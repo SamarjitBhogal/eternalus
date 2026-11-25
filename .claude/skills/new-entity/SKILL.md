@@ -32,11 +32,10 @@ is at most 3.
    components, one behaviour test per unique behaviour, and (for structures/obstacles) the
    "appears on the minimap with no code change" test from `06-map-and-minimap.md`.
 7. Docs: update the folder table in `packages/core/AGENTS.md` only if a new folder appeared;
-   update `docs/reference/game-design/*` if the design changed; append an entry to
-   `docs/plan/PROGRESS.md`.
+   update `docs/reference/game-design/*` if the design changed; add a new entry file in `docs/plan/progress/`.
 8. Run `npm run check` and report the result verbatim. Do not commit unless asked.
 
 ## Done when
 
 - `npm run check` passes; the registry line is the only cross-cutting change; every tuning
-  number is in `content/`; tests exist for the behaviour; PROGRESS.md has an entry.
+  number is in `content/`; tests exist for the behaviour; docs/plan/progress/ has a new entry file.

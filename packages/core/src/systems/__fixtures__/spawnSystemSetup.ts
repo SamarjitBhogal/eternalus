@@ -19,8 +19,10 @@ import { GameState } from '../../state/GameState';
 import { spawnMapStructures } from '../../state/__fixtures__/spawnMapStructures';
 import { matchWorldOf } from '../../state/__fixtures__/matchWorld';
 import type { GameEventMap } from '../../state/GameEvents.types';
+import type { SpawnPlan } from '../SpawnSystem.types';
 import { SpawnSystem } from '../SpawnSystem';
 import { countdownTicks } from '../../config/countdownTicks';
+import { timelineFrameOf } from '../../config/timelineFrameOf';
 
 /** The simulation tick rate the fixtures use. */
 export const TICK_RATE = 30;
@@ -30,6 +32,7 @@ export type SpawnPlanOverrides = {
   readonly openingWave?: OpeningWaveDefinition;
   readonly waves?: Readonly<Record<string, readonly AuthoredSpawnWave[]>>;
   readonly guards?: Readonly<Record<string, AuthoredGuardPlan>>;
+  readonly defenders?: SpawnPlan['defenders'];
 };
 
 /**
@@ -49,6 +52,7 @@ export const newSystem = (
     weights: LANE_ASSESSMENT_WEIGHTS,
     formationId: 'ranks',
     guards: loadGuardPlans(TICK_RATE, plan.guards ?? {}),
+    defenders: plan.defenders ?? {},
   });
 
 /** The opening wave sent by a structure kind the test map does not have, so no opening hordes. */
@@ -63,7 +67,15 @@ export const setUp = (
     match: overrides.match ?? {},
     limits: overrides.limits ?? {},
   });
-  const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP));
+  const state = new GameState(
+    config,
+    1,
+    matchWorldOf(TWO_LANE_MAP),
+    {},
+    {
+      countdownEndTick: timelineFrameOf(config).countdownEndTick,
+    },
+  );
   spawnMapStructures(state);
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
   const system = newSystem(state, factory, plan);

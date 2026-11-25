@@ -206,7 +206,13 @@ export const TEST_CONTENT: DisplayCatalogue = {
   lockInChromeAssetId: 'lock-in-chrome',
   effectsRenderer: 'figma-raster',
   contrastMode: 'figma',
+  uiEnhancements: [],
   hud: TEST_HUD_CATALOGUE,
+  laneMinions: [
+    { id: 'light-minion', displayName: 'Light Minion' },
+    { id: 'medium-minion', displayName: 'Medium Minion' },
+    { id: 'heavy-minion', displayName: 'Heavy Minion' },
+  ],
   teamNames: { light: 'Light', dark: 'Dark' },
   botRoster: {
     id: 'test',

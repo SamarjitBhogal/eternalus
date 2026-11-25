@@ -3,6 +3,7 @@ import { type ReactElement, useRef } from 'react';
 import { useAppSelector } from '../../bridge/hooks';
 import { AbilityBar } from '../hud/AbilityBar';
 import { AetherBar } from '../hud/AetherBar';
+import { DeveloperMenu } from '../hud/DeveloperMenu';
 import { DuelHud } from '../hud/DuelHud';
 import { CrystalStatus } from '../hud/CrystalStatus';
 import { GadgetBar } from '../hud/GadgetBar';
@@ -10,6 +11,7 @@ import { HealthBar } from '../hud/HealthBar';
 import { HudFilters } from '../hud/HudFilters';
 import { LevelBadge } from '../hud/LevelBadge';
 import { MatchClock } from '../hud/MatchClock';
+import { MatchCountdown } from '../hud/MatchCountdown';
 import { MinimapPanel } from '../hud/MinimapPanel';
 import { ObjectiveTracker } from '../hud/ObjectiveTracker';
 import { PauseOverlay } from '../hud/PauseOverlay';
@@ -23,10 +25,10 @@ import type { ScreenProps } from './screen.types';
 /**
  * The match screen (13 §3, Figma 62:231): the game viewport full-bleed, the HUD over it (a size
  * container whose `--hud-u` is one Figma px, so the 1920 × 1080 layout scales uniformly) with its
- * nine regions in the Figma's paint order, and the pause overlay beside both. It reads only the
- * open overlay (each HUD leaf reads its own data, so a publish never re-renders it). While an
- * overlay is open the viewport and the HUD are `inert` (13 §7; CD-11) and the session pauses the
- * match.
+ * nine regions in the Figma's paint order, the pre-match countdown over all of them (DEC-278), and
+ * the pause overlay beside both. It reads only the open overlay (each HUD leaf reads its own data,
+ * so a publish never re-renders it). While an overlay is open the viewport and the HUD are `inert`
+ * (13 §7; CD-11) and the session pauses the match.
  */
 export function MatchScreen({ viewport }: ScreenProps): ReactElement {
   const overlay = useAppSelector((state) => state.session.overlay);
@@ -71,7 +73,9 @@ export function MatchScreen({ viewport }: ScreenProps): ReactElement {
         <div className={styles.minimap} data-hud-region="minimap">
           <MinimapPanel />
         </div>
+        <MatchCountdown />
       </section>
+      <DeveloperMenu />
       <PauseOverlay openerRef={openerRef} />
     </main>
   );

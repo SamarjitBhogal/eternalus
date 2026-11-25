@@ -8,11 +8,13 @@ import { applyCommand } from './commands/applyCommand';
 import type { Command } from './commands/Command.types';
 import type { CommandContext, CommandHandlers } from './commands/CommandHandler.types';
 import { CommandQueue } from './commands/CommandQueue';
+import { LegendSpawner } from './entities/LegendSpawner';
+import { ROVER_BOT } from './content/ai/difficulties/rover';
 import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers';
 import { Footprint } from './components/Footprint';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from './config/matchPhases';
 import { validateGameConfig } from './config/validateGameConfig';
-import { SCORING } from './content/match/scoring';
+import { loadScoring } from './content/match/loadScoring';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import type { LogContext, Logger } from './diagnostics/Logger.types';
@@ -51,8 +53,8 @@ import { DUEL_RULES } from './content/duel/duelRules';
 import { duelStartPoints } from './match/duelStartPoints';
 import { createDefaultMatchDirector } from './match/defaultMatchDirector';
 import { MatchTimeline } from './match/MatchTimeline';
+import { timelineFrameOf } from './config/timelineFrameOf';
 import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
-import { Legend } from './entities/Legend';
 import { Unit } from './entities/Unit';
 import type {
   GameEventHandler,
@@ -96,7 +98,9 @@ export class Simulation {
   private readonly botQueue = new CommandQueue();
   /** Commands from `enqueueCommand` (player, developer menu). Each one enters the replay log. */
   private readonly externalQueue = new CommandQueue();
-  private readonly handlers: CommandHandlers = createDefaultCommandHandlers();
+  private readonly handlers: CommandHandlers = createDefaultCommandHandlers({
+    rover: { controllerId: 'rover', profileId: ROVER_BOT.id, memory: {} },
+  });
   private readonly commandContext: CommandContext;
   private readonly systemContext: SystemContext;
   private readonly pipeline: SystemPipeline;
@@ -151,7 +155,13 @@ export class Simulation {
     const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
     // Without the default pipeline no director runs, so no mark would ever fire: list none.
     const schedule = systems === undefined ? timeline.schedule() : [];
-    this.state = new GameState(validConfig, seed, world, { space, paths }, schedule);
+    this.state = new GameState(
+      validConfig,
+      seed,
+      world,
+      { space, paths },
+      { schedule, countdownEndTick: timelineFrameOf(validConfig).countdownEndTick },
+    );
     const duelStarts =
       duel === undefined ? undefined : duelStartPoints(map, DUEL_RULES.startOffset);
     if (duel !== undefined) this.state.match.startDuel(duel.killTarget);
@@ -206,7 +216,7 @@ export class Simulation {
         timeline,
         debug,
         logger,
-        scoring: SCORING,
+        scoring: loadScoring(tickRate),
       });
       this.pipeline = new DefaultSystemPipeline({
         invariants: new DefaultInvariantRunner({
@@ -435,6 +445,7 @@ export class Simulation {
         'A roster needs a map: its Legends spawn on its lanes and at its Strongholds.',
       );
     }
+    const legends = new LegendSpawner(factory);
     const humans = Simulation.humanSlotsOf(roster, state.config.match.playerTeam);
     AiSystem.assertRegistered(
       roster.flatMap((slot, index) =>
@@ -451,16 +462,14 @@ export class Simulation {
       controllers,
     );
     roster.forEach((slot, index) => {
-      const reason = slot.pilot === 'bot' ? Simulation.legendRefusal(factory, slot) : null;
+      const reason = slot.pilot === 'bot' ? legends.refusal(slot.definitionId) : null;
       if (reason !== null) {
         throw new Error(
           `Roster slot ${String(index)} (a ${slot.team} bot) cannot spawn "${slot.definitionId}": ${reason}.`,
         );
       }
     });
-    const refusals = new Map(
-      humans.map((human) => [human, Simulation.legendRefusal(factory, human)]),
-    );
+    const refusals = new Map(humans.map((human) => [human, legends.refusal(human.definitionId)]));
     // A refused human slot still counts against the caps below, but takes no lane and no spawn.
     const spawning = roster.filter((slot) => (refusals.get(slot) ?? null) === null);
     const plans = Simulation.planLanes(
@@ -492,14 +501,14 @@ export class Simulation {
         placed.set(lane, follower + 1);
         routes.pose(lane, team, 0, anchor, forward);
         formationSlot(anchor, forward, follower, RANKS_FORMATION, at);
-        Simulation.spawnSlot(state, factory, slot, { x: at.x, y: at.y }, { lane });
+        Simulation.spawnSlot(state, legends, slot, { x: at.x, y: at.y }, { lane });
       });
     }
     for (const slot of spawning.filter(({ role }) => role === 'rover')) {
       const forWhom = slot.pilot === 'human' ? "the human's Legend" : `the ${slot.team} Rover`;
       const position =
         duelStarts?.[slot.team] ?? Simulation.strongholdOf(state, slot.team, forWhom);
-      Simulation.spawnSlot(state, factory, slot, position, {});
+      Simulation.spawnSlot(state, legends, slot, position, {});
     }
   }
 
@@ -619,30 +628,24 @@ export class Simulation {
    */
   private static spawnSlot(
     state: GameState,
-    factory: EntityFactory,
+    legends: LegendSpawner,
     slot: RosterSlot,
     position: Vec2,
     memory: AiMemory,
   ): void {
-    const { kind } = factory.definitions.get(slot.definitionId);
-    const entity = factory.create(kind, slot.definitionId, {
+    const entity = legends.spawn(
+      state,
+      slot.definitionId,
+      slot.team,
       position,
-      team: slot.team,
-      ...(slot.pilot === 'bot' && {
-        controller: {
-          controllerId: Simulation.controllerOf(slot),
-          profileId: slot.difficulty,
-          memory,
-        },
-      }),
-      ...state.world?.startFacing(slot.team, position),
-    });
-    state.entities.add(entity);
-    state.events.emit('entity-spawned', {
-      entityId: entity.id,
-      kind: entity.kind,
-      team: slot.team,
-    });
+      slot.pilot === 'bot'
+        ? {
+            controllerId: Simulation.controllerOf(slot),
+            profileId: slot.difficulty,
+            memory,
+          }
+        : undefined,
+    );
     if (slot.pilot === 'human') {
       state.match.seatHuman(entity.id, slot.team);
     }
@@ -655,28 +658,11 @@ export class Simulation {
    * @throws Error naming `forWhom` when the map has no Stronghold for `team`.
    */
   private static strongholdOf(state: GameState, team: PlayableTeam, forWhom: string): Vec2 {
-    const stronghold = state.world?.definition.features.find(
-      (feature) => feature.kind === 'stronghold' && feature.team === team,
-    );
+    const stronghold = state.world?.strongholdOf(team);
     if (stronghold === undefined) {
       throw new Error(`The map has no ${team} Stronghold for ${forWhom}.`);
     }
-    return { x: stronghold.position.x, y: stronghold.position.y };
-  }
-
-  /**
-   * Why `slot`'s Legend cannot spawn: its `definitionId` names no definition, or one whose kind is
-   * not a Legend; `null` when it can. A bad bot slot throws; a bad human slot is logged (DEC-173).
-   */
-  private static legendRefusal(
-    factory: EntityFactory,
-    { definitionId }: RosterSlot,
-  ): 'unknown-definition' | 'not-a-legend' | null {
-    if (!factory.definitions.has(definitionId)) {
-      return 'unknown-definition';
-    }
-    const { kind } = factory.definitions.get(definitionId);
-    return factory.registry.get(kind)?.prototype instanceof Legend ? null : 'not-a-legend';
+    return stronghold;
   }
 
   /**

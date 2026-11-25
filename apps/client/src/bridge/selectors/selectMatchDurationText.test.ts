@@ -8,7 +8,7 @@ const after = (durationSeconds: number | null) =>
     // The clock ran on after the end (DEC-92); the length comes from the result alone.
     match: {
       ...matchSlice.getInitialState(),
-      clock: { tick: 99_000, seconds: 3300 },
+      clock: { tick: 99_000, seconds: 3300, countdown: null },
       durationSeconds,
     },
   });

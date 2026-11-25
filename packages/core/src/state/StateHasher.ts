@@ -38,8 +38,8 @@ export class StateHasher {
     const parts: unknown[] = [state.tick, match.phase, state.rng.getState(), entities];
     // Appended only once a field leaves its initial value (0 or false), so a match no director
     // runs hashes exactly as before (recorded replay checkpoints stay valid). One list feeds both
-    // the check and the hash, so a new field cannot be left out of the check. The schedule comes
-    // from the config, which a replay carries, so it is not hashed.
+    // the check and the hash, so a new field cannot be left out of the check. The schedule and
+    // `countdownEndTick` come from the config, which a replay carries, so they are not hashed.
     const matchFields = [match.phaseEnteredTick, match.timelineCursor, match.isIdleHeld];
     if (matchFields.some((value) => value !== 0 && value !== false)) {
       parts.push(['match', ...matchFields]);
@@ -86,6 +86,27 @@ export class StateHasher {
         posts.push([id, guardId, respawnAtTick]);
       });
       parts.push(['guards', ...posts]);
+    }
+    // Dead Legends waiting to respawn (DEC-295) are appended only while some wait, for the same
+    // reason: each one's team, return tick and owed XP, then the waiting Legend's own fields, as
+    // an entity in the store hashes them, since it is out of the store meanwhile.
+    if (state.respawns.size > 0) {
+      const waiting: unknown[] = [];
+      state.respawns.forEach(({ legend, team, returnsAtTick, owedXp }) => {
+        waiting.push([
+          team,
+          returnsAtTick,
+          owedXp.map(({ cause, victimId, victimTeam, xp, maxLevels }) => [
+            cause,
+            victimId,
+            victimTeam,
+            xp,
+            maxLevels ?? null,
+          ]),
+          StateHasher.fieldsOf(legend),
+        ]);
+      });
+      parts.push(['respawns', ...waiting]);
     }
     // Ally damage (DEC-89) is appended only while some is counted, for the same reason.
     if (state.allyDamage.size > 0) {

@@ -31,7 +31,8 @@ function renderLayer<K extends LayerKind>(
 /**
  * Draws a content `BackgroundSet` (contract §2.5) full-bleed behind a screen: gradients, drifting
  * particles and images, in layer order. Decorative, so hidden from assistive technology; motion
- * stops under `prefers-reduced-motion`. Renders a plain surface until content has loaded.
+ * stops under `prefers-reduced-motion` and under the in-game reduce-motion setting (UE-03).
+ * Renders a plain surface until content has loaded.
  */
 export function ThemedBackground({
   set,

@@ -16,6 +16,66 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-legends`) — developer menu, slice 2
+      (add/remove Legends, FR-097) built; decisions for the owner.** (a) `dev-spawn-legend` takes
+      `{ team, definitionId }`, not the `{ team, definitionId, controllerId, at? }` of 13 section
+      4: the Legend always plays with the Rover controller (it takes no lane, so it needs no lane
+      memory, and it starts at the Stronghold like a roster Rover) with the `rover` difficulty.
+      A controller picker, a lane for a laner bot and a spawn point other than the Stronghold are
+      left out. (b) Removal reuses `dev-remove-entity`; there is no `dev-remove-legend` (the
+      existing command removes any entity and emits `entity-removed`). (c) FR-097 and FR-105 call
+      the removal cause `developer-menu`; the code's `RemovalCause` is `dev-removed` (used by tests,
+      invariants and 03). Not renamed here: do you want the rename? (d) The class picker lists the
+      selectable classes of the display catalogue (a class id is the Legend definition id). (e) The
+      team picker is now one control above both the mob and the Legend sections. (f) Refusals
+      (`cap-exceeded`, `not-a-legend`, `no-stronghold`) still reach only the log: the bridge has
+      no diagnostic event. (g) Adding or removing the human Legend and sim mode
+      (`dev-set-controller`, FR-099) stay for slice 3.
+      Decision: DEC-293 (2026-11-20, Owner Calls page) answers (a) and (b): "Small spawn, plus
+      `dev-remove-legend` that refuses the human outside sim mode". Built in PR #109: the spawn
+      stays `{ team, definitionId }`; `dev-remove-legend { entityId }` refuses the human's Legend
+      outside sim mode (`human-legend`). DEC-355 (2026-11-23, Owner Calls page) closes (c), (d)
+      and (e): "Keep all three as built" (`dev-removed` stays, the character-select class list,
+      one Team control). (f) and (g) stay open.
+- [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu`) — developer menu, slice 1 built;
+      the rest needs owner and core work.** Built: `?dev=1` enables the menu, F1
+      (`toggle-developer-menu`) opens it, and it spawns a horde of lane minions at a map structure
+      (`dev-spawn-mobs`) and removes an entity by id (`dev-remove-entity`). Not built, and why:
+      (a) the persisted `settings.developer.menuEnabled` toggle, because settings persistence does
+      not exist yet (only the query flag enables the menu; there is no session toggle either);
+      (b) add/remove Legends with class and team pickers (FR-097), which needs a new core
+      `dev-spawn-legend` command; (c) sim mode / `dev-set-controller` (FR-099), unsupported in
+      core; (d) invariant level, timeline jump, overlays, time scale, replay dump and fixture
+      (FR-110), pre-match config overrides; (e) teleport, which no requirement names (SCRUM-437
+      says to raise it as a feature request); (f) showing core's refusals (unit cap clipping,
+      `command-rejected`): the bridge carries no diagnostic event yet. The mob picker reads
+      the lane minions from `DisplayContent.laneMinions`, which core now publishes through
+      `loadDisplayContent`; no client list remains. Decide: (1) the menu's name ("Architect's
+      Table" is still only proposed); (2) built: core publishes its mob list in
+      `loadDisplayContent` (`DisplayContent.laneMinions`); (3) whether the next slice adds
+      `dev-spawn-legend` (FR-097); (4) `?dev=1` also works in release builds (the same
+      flag already turns on the explorer chrome): add a build-time guard? Online play: a remote
+      (online Duel) match must always keep the menu disabled (`Match.isDeveloperMenuEnabled` is
+      optional and off by default, and the online match factory must not pass it), otherwise dev
+      commands would be a cheat path.
+- [ ] **Dependency audit (re-run 2026-11-20): approve one upgrade PR for the `eslint` family and
+      `zod`, and say whether to turn on Dependabot alerts.** PR #113 already moved `vite` to 8.3.8
+      and `vitest` to 5.1.0. `npm audit` on `phase/3-sprint-3-work` (`5a7cc8dc`) now reports 10
+      findings (9 moderate, 1 high, none critical), all in dev tooling, none in the browser build or
+      the Duel server. High: `zod` 4.6.5 (memory exhaustion on oversized constrained collections,
+      GHSA-mrhx-c7xc-m3w5; fixed in 4.6.6), transitive through `knip` and
+      `eslint-plugin-react-hooks`. Moderate: `minimatch` 10.2.6 (glob DoS, GHSA-g3hv-75wg-m249),
+      reached through `eslint` 10.11.0 and `typescript-eslint` 8.70.1 and the
+      `@typescript-eslint/*` packages; the other 8 moderate findings are those packages. On
+      2026-11-13 npm proposed downgrades for this family; it now proposes upgrades (`eslint`
+      10.15.0, `typescript-eslint` 8.73.0, not semver-major, but past the exact versions pinned in
+      `package.json`, so `npm audit fix --force`), and `zod` 4.6.6 is a patch.
+      AGENTS.md says no new or upgraded dependencies without explicit human approval, and the
+      lockfile is never hand-edited. Approve: one dependency-upgrade PR for these (run by `npm`,
+      with `npm run check`)? Also: GitHub answers "Dependabot alerts are disabled for this
+      repository" (HTTP 403). Turn them on (repository settings, owner), or keep relying on a manual
+      `npm audit`?
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
@@ -41,6 +101,44 @@ Reply inline (`Decision: …`).
       rings derived as `ceil(distance / cellSize)`. Whether 30 m still covers a Stronghold is a
       live question on #98.
 
+- [x] **Corner camp boss: new `TUNE` values, its display name, and better-than-design items B2
+      and N4 (Aryan Walanj, 2026-11-12; PR #91 `feat/bosses-p3`, your review S2, S3 and nit 3;
+      DEC-236).** (1) The values with no reference source, all `TUNE` in
+      `content/mobs/cornerBoss.ts`: footprint radius 1.5 m (about twice a heavy camp mob), attack
+      reach 2 m, max speed 2.5 m/s, acceleration 8 m/s², mass 12, vision radius 45 m (its aggro
+      radius, the ring's diameter, from `CORNER_CAMP_RING`). Its health (8,200), damage (205 per hit every 1.5 s) and team-wide XP (500,
+      DEC-237) are `balancing.md`'s MiniBoss row, sized for level-4 Legends, though this boss exists from
+      t = 0. Also `TUNE` (2026-11-17, PR #91 critic): the corner camp plan's leash tolerance
+      7 m (`content/structures/guardPlans.ts`), above DEC-181's 5.5 m, since this boss is bigger,
+      slower and reaches further than any guard (DEC-181's sum for it is about 6.08 m). Approve
+      them or give values. (2) The display name "Corner Camp Boss" (names are open
+      with HC-Q4). Approve or rename. (3) **B2 of the PR #91 body (your S2 calls it "your B2"; not your review's B2, the team XP), better than the design:** store the boss's health
+      and damage as multiples of `refHealth(level)` (10 × and 0.25 ×), as `balancing.md`
+      recommends, instead of absolute numbers. (4) **N4, better than the design:** the capture
+      point boss (`capturePointBoss.ts`, PR #99) uses the same MiniBoss row; once B2 is done, keep
+      that row in one shared constant, as `refHealth` multiples, that both bosses use. Approve
+      B2 and N4 (one follow-up PR), or drop them.
+  - **Answered 2026-11-20 by DEC-296** (PR #91 comments). (1) and (2) approved and cited in the
+    code; the mass follows the HC-S12 (d) answer, the same for both bosses: the corner boss has
+    the Sentinel's 6 (PR #91); the capture point boss gets 6 in the DEC-284 (3) follow-up PR.
+    (3) and (4) approved, not built yet: they go in the HC-B12 follow-up PR.
+
+- [x] **PR #91 critic (2026-11-13), better than the design: the ring size on the map feature
+      (Aryan Walanj, `feat/bosses-p3`, claudiodh's B4).** The corner camp's ring is now core
+      content (`CORNER_CAMP_RING`, `content/structures/cornerCampRing.ts`, radius 22.5 m; the
+      boss's vision and acquisition radius follow it: 45 m, the ring's diameter, since PR #91
+      B6, so the boss sees the whole ring from any post). The client draws it because core exports the constant and `Match` passes the size
+      into `MapView` (`featureSizes`). The critic proposes instead an optional ring radius on
+      `MapFeatureDefinition` (`content/maps/mapFeatureDefinitions.ts`), copied onto `MapFeature`
+      by the generator, which `MapView` draws from the map data it already gets. That drops the
+      new export, the constructor parameter and the size-0 placeholder in `FEATURE_STYLES`, and
+      the capture point's ring (still 45 m in `FEATURE_STYLES`) could use the same field. It also
+      suggested one shared camp post gap constant; done 2026-11-17 by the phase/3 merge
+      (`cornerCampRing.ts` reads `GUARD_LEASH.postGap`). Approve the ring field as a follow-up PR
+      (docs 06 and 07 updated with it), or keep the current wiring.
+  - **Answered 2026-11-20 by DEC-296** (PR #91 comments): the ring field is approved as a
+    follow-up PR, not built yet; the 22.5 m radius is approved.
+
 - [ ] **Teammate's boss spec (Aryan Walanj, 2026-11-11): amend reference 04?** A teammate's spec
       differs from `docs/reference/game-design/04-objectives-capture-points-and-bosses.md` in
       four places. Nothing is built for any of them until you answer; no Cathedral or middle-boss
@@ -64,9 +162,10 @@ Reply inline (`Decision: …`).
       (c) needs Sam's sign-off now and is replaced by phase-3 sprint 3.6's `BossController`, (d)
       partly built, (e) awaits the owner and Sam.** (a) The boss
       spawns at the default timeline's quarter mark (440 s after the countdown ends, 2026-11-12;
+      450 s since DEC-282 (1) counts the marks from the countdown's end, 2026-11-20;
       `guardPlans.test.ts` derives it from `createDefaultGameConfig`'s `quarter-mark` entry), but
       through its guard plan's `delaySeconds`, not `MatchTimeline`: a match with another
-      `plannedMatchSeconds` or countdown keeps 440 s. Reference 04 and 07 §7 schedule it from the
+      `plannedMatchSeconds` keeps 450 s. Reference 04 and 07 §7 schedule it from the
       match timeline; only that mechanism is still interim. (b) **Built 2026-11-12 (PR #99 review
       F8):** while the boss lives its zone cannot be captured, as reference 04 says:
       `CaptureSystem` sets `lockedBy` from the zone's guard posts (`content/zones/zoneLocks.ts`)
@@ -112,7 +211,10 @@ Reply inline (`Decision: …`).
       are metres on the default 1600 × 900 world; on another world size `map/zoneArea.ts`
       stretches the floor and the leash does not follow.
 
-- [ ] AI56-F4 exemption for boss rows; claudiodh/Sam to confirm (asked on #99).
+- [x] AI56-F4 exemption for boss rows; claudiodh/Sam to confirm (asked on #99). Since
+      2026-11-17 (PR #91) the corner boss (`corner-boss`) is exempt too: it acquires across its
+      camp ring (`CORNER_CAMP_RING`), not leash less post gap (`aggroRules.test.ts`).
+  - **Answered 2026-11-20 by DEC-296** (PR #91 comments): the boss exemption is approved.
 
 - [ ] **Capture point boss: four better-than-design items (PR #99 critic, 2026-11-12) — Sam and
       the owner: approve or drop; no code change until then.** (1) **Zone lock read from state,
@@ -150,7 +252,7 @@ Reply inline (`Decision: …`).
       paths and no doc says which owns boss timing. Due before the zone-lock PR: pick one owner
       and update 07 §7 and 12 so only one mechanism is named.
 
-- [ ] **One guard plan per home, mates by `homeId` (`feat/zone-guard-homes` critic finding 3,
+- [x] **One guard plan per home, mates by `homeId` (`feat/zone-guard-homes` critic finding 3,
       2026-11-09) — accepted as interim.** `GuardRoster` looks plans up by the home's definition
       id, so a home has one plan, and `GuardController` (`ai/GuardController.ts`, `isMate`)
       treats every guard on a home as a mate. 18 §7.1 makes the capture point the home of the
@@ -158,8 +260,11 @@ Reply inline (`Decision: …`).
       cannot both be plans, and on one `homeId` they would count as mates across teams. 18 §7.1
       now records the limit. Due before checkpoint defenders get posts: key mates by plan or by
       team as well as home, and allow more than one plan per home if both must coexist.
+      **Done in PR #130 (2026-11-22):** defender posts carry `GuardSlot.checkpoint` and sit beside
+      the zone's plan; mates need the same home and team (`GuardController`), and a `group` plan's
+      group is the home's own posts only (`GroupGuardRespawn`).
 - [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
-      but unhandled actions: `toggle-developer-menu` (BUG-4, a feature), `sprint`, `interact`,
+      but unhandled actions: `toggle-developer-menu` (handled since #107), `sprint`, `interact`,
       `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
       (no overlay exists) are in `InputAction`, bound in `keybindings.ts` and shown as rebindable
       in settings, yet nothing handles them. Decide whether to hide them from the bindings screen
@@ -178,12 +283,20 @@ Reply inline (`Decision: …`).
       break. No spec gives the inner walls their own value. Should the `'wall'` features inside the
       Stronghold ring keep the WallSegment value, or get their own (which number)?
   - **Answered 2026-11-13 by DEC-247** (chat, PR #96). Not built yet (BUG-2).
+  - Where it lives: the inner walls are `'wall'` map objects built by
+    `packages/core/src/map/MapBuildingInteriorBuilder.ts` (cathedral partitions, chapel and apse
+    walls) and `packages/core/src/map/MapPalaceRoomsBuilder.ts` (palace room walls); their health
+    is the `wall` entry of `packages/core/src/content/maps/mapObjectDefinitions.ts`. A side's own
+    pieces refusing its attacks (DEC-121 (a), `combat/FriendlyFireStep.ts`) can also look slow.
 
 - [x] **BUG-3: minions attack obstacles (2026-11-12, PR #96, SCRUM-436).** Today a stuck unit
       paths around an obstacle (DEC-193); minions never attack obstacles or props. The playtest
       asked for minions to attack them. Keep DEC-193, or should minions attack obstacles (and
       which ones: props only, or blocking obstacles too)?
   - **Answered 2026-11-13 by DEC-248** (chat, PR #96). Not built yet (BUG-3).
+  - Where it lives: the lane minion's aggro rules (`content/ai/aggro/laneMinion.ts`) and
+    `ai/aggroRank.ts` rank only Legends, minions, turrets and the lane objective today; no rule
+    targets a prop or an obstacle.
 
 - [x] **`refactor/durations-at-load` critic (2026-11-14), better than the design — built, sign-off
       asked; no decision blocks the PR.** #86's healing system divided its two rates
@@ -200,7 +313,7 @@ Reply inline (`Decision: …`).
     signed off: the time check in the aggro, stuck, veterancy and guard loaders (the 2026-11-12
     critic) and #86's healing times as DEC-241's sixth reader.
 
-- [ ] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
+- [x] **HC-B9 — Better than the design, not built, sign-off asked: two older times not read once at
       load (`refactor/durations-at-load` merge critic, 2026-11-19); no decision blocks the PR.**
       Both are older than PR #125 and keep their values.
       (1) **One countdown-end tick.** Three readers each compute the tick the countdown ends with
@@ -214,6 +327,18 @@ Reply inline (`Decision: …`).
       Proposal: a scoring loader turns it into ticks and rejects a negative or non-finite value,
       as `loadGuardPlans` does.
       Build both in PR #125, build them in a later PR, or keep the code as it is?
+  - Answered 2026-11-20 (Owner Calls page, DEC-285): "Approve both: (1) in the DEC-278 countdown
+    PR, which already touches every reader; (2) in a follow-up PR". (1) **Built** on
+    `feat/match-start-countdown`: the tick is `MatchState.countdownEndTick`, set once when the
+    match is built; every runtime reader reads it (the three above, and `MatchDirector` and the
+    snapshot, which that branch added). Built with it, critic round 2's BTD4: `timelineMarkTick`
+    takes a named `TimelineFrame`. (2) **Built** on `refactor/scoring-at-load` (PR #139): `content/match/loadScoring.ts`
+    turns `assistWindowSeconds` into `assistWindowTicks` once and rejects a negative or non-finite
+    window; `Simulation` passes the loaded value, and the scoring rules see only ticks. Same
+    conversion as before (30 s = 900 ticks). With it, under the standing rule, the critic's two
+    better-than-design items (DEC-287): the loader also turns the held minute into ticks, so
+    `createDefaultScoringRules` takes no tick rate, and the authored and loaded scoring types
+    share one `weights` base.
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
@@ -257,6 +382,25 @@ Reply inline (`Decision: …`).
   - **(2) done by DEC-234** (#85, 2026-11-09): the inside test runs once, in `aimPointOf`, which
     returns an `AimedAt` tag; `isInReach` and `facingPointOf` read it. The tidy PR builds no
     helper for it.
+- [ ] **Per-address connection cap and `X-Forwarded-For` (SCRUM-432 critic, 2026-11-12) — owner /
+      security, not introduced by this branch.** `ClientAddress.resolve` (`apps/server/src/transport/`)
+      takes the FIRST `X-Forwarded-For` entry when the peer is loopback. Behind `tailscale serve`
+      every peer is loopback, so if the proxy appends to a client-supplied header instead of
+      replacing it, a remote client can pick its own address and defeat the per-address cap (the
+      load bots do exactly this on purpose). Decide: take the LAST trusted hop, or verify what
+      `tailscale serve` does with the header.
+- [ ] **Duel creation cost and the 400-bot failure (SCRUM-432, PR #103 review S3, 2026-11-20) —
+      owner.** (1) The queue-load runs (`multiplayer-and-scalability-plan.md` §7, "Implementation
+      status: matchmaking under load") started about 8 Duels per second in one process (500
+      matches in 62.6 s). A one-off timing gave about 135 ms (132 to 147 ms) of synchronous work
+      per `CoreDuelSimulationFactory.create()`, probably map generation; not confirmed, the
+      timing file was not kept. ADR 0016 point 2 keeps Duels on the main thread until a measured
+      metric breaks the scalability research's ladder. Decide: (A) move Duel creation to a worker,
+      (B) pre-build Duels before pairs need them, or (C) accept it for now and re-measure in MP-5.
+      (2) 400 bots failed (2 to 8 joins never answered, two runs). The cause is unconfirmed: maybe
+      the `MAX_CONNECTIONS = 500` cap. DEC-37 asks for "hundreds or thousands" of players. Approve
+      a follow-up that finds the cause: an `onClose` handler in the bots, or a refusal counter in
+      the server.
 
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
@@ -277,7 +421,7 @@ Reply inline (`Decision: …`).
       catalogue does not list `NoMapObjectOverlapInvariant` (`no-map-object-overlap`); a
       doc-gardening fix. Approve which to schedule, or drop them.
 
-- [ ] **Minion plan MVP gaps (1): zone level-up numbers (2026-11-06, refreshed 2026-11-12,
+- [x] **Minion plan MVP gaps (1): zone level-up numbers (2026-11-06, refreshed 2026-11-12,
       PR #81).** Zone level-up (reference 02, MVP) is designed in architecture 07 §7 and now
       scheduled as minion plan phase M10; `CaptureSystem` is on the phase branch (PR #64), so
       only your answers block it. (a) Which zones count: the Cathedral only, or all three central
@@ -288,11 +432,57 @@ Reply inline (`Decision: …`).
       events instead of 07 §7's status effect (one minion level with two sources, DEC-168 B3),
       and removing it on the same tick the zone is lost. Approve both, or keep 07 §7's status
       effect and say when the level is removed.
+  - **Answered 2026-11-15 by DEC-258** (chat): (a) all three central zones; (b) and (c)
+    approved as written. M10 is unblocked; not built yet.
 
-- [ ] **Minion plan MVP gaps (2): checkpoint defenders sign-off (2026-11-06, refreshed
+- [x] **Minion plan MVP gaps (2): checkpoint defenders sign-off (2026-11-06, refreshed
       2026-11-12, PR #81).** M6b (checkpoint defenders) no longer waits for PR #64, which merged
       on 2026-11-08. Sign off the recommendations of the "Minion M6" item (1) below (the leash is
       the zone's radius; defenders at an unowned point are neutral), and M6b can start.
+  - **Answered 2026-11-15 by DEC-257** (chat): both recommendations approved. Built on
+    `feat/minion-m6b-checkpoint-defenders`.
+
+- [ ] **Minion M6b follow-ups (`feat/minion-m6b-checkpoint-defenders`, 2026-11-15, critic).**
+      (1) `checkpoint-cleared` is never emitted, so killing a checkpoint's defenders gives no
+      checkpoint XP (07 §7, balancing.md 60 / 150 / 400). Who builds it? `Recommendation:` the
+      guard roster emits it as it emits `camp-cleared`, and `ProgressionSystem` pays it, in its
+      own PR. (2) balancing.md recommends that a checkpoint's defenders must be dead before the
+      next stage counts; 07 §7 does not adopt it and nothing enforces it. Adopt it, or drop it?
+      (3) **Better than the design (DEC-139), sign-off asked:** (a) a `never` guard respawn rule
+      (a third strategy beside `each` and `group`) for defender posts, instead of the inline
+      branch for a standing home with no plan; (b) key the defender tables by capture-point
+      definition id, then checkpoint, so the Cathedral and the outer forts can differ (DISC-11:
+      major and lesser zones are reward tables). Approve either, or leave as built.
+      **Update 2026-11-20 (PR #130 merge with #99):** (3)(a) is overtaken: phase/3 has the `never`
+      rule (`NeverGuardRespawn`, DEC-168), and defender posts now use it, marked by
+      `GuardSlot.checkpoint` instead of the inline branch. (3)(b) stays open. The despawn on an
+      owner change is gone (DEC-261 as changed 2026-11-20). (4) **Not built, needs an owner:**
+      DEC-260 as signed off 2026-11-20 makes neutral defenders and forest-camp mobs level
+      (changing DEC-165); `VeterancySystem.isLeveller` still skips neutral posts, which would also
+      level #99's capture point boss group. Build it in its own PR, and say whether the boss group
+      levels too. (5) **Better than the design (DEC-139), sign-off asked:** the defenders take any
+      enemy inside their leash (`shouldAcquireAcrossLeash`, DEC-260), which #99's boss and support
+      mobs lack (their fixed `acquisitionRadius` from `CAPTURE_POINT_COURT` only reaches enemies
+      near their post). Use the flag for #99's zone guards too? Not changed without your sign-off.
+      (6) **Question (critic, 2026-11-20):** a defender post the unit cap blocks waits and fills
+      when the cap frees, possibly after the point changed owner, so an old owner's defender
+      appears at a zone it lost. `Recommendation:` give such a post up on its due tick (counted as
+      suppressed once), since defenders answer one push. Built today: it waits. (7) **Better than
+      the design (DEC-139), sign-off asked:** with DEC-261 keeping living defenders, each owner
+      flip lets a checkpoint be reached again, so a contested point gains another set per flip
+      without bound. Cap it: skip a checkpoint's defenders while its earlier posts still hold
+      guards? (8) `GuardRoster.ts` is 332 lines (limit ~300): move `clearPost` into its own
+      helper in a tidy PR.
+      **Update 2026-11-22 (PR #130 review round 2):** (1), (4) and the answers to (6) and (7) are
+      planned as M6c (`feat/minion-m6c-defender-followups`, SamarjitBhogal, Phase 3 sprint 3; the
+      minion plan's §1.2 rows); (4)'s boss-group question, (6) and (7) still wait on the owner.
+      (8) is done: `clearGuardPost.ts` and `spawnPlanProblems.ts` hold the moved code
+      (`GuardRoster.ts` 275 lines, `SpawnSystem.ts` 318). (9) **Better than the design (DEC-139),
+      sign-off asked (review round 2, finding 5):** put the respawn rule on the post
+      (`GuardSlot.respawn`, set by `addPosts`), so `GuardRoster.update` needs no `checkpoint`
+      ternary and each rule counts only its own posts. Built today: `GroupGuardRespawn` counts
+      only the home's own posts (same `checkpoint` marker), which closes the gap with no new
+      field.
 
 - [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
       The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
@@ -368,7 +558,7 @@ Reply inline (`Decision: …`).
   - **Answered 2026-11-04 by DEC-167** (chat, B66-F5): the restored march test's "first enemy
     objective" check is approved.
 
-- [ ] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
+- [x] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
       checkpoint defenders wait on your sign-off.** (1) **Sign-off needed:** checkpoint defenders
       need `CaptureSystem`, which is on the phase branch since PR #64 merged (2026-11-08; #49 was
       closed). Defenders are a guard plan per checkpoint asked for by `CaptureSystem`.
@@ -388,6 +578,8 @@ Reply inline (`Decision: …`).
     (2) by DEC-167: camps wake when the match countdown ends (no separate camp cooldown setting);
     camp mobs keep the lane-minion stats and XP as tuning defaults. Camp-mob kills count toward
     minion veterancy (DEC-165, amended 2026-11-04 evening).
+  - **Item (1) answered 2026-11-15 by DEC-257** (chat): the leash is the zone's reach;
+    defenders at an unowned point are neutral. Built on `feat/minion-m6b-checkpoint-defenders`.
 
 - [ ] **Minion M5b (`feat/minion-m5b-if-time`, overnight 2026-10-30) — built two of three, one
       blocked.** (1) **Tower Guardians are not built:** they need ranged attacks (no projectile
@@ -583,6 +775,9 @@ Reply inline (`Decision: …`).
     happen as the owner wants. A dead Legend gets no structure XP today. The owner ruled that
     it is paid on respawn once respawn (GL-12) exists; a `ponytail:` note in
     `ProgressionSystem.ts` marks the stand-in.
+  - **Update 2026-11-22 (PR #100, DEC-186):** pay on respawn is built: XP a waiting Legend earns is
+    owed on its queue entry and paid in `ProgressionSystem`'s pass after it returns. The stand-in
+    note is removed.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
@@ -1622,6 +1817,18 @@ Reply inline (`Decision: …`).
     for a class (`Recommendation:`). CD-45, the locked view, shows the locked Legend's panel on the
     left, where your DEC-60 says "the details of the class still shown on the left"
     (`Recommendation:`). Keep, change or reject them with the other rows.
+  - New rows, 2026-11-20 (`feat/match-start-countdown`, DEC-278, DEC-282): CD-48 (UE-01, the
+    countdown's urgency on the character select and the match-start overlay) and CD-49 (the
+    match-start overlay itself, which no frame draws). As you asked (DEC-282 (8)), the shots come
+    to you on the "Countdown PR Calls" page before the pull request opens: the character select at
+    9 s with UE-01 on, the Figma-unchanged scenes, and the overlay at 10 s, at 5 s and the Duel's
+    START; the plan's rule-7 performance check is recorded in `docs/plan/PROGRESS.md` and the
+    pull request. CD-48's 1.08, 1.12 and 0.30 and CD-49's veil and size are recommendations: keep,
+    change or reject them with the other rows.
+  - Answered, 2026-11-20 (DEC-299, Owner Calls page): you kept CD-48's 1.08, 1.12 and 0.30. CD-49's
+    glow now grows with the numeral, whose font size is 216 px, your "slightly smaller" read as
+    10 % below 240 (a recommendation); the new overlay shots are on the "Countdown PR Calls" page. CD-49's
+    veil tint stays a recommendation: keep, change or reject it with the other rows.
 - [ ] **HC-Q1 — The Legends (DEC-49), still open after your answer of 2026-10-17** (the answered
       part is in Done). (1) Do the game doc's Magus focuses carry over to the new Legends
       (reference 01's Necromancer "debuff focus", Druid's buffs, Mage's self focus), and what role
@@ -2784,6 +2991,16 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
+- [ ] **Make the tower horde test faster (DEC-289, 2026-11-20).** Owner: to be assigned.
+      `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its
+      lane within 10 seconds (DEC-133, seed %i)", builds a whole map and match for each of its
+      three seeds (1, 2, 10), steps the countdown, then 10 s of play. One seed takes about 3 s
+      locally without coverage, but up to 65 s under coverage on the windows-latest CI runner
+      (PR #122, run 44714237495, 2026-11-20). DEC-289 gave this test its own 120 s time limit
+      (`HORDE_WALK_TIMEOUT_MS`) until it is faster. Where the time goes is not measured yet. Done
+      when the test runs well under 60 s on windows-latest CI and `HORDE_WALK_TIMEOUT_MS` is
+      removed, with every assertion and all three seeds kept (seed 10 covers critic round 3,
+      M-A).
 - [ ] **PR #30 renderer follow-up** — Owner: Gurshaan. Separate caching/batching and close-view
       material detail from the map PR; retain all renderer-specific tests with that change.
       Keep draw order inside SceneView, address renderer file length and the capture layer,
@@ -2825,6 +3042,22 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       `CaptureHoldRule` takes it instead of the whole `GameState`, and the capture-point lookups
       of `CaptureHoldRule`, `CaptureProgressBoundsInvariant` and `CaptureSystem` move to it. Close
       this item when its PR merges.
+- [ ] **Rule 7 frame latency (DEC-299 (3))** — Owner: sholtzman, after PR #138 is pushed; it does
+      not block that merge. The match-start overlay's performance runs (ui-enhancements-plan §2
+      rule 7) read a frame-interval p95 of 16.7 to 16.8 ms and a maximum of 16.8 ms in every
+      condition, the controls with every enhancement off included, with no frame over 33 ms; the
+      12 rule-7 re-runs on the DEC-299 (2) tree read the same. One diagnostic re-run on that tree
+      (the ui-off control at CPU ×4, `perf-lt.mjs`) read one 33.3 ms interval, one dropped frame
+      (`over33` counts only intervals over 33.4 ms). The owner passed rule 7 and asked: "we
+      should find out why theres latency whenever we have time". Find why the intervals read
+      16.8 ms and not 16.7 (the browser's frame clock, the headless display, the measuring script
+      or the game) and record the answer in `docs/plan/PROGRESS.md` and here. With it: at CPU ×4
+      the re-runs count three long tasks of about 58 ms per run, all during page load before the
+      measured frames, on the commit before DEC-299 too and with every enhancement off, where the
+      first runs counted none with the same script; find what differs. The runs:
+      `eternalus-agent-work/game-loop-plan/ue-shots-2026-11-20/` (`run.sh` perf_run, `perf.mjs`,
+      `report.py`; the re-run: `perf-dec299.sh`, `perf-lt.mjs`, `perf-dec299/NOTE.md`; the
+      diagnostic runs: `perf-dec299-lt/`, `perf-33bcdcf6-lt/`).
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
@@ -3009,6 +3242,23 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   - Decision (sholtzman, chat, 2026-10-30, Call 5): "fix and get the fighting / proceeding
     working"; the critic ruled this rule better than the design. Built as MS-33 on
     `fix/minion-m1-review`; doc 18 §1 and §4 and the minion plan §3 updated.
+- [ ] **HC-B10 hook tests in `npm run check` (DEC-276 critic; better than the design, owner
+      approved 2026-11-19)** — Owner: sholtzman, a `chore/` harness PR after
+      `chore/stop-hook-changed-files` merges. Run `node --test scripts/**/*.test.mjs` (the hook
+      tests and `scripts/coderabbit/`) from `npm run check`, so CI runs them on Linux and Windows.
+      First make them pass on Windows: with `shell: true`, cmd.exe drops the quotes in the first
+      test of `scripts/hooks/hookInput.test.mjs`; the signal test is POSIX-only and skips itself
+      on Windows. Update the CI gate row in `docs/process/guardrails.md` and doc 16. Close this
+      item when its PR merges.
+- [ ] **HC-B11 guard on progress entry files (DEC-277 critic; better than the design, owner
+      approved 2026-11-19)** — Owner: sholtzman, a `chore/` harness PR after
+      `chore/progress-entry-files` merges. A check in `npm run check` that fails when a commit
+      edits an entry file in `docs/plan/progress/` that already exists on the base branch (new
+      files pass), plus a `.coderabbit.yaml` path rule for `docs/plan/progress/**` that says
+      entries are append-only records. The same check fails on any file in `docs/plan/progress/`
+      other than `README.md` whose name does not match the entry pattern (critic round 2, owner
+      sign-off pending). Update the docs check row in `docs/process/guardrails.md`. Close this
+      item when its PR merges.
 
 ## Feedback
 
@@ -3034,6 +3284,48 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
+  recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a
+  baseline, plus newer CSS behind `@supports` with a fallback, as DEC-312 does. You named no
+  baseline, so no browser versions are listed.
+
+- 2026-11-20 — **Your pick on HC-B15, one fit source for the HUD and the countdown**
+  (`refactor/countdown-hud-units`): recorded as DEC-312. (c) CSS typed arithmetic: the match-start
+  numeral is in HUD units again and off the select artboard, so the HUD has one fit source; its
+  glow still grows with it. Your "sure keep it" keeps a fallback for browsers without typed
+  arithmetic (Safari before 26, Firefox before 158): there the numeral is a 216 HUD-unit font and its
+  glow stays at the select size. Architecture 13 §3 and reference 15 CD-49 are amended.
+
+- 2026-11-20 — **Your answers on the countdown pull request #138** (`feat/match-start-countdown`):
+  recorded as DEC-299. UE-01's look stays as built. The match-start numeral is the character
+  select's numeral enlarged on the select artboard, so its glow grows with it, at a 216 px font
+  size (10 % smaller than 240). Rule 7's limit is one 60 Hz frame, so 16.8 ms passes; why frames read
+  16.8 ms is the request "Rule 7 frame latency". The structural tests stand for the screen-reader
+  lines, and the pull request says no screen reader was run. Reference 15 amends CD-48 and CD-49.
+
+- 2026-11-20 — **Built under your standing rule for better-than-design items (DEC-223, DEC-232)**
+  (`feat/match-start-countdown`): the countdown critic's BTD2, BTD3, BTD5 and BTD6, recorded as
+  DEC-286, and BTD4, recorded inside DEC-285. BTD5 appends one bullet to your design text,
+  architecture 13 §7 "Screen-reader lines": one live region, and every screen-reader line goes in
+  through `useLiveRegion`.
+
+- 2026-11-20 — **Your answers on the DEC-278 critic, round 1 (the match-start countdown)**
+  (`feat/match-start-countdown`): recorded as DEC-282 in
+  `docs/reference/game-design/13-owner-decisions-log.md`. The phase marks count from the
+  countdown's end; core's `MatchResult.matchTicks` is the match time; one shared countdown with
+  UE-01's urgency on the character select and the match-start overlay, with UE-03 and the
+  `uiEnhancements` switch built in the same PR; the bridge's countdown derivation is signed off.
+  Reference 15 registers UE-01 as CD-48.
+
+- 2026-11-20 — **Legend respawn, interim (`fix/legend-respawn`, PR #100, GL-12).** Answered by
+  DEC-295 (owner, 2026-11-20): the same Legend object waits and returns reset (full health and
+  aether; ultimate charge kept apart), a bot laner re-plans its lane by the current threat, a
+  returning Legend ignores every cap, and a fallen Legend's body stays on the map greyed out. Built
+  in PR #100, with DEC-186's "pay on respawn". Critic items (a) `createWithId` and (d) the
+  factory coupling are gone with the redesign; (b) the ultimate charge waits for #123, which the
+  kept Legend object carries through death; (c) the loadout survives death, and of the cooldowns only the ultimate's charge and cooldown do, other abilities coming back fully cooled down (FR-117, no ability cooldown state exists yet); (e)
+  polling just before `DeathSystem` stays (it also keeps XP earned later in the same tick).
 
 - 2026-11-03 — **PR #56 — the `returning` state (DEC-144 G).** Decision (SamarjitBhogal,
   2026-11-03, recorded as DEC-155): (b) merge it into the resting state. `LeashBehaviour`, `MinionController` and

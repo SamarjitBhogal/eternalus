@@ -105,6 +105,7 @@ const settings = new SettingsController({
   persistence,
   logger,
   isApplePlatform: isAppleUserAgent(window.navigator.userAgent),
+  themeRoot: document.documentElement,
 });
 const resources = new ResourceController({
   manifest: ASSET_MANIFEST,
@@ -149,7 +150,11 @@ const session = new SessionController({
   createRosterRng,
   themeRoot: document.documentElement,
   prepareWorld: (seed) => prepareMatchWorld(gameConfig, seed),
-  createMatch: createBrowserMatch(browserMatchDeps),
+  // The developer menu is a solo-match tool: only `createMatch` enables it, an online Duel never does.
+  createMatch: createBrowserMatch({
+    ...browserMatchDeps,
+    isDeveloperMenuEnabled: developer.isDeveloper,
+  }),
   createDuelMatch: createBrowserDuelMatch(browserMatchDeps),
   createDuelTransport: () =>
     new WebSocketTransport(

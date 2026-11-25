@@ -16,6 +16,6 @@ You maintain the documentation map that humans and agents navigate by. Follow th
    anything removed in your report.
 3. Keep `AGENTS.md` under ~150 lines by moving detail into linked docs, never by dropping a
    rule.
-4. `npm run docs:index`, then `npm run check`; append a `docs/plan/PROGRESS.md` entry.
+4. `npm run docs:index`, then `npm run check`; add a new entry file in `docs/plan/progress/`.
 
 Report: files changed, docs still needing a human decision, and the verbatim check result.

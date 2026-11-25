@@ -54,7 +54,20 @@ describe('SelectionDefs text glows', () => {
     expect(TEXT_GLOW_FILTERS.map(({ id }) => id)).toEqual([
       SELECTION_DEF_IDS.glowLabel,
       SELECTION_DEF_IDS.glowCountdown,
+      SELECTION_DEF_IDS.glowCountdownUrgent,
     ]);
+  });
+
+  // UE-01 (ui-enhancements-plan §3.2, DEC-100): from 5 s down the same glow, its flood at 30 %.
+  it('pins the urgent countdown glow: the countdown glow at 30 % in the same region', () => {
+    const glow = defOf(SELECTION_DEF_IDS.glowCountdown);
+    const urgent = defOf(SELECTION_DEF_IDS.glowCountdownUrgent);
+
+    expect(urgent?.shadows).toEqual(glow?.shadows.map((shadow) => ({ ...shadow, opacity: 0.3 })));
+    expect(urgent?.flood).toBe('countdown');
+    expect(urgent?.region).toEqual(glow?.region);
+    expect(urgent?.users).toEqual(glow?.users);
+    expect(filterOf(SELECTION_DEF_IDS.glowCountdownUrgent)).not.toBe('missing');
   });
 
   // The experiment's regions, kept: in Chrome the blur depends on the filter region (a 4.4-box
@@ -129,6 +142,21 @@ describe('SelectionDefs text glows', () => {
     expect(red).toHaveLength(3);
     expect(opacities).toEqual([0.15, 0.15, 0.15, 0.15]);
     expect(token('--selection-countdown-glow')).toBe(
+      `rgb(${red?.join(' ') ?? 'missing'} / ${String((opacities?.[0] ?? Number.NaN) * 100)}%)`,
+    );
+  });
+
+  it('mirrors the urgent glow token in the urgent def: the countdown red at 30 %', () => {
+    const red = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i
+      .exec(token('--selection-countdown'))
+      ?.slice(1)
+      .map((channel) => parseInt(channel, 16));
+    const opacities = defOf(SELECTION_DEF_IDS.glowCountdownUrgent)?.shadows.map(
+      ({ opacity }) => opacity,
+    );
+
+    expect(opacities).toEqual([0.3, 0.3, 0.3, 0.3]);
+    expect(token('--selection-countdown-urgent-glow')).toBe(
       `rgb(${red?.join(' ') ?? 'missing'} / ${String((opacities?.[0] ?? Number.NaN) * 100)}%)`,
     );
   });

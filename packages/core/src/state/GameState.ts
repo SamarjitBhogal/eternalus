@@ -15,13 +15,18 @@ import type { EntityId, RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
 import type { DamageSource, GameEventMap } from './GameEvents.types';
 import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
-import type { GameStateIndexes, RecordedCommand, TeamState } from './GameState.types';
+import type {
+  GameStateIndexes,
+  GameStateTiming,
+  RecordedCommand,
+  TeamState,
+} from './GameState.types';
 import { MatchRecord } from './MatchRecord';
-import type { ScheduledMark } from './MatchState.types';
 import type { HordeRequest } from './HordeRequest.types';
 import { GuardStore } from './GuardStore';
 import { HordeStore } from './HordeStore';
 import { LaneStructures } from './LaneStructures';
+import { RespawnQueue } from './RespawnQueue';
 import type { MatchWorld } from './MatchWorld';
 import type { PathQuery } from './PathQuery.types';
 import type { EntitySnapshot, HordeSnapshot, Snapshot } from './Snapshot.types';
@@ -60,6 +65,8 @@ export class GameState {
   public readonly hordes = new HordeStore();
   /** Every structure's guard posts (architecture 18 §7). */
   public readonly guards = new GuardStore();
+  /** Dead Legends waiting to return to their Stronghold (FR-051). */
+  public readonly respawns = new RespawnQueue();
   /** Each team's ally damage per lane since its last heavy wave (DEC-89, architecture 18 §3.3). */
   public readonly allyDamage = new AllyDamageStore();
   /** Hordes asked for this tick (developer menu), fulfilled by `SpawnSystem` in order. */
@@ -102,8 +109,8 @@ export class GameState {
    * @param world - The match's map at runtime; without one, nothing spawns on lanes.
    * @param indexes - The neighbour index `SpaceSystem` refills each tick and A\* for Legends;
    *   each `null` without a map.
-   * @param schedule - The resolved timeline (`MatchTimeline`) as plain marks; empty when no
-   *   director runs.
+   * @param timing - The resolved timeline marks and the countdown's end tick (`Simulation`);
+   *   none in most unit tests.
    */
   public constructor(
     public readonly config: GameConfig,
@@ -112,7 +119,7 @@ export class GameState {
     /** The map, its lane routes and its grid, or `null` (most unit tests). */
     public readonly world: MatchWorld | null = null,
     indexes: GameStateIndexes = {},
-    schedule: readonly ScheduledMark[] = [],
+    { schedule = [], countdownEndTick = 0 }: GameStateTiming = {},
   ) {
     this.space = indexes.space ?? null;
     this.paths = indexes.paths ?? null;
@@ -121,6 +128,7 @@ export class GameState {
     this.match = new MatchRecord(
       config.match.playerTeam,
       schedule,
+      countdownEndTick,
       this.events,
       () => this.currentTick,
     );
@@ -232,7 +240,15 @@ export class GameState {
     this.entities.forEach((entity) => {
       entities.push(snapshotter.snapshotOf(entity));
     });
-    const { phase, phaseEnteredTick, timelineCursor, schedule, humanLegendId, duel } = this.match;
+    const {
+      phase,
+      phaseEnteredTick,
+      timelineCursor,
+      schedule,
+      countdownEndTick,
+      humanLegendId,
+      duel,
+    } = this.match;
     const hordes: HordeSnapshot[] = [];
     this.hordes.forEach((horde) => {
       hordes.push({ ...horde });
@@ -244,6 +260,7 @@ export class GameState {
         phase,
         phaseEnteredTick,
         upcoming: schedule.slice(timelineCursor),
+        countdownEndTick,
         humanLegendId,
         ...(duel !== null && { duel }),
       },

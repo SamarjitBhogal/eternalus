@@ -4,7 +4,7 @@ description: The build plan for the owner's game loop (match director, phases, c
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-15
+last-reviewed: 2026-11-20
 tags: [plan, match-director, scoring, victory, results, post-game, hud, session]
 related:
   - docs/architecture/12-game-story-and-match-director.md
@@ -193,6 +193,11 @@ export type MatchSnapshot = {
   snapshot field on structures; it comes with sprint 2.4, not this plan.
 - Core events added to `GameEventMap`: `match-ended { result: MatchResult }`. `phase-changed`
   starts to be emitted.
+
+**Appended 2026-11-20 (DEC-282 (4), `feat/match-start-countdown`):** the countdown is not picked
+from `upcoming`. `MatchSnapshot` also carries `countdownEndTick` (from config, DEC-278 (4)), and
+`MatchBridge` derives the match-start countdown and the match clock from it, so both hold after
+the `countdown-over` entry has fired (a Duel joined late). The owner signed off this derivation.
 
 ### 4.3 Victory: the sovereign (12 §6, ADR 0021)
 

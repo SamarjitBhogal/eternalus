@@ -11,6 +11,7 @@ import type { GameState } from './state/GameState';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
 import { Simulation } from './Simulation';
+import { clearCheckpointDefenders } from './__fixtures__/clearCheckpointDefenders';
 import type { ReplaySetup } from './Simulation.types';
 
 /** The light Stronghold of the two-lane map, where the human's Legend (a Rover) spawns. */
@@ -211,6 +212,7 @@ describe('Simulation: capture scoring (DEC-214)', () => {
   it('scores a capture through full steps: checkpoint points, checkpoints won, held ticks', () => {
     const fold = vi.spyOn(Scoring.prototype, 'fold');
     const sim = createTarget(CAPTURE_SETUP);
+    clearCheckpointDefenders(sim);
     const capturedOn: number[] = [];
     sim.on('capture-point-owner-changed', () => {
       capturedOn.push(sim.tick);

@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-16
+last-reviewed: 2026-11-20
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -289,9 +289,14 @@ The weights, the rate cap and the revert rate are `TUNE` values in
 looked up by map feature kind in `map/zoneArea.ts` (the fort's size and the Cathedral's floor are
 in `content/maps/buildingGeometry.ts`); the zone definition has no size.
 
-Reaching a checkpoint (`checkpoint-reached`) spawns that checkpoint's defenders (held by `GuardController` with the zone as home and fighting
-for the team that owns the point, [18](18-minion-system.md) MS-28, §7.1) through a `Spawner` table (1: medium assist mobs; 2: heavy plus light assist mobs; 3: one massive
-"Balrog-type" mob) and, when cleared, awards XP shared among nearby allies biased toward the top
+Reaching a checkpoint (`checkpoint-reached`) with a Legend of the reaching side on the zone
+(DEC-259) spawns that checkpoint's defenders from its defender table (1: medium assist mobs; 2:
+heavy plus light assist mobs; 3: one massive "Balrog-type" mob; DEC-260), held by
+`GuardController` with the zone as home, leashed to the zone's reach and fighting for the team
+that owns the point, or neutral while no team does ([18](18-minion-system.md) MS-28, §7.1;
+DEC-257). They never respawn. A change of owner keeps the ones still alive: they fight the new
+owner's units inside the zone and count as presence for their own side, so the new owner must
+kill them to keep the point (DEC-261). A cleared checkpoint awards XP shared among nearby allies biased toward the top
 damage dealer (`ProgressionSystem` listens to `checkpoint-cleared`). Holding a zone applies
 `StatusEffects` from content: ability/ultimate cooldown reduction and, after `levelUpAfterTicks`,
 a level-up for that side's lane minions; both are removed on loss. Mini-bosses at the quarter mark
@@ -500,6 +505,23 @@ snapshot's `mapFeatureId`, not by position. Interim differences:
   does not follow the owner yet (the minimap entity markers, SCRUM-151).
 - The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
   capture tracker); this PR publishes the presence and draws the split bar in the world.
+
+**2026-11-09 (`feat/bosses-p3`, corner camp boss, interim; updated 2026-11-17).** DEC-236
+approves corner camps for Phase 3, with the corner boss on `GuardController` as an interim
+stand-in until it moves to the `Boss` family with `BossController` in Phase 3 sprint 3.6.
+`corner-camp` is a `Camp` structure definition like the forest camps (rule `never`, circle radius
+1 `TUNE`), and its guard plan `corner-camp` (`content/structures/guardPlans.ts`) spawns one
+`corner-boss` at match start: a `heavy-mob` with the MiniBoss row's stats from `balancing.md`,
+held over the camp's ring by `GuardController` and respawned 5 minutes after it dies (DEC-12).
+Its kill pays every Legend of the killer's team, at most 2 levels each (DEC-237,
+`XP_SOURCES.teamKills`). Not built yet: the `MiniBoss` entity and its `BossController` moves, the
+MiniBoss row's 5%/s regeneration and its 25% cut to damage from minions, the support units, the
+crystal, the heavy side wave on a kill and the GreaterBoss buffs. The camp's ring is core content
+(`CORNER_CAMP_RING`, `content/structures/cornerCampRing.ts`): the guard plan's leash and post gap,
+the boss's acquisition and vision radius (the ring's diameter, so from any post it sees an enemy
+anywhere in the ring) and the ring the client draws all derive from it. Gap until sprint 3.6: the
+boss sees the whole ring but cannot always reach it. Its `leashed-chase` movement steers straight
+and stops on the camp's own objects, so a Legend standing behind the camp is safe.
 
 ## Related
 

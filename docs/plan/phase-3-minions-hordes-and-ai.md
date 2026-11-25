@@ -4,7 +4,7 @@ description: Sprint checklists for the Mob family, the Horde composite, flow-fie
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-07
+last-reviewed: 2026-11-19
 tags: [plan, phase-3, minions, hordes, ai, pathing, match-director]
 paths: ['packages/core/src/ai/**', 'packages/core/src/match/**', 'packages/core/src/map/**']
 related:
@@ -174,6 +174,10 @@ Owner: _ (sim lane A). Week 7. Depends on 3.3 and 3.5.
       from content: move list, cooldowns, zone restriction; fights anyone from either team).
       Owner: _. Test: a boss never leaves its zone; move selection is seeded-random and
       replayable. Done when: a new boss is a definition with a move table.
+- [ ] **Corner boss into the `Boss` family** (DEC-236): the corner camp's `corner-boss` moves
+      from its interim `GuardController` stand-in (a `heavy-mob` guard) to the `Boss` family with
+      `BossController`. Owner: _. Done when: no guard plan posts a boss, and the boss reaches an
+      intruder anywhere in the ring.
 - [ ] **Mini-boss rules** (`TUNE`: spawn at the quarter mark on the outer lanes with support
       mobs; its capture point cannot be captured while it lives; on defeat the team gets a
       permanent buff and ability XP). The final-hit consumable is an open question (INBOX).
@@ -220,7 +224,7 @@ Owner: _ (sim lane + client lane). Week 7.
 - [ ] **Soak at 144 units per team + 20 Legends** for 18,000 ticks at `heavy` invariants;
       `npm run bench` prints per-system time (`Recommendation:` budget split: pathing 2.5 ms,
       collision 2 ms, AI 1.5 ms, combat 1 ms, rest 1 ms). Owner: _. Test: the soak. Done when:
-      the numbers are in [PROGRESS.md](PROGRESS.md).
+      the numbers are in [progress log](progress/README.md).
 - [ ] **Replay determinism with AI** (5 seeds × full sim-mode match, hash every 100 ticks).
       Owner: _. Test: identical hashes across two runs and after a `Map` iteration audit. Done
       when: the fixtures are committed.
@@ -242,7 +246,7 @@ invariant violations; identical hashes on replay.
 
 ## Exit criteria
 
-1. All sprint metrics pass and are recorded in [PROGRESS.md](PROGRESS.md) with the machine.
+1. All sprint metrics pass and are recorded in [progress log](progress/README.md) with the machine.
 2. Demo: start a match with one human Legend; watch the countdown, the first three hordes, tower
    spawns at 60 s, a camp activating, the quarter-mark mini-boss, and the match ending when a
    Stronghold falls; then switch to sim mode and let bots finish a match.
@@ -265,7 +269,7 @@ invariant violations; identical hashes on replay.
 - [README.md](README.md)
 - [phase-2-structures-and-combat.md](phase-2-structures-and-combat.md)
 - [phase-4-legends-abilities-and-loadouts.md](phase-4-legends-abilities-and-loadouts.md)
-- [PROGRESS.md](PROGRESS.md)
+- [progress log](progress/README.md)
 - [../architecture/11-game-ai.md](../architecture/11-game-ai.md)
 - [../architecture/12-game-story-and-match-director.md](../architecture/12-game-story-and-match-director.md)
 - [../architecture/06-map-and-minimap.md](../architecture/06-map-and-minimap.md)

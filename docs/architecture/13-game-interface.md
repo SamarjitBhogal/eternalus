@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-15
+last-reviewed: 2026-11-21
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -152,19 +152,20 @@ show comes from content through the store (`contentSlice`, `matchSlice`), never 
 | `MatchScreen`                                                                                                                                                                                                               | the open overlay and the bindings (`usePauseMenuKey`); renders the `viewport` prop (the only screen that does, so no `Match` exists outside `match`, DEC-50), the HUD and the pause overlay                                                   | `open-overlay`, `close-overlay`; `leave-match` (from the pause overlay), `forfeit`          | **MVP**                                                                           |
 | `ResultsScreen`                                                                                                                                                                                                             | `selectResultsView` (verdict, status line, rematch: a Duel the other player left is a victory, and says so; a rematch only after a local match), `selectMatchDurationText` (DEC-129), `selectCountdownSeconds('results')` (`matchSetupSlice`) | `continue` (DEC-78), `navigate`, `start-match` (rematch, after a local match)               | **MVP**                                                                           |
 
-| HUD element                                           | Source in the store                                                                        | Behaviour                                                                                                                                                                                                                                                       | Status                                      |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| `HealthBar`, `AetherBar`                              | `matchSlice.player` (from `hud-state`)                                                     | base bar plus one patterned segment per shield bar (never colour alone); `aether / maxAether`; level and XP in `LevelBadge`                                                                                                                                     | **MVP**                                     |
-| `AbilityBar`                                          | `selectAbilitySlots` ([05](05-abilities-weapons-and-loadouts.md) §15)                      | one slot per `AbilitySlotSnapshot`: icon, cooldown sweep (the owner's vertical fill, register CD-28), ultimate charge, `blockedBy` hint, `<KeyGlyph action={slot.slot} />`; the gadget slots use the same slot ([05](05-abilities-weapons-and-loadouts.md) §11) | **MVP**                                     |
-| `LevelBadge`                                          | `matchSlice.player` (`level`, `xp`, `xpToNext`), the HUD kit (`selectHudKit`)              | the class emblem by asset id (an empty shield where the class has none), an XP ring (`xp / xpToNext`) and the level number, alike on every class (DEC-62)                                                                                                       | **MVP**                                     |
-| `WeaponPanel`                                         | the HUD kit                                                                                | the weapon art by asset id, or an empty container (DEC-57, DEC-62), and a weapon-level bar: weapons level up during each match, probably post-MVP (DEC-62; OQ-63)                                                                                               | **MVP**; level bar likely post-MVP (DEC-62) |
-| `UltimateChargeBar`, `ChargePips`                     | `matchSlice.player` (the ultimate slot)                                                    | the ultimate, an additional ability on its own key (DEC-62): its charge bar and pips, "no data" until OQ-64 rules them                                                                                                                                          | **MVP**; OQ-64                              |
-| `StructureStrip`, `ObjectiveTracker`, `CrystalStatus` | `matchSlice` structures and capture points (`structure-state`, `capture-state`)            | one tile per structure kind and capture point of each team, generated from the map, so a `numLanes` change needs no code (NFR-008); owner shown by an allegiance flag as well as colour (§7); a tile without data shows "no data"                               | **MVP**                                     |
-| `MinimapPanel`                                        | `settingsSlice.hud.minimapVisible`                                                         | the frame around the `'minimap'` renderer layer that `GameCanvas.tsx` positions under it ([08](08-game-engine.md) §4); a click emits `minimap-click { u, v }` (normalised), which `Match` projects with `MinimapProjection`                                     | **MVP**                                     |
-| `MatchClock`, `Scoreboard`                            | `matchSlice.clock` (5 Hz), `matchSlice.scoreboard` (1 Hz)                                  | `mm:ss` and the phase label; team scores, structures alive, per-Legend rows                                                                                                                                                                                     | **MVP**                                     |
-| `Announcer`                                           | `matchSlice.announcements` (from `announce`, [12](12-game-story-and-match-director.md) §8) | a queue with per-item TTL and `priority`; also the surface for live achievements and, post-MVP, tutorial dialogue                                                                                                                                               | **MVP**                                     |
-| `DeveloperMenu`                                       | `diagnosticsSlice`, `matchSlice`, `settingsSlice.developer`                                | §4                                                                                                                                                                                                                                                              | **MVP**                                     |
-| `PerfOverlay`                                         | `diagnosticsSlice.perf`, `diagnosticsSlice.violations`, `diagnosticsSlice.logTail`         | tick and frame histograms, last long animation frame, memory sample, log tail, violations with "copy repro" ([15](15-diagnostics-and-runtime-testing.md) §5)                                                                                                    | **MVP**                                     |
+| HUD element                                           | Source in the store                                                                        | Behaviour                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Status                                      |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| `HealthBar`, `AetherBar`                              | `matchSlice.player` (from `hud-state`)                                                     | base bar plus one patterned segment per shield bar (never colour alone); `aether / maxAether`; level and XP in `LevelBadge`                                                                                                                                                                                                                                                                                                                                                                                     | **MVP**                                     |
+| `AbilityBar`                                          | `selectAbilitySlots` ([05](05-abilities-weapons-and-loadouts.md) §15)                      | one slot per `AbilitySlotSnapshot`: icon, cooldown sweep (the owner's vertical fill, register CD-28), ultimate charge, `blockedBy` hint, `<KeyGlyph action={slot.slot} />`; the gadget slots use the same slot ([05](05-abilities-weapons-and-loadouts.md) §11)                                                                                                                                                                                                                                                 | **MVP**                                     |
+| `LevelBadge`                                          | `matchSlice.player` (`level`, `xp`, `xpToNext`), the HUD kit (`selectHudKit`)              | the class emblem by asset id (an empty shield where the class has none), an XP ring (`xp / xpToNext`) and the level number, alike on every class (DEC-62)                                                                                                                                                                                                                                                                                                                                                       | **MVP**                                     |
+| `WeaponPanel`                                         | the HUD kit                                                                                | the weapon art by asset id, or an empty container (DEC-57, DEC-62), and a weapon-level bar: weapons level up during each match, probably post-MVP (DEC-62; OQ-63)                                                                                                                                                                                                                                                                                                                                               | **MVP**; level bar likely post-MVP (DEC-62) |
+| `UltimateChargeBar`, `ChargePips`                     | `matchSlice.player` (the ultimate slot)                                                    | the ultimate, an additional ability on its own key (DEC-62): its charge bar and pips, "no data" until OQ-64 rules them                                                                                                                                                                                                                                                                                                                                                                                          | **MVP**; OQ-64                              |
+| `StructureStrip`, `ObjectiveTracker`, `CrystalStatus` | `matchSlice` structures and capture points (`structure-state`, `capture-state`)            | one tile per structure kind and capture point of each team, generated from the map, so a `numLanes` change needs no code (NFR-008); owner shown by an allegiance flag as well as colour (§7); a tile without data shows "no data"                                                                                                                                                                                                                                                                               | **MVP**                                     |
+| `MinimapPanel`                                        | `settingsSlice.hud.minimapVisible`                                                         | the frame around the `'minimap'` renderer layer that `GameCanvas.tsx` positions under it ([08](08-game-engine.md) §4); a click emits `minimap-click { u, v }` (normalised), which `Match` projects with `MinimapProjection`                                                                                                                                                                                                                                                                                     | **MVP**                                     |
+| `MatchClock`, `Scoreboard`                            | `matchSlice.clock` (5 Hz), `matchSlice.scoreboard` (1 Hz)                                  | `mm:ss` match time, counted from the countdown's end (DEC-278), and the phase label; team scores, structures alive, per-Legend rows                                                                                                                                                                                                                                                                                                                                                                             | **MVP**                                     |
+| `MatchCountdown`                                      | `matchSlice.clock` (its `countdown`, from `match-clock`)                                   | the pre-match countdown over the whole screen: a tinted veil with the seconds left in the middle, drawn by the shared `ui/components/Countdown` at the overlay's size, with UE-01's urgency (DEC-282 (3)); its numeral is the select numeral enlarged by `scale` in HUD units, so the glow scales with it (DEC-299 (2), DEC-312; not without typed arithmetic, DEC-312 (2)); START for a Duel's first second after it; nothing once the match runs; no pointer events, so the player may turn (DEC-278, DEC-88) | **MVP**                                     |
+| `Announcer`                                           | `matchSlice.announcements` (from `announce`, [12](12-game-story-and-match-director.md) §8) | a queue with per-item TTL and `priority`; also the surface for live achievements and, post-MVP, tutorial dialogue                                                                                                                                                                                                                                                                                                                                                                                               | **MVP**                                     |
+| `DeveloperMenu`                                       | `diagnosticsSlice`, `matchSlice`, `settingsSlice.developer`                                | §4                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | **MVP**                                     |
+| `PerfOverlay`                                         | `diagnosticsSlice.perf`, `diagnosticsSlice.violations`, `diagnosticsSlice.logTail`         | tick and frame histograms, last long animation frame, memory sample, log tail, violations with "copy repro" ([15](15-diagnostics-and-runtime-testing.md) §5)                                                                                                                                                                                                                                                                                                                                                    | **MVP**                                     |
 
 Announcer lines, verdict lines and faction blurbs are content in core
 (`content/narrative/`); the HUD renders `displayName`s from the snapshot and the
@@ -189,7 +190,7 @@ anything that only changes how the client shows or paces the simulation is a cli
 
 | Control                                          | Message                                                                                                                                               | Cap or rule                                                                                        | Status                        |
 | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------- |
-| Add / remove a Legend                            | `dev-spawn-legend { team, definitionId, controllerId, at? }`, `dev-remove-legend { entityId }`                                                        | `maxLegendsPerTeam` (10, `TUNE`) → `command-rejected` shown inline; the human only in sim mode     | **MVP**                       |
+| Add / remove a Legend                            | `dev-spawn-legend { team, definitionId }` (a Rover bot at the team's Stronghold), `dev-remove-legend { entityId }` (DEC-293)                          | `maxLegendsPerTeam` (10, `TUNE`) → `command-rejected` shown inline; the human only in sim mode     | **MVP**                       |
 | Spawn mobs from an origin                        | `dev-spawn-mobs { team, definitionId, count, origin }` (structure id, `{ lane, t }` or cursor), spawned as one horde ([18](18-minion-system.md) §3.5) | `maxUnitsPerTeam` (144, `TUNE`): clipped, `spawn-suppressed` counted in `TeamState`, never a crash | **MVP**                       |
 | Sim mode: remove or add the human                | `dev-set-controller { entityId, controllerId }` (DISC-56)                                                                                             | at most one `player` controller (`SinglePlayerBrainInvariant`)                                     | **MVP**                       |
 | Invariant level; timeline jump                   | `dev-set-assert-level { level, heavyEvery? }`; `dev-set-phase { phase }` (forward only)                                                               | —                                                                                                  | **MVP**; jump **MVP-if-time** |
@@ -228,7 +229,8 @@ export type BridgeEventMap = {
   'match-clock': {
     readonly tick: number;
     readonly phase: MatchPhase;
-    readonly elapsedSeconds: number;
+    readonly elapsedSeconds: number; // from the countdown's end: the countdown is not match time (DEC-278)
+    readonly countdown: number | null; // the countdown's seconds left; 0 = a Duel's START; null once the match runs (DEC-278)
   };
   'hud-state': {
     readonly player: PlayerHudSnapshot | null; // Snapshot.player joined with the Legend's EntitySnapshot (05 §15, DEC-232)
@@ -249,7 +251,7 @@ export type BridgeEventMap = {
   };
   'match-ended': {
     readonly result: MatchResult;
-    readonly durationSeconds: number; // DEC-129
+    readonly durationSeconds: number; // DEC-129; the countdown not counted (DEC-278)
   };
   // An online Duel the server ended (ADR 0016); the session publishes it in place of `match-ended`.
   // `MatchEnding` (`@eternalus/protocol`) is the winner and the reason, the wire message's own type.
@@ -482,13 +484,21 @@ that button's release does not step the browser's history, DEC-112).
   The selection screens are one 1920 × 1080 artboard scaled as a whole; the HUD is sized by its
   own unit `--hud-u` (1 px at 1920 × 1080); no text renders below `--text-min`, whose value
   `styles/global.css` sets (`Recommendation:`, the owner's Keep of 2026-10-28, INBOX HC-Q14).
+  Browser support is a baseline, plus newer CSS behind `@supports` with a fallback, as DEC-312
+  does (DEC-316).
 - **Accessibility minimums** (ES-11 and plan sprint 5.5, `Recommendation:` beyond the sources'
   remappable controls): every screen operable by keyboard alone with a visible focus ring; every
-  interactive element has an accessible name; `prefers-reduced-motion` disables shake and flashes;
+  interactive element has an accessible name; `prefers-reduced-motion` and the in-game Reduce motion
+  setting (`data-reduce-motion` on `<html>`, UE-03) disable shake and flashes;
   HUD text contrast ≥ 4.5:1 and bars ≥ 3:1 from the tokens; team identity never signalled by
   colour alone (shape or outline too, on HUD and minimap glyphs); nothing flashes faster than
   3 Hz; the match pauses from `pause-menu`. Rebinding itself is "one of the best value
   accessibility features" ([research B2](../research/persistence-input-diagnostics-research.md#b2-rebinding-ux-and-data-representation)).
+- **Screen-reader lines** (DEC-282 (7), DEC-286 (4)). The app has one polite live region,
+  `ui/components/LiveRegion.tsx`, which `App` mounts outside the screen switch, so it is in the
+  page before any line arrives. Every line for a screen reader (a countdown's alert, the
+  `Announcer`, live achievements) goes into it through `useLiveRegion`. No component makes a live
+  region of its own: a region added in the same task as its line is not announced.
 - **React rules** (`apps/client/AGENTS.md`): function components only, except the one
   `ErrorBoundary` class (§3, ADR 0025); logic in co-located `useXxx.ts` hooks; one store, slices
   via `createSlice` registered in `combineSlices(...)`, never a second `configureStore`; typed
@@ -503,7 +513,10 @@ that button's release does not step the browser's history, DEC-112).
   and button chrome, and `contrastMode` (`'figma'` or `'minimums'`, also chosen by the OS setting
   `prefers-contrast: more`) for the HUD colours that fall below the minimums above, which stay
   listed exceptions in the `'figma'` set. A later improvement on a frame ships the same way, with
-  the frame's original kept as a live, selectable variant.
+  the frame's original kept as a live, selectable variant: the UI enhancements of [the UI
+  enhancements plan](../plan/ui-enhancements-plan.md) are one content list, `uiEnhancements`, which
+  `SessionController` writes to `data-ui-enhancements` on `<html>`; each enhancement's CSS is
+  scoped under its id (DEC-100, DEC-282 (5)).
 
 ## 8. Tests
 
@@ -582,6 +595,23 @@ and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver
 - Boot does not wait for the settings: the store has no bindings until the first `settings`
   event; with the memory adapter that is immediate, with IndexedDB (S2) it needs a boot-time wait
   or the `degraded` path of [14](14-persistence-and-resources.md) §10.
+
+Developer menu (2026-11-13, slice 2): the menu also adds a bot Legend of a selectable class to a
+team (`dev-spawn-legend { team, definitionId }`, at the Stronghold, Rover controller, refused at
+`maxLegendsPerTeam`), and removes one with `dev-remove-legend { entityId }`, refused for the
+human's Legend outside sim mode (DEC-293, 2026-11-20, which also drops the `controllerId` and `at?`
+of the earlier spawn shape). FR-097 is met in part: a refusal reaches only the log, not the UI,
+and the removal cause is `dev-removed`, not FR-097's `developer-menu` (`INBOX.md` items (c), (f)).
+
+Developer menu (2026-11-13, slice 1): `DeveloperMenu` is enabled by `?dev=1` only (the
+persisted `settings.developer.menuEnabled` needs settings persistence, which does not exist) and
+opened by `toggle-developer-menu` (F1). Built controls: spawn mobs (`dev-spawn-mobs`) and remove an
+entity by id (`dev-remove-entity`), each sent as a `dev-command` intent that `Match` enqueues. The
+mob picker lists the lane minions of core's display content (`DisplayContent.laneMinions`). Core
+refuses `dev-remove-entity` for a Legend in a human seat (`human-legend`): the human is removed
+only in sim mode (the "Add / remove a Legend" row above). Not built: sim mode, `dev-toggle`,
+invariant level, timeline jump, config overrides,
+and showing core's refusals in the UI. `bridge/events.ts` has no `dev-toggle` yet.
 
 HUD (2026-10-18): the `AbilityBar` cooldown sweep of §3 is the owner's Figma look, a vertical fill
 rather than a conic sweep. A slot on cooldown shows the frame's red vertical gradient, cut from the
@@ -749,6 +779,14 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   page; only `prefers-reduced-motion` reaches CSS, except in View Details, which reads the setting
   itself (`data-reduce-motion` on its own root) until UE-03 applies it everywhere (INBOX HC-S3;
   specified as UE-03 in [the UI enhancements plan](../plan/ui-enhancements-plan.md)).
+  **Appended 2026-11-20 (DEC-282 (5), `feat/match-start-countdown`):** UE-03, the `uiEnhancements`
+  switch and UE-01 are built. `SettingsController` writes `data-reduce-motion` on `<html>`, and
+  every reduced-motion rule has its `:root[data-reduce-motion]` twin (`ui/motionTokens.test.ts`
+  checks); View Details' own reading is gone. `SessionController` writes `data-ui-enhancements`
+  (`?dev=1&ui=` overrides it). UE-01 runs on the character select's and the match-start
+  countdowns; the win/lose screen's countdown stays static. Their screen-reader line goes into the
+  app's one polite live region, `ui/components/LiveRegion.tsx`, which `App` mounts outside the
+  screen switch, so it is in the page before any countdown (DEC-282 (7)).
 - **Character select, known gaps (2026-10-30).** Content has no description of a class's default
   ability, proficiency or specialty, or of a Legend's abilities, so View Details' rows show a
   label and a name only, and several Legends have no lore paragraph yet (register CD-41). View
@@ -795,8 +833,9 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   limits) and `toggle-minimap` (`MatchViewControls.toggleMiniMap`: the canvas minimap and the HUD
   ring hide, no click reaches a hidden minimap; the state reaches the UI by the
   `minimap-visibility` event into `viewSlice`; not persisted, an owner question in `INBOX.md`).
-  Still bound but unhandled: `toggle-perf-overlay` (no overlay exists), `toggle-developer-menu`,
-  `sprint`, `interact`, `turret-toggle-control`, `turret-switch-ammo` (`INBOX.md`).
+  Still bound but unhandled: `toggle-perf-overlay` (no overlay exists), `sprint`, `interact`,
+  `turret-toggle-control`, `turret-switch-ammo` (`INBOX.md`). `toggle-developer-menu` is handled
+  since the developer menu (#107): F1 opens it once `?dev=1` enabled it.
 
 ## Related
 

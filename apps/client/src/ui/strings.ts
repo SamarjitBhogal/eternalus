@@ -157,6 +157,11 @@ export const STRINGS = {
       'duel-versus': 'Duel versus',
     } satisfies Record<MenuRoute, string>,
   },
+  /**
+   * UE-01: the polite line both countdowns say at 10 and 5 s (the character select's and the
+   * pre-match overlay's), while the `countdown-urgency` enhancement is on.
+   */
+  countdownAlert: (seconds: number): string => `${String(seconds)} seconds left`,
   /** Shown where an action has no binding (`KeyGlyph`, the settings list). */
   unbound: '—',
   /** A value not known yet: a HUD slot's or structure's state (CD-13, DEC-17). */
@@ -182,6 +187,24 @@ export const STRINGS = {
     renderScale: 'Render scale',
     reduceMotion: 'Reduce motion',
     colourBlindMode: 'Colour-blind mode',
+  },
+  /** The developer menu (13 §4; `?dev=1` only). */
+  developerMenu: {
+    title: 'Developer menu',
+    spawnMobs: 'Spawn mobs',
+    team: 'Team',
+    mob: 'Mob',
+    count: 'Count',
+    origin: 'Origin',
+    spawn: 'Spawn',
+    legends: 'Legends',
+    legendClass: 'Class',
+    add: 'Add',
+    legendToRemove: 'Legend to remove',
+    removeLegend: 'Remove Legend',
+    removeEntity: 'Remove entity',
+    entityId: 'Entity id',
+    remove: 'Remove',
   },
   pause: { title: 'Paused', resume: 'Resume', settings: 'Settings', leave: 'Leave match' },
   /** The match viewport; the explorer labels show only with the developer flag (13 §4, DEC-32). */
@@ -261,8 +284,8 @@ export const STRINGS = {
     duelScore: 'Duel score',
     /** "3 - 1" with the target beside it: "first to 10". */
     duelFirstTo: (target: number): string => `first to ${String(target)}`,
-    duelCountdown: 'Match start',
-    duelStart: 'START',
+    matchCountdown: 'Match start',
+    countdownStart: 'START',
     health: 'Health',
     aether: 'Aether',
     level: 'Level',
