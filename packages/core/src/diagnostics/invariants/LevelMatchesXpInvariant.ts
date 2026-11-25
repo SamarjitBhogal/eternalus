@@ -9,7 +9,8 @@ import type { Invariant, Violation } from '../Invariant.types';
  * `level-matches-xp` (architecture 05 §16, 15 §3): (1) every `Progression`'s level is the one its XP
  * gives on its curve; and every `xp-gained` of this tick (2) is backed by an `entity-died` this tick
  * whose killer is the recipient (a structure award, DEC-186, instead needs the structure gone; a
- * team-kill award, DEC-237, a killer on the recipient's team), (3)
+ * team-kill award, DEC-237, a killer on the recipient's team; XP owed while waiting to respawn,
+ * DEC-186, a recipient that is back in the store), (3)
  * is the only award for that kill, and (4) is not for a self-kill or an ally kill (O5). It keeps
  * no scratch: everything comes from the state and this tick's events.
  * Runs every tick, since rules 2–4 read this tick's events.
@@ -75,6 +76,21 @@ export class LevelMatchesXpInvariant implements Invariant {
             this.violation(
               entityId,
               `Entity "${entityId}" gained structure XP for "${victimId}", which is still standing.`,
+            ),
+          );
+        }
+      } else if (award.cause === 'respawn') {
+        // Owed while the recipient waited to respawn (DEC-186): paid only once it is back.
+        if (
+          state.entities.get(entityId) === undefined &&
+          !state.entities
+            .removedThisTick()
+            .some(({ entityId: removedId, cause }) => removedId === entityId && cause === 'died')
+        ) {
+          violations.push(
+            this.violation(
+              entityId,
+              `Entity "${entityId}" gained owed XP for "${victimId}" while it is not in the match.`,
             ),
           );
         }

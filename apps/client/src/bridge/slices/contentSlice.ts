@@ -15,6 +15,7 @@ const initialState: DisplayCatalogue = {
   contrastMode: 'figma',
   uiEnhancements: [],
   hud: { structureKinds: [], objectiveKinds: [], chrome: null },
+  laneMinions: [],
   teamNames: { light: '', dark: '' },
   botRoster: {
     id: '',
@@ -49,6 +50,7 @@ export const contentSlice = createSlice({
      */
     selectIsUiEnhancementOn: (state, id: UiEnhancementId) => state.uiEnhancements.includes(id),
     selectHudCatalogue: (state) => state.hud,
+    selectLaneMinions: (state) => state.laneMinions,
     selectTeamNames: (state) => state.teamNames,
     selectVerdictLines: (state) => state.verdictLines,
     selectSovereignNames: (state) => state.sovereignNames,
