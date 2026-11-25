@@ -63,16 +63,27 @@ export class GuardController implements Controller {
   }
 
   /** The leash and the resting place of the guard on `post`. */
-  private static rulesFor(post: GuardSlot): LeashRules<'holding'> {
+  private static rulesFor(post: GuardSlot): LeashRules<'holding', GuardAggroRuleDefinition> {
     const home = { x: post.homeX, y: post.homeY };
+    const leashReach = ({ position }: { readonly position: { x: number; y: number } }): number =>
+      distance(position, home) + post.homeRadius + post.leashRadius;
     return {
       idle: 'holding',
       isOutsideLeash: (_situation, _memory, point) =>
         distance(point, home) - post.homeRadius > post.leashRadius,
       extra: () => null,
-      // Guards of one structure defend each other anywhere in its circle (DEC-144).
-      isMate: ({ state }, victimId) => state.guards.slotOf(victimId)?.homeId === post.homeId,
-      helpRadius: ({ position }) => distance(position, home) + post.homeRadius + post.leashRadius,
+      // Guards of one home and team defend each other anywhere in its circle (DEC-144); a capture
+      // point can hold defenders of more than one team.
+      isMate: ({ state }, victimId) => {
+        const mate = state.guards.slotOf(victimId);
+        return mate?.homeId === post.homeId && mate.team === post.team;
+      },
+      helpRadius: leashReach,
+      // A capture point's defenders take any enemy in their leash (DEC-260).
+      acquisitionRadius: (situation) =>
+        situation.rule.shouldAcquireAcrossLeash === true
+          ? leashReach(situation)
+          : situation.rule.acquisitionRadius,
     };
   }
 }
