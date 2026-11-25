@@ -6,15 +6,12 @@ import {
   type Snapshot,
 } from '@eternalus/core';
 
-import { LegendAnimation } from './LegendAnimation';
-import { LEGEND_VISUAL_DIAMETER } from './views/entityViews.constants';
-import { LegendSpriteView } from './views/LegendSpriteView';
-
 import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
 import { GameLoop } from './engine/loop/GameLoop';
 import { DeveloperMenuController } from './DeveloperMenuController';
 import { HealthBarVisibility } from './HealthBarVisibility';
+import { LegendAnimation } from './LegendAnimation';
 import { LegendBodies } from './LegendBodies';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
 import type { WorldPoint, WorldRect } from './engine/render/Renderer.types';
@@ -32,7 +29,9 @@ import type { PlayerActions } from './PlayerActions';
 import { PlayerCommands } from './PlayerCommands';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
+import { LEGEND_VISUAL_DIAMETER } from './views/entityViews.constants';
 import { LegendBodyLayer } from './views/LegendBodyLayer';
+import { LegendSpriteView } from './views/LegendSpriteView';
 import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';

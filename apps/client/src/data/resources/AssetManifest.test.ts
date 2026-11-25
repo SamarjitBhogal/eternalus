@@ -165,10 +165,27 @@ describe('ASSET_MANIFEST', () => {
     expect(files.filter((file) => !/^[0-9a-f]{64}$/.test(file.hash))).toEqual([]);
   });
 
-  it('licenses every entry and verifies URL/Figma or documented attachment provenance (ADR 0028)', () => {
+  it('licenses every entry and names its Figma node or download in its source', () => {
     expect(assets.filter((entry) => !(entry.licence in ASSET_LICENCES))).toEqual([]);
     expect(
       assets.filter(
+        (entry) =>
+          entry.attachmentReferenceId === undefined && !/\b\d+:\d+\b|https:\/\//.test(entry.source),
+      ),
+    ).toEqual([]);
+  });
+
+  it('binds each attachment entry to its registered, documented reference (ADR 0028, DEC-298)', () => {
+    const attached = assets.filter((entry) => entry.attachmentReferenceId !== undefined);
+    expect(attached.map(({ id }) => id)).toEqual([
+      'assassin-sprites',
+      'knight-sprites',
+      'paladin-sprites',
+      'colossus-sprites',
+      'juggernaut-sprites',
+    ]);
+    expect(
+      attached.filter(
         (entry) =>
           !hasAssetProvenance(entry, ATTACHMENT_REFERENCES, {
             'docs/reference/legend-sprite-provenance.md': legendProvenance,
@@ -217,7 +234,7 @@ describe('ASSET_MANIFEST', () => {
     );
 
     expect(misplaced).toEqual([]);
-    expect(filesPerGroup).toEqual(GROUPS.map(() => 1));
+    expect(filesPerGroup).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
   it('is the concatenation of the declared group files', () => {

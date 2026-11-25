@@ -1,5 +1,3 @@
-import type { AssetGroup } from '../data/resources/AssetManifest.types';
-import type { ResourceController } from '../data/resources/ResourceController';
 import { type GameConfig, makeLogRecord, SEVERITY, Simulation } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
@@ -8,6 +6,7 @@ import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { LogSink } from '../data/logging/LogSink.types';
 import { RingBufferSink } from '../data/logging/RingBufferSink';
 import { SinkLogger } from '../data/logging/SinkLogger';
+import type { ResourceController } from '../data/resources/ResourceController';
 import { DeviceIntentSource } from './DeviceIntentSource';
 import { Camera } from './engine/Camera';
 import { KeyboardDevice } from './engine/input/KeyboardDevice';
@@ -17,6 +16,7 @@ import { Canvas2dRenderer } from './engine/render/Canvas2dRenderer';
 import type { SessionClock } from './engine/time/SessionClock.types';
 import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
+import { LEGEND_SPRITE_SHEETS } from './LegendAnimation.constants';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, LOG_RING_CAPACITY } from './Match.constants';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
@@ -25,18 +25,6 @@ import type { HostDocument, HostWindow } from './MatchHost.types';
 import { withPlayerTeam } from './withPlayerTeam';
 import type { SettingsController } from './settings/SettingsController';
 import type { MatchFactory } from './SessionController.types';
-
-/** The atlas asset group selected for each supported Legend. */
-const ATLAS_GROUP_BY_SPEC: Readonly<Record<string, AssetGroup>> = {
-  assassin: 'atlas-assassin',
-  knight: 'atlas-knight',
-  paladin: 'atlas-paladin',
-  colossus: 'atlas-colossus',
-  juggernaut: 'atlas-juggernaut',
-  catalyst: 'atlas-catalyst',
-  oracle: 'atlas-oracle',
-  necromancer: 'atlas-necromancer',
-};
 
 /** What the browser match factory is built from; `main.tsx` passes window, document and the page singletons. */
 export type BrowserMatchDeps = {
@@ -95,7 +83,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
   return (request, viewport) => {
     const { window, gameConfig, settings, resources } = deps;
     const playerSpecId = request.setup.allies.find((entry) => entry.isPlayer)?.specId ?? null;
-    const atlasGroup = ATLAS_GROUP_BY_SPEC[playerSpecId ?? ''];
+    const atlasGroup = LEGEND_SPRITE_SHEETS[playerSpecId ?? '']?.group;
     let isAtlasOwner = true;
     // Core spawns the roster's human slot, the player's Rover, at the team's Stronghold: a map
     // without one throws in `Simulation`, below.

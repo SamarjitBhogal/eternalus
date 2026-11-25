@@ -6,7 +6,11 @@ import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { EntityLayer } from './EntityLayer';
 import type { HealthBarSide } from './HealthBarView.types';
 import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_MOB_GLYPH } from './entityViews.constants';
-import { HEALTH_BAR_FILL_COLORS, HEALTH_BAR_TRACK_COLOR } from './HealthBarView.constants';
+import {
+  HEALTH_BAR_FILL_COLORS,
+  HEALTH_BAR_GAP,
+  HEALTH_BAR_TRACK_COLOR,
+} from './HealthBarView.constants';
 import type { WorldLayer } from './SceneView.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
 import { ViewRegistry } from './ViewRegistry';
@@ -56,6 +60,19 @@ class SpyView implements EntityView {
 
   public drawMinimap(): void {
     // The main-view tests below record `draw` only.
+  }
+}
+
+/** A view that draws nothing and reports a fixed visible height, as a drawn sprite does. */
+class TallView implements EntityView {
+  public constructor(private readonly height: number) {}
+
+  public draw(): number {
+    return this.height;
+  }
+
+  public drawMinimap(): void {
+    // The health-bar test below needs the main view only.
   }
 }
 
@@ -249,5 +266,25 @@ describe('EntityLayer', () => {
     expect(track?.[2]?.y).toBeLessThan(20);
     // The bars come after all three units, so no unit hides one.
     expect(calls.findIndex((call) => call.op === 'fillPolygon')).toBe(calls.length - 4);
+  });
+
+  it('lifts a bar above the height its view returns, not the footprint (a drawn sprite)', () => {
+    const layer = new EntityLayer(
+      new ViewRegistry(new TallView(3)),
+      () => false,
+      () => 'enemy',
+    );
+    const foe = {
+      ...member('foe', 'mob', 10),
+      transform: { x: 10, y: 20, radius: 0.5, facing: EAST },
+    };
+    layer.show(null, snapshot(1, [foe]), 0, null);
+    const renderer = new RecordingRenderer();
+    layer.draw(renderer);
+    const [track] = renderer.calls.flatMap((call) =>
+      call.op === 'fillPolygon' ? [call.args[0]] : [],
+    );
+
+    expect(track?.[2]?.y).toBeCloseTo(20 - 3 - HEALTH_BAR_GAP);
   });
 });

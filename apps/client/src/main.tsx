@@ -1,4 +1,3 @@
-import { SpriteAtlasLoader } from './data/resources/loaders/SpriteAtlasLoader';
 import { createDefaultGameConfig, type Logger, makeLogRecord, SEVERITY } from '@eternalus/core';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -21,6 +20,7 @@ import { ASSET_LICENCES } from './data/resources/assetLicences';
 import { ASSET_MANIFEST } from './data/resources/AssetManifest';
 import { describeCredits } from './data/resources/describeCredits';
 import { FontLoader } from './data/resources/loaders/FontLoader';
+import { SpriteAtlasLoader } from './data/resources/loaders/SpriteAtlasLoader';
 import { UiImageLoader } from './data/resources/loaders/UiImageLoader';
 import { ResourceController } from './data/resources/ResourceController';
 import { createCoreCatalogue } from './game/content/coreCatalogue';

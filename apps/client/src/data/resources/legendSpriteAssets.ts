@@ -10,7 +10,10 @@ import colossus2x from '../../assets/match/legends/colossus-sprites@2x.webp';
 import juggernaut from '../../assets/match/legends/juggernaut-sprites.webp';
 import juggernaut2x from '../../assets/match/legends/juggernaut-sprites@2x.webp';
 
-/** User-authorised character art; provenance and budget are recorded in ADR 0027. */
+/**
+ * User-authorised character art: provenance in ADR 0028 and
+ * `docs/reference/legend-sprite-provenance.md`; the proposed byte budget in ADR 0027 (draft).
+ */
 export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
   {
     id: 'assassin-sprites',

@@ -2,6 +2,7 @@ import { TEAM_COLORS } from './MapView.constants';
 import type { EntitySnapshot } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 import { LegendSpriteView } from './LegendSpriteView';
+import { SPRITE_GROUND_OFFSETS } from '../LegendAnimation.constants';
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 
 const entity: EntitySnapshot = {
@@ -22,7 +23,8 @@ describe('LegendSpriteView', () => {
   it('draws an atlas frame and keeps the team ring and Legend minimap marker', () => {
     const renderer = new RecordingRenderer(),
       view = new LegendSpriteView(() => ({ atlasId: 'oracle-sprites', frame: 3 }), 6.8);
-    view.draw(state, renderer);
+    // The height above the feet: the health bar sits on top of it.
+    expect(view.draw(state, renderer)).toBeCloseTo(6.8 * (1 - SPRITE_GROUND_OFFSETS.magus));
     expect(renderer.calls.find((call) => call.op === 'drawSprite')?.args[0]).toEqual({
       atlasId: 'oracle-sprites',
       frame: 3,
@@ -37,7 +39,8 @@ describe('LegendSpriteView', () => {
   it('uses the existing Legend fallback when the atlas is unavailable', () => {
     const renderer = new RecordingRenderer();
     vi.spyOn(renderer, 'drawSprite').mockReturnValue(false);
-    new LegendSpriteView(() => ({ atlasId: 'missing', frame: 0 }), 6.8).draw(state, renderer);
+    const view = new LegendSpriteView(() => ({ atlasId: 'missing', frame: 0 }), 6.8);
+    expect(view.draw(state, renderer)).toBeUndefined();
     expect(renderer.calls.filter((call) => call.op === 'drawWorldGlyph').length).toBeGreaterThan(1);
   });
   it('keeps the fallback when no selected sprite is provided', () => {

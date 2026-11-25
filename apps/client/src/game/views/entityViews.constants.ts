@@ -105,5 +105,9 @@ export const MINI_MAP_OUTLINE_COLORS: Readonly<Record<Team, string>> = {
 /** Mini map layer of Legends' markers: above the mobs' (layer 0), so a Legend stays on top. */
 export const MINI_MAP_LEGEND_LAYER = 1;
 
-/** Legend presentation diameter shared with the visuals branch (DEC-238). */
+/**
+ * World width of a drawn Legend sprite. DEC-238 (owner, 2026-11-10) approves larger Legend draw
+ * sizes as stand-in art; its row and this value land with PR #90 (`feat/visuals-and-design`).
+ */
+// TUNE: owner 2026-11-10 (DEC-238): stand-in art size
 export const LEGEND_VISUAL_DIAMETER = 5.2;

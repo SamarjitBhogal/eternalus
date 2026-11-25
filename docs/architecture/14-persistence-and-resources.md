@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-24
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -565,7 +565,7 @@ detail:
   files) into the one `ASSET_MANIFEST`. An entry has a `file` and an optional `file2x` (each with
   URL, bytes and hash), its per-use `renditions`, a `licence` and a `source`. An image placed at the
   spot it was baked for (a plate, a weapon art) also carries its draw `box` (origin and size in px
-  of the 1920 × 1080 frame), on the entry or on a rendition. `AssetType` is `'ui-image' | 'font'`.
+  of the 1920 × 1080 frame), on the entry or on a rendition. `AssetType` is `'ui-image' | 'font' | 'sprite-atlas'`.
   The shared groups (`boot`, `selection`, `selection-primary`, `selection-alternate`,
   `selection-raster`, `selection-primary-raster`, `match`) let a session load only its layout's art
   and, with the `'css'` effects renderer, no Figma plates (`game/session/selectionAssetGroups.ts`).

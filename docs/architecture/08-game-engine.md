@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-24
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -306,7 +306,7 @@ The design keeps the move cheap:
 
 ## 11. Implementation status
 
-Legend sprite rendering uses the current port drawSprite(sprite, feet, size), which returns whether it drew a frame. Canvas2dRenderer prepares destination-size frames lazily in a bounded cache and copies them without resampling. LegendSpriteView uses its ordinary Legend fallback while an atlas loads or the frame cannot be drawn.
+Legend sprite rendering uses the current port drawSprite(sprite, feet, size), which returns whether it drew a frame. Canvas2dRenderer prepares destination-size frames lazily in a bounded cache and copies them without resampling. LegendSpriteView uses its ordinary Legend fallback while an atlas loads or the frame cannot be drawn. `EntityView.draw` returns the height a view drew above the entity's position, or `undefined`; `EntityLayer` passes it to `HealthBarView`, so the bar sits above a sprite and not above the footprint.
 
 HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
 

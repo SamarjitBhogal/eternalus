@@ -1,16 +1,13 @@
 import type { EntitySnapshot } from '@eternalus/core';
+
 import type { Renderer } from '../engine/render/Renderer';
 import type { SpriteRef } from '../engine/render/Renderer.types';
-import { RANGED_LEGEND_SKINS } from '../LegendAnimation.constants';
-import { LegendView } from './LegendView';
+import { SPRITE_GROUND_OFFSETS } from '../LegendAnimation.constants';
+import { FOCUS_RING_COLOR } from './entityViews.constants';
 import type { EntityDrawState } from './EntityView.types';
 import { drawFacingChevron } from './facingChevron';
-import { FOCUS_RING_COLOR } from './entityViews.constants';
-
-const MAGUS_GROUND_OFFSET = 0.35;
-const REPACKED_GROUND_OFFSET = 9 / 128;
-const MAGUS_ATLAS_IDS = new Set([...RANGED_LEGEND_SKINS].map((spec) => spec + '-sprites'));
-const RING_SCALE = 0.55;
+import { GROUND_OFFSET_BY_ATLAS, LEGEND_SPRITE_RING_SCALE } from './LegendSpriteView.constants';
+import { LegendView } from './LegendView';
 
 /** Draws the selected Legend's sprite and falls back to the ordinary Legend view. */
 export class LegendSpriteView extends LegendView {
@@ -26,15 +23,14 @@ export class LegendSpriteView extends LegendView {
   public override draw(state: EntityDrawState, renderer: Renderer): number | undefined {
     const { position, entity, isFocused } = state;
     const frame = this.frameOf(entity);
-    const groundOffset = MAGUS_ATLAS_IDS.has(frame?.atlasId ?? '')
-      ? MAGUS_GROUND_OFFSET
-      : REPACKED_GROUND_OFFSET;
+    const groundOffset =
+      GROUND_OFFSET_BY_ATLAS.get(frame?.atlasId ?? '') ?? SPRITE_GROUND_OFFSETS.repacked;
     const feet = { x: position.x, y: position.y + this.size * groundOffset };
     if (frame === null || !renderer.drawSprite(frame, feet, this.size)) {
       super.draw(state, renderer);
       return;
     }
-    const size = this.size * RING_SCALE;
+    const size = this.size * LEGEND_SPRITE_RING_SCALE;
     renderer.drawWorldGlyph({ shape: 'ring', size }, position, this.colorOf(entity.team));
     drawFacingChevron(state, renderer);
     if (isFocused)

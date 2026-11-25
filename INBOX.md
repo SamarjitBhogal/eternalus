@@ -2961,6 +2961,7 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
+- [ ] DEC-298 (5), (7) — Selected-subclass portrait follow-up. Carry the credited Juggernaut portrait with its notice intact for the class-project MVP and replace it after delivery. Build the selected, forward-facing character cutouts using the Oracle reference and propose their actual encoded bytes for review.
 - [ ] **Make the tower horde test faster (DEC-289, 2026-11-20).** Owner: to be assigned.
       `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its
       lane within 10 seconds (DEC-133, seed %i)", builds a whole map and match for each of its
@@ -3588,5 +3589,3 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   `docs/inbox-decisions-2026-10-03`.
 - 2026-09-30 — Phase 0 documentation + harness written on `docs/phase-0-foundation`
   (merged as PR #3; see `docs/changelog/2026-09-30-phase-0-foundation.md`).
-
-- [ ] DEC-298 (5), (7) — Selected-subclass portrait follow-up. Carry the credited Juggernaut portrait with its notice intact for the class-project MVP and replace it after delivery. Build the selected, forward-facing character cutouts using the Oracle reference and propose their actual encoded bytes for review.

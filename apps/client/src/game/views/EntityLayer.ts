@@ -65,7 +65,7 @@ export class EntityLayer implements WorldLayer {
     const heights = ordered.map((state) => this.views.viewFor(state.entity).draw(state, renderer));
     ordered.forEach((state, index) => {
       const side = this.healthBarOf(state.entity);
-      if (side !== null) this.healthBars.draw(state, side, renderer, heights[index] ?? undefined);
+      if (side !== null) this.healthBars.draw(state, side, renderer, heights[index]);
     });
   }
 
