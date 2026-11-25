@@ -1,5 +1,5 @@
 import { MemoryLogger } from '@eternalus/core';
-import { ClientMessageParser } from '@eternalus/protocol';
+import { ClientMessageParser, RECONNECT_WINDOW_MS } from '@eternalus/protocol';
 import { describe, expect, it } from 'vitest';
 import { DuelGateway } from '../gateway/DuelGateway';
 import { TokenBucket } from '../limits/TokenBucket';
@@ -12,7 +12,7 @@ import { FakeClock } from '../time/FakeClock';
 import { FakeTickScheduler } from '../time/FakeTickScheduler';
 import { FakeConnection } from '../transport/FakeConnection';
 import { PresenceBook } from './PresenceBook';
-import { MAX_HELD_GUESTS, MAX_KNOWN_GUESTS, RECONNECT_WINDOW_MS } from './PresenceBook.constants';
+import { MAX_HELD_GUESTS, MAX_KNOWN_GUESTS } from './PresenceBook.constants';
 
 const join = (guestId?: string): string =>
   JSON.stringify({
@@ -304,6 +304,19 @@ describe('PresenceBook', () => {
 
   it('records the loss for the one who left first when both seats end up held', () => {
     const { connect, guestIdOf, ratings } = setup();
+    const [a, b] = [connect(), connect()];
+    const [idA, idB] = [guestIdOf(a), guestIdOf(b)];
+    if (idA === undefined || idB === undefined) throw new Error('no ids');
+    a.receive(join());
+    b.receive(join());
+    a.close();
+    b.close();
+    expect(ratings.get(idA)).toMatchObject({ matches: 1, losses: 1 });
+    expect(ratings.get(idB)).toMatchObject({ matches: 1, wins: 1 });
+  });
+
+  it('records the loss for the one who left first even when the held-guest cap is full', () => {
+    const { connect, guestIdOf, ratings } = setup(1);
     const [a, b] = [connect(), connect()];
     const [idA, idB] = [guestIdOf(a), guestIdOf(b)];
     if (idA === undefined || idB === undefined) throw new Error('no ids');
