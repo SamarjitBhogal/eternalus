@@ -8982,6 +8982,31 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1602 passed (1602)"; protocol "Tests 31 passed (31)"; client "Tests 2013 passed (2013)"; server "Tests 141 passed (141)"; "Documentation check passed."
 - Next step: reviewer re-check; the team merges in stack order.
 
+### 2026-11-13 — Phase 3 / online Duel — feat/duel-player-messaging (stacked on #104) — claudiodh + Claude Code
+
+- What was done: the player is told what the online Duel is doing. The queue screen explains the wait and shows an elapsed timer; the VERSUS screen says "Match found: A VS B. The match starts in a moment." The `pause-menu` key in an online match opens a Leave-the-Duel confirmation (Stay or Leave = `forfeit`; the match does not pause and only Escape works while it is open) and a `beforeunload` guard warns before the tab closes. New server message `opponent-presence` (`disconnected` with the reconnect window, then `reconnected`) from `PresenceBook`, shown in the Duel HUD as a countdown banner. No game numbers or design decisions.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1356 passed (1356)"; protocol "Tests 31 passed (31)"; client "Tests 1942 passed (1942)"; server "Tests 143 passed (143)"; "Documentation check passed."
+- Pre-PR gate: critic request-changes (the client `ServerMessageDecoder` dropped `opponent-presence`; `graceMs` optional) → fixed (decoder case + tests, `graceMs` required on `disconnected`); ponytail cuts not applied (one-class rule, existing tests read the getter).
+- Next step: reviewer approval; merges in stack order after #104.
+
+### 2026-11-13 — Phase 3 / sprint 3.1 — feat/duel-player-messaging (known gap) — claudiodh + Claude Code
+
+- What was done: closed the PR #118 known gap. `MatchScreen` read `isDuel` from the first
+  `duel-state`, so an Escape before it opened the single-player pause menu. New
+  `matchSlice.selectors.selectIsDuel` is true from `match-found` on (the VERSUS names) or once a
+  scoreboard exists; `MatchScreen` uses it for the Escape key and the unload guard. A slice test
+  covers outside, matched and scored.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1356 passed (1356)"; protocol "Tests 31
+  passed (31)"; client "Tests 1943 passed (1943)"; server "Tests 143 passed (143)"; "Documentation
+  check passed."
+- Next step: review; merge after #104.
+
+### 2026-11-15 — Phase 3 / sync — feat/duel-player-messaging (PR #118) — claudiodh + Claude Code
+
+- What was done: merged `feat/mm-guest-identity` (7e4b022a) into this branch. Conflicts: the bridge keeps the new `match-ended` and `duel-ended` events and drops the old `match-result`; the Duel scoreboard is `duelHud` in `matchSlice` next to the ending (`duel`) and this branch's `opponentGraceMs`, so `selectIsDuel` reads `versus` or `duelHud`; the `forfeit-duel` and `continue` intents both stay; `DuelSession` handlers keep `opponentPresence` and take `ended(ending)`; the protocol keeps `opponent-presence` and `match-ended` as `MatchEnding`. Logs keep both sides. No force push.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1602 passed (1602)"; protocol "Tests 31 passed (31)"; client "Tests 2039 passed (2039)"; server "Tests 143 passed (143)"; "Documentation check passed."
+- Next step: reviewer approval; the team merges in stack order.
+
 ### 2026-11-15 — Phase 3 / sync — chore/deps-vite-vitest (PR #113) — claudiodh + Claude Code
 
 - What was done: merged `phase/3-sprint-3-work` (80e0ea13) into this branch because #113 was CONFLICTING. Conflict: `PROGRESS.md` (both sides kept).
@@ -10263,6 +10288,33 @@ tick)`), and a minion records the point that granted its levels (`Veterancy.gran
   timed out in 120000ms"). Rerun alone: "Tests 11 passed (11)". Then `npm run build` ("✓ built in
   4.49s") and `npm run docs:check` ("Documentation check passed.").
 - Next step: Aryan pushes `feat/bosses-p3` and asks the reviewers to re-review PR #91.
+
+### 2026-11-15 — Phase 3 / bug tracker — docs/bug-citadel-side-entrances — SamarjitBhogal + Claude Code
+
+- What was done: logged BUG-8 as Task SCRUM-443 under SCRUM-433 (label `bug`, screenshot
+  attached): units spawned inside the Citadel cannot reach its side gates and walk into walls
+  until they find the middle exit. Cause not confirmed: the palace walls leave a gap toward each
+  gate. The row names the related plan item, M4 Flow fields (Stronghold-to-gate ground).
+- Pre-PR gate: critic (`architecture-reviewer`) request-changes, no blockers; its three
+  should-fix rows (last-reviewed bump, M4 wording, this checks line) and one nit applied.
+  Ponytail: nothing to cut (one table row).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; "Tests 1582 passed (1582)"; client "Tests 1979 passed (1979)"; "✓ built in 350ms";
+  "Documentation check passed." Under Node 22 the client test `WebSocketTransport` fails on
+  `CloseEvent is not defined` (outside this diff; the repo requires Node 24).
+- Next step: assign SCRUM-443; find the blocker between the palace and the side gates.
+
+### 2026-11-20 — Phase 3 / bug tracker — docs/bug-citadel-side-entrances (PR #128 review round) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`) into the branch; the only conflict
+  was this file (both sides appended, kept both, the phase entries first). Applied the review nit
+  from claudiodh and swholtzman: the BUG-8 row now says the wall-gap test covers the palace oval
+  only (`MapPalaceWallsBuilder.test.ts` probes `floorRadiusX/Y`, not the outer oval).
+- Checks run: `npm run check` (Node 24.21.0) on the merge → `EXIT=0`: "All matched files use
+  Prettier code style!"; core "Tests 1674 passed (1674)"; protocol "Tests 29 passed (29)";
+  client "Tests 2011 passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 377ms";
+  "Documentation check passed."
+- Next step: re-request review on PR #128.
 
 ### 2026-11-07 — Phase 3 / unit-cap performance check (minion plan §1.2) — chore/minion-perf-check — SamarjitBhogal + Claude Code
 
