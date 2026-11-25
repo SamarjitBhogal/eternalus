@@ -15,6 +15,7 @@ import { MatchCountdown } from '../hud/MatchCountdown';
 import { MinimapPanel } from '../hud/MinimapPanel';
 import { ObjectiveTracker } from '../hud/ObjectiveTracker';
 import { PauseOverlay } from '../hud/PauseOverlay';
+import { ReconnectingNotice } from '../hud/ReconnectingNotice';
 import { StructureStrip } from '../hud/StructureStrip';
 import { type PauseOpenerRef, usePauseMenuKey } from '../hud/usePauseMenuKey';
 import { WeaponPanel } from '../hud/WeaponPanel';
@@ -28,7 +29,8 @@ import type { ScreenProps } from './screen.types';
  * nine regions in the Figma's paint order, the pre-match countdown over all of them (DEC-278), and
  * the pause overlay beside both. It reads only the open overlay (each HUD leaf reads its own data,
  * so a publish never re-renders it). While an overlay is open the viewport and the HUD are `inert`
- * (13 §7; CD-11) and the session pauses the match.
+ * (13 §7; CD-11) and the session pauses the match. The connection status (DEC-349) is painted
+ * last, over the countdown and the pause dialog, and is never `inert`, so it stays seen and read.
  */
 export function MatchScreen({ viewport }: ScreenProps): ReactElement {
   const overlay = useAppSelector((state) => state.session.overlay);
@@ -77,6 +79,9 @@ export function MatchScreen({ viewport }: ScreenProps): ReactElement {
       </section>
       <DeveloperMenu />
       <PauseOverlay openerRef={openerRef} />
+      <div className={styles.status}>
+        <ReconnectingNotice />
+      </div>
     </main>
   );
 }
