@@ -16,15 +16,21 @@ describe('MatchWorld', () => {
     expect(world.routes.length('lane-0')).toBe(160);
   });
 
-  it("finds each team's Stronghold and answers a copy", () => {
+  it('finds the Stronghold of each team, as a copy', () => {
     const world = new MatchWorld(
       TWO_LANE_MAP,
       WorldMap.fromDefinition(TWO_LANE_MAP, 2, () => false),
     );
 
-    expect(world.strongholdOf('dark')).toEqual({ x: 190, y: 30 });
     expect(world.strongholdOf('light')).toEqual({ x: 10, y: 30 });
-    expect(world.strongholdOf('dark')).not.toBe(world.strongholdOf('dark'));
+    expect(world.strongholdOf('dark')).toEqual({ x: 190, y: 30 });
+    expect(world.strongholdOf('light')).not.toBe(world.strongholdOf('light'));
+    expect(
+      new MatchWorld(
+        { ...TWO_LANE_MAP, features: [] },
+        WorldMap.fromDefinition(TWO_LANE_MAP, 2, () => false),
+      ).strongholdOf('light'),
+    ).toBeUndefined();
   });
 
   it('faces a unit toward the enemy Stronghold at spawn, and a neutral one nowhere (DEC-216 (6))', () => {
