@@ -30,5 +30,5 @@ EXPOSE 8787
 USER node
 # /health listens on the container's own loopback (OPS_PORT, default 8788).
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
-  CMD node -e "fetch('http://127.0.0.1:8788/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+  CMD node -e "fetch('http://127.0.0.1:' + Number(process.env.OPS_PORT ?? 8788) + '/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
 CMD ["node", "main.js"]
