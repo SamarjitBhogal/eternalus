@@ -81,7 +81,12 @@ export class LevelMatchesXpInvariant implements Invariant {
         }
       } else if (award.cause === 'respawn') {
         // Owed while the recipient waited to respawn (DEC-186): paid only once it is back.
-        if (state.entities.get(entityId) === undefined) {
+        if (
+          state.entities.get(entityId) === undefined &&
+          !state.entities.removedThisTick().some(
+            ({ entityId: removedId, cause }) => removedId === entityId && cause === 'died',
+          )
+        ) {
           violations.push(
             this.violation(
               entityId,
