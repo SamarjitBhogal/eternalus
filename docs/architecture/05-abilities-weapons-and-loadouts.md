@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-24
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -936,8 +936,10 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   it `maxLevels` levels (`Progression.xpToReach`); `level-matches-xp` checks that the killer is on
   the recipient's team (`cause: 'team-kill'`). `ProgressionSystem` listens to `entity-died`
   itself, not 12's `xp-granted` reward path. Camp XP is built: `camp-cleared` pays
-  `XP_SOURCES.campCleared` (`cause: 'camp-cleared'`), one tick after the last mob's kill XP, and
-  `level-matches-xp` checks that the camp is a guard home with no guard left. Interim: the bonus
+  the camp's entry in `XP_SOURCES.campCleared`, keyed by camp definition id (forest camps only; a
+  corner camp's boss pays `teamKills` instead) (`cause: 'camp-cleared'`), one tick after the last
+  mob's kill XP, and `level-matches-xp` checks that the camp is a guard home with none of its own
+  posts holding a guard (checkpoint-defender posts on the same home do not count). Interim: the bonus
   goes only to the Legend that killed the camp's last mob, until the owner says who "the clearing
   Legends" are (`INBOX.md` "Camp rewards"). Not built yet: the share radius and damage bias, assists, checkpoint
   XP, the Eternal's flat 5 levels (DEC-237) (their systems do not exist),

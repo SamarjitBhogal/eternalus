@@ -13,8 +13,13 @@ export const XP_SOURCES: XpSourcesDefinition = {
   // of the curve. One value for every structure kind.
   structureDestroyed: 120,
   // TUNE: balancing.md "Camps" `Recommendation:` "a 50 XP bonus to the clearing Legends"; the
-  // clearing Legend is the one that killed the camp's last mob (INBOX.md "Camp rewards").
-  campCleared: 50,
+  // clearing Legend is the one that killed the camp's last mob (INBOX.md "Camp rewards"). Forest
+  // camps only: balancing.md lists the corner camps apart, and their boss pays `teamKills`.
+  campCleared: {
+    'forest-camp-light': 50,
+    'forest-camp-medium': 50,
+    'forest-camp-heavy': 50,
+  },
   teamKills: {
     // TUNE: balancing.md MiniBoss "500 XP team-wide"; DEC-237 (owner 2026-11-10): a mini-boss kill
     // lifts a Legend 2 levels at most.

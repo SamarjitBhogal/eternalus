@@ -24,17 +24,22 @@ import { ProgressionSystem } from './ProgressionSystem';
 
 const TICK_RATE = 30;
 
-/** The two-lane map with one neutral light forest camp, its countdown 1 s (30 ticks). */
-const campMatch = () => {
+/** The two-lane map with one neutral camp (a light forest camp by default), its countdown 1 s. */
+const campMatch = (
+  camp: { kind: 'camp' | 'corner-camp'; definitionId: string } = {
+    kind: 'camp',
+    definitionId: 'forest-camp-light',
+  },
+) => {
   const map: MapDefinition = {
     ...TWO_LANE_MAP,
     features: [
       ...TWO_LANE_MAP.features,
       {
         id: 'camp-0',
-        kind: 'camp',
+        kind: camp.kind,
         team: 'neutral',
-        definitionId: 'forest-camp-light',
+        definitionId: camp.definitionId,
         position: { x: 100, y: 50 },
         minimapGlyph: { shape: 'dot', size: 4, colourRole: 'neutral' },
       },
@@ -58,7 +63,7 @@ const campMatch = () => {
     undefined,
     loadWeapons(TICK_RATE),
   );
-  const roster = new GuardRoster(factory, units, loadGuardPlans(TICK_RATE));
+  const roster = new GuardRoster(factory, units, loadGuardPlans(TICK_RATE), {});
   roster.layOut(state);
   const progression = new ProgressionSystem(state, {
     units,
@@ -111,7 +116,39 @@ describe('ProgressionSystem camp reward through the guard roster (balancing.md "
     expect(legend.getComponent(Progression).xp).toBe(mobXp);
 
     step();
-    expect(legend.getComponent(Progression).xp).toBe(mobXp + XP_SOURCES.campCleared);
+    expect(legend.getComponent(Progression).xp).toBe(
+      mobXp + (XP_SOURCES.campCleared['forest-camp-light'] ?? 0),
+    );
+    expect(violations).toEqual([]);
+  });
+
+  it('pays no clear bonus for a corner camp: its boss already pays the team (DEC-237)', () => {
+    const { state, step, campMobIds, legend, violations } = campMatch({
+      kind: 'corner-camp',
+      definitionId: 'corner-camp',
+    });
+    let clears = 0;
+    state.events.on('camp-cleared', () => {
+      clears += 1;
+    });
+    step(TICK_RATE + 1);
+    const mobs = campMobIds();
+    expect(mobs.length).toBeGreaterThan(0);
+
+    for (const id of mobs) {
+      new DamagePipeline().apply(state, id, 1e6, {
+        attackerId: legend.id,
+        kind: 'weapon',
+        definitionId: 'test',
+      });
+    }
+    step();
+    const afterKill = legend.getComponent(Progression).xp;
+    expect(afterKill).toBeGreaterThan(0);
+
+    step();
+    expect(clears).toBe(1);
+    expect(legend.getComponent(Progression).xp).toBe(afterKill);
     expect(violations).toEqual([]);
   });
 });

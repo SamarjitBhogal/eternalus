@@ -19,7 +19,8 @@ import type { Award, ProgressionContent } from './ProgressionSystem.types';
  * team (DEC-186), and a boss in `xpSources.teamKills` pays every Legend of its killer's playable
  * team instead of the killer, lifting none more than the reward's `maxLevels` (DEC-237); a Legend
  * the cap leaves nothing to pay gets no award. A cleared camp (`camp-cleared`) pays the Legend
- * that killed its last mob `xpSources.campCleared`. Self-kills and ally kills pay nothing (O5). Each
+ * that killed its last mob the camp's `xpSources.campCleared` entry; a camp without one (a corner
+ * camp) pays no bonus. Self-kills and ally kills pay nothing (O5). Each
  * level gained raises max health by the class's share of its base health (O3) and max aether,
  * heals and refills by the raise only while the Legend is alive (O4), and emits `level-up`.
  */
@@ -90,8 +91,15 @@ export class ProgressionSystem implements System {
     // XP, as structure XP does.
     state.events.on('camp-cleared', ({ entityId, killerId }) => {
       const killer = killerId === null ? undefined : state.entities.get(killerId);
-      const campTeam = state.entities.get(entityId)?.findComponent(TeamMembership)?.team;
-      if (killer === undefined || campTeam === undefined || this.legendOf(killer) === undefined) {
+      const camp = state.entities.get(entityId);
+      const campTeam = camp?.findComponent(TeamMembership)?.team;
+      const xp = camp === undefined ? undefined : content.xpSources.campCleared[camp.definitionId];
+      if (
+        killer === undefined ||
+        campTeam === undefined ||
+        xp === undefined ||
+        this.legendOf(killer) === undefined
+      ) {
         return;
       }
       this.pending.push({
@@ -99,7 +107,7 @@ export class ProgressionSystem implements System {
         killerId: killer.id,
         victimId: entityId,
         victimTeam: campTeam,
-        xp: content.xpSources.campCleared,
+        xp,
       });
     });
   }

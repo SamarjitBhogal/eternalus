@@ -31,7 +31,7 @@ const CURVES = new ContentCatalogue<LevelCurveDefinition>([
 const XP_SOURCES = {
   legendKill: { base: 150, perVictimLevel: 25 },
   structureDestroyed: 300,
-  campCleared: 50,
+  campCleared: { 'forest-camp-light': 50 },
   teamKills: { 'capture-point-boss': { xp: 500, maxLevels: 2 } },
 };
 

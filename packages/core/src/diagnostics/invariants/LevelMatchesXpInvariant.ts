@@ -128,13 +128,18 @@ export class LevelMatchesXpInvariant implements Invariant {
     return { invariantId: this.id, severity: this.severity, message, entityId, details: {} };
   }
 
-  /** Whether `campId` is a guard home with at least one post and no post holding a guard. */
+  /**
+   * Whether `campId` is a guard home with at least one post of its own plan and none of them
+   * holding a guard. Checkpoint-defender posts on the same home are not part of the camp, as in
+   * `GroupGuardRespawn`.
+   */
   private static isCampCleared(state: GameState, campId: string): boolean {
     let posts = 0;
     let held = 0;
-    state.guards.forEach(({ homeId, guardId }) => {
-      posts += homeId === campId ? 1 : 0;
-      held += homeId === campId && guardId !== null ? 1 : 0;
+    state.guards.forEach(({ homeId, guardId, checkpoint }) => {
+      const isCampPost = homeId === campId && checkpoint === undefined;
+      posts += isCampPost ? 1 : 0;
+      held += isCampPost && guardId !== null ? 1 : 0;
     });
     return posts > 0 && held === 0;
   }
