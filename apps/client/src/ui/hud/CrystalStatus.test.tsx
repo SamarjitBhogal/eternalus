@@ -17,10 +17,10 @@ describe('CrystalStatus', () => {
     expect(html).not.toContain('<img');
   });
 
-  it('draws no crystal in a Duel, which has no Cathedral crystal (SCRUM-447)', () => {
+  it('draws the crystal in a Duel too, whose Cathedral keeps its gem (DEC-348)', () => {
     const html = renderWithStore(<CrystalStatus />, {
       matchSetup: { ...matchSetupSlice.getInitialState(), mode: 'duel' },
     });
-    expect(html).toBe('');
+    expect(html).toContain('src="/assets/test/objective-crystal.webp"');
   });
 });
