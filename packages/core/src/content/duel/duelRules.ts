@@ -1,14 +1,36 @@
 import type { DuelArenaRules } from './duelRules.types';
 
 /**
- * The Duel arena: only the two Legends in a closed Cathedral. The owner's demo feedback of
- * 2026-11-20 (SCRUM-445, SCRUM-446, SCRUM-447, SCRUM-450), within DEC-36.
+ * The Duel arena: only the two Legends in a closed Cathedral whose walls cannot break, its gem
+ * kept. The owner's demo feedback of 2026-11-20 (SCRUM-445, SCRUM-446, SCRUM-450) and DEC-348,
+ * within DEC-36.
  */
 const DUEL_ARENA: DuelArenaRules = {
   spawnsMobs: false,
   hasCaptureObjectives: false,
-  omittedStructureIds: ['cathedral'],
+  // DEC-348: "no towers, gates, camps or Strongholds". Not `cathedral`: the gem stays.
+  omittedStructureIds: [
+    'stronghold',
+    'spawner-tower',
+    'buff-tower',
+    'gate',
+    'forest-camp-light',
+    'forest-camp-medium',
+    'forest-camp-heavy',
+    'corner-camp',
+  ],
+  omittedObjectKinds: [
+    'fort',
+    'camp',
+    'stronghold',
+    'spawner-tower',
+    'buff-tower',
+    'gate',
+    'turret',
+  ],
+  omitsSideObjects: true,
   isCathedralClosed: true,
+  unbreakableCathedralKinds: ['wall'], // DEC-348 (2)
 };
 
 /** The online Duel's rules (ADR 0016, DEC-36, FR-115). */

@@ -150,12 +150,16 @@ export class Simulation {
       ...(roster.length === 0 ? {} : { roster }),
       ...(duel === undefined ? {} : { duel }),
     };
-    // A Duel keeps only the arena (DEC-36; SCRUM-445 to SCRUM-447, SCRUM-450).
+    // A Duel keeps only the arena (DEC-36, DEC-348; SCRUM-445, SCRUM-446, SCRUM-450).
     const arena = duel === undefined ? undefined : DUEL_RULES.arena;
     const mapObjects =
       authoredObjects === undefined || arena === undefined
         ? authoredObjects
-        : duelMapObjects(authoredObjects, arena);
+        : duelMapObjects(
+            authoredObjects,
+            arena,
+            map?.features.find(({ kind }) => kind === 'cathedral')?.id,
+          );
     const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
     // Without the default pipeline no director runs, so no mark would ever fire: list none.
     const schedule = systems === undefined ? timeline.schedule() : [];
@@ -360,8 +364,8 @@ export class Simulation {
    * DEC-185 D; a gate's own outline, DEC-217 (17)). A blocking such object (a fort) is the
    * structure's body: it has no health of its own (one pool, DEC-185 B). Only towers share one
    * pool (DEC-217 (13)): the palace's and the gates' objects do not block, so they keep their own
-   * health. A Duel does not build the structures its `omittedStructureIds` list (SCRUM-447: the
-   * `cathedral`, the gem's body).
+   * health. A Duel does not build the structures its `omittedStructureIds` list (DEC-348: towers,
+   * gates, camps and Strongholds; the Cathedral's gem stays).
    *
    * @returns Map object id → the id of the structure it is the body of.
    */
