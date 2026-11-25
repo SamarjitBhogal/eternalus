@@ -23,6 +23,27 @@ Reply inline (`Decision: …`).
       built; (b) store the grid's version with the cache and search again when it changes (one more
       number in brain memory, one more search after each opening). Say which.
 
+- [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu`) — developer menu, slice 1 built;
+      the rest needs owner and core work.** Built: `?dev=1` enables the menu, F1
+      (`toggle-developer-menu`) opens it, and it spawns a horde of lane minions at a map structure
+      (`dev-spawn-mobs`) and removes an entity by id (`dev-remove-entity`). Not built, and why:
+      (a) the persisted `settings.developer.menuEnabled` toggle, because settings persistence does
+      not exist yet (only the query flag enables the menu; there is no session toggle either);
+      (b) add/remove Legends with class and team pickers (FR-097), which needs a new core
+      `dev-spawn-legend` command; (c) sim mode / `dev-set-controller` (FR-099), unsupported in
+      core; (d) invariant level, timeline jump, overlays, time scale, replay dump and fixture
+      (FR-110), pre-match config overrides; (e) teleport, which no requirement names (SCRUM-437
+      says to raise it as a feature request); (f) showing core's refusals (unit cap clipping,
+      `command-rejected`): the bridge carries no diagnostic event yet. The mob picker reads
+      the lane minions from `DisplayContent.laneMinions`, which core now publishes through
+      `loadDisplayContent`; no client list remains. Decide: (1) the menu's name ("Architect's
+      Table" is still only proposed); (2) built: core publishes its mob list in
+      `loadDisplayContent` (`DisplayContent.laneMinions`); (3) whether the next slice adds
+      `dev-spawn-legend` (FR-097); (4) `?dev=1` also works in release builds (the same
+      flag already turns on the explorer chrome): add a build-time guard? Online play: a remote
+      (online Duel) match must always keep the menu disabled (`Match.isDeveloperMenuEnabled` is
+      optional and off by default, and the online match factory must not pass it), otherwise dev
+      commands would be a cheat path.
 - [ ] **Dependency audit (re-run 2026-11-20): approve one upgrade PR for the `eslint` family and
       `zod`, and say whether to turn on Dependabot alerts.** PR #113 already moved `vite` to 8.3.8
       and `vitest` to 5.1.0. `npm audit` on `phase/3-sprint-3-work` (`5a7cc8dc`) now reports 10
@@ -217,7 +238,7 @@ Reply inline (`Decision: …`).
       paths and no doc says which owns boss timing. Due before the zone-lock PR: pick one owner
       and update 07 §7 and 12 so only one mechanism is named.
 
-- [ ] **One guard plan per home, mates by `homeId` (`feat/zone-guard-homes` critic finding 3,
+- [x] **One guard plan per home, mates by `homeId` (`feat/zone-guard-homes` critic finding 3,
       2026-11-09) — accepted as interim.** `GuardRoster` looks plans up by the home's definition
       id, so a home has one plan, and `GuardController` (`ai/GuardController.ts`, `isMate`)
       treats every guard on a home as a mate. 18 §7.1 makes the capture point the home of the
@@ -225,8 +246,11 @@ Reply inline (`Decision: …`).
       cannot both be plans, and on one `homeId` they would count as mates across teams. 18 §7.1
       now records the limit. Due before checkpoint defenders get posts: key mates by plan or by
       team as well as home, and allow more than one plan per home if both must coexist.
+      **Done in PR #130 (2026-11-22):** defender posts carry `GuardSlot.checkpoint` and sit beside
+      the zone's plan; mates need the same home and team (`GuardController`), and a `group` plan's
+      group is the home's own posts only (`GroupGuardRespawn`).
 - [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
-      but unhandled actions: `toggle-developer-menu` (BUG-4, a feature), `sprint`, `interact`,
+      but unhandled actions: `toggle-developer-menu` (handled since #107), `sprint`, `interact`,
       `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
       (no overlay exists) are in `InputAction`, bound in `keybindings.ts` and shown as rebindable
       in settings, yet nothing handles them. Decide whether to hide them from the bindings screen
@@ -383,7 +407,7 @@ Reply inline (`Decision: …`).
       catalogue does not list `NoMapObjectOverlapInvariant` (`no-map-object-overlap`); a
       doc-gardening fix. Approve which to schedule, or drop them.
 
-- [ ] **Minion plan MVP gaps (1): zone level-up numbers (2026-11-06, refreshed 2026-11-12,
+- [x] **Minion plan MVP gaps (1): zone level-up numbers (2026-11-06, refreshed 2026-11-12,
       PR #81).** Zone level-up (reference 02, MVP) is designed in architecture 07 §7 and now
       scheduled as minion plan phase M10; `CaptureSystem` is on the phase branch (PR #64), so
       only your answers block it. (a) Which zones count: the Cathedral only, or all three central
@@ -394,11 +418,57 @@ Reply inline (`Decision: …`).
       events instead of 07 §7's status effect (one minion level with two sources, DEC-168 B3),
       and removing it on the same tick the zone is lost. Approve both, or keep 07 §7's status
       effect and say when the level is removed.
+  - **Answered 2026-11-15 by DEC-258** (chat): (a) all three central zones; (b) and (c)
+    approved as written. M10 is unblocked; not built yet.
 
-- [ ] **Minion plan MVP gaps (2): checkpoint defenders sign-off (2026-11-06, refreshed
+- [x] **Minion plan MVP gaps (2): checkpoint defenders sign-off (2026-11-06, refreshed
       2026-11-12, PR #81).** M6b (checkpoint defenders) no longer waits for PR #64, which merged
       on 2026-11-08. Sign off the recommendations of the "Minion M6" item (1) below (the leash is
       the zone's radius; defenders at an unowned point are neutral), and M6b can start.
+  - **Answered 2026-11-15 by DEC-257** (chat): both recommendations approved. Built on
+    `feat/minion-m6b-checkpoint-defenders`.
+
+- [ ] **Minion M6b follow-ups (`feat/minion-m6b-checkpoint-defenders`, 2026-11-15, critic).**
+      (1) `checkpoint-cleared` is never emitted, so killing a checkpoint's defenders gives no
+      checkpoint XP (07 §7, balancing.md 60 / 150 / 400). Who builds it? `Recommendation:` the
+      guard roster emits it as it emits `camp-cleared`, and `ProgressionSystem` pays it, in its
+      own PR. (2) balancing.md recommends that a checkpoint's defenders must be dead before the
+      next stage counts; 07 §7 does not adopt it and nothing enforces it. Adopt it, or drop it?
+      (3) **Better than the design (DEC-139), sign-off asked:** (a) a `never` guard respawn rule
+      (a third strategy beside `each` and `group`) for defender posts, instead of the inline
+      branch for a standing home with no plan; (b) key the defender tables by capture-point
+      definition id, then checkpoint, so the Cathedral and the outer forts can differ (DISC-11:
+      major and lesser zones are reward tables). Approve either, or leave as built.
+      **Update 2026-11-20 (PR #130 merge with #99):** (3)(a) is overtaken: phase/3 has the `never`
+      rule (`NeverGuardRespawn`, DEC-168), and defender posts now use it, marked by
+      `GuardSlot.checkpoint` instead of the inline branch. (3)(b) stays open. The despawn on an
+      owner change is gone (DEC-261 as changed 2026-11-20). (4) **Not built, needs an owner:**
+      DEC-260 as signed off 2026-11-20 makes neutral defenders and forest-camp mobs level
+      (changing DEC-165); `VeterancySystem.isLeveller` still skips neutral posts, which would also
+      level #99's capture point boss group. Build it in its own PR, and say whether the boss group
+      levels too. (5) **Better than the design (DEC-139), sign-off asked:** the defenders take any
+      enemy inside their leash (`shouldAcquireAcrossLeash`, DEC-260), which #99's boss and support
+      mobs lack (their fixed `acquisitionRadius` from `CAPTURE_POINT_COURT` only reaches enemies
+      near their post). Use the flag for #99's zone guards too? Not changed without your sign-off.
+      (6) **Question (critic, 2026-11-20):** a defender post the unit cap blocks waits and fills
+      when the cap frees, possibly after the point changed owner, so an old owner's defender
+      appears at a zone it lost. `Recommendation:` give such a post up on its due tick (counted as
+      suppressed once), since defenders answer one push. Built today: it waits. (7) **Better than
+      the design (DEC-139), sign-off asked:** with DEC-261 keeping living defenders, each owner
+      flip lets a checkpoint be reached again, so a contested point gains another set per flip
+      without bound. Cap it: skip a checkpoint's defenders while its earlier posts still hold
+      guards? (8) `GuardRoster.ts` is 332 lines (limit ~300): move `clearPost` into its own
+      helper in a tidy PR.
+      **Update 2026-11-22 (PR #130 review round 2):** (1), (4) and the answers to (6) and (7) are
+      planned as M6c (`feat/minion-m6c-defender-followups`, SamarjitBhogal, Phase 3 sprint 3; the
+      minion plan's §1.2 rows); (4)'s boss-group question, (6) and (7) still wait on the owner.
+      (8) is done: `clearGuardPost.ts` and `spawnPlanProblems.ts` hold the moved code
+      (`GuardRoster.ts` 275 lines, `SpawnSystem.ts` 318). (9) **Better than the design (DEC-139),
+      sign-off asked (review round 2, finding 5):** put the respawn rule on the post
+      (`GuardSlot.respawn`, set by `addPosts`), so `GuardRoster.update` needs no `checkpoint`
+      ternary and each rule counts only its own posts. Built today: `GroupGuardRespawn` counts
+      only the home's own posts (same `checkpoint` marker), which closes the gap with no new
+      field.
 
 - [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
       The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
@@ -474,7 +544,7 @@ Reply inline (`Decision: …`).
   - **Answered 2026-11-04 by DEC-167** (chat, B66-F5): the restored march test's "first enemy
     objective" check is approved.
 
-- [ ] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
+- [x] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
       checkpoint defenders wait on your sign-off.** (1) **Sign-off needed:** checkpoint defenders
       need `CaptureSystem`, which is on the phase branch since PR #64 merged (2026-11-08; #49 was
       closed). Defenders are a guard plan per checkpoint asked for by `CaptureSystem`.
@@ -494,6 +564,8 @@ Reply inline (`Decision: …`).
     (2) by DEC-167: camps wake when the match countdown ends (no separate camp cooldown setting);
     camp mobs keep the lane-minion stats and XP as tuning defaults. Camp-mob kills count toward
     minion veterancy (DEC-165, amended 2026-11-04 evening).
+  - **Item (1) answered 2026-11-15 by DEC-257** (chat): the leash is the zone's reach;
+    defenders at an unowned point are neutral. Built on `feat/minion-m6b-checkpoint-defenders`.
 
 - [ ] **Minion M5b (`feat/minion-m5b-if-time`, overnight 2026-10-30) — built two of three, one
       blocked.** (1) **Tower Guardians are not built:** they need ranged attacks (no projectile
