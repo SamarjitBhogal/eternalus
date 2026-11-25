@@ -8850,6 +8850,7 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - What was done: the developer menu's remove-entity input could not be typed into, because `KeyboardDevice` and the one-shot key table in `MatchHost` prevented the default of every bound key on the window, whatever element had focus. Both now ignore a key event whose target is an input, textarea, select or contentEditable element (`isEditableTarget`). Merged `fix/bound-key-actions` (after its sync with `phase/3-sprint-3-work`); code conflicts in `Match.ts`, `createBrowserMatch.ts` and `events.ts` resolved by keeping both the developer menu and the observer/bridge changes. A TSDoc line in `MatchHost.ts` was re-wrapped.
 - Checks run: `npm run check` (result in the PR comment).
 - Next step: reviewer re-review.
+
 ### 2026-11-15 — Phase 3 / sync — fix/legend-respawn (PR #100) — claudiodh + Claude Code
 
 - What was done: merged `phase/3-sprint-3-work` (80e0ea13) into this branch because #100 was CONFLICTING. Conflicts: `INBOX.md` (both sides kept); `MatchWorld.ts` and its test (both the `strongholdOf` and `startFacing` members kept); `DefaultSystemPipeline.ts` and its test (the out-of-combat healing system and the respawn system both kept, healing first, both before death).
