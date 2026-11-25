@@ -10185,3 +10185,100 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   timed out in 120000ms"). Rerun alone: "Tests 11 passed (11)". Then `npm run build` ("✓ built in
   4.49s") and `npm run docs:check` ("Documentation check passed.").
 - Next step: Aryan pushes `feat/bosses-p3` and asks the reviewers to re-review PR #91.
+
+### 2026-11-07 — Phase 3 / unit-cap performance check (minion plan §1.2) — chore/minion-perf-check — SamarjitBhogal + Claude Code
+
+- What was done: `npm run bench` (`scripts/bench/hordes.mjs`), the headless tick bench of the Phase
+  1 plan in a minion form: it loads core through Vite's module runner (Vitest 5 has no `bench`
+  API, and Node cannot resolve core's extensionless imports), builds a generated 3-lane match with
+  every bot Legend (9 laners and the Rover per team), fills each team to 144 mobs, then to the
+  cap, with light-minion hordes at 45% and 55% of every lane so they fight, and times 900 ticks
+  after 60 warm-up ticks. It prints p50, p95 and max and asserts no time; it fails only when a
+  case cannot be filled. CI runs it as its own step (not part of `npm run check`), as the Phase 1
+  item asks; approved by SamarjitBhogal on 2026-11-07. Doc 15 Implementation status,
+  the Phase 1 bench item, the plan README metric and the README command list name it.
+- Measured (Node 24.21, AMD Ryzen AI 9 HX 370, three runs; these first runs filled 146 mobs per
+  team for the 144 case, and a rerun after the critic's exact-fill fix gave p95 11.4 ms at 144 and
+  12.1 ms at 290):
+  - 144 mobs per team + 10 Legends each: p50 1.9 to 2.7 ms, p95 8.0 to 11.4 ms, max 17.5 to
+    19.4 ms.
+  - 290 mobs per team (the 300-unit cap with the Legends) + 10 Legends each: p50 2.0 to 2.9 ms,
+    p95 8.2 to 12.0 ms, max 18.2 to 26.1 ms.
+  - Over the plan's p95 ≤ 8 ms. A one-off probe timing each system and controller (not committed)
+    put the spikes in `ai` (p95 10.6 ms, max 24 ms at the cap): the `bot-legend` controller took
+    1.2 s of the 900 ticks (0.45 ms per decision, 166 decisions over 2 ms, max 6.9 ms), against
+    0.25 s for 76,550 minion decisions. Pathing p95 0.57 ms, the next system 0.23 ms. About 88
+    decisions were due per tick at the cap, under `maxDecisionsPerTick` 96 (DEC-181).
+- Dependency: `vite` 8.3.1 is now also a root devDependency (the client already had the same
+  version), so knip sees the script's import; approved by SamarjitBhogal on 2026-11-07.
+- Checks run: `npm run check` passed: core `Tests  1079 passed (1079)`, client
+  `Tests  1754 passed (1754)`, `Documentation check passed.`
+- Next step: the bot path cache (minion plan §3, M8 stand-in), then re-run `npm run bench`.
+
+### 2026-11-12 — Phase 3 / sync — chore/minion-perf-check — SamarjitBhogal + Claude Code
+
+- What was done: merged `docs/minion-plan-mvp-gaps` (PR #81, which now carries
+  `phase/3-sprint-3-work` at `3dc9e908`) into PR #83; it was 166 commits behind and conflicting.
+  Append-only logs: both sides kept, this branch's entries last. `INBOX.md`: this branch's
+  tick-time item kept, the stale copy of #81's item dropped (#81's refreshed items come in).
+  Minion plan §1.2: #81's refreshed rows, with this branch's measured "Unit-cap performance" row.
+  Doc 15: the later `last-reviewed`.
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1321 passed (1321)"; client "Tests 1818 passed (1818)"; "✓ built in
+  307ms"; "Documentation check passed." `npm run bench` on the merged base: 144/team p95 1.46 ms
+  (max 2.99), 290/team p95 2.51 ms (max 4.99), both within 8 ms; but only one mob per team died
+  in 900 ticks (2026-11-07: hordes fought), so the bench may no longer make the hordes meet.
+- Next step: check that the bench's hordes still fight on the new base before quoting these
+  numbers; then update the INBOX tick-time item.
+
+### 2026-11-20 — Phase 3 / minion plan §1.2 unit-cap performance — chore/minion-perf-check (PR #83 review round) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`); conflicts in `INBOX.md` and this
+  file (kept both), doc 15 `last-reviewed`. Review fixes: root `vite` bumped to 8.3.8 with
+  `npm install -D -E` so `npm ci` works after the merge (B3); every bench roster slot has
+  `pilot: 'bot'` (B1, DEC-173); timing starts at the first death of a filled mob after the
+  countdown, so the 900 timed ticks are a fight (B2); the bench throws when a bot Legend has not
+  moved, the hordes never meet or no filled mob dies while timed (S3; checked: without `pilot` it
+  throws "10 Legends did not move after the countdown"); the 290 case prints "no target (INBOX
+  DEC-137 (1))" (N2); the header says a missed budget exits 0 (N1). Re-measured on an idle machine
+  (load 2.7 on 24 threads, Node 24.21.0, AMD Ryzen AI 9 HX 370): 144/team p50 1.78 / p95 3.47 /
+  max 4.85 ms, mobs 143/144 → 92/98, contact 588 ticks after the countdown; 290/team p50 2.51 /
+  p95 3.44 / max 11.65 ms, mobs 290/289 → 201/212. INBOX item, plan README row, minion plan row
+  and doc 15 updated (S2). Not done: S1 (an ADR or DEC row for the CI step and root `vite`, the
+  `ci.yml` header and the guardrails table) waits for the owner's call.
+- Checks run: `npm run check` (Node 24.21.0) on the merge → `EXIT=0`: "All matched files use
+  Prettier code style!"; core "Tests 1674 passed (1674)"; protocol "Tests 29 passed (29)"; client
+  "Tests 2011 passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 521ms"; "Documentation
+  check passed."; `npm ci` exit 0 after the `vite` bump; `npm run bench` as above.
+- Next step: owner sign-off on the CI step and the dependency (S1); then re-request review.
+
+### 2026-11-21 — Phase 3 / minion plan §1.2 unit-cap performance — chore/minion-perf-check (CodeRabbit on `c554f2d4`) — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit's three findings. The plan README row no longer says "met": the run was
+  on a non-reference machine and the timed population falls from 144 to about 95 per team, so it
+  is pending the reference laptop and the sampling rule. `INBOX.md` asks the owner whether NFR-021
+  means the fill or a population held for the whole timed window; the bench header says the window
+  is a fight with a falling population. Not changed: the doc 15 status text waits for the owner's
+  sign-off, as CodeRabbit asks.
+- Checks run: `npm run docs:check` → "Documentation check passed."; `npm run check:quick` by the
+  pre-commit hook (only docs and a script comment changed).
+- Next step: the owner answers S1 and the sampling question; then re-request review.
+
+### 2026-11-21 — Phase 3 / minion plan §1.2 unit-cap performance — chore/minion-perf-check (PR #83 outstanding review comments) — SamarjitBhogal + Claude Code
+
+- What was done: swept every open review item on PR #83. CodeRabbit's `hordes.mjs` finding: the
+  bench now labels its budget column "p95 ≤ 8 ms (combat window)" and prints that the column is
+  combat-window evidence, not an NFR-021 pass, until the owner sets the sampling rule (INBOX).
+  The two plan README findings were already fixed in `5c276d6d`. Left for the owner: the doc 15
+  status-text sign-off (CodeRabbit), S1 (ADR or DEC row for the CI step and root `vite`, the
+  `ci.yml` header and guardrails table), the CI-cost / `workflow_dispatch` ruling, the reference
+  laptop and the NFR-021 sampling rule. The CI step comment nit (N1) is not changed: `ci.yml` is a
+  guardrail config and waits for S1. The PR is CONFLICTING with `phase/3-sprint-3-work` (`54615afa`)
+  in this file only; not merged here.
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1684 passed (1684)"; protocol "Tests 29 passed (29)"; client "Tests 2011
+  passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 413ms"; "Documentation check
+  passed." `npm run bench` (Node 24.21.0, loaded machine, not the reference laptop): 144/team p95
+  4.58 ms, mobs 143/144 → 92/98; 290/team p95 4.85 ms, 290/289 → 201/212.
+- Next step: merge the phase branch (PROGRESS conflict, keep both); owner answers S1 and the
+  sampling question; refresh the PR body (N3); then re-request review.

@@ -483,6 +483,32 @@ Reply inline (`Decision: …`).
       a follow-up that finds the cause: an `onClose` handler in the bots, or a refusal counter in
       the server.
 
+- [ ] **Tick time: bench evidence, four questions (`chore/minion-perf-check`, PR #83; rewritten
+      2026-11-22 to the current state).** `npm run bench` runs a 3-lane match with the shipped bot
+      roster (10 bot Legends per team), fills each team to 144 mobs, then to the cap, and times 900
+      ticks of the fight from the first death after the countdown. Latest run (2026-11-22, AMD
+      Ryzen AI 9 HX 370, Node 24, load about 6): p95 4.50 ms at 144/team (143/144 → 92/98 mobs over
+      the window), p95 4.85 ms / max 8.59 ms at 290/team (no target, DEC-137 (1)). This is
+      combat-window evidence, not an NFR-021 pass. NFR-025's per-system split (AI ≤ 1.5 ms) is not
+      measured: it waits for the `Profiler` port (15 §6). The 2026-11-07 figures in `PROGRESS.md`
+      are not comparable (that bench later lost its bots). Questions:
+      (1) **Reference laptop:** the targets name "the reference dev laptop"; which machine is it?
+      (2) **Sampling rule (CodeRabbit on PR #83):** the population falls during the timed fight.
+      Does NFR-021's "at 144 units per team" mean the fill, or must the bench hold 144 per team for
+      the whole window (respawning the dead)?
+      (3) **CI step sign-off:** the bench step in `ci.yml` (17 to 19 s per job) and the root `vite`
+      devDependency rest on the author's PR description (ADR 0018 (3)). Do you also want an ADR or
+      a DEC row, or should the step move to `workflow_dispatch` only? The `ci.yml` header and the
+      guardrails "CI gate" row still say CI mirrors `npm run check` one-to-one; they get one line
+      each once you answer.
+      (4) **Better than the design (DEC-139), optional:** move the bench scenario (roster, fill,
+      wait for contact) into a typed core module with a vitest test, leaving only the clock in the
+      `.mjs`; `tsc` would then catch API changes such as DEC-173's `pilot`, and a test would prove
+      the hordes fight without a timed CI step. Recommendation: yes, after (3).
+  - Answered 2026-11-23 (Owner Calls page, relayed on PR #83), recorded as DEC-351: (1) the CI
+    runner (`ubuntu-latest`); (2) the fill is enough, report the start and end counts; (3) the
+    step stays on every pull request, as built. Done in PR #83. Only (4) stays open.
+
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
       every map feature, so `map/strongholdRing.ts` checks at run time that a Stronghold has it
