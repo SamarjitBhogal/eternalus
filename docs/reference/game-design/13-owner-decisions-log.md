@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-25
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,15 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-23 (Owner Calls page: the developer menu's Legends section)
+
+The owner's answer of 2026-11-23 on the coordinator's Owner Calls page to PR #109 (`INBOX.md`
+BUG-4 / SCRUM-437 slice 2, items (c), (d) and (e)). DEC-355 is this batch (reserved for PR #109).
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                        | Docs changed                         |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| DEC-355 | **The developer menu's Legends section is signed off as built** (FR-097; closes `INBOX.md` BUG-4 / SCRUM-437 slice 2 (c), (d) and (e)). "Keep all three as built". (1) The removal cause stays `dev-removed`, not FR-097 and FR-105's `developer-menu`. (2) The class picker lists the character-select classes (a class id is the Legend definition id). (3) One Team control above the mob and Legend sections sets the team for both spawns. | `INBOX.md` BUG-4 / SCRUM-437 slice 2 |
 
 ## Batch 2026-11-21 (Owner Calls page: the browser-support line)
 
