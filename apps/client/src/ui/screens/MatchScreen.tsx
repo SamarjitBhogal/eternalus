@@ -1,10 +1,13 @@
 import { type ReactElement, useRef } from 'react';
 
 import { useAppSelector } from '../../bridge/hooks';
+import { selectIsDuel } from '../../bridge/selectors/selectIsDuel';
 import { AbilityBar } from '../hud/AbilityBar';
 import { AetherBar } from '../hud/AetherBar';
 import { DeveloperMenu } from '../hud/DeveloperMenu';
 import { DuelHud } from '../hud/DuelHud';
+import { DuelLeaveDialog } from '../hud/DuelLeaveDialog';
+import { useDuelUnloadGuard } from '../hud/useDuelUnloadGuard';
 import { CrystalStatus } from '../hud/CrystalStatus';
 import { GadgetBar } from '../hud/GadgetBar';
 import { HealthBar } from '../hud/HealthBar';
@@ -35,7 +38,9 @@ import type { ScreenProps } from './screen.types';
 export function MatchScreen({ viewport }: ScreenProps): ReactElement {
   const overlay = useAppSelector((state) => state.session.overlay);
   const openerRef: PauseOpenerRef = useRef<Element | null>(null);
-  usePauseMenuKey(overlay, openerRef);
+  const isDuel = useAppSelector(selectIsDuel);
+  usePauseMenuKey(overlay, openerRef, isDuel);
+  useDuelUnloadGuard(isDuel);
   const isInert = overlay !== null;
   return (
     <main className={styles.screen}>
@@ -79,6 +84,7 @@ export function MatchScreen({ viewport }: ScreenProps): ReactElement {
       </section>
       <DeveloperMenu />
       <PauseOverlay openerRef={openerRef} />
+      <DuelLeaveDialog />
       <div className={styles.status}>
         <ReconnectingNotice />
       </div>
