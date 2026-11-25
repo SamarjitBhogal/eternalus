@@ -385,7 +385,7 @@ describe('Simulation: the human slot of the roster', () => {
     expect(build([human()]).exportReplay().roster).toEqual([human()]);
   });
 
-  it('reproduces its hashes in a replay of a human slot with a saved loadout, which the replay keeps', () => {
+  it('reproduces its hashes in a replay of a human slot with a saved loadout, which the replay keeps and needs', () => {
     const armed: RosterSlot = {
       pilot: 'human',
       team: 'dark',
@@ -409,6 +409,10 @@ describe('Simulation: the human slot of the roster', () => {
 
     expect(runReplay(replay, createTarget).firstDivergence).toBeNull();
     expect(build([armed]).exportReplay().roster).toEqual([armed]);
+    // `StateHasher` hashes the weapon, so the same replay without the loadout diverges at once.
+    expect(runReplay({ ...replay, roster: [human()] }, createTarget).firstDivergence).toMatchObject(
+      { tick: 0 },
+    );
   });
 
   it('hashes a match with a human differently from one in sim mode (the Legend is in the entities)', () => {
