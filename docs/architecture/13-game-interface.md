@@ -167,6 +167,13 @@ show comes from content through the store (`contentSlice`, `matchSlice`), never 
 | `DeveloperMenu`                                       | `diagnosticsSlice`, `matchSlice`, `settingsSlice.developer`                                                                                                                                            | §4                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | **MVP**                                     |
 | `PerfOverlay`                                         | `diagnosticsSlice.perf`, `diagnosticsSlice.violations`, `diagnosticsSlice.logTail`                                                                                                                     | tick and frame histograms, last long animation frame, memory sample, log tail, violations with "copy repro" ([15](15-diagnostics-and-runtime-testing.md) §5)                                                                                                                                                                                                                                                                                                                                                    | **MVP**                                     |
 
+`OpponentPresenceBanner` reads `matchSlice.opponentGraceMs` from `duel-opponent-presence`. In a
+Duel it shows a non-blocking notice (`role="status"`) that the opponent lost connection, with a
+`role="timer"` count of the server's reconnect window (DEC-297 (1)); it hides when they return.
+`DuelLeaveDialog` reads `sessionSlice.overlay` (`leave-duel`): in a Duel it offers Stay (focused)
+and Leave. Leave emits `forfeit`; the match does not pause because the server runs it. It is
+keyboard-operable through `useModalKeyFilter`.
+
 Announcer lines, verdict lines and faction blurbs are content in core
 (`content/narrative/`); the HUD renders `displayName`s from the snapshot and the
 content index. One `ErrorBoundary`, the one class component (DEC-115), wraps the current screen
@@ -256,6 +263,8 @@ export type BridgeEventMap = {
   // An online Duel the server ended (ADR 0016); the session publishes it in place of `match-ended`.
   // `MatchEnding` (`@eternalus/protocol`) is the winner and the reason, the wire message's own type.
   'duel-ended': MatchEnding;
+  // The Duel opponent's dropped connection: the reconnect window's length in ms, or null once they are back.
+  'duel-opponent-presence': { readonly graceMs: number | null };
   diagnostic: { readonly record: LogRecord }; // violations and warnings for the overlay
   'perf-sample': PerfSample; // histograms, last long frame, memory (a bridge-defined type)
   'session-phase': { readonly phase: SessionPhase };
@@ -276,6 +285,7 @@ export type UiIntent =
   | { readonly kind: 'navigate'; readonly route: MenuRoute }
   | { readonly kind: 'start-match'; readonly setup: MatchSetupRequest }
   | { readonly kind: 'leave-match' }
+  // The online Duel only: give up the match (the opponent wins) and return to `menu`; the session sends the wire `forfeit` first.
   | { readonly kind: 'forfeit' }
   | { readonly kind: 'save-loadout'; readonly loadout: Loadout }
   | { readonly kind: 'set-bindings'; readonly bindings: readonly Binding[] }
@@ -492,7 +502,7 @@ that button's release does not step the browser's history, DEC-112).
   setting (`data-reduce-motion` on `<html>`, UE-03) disable shake and flashes;
   HUD text contrast ≥ 4.5:1 and bars ≥ 3:1 from the tokens; team identity never signalled by
   colour alone (shape or outline too, on HUD and minimap glyphs); nothing flashes faster than
-  3 Hz; the match pauses from `pause-menu`. Rebinding itself is "one of the best value
+  3 Hz; the match pauses from `pause-menu` (single player; in an online Duel the key opens and closes the `leave-duel` confirmation instead and nothing pauses, because the server runs the match). Rebinding itself is "one of the best value
   accessibility features" ([research B2](../research/persistence-input-diagnostics-research.md#b2-rebinding-ux-and-data-representation)).
 - **Screen-reader lines** (DEC-282 (7), DEC-286 (4)). The app has one polite live region,
   `ui/components/LiveRegion.tsx`, which `App` mounts outside the screen switch, so it is in the

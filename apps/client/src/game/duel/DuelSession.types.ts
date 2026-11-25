@@ -20,6 +20,11 @@ export type DuelSessionHandlers = {
   readonly started: () => void;
   /** The server ended the match, before or after the first snapshot. */
   readonly ended: (ending: MatchEnding) => void;
+  /**
+   * The opponent's connection dropped (`graceMs`: how long the server holds their seat) or came
+   * back (`null`). If the window runs out, `ended` follows with `opponent-left`.
+   */
+  readonly opponentPresence: (graceMs: number | null) => void;
   /** The connection dropped once paired; the session is reconnecting (DEC-349). */
   readonly reconnecting: () => void;
   /** A reconnect took the seat back: the same Duel goes on. */
