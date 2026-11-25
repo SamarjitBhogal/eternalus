@@ -9,6 +9,7 @@ describe('store', () => {
       [
         'assets',
         'content',
+        'developerMenu',
         'hud',
         'loading',
         'loadouts',

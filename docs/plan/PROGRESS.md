@@ -8134,6 +8134,38 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1336 passed (1336)"; protocol "Tests 18 passed (18)"; server "Tests 79 passed (79)"; client "Tests 1883 passed (1883)"; "Documentation check passed."
 - Next step: reviewer approval; the team merges.
 
+### 2026-11-11 — Phase 3 / sprint 3: interim Legend respawn (BUG-6, SCRUM-439, plan task GL-12) — fix/legend-respawn — Claude Code
+
+- What was done: a dead Legend came back never, so a human Legend's death stalled the match
+  (`DeathSystem` removes every dead entity and `Entity.retire` drops its components). New
+  `RespawnSystem` (just before `DeathSystem`) queues each dead Legend of a playable team in
+  `state.respawns` (new `RespawnQueue`, hashed by `StateHasher` only while non-empty, so the empty
+  hash is unchanged) and, after `LEGEND_RESPAWN_SECONDS` (10 s, `content/progression/legendRespawn.ts`,
+  `// TUNE:`, DEC-80), rebuilds the same Legend at its team's Stronghold: same id
+  (`EntityFactory.createWithId`, the id counter does not move), level, XP (`Progression.restore`)
+  and raised caps, full health and aether, same bot controller; it emits `entity-spawned` and the
+  new `legend-respawned`. `MatchWorld.strongholdOf` is shared with `Simulation`. The sovereign is
+  not a Legend, so it never returns. `TODO(claudiodh)` in `ProgressionSystem` stays (momentum
+  timer); structure XP for a Legend dead at that moment ("pay on respawn", DEC-186) is not built.
+  No new invariant (the queue's `add` and the store's duplicate-id check already throw).
+  Docs: doc 05 section 18 note, `INBOX.md` item with the three open points.
+- Checks run: full `npm run check` exit 0: core `Test Files 237 passed (237)` and
+  `Tests 1322 passed (1322)`, client `Tests 1818 passed (1818)`, `Documentation check passed.`
+- Next step: critic and ponytail gate, then PR into phase/3; claudiodh's momentum-scaling timer
+  replaces the fixed delay.
+
+### 2026-11-13 — Phase 3 / sync — fix/legend-respawn (PR #100) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (3dc9e908, after #51 and #52) into this branch because #100 was CONFLICTING. Only `docs/plan/PROGRESS.md` conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1339 passed (1339)"; client "Tests 1818 passed (1818)"; "Documentation check passed."
+- Next step: reviewer approval; the team merges.
+
+### 2026-11-13 — Phase 3 / sprint 3: Copilot review fixes — fix/legend-respawn (PR #100) — Claude Code
+
+- What was done: three Copilot comments, all valid. (1) Unit cap: a returning Legend is not counted while it waits, so spawns can fill its slot. Decision (simplest, in `INBOX.md`): a returning Legend ignores the caps, which gate new spawns only; documented on `RespawnSystem`, pinned by a new test (it passes before and after, since it records the behaviour). (2) Client: `PlayerCommands` kept `lastMove` and `attackTargetId` while the rebuilt Legend had no movement or target, so held input stayed idle; it now resets both when the Legend reappears in the snapshot (new test fails without it). (3) The hash test now compares two states at the same tick with the same entities, only the queue differs (fails when the queue is left out of `StateHasher`).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1340 passed (1340)"; client "Tests 1819 passed (1819)"; "Documentation check passed."
+- Next step: reviewer approval; the team merges.
+
 ### 2026-11-13 — Phase 3 — fix/session-e2e-test-isolation — Claude Code
 
 - What was done: fixed a test-order dependency in `apps/client/src/game/SessionController.endToEnd.test.ts`. The "tick throws" test spies on `Simulation.prototype.step`; the config's `restoreMocks` does not undo it, so when it ran before "screen crashed" every tick threw, the match ended as `match-crashed` first, and the screen-crash intent then reported `screen-crashed`. Fix: `afterEach(() => vi.restoreAllMocks())` in that describe. No assertion changed; no production code changed.
@@ -8171,6 +8203,42 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   limit with the decision it needs.
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 1321 passed (1321)"; client "Tests 1827 passed (1827)"; "✓ built in 248ms"; "Documentation check passed."
 - Next step: reviewer approval; the owner answers the INBOX item.
+
+### 2026-11-13 — Phase 3 / combat sprint: developer menu, slice 1 (BUG-4 / SCRUM-437) — feat/developer-menu — Claude Code
+
+- What was done: `DeveloperMenu` (`ui/hud/`) mounts only when `?dev=1` enabled it and F1
+  (`toggle-developer-menu`, a `MatchHost` one-shot action, DEC-117) opened it. New bridge pieces:
+  the `dev-command` intent, the `developer-menu` event and `developerMenuSlice`. The game side is
+  `DeveloperMenuController`, built by `Match`: it publishes the pickers (the lane minions, the map
+  structures that sit on a lane), toggles open, and turns each `dev-command` into one
+  `Simulation.enqueueCommand` while the menu is enabled. Controls: spawn mobs (`dev-spawn-mobs`
+  with team, mob, count, origin) and remove an entity by id (`dev-remove-entity`). Left out
+  (`INBOX.md`): the persisted setting, Legends (FR-097), sim mode (FR-099), the other FR-098/110
+  controls, refusals shown in the UI, teleport.
+- Checks run: full `npm run check` exit 0: core `Tests 1305 passed (1305)`, client
+  `Tests 1846 passed (1846)`, `Documentation check passed.`
+- Next step: owner answers the `INBOX.md` item; slice 2 adds `dev-spawn-legend` and the toggles.
+
+### 2026-11-13 — Phase 3 / sync — feat/developer-menu (PR #107) — claudiodh + Claude Code
+
+- What was done: merged `fix/bound-key-actions` into this branch (its base, updated after the sync with `phase/3-sprint-3-work` 3dc9e908) because #107 was CONFLICTING. Only the append-only logs conflicted; both sides' entries are kept. No feature code changed. No force push.
+- Checks run: `npm run check` → `EXIT=0`: Tests 1321 passed (1321);Tests 1846 passed (1846); "Documentation check passed."
+- Next step: reviewer approval; the team merges in stack order.
+
+### 2026-11-13 — Phase 3 / combat sprint: developer menu, slice 2: add and remove Legends (BUG-4 / SCRUM-437) — feat/developer-menu-legends — Claude Code
+
+- What was done: core command `dev-spawn-legend { team, definitionId }` (`DevSpawnLegendHandler`,
+  registered in `defaultCommandHandlers.ts`): one bot Legend at its team's Stronghold, bound to the
+  Rover controller, refused with `unknown-definition`, `not-a-legend`, `no-stronghold` or
+  `cap-exceeded` (`maxLegendsPerTeam`, and the Unit cap). `LegendSpawner` (entities/) is the one Legend check and spawn, shared with `Simulation.spawnRoster`; the Rover controller is passed to the handler by `Simulation`, so `commands/` imports no content. `MatchWorld.strongholdOf` is the one
+  Stronghold lookup, now also used by `Simulation.spawnRoster`. Removing a bot Legend reuses
+  `dev-remove-entity` (cause `dev-removed`, not FR-105's `developer-menu`: `INBOX.md`). The
+  `DeveloperMenu` has an Add Legend section (class picker from the display catalogue's selectable
+  classes, the team picker now shared with the mob section, one `dev-spawn-legend` per press).
+  Left out (`INBOX.md`): the human Legend and sim mode, a controller picker, other spawn points,
+  refusals shown in the UI.
+- Checks run: full `npm run check` exit 0: core `Tests 1331 passed (1331)`, client `Tests 1849 passed (1849)`, `Documentation check passed.`
+- Next step: slice 3 (`dev-set-controller`, sim mode) after the owner answers the `INBOX.md` item.
 
 ### 2026-11-13 — Phase 3 / dependencies — chore/deps-vite-vitest — claudiodh + Claude Code
 
@@ -8791,6 +8859,22 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   sides kept, this batch above #93's as the log is newest first): full `npm run check` exit 0
   (`eternalus-agent-work/tower-ruins-and-routes/ci-timeout-check-merge-fcc48a7b.log`).
 - Next step: a PR into `phase/3-sprint-3-work`.
+
+### 2026-11-15 — Phase 3 / developer menu: typing in text fields (PR #107 review) — feat/developer-menu — claudiodh + Claude Code
+
+- What was done: the developer menu's remove-entity input could not be typed into, because `KeyboardDevice` and the one-shot key table in `MatchHost` prevented the default of every bound key on the window, whatever element had focus. Both now ignore a key event whose target is an input, textarea, select or contentEditable element (`isEditableTarget`). Merged `fix/bound-key-actions` (after its sync with `phase/3-sprint-3-work`); code conflicts in `Match.ts`, `createBrowserMatch.ts` and `events.ts` resolved by keeping both the developer menu and the observer/bridge changes. A TSDoc line in `MatchHost.ts` was re-wrapped.
+- Checks run: `npm run check` (result in the PR comment).
+- Next step: reviewer re-review.
+
+### 2026-11-15 — Phase 3 / sync — fix/legend-respawn (PR #100) — claudiodh + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (80e0ea13) into this branch because #100 was CONFLICTING. Conflicts: `INBOX.md` (both sides kept); `MatchWorld.ts` and its test (both the `strongholdOf` and `startFacing` members kept); `DefaultSystemPipeline.ts` and its test (the out-of-combat healing system and the respawn system both kept, healing first, both before death).
+
+### 2026-11-15 — Phase 3 / developer menu: sync with feat/developer-menu (PR #109) — feat/developer-menu-legends — claudiodh + Claude Code
+
+- What was done: merged `feat/developer-menu` (the text-field key fix and the `phase/3-sprint-3-work` sync) into this branch. Conflicts: `Simulation.ts` (kept `LegendSpawner`; the spawn's start facing, DEC-216 (6), moved into `LegendSpawner.spawn` so the roster and `dev-spawn-legend` both face the enemy Stronghold), `MatchWorld.test.ts` (kept the `strongholdOf` and `startFacing` tests) and `PROGRESS.md` (both sides kept).
+- Checks run: `npm run check` (result in the PR).
+- Next step: reviewer approval.
 
 ### 2026-11-15 — Phase 3 / sync — fix/session-e2e-test-isolation (PR #111) — claudiodh + Claude Code
 
@@ -9655,6 +9739,38 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: see the commit's check log (`npm run check`, EXIT recorded in the hand-off).
 - Next step: merge into `feat/loadout-screen`; the owner's INBOX answers (v1 on disk, WARN vs ERROR, blocked wait, degraded status).
 
+### 2026-11-18 — Phase 3 / sprint 3 sync — feat/developer-menu — copilot + Copilot Coding Agent
+
+- What was done: merged `origin/phase/3-sprint-3-work` (`af54fe9`) into this branch. Resolved the
+  conflicts in `INBOX.md` and this log by retaining both branches' entries, and in `MatchScreen`
+  by keeping both `DuelHud` and `DeveloperMenu`.
+- Checks run: `npm run check:quick` passed. `npm run check` → `EXIT=0`: core 1,637 tests,
+  protocol 29, client 2,043, server 84; both builds and `Documentation check passed.`
+- Next step: reviewer re-review of the merged branch.
+
+### 2026-11-20 — Phase 3 / sprint 3 review fixes — feat/developer-menu (PR #107) — claudiodh + Claude Code
+
+- What was done: swholtzman's review of 2026-11-19. B1: core refuses `dev-remove-entity` for a
+  Legend in a human seat (`human-legend`; 13 §4, the human only in sim mode), with a handler test
+  and a menu-path test; two client tests that removed the player now drop it from the snapshot.
+  S1: the mob picker reads `DisplayContent.laneMinions` from the display catalogue (no client
+  list). S2: `DeveloperSpawnMobs` and `DeveloperRemoveEntity` split out of `DeveloperPanel`. S3:
+  `createBrowserMatch` test for `?dev=1` and F1. N1, N2, N3, N4, N6, N7 fixed; N5 (entity picker)
+  and S4 (CI approval) left open.
+- Checks run: `npm run check:quick` → exit 0; the touched core and client test files pass.
+- Next step: `npm run check`, then the stack merge into #109 and #112; reviewer re-review.
+
+### 2026-11-20 — Phase 3 / sprint 3 review fixes — feat/developer-menu-legends (PR #109) — claudiodh + Claude Code
+
+- What was done: swholtzman's review of 2026-11-19 and the owner ruling DEC-293 ("Small spawn,
+  plus `dev-remove-legend` that refuses the human outside sim mode"). `dev-spawn-legend` stays
+  `{ team, definitionId }`; `dev-remove-legend { entityId }` refuses a non-Legend and the human's
+  Legend outside sim mode (`0bf35c03`). This session: the DEC-293 row, 13 §4 and `mechanics-ideas`
+  §9 rows, the 03 and 13 status notes, the INBOX `Decision:` line. **FR-097 is partial**: refusals
+  reach only the log, and the removal cause is `dev-removed`, not `developer-menu` (INBOX (c), (f)).
+- Checks run: `npm run check` (result in the PR comment).
+- Next step: merge into `feat/developer-menu-sim-mode` (#112); reviewer re-review.
+
 ### 2026-11-21 — Phase 3 / the match-start countdown: merge of phase/3 (`a3550159`, #140) — feat/match-start-countdown — sholtzman + Claude Code
 
 - What was done: merged `origin/phase/3-sprint-3-work` at `a3550159` (#140, DEC-289: the tower
@@ -9958,6 +10074,18 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Documentation check passed."; `eternalus-agent-work/scoring-at-load/check-4.log`); then `prettier --check` and
   `npm run docs:check` on this file.
 - Next step: the owner pushes the merge (coordinator checks the script); #139 merges.
+
+### 2026-11-20 — Phase 3 / sprint 3: respawn review round 3 and DEC-295 — fix/legend-respawn (PR #100) — claudiodh + Claude Code
+
+- What was done: answered swholtzman's CHANGES_REQUESTED review and the owner's DEC-295. A dead Legend now waits as itself: `DeathSystem` withdraws it (`EntityStore.withdraw`, not retired), `RespawnQueue` holds the same object and `StateHasher` hashes its fields; on return it gets full health and aether, no statuses, movement or target, faces the enemy Stronghold (S1), and a bot laner re-plans its lane (`assessLanes`). `createWithId` and `Progression.restore` are gone. DEC-186 "pay on respawn" (B1): a waiting Legend is owed its team's structure and boss XP and late kill XP, paid on `legend-respawned` with cause `respawn`, which `level-matches-xp` accepts only for a Legend back this tick. `RespawnSystem` is registered in every match, after the Duel round (a Duel test pins it, S4). Client: `LegendBodies` and `LegendBodyLayer` leave a greyed body where a Legend fell. Docs: DEC-295 row, BUG-6 `Fixed`, the INBOX item moved to Done, this file's #97 entry made whole again (B2). Not done: the design-doc updates of review S3 and N4.
+- Checks run: see the final `npm run check` of this round in the PR reply.
+- Next step: reviewer re-review; S3 and N4 doc updates.
+
+### 2026-11-20 — Phase 3 / sprint 3: respawn design docs (review S3, N4) — fix/legend-respawn (PR #100) — claudiodh + Claude Code
+
+- What was done: doc 03 §2 says a respawned Legend is the same entity (ids stay never reused) and names `EntityStore.withdraw` beside `remove`; its events table names `RespawnSystem` as an `entity-spawned` emitter and gains the `legend-respawned` row. Doc 18's pipeline positions place `RespawnSystem` (every match, after the Duel round). Doc 05's Implementation status describes the built DEC-295 middle way and DEC-186 pay-on-respawn, and the polling note gives the right reason (N4). The previous entry's checks, at 4c0d3dc8: `npm run check` → `EXIT=0`: core "Tests 1700 passed (1700)"; protocol "Tests 29 passed (29)"; client "Tests 2013 passed (2013)"; server "Tests 84 passed (84)"; "Documentation check passed."
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 1700 passed (1700)"; protocol "Tests 29 passed (29)"; client "Tests 2013 passed (2013)"; server "Tests 84 passed (84)"; "Documentation check passed." (docs only: the counts match the previous run.)
+- Next step: reviewer re-review; the team merges.
 
 ### 2026-11-15 — Phase 3 / sync — docs/inbox-audit-and-bugs (PR #110) — claudiodh + Claude Code
 
