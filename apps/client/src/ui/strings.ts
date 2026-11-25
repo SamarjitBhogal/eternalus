@@ -287,6 +287,8 @@ export const STRINGS = {
     duelScore: 'Duel score',
     /** "3 - 1" with the target beside it: "first to 10". */
     duelFirstTo: (target: number): string => `first to ${String(target)}`,
+    /** While a dropped Duel connection is being restored (the owner's words, DEC-349). */
+    duelReconnecting: 'Reconnecting...',
     matchCountdown: 'Match start',
     countdownStart: 'START',
     health: 'Health',

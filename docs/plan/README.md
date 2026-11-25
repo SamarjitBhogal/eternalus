@@ -4,7 +4,7 @@ description: The Eternalus MVP roadmap; read this to know which phase we are in,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-23
 tags: [plan, roadmap, sprints, metrics]
 related:
   [
@@ -165,7 +165,7 @@ Targets are project-level; the phase docs say when each is first measured. Numbe
 | Metric                            | Target                                                                                                     | Measured by                                                     | First gate | Status (2026-09-30) |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------- | ------------------- |
 | Determinism replay test           | Same seed + command log → identical `StateHasher` hash every 100 ticks, 10 seeds × 3000 ticks              | `npm run test` (replay fixtures in core)                        | Phase 1    | not started         |
-| Simulation tick time              | ≤ 8 ms per tick at 30 TPS with 144 units/team + 20 Legends on the reference dev laptop (`Recommendation:`) | `PerfOverlay` histogram; headless bench in `npm run bench` (P3) | Phase 3    | not started         |
+| Simulation tick time              | ≤ 8 ms per tick at 30 TPS with 144 units/team + 20 Legends on the CI runner, `ubuntu-latest` (DEC-351)     | `PerfOverlay` histogram; headless bench in `npm run bench` (P3) | Phase 3    | 11-23: DEC-351      |
 | Render frame rate                 | 60 fps: median frame ≤ 16.7 ms, no frame > 50 ms during a 60 s match segment (`Recommendation:`)           | `PerfOverlay` + long-animation-frame observer                   | Phase 1    | not started         |
 | Coverage thresholds               | core ≥ 80% now → 85% end of Phase 2 → 90% end of Phase 6; client ≥ 45/50% now → 55% P1 → 65% P5 → 70% P6   | `npm run test:coverage` (ratchet, only goes up)                 | Every PR   | core 80, client 45  |
 | Lint                              | Zero warnings, zero `eslint-disable` without a named rule and reason                                       | `npm run lint`                                                  | Every PR   | green               |

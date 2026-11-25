@@ -239,6 +239,8 @@ export type BridgeEventMap = {
    * the final score from the server's last snapshot (SCRUM-449).
    */
   'duel-state': DuelHudState;
+  /** This player's Duel connection dropped and is reconnecting (DEC-349), or no longer is. */
+  'duel-connection': { readonly isReconnecting: boolean };
   /**
    * The match ended, once per match (13 §5): core's result, and its length in match seconds (the
    * bridge knows the tick rate, the UI does not; DEC-129 (1)), the countdown not counted (DEC-278).
