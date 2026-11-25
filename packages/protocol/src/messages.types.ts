@@ -52,4 +52,14 @@ export type ServerMessage =
   /** The match after a tick; `ackSeq` is the last `intent.seq` applied for the receiver. */
   | { readonly type: 'state'; readonly snapshot: Snapshot; readonly ackSeq: number }
   | ({ readonly type: 'match-ended' } & MatchEnding)
+  /**
+   * The opponent's connection dropped (`disconnected`, `graceMs` is how long the server holds their
+   * seat) or came back (`reconnected`). If the window runs out, `match-ended` `opponent-left` follows.
+   */
+  | {
+      readonly type: 'opponent-presence';
+      readonly status: 'disconnected';
+      readonly graceMs: number;
+    }
+  | { readonly type: 'opponent-presence'; readonly status: 'reconnected' }
   | { readonly type: 'rejected'; readonly reason: RejectReason };

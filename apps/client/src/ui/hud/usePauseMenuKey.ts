@@ -7,9 +7,15 @@ export type PauseOpenerRef = { current: Element | null };
 
 /**
  * What the `pause-menu` key asks for with `overlay` open: open the pause menu over the match,
- * close it, or go back to it from the settings (13 §6.4; 13 §7).
+ * close it, or go back to it from the settings (13 §6.4; 13 §7). In an online Duel there is no
+ * pause menu: the key opens and closes the leave confirmation instead.
  */
-export function pauseMenuKeyIntent(overlay: Overlay | null): UiIntent {
+export function pauseMenuKeyIntent(overlay: Overlay | null, isDuel = false): UiIntent {
+  if (isDuel) {
+    return overlay === null
+      ? { kind: 'open-overlay', overlay: 'leave-duel' }
+      : { kind: 'close-overlay' };
+  }
   return overlay === 'pause'
     ? { kind: 'close-overlay' }
     : { kind: 'open-overlay', overlay: 'pause' };
@@ -24,9 +30,10 @@ export function pressPauseMenuKey<TElement>(
   overlay: Overlay | null,
   openerRef: { current: TElement | null },
   focus: { readonly activeElement: TElement | null },
+  isDuel = false,
 ): void {
   if (overlay === null) openerRef.current = focus.activeElement;
-  emitIntent(pauseMenuKeyIntent(overlay));
+  emitIntent(pauseMenuKeyIntent(overlay, isDuel));
 }
 
 /**
@@ -34,8 +41,12 @@ export function pressPauseMenuKey<TElement>(
  * close the pause menu over the match; the session pauses the match (13 §7; INBOX HC-Q8). A
  * rebind capture in the embedded settings pre-empts it (capture phase, `bindActionShortcut`).
  */
-export function usePauseMenuKey(overlay: Overlay | null, openerRef: PauseOpenerRef): void {
+export function usePauseMenuKey(
+  overlay: Overlay | null,
+  openerRef: PauseOpenerRef,
+  isDuel = false,
+): void {
   useActionShortcut('pause-menu', () => {
-    pressPauseMenuKey(overlay, openerRef, document);
+    pressPauseMenuKey(overlay, openerRef, document, isDuel);
   });
 }
