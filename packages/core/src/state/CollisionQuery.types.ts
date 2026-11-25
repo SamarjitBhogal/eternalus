@@ -21,10 +21,19 @@ export interface CollisionQuery {
   reach(from: Vec2, direction: Vec2, distance: number, radius: number): number;
 
   /**
-   * Where a circle of `radius` at `at` stands once pushed out of every wall it overlaps, each
-   * time the shortest way out of the deepest one, and kept inside the map's edge: `at` itself
-   * when it overlaps none. A body that grew in place (`BodySizeSystem`) is moved here, so it keeps
-   * the precondition of `reach`.
+   * Where a circle of `radius` at `at` stands once pushed out of the walls it overlaps, each time
+   * the shortest way out of the deepest one, never into another wall, and kept inside the map's
+   * edge: `at` itself when it overlaps none. A unit a new wall was placed over is moved here
+   * (`EntitySummoner`), and a body that grows in place is moved here when the result has room
+   * (`BodySizeSystem`, `hasRoom`), so they keep the precondition of `reach`. The push does not
+   * search for free ground: it can end with the circle partly inside a wall it already overlapped
+   * (`CollisionResolver.pushOut` gives the limits).
    */
   pushOut(at: Vec2, radius: number): Vec2;
+
+  /**
+   * Whether a circle of `radius` at `at` overlaps no wall, by the test `pushOut` moves a circle
+   * with. `BodySizeSystem` asks it before a body grows.
+   */
+  hasRoom(at: Vec2, radius: number): boolean;
 }

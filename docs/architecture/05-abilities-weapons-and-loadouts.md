@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-24
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -1443,9 +1443,11 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     `multiplier('size')`, so a size starts and ends in the tick its status does, whatever ends the
     status (time-out, a Duel reset). Every reader sees the one radius: reach (`ReachQuery`, the
     sweep), areas, shots, clicks (`findUnitAt`), collision, the hash and the snapshot, so the
-    client draws the larger body. A moving body that grew is pushed out of the walls it then
-    overlaps ([10](10-physics.md) §12). `ascended` (× 1.25) and `eternal` (× 1.5) can use the
-    same stat.
+    client draws the larger body. A moving body that grows is pushed out of the walls it then
+    overlaps. Where the push leaves it in a wall (a gap narrower than the grown body), it keeps
+    its size until it has room; the other three modifiers apply from the cast
+    ([10](10-physics.md) §12, DEC-365, `INBOX.md` HC-Q113). `ascended` (× 1.25) and `eternal`
+    (× 1.5) can use the same stat.
 - **Shield Wall (`feat/sentinel-wall`, 2026-11-23; DEC-330 (7), DEC-307, reading R4).** Shield
   Wall is the Sentinel's `ability-3` (`content/abilities/shieldWall.ts`): `directional`, with one
   `summon` step that places the `shield-wall-barrier` obstacle (`content/obstacles/`). Where the
@@ -1469,8 +1471,9 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     (`PlacedWalls`, 10 §12): the static collision index, the nav grid and the lane fields. It
     pushes every unit the outline covers out of the walls by the match's one push-out rule
     (`CollisionQuery.pushOut`, which `BodySizeSystem` also uses; DEC-363), so no unit starts a
-    move inside a wall. In a gap narrower than the unit, the unit can stay partly inside a wall;
-    it can walk out (10 §12).
+    move inside a wall, with one exception. A push never moves a unit into a map object or
+    another wall (DEC-364, DEC-365), and it does not search for free ground. So a unit can stay
+    partly inside the new wall; it can walk out (10 §12, `INBOX.md` HC-S14).
   - **A step's aim check.** An effect may have `aimBlockedBy` (optional on `AbilityEffect`);
     `CastValidator` asks every step of the ability after the targeting, so a refused cast spends
     nothing. The summon refuses (`no-target`) a wall whose outline would overlap a wall (terrain,
@@ -1480,8 +1483,8 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     (`PlacedOutline` in `content/loadDisplayContent.ts`: the outline's corners and its
     distance). The client paints it where the wall will stand: its middle `distance` ahead of
     the caster toward the pointer, turned to face that way (`aimShapePainters.ts`). Known limit:
-    the overlay does not turn red where the cast is refused; that needs a walls query in the
-    client.
+    the overlay does not show where the cast is refused. A placement preview from core comes
+    with lane B PR 7 (`INBOX.md` HC-S15).
   - **Not built.** DEC-307's stop of a charging Sentinel comes with PR 8; the wall blocks walking
     and dashes like a map wall. `NoMapObjectOverlapInvariant` does not check placed walls
     (`INBOX.md` HC-S14, scheduled with PR 8).

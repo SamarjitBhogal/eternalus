@@ -17,6 +17,7 @@ const wallAt = (wallX: number) => {
       return Math.max(0, Math.min(distance, (wallX - radius - from.x) / direction.x));
     },
     pushOut: (at) => at,
+    hasRoom: () => true,
   };
   return { collisions, asked };
 };

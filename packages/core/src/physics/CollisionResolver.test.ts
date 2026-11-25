@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { doesCircleOverlapPolygon } from '../utils/circlePolygon';
 import { CollisionResolver } from './CollisionResolver';
 import { StaticCollisionIndex } from './StaticCollisionIndex';
 
@@ -175,6 +176,56 @@ describe('CollisionResolver', () => {
       expect(edge.pushOut({ x: 0.5, y: 5 }, 0.65)).toEqual({ x: 0.65, y: 5 });
     });
 
+    it('never moves a circle into a wall it did not overlap: a pass stops short of the next wall', () => {
+      // A wall placed over the circle; the shortest way out (east) leads into a pocket of two rocks.
+      const rocks = [rect(114.8, 52.2, 3.3, 1.7), rect(115.7, 54.2, 3.5, 3.8)];
+      const resolver = new CollisionResolver(
+        new StaticCollisionIndex([
+          { id: 'placed', polygon: rect(112.5, 52, 1, 4) },
+          ...rocks.map((polygon, index) => ({ id: `rock-${String(index)}`, polygon })),
+        ]),
+        OPEN,
+      );
+
+      const out = resolver.pushOut({ x: 113.1, y: 54.5 }, 1.25);
+
+      expect(out.x).toBeGreaterThan(113.1);
+      for (const polygon of rocks) expect(doesCircleOverlapPolygon(out, 1.25, polygon)).toBe(false);
+      // The pass slides along the south rock's corner into the pocket: it does not stop at it.
+      expect(out.x).toBeCloseTo(114.45, 2);
+      expect(out.y).toBeCloseTo(55.237, 2);
+    });
+
+    it('keeps each pass inside the bounds, so the clamp moves no circle into a rock', () => {
+      // A wall turned 45° lies over the circle, 1.1 m from the east edge. The way out leads past
+      // the edge; a clamp back from there would end inside the rock south of the circle.
+      const rock = rect(37, 22.2, 0.8, 2);
+      const [along, across] = [2 * Math.SQRT1_2, 0.5 * Math.SQRT1_2];
+      const resolver = new CollisionResolver(
+        new StaticCollisionIndex([
+          {
+            id: 'placed',
+            polygon: [
+              { x: 38.6 + along - across, y: 20 - along - across },
+              { x: 38.6 + along + across, y: 20 - along + across },
+              { x: 38.6 - along + across, y: 20 + along + across },
+              { x: 38.6 - along - across, y: 20 + along - across },
+            ],
+          },
+          { id: 'rock', polygon: rock },
+        ]),
+        { x: 0, y: 0, width: 40, height: 40 },
+      );
+      const start = { x: 37.66, y: 20.95 };
+
+      const out = resolver.pushOut(start, 1.25);
+
+      expect(doesCircleOverlapPolygon(start, 1.25, rock)).toBe(false);
+      expect(out.x).toBeGreaterThan(start.x);
+      expect(out.x).toBeLessThanOrEqual(38.75);
+      expect(doesCircleOverlapPolygon(out, 1.25, rock)).toBe(false);
+    });
+
     it('leaves a circle inside a passage of the wall where it is', () => {
       const resolver = new CollisionResolver(
         new StaticCollisionIndex([
@@ -184,6 +235,25 @@ describe('CollisionResolver', () => {
       );
 
       expect(resolver.pushOut({ x: 5.5, y: 0 }, 0.65)).toEqual({ x: 5.5, y: 0 });
+    });
+  });
+
+  describe('hasRoom', () => {
+    const resolver = new CollisionResolver(
+      new StaticCollisionIndex([
+        { id: 'wall', polygon: rect(5, -20, 1, 40), passages: [rect(4, -2, 3, 4)] },
+      ]),
+      OPEN,
+    );
+
+    it('is true for a circle clear of every wall and for one inside a passage of a wall', () => {
+      expect(resolver.hasRoom({ x: 4.3, y: 10 }, 0.65)).toBe(true);
+      expect(resolver.hasRoom({ x: 5.5, y: 0 }, 0.65)).toBe(true);
+    });
+
+    it('is false for a circle that overlaps a wall, also one with its centre in the wall', () => {
+      expect(resolver.hasRoom({ x: 4.5, y: 10 }, 0.65)).toBe(false);
+      expect(resolver.hasRoom({ x: 5.5, y: 10 }, 0.65)).toBe(false);
     });
   });
 });

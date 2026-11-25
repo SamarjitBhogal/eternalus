@@ -9,6 +9,7 @@ import type { DefinitionSource } from '../../entities/EntityFactory.types';
 import { MapGenerator } from '../../map/MapGenerator';
 import { MapObjectBuilder } from '../../map/MapObjectBuilder';
 import { MapPresentationBuilder } from '../../map/MapPresentationBuilder';
+import { TWO_LANE_MAP } from '../../state/__fixtures__/twoLaneMap';
 import { findUnitAt } from '../../state/findUnitAt';
 import { doesCircleOverlapPolygon } from '../../utils/circlePolygon';
 import type { Vec2 } from '../../utils/geometry.types';
@@ -265,6 +266,51 @@ describe('Berserk (scenario)', () => {
     expect(first.log.filter((line) => line.includes(' cast '))).toHaveLength(1);
     expect(first.radius()).toBeCloseTo(1.25 * 1.3, 12);
     expect(second.sim.hash()).toBe(first.sim.hash());
+  });
+});
+
+describe('Berserk in a gap narrower than the grown body', () => {
+  /** Two rocks 2.6 m apart: the Sentinel (2.5 m wide) fits between them, 3.25 m does not. */
+  const rock = (id: string, y: number, height: number): MapObject => ({
+    id,
+    kind: 'rock',
+    isBlocking: true,
+    footprints: [
+      [
+        { x: 109.6, y },
+        { x: 113, y },
+        { x: 113, y: y + height },
+        { x: 109.6, y: y + height },
+      ],
+    ],
+  });
+  const ROCKS = [rock('rock-north', 55.3, 1.7), rock('rock-south', 50, 2.7)];
+  const overlapsRock = (point: Vec2, radius: number): boolean =>
+    ROCKS.some(({ footprints }) =>
+      footprints.some((footprint) => doesCircleOverlapPolygon(point, radius, footprint)),
+    );
+
+  it('keeps the body small in the gap and grows it once it walked out, every invariant holding', () => {
+    const scenario = match({
+      world: { map: TWO_LANE_MAP, mapObjects: ROCKS },
+      at: { x: 110, y: 54 },
+      isQuick: true,
+    });
+
+    scenario.startBerserk();
+    scenario.run(30);
+    const inGap = { radius: scenario.radius(), at: scenario.at(scenario.sentinel) };
+    scenario.walk({ x: -1, y: 0 });
+    scenario.run(20); // 0.36 m each tick: 7.2 m west
+    const outside = scenario.at(scenario.sentinel);
+
+    expect(scenario.log.some((line) => line.endsWith(`berserk on ${scenario.sentinel}`))).toBe(
+      true,
+    );
+    expect(inGap).toEqual({ radius: 1.25, at: { x: 110, y: 54 } });
+    expect(outside.x).toBeLessThan(108);
+    expect(scenario.radius()).toBeCloseTo(1.625, 12);
+    expect(overlapsRock(outside, 1.625)).toBe(false);
   });
 });
 

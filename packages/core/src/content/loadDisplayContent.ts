@@ -38,7 +38,7 @@ import { ContentValidator } from './validation/ContentValidator';
  * `corners` in its own frame (+x along the aim, as `ObstacleDefinition.footprint`), placed
  * `distance` metres ahead of the caster's centre along the aim and turned to face it.
  */
-export type PlacedOutline = {
+type PlacedOutline = {
   readonly kind: 'outline';
   readonly corners: Polygon;
   readonly distance: number;

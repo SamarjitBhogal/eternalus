@@ -16,8 +16,10 @@ import { isCollisionMover } from './isCollisionMover';
  * walk-on: a Shield Wall) becomes a wall at once (`GameState.walls`), and every unit its outline
  * overlaps is pushed out of the walls by the match's one push-out rule
  * (`GameState.collisions.pushOut`, which `BodySizeSystem` also uses; DEC-363), so no unit starts a
- * move inside a wall (`CollisionResolver`'s precondition). A gap narrower than the unit has no
- * room for it, so the unit can stay partly inside a wall there; it can still walk out.
+ * move inside a wall (`CollisionResolver`'s precondition), with one exception. The push never
+ * moves a unit into a map object or another wall, and it does not search for free ground (at
+ * most four passes, each the shortest way out of the deepest wall). So a unit can stay partly
+ * inside the new wall, also where there is room close by; it can still walk out.
  * `despawn` takes a body out as `despawned`; the wall goes with it (`Simulation` removes a placed
  * wall at every `entity-removed`).
  */

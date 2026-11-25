@@ -667,6 +667,17 @@ Reply inline (`Decision: …`).
       monsters and bosses. Buildings still take the normal damage. (A) Units only (built).
       (B) Every enemy in the fan. (C) Other (note). Code: `abilities/effects/ExecuteEffect.ts`
       (`TargetFilter.families`).
+- [ ] **HC-Q113 — Berserk in a tight space: what happens when the bigger Sentinel does not fit?
+      (lane B PR 6, correctness critic round 3, M1, 2026-11-24).** Nothing waits on the answer;
+      the build uses (A). Berserk makes the Sentinel 1.3 times as wide: 3.25 m, from 2.5 m.
+      Between two rocks or walls less than 3.25 m apart, the bigger body does not fit. Before
+      this fix it grew there and stood partly inside a rock, and the game's error check reported
+      it. Now the Sentinel keeps its normal size there. Berserk still counts: the damage, the
+      damage reduction, the speed and the 12 s all start at the cast. The body grows in the
+      first moment the Sentinel has room, for example when it walks out of the gap. (A) Normal
+      size until there is room (built, DEC-365 (1)). (B) Move the Sentinel to the nearest free
+      ground and grow it there; it can jump a few metres. (C) Grow in place and stand partly
+      inside the rock. (D) Other (note). Code: `systems/BodySizeSystem.ts`.
 - [ ] **HC-S13 — Scheduled: an online Duel must not send a hidden enemy to a player
       (Samarjit's review of #150, 6026306663, nit 1; lane B PR 6, 2026-11-23).** Nothing to
       answer now. `isHidden` on a snapshot entity only tells the client not to draw the unit
@@ -677,12 +688,13 @@ Reply inline (`Decision: …`).
       seat only what core filters. That filter must leave out every enemy that is hidden from the
       seat's team (Veil today, any `hidden` status later). Scheduled with W10; it needs no change
       before a server-run Duel exists.
-- [ ] **HC-B43 — Better than the design, sign-off asked: four items from the PR 6 architecture
-      critic (lane B PR 6, `feat/sentinel-kit`, pre-PR gate round 1, 2026-11-23;
-      COMBAT-ABILITIES-LANE-2-24).** Nothing waits on you. (1) Built, recorded as DEC-363: one
-      rule pushes a unit out of the walls, and one rule says which units walls stop. A new Shield
-      Wall and a body that grows (Berserk) both use them, as does the collision step. Before, each
-      of the three had its own copy, and the copies differed. Say "no" and it goes back. (2) Not
+- [ ] **HC-B43 — Better than the design, sign-off asked: nine items from the PR 6 critics
+      (lane B PR 6, `feat/sentinel-kit`, pre-PR gate rounds 1 and 2, 2026-11-23;
+      COMBAT-ABILITIES-LANE-2-24 and -25).** Nothing blocks the PR. Item (4) changes one design
+      line after your yes. (1) Built, recorded as DEC-363: one rule pushes a unit out of the
+      walls, and one rule says which units walls stop. A new Shield Wall and a body that grows
+      (Berserk) use both; the collision step uses the second. Before, each of the three had its
+      own copy, and the copies differed. Say "no" and it goes back. (2) Not
       built: a map object that breaks (a wall segment, a rock) could leave the walls by the same
       path as a placed wall (`RuntimeWalls` and the `terrain-changed` event). Today it has its own
       path, outside PR 6. (A) Keep two paths. (B) One path, in a follow-up PR. (3) Not built: a
@@ -692,13 +704,42 @@ Reply inline (`Decision: …`).
       fan is written as a reach past the body edge and an arc in degrees (`{ reach, arcDegrees }`),
       the words of the weapon sweeps (DEC-319, DEC-304). The design text (05 §3) says a radius and
       the cosine of the half angle. With your yes, the 05 §3 line changes to match.
+      Round 2 added five items. (5) Built, DEC-364 (1): the guard leash check allows 6 m, not
+      5.5 m (your "about 5.5 m" of DEC-181). A Berserk Sentinel is wider, and the old value could
+      report a guard that did nothing wrong (5.82 m by the DEC-144 formula). Only the check reads
+      the value; play does not change. (6) Built, DEC-364 (2) and DEC-365 (2): a unit under a new
+      Shield Wall is never pushed into a rock or another wall next to it. Before, this could
+      happen in a narrow pocket. The push does not look for free ground: if the shortest way out
+      is closed, the unit stays partly inside the new wall and can walk out.
+      (7) Not built, scheduled as HC-S15: when you aim Shield Wall where it cannot stand, the
+      outline does not show that the cast will be refused. (8) Not built, kept as it is: the rule
+      "which units walls stop" could live on the entity store, so that the overlap check
+      (`NoMapObjectOverlapInvariant`) shares it. The check keeps its own, wider rule on purpose:
+      it tests the collision code from outside (DEC-364 (3)). (9) Not built, kept as it is: the
+      ledger of placed walls could forget a broken wall when it breaks. Today the one reader
+      (`SummonEffect`) skips broken walls.
 - [ ] **HC-S14 — Scheduled: the map-object overlap check does not see placed walls (lane B PR 6,
       `feat/sentinel-kit`, critic N8, 2026-11-23).** Nothing to answer now.
       `NoMapObjectOverlapInvariant` checks that no unit stands inside a map object. It does not
       check a placed wall (a Shield Wall). The summoner pushes every unit out of a new wall, and
-      `BodySizeSystem` pushes a grown body out, so the rule holds except in a gap narrower than the
-      unit (10 §12). Scheduled with PR 8 (passives), which changes placed walls again (DEC-307: a
-      charging Sentinel stops at the wall, 05 §18).
+      a body grows only where the grown body has room (DEC-365 (1)). A push never moves a unit
+      into a map object (DEC-364 (2), DEC-365 (2)). The push does not search for free ground, so
+      a unit can stay partly inside the placed wall (10 §12). It can walk out, and a dash that
+      starts there can cross the 1 m wall. Scheduled
+      with PR 8 (passives), which changes placed walls again (DEC-307: a charging Sentinel stops
+      at the wall, 05 §18): the check for placed walls, and a swept first leg for a move that
+      starts inside one (the `ponytail` remark on `CollisionResolver`).
+- [ ] **HC-S15 — Scheduled: the Shield Wall aim outline does not show a refused cast (lane B
+      PR 6, `feat/sentinel-kit`, architecture critic round 2, BTD-1, 2026-11-23).** Nothing to
+      answer now. The outline shows where the wall will stand. A cast is refused, and spends
+      nothing, where the wall would overlap a wall or leave the map; the outline looks the same
+      there. The client also repeats core's rule for turning the outline (`placePolygon`).
+      Scheduled with lane B PR 7 (the Magus kit, DEC-301): a placement preview from core, as
+      `Simulation.dashReach` is for a dash. It returns the placed outline and whether it has
+      room (`PlacedWalls.isBlocked`), so there is one turning rule and the overlay can show a
+      refused cast. It is not built in PR 6: it adds a port across core and the client, and the
+      gate's three critic rounds are used. PR 7 is the next lane B PR, and its placed zone
+      (Sanctuary) is a second user of the preview.
 - [x] **HC-Q67 — Combat gaps: build before the presentation (2026-11-27)? In which order?
       (combat audit, COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).**
       Your nine combat questions: 0 of 9 are true today. Evidence and the proposed PRs (two lanes,

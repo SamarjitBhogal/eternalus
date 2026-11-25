@@ -13,7 +13,7 @@ export class Transform {
   private readonly currentPosition: MutableVec2;
   private readonly beforeMovement: MutableVec2;
   private readonly currentFacing: MutableVec2 = { ...INITIAL_FACING };
-  private scale = 1;
+  private currentScale = 1;
 
   /**
    * @param position - Starting point in world units.
@@ -31,7 +31,12 @@ export class Transform {
 
   /** The footprint radius now: the built radius times the current scale. */
   public get radius(): number {
-    return this.baseRadius * this.scale;
+    return this.baseRadius * this.currentScale;
+  }
+
+  /** How many times the built radius the footprint is now (1 = as built). */
+  public get scale(): number {
+    return this.currentScale;
   }
 
   /**
@@ -41,7 +46,7 @@ export class Transform {
    */
   public resize(scale: number): void {
     Transform.assertPositive(scale, 'scale');
-    this.scale = scale;
+    this.currentScale = scale;
   }
 
   /** The current position. Read it, but do not keep it: moves update it in place. */

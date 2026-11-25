@@ -141,10 +141,10 @@ export class AbilitySystem implements System {
     const next = new CastInstance(
       { ...cast, casterId: caster.id, ability },
       {
+        ...this.services,
         state,
         effects: this.registry,
         targets: this.targets,
-        ...this.services,
       },
     ).run({ from: here, to: here }, cast.nextStep);
     if (next < ability.steps.length) {

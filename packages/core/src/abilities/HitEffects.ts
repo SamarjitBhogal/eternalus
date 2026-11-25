@@ -111,10 +111,10 @@ export class HitEffects {
         tick: state.tick,
       },
       {
+        ...this.services,
         state,
         effects: this.registry,
         targets: this.targets,
-        ...this.services,
       },
     ).run({ from: placement.from, to: placement.to, targetId });
   }

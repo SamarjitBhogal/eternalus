@@ -274,7 +274,7 @@ describe('GameState', () => {
 
   // Moved from `MatchWorld.test.ts`: the port sits beside `space` and `paths` (critic r2 BTD-B).
   it('keeps the collision rule it was given beside its other indexes, and none without one', () => {
-    const collisions = { reach: () => 1, pushOut: (at: Vec2) => at };
+    const collisions = { reach: () => 1, pushOut: (at: Vec2) => at, hasRoom: () => true };
 
     const state = new GameState(createDefaultGameConfig(), 1, null, { collisions });
 

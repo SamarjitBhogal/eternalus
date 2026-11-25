@@ -20,9 +20,13 @@ import type { CirclePenetration } from '../utils/circlePolygon.types';
  * when its move ends no deeper (`startsInside`), so a move longer than the polygon is thick can
  * cross it. `CollisionSystem` keeps every unit out of walls, so a walk or a dash never starts
  * inside one (critic r2 F2: not reached in 5400 ticks of 8 bots); `CollisionQuery.reach` states
- * that precondition, and `pushOut` moves a body that grew in place out of the walls it then
- * overlaps (`BodySizeSystem`). Upgrade path: sweep the exit leg once something places units inside
- * walls.
+ * that precondition, and `pushOut` moves a body out of the walls it overlaps in place: one that
+ * grew (`BodySizeSystem`) and one a new wall was placed over (`EntitySummoner`). `pushOut` takes
+ * at most `MAX_SLIDE_CONTACTS` passes and does not search for free ground, so a unit under a new
+ * wall can stay partly inside it, also where there is room close by; a dash that starts there
+ * can cross a thin placed wall. A body does not grow while the push leaves it in a wall
+ * (`hasRoom`). Upgrade path: sweep the exit leg of such a move (`INBOX.md` HC-S14, with the
+ * overlap check for placed walls).
  */
 export class CollisionResolver {
   /**
@@ -68,7 +72,15 @@ export class CollisionResolver {
   /**
    * Where a circle of `radius` at `at` stands once pushed out of the walls it overlaps: each pass
    * moves it the shortest way out of the deepest one, `CONTACT_EPSILON` clear, up to
-   * `MAX_SLIDE_CONTACTS` passes (a corner), then inside the bounds. `at` itself when it overlaps
+   * `MAX_SLIDE_CONTACTS` passes (a corner), then inside the bounds. Each pass is a swept move
+   * (`slide`): it stops short of a wall the circle does not overlap and slides along it, it
+   * takes the circle no deeper into another wall it overlaps, and it stays inside the bounds
+   * (it slides along their edge). So a push never moves a circle into a wall. The
+   * passes do not search for free ground: they can end with the circle partly inside a wall it
+   * already overlapped (a gap narrower than the circle, or more walls than passes), and
+   * `hasRoom` tells. One exception: the last step, the clamp to the bounds, is not swept. It
+   * moves only a circle that starts outside the bounds and overlaps no wall (a body that grew
+   * at the map's edge), and it can move that one into a wall. `at` itself when it overlaps
    * none. A circle inside a passage of a wall does not overlap that wall. Mutates nothing.
    */
   public pushOut(at: Vec2, radius: number): Vec2 {
@@ -77,10 +89,12 @@ export class CollisionResolver {
       const overlap = this.deepestOverlap(position, radius);
       if (overlap === null) break;
       const step = overlap.depth + CONTACT_EPSILON;
-      position = {
-        x: position.x + overlap.normal.x * step,
-        y: position.y + overlap.normal.y * step,
-      };
+      position = this.slide(
+        position,
+        { x: overlap.normal.x * step, y: overlap.normal.y * step },
+        radius,
+        true,
+      );
     }
     const { x, y, width, height } = this.bounds;
     return {
@@ -89,11 +103,24 @@ export class CollisionResolver {
     };
   }
 
-  /** `move` without the bounds: the sweep and the slide. */
-  private slide(start: Vec2, displacement: Vec2, radius: number): Vec2 {
+  /**
+   * Whether a circle of `radius` at `at` overlaps no wall (a circle inside a passage of a wall
+   * does not overlap that wall). Mutates nothing.
+   */
+  public hasRoom(at: Vec2, radius: number): boolean {
+    return this.overlaps(at, radius).length === 0;
+  }
+
+  /**
+   * `move` without the clamp: the sweep and the slide. With `isBounded`, each leg also stays
+   * inside the bounds: the part of it past an edge is dropped, so the circle slides along the
+   * edge.
+   */
+  private slide(start: Vec2, displacement: Vec2, radius: number, isBounded = false): Vec2 {
     let position = { ...start };
     let delta = { ...displacement };
     for (let iteration = 0; iteration < MAX_SLIDE_CONTACTS; iteration++) {
+      if (isBounded) delta = this.keptInside(position, delta, radius);
       const contact = this.firstContact(position, delta, radius);
       if (contact === null) return { x: position.x + delta.x, y: position.y + delta.y };
       const travel = CollisionResolver.shortOf(contact, delta);
@@ -107,6 +134,15 @@ export class CollisionResolver {
       if (Math.hypot(delta.x, delta.y) <= CONTACT_EPSILON) return position;
     }
     return position;
+  }
+
+  /** `delta` without the part that takes a circle of `radius` at `from` past the bounds. */
+  private keptInside(from: Vec2, delta: Vec2, radius: number): Vec2 {
+    const { x, y, width, height } = this.bounds;
+    return {
+      x: CollisionResolver.clamp(from.x + delta.x, x, width, radius) - from.x,
+      y: CollisionResolver.clamp(from.y + delta.y, y, height, radius) - from.y,
+    };
   }
 
   /**
@@ -139,19 +175,26 @@ export class CollisionResolver {
     return Math.max(0, contact.time - CONTACT_EPSILON / Math.max(length, CONTACT_EPSILON));
   }
 
-  /** The deepest overlap of a circle at `at` with a wall outside its passages, or `null`. */
+  /** The deepest overlap of a circle at `at` that has a way out (a normal), or `null`. */
   private deepestOverlap(at: Vec2, radius: number): CirclePenetration | null {
-    const box = { x: at.x - radius, y: at.y - radius, width: radius * 2, height: radius * 2 };
     let deepest: CirclePenetration | null = null;
-    for (const entry of this.index.query(box)) {
-      if (entry.passages?.some((passage) => isCircleInsidePolygon(at, radius, passage)) === true)
-        continue;
-      const overlap = circlePenetration(at, radius, entry.polygon);
+    for (const overlap of this.overlaps(at, radius)) {
       const hasWayOut = overlap.normal.x !== 0 || overlap.normal.y !== 0;
-      if (overlap.depth > CONTACT_EPSILON && hasWayOut && overlap.depth > (deepest?.depth ?? 0))
-        deepest = overlap;
+      if (hasWayOut && overlap.depth > (deepest?.depth ?? 0)) deepest = overlap;
     }
     return deepest;
+  }
+
+  /** Each overlap of a circle at `at` with a wall outside its passages. */
+  private overlaps(at: Vec2, radius: number): CirclePenetration[] {
+    const box = { x: at.x - radius, y: at.y - radius, width: radius * 2, height: radius * 2 };
+    return [...this.index.query(box)]
+      .filter(
+        ({ passages }) =>
+          passages?.some((passage) => isCircleInsidePolygon(at, radius, passage)) !== true,
+      )
+      .map(({ polygon }) => circlePenetration(at, radius, polygon))
+      .filter(({ depth }) => depth > CONTACT_EPSILON);
   }
 
   private firstContact(start: Vec2, delta: Vec2, radius: number): SweepContact | null {

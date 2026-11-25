@@ -18,7 +18,10 @@ import { GameState } from '../state/GameState';
 import type { Vec2 } from '../utils/geometry.types';
 import { BodySizeSystem } from './BodySizeSystem';
 
-/** A 100 x 100 map with one house wall from x = 5 to x = 7, y = 1 to y = 9. */
+/**
+ * A 100 x 100 map with one house wall from x = 5 to x = 7, y = 1 to y = 9, and a second wall from
+ * x = 9.6 to x = 11.6: the gap between them is 2.6 m.
+ */
 const MAP: MapDefinition = {
   id: 'body-size-test',
   displayName: 'Test',
@@ -43,6 +46,18 @@ const HOUSE: MapPresentation = {
       layer: 'detail',
       color: 'stone',
       object: { id: 'house', kind: 'house', isFootprint: true },
+    },
+    {
+      id: 'second-wall',
+      shape: [
+        { x: 9.6, y: 1 },
+        { x: 11.6, y: 1 },
+        { x: 11.6, y: 9 },
+        { x: 9.6, y: 9 },
+      ],
+      layer: 'detail',
+      color: 'stone',
+      object: { id: 'second-house', kind: 'house', isFootprint: true },
     },
   ],
 };
@@ -110,6 +125,22 @@ describe('BodySizeSystem', () => {
     expect(grown.x).toBeLessThan(5 - 1.25 * 1.3);
     expect(grown.y).toBe(5);
     expect(transform.position).toEqual(grown);
+  });
+
+  it('keeps a body small where the grown body has no room, and grows it once it has', () => {
+    // The 2.6 m gap holds the Sentinel (2.5 m wide), not the Berserk Sentinel (3.25 m wide).
+    const { transform, statuses, run } = setUp({ x: 8.3, y: 5 });
+
+    statuses.apply(BERSERK, null, 0);
+    run();
+    run();
+    const inGap = { radius: transform.radius, position: { ...transform.position } };
+    transform.moveTo({ x: 8.3, y: 10.5 }); // out of the gap: 1.98 m from each wall corner
+    run();
+
+    expect(inGap).toEqual({ radius: 1.25, position: { x: 8.3, y: 5 } });
+    expect(transform.radius).toBeCloseTo(1.25 * 1.3, 12);
+    expect(transform.position).toEqual({ x: 8.3, y: 10.5 });
   });
 
   it('leaves a body that did not grow where it is, even one placed inside a wall', () => {

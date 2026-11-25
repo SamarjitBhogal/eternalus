@@ -570,11 +570,8 @@ Health and destruction snapshots drive art and ruins; cutaways remain cosmetic. 
 passages) instead of the Stronghold feature's footprint, whose floor is walkable; a destroyed
 object reopens its cells and marks the lane fields over them dirty. Conservative stamping
 (DEC-14) closes palace room doors narrower than two cells in the grid; the collider still lets
-units through them. The `terrain-changed` event exists since lane B PR 6 (`feat/sentinel-kit`,
-2026-11-23): a wall placed during the match (a Shield Wall) reports its cells with it
-(`map/RuntimeWalls`, [10](10-physics.md) §12). A destroyed map object still clears its cells and
-marks the lane fields dirty directly (`INBOX.md` HC-B43 (2)). The Structure family replaces
-obstacle-backed scenery in sprint 2.1 and walls and gates follow in sprint 2.4.
+units through them. The `terrain-changed` event follows in Phase 2 sprint 2.5, the Structure
+family replaces obstacle-backed scenery in sprint 2.1 and walls and gates follow in sprint 2.4.
 Duel door closure uses those structure snapshots; occupancy-driven cutaways are not yet
 scheduled (INBOX).
 Renderer caching and close-view material detail belong to the separate renderer follow-up in
@@ -623,6 +620,13 @@ seams, runes and emitter artwork for the existing turret features. `MapDecoratio
 suppresses the main view's plain feature marker; explicit object ownership removes the correct
 panel artwork when its wall segment dies. The minimap retains its generated feature markers.
 All decoration stays in the existing render layers and adds no new shield-immunity mechanic.
+
+### 2026-11-23 — Walls placed during the match (lane B PR 6, `feat/sentinel-kit`)
+
+The `terrain-changed` event exists (the 2026-10-30 amendment above expected it in Phase 2
+sprint 2.5). A wall placed during the match (a Shield Wall) reports its cells with it
+(`map/RuntimeWalls`, [10](10-physics.md) §12). A destroyed map object still clears its cells and
+marks the lane fields dirty directly (`INBOX.md` HC-B43 (2)).
 
 ## Related
 

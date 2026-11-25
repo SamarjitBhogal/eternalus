@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-24
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -367,12 +367,20 @@ match. `Transform.radius` is the built radius times a scale, and `Transform.resi
 the scale. `systems/BodySizeSystem` runs after `StatusEffectSystem` and before `MovementSystem`.
 Each tick it sets every body with statuses to its `size` stat (05 §18, "Berserk"). Every reader
 (collision, reach, areas, shots, clicks, the hash, the snapshot) reads the one radius. A moving
-body that grew is moved out of the walls it now overlaps by `CollisionQuery.pushOut`
+body that grows is moved out of the walls it now overlaps by `CollisionQuery.pushOut`
 (`CollisionResolver.pushOut`: up to `MAX_SLIDE_CONTACTS` passes, each the shortest way out of the
-deepest overlap, then the bounds clamp). So `reach`'s precondition (no unit starts inside a wall)
-still holds. A deploying mob is not pushed, as `CollisionSystem` lets it pass its walls. In a gap
-narrower than the grown body, the passes can end with the body still inside a wall. That body then
-can walk out but not deeper in (the `ponytail` remark on `CollisionResolver`).
+deepest overlap, then the bounds clamp). Each pass is a swept move: it stops short of a wall the
+body does not overlap, slides along it, and stays inside the bounds (it slides along their edge).
+So a push never moves a body into another wall or a map object (DEC-364, DEC-365). The
+passes do not search for free ground: they can end with the body still inside a wall it already
+overlapped (a gap narrower than the grown body, or more walls than passes). The clamp is not
+swept; it moves only a body that grew at the map's edge and overlaps no wall, and it can move
+that body into one. Where the push leaves the grown body
+in a wall (`CollisionQuery.hasRoom`), the body does not grow and does not move: it keeps its
+size, and `BodySizeSystem` tries again each tick, so the body grows in the first tick it has room
+(DEC-365, `INBOX.md` HC-Q113). So a body that grows keeps `reach`'s precondition (no unit starts
+inside a wall). A deploying mob grows in place and is not pushed, as `CollisionSystem` lets it
+pass its walls.
 `Collider.shape.radius` stays the built radius; no code reads it at runtime.
 
 **2026-11-23 (branch `feat/sentinel-wall`, lane B PR 6; DEC-330 (7), DEC-307).** A wall can be
@@ -387,8 +395,14 @@ has room (`isBlocked`: no overlap with an indexed polygon, passages ignored, and
 The map's own objects keep their removal path (`INBOX.md` HC-B43 (2)). A unit that a new wall
 covers is pushed out by the summoner (`EntitySummoner`) through `CollisionQuery.pushOut`, the rule
 `BodySizeSystem` uses (the Berserk note above), so `CollisionResolver`'s precondition (no move
-starts inside a wall) still holds. One predicate, `entities/isCollisionMover`, says which units
-walls stop: `CollisionSystem` slides exactly these, and only these are pushed (DEC-363).
+starts inside a wall) still holds, with one exception: the push takes at most
+`MAX_SLIDE_CONTACTS` passes and does not search for free ground, so a unit can stay partly inside
+the new wall, also where there is room close by. It is never moved into a map object. From there
+it can walk out but not deeper in, and a dash can cross the 1 m wall (the `ponytail` remark on
+`CollisionResolver`; `INBOX.md` HC-S14). One predicate, `entities/isCollisionMover`,
+says which units walls stop: `CollisionSystem` slides exactly these, and only these are pushed
+(DEC-363). `NoMapObjectOverlapInvariant` keeps its own, wider test on purpose: it checks the
+collision code from outside, so it does not share that code's predicate.
 
 ## Related
 
