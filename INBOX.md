@@ -16,11 +16,6 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **`feat/duel-results-score` (PR #146, SCRUM-449): decisions-log row.** The Duel's results
-      screen shows both players' final kill score and has no countdown, which modifies DEC-78
-      (the win/lose screen counts down to the menu). Please add the decisions-log row quoting
-      SCRUM-449 and DEC-78 and sign it off; `matchSetupRules.ts` and architecture 13 cite it
-      once it exists. Decision: …
 - [ ] **Dependency audit (re-run 2026-11-20): approve one upgrade PR for the `eslint` family and
       `zod`, and say whether to turn on Dependabot alerts.** PR #113 already moved `vite` to 8.3.8
       and `vitest` to 5.1.0. `npm audit` on `phase/3-sprint-3-work` (`5a7cc8dc`) now reports 10

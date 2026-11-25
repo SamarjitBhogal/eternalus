@@ -6,7 +6,7 @@ import { startCountdown } from '../startCountdown';
 /**
  * The win/lose screen (13 §2, DEC-78): the verdict for `RESULTS_COUNTDOWN_MS`, then the menu;
  * `continue` skips the wait. After an online Duel there is no countdown: the screen stays until
- * the player leaves it (SCRUM-449). Also a rematch with the same setup (`start-match`, after a local match
+ * the player leaves it (DEC-347, SCRUM-449). Also a rematch with the same setup (`start-match`, after a local match
  * only) or a menu route (`navigate`). It shows on the selection screens' backdrop and banner (game-loop plan §8), so it
  * loads the `selection` group and releases it on every way out.
  */

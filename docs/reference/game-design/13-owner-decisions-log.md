@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-25
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,15 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-23 (Owner Calls page: the Duel results screen)
+
+The owner's answer of 2026-11-23 on the coordinator's Owner Calls page to the PR #146 question
+(`INBOX.md`, `feat/duel-results-score`). DEC-347 is this batch (reserved for PR #146).
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Docs changed                                                      |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| DEC-347 | **A Duel's win/lose screen shows both players' final kill score and has no countdown** (SCRUM-449, the 2026-11-20 Duel demo; closes the `INBOX.md` item for PR #146). "Yes, as built: show both scores, no countdown." This changes DEC-78 for a Duel only: the screen shows VICTORY or DEFEAT with both names and their final kills, the player's own side first (for example "Ana 10 – Rival 5"), and it stays until the player leaves it. After every other match the DEC-78 countdown to the menu stays. | architecture 13 §2, §3 and the Duel results paragraph; `INBOX.md` |
 
 ## Batch 2026-11-21 (Owner Calls page: the browser-support line)
 

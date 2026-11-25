@@ -30,7 +30,7 @@ function statusText(status: ResultsStatus): string {
  * match's length, then Continue (skips the wait), a rematch and the main menu. Only a local match
  * offers the rematch (an online Duel's setup is the server's, ADR 0016); a Duel the other player
  * left names that under its verdict (DEC-251). A Duel's screen shows both players' names and final
- * kills and no countdown: it stays until the player leaves (SCRUM-449). `selectResultsView`
+ * kills and no countdown: it stays until the player leaves (DEC-347, SCRUM-449). `selectResultsView`
  * decides all of it.
  */
 export function ResultsScreen(): ReactElement {
