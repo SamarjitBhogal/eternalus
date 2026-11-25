@@ -85,7 +85,7 @@ export { MapGenerator } from './map/MapGenerator';
 export type { MapGeneratorConfig } from './map/MapGenerator.types';
 export { Simulation } from './Simulation';
 export type { Replay, ReplaySetup, ReplayTargetFactory, RosterSlot } from './Simulation.types';
-export type { Loadout } from './loadout/Loadout.types';
+export type { Loadout, LoadoutSlot } from './loadout/Loadout.types';
 export { autoBuildLoadout, repairLoadout, validateLoadout } from './loadout/loadoutApi';
 export { loadoutContentOf } from './loadout/loadoutContentOf';
 export type {

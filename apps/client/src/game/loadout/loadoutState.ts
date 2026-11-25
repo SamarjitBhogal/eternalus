@@ -1,4 +1,4 @@
-import { type LoadoutContent, type LoadoutField, repairLoadout } from '@eternalus/core';
+import { type LoadoutContent, type LoadoutSlot, repairLoadout } from '@eternalus/core';
 
 import type { SavedLoadout } from './LoadoutController.types';
 
@@ -7,7 +7,7 @@ type ResolvedLoadouts = {
   /** The primary weapon of each class's saved loadout, repaired where it had to be. */
   readonly saved: Readonly<Record<string, string>>;
   /** The slots auto-build repaired, per class; a class with none repaired is absent. */
-  readonly repairs: ReadonlyMap<string, readonly LoadoutField[]>;
+  readonly repairs: ReadonlyMap<string, readonly LoadoutSlot[]>;
 };
 
 /**
@@ -20,7 +20,7 @@ export function resolveSavedLoadouts(
   records: ReadonlyMap<string, SavedLoadout>,
 ): ResolvedLoadouts {
   const saved: Record<string, string> = {};
-  const repairs = new Map<string, readonly LoadoutField[]>();
+  const repairs = new Map<string, readonly LoadoutSlot[]>();
   for (const [classId, record] of records) {
     if (!content.legends.has(classId)) continue;
     const { loadout, repaired } = repairLoadout({ classId, ...record }, content);

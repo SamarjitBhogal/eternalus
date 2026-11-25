@@ -1,9 +1,9 @@
 import type { LegendDefinition } from '../content/legends/legends.types';
 import type { WeaponDefinition } from '../content/weapons/weapons.types';
-import type { Loadout } from './Loadout.types';
+import type { Loadout, LoadoutSlot } from './Loadout.types';
 
-/** A part of a `Loadout` a problem is about: its class, or one of its slots (05 §12). */
-export type LoadoutField = 'class' | 'primary-weapon';
+/** A part of a `Loadout` a problem is about: its class, or one of its slots (05 §12, DEC-354 (3)). */
+export type LoadoutField = 'class' | LoadoutSlot;
 
 /** One broken rule of a loadout (05 §12 `LoadoutProblem`). */
 export type LoadoutProblem = {

@@ -1,14 +1,17 @@
 import { createDefaultLoadoutRules } from './defaultLoadoutRules';
-import type { Loadout } from './Loadout.types';
+import type { Loadout, LoadoutSlot } from './Loadout.types';
 import { LoadoutValidator } from './LoadoutValidator';
-import type { LoadoutContent, LoadoutField, LoadoutProblem } from './LoadoutValidator.types';
+import type { LoadoutContent, LoadoutProblem } from './LoadoutValidator.types';
 
 const DEFAULT_VALIDATOR = new LoadoutValidator(createDefaultLoadoutRules());
 
 /** The `Loadout` field each slot is stored in; a new slot is one more entry. */
 const SLOT_FIELDS = {
   'primary-weapon': 'primaryWeaponId',
-} as const satisfies Record<Exclude<LoadoutField, 'class'>, Exclude<keyof Loadout, 'classId'>>;
+} as const satisfies Record<LoadoutSlot, Exclude<keyof Loadout, 'classId'>>;
+
+/** Every slot, in `SLOT_FIELDS` order. */
+const SLOTS = Object.keys(SLOT_FIELDS) as readonly LoadoutSlot[];
 
 /**
  * Every problem of `loadout` against `content`, by the default rules (05 §12); empty when it is
@@ -43,14 +46,13 @@ export const autoBuildLoadout = (classId: string, content: LoadoutContent): Load
 export const repairLoadout = (
   saved: Loadout,
   content: LoadoutContent,
-): { readonly loadout: Loadout; readonly repaired: readonly LoadoutField[] } => {
+): { readonly loadout: Loadout; readonly repaired: readonly LoadoutSlot[] } => {
   const built = autoBuildLoadout(saved.classId, content);
-  // The class exists (autoBuildLoadout checked it), so every problem is a slot's.
-  const repaired = [...new Set(validateLoadout(saved, content).map(({ field }) => field))];
-  const loadout = repaired.reduce<Loadout>((current, field) => {
-    if (field === 'class') return current;
-    const key = SLOT_FIELDS[field];
-    return { ...current, [key]: built[key] };
-  }, saved);
+  const problems = validateLoadout(saved, content);
+  const repaired = SLOTS.filter((slot) => problems.some(({ field }) => field === slot));
+  const loadout = repaired.reduce<Loadout>(
+    (current, slot) => ({ ...current, [SLOT_FIELDS[slot]]: built[SLOT_FIELDS[slot]] }),
+    saved,
+  );
   return { loadout, repaired };
 };
