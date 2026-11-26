@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { timelineFrameOf } from '../../config/timelineFrameOf';
 import { timelineMarkTick } from '../../config/timelineMarkTick';
-import { CATHEDRAL_GEM } from '../../content/structures/cathedralGem';
+import { STRUCTURE_DEFINITIONS } from '../../content/structures/structureCatalogue';
 import { TEST_DEBUG_CONFIG } from '../../diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from '../../diagnostics/MemoryLogger';
 import { MapGenerator } from '../../map/MapGenerator';
@@ -11,6 +11,7 @@ import { MapObjectBuilder } from '../../map/MapObjectBuilder';
 import { MapPresentationBuilder } from '../../map/MapPresentationBuilder';
 import { Simulation } from '../../Simulation';
 import type { DuelOptions } from '../../Simulation.types';
+import type { GameState } from '../../state/GameState';
 
 /** A 20 s planned match with no countdown, so mid-game comes after 10 s; a Duel with `duel`. */
 const match = (duel?: DuelOptions) => {
@@ -63,10 +64,17 @@ describe('the gem eruption (scenario, 12 §3, DEC-83)', () => {
     simulation.on('entity-removed', ({ entityId, cause }) => {
       if (entityId === gem.id) removed.push({ tick: simulation.tick, entityId, cause });
     });
+    const { carriedObjectId } = STRUCTURE_DEFINITIONS.get('cathedral');
     const plinthDestroyed = (): boolean | undefined =>
-      simulation.snapshot().mapObjects?.find(({ id }) => id === CATHEDRAL_GEM.plinthObjectId)
-        ?.isDestroyed;
+      simulation.snapshot().mapObjects?.find(({ id }) => id === carriedObjectId)?.isDestroyed;
+    const at = { x: gem.transform?.x ?? 0, y: gem.transform?.y ?? 0 };
+    const isOpenGround = (): boolean | undefined =>
+      (simulation as unknown as { readonly state: GameState }).state.world?.grid.isWalkableAt(
+        at.x,
+        at.y,
+      );
     expect(plinthDestroyed()).toBe(false);
+    expect(isOpenGround()).toBe(false);
 
     stepTo(simulation, eruptionTick + 1);
     // A Warrior standing where the gem stood: the debug invariants throw if it overlaps a
@@ -76,7 +84,7 @@ describe('the gem eruption (scenario, 12 §3, DEC-83)', () => {
       kind: 'warrior',
       definitionId: 'warrior',
       team: 'light',
-      at: { x: gem.transform?.x ?? 0, y: gem.transform?.y ?? 0 },
+      at,
       count: 1,
     });
     stepTo(simulation, eruptionTick + 2 * config.tickRate);
@@ -84,6 +92,8 @@ describe('the gem eruption (scenario, 12 §3, DEC-83)', () => {
     expect(removed).toEqual([{ tick: eruptionTick + 1, entityId: gem.id, cause: 'despawned' }]);
     expect(simulation.snapshot().entities.some(({ kind }) => kind === 'cathedral-gem')).toBe(false);
     expect(plinthDestroyed()).toBe(true);
+    // The path grid reopens with collision (07 §10), so pathing and guards see open ground there.
+    expect(isOpenGround()).toBe(true);
   });
 
   it('summons no boss in a Duel and leaves the gem standing (DEC-36: the world is off)', () => {

@@ -2,7 +2,6 @@ import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { MAP_PALETTE as P } from '../content/maps/map1Scenery';
 import type { MapDecoration } from '../content/maps/maps.types';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
-import { CATHEDRAL_GEM } from '../content/structures/cathedralGem';
 import { cos, sin } from '../utils/deterministicMath';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 
@@ -118,7 +117,8 @@ export class CathedralInteriorBuilder extends MapDecorationBuilder {
    */
   private gemPlinth(): void {
     const radius = STRUCTURE_DEFINITIONS.get('cathedral').footprintRadius;
-    const { plinthObjectId } = CATHEDRAL_GEM;
+    const { carriedObjectId: plinthObjectId } = STRUCTURE_DEFINITIONS.get('cathedral');
+    if (plinthObjectId === undefined) throw new Error('The Cathedral gem carries no plinth');
     this.beginObject(plinthObjectId, 'cathedral');
     this.blockEllipse(plinthObjectId, G.cathedral.x, G.cathedral.y, radius, radius, P.ivoryStone);
     this.endObject();

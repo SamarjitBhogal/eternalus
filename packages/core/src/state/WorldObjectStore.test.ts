@@ -24,7 +24,7 @@ const fixtureFactory = (): EntityFactory => {
 };
 
 describe('WorldObjectStore', () => {
-  it('destroys a map object with no health of its own, which then blocks nothing (12 §3)', () => {
+  it('retires a carried map object with its carrier, which then blocks nothing (12 §3)', () => {
     const plinth: MapObject = {
       id: 'plinth',
       kind: 'cathedral',
@@ -43,10 +43,12 @@ describe('WorldObjectStore', () => {
       factory: fixtureFactory(),
       entities: new EntityStore(),
       definitions: MAP_OBJECT_DEFINITIONS,
+      carriers: new Map([['plinth', 'gem']]),
     });
     expect(world.blockingAt({ x: 2, y: 2 }, 1)).toBe('plinth');
+    expect(world.objectFor('gem')).toBe(plinth);
 
-    world.destroy('plinth');
+    world.removed('gem');
 
     expect(world.blockingAt({ x: 2, y: 2 }, 1)).toBeNull();
     expect([...world.destroyedIds]).toEqual(['plinth']);

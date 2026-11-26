@@ -270,7 +270,7 @@ export class GuardRoster {
     return !state.entities.isAlive(guardId) || state.entities.teamOf(guardId) !== slot.team;
   }
 
-  /** The tick a plan's posts are first filled (its `activation`), or `null`: when `activate` says. */
+  /** The tick a plan's posts are first filled (its `activation`), or `null`: `activate` fills them. */
   private static firstTick<K extends ActivationKind>(
     state: GameState,
     activation: ActivationOf<K>,

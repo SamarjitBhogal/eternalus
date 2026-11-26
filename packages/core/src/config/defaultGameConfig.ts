@@ -54,7 +54,10 @@ const DEFAULT_GAME_CONFIG: Omit<GameConfig, 'match'> & {
   },
 };
 
-/** The default timeline's entry the gem erupts on (architecture 12 §3); the client's cut-scene reads it. */
+/**
+ * The default timeline's entry the gem erupts on (architecture 12 §3); the client's cut-scene
+ * reads it.
+ */
 export const GEM_ERUPTION_ENTRY_ID = 'gem-eruption';
 
 /** The default timeline (architecture 12 §3); the countdown ends at `countdownTicks`. */

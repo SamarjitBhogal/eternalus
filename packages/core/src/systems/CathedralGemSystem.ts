@@ -65,7 +65,10 @@ export class CathedralGemSystem implements System {
     });
   }
 
-  /** Removes an erupted gem first, then ages each gem's glow, hands it over, then answers this tick's hits. */
+  /**
+   * Removes an erupted gem first, then ages each gem's glow, hands it over, then answers this
+   * tick's hits.
+   */
   public update({ state }: SystemContext): void {
     if (this.hasErupted) {
       this.hasErupted = false;
@@ -108,7 +111,6 @@ export class CathedralGemSystem implements System {
       state.entities.remove(entityId, 'despawned');
       state.events.emit('entity-removed', { entityId, cause: 'despawned' });
     }
-    state.worldObjects?.destroy(this.gem.plinthObjectId);
   }
 
   private strike(state: GameState, gem: CathedralGemState, unitId: EntityId): void {

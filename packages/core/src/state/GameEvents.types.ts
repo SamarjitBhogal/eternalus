@@ -170,7 +170,10 @@ export type GameEventMap = {
     readonly cause: string;
   };
   readonly 'boss-summoned': { readonly entityId: EntityId; readonly kind: string };
-  /** The Cathedral gem erupted (`summon-greater-boss`, 12 §3); `boss-summoned` comes with the spawn. */
+  /**
+   * The Cathedral gem erupted (`summon-greater-boss`, 12 §3); `boss-summoned` comes with the
+   * spawn.
+   */
   readonly 'greater-boss-summoned': { readonly bossId: string };
   /** `command` is the rejected `Command` (typed loosely: `state/` sits below `commands/`). */
   readonly 'command-rejected': {

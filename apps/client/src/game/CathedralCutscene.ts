@@ -53,7 +53,7 @@ export class CathedralCutscene {
 
   /**
    * Reads the latest snapshot, after each step: the tick, the eruption's tick while it is still
-   * upcoming, the gem's place while it stands, and whether the player started moving (`isMoving`,
+   * upcoming, the gem's place once it is seen, and whether the player started moving (`isMoving`,
    * this tick's movement input), which skips a playing cut-scene.
    */
   public observe(snapshot: Snapshot, isMoving: boolean): void {
@@ -63,8 +63,11 @@ export class CathedralCutscene {
       ({ entryId }) => entryId === GEM_ERUPTION_ENTRY_ID,
     );
     if (eruption !== undefined) this.eruptionTick = eruption.tick;
-    const gem = snapshot.entities.find(({ kind }) => kind === 'cathedral-gem');
-    if (gem?.transform != null) this.gemAt = { x: gem.transform.x, y: gem.transform.y };
+    // The gem never moves, so it is looked up only until it is found.
+    if (this.gemAt === null) {
+      const gem = snapshot.entities.find(({ kind }) => kind === 'cathedral-gem');
+      if (gem?.transform != null) this.gemAt = { x: gem.transform.x, y: gem.transform.y };
+    }
     if (this.hasErupted && this.burstTick === null) this.burstTick = this.tick;
     if (this.isPlaying() && isMoving && !this.wasMoving) this.isSkipped = true;
     this.wasMoving = isMoving;

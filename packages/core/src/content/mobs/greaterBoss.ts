@@ -1,15 +1,16 @@
 import { GUARD_LEASH } from '../structures/guardLeash';
 import type { MobDefinition } from './mobs.types';
 
-// balancing.md "Mini-boss and Greater Boss relative to Legends": refHealth(L) = 650 × 1.08^(L − 1),
+// balancing.md "Mini-boss and Greater Boss relative to Legends":
+// refHealth(L) = 650 × 1.08^(L − 1),
 // the level-L Warrior of the anchor table, at the GreaterBoss row's expected level 7 (≈ 1,031).
 // TUNE: the level was set for a 20-minute match (DEC-13: 30 minutes; INBOX).
 const REF_HEALTH = 650 * 1.08 ** (7 - 1);
 
 /**
  * The Greater Boss, "the Eternal" (reference 04, balancing.md's GreaterBoss row), summoned at the
- * Cathedral when the gem erupts (architecture 12 §3). Interim (doc 04's `GreaterBoss` class and doc
- * 11 §4.6's `BossController` come later): a neutral heavy mob on the Cathedral zone's guard post,
+ * Cathedral when the gem erupts (12 §3). Interim (doc 04's `GreaterBoss` class and doc 11
+ * §4.6's `BossController` come later): a neutral heavy mob on the Cathedral zone's guard post,
  * driven by `GuardController` with one basic attack and no moves; its post, zone leash and (no)
  * respawn are the zone's guard plan (`content/structures/guardPlans.ts`). It takes a quarter of a
  * minion's hit (`BOSS_MINION_DAMAGE_TAKEN`). No kill reward yet: DEC-237's flat 5 levels come with

@@ -44,8 +44,9 @@ import { isPlayableTeam } from '../teams/playableTeams';
  * It also runs every structure's and zone's guard plan (18 §7, 07 §6) through its `GuardRoster`,
  * adds a capture point's defenders when `checkpoint-reached` names it with a Legend present
  * (07 §7, 18 §7.1, DEC-259). A point that changes owner keeps its living defenders: they fight
- * the new owner inside the zone and count as presence for their own side (DEC-261). On its pass after
- * `greater-boss-summoned` it spawns the summoned boss and announces it with `boss-summoned` (12 §3).
+ * the new owner inside the zone and count as presence for their own side (DEC-261). On its pass
+ * after `greater-boss-summoned` it spawns the summoned boss and announces it with `boss-summoned`
+ * (12 §3).
  */
 export class SpawnSystem implements System {
   public readonly name = 'spawn';

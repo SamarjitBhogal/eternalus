@@ -298,7 +298,8 @@ describe('the Greater Boss spawns at the gem eruption (scenario, 12 §3)', () =>
         const mob = MOB_DEFINITIONS.get(slot.mobId);
         posts.push({
           mobId: slot.mobId,
-          // How far from its home a guard can touch a unit: its leash, the leeway, its body and reach.
+          // How far from its home a guard can touch a unit: its leash, the leeway, its body and
+          // reach.
           reach:
             slot.homeRadius +
             slot.leashRadius +

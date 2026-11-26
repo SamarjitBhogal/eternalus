@@ -1,6 +1,7 @@
 /**
  * The mid-game cut-scene's timing and feel (Aryan 2026-11-22: the camera turns to the Cathedral,
- * the gem erupts, the Greater Boss appears). TUNE: no reference values; defaults taken in the build.
+ * the gem erupts, the Greater Boss appears). TUNE: no reference values; defaults taken in the
+ * build.
  */
 export const CUTSCENE = {
   /** How long before the eruption the camera starts turning to the Cathedral. */
@@ -11,7 +12,9 @@ export const CUTSCENE = {
   burstSeconds: 1.5,
   /** Share of the distance to the Cathedral the camera covers each frame (slower than follow). */
   smoothing: 0.08,
-  /** The screen shake: its largest offset (world units) at the eruption, fading over the burst. */
-  /** `verticalShare`: the share of the sideways swing the camera also moves up and down. */
+  /**
+   * The screen shake: its largest offset (world units) at the eruption, fading over the burst;
+   * `verticalShare` is the share of the sideways swing the camera also moves up and down.
+   */
   shake: { amplitude: 0.8, ticksPerSwing: 2, verticalShare: 0.5 },
 } as const;

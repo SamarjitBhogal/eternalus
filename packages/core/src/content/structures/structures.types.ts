@@ -38,6 +38,11 @@ export type StructureDefinition = EntityDefinitionBase & {
    * DEC-217 (16)). A gate's outline is for reach only (DEC-217 (17)).
    */
   readonly hasFortBox?: true;
+  /**
+   * A map object with no health of its own that stands while this structure does and is destroyed
+   * with it (`WorldObjectStore`'s `carriers`): the gem's plinth, gone when the gem erupts (12 §3).
+   */
+  readonly carriedObjectId?: string;
 };
 
 /** Which lane a spawner's horde takes: the spawner's own lane, or the team's worst lane. */
@@ -172,9 +177,4 @@ export type CathedralGemDefinition = {
   readonly statusIds: readonly string[];
   /** The gem glows for this status's duration plus `extraTicks` after each hit. */
   readonly glow: { readonly statusId: string; readonly extraTicks: number };
-  /**
-   * The map object of the plinth under the gem that blocks movement (DEC-346); destroyed with the
-   * gem when it erupts (12 §3), so the Greater Boss stands where the gem stood.
-   */
-  readonly plinthObjectId: string;
 };
