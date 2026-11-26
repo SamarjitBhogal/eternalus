@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -568,8 +568,10 @@ export class DamagePipeline {
 The order is fixed and every multiplier is data: attacker statuses (`imbue`, `enraged`, the minion
 strength-by-distance curve), target statuses (`sundered`, `marked`, `hexed`), the target's
 `damageMultipliers` keyed by the attacker's `damageClass`
-([07 §4](07-structures-obstacles-and-destructibles.md#4-gates)), `Collider.isUnbreakable`
-(rejects), then `Health.applyDamage`. `DeathResolver` turns an overflow into `entity-died {
+([07 §4](07-structures-obstacles-and-destructibles.md#4-gates)), a big boss's body-part bonus
+(an attacker in its rear half, or a projectile's impact point on its head outline; only the larger
+when both hold; DEC-381), `Collider.isUnbreakable` (rejects), then `Health.applyDamage`.
+`DeathResolver` turns an overflow into `entity-died {
 entityId, killer: DamageSource }` and records the cause for `DeathSystem` (rule B). A death by
 attacker-less damage that credits a killer (the Cathedral gem's statuses, DEC-346) names the
 victim's last enemy damager inside the assist window as the attacker, keeping the gem's source kind
@@ -586,9 +588,13 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 which gives the same result as §9's late check; 07 §3), `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
 `INBOX.md`), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8), `MinionStrengthStep`
 (the minion strength-by-distance curve, its base-stat point moved toward the enemy for each lane
-tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16) and
+tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16),
 `BossMinionDamageStep` (a boss takes only its share of a lane minion's hit, balancing.md; the
-shares are `BOSS_MINION_DAMAGE_TAKEN` in `content/mobs/minionModifiers.ts`). Interim differences:
+shares are `BOSS_MINION_DAMAGE_TAKEN` in `content/mobs/minionModifiers.ts`) and
+`BodyPartBonusStep` (DEC-381: the back-hit and head-shot bonuses on a unit with a `CombatHitbox`;
+the multipliers are `BODY_PART_BONUS` in `content/mobs/bodyPartBonus.ts`). `DamageHit` and
+`apply` carry an optional `impactPoint`, which only a projectile's hit sets; no projectile deals
+damage yet, so only tests reach the head-shot bonus today. Interim differences:
 no `DamageType` yet (nothing reads it; it joins `DamageHit` and
 `apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
 `DeathResolver` is not a separate class yet. The gem's kill credit is `KillCredit`, which the

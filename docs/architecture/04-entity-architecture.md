@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-26
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -176,6 +176,7 @@ invariant `finite-transforms` checks the position and the facing
 | `Vision`        | `radius`, `revealedUntilTick`                                                             | radius ≥ 0                                                                                                      | `canSee(target)`                                                                                   |
 | `Spawner`       | `spawnTableId`, `intervalTicks`, `nextSpawnTick`, `guardIds`                              | next spawn ≥ current tick                                                                                       | `isDue(tick)`, `schedule(tick)`                                                                    |
 | `Capturable`    | `owner`, `progress`, `checkpoint`, `lockedBy`, `presence`, each side's reached checkpoint | `-1 <= progress <= 1`; `0 <= checkpoint <= ` the configured count (checked by `CaptureProgressBoundsInvariant`) | `setProgress`, `setOwner` (clears the checkpoints each side reached), `setPresence`, `markReached` |
+| `CombatHitbox`  | a big boss's local body outline and head outline (static definition data, DEC-381)        | mirrored only by `facing.x`, as the side-view art is; never hashed                                              | `polygonAt(position, facing)`, `isOnHead(point, position, facing)`                                 |
 | `ZoneArea`      | `polygons` (the building's floor, world units)                                            | at least one polygon of at least 3 finite points                                                                | `contains(point)`, `reachFrom(center)`                                                             |
 
 Cross-component calls go through the entity (`entity.get(Team)`), not through a global lookup.
