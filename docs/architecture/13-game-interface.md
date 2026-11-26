@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -585,9 +585,8 @@ difference is registered in
 Sim mode (2026-11-13, FR-099): the developer menu's Sim mode section sends `dev-set-controller` (Remove
 human: the human Legend to the bot role its team lacks; Take control: a typed Legend id to
 `player`, swapping the seat if a human exists, DEC-294). With no human, Follow (client-only, no
-`Command`: a `dev-follow` intent with a Legend id to `DeveloperMenuController`, not the
-`dev-toggle` of §4's spectate row) makes the camera follow a typed
-Legend id, the spectate row of §4; Stop following ends it. The menu reads both controller ids from the `developer-menu` state. `Match` reads the
+`Command`: a `dev-follow` intent to `DeveloperMenuController`, not §4's `dev-toggle` spectate
+row) makes the camera follow a typed Legend id; Stop following ends it. The menu reads both controller ids from the `developer-menu` state. `Match` reads the
 human Legend from each snapshot, so with none the HUD player block and the attack clicks stand
 idle, the camera too unless Follow names a Legend, and the match runs on. Not built: `SinglePlayerBrainInvariant` (cited by the sim-mode row of the
 table in section 4); a Legend with no human is not checked for it.
@@ -730,8 +729,7 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   `capture-state` is now
   published; `loading-progress` names seven asset groups ([14](14-persistence-and-resources.md)
   §14); `hud-state` is `{ player }` with no
-  `spectatedLegendId`: sim mode's Follow (the sim mode note above) moves only the camera, and the
-  HUD does not show the followed Legend. The display types live in
+  `spectatedLegendId` (sim mode's Follow moves only the camera; see the sim mode note above). The display types live in
   `bridge/catalogue.types.ts` and `bridge/hud.types.ts`; `bridge/` also gains `selectionRules.ts`,
   `matchSetupRules.ts`, `minimapRing.ts`, `legendNames.ts` and `opponentOf.ts`, and `assetsSlice`. The HUD data is in
   `hudSlice` (the Sprint 1 contract), `matchSlice.clock` is nullable, and `match-setup` resets the
