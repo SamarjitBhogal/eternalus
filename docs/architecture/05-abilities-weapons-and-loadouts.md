@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-26
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -692,17 +692,18 @@ floor after that (DEC-306). A weapon with a melee attack beside its default atta
 melee, on its own rebindable action, DEC-308). `mode` is the same optional field as the heavy
 attack's. The basic and melee attacks share the unit's one cooldown (a reading of DEC-308).
 
-**Lit shots (HC-Q89, DEC-345).** A shot flies over a lake or a lava river (10 §7). A shot whose
-definition has `litOnHit` steps catches fire when it flies over a shape that lights shots (a lava
-river: `CollisionQuery.lightsShot`, 10 §7) before it reaches the body it lands on. It stays lit
+**Lit shots (HC-Q89, DEC-345).** A shot flies over a map shape flagged `canShotsCross` (a map
+builder sets the flags, 10 §7). A shot whose definition has `litOnHit` steps catches fire when it
+flies over a shape flagged `canLightShots` (`CollisionQuery.lightsShot`, 10 §7) before it reaches
+the body it lands on. It stays lit
 until it lands or ends. Where a lit shot lands damage, `ProjectileSystem` runs its `litOnHit` steps
 on the body through the `StepRunner` port (`HitEffects.runSteps`), as the attack's `onHit` runs:
 one cast named after the weapon that fired it, credited to the owner (or to the payload as the
 `Shooter` when the owner is gone). Content decides which shots can catch fire and what a lit shot
 does: each projectile's `litOnHit` in `content/projectiles/` (authored in seconds, loaded in ticks
 by `loadProjectiles`, checked against the ability registry at boot by `checkAttackLinks`), and the
-statuses those steps apply in `content/status-effects/`. A shot with no `litOnHit` flies over lava
-and does not catch fire. A body with no `StatusEffects` takes the shot's damage and no status.
+statuses those steps apply in `content/status-effects/`. A shot with no `litOnHit` flies over such
+a shape and does not catch fire. A body with no `StatusEffects` takes the shot's damage and no status.
 `ProjectileFlight` holds whether a shot is lit; the hash, `EntitySnapshot.projectile` and the
 client's look of the shot follow it.
 
@@ -818,6 +819,18 @@ as before. A dash step of a gone caster does nothing (`DashEffect`), and `Entity
 ignores an unknown attacker. A live attacker's hit does not change. `attackInTicks` and
 `timeProblems` now live in `content/timesInTicks.ts` with `stepInTicks`, shared by the loaders of
 abilities, statuses, weapons and turret ammo.
+
+**Implementation status, 2026-11-26 (branch `feat/shots-over-lava`; HC-Q105, DEC-373 correction,
+HC-Q115).** The shot rule above names walk-on outlines. In the code, `AreaHitQuery.stopsShot`
+reads one shot property: `Outline.canShotsFlyOver` (a walk-on outline, or a map object flagged
+`canShotsCross`, such as a camp fire), or `Collider.canShotsFlyOver` for a body with no outline
+(set from `StructureDefinition.canShotsFlyOver`, on the forest camps). A shot not aimed at such a
+body flies over it; a shot aimed at it stops there, as at a walk-on outline (DEC-322 (1)). So a
+forest camp no longer stops every shot: the text above that names it as an example of a body that
+takes no damage does not hold for it (the owner confirms the reading in `INBOX.md` HC-Q115). Any
+other body that takes no damage now still stops every shot. `LineOfFire` uses the same rule. The
+melee rule (`AreaHitQuery.find`) still reads `isWalkOn`, so a sword still hits a camp fire that it
+sweeps.
 
 ## 11. Artifacts (gadgets Z and C)
 

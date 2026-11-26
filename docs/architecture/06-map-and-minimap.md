@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-26
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -639,6 +639,16 @@ fire). The map builder sets them: `MapLandscapeBuilder` gives lakes `canShotsCro
 both, through `MapDecorationBuilder.beginObject`. `MapObjectBuilder` copies them to the
 `MapObject`, and `staticCollisionIndexOf` to each collision shape. Every other object has neither,
 so it stops a shot. Collision reads the flags (10 §7); the map does not.
+
+### 2026-11-26 — Camp fires carry the shot flags (branch `feat/shots-over-lava`, DEC-373, HC-Q105)
+
+`MapSceneryBuilder` now sets both flags, `canShotsCross` and `canLightShots`, on each camp fire
+object (`<camp>-fire`), through `MapDecorationBuilder.beginObject`. So the note above ("Every other
+object has neither") no longer holds for camp fires. A camp fire is furniture with health, so it is
+also a body: its `MapObjectBody` reads `canShotsCross` as a body shots fly over
+(`Outline.canShotsFlyOver`), and a shot aimed at the fire still lands on it (10, 2026-11-26
+correction note). The map still decides nothing about shots: it only sets the flags. The palace
+kitchen hearths (`MapPalaceRoomsBuilder`) carry no flag (`INBOX.md` HC-Q116).
 
 ## Related
 
