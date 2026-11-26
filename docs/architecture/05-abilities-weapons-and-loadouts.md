@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-24
+last-reviewed: 2026-11-26
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -1455,8 +1455,11 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **The `summon` spec.** `{ definitionId, distance, maxActive }`: the body stands `distance`
     metres from the caster's centre along the cast's direction, facing that way, and a caster holds
     at most `maxActive` bodies of the definition. A new one first removes the caster's oldest as
-    `despawned`; a body that leaves the world for any cause frees its place (DEC-330 (7)). The
-    ledger is `GameState.summons` (`state/SummonLedger`), which `StateHasher` hashes. §3's `count`,
+    `despawned`; a body that leaves the world for any cause, or breaks, frees its place (DEC-330
+    (7)). Each body carries its caster in the `Summoned` component (DEC-382, HC-B43 (3) B), which
+    the summoner adds before the body joins the match and `StateHasher` hashes. The step counts
+    the caster's standing bodies of the definition from the store, oldest first in store order,
+    and skips a dead one (HC-B43 (9) B); no separate list exists. §3's `count`,
     `lifetimeSeconds` and `controllerId` are not built: no ability needs them yet (the wall is
     permanent until broken, DEC-330 (7)). The body stays when its caster dies or leaves.
   - **Placing.** `abilities/` may not import `entities/` (02 §2), so the step places through a

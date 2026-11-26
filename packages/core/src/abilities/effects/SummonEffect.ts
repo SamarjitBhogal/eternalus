@@ -1,5 +1,6 @@
 import type { Aim } from '../../components/AbilitySlotRuntime.types';
 import { Health } from '../../components/Health';
+import { Summoned } from '../../components/Summoned';
 import { Transform } from '../../components/Transform';
 import type {
   AbilityRejectReason,
@@ -20,9 +21,9 @@ import { mustBePositive, mustNotBeNegative } from '../specChecks';
  * Places one body from a definition, owned by the caster (architecture 05 §3 `SummonEffect`; a
  * Shield Wall, DEC-330 (7)): `distance` metres from the caster's centre along the cast's
  * direction, facing that way, through the `Summoner` port (`CastContext.summoner`), which also
- * makes a solid outline a wall. A caster holds at most `maxActive` bodies of one definition
- * (`GameState.summons`): a new one first removes the caster's oldest standing one as
- * `despawned`, and one that is destroyed frees its place at once, also in the tick it breaks. A
+ * makes a solid outline a wall. Each body carries its caster (`Summoned`). A caster holds at most
+ * `maxActive` bodies of one definition: a new one first removes the caster's oldest standing one
+ * as `despawned`, and one that is destroyed frees its place at once, also in the tick it breaks. A
  * body whose outline would overlap a wall or reach past the map's edge is not placed: the cast is
  * refused (`no-target`) before it spends anything (`aimBlockedBy`, which `CastValidator` asks).
  * The overlay draws the outline where the body will stand (`describe`). The body stays when the
@@ -87,25 +88,48 @@ export class SummonEffect implements AbilityEffect<SummonSpec> {
   }
 
   /**
-   * Removes the caster's oldest standing bodies over the cap, then places the new one and records
-   * it. A body destroyed earlier in this tick still waits for `DeathSystem` to remove it, so it
-   * does not count: it frees its place at once.
+   * Removes the caster's oldest standing bodies over the cap, then places the new one, owned by
+   * the caster. A body destroyed earlier in this tick still waits for `DeathSystem` to remove it,
+   * so it does not count: it frees its place at once.
    */
   public apply(spec: SummonSpec, cast: CastContext): void {
     const { state, casterId, direction } = cast;
     const { definitionId, maxActive } = spec;
-    const placed = state.summons
-      .placedBy(casterId, definitionId)
-      .filter((id) => state.entities.get(id)?.findComponent(Health)?.isDead !== true);
-    for (const oldest of placed.slice(0, Math.max(0, placed.length + 1 - maxActive))) {
+    const standing = SummonEffect.standingOf(state, casterId, definitionId);
+    for (const oldest of standing.slice(0, Math.max(0, standing.length + 1 - maxActive))) {
       cast.summoner.despawn(state, oldest);
     }
     const centre = cast.placement.to;
-    const id = cast.summoner.summon(state, definitionId, {
-      position: SummonEffect.ahead(spec, centre, direction),
-      facing: direction,
+    cast.summoner.summon(
+      state,
+      definitionId,
+      { position: SummonEffect.ahead(spec, centre, direction), facing: direction },
+      casterId,
+    );
+  }
+
+  /**
+   * The bodies built from `definitionId` that `casterId` placed (`Summoned`) and that still stand
+   * (not dead), oldest first. Oldest first is the store's order: `EntityStore` keeps the order
+   * bodies were added in, the summoner adds a body the moment it is cast, and no body is ever
+   * added again. The caller removes bodies only after this walk (`forEach` skips an entity
+   * removed during it).
+   */
+  private static standingOf(
+    state: GameState,
+    casterId: EntityId,
+    definitionId: string,
+  ): readonly EntityId[] {
+    const standing: EntityId[] = [];
+    state.entities.forEach((entity) => {
+      if (
+        entity.definitionId === definitionId &&
+        entity.findComponent(Summoned)?.ownerId === casterId &&
+        entity.findComponent(Health)?.isDead !== true
+      )
+        standing.push(entity.id);
     });
-    state.summons.record(casterId, definitionId, id);
+    return standing;
   }
 
   /** Where the body stands: `distance` from `centre` along `direction`. */

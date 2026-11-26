@@ -12,12 +12,18 @@ export type SummonPlacement = { readonly position: Vec2; readonly facing: Vec2 }
  */
 export interface Summoner {
   /**
-   * Builds the body `definitionId` at `placement`, adds it, makes a solid outline a wall
+   * Builds the body `definitionId` at `placement`, owned by `ownerId` (the `Summoned` component,
+   * there before the body joins the match), adds it, makes a solid outline a wall
    * (`GameState.walls`) and announces it (`entity-spawned`).
    *
    * @returns The new body's id.
    */
-  summon(state: GameState, definitionId: string, placement: SummonPlacement): EntityId;
+  summon(
+    state: GameState,
+    definitionId: string,
+    placement: SummonPlacement,
+    ownerId: EntityId,
+  ): EntityId;
   /** Takes the body `entityId` out of the match as `despawned` and announces it. */
   despawn(state: GameState, entityId: EntityId): void;
 }

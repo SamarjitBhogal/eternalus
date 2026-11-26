@@ -14,6 +14,7 @@ import { ProjectileFlight } from '../components/ProjectileFlight';
 import { ProjectilePayload } from '../components/ProjectilePayload';
 import { Progression } from '../components/Progression';
 import { StatusEffects } from '../components/StatusEffects';
+import { Summoned } from '../components/Summoned';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { INITIAL_FACING } from '../components/Transform.constants';
@@ -949,29 +950,16 @@ describe('StateHasher', () => {
     });
   });
 
-  it('hashes the placed bodies once a caster has one, by caster, definition and body', () => {
-    const hashWith = (placed: readonly (readonly [string, string, string])[]): number => {
-      const { state } = stateWithSoldier();
-      for (const [ownerId, definitionId, entityId] of placed) {
-        state.summons.record(ownerId, definitionId, entityId);
-      }
+  // A body without `Summoned` keeps the legacy fields ("hashes a match without hordes ...").
+  it('hashes a placed body’s caster, so two casters give two hashes (DEC-382, HC-B43 (3))', () => {
+    const hashOwnedBy = (ownerId?: string): number => {
+      const { state, soldier } = stateWithSoldier();
+      if (ownerId !== undefined) soldier.addComponent(new Summoned(ownerId));
       return hasher.hash(state);
     };
-    const none = hashWith([]);
+    const unowned = hashOwnedBy();
 
-    expect(hashWith([])).toBe(none);
-    expect(
-      new Set([
-        none,
-        hashWith([['entity-1', 'wall', 'entity-9']]),
-        hashWith([['entity-2', 'wall', 'entity-9']]),
-        hashWith([['entity-1', 'orb', 'entity-9']]),
-        hashWith([['entity-1', 'wall', 'entity-8']]),
-        hashWith([
-          ['entity-1', 'wall', 'entity-8'],
-          ['entity-1', 'wall', 'entity-9'],
-        ]),
-      ]).size,
-    ).toBe(6);
+    expect(hashOwnedBy('entity-7')).toBe(hashOwnedBy('entity-7'));
+    expect(new Set([unowned, hashOwnedBy('entity-7'), hashOwnedBy('entity-8')]).size).toBe(3);
   });
 });
