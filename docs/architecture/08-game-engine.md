@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -314,8 +314,8 @@ Legend sprites (PR #170, `feat/character-sprites-phase3`, 2026-11-25):
 - The port has `drawSprite(sprite, anchor, width): void` (the frame's bottom centre at `anchor`,
   `width` world units wide, the height from the atlas cell) and the query `hasSprite(sprite)`.
   `RecordingRenderer` answers `hasSprite` by the same rule (`atlasWithFrame`). §4's sketch takes
-  `x, y` and `options`; the built port takes a `WorldPoint`, as its other methods do. A later PR
-  adds `options?: { angle?, alpha? }` for projectiles.
+  `x, y` and `options`; the built port takes a `WorldPoint`, as its other methods do. The first
+  PR that needs `SpriteOptions` (§4) adds it.
 - `match-loading` loads the player's sheet group after `match`
   ([13](13-game-interface.md) §2, `matchAssetGroups`), and `createBrowserMatch` gives its atlas to
   `Canvas2dRenderer.fromCanvas` (§6: constructor injection). `createLegendView` registers
@@ -326,9 +326,13 @@ Legend sprites (PR #170, `feat/character-sprites-phase3`, 2026-11-25):
   size too. `INBOX.md` asks the owner to sign this off (#170 better-than-design items).
 - The health bar sits above the artwork through `EntityView.visualRadiusOf?`, the contract of
   PR #90. The second of #90 and #170 to merge drops its duplicate of it and of
-  `LEGEND_VISUAL_DIAMETER`.
-- `Match.ts` has 315 lines (`wc -l`), over the ~300-line guideline. The next split moves the
-  player's sprite (`LegendAnimation`, the frame tick and `createLegendView`) into one collaborator.
+  `LEGEND_VISUAL_DIAMETER`. DEC-238's row lands with PR #90; until then `LEGEND_VISUAL_DIAMETER`
+  is provisional (Owner Calls card PR170 (6)). On merge with PR #90, the fallback of
+  `LegendSpriteView.visualRadiusOf` changes from the footprint radius to `super.visualRadiusOf()`
+  (#90's `LegendView`), and the health bar still uses the sprite top.
+- `game/PlayerLegendSprite.ts` holds the player's sprite wiring: `LegendAnimation`, the frame
+  tick and `createLegendView`. `Match` builds it from `MatchDeps.playerSheet`, which the match
+  factory looks up.
 
 HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
 

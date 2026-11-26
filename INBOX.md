@@ -33,6 +33,15 @@ Reply inline (`Decision: …`).
       (BTD5) The frame time in `EntityDrawState`: the sprite view reads `Match.frameTick`
       through a closure today, a hidden order dependency on `render()`. Decision: …
 
+- [ ] **Better than design: two more Legend sprite items (#170 critic round 2, 2026-11-26).** Not
+      built in #170. Owner Calls cards PR170 (13) and (14) ask the same. (BTD7)
+      `visualRadiusOf?` serves two queries: the hit radius for pointer targeting and the anchor
+      for the health bar (the top of the art). They are equal for discs and differ for standing
+      sprites. Split it into `visualRadiusOf?` and `visualTopOf?`. It touches PR #90 and
+      PR #170. (BTD8) Architecture 14 §11 plans `get<T>(id): T`, which is an unchecked cast by
+      design. One typed accessor per asset type (as `atlases(group)` in #170) removes the cast.
+      This changes the design text, not the code. Decision: …
+
 - [ ] **Licence class of the Magus sprite sheets (#170 pre-PR critic S11, 2026-11-25).** A
       contributor made the six Magus sheets (Catalyst, Oracle, Heretic; 1x and 2x) with AI from
       your card art. The manifest gives them the licence `owner` ("Owner-made for Eternalus").

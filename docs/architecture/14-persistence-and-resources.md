@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-24
+last-reviewed: 2026-11-26
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -560,9 +560,9 @@ detail:
   into the renderer. `match-loading` loads the player's sheet group, and `MenuState` and
   `ResultsState` release it (`matchAssetGroups`). `atlases(group)` picks the handles with
   `instanceof SpriteAtlasAsset`; it stands in for §11's `get<T>(id)` over an `AssetCache`, which
-  needs a typed handle per asset type to avoid an unchecked cast. `AssetCache` stays planned for
-  Phase 6, sprint 6.3, with the second decoded asset type (audio or JSON). Not built yet: `get`,
-  `AssetCache`, and the audio and JSON loaders.
+  needs a typed handle per asset type to avoid an unchecked cast. `AssetCache` stays planned:
+  plan Phase 5, sprint 5.2 names it in the task "`ResourceController` facade + `AssetCache` +
+  `loadingSlice`". Not built yet: `get`, `AssetCache`, and the audio and JSON loaders.
   An asset that fails to load never rejects its group: it is warned about through an injected
   callback and listed in the load's outcome, and a failed rendition falls back to the entry's own
   file; §12's typed error is not built. Progress counts an entry's loaded files once the entry is
