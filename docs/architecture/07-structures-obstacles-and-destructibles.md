@@ -4,15 +4,17 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-23
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
     'packages/core/src/entities/structures/**',
     'packages/core/src/entities/Obstacle*',
-    'packages/core/src/components/{Health,Spawner,Capturable,Carry}*',
-    'packages/core/src/systems/{Structure,Spawn,Capture}System*',
+    'packages/core/src/components/{Health,Spawner,Capturable,Carry,CathedralGemState}*',
+    'packages/core/src/systems/{Structure,Spawn,Capture,CathedralGem}System*',
     'packages/core/src/content/{structures,obstacles}/**',
+    'packages/core/src/systems/ZoneLevelUpSystem*',
+    'packages/core/src/content/zones/loadZoneLevelUp*',
   ]
 related:
   [
@@ -66,6 +68,7 @@ export abstract class Structure extends Entity {
 | `Turret`       | `TurretState`, `Combat`              | Auto-fires bolts; Warrior Legends may take manual control                                  | MVP (manual: MVP-if-time)           |
 | `Camp`         | `Spawner`                            | Neutral spawner for forest/corner camps; activates when the match countdown ends (DEC-167) | MVP (corner: MVP-if-time)           |
 | `Cathedral`    | `Spawner` (gem), `Aura`              | Middle capture point's building; summons the `GreaterBoss` mid-match                       | MVP (boss summon: per plan phase 3) |
+| `CathedralGem` | `CathedralGemState`                  | Its own unbreakable body (DEC-292); stuns and burns hitters; blocks movement (DEC-346)     | MVP                                 |
 
 Not a structure: `CapturePoint` is a `Zone` (no collider, §7). Anti-air buildings and form-change
 stations (Ascendance/Enchantment) are **post-MVP** (§14).
@@ -298,8 +301,13 @@ DEC-257). They never respawn. A change of owner keeps the ones still alive: they
 owner's units inside the zone and count as presence for their own side, so the new owner must
 kill them to keep the point (DEC-261). A cleared checkpoint awards XP shared among nearby allies biased toward the top
 damage dealer (`ProgressionSystem` listens to `checkpoint-cleared`). Holding a zone applies
-`StatusEffects` from content: ability/ultimate cooldown reduction and, after `levelUpAfterTicks`,
-a level-up for that side's lane minions; both are removed on loss. Mini-bosses at the quarter mark
+`StatusEffects` from content: ability/ultimate cooldown reduction, removed on loss. Every capture
+point has a zone level-up (DEC-258): once a side has held it for the hold time without a break,
+that side's hordes spawned on its lane gain minion levels, and losing the point takes them back on
+the same tick. `ZoneLevelUpSystem` hears `CaptureSystem`'s ownership events and announces the levels
+with `minion-levels-granted`; `MinionLevelSystem` applies them on its pass as the one minion level of
+its two sources (DEC-168, DEC-353), so a lost zone never costs a level the kills earned (DEC-279). The hold
+time and the levels are fields of each capture point's `ZoneDefinition` (`levelUp`, DEC-353), and `loadZoneLevelUp` turns the hold time into ticks once, at load (DEC-241); the cap is the minion level cap. Mini-bosses at the quarter mark
 lock the outer zones (`lockedBy`) until they die (`MatchDirector` timeline).
 
 ## 8. Structure destruction effects
@@ -503,6 +511,31 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   does not follow the owner yet (the minimap entity markers, SCRUM-151).
 - The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
   capture tracker); this PR publishes the presence and draws the split bar in the world.
+- **Cathedral gem (`feat/cathedral-gem-hittable`; DEC-291, DEC-292, DEC-346).** The gem is its own
+  body, apart from the building: a neutral `CathedralGem` structure built on the `cathedral` map
+  feature, `never` breakable, so `BreakabilityStep` blocks every hit. `DamagePipeline` announces a
+  blocked hit (`damage-blocked`); `CathedralGemSystem` answers each one that has an attacker by
+  landing `CATHEDRAL_GEM`'s statuses on that unit as environment damage (the gem is no team's, so it
+  hurts neutrals too): a stun and its tick damage. A touch strikes nobody (DEC-346): the gem blocks
+  movement instead, through an unbreakable plinth of the gem's own radius under it (a `cathedral`
+  map object, built by `CathedralInteriorBuilder`), so collision and the lane paths go round it.
+  A death by the gem's statuses counts for the victim's last enemy damager within the assist
+  window, or nobody (DEC-346): `KillCredit`, called by `DamagePipeline` before `entity-died`, so
+  every reader of the killer agrees; the last enemy hit is the hashed `LastEnemyHit` component.
+  Weapons reach the gem today, and the player's aim picks the gem before the plinth (`findGemAt`
+  before `findMapObjectAt`). The projectile PR (#148) stops a shot on static shapes: whichever of
+  #132 and #148 merges second must let a shot aimed at the gem reach the gem's circle before the
+  plinth around it (and make a stray shot strike it, DEC-292: contact "by accident" strikes).
+  Bots and minions never pick the gem as a target: perception sees only units, and a lane's
+  objectives are playable-team structures only (`LaneStructures`). The gem's content id is
+  `cathedral`, because `spawnStructures` builds one structure per map feature, matched by the
+  feature's definition id; the planned `Cathedral` building (§1) cannot share that id, so its PR
+  changes the spawn link (or renames the gem's id, which no save stores yet, ADR 0023). Its
+  `CathedralGemState` (the Cathedral's holder from `capture-point-owner-changed`, and its glow) is
+  in the snapshot, and `CathedralGemView` draws it in the holder's colour (DEC-291). The gem system
+  is off in a Duel until the follow-up PR builds the owner's Duel design (DEC-346). The `Cathedral`
+  building is not an entity yet: its `Spawner` and `Aura` (§1, §6), the gem's look over time and
+  the summon-greater-boss action are not built.
 
 **2026-11-09 (`feat/bosses-p3`, corner camp boss, interim; updated 2026-11-17).** DEC-236
 approves corner camps for Phase 3, with the corner boss on `GuardController` as an interim

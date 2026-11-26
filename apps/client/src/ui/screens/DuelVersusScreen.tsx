@@ -13,9 +13,7 @@ export function DuelVersusScreen(): ReactElement {
     <ScreenFrame>
       <Panel title={STRINGS.duelVersus.title}>
         {versus !== null && (
-          <p role="status">
-            {versus.own} {STRINGS.duelVersus.versus} {versus.opponent}
-          </p>
+          <p role="status">{STRINGS.duelVersus.matchFound(versus.own, versus.opponent)}</p>
         )}
       </Panel>
     </ScreenFrame>

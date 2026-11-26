@@ -8,6 +8,8 @@ describe('DuelQueueScreen', () => {
   it('says it is searching and offers only Cancel', () => {
     const html = renderWithStore(<DuelQueueScreen />);
     expect(html).toContain(STRINGS.duelQueue.searching);
+    expect(html).toContain(STRINGS.duelQueue.explanation);
+    expect(html).toContain('00:00');
     expect(buttonNames(html)).toEqual([STRINGS.duelQueue.cancel]);
   });
 });

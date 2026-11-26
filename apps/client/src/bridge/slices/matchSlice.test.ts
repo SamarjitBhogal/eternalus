@@ -72,6 +72,22 @@ describe('matchSlice', () => {
     });
   });
 
+  it("stores the disconnected opponent's reconnect window and clears it on reconnect", () => {
+    let match = matchSlice.reducer(undefined, matchSlice.actions.opponentPresenceChanged(10_000));
+    expect(matchSlice.selectors.selectOpponentGraceMs({ match })).toBe(10_000);
+    match = matchSlice.reducer(match, matchSlice.actions.opponentPresenceChanged(null));
+    expect(matchSlice.selectors.selectOpponentGraceMs({ match })).toBeNull();
+  });
+
+  it('stores whether the Duel connection is reconnecting', () => {
+    const { connectionChanged } = matchSlice.actions;
+    const { selectIsReconnecting } = matchSlice.selectors;
+    const dropped = matchSlice.reducer(undefined, connectionChanged(true));
+    expect(selectIsReconnecting({ match: dropped })).toBe(true);
+    const back = matchSlice.reducer(dropped, connectionChanged(false));
+    expect(selectIsReconnecting({ match: back })).toBe(false);
+  });
+
   it('resets to the initial state', () => {
     const { structures } = figmaHudState().match;
     let match = matchSlice.reducer(undefined, structuresChanged(structures));
@@ -85,7 +101,9 @@ describe('matchSlice', () => {
       durationSeconds: null,
       versus: null,
       duel: null,
+      opponentGraceMs: null,
       duelHud: null,
+      isReconnecting: false,
     });
   });
 });
