@@ -15,6 +15,7 @@ import type { Camera } from './engine/Camera';
 import type { Projection } from './engine/input/Projection.types';
 import type { FrameScheduler } from './engine/loop/FrameScheduler.types';
 import type { Renderer } from './engine/render/Renderer';
+import type { LegendSpriteSheet } from './legendSpriteSheets.types';
 import type { PlayerActions } from './PlayerActions';
 
 /**
@@ -88,10 +89,10 @@ type RemotePlayer = {
 /** Everything a `Match` is wired from (architecture 08 §7). */
 export type MatchDeps = {
   /**
-   * The player's sub-class (its stable content id) in a local match. It picks the sprite sheet
-   * (`LEGEND_SPRITE_SHEETS`); left out or `null` (an online Duel), the player's Legend is a disc.
+   * The player's sprite sheet in a local match (`LEGEND_SPRITE_SHEETS`, looked up by the match
+   * factory). Left out in an online Duel, or for a sub-class without a sheet: the Legend is a disc.
    */
-  readonly playerSpecId?: string | null;
+  readonly playerSheet?: LegendSpriteSheet;
   readonly simulation: MatchSimulation;
   /** Set for an online Duel: replaces the local `PlayerCommands` and the snapshot's human Legend. */
   readonly remote?: RemotePlayer;

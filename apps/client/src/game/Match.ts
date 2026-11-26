@@ -8,13 +8,10 @@ import {
 
 import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
-import { createLegendView } from './createLegendView';
 import { GameLoop } from './engine/loop/GameLoop';
 import { DeveloperMenuController } from './DeveloperMenuController';
 import { HealthBarVisibility } from './HealthBarVisibility';
-import { LegendAnimation } from './LegendAnimation';
 import { LegendBodies } from './LegendBodies';
-import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
 import type { WorldPoint, WorldRect } from './engine/render/Renderer.types';
 import {
@@ -29,6 +26,7 @@ import { MatchCamera } from './MatchCamera';
 import { MatchViewControls } from './MatchViewControls';
 import type { PlayerActions } from './PlayerActions';
 import { PlayerCommands } from './PlayerCommands';
+import { PlayerLegendSprite } from './PlayerLegendSprite';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
 import { LegendBodyLayer } from './views/LegendBodyLayer';
@@ -81,10 +79,8 @@ export class Match implements LoopTarget {
 
   private current: Snapshot;
 
-  private readonly legendAnimation: LegendAnimation;
-
-  /** The tick the current frame shows (the snapshot's tick plus the frame's `alpha`). */
-  private frameTick = 0;
+  /** The player's Legend sprite: its animation, the frame's tick and the Legend view. */
+  private readonly legendSprite: PlayerLegendSprite;
 
   private readonly playerId: EntityId | null;
 
@@ -104,33 +100,19 @@ export class Match implements LoopTarget {
     const { map, presentation, mapObjects } = world;
     this.current = simulation.snapshot();
     this.playerId = deps.remote?.legendId ?? this.current.match.humanLegendId;
-    const sheet = LEGEND_SPRITE_SHEETS[deps.playerSpecId ?? ''];
-    this.legendAnimation = new LegendAnimation(
-      this.playerId,
-      sheet?.atlasId ?? null,
-      tickRate,
-      simulation,
-    );
+    this.legendSprite = new PlayerLegendSprite(deps, this.playerId);
     this.healthBars = new HealthBarVisibility(simulation);
     this.bodies = new LegendBodies(simulation);
     this.entities = new EntityLayer(
-      createDefaultViewRegistry(
-        (kind) => {
-          logger.log(
-            makeLogRecord(
-              'WARN',
-              'client.views',
-              `No view for kind "${kind}"; drawing the default view.`,
-            ),
-          );
-        },
-        createLegendView({
-          sheet,
-          renderer: deps.renderer,
-          logger,
-          frameOf: (entity) => this.legendAnimation.frame(entity, this.frameTick),
-        }),
-      ),
+      createDefaultViewRegistry((kind) => {
+        logger.log(
+          makeLogRecord(
+            'WARN',
+            'client.views',
+            `No view for kind "${kind}"; drawing the default view.`,
+          ),
+        );
+      }, this.legendSprite.view),
       isDead,
       this.healthBars.healthBarOf,
     );
@@ -248,7 +230,7 @@ export class Match implements LoopTarget {
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
-    this.legendAnimation.observe(this.previous, this.current);
+    this.legendSprite.observe(this.previous, this.current);
     this.healthBars.observe(this.current, this.playerId);
     this.bodies.observe(this.current);
     this.roofs.playerAt(this.livingPlayerAt());
@@ -259,7 +241,7 @@ export class Match implements LoopTarget {
 
   /** One frame: the camera follows the player, then the scene and the minimap are drawn. */
   public render(alpha: number): void {
-    this.frameTick = this.current.tick + alpha;
+    this.legendSprite.setFrameTick(this.current.tick + alpha);
     const { renderer } = this.deps;
     this.camera.follow(this.playerEntity()?.transform ?? null);
     const view = this.camera.visibleArea();
@@ -285,7 +267,7 @@ export class Match implements LoopTarget {
    * camera are injected, so their owner (`MatchHost`) destroys them.
    */
   public destroy(): void {
-    this.legendAnimation.destroy();
+    this.legendSprite.destroy();
     this.loop.destroy();
     this.healthBars.destroy();
     this.bodies.destroy();

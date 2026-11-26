@@ -18,6 +18,8 @@ import { Camera } from './engine/Camera';
 import type { Projection } from './engine/input/Projection.types';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
+import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
+import type { LegendSpriteSheet } from './legendSpriteSheets.types';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
 import type { IntentSource } from './Match.types';
@@ -27,6 +29,8 @@ import { FOCUS_RING_COLOR } from './views/entityViews.constants';
 
 const SEED = 1;
 const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
+/** The Knight's sprite sheet, which the match factory would pass for a Knight pick. */
+const KNIGHT_SHEET = LEGEND_SPRITE_SHEETS.knight;
 
 /**
  * The centre of the HUD minimap ring on the tests' 1280 × 720 canvas (device pixels), from the
@@ -97,7 +101,7 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
 const setUp = (
   content?: Content,
   withMapObjects = false,
-  playerSpecId: string | null = null,
+  playerSheet?: LegendSpriteSheet,
   atlases: ConstructorParameters<typeof RecordingRenderer>[0] = {},
 ) => {
   // No countdown: core's countdown holds all movement, and these tests walk from the start.
@@ -118,7 +122,7 @@ const setUp = (
   const input = new ScriptedIntent();
   const logger = new MemoryLogger();
   const match = new Match({
-    playerSpecId,
+    ...(playerSheet === undefined ? {} : { playerSheet }),
     simulation,
     world,
     tickRate: config.tickRate,
@@ -483,7 +487,7 @@ describe('Match', () => {
   });
 
   it('renders the selected Knight through the live match view registry', () => {
-    const { match, renderer, logger } = setUp(undefined, false, 'knight', {
+    const { match, renderer, logger } = setUp(undefined, false, KNIGHT_SHEET, {
       'knight-sprites': { columns: 6, rows: 10 },
     });
     match.render(0);
@@ -495,7 +499,7 @@ describe('Match', () => {
   });
 
   it('draws the selected Knight as a disc, with one WARN, when the renderer has no atlas', () => {
-    const { match, renderer, logger } = setUp(undefined, false, 'knight');
+    const { match, renderer, logger } = setUp(undefined, false, KNIGHT_SHEET);
     match.render(0);
 
     expect(renderer.calls.some((call) => call.op === 'drawSprite')).toBe(false);

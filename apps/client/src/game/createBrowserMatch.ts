@@ -81,8 +81,8 @@ function readEvidence(simulation: Simulation, ring: RingBufferSink): MatchEviden
  * `Simulation(setup.seed)` on `request.world`'s map and map objects with `request.roster` (the
  * setup's bots and the player's human slot) as its roster, the `Match` on the same world and its
  * `MatchHost`, then starts the host, which owns everything from then on. The renderer gets the
- * atlas of the player's sprite sheet, which `match-loading` loaded and the session releases (13 §2).
- * The match log records the seed first.
+ * atlas of the player's sprite sheet, which `match-loading` loaded and the session releases (13 §2),
+ * and the `Match` gets the sheet. The match log records the seed first.
  * @throws What the renderer or `Match` threw, after destroying every adapter already built
  *   (0 listeners, 0 pending frames).
  */
@@ -121,7 +121,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         roster: request.roster,
       });
       match = new Match({
-        playerSpecId,
+        ...(sheet === undefined ? {} : { playerSheet: sheet }),
         simulation,
         world: request.world,
         tickRate: gameConfig.tickRate,
