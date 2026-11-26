@@ -47,20 +47,24 @@ describe('MapObjectBuilder', () => {
     expect(teamOf('capture-point-lane-0')).toBeUndefined();
     expect(objects.filter((o) => o.kind === 'tree').every((o) => o.team === undefined)).toBe(true);
   });
-  it('lets shots cross lakes and lava rivers, lets only lava rivers light shots, and flags nothing else (DEC-345)', () => {
+  it('lets shots cross lakes, lava rivers and camp fires, lets only lava rivers and camp fires light shots, and flags nothing else (DEC-345, DEC-373)', () => {
     const map = new MapGenerator().generate(createDefaultGameConfig(), 1);
     const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
     const lakes = objects.filter((o) => /^lake-\d+(-mirror)?$/.test(o.id));
-    const rivers = objects.filter((o) => /^lava-river-\d+(-mirror)?$/.test(o.id));
-    const rest = objects.filter((o) => !lakes.includes(o) && !rivers.includes(o));
+    const fires = objects.filter(
+      (o) => /^lava-river-\d+(-mirror)?$/.test(o.id) || o.id.endsWith('-camp-fire'),
+    );
+    const rest = objects.filter((o) => !lakes.includes(o) && !fires.includes(o));
 
     expect(lakes.length).toBeGreaterThan(1);
-    expect(rivers.length).toBeGreaterThan(0);
+    expect(fires.filter((o) => o.id.startsWith('lava-river-')).length).toBeGreaterThan(0);
+    expect(fires.filter((o) => o.id.endsWith('-camp-fire')).length).toBeGreaterThan(1);
     expect(lakes.every((o) => o.canShotsCross === true && o.canLightShots === undefined)).toBe(
       true,
     );
-    expect(rivers.every((o) => o.canShotsCross === true && o.canLightShots === true)).toBe(true);
+    expect(fires.every((o) => o.canShotsCross === true && o.canLightShots === true)).toBe(true);
     expect(rest.some((o) => o.kind === 'rock' || o.kind === 'tree')).toBe(true);
+    expect(rest.some((o) => o.id.endsWith('-kitchen-hearth'))).toBe(true);
     expect(rest.every((o) => o.canShotsCross === undefined && o.canLightShots === undefined)).toBe(
       true,
     );

@@ -46,3 +46,19 @@ it('is an outline: its footprints, walked on when the object does not block', ()
   expect(new MapObjectBody(palace).isWalkOn).toBe(true);
   expect(new MapObjectBody(rock).isWalkOn).toBe(false);
 });
+
+it('lets a shot not aimed at it fly over it when it is walked on or shots cross it (a camp fire, HC-Q105)', () => {
+  const floor = [
+    { x: 0, y: 0 },
+    { x: 4, y: 0 },
+    { x: 4, y: 4 },
+  ];
+  const rock = { id: 'rock', kind: 'rock' as const, isBlocking: true, footprints: [floor] };
+  const palace = { ...rock, id: 'palace', kind: 'stronghold' as const, isBlocking: false };
+  const fire = { ...rock, id: 'fire', kind: 'furniture' as const, canShotsCross: true as const };
+
+  expect(new MapObjectBody(rock).canShotsFlyOver).toBe(false);
+  expect(new MapObjectBody(palace).canShotsFlyOver).toBe(true);
+  expect(new MapObjectBody(fire).canShotsFlyOver).toBe(true);
+  expect(new MapObjectBody(fire).isWalkOn).toBe(false);
+});

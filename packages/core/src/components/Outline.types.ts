@@ -11,6 +11,15 @@ export interface Outline {
   readonly polygons: readonly Polygon[];
   /** The box around every polygon: a cheap first test before the exact polygons. */
   readonly bounds: Rect;
-  /** Units walk on it (a palace floor, a gate's passage): only a hit aimed at it hits it (DEC-322). */
+  /**
+   * Units walk on it (a palace floor, a gate's passage): only a hit aimed at it hits it (DEC-322).
+   * The melee and ability-area rule (`AreaHitQuery.find`) reads it.
+   */
   readonly isWalkOn: boolean;
+  /**
+   * A shot flies over it unless the shot aims at it (`AreaHitQuery.stopsShot`, DEC-322 (1)): a
+   * walk-on outline, or a map object flagged `canShotsCross` (HC-Q105, DEC-373). The one property
+   * the shot rule reads, for `ProjectileSystem` and `LineOfFire` alike.
+   */
+  readonly canShotsFlyOver: boolean;
 }

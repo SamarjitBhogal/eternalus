@@ -4,6 +4,7 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
+import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
 import { ProjectileFlight } from '../components/ProjectileFlight';
 import { ProjectilePayload } from '../components/ProjectilePayload';
@@ -17,6 +18,7 @@ import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import type { RangedAttack } from '../content/units/units.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
+import { Entity } from '../entities/Entity';
 import { EntityFactory } from '../entities/EntityFactory';
 import { Projectile } from '../entities/Projectile';
 import { createDefaultAbilityRegistry } from '../abilities/defaultAbilityRegistry';
@@ -88,8 +90,16 @@ const setUp = (shape: StaticCollisionShape, hits?: StepRunner | null) => {
   );
   const context = { state, logger: new NullLogger() };
   let counter = 0;
-  /** A shot from the archer that moves `by` metres east this tick, from `at` metres east. */
-  const fire = (definition: ProjectileDefinition, by: number, at = 0) => {
+  /**
+   * A shot from the archer that moves `by` metres east this tick, from `at` metres east, aimed at
+   * `targetId` (none by default).
+   */
+  const fire = (
+    definition: ProjectileDefinition,
+    by: number,
+    at = 0,
+    targetId: string | null = null,
+  ) => {
     counter += 1;
     const shot = new Projectile(`shot-${String(counter)}`, definition.id);
     shot.spawn({ definition, position: { x: at, y: 0 }, team: 'light' });
@@ -99,7 +109,7 @@ const setUp = (shape: StaticCollisionShape, hits?: StepRunner | null) => {
         team: 'light',
         ownerLevel: 1,
         source: { attackerId: archer.id, kind: 'weapon', definitionId: 'bow' },
-        targetId: null,
+        targetId,
         impact: { kind: 'weapon', attack: attackOf(definition.id) },
         origin: { x: 0, y: 0 },
       }),
@@ -284,5 +294,62 @@ describe('ProjectileSystem with lakes, lava and lit arrows (HC-Q89, DEC-345)', (
     system.update(context);
 
     expect(burning()).toBe(true);
+  });
+});
+
+/**
+ * A camp fire's body over the lava strip (HC-Q105): furniture with health whose map object shots
+ * cross and that lights them, as `MapSceneryBuilder` builds a camp fire.
+ */
+class CampFire extends Entity {
+  public readonly kind = 'obstacle';
+  public readonly family = 'obstacle';
+  protected installComponents(): void {
+    this.addComponent(new Transform({ x: 15, y: 0 }, 0.5));
+    this.addComponent(new Health(100));
+    this.addComponent(
+      new MapObjectBody({
+        id: 'camp-fire',
+        kind: 'furniture',
+        footprints: [LAVA.polygon],
+        isBlocking: true,
+        canShotsCross: true,
+        canLightShots: true,
+      }),
+    );
+  }
+}
+
+describe('ProjectileSystem over a camp fire, a body with health that shots cross (HC-Q105, DEC-373)', () => {
+  /** `setUp` over the lava strip, with a camp fire's body on the strip. */
+  const withCampFire = () => {
+    const scene = setUp(LAVA);
+    const campFire = new CampFire('camp-fire', 'furniture');
+    campFire.spawn({});
+    scene.state.entities.add(campFire);
+    return { ...scene, campFire };
+  };
+
+  it('flies an arrow not aimed at the fire over it, lights it and burns the body past it; the fire takes nothing', () => {
+    const { state, target, system, context, fire, damaged, burning, campFire } = withCampFire();
+    const shot = fire(ARROW, 45);
+
+    system.update(context);
+
+    expect(state.entities.has(shot.id)).toBe(false);
+    expect(damaged).toEqual([expect.objectContaining({ targetId: target.id, kind: 'weapon' })]);
+    expect(burning()).toBe(true);
+    expect(campFire.getComponent(Health).current).toBe(100);
+  });
+
+  it('lands an arrow aimed at the fire on the fire, not on the body past it', () => {
+    const { state, system, context, fire, damaged, campFire } = withCampFire();
+    const shot = fire(ARROW, 45, 0, campFire.id);
+
+    system.update(context);
+
+    expect(state.entities.has(shot.id)).toBe(false);
+    expect(damaged).toEqual([expect.objectContaining({ targetId: campFire.id, kind: 'weapon' })]);
+    expect(campFire.getComponent(Health).current).toBeLessThan(100);
   });
 });
