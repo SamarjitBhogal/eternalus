@@ -1,5 +1,6 @@
 import type { ControllerId } from '../ai/ai.types';
 import type { EntityDefinitionBase } from '../EntityDefinition.types';
+import type { Polygon } from '../../utils/geometry.types';
 
 /**
  * How a unit moves. All values must be positive. Content files author speeds per second (the game
@@ -44,6 +45,12 @@ export type UnitDefinition = EntityDefinitionBase & {
   readonly baseHealth: number;
   /** Collider circle radius in world units. */
   readonly footprintRadius: number;
+  /**
+   * The body shape of a big boss (DEC-381), in local world units for the art's left-facing pose
+   * (`CombatHitbox` mirrors it when the unit faces right). Clicks, attack reach and hits count on
+   * it instead of the collider circle. Leave it out for a unit that is only its circle (DEC-183).
+   */
+  readonly combatHitbox?: Polygon;
   /** Sight radius in world units. */
   readonly visionRadius: number;
   /** Top speed, acceleration and mass; `movementStrategy` says how the unit steers. */

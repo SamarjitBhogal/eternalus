@@ -1,5 +1,6 @@
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
+import { CombatHitbox } from '../components/CombatHitbox';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
 import { Footprint } from '../components/Footprint';
@@ -154,9 +155,9 @@ export class EntityStore {
   /**
    * Whether `targetId` is within `attackerId`'s attack reach, measured edge to edge between the
    * two footprints (architecture 05 §10) to the point `aimPointOf` gives: on the target's outline
-   * when it has one (`outlineOf`: a map object, or a lane tower's fort, DEC-185), standing inside
-   * an outline counting as in reach; else to its collider circle. `false` when either is unknown,
-   * either has no `Transform`, or the attacker cannot attack.
+   * when it has one (`outlineOf`: a map object, a lane tower's fort, DEC-185, or a big boss's
+   * body, DEC-381), standing inside an outline counting as in reach; else to its collider circle.
+   * `false` when either is unknown, either has no `Transform`, or the attacker cannot attack.
    */
   public isInReach(attackerId: EntityId, targetId: EntityId): boolean {
     const attacker = this.entities.get(attackerId);
@@ -178,16 +179,23 @@ export class EntityStore {
   }
 
   /**
-   * The outlines attack reach to `id` is measured to and a chase of it aims at: its map object's
-   * footprints, else its structure `Footprint`'s polygons (a lane tower's fort, the Stronghold's
-   * palace, DEC-185; a gate's outline, DEC-217 (17)). `undefined` for a body that is only its
-   * collider circle, or an unknown id.
+   * The outlines attack reach to `id` is measured to and a chase of it aims at: a big boss's body
+   * outline where it stands now (`CombatHitbox`, DEC-381), else its map object's footprints, else
+   * its structure `Footprint`'s polygons (a lane tower's fort, the Stronghold's palace, DEC-185; a
+   * gate's outline, DEC-217 (17)). `undefined` for a body that is only its collider circle, or an
+   * unknown id.
    */
   public outlineOf(id: EntityId): readonly Polygon[] | undefined {
     const entity = this.entities.get(id);
+    if (entity === undefined) return undefined;
+    const hitbox = entity.findComponent(CombatHitbox);
+    if (hitbox !== undefined) {
+      const { position, facing } = entity.getComponent(Transform);
+      return [hitbox.polygonAt(position, facing)];
+    }
     return (
-      entity?.findComponent(MapObjectBody)?.object.footprints ??
-      entity?.findComponent(Footprint)?.polygons
+      entity.findComponent(MapObjectBody)?.object.footprints ??
+      entity.findComponent(Footprint)?.polygons
     );
   }
 

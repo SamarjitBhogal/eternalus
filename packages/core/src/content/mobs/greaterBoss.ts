@@ -24,6 +24,19 @@ export const GREATER_BOSS = {
   // TUNE: Aryan 2026-11-15 and 2026-11-22 (reference 04 "obscenely massive"), twice the Sentinel;
   // Sam to confirm (INBOX)
   footprintRadius: 2.5,
+  // The body shape clicks and hits count on (DEC-381), in local metres for the left-facing pose:
+  // the solid shoulders, torso and planted limbs of the 48 m obsidian colossus art (#161), which
+  // draws this boss once #160 merges (DEC-370).
+  combatHitbox: [
+    { x: -20, y: -9 },
+    { x: -12, y: -18 },
+    { x: 11, y: -18 },
+    { x: 20, y: -9 },
+    { x: 20, y: 2 },
+    { x: 11, y: 9 },
+    { x: -15, y: 9 },
+    { x: -20, y: 4 },
+  ],
   // TUNE: no reference value; the centre zone, so it sees the whole zone from its post
   visionRadius: GUARD_LEASH.greaterBossZone,
   movementStrategy: 'leashed-chase',

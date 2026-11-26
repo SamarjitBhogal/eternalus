@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { Capturable } from '../components/Capturable';
+import { CombatHitbox } from '../components/CombatHitbox';
 import { MapObjectBody } from '../components/MapObjectBody';
+import { Transform } from '../components/Transform';
 import { ZoneArea } from '../components/ZoneArea';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
@@ -57,6 +59,21 @@ describe('EntitySnapshotter', () => {
 
     expect(snapshotter.snapshotOf(house).mapObjectId).toBe('house-7');
     expect(snapshotter.snapshotOf(new Bare('entity-2', 'bare'))).not.toHaveProperty('mapObjectId');
+  });
+
+  it("puts a big boss's body outline where it stands, and leaves the key out for every other entity", () => {
+    const boss = new Bare('entity-1', 'greater-boss');
+    boss.addComponent(new Transform({ x: 10, y: 20 }, 2.5));
+    boss.addComponent(new CombatHitbox(SQUARE));
+    const snapshotter = new EntitySnapshotter(4, CURVES);
+
+    expect(snapshotter.snapshotOf(boss).combatHitbox).toEqual([
+      { x: 10, y: 20 },
+      { x: 6, y: 20 },
+      { x: 6, y: 24 },
+      { x: 10, y: 24 },
+    ]);
+    expect(snapshotter.snapshotOf(new Bare('entity-2', 'bare'))).not.toHaveProperty('combatHitbox');
   });
 
   it('names the map feature a structure was built from, and leaves the key out for every other entity', () => {

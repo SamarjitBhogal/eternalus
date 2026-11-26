@@ -1,6 +1,7 @@
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
+import { CombatHitbox } from '../components/CombatHitbox';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Progression } from '../components/Progression';
@@ -15,8 +16,8 @@ import type { EntitySnapshot } from './Snapshot.types';
 
 /**
  * Projects one entity into its `EntitySnapshot` (architecture 03 §5): one group per component,
- * `null` when the entity has no such component (DEC-17); `mapObjectId` and `mapFeatureId` are
- * left out instead. A new component group is added here, never in `GameState` (DEC-232).
+ * `null` when the entity has no such component (DEC-17); `mapObjectId`, `mapFeatureId` and
+ * `combatHitbox` are left out instead. A new component group is added here, never in `GameState` (DEC-232).
  */
 export class EntitySnapshotter {
   /**
@@ -32,6 +33,7 @@ export class EntitySnapshotter {
   /** The entity as plain, structured-clone-safe data. */
   public snapshotOf(entity: Entity): EntitySnapshot {
     const transform = entity.findComponent(Transform);
+    const hitbox = entity.findComponent(CombatHitbox);
     const health = entity.findComponent(Health);
     const progression = entity.findComponent(Progression);
     const aether = entity.findComponent(Aether);
@@ -47,6 +49,10 @@ export class EntitySnapshotter {
         : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
       ...(entity instanceof Structure &&
         entity.mapFeatureId !== null && { mapFeatureId: entity.mapFeatureId }),
+      ...(hitbox !== undefined &&
+        transform !== undefined && {
+          combatHitbox: hitbox.polygonAt(transform.position, transform.facing),
+        }),
       team: entity.findComponent(TeamMembership)?.team ?? null,
       transform:
         transform === undefined
