@@ -7,6 +7,7 @@ import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers'
 import { validateGameConfig } from './config/validateGameConfig';
 import { timelineFrameOf } from './config/timelineFrameOf';
 import { DUEL_RULES } from './content/duel/duelRules';
+import type { DuelArenaRules } from './content/duel/duelRules.types';
 import type { ContentCatalogue } from './content/ContentCatalogue';
 import { MAP_OBJECT_DEFINITIONS } from './content/maps/mapObjectDefinitions';
 import type { MapObject } from './content/maps/mapObjects.types';
@@ -91,7 +92,7 @@ export class Simulation {
       duel === undefined ? undefined : duelStartPoints(map, DUEL_RULES.startOffset);
     if (duel !== undefined) this.state.match.startDuel(duel.killTarget);
     const content = loadMatchContent(this.state.config.tickRate, { ...options, structures });
-    const { controllers, units, factory } = content;
+    const { controllers, factory } = content;
     this.curves = content.curves;
     const omittedIds = arena?.omittedStructureIds ?? [];
     const owners = spawnStructures(this.state, factory, { structures, mapObjects, omittedIds });
@@ -110,12 +111,9 @@ export class Simulation {
             timeline,
             debug,
             logger,
-            factory,
+            content,
             space,
-            units,
-            curves: this.curves,
             structures,
-            controllers,
             map,
             mapObjects,
             arena,
@@ -132,6 +130,7 @@ export class Simulation {
       this.state.events.emit('entity-spawned', zone);
     }
     this.logRejectedCommands(logger);
+    // The constructor runs at tick 0, which is always a checkpoint tick.
     this.replay.recordCheckpointIfDue(this.state.tick, () => this.hash());
   }
 
@@ -256,7 +255,7 @@ export class Simulation {
    */
   private static matchMapObjects(
     { mapObjects, map }: Pick<SimulationOptions, 'mapObjects' | 'map'>,
-    arena: typeof DUEL_RULES.arena | undefined,
+    arena: DuelArenaRules | undefined,
   ): readonly MapObject[] | undefined {
     if (mapObjects === undefined || arena === undefined) return mapObjects;
     const cathedralId = map?.features.find(({ kind }) => kind === 'cathedral')?.id;

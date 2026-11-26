@@ -6,7 +6,6 @@ status: active
 owner: SamarjitBhogal
 last-reviewed: 2026-11-25
 tags: [review, refactor, simulation, composition-root, maintainability, nfr]
-paths: ['packages/core/src/Simulation.ts', 'packages/core/src/simulation/**']
 related:
   - docs/architecture/03-game-model.md
   - docs/architecture/02-code-structure.md
@@ -44,11 +43,12 @@ constructor:
 | 2026-11-20 | `177d1ac7` | 746   | refactor(core): build the timeline frame once and hand the countdown tick to GameState |
 | 2026-11-25 | phase head | 761   | (before this refactor)                                                                 |
 
-Lines are the file's length at that commit (every tenth commit that touched it). Over the same
+Lines are the file's length at a selection of the commits that touched it. Over the same
 period the file gained bot rosters, map objects and structures, zones, replay recording, the match
 director, scoring and the Duel, each adding setup to the constructor.
 
-76 commits touched the file. No single change was wrong; each one took the shortest path. Together
+72 non-merge commits touched the file
+(`git log --oneline --no-merges 67dbae61 -- packages/core/src/Simulation.ts | wc -l`). No single change was wrong; each one took the shortest path. Together
 they produced the code smells below.
 
 ### Smell inventory (before)
@@ -64,7 +64,8 @@ they produced the code smells below.
 | **Untestable in isolation**   | Roster spawning rules (caps, lane assignment, human seats) could only be tested by building a whole `Simulation`.                                                                                                                                                                                     |
 
 The project's own requirements forbid this: NFR-001 ("no monoliths") and NFR-003 (file and
-function size). The features and NFR report (PR #174) named it as the largest open maintainability item.
+function size). The features and NFR report (PR #174, open when this was written) named it as the largest open
+maintainability item.
 
 ### Why this file, and why now
 
@@ -143,37 +144,46 @@ mechanical: the same setup and seed must produce the same `StateHasher` hash at 
    - no map; a map without map objects and a small roster; a custom empty pipeline.
 2. **Extract in small steps.** Each module was moved out on its own, keeping the code inside it
    as it was (same statements, same order); only the call sites changed.
-3. **Compare after each step.** The snapshot was re-run after the main extraction and again
-   after the content extraction. Both times the snapshot file was **byte-identical** to the
-   baseline. The temporary test was then deleted; the permanent guard is the existing
+3. **Compare after each step.** The snapshot was re-run after the main extraction, after the
+   content extraction and after the pre-PR critic's fixes. Each time all scenarios matched the
+   baseline and the snapshot file stayed **byte-identical**. The temporary test was then deleted; the permanent guard is the existing
    `Simulation.replay.test.ts` and its fixture `diagnostics/__fixtures__/wanderSeed7.replay.ts`,
    which replays a recorded match and checks every checkpoint hash.
-4. **Full suite.** All core tests pass (1,830 before, plus the new `ReplayRecorder` tests), and
+4. **Full suite.** All core tests pass (1,830 before, plus the new `ReplayRecorder` and
+   `RosterSpawner` tests), and
    `npm run check` passes (section 5).
 
-A new unit test, `simulation/ReplayRecorder.test.ts`, now covers what was untestable before:
-setup fields kept only when present, checkpoints only on checkpoint ticks (hashing only then),
-and an exported command log that is a copy.
+Two new unit tests cover what could only be tested through a whole `Simulation` before:
+
+- `simulation/ReplayRecorder.test.ts`: setup fields kept only when present, checkpoints only on
+  checkpoint ticks (hashing only then), and an exported command log that is a copy.
+- `simulation/RosterSpawner.test.ts`: an empty roster, a roster without a map, bots and a seated
+  human, two humans on one team, a lone human off the player team, the `legendsPerTeam` cap, a
+  bot that is not a Legend, and a human slot that cannot spawn (logged, the rest spawns).
+
+The other parts (`buildMatchWorld`, `spawnMapEntities`, `matchContent`, `buildDefaultPipeline`)
+only moved; they stay covered through the `Simulation.*.test.ts` suites.
 
 ## 4. Results
 
 | Metric                      | Before | After                         |
 | --------------------------- | ------ | ----------------------------- |
-| `Simulation.ts` lines       | 761    | 265                           |
-| Constructor lines           | 165    | 67                            |
+| `Simulation.ts` lines       | 761    | 264                           |
+| Constructor lines           | 165    | 65                            |
 | `private static` helpers    | 12     | 1                             |
-| Import statements           | 74     | 38                            |
+| Import statements           | 74     | 39                            |
 | Largest new module          | n/a    | `RosterSpawner.ts`, 242 lines |
 | Public API changes          | n/a    | none                          |
 | State hashes in 5 scenarios | n/a    | identical                     |
 
-`Simulation.ts` is now under the 300-line limit. The constructor is 67 lines, close to the
-60-line guide: 16 of them are one property per line of the `buildDefaultPipeline` options object,
-which a further split would only move, not remove.
+`Simulation.ts` is now under the 300-line limit. The constructor is 65 lines, close to the
+60-line guide: 13 of them are one property per line of the `buildDefaultPipeline` options object,
+which a further split would only move, not remove. On the critic's advice the pipeline takes the
+`MatchContent` object whole instead of its four parts.
 
 ## 5. Checks
 
-`npm run check` on Node 24.21 → exit 0 (core 1833, protocol 31, client 2186, server 163 tests; "Documentation check passed."),
+`npm run check` on Node 24.21 → exit 0 (core 1841, protocol 31, client 2186, server 163 tests; "Documentation check passed."),
 as recorded in `docs/plan/progress/2026-11-25-2359-refactor-simulation-split.md`. The new
 `simulation/` folder has 100 % line coverage.
 
@@ -197,4 +207,4 @@ as recorded in `docs/plan/progress/2026-11-25-2359-refactor-simulation-split.md`
   facade.
 - [02-code-structure §2](../architecture/02-code-structure.md#2-packagescoresrc-l2-domain): the
   `simulation/` folder and its import rights.
-- The features and NFR report (PR #174): where this refactor was identified (NFR-001, NFR-003).
+- The features and NFR report (PR #174, open when this was written): where this refactor was identified (NFR-001, NFR-003).

@@ -16,6 +16,20 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Better than design: the `simulation/` folder and two follow-ups (refactor/simulation-split
+      pre-PR critic, 2026-11-25).** (BTD1) Sign-off: the split of `Simulation.ts` puts the
+      constructor's build steps in a new folder `packages/core/src/simulation/` (`RosterSpawner`,
+      `ReplayRecorder`, `buildMatchWorld`, `spawnMapEntities`, `matchContent`,
+      `buildDefaultPipeline`), imported only by `Simulation.ts` and with its import rights, since
+      `match/` and `entities/` may not import AI, systems or diagnostics. The branch already writes
+      the folder into architecture 02 and 03 and `packages/core/AGENTS.md`; keep it, rename it (for
+      example `matchSetup/`, so it does not differ from `Simulation.ts` only by case), or move the
+      parts? (BTD2) A generic `ReplayRecorderOf<Setup>` in `diagnostics/`, next to `ReplayOf` and
+      `REPLAY_CHECKPOINT_EVERY`, taking a ready `ReplaySetup`, would drop its dependency on
+      `SimulationOptions` and serve any replay target. (BTD3) A file-length guardrail: ESLint
+      `max-lines` (about 300) and `max-lines-per-function` (about 60) for `packages/core/src`, which
+      NFR-003's verification already names; a guardrail change, so it needs an ADR. Decision: …
+
 - [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only
       its group's home (`CAMP_BODY`: "a camp is only its group's home"): the camp's mobs are what

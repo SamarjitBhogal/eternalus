@@ -107,6 +107,8 @@ export class RosterSpawner {
   }
 
   /**
+   * Checks every bot slot before anything spawns.
+   *
    * @throws Error when a bot slot's controller or difficulty is not registered, or its definition
    *   does not exist or is not a Legend.
    */
