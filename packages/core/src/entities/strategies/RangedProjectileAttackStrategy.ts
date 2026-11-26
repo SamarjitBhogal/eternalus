@@ -14,8 +14,9 @@ import { weaponSourceOf } from './weaponSourceOf';
  * along `aim.direction` (no lead) and carries a `ProjectilePayload` with a weapon impact and the
  * body it aims at: the locked target, or else the body whose walk-on or `shotsCross` polygons the
  * aim point is on (a gate's passage, a camp fire: `AreaHitQuery.aimedBodyOf`, DEC-322 (1)), so
- * the shot can hit those polygons and flies over the others. `CombatSystem` hands it a unit direction, so a shot
- * always moves. It passes its owner by; `ProjectileSystem` flies and lands it, from the next tick.
+ * the shot can hit those polygons and flies over the others. `CombatSystem` hands it a unit
+ * direction, so a shot always moves. It passes its owner by; `ProjectileSystem` flies and lands it,
+ * from the next tick.
  */
 export class RangedProjectileAttackStrategy implements AttackStrategy {
   /**

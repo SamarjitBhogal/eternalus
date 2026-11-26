@@ -75,19 +75,17 @@ export class AreaHitQuery {
 
   /**
    * The polygons of `body`'s outline that `shot` can touch it on (DEC-322 (1)): every one when the
-   * shot aims at the body (`shot.targetId`). Else only the solid ones that shots do not cross (a
-   * fort, the Stronghold's outer walls and throne, DEC-373 (1)), so a shot flies over a walk-on
-   * floor and over a camp fire (`Outline.shotsCross`, HC-Q105, Q104-9). None for a body that is
-   * only its collider circle.
+   * shot aims at the body (`shot.targetId`), else every one that the shot does not fly over
+   * (`flownOverPolygonsOf`). None for a body that is only its collider circle.
    */
   public static shotPolygonsOf(
     shot: ShotAim,
     { entity, outline }: ShotStopBody,
   ): readonly Polygon[] {
     if (outline === null) return [];
-    const isAimed = entity.id === shot.targetId;
-    const polygons = AreaHitQuery.hitPolygonsOf(outline, isAimed);
-    return isAimed ? polygons : polygons.filter((polygon) => !outline.shotsCross.includes(polygon));
+    if (entity.id === shot.targetId) return outline.polygons;
+    const flownOver = AreaHitQuery.flownOverPolygonsOf(outline);
+    return outline.polygons.filter((polygon) => !flownOver.includes(polygon));
   }
 
   /**
@@ -148,15 +146,15 @@ export class AreaHitQuery {
 
   /**
    * The body that `attackerId` aims at with `point` under rule 1, on a polygon that a shot not
-   * aimed at the body flies over: a walk-on polygon or an `Outline.shotsCross` one (a camp fire,
-   * HC-Q105, Q104-9). Its shot then names the body as its target (`ProjectilePayload.targetId`), so
-   * the shot can hit it. Only `RangedProjectileAttackStrategy` asks it, so it reads the shot rule's
-   * polygons, not only the walk-on ones. A solid polygon that stops every shot (the Stronghold's
-   * outer walls) does not name its body: the shot stops there anyway. Only enemy bodies (no
-   * team counts as enemy). When several such outlines hold the point (a gate's passage is both the
-   * gate's outline and the gate map object's), a structure comes first, then the first by id, so a
-   * shot at the gate names the gate. A sweep still hits both (DEC-284 (2)). The palace floor is
-   * only the palace map object's (DEC-344 (4)).
+   * aimed at the body flies over (`flownOverPolygonsOf`: a walk-on floor, a camp fire). Its shot
+   * then names the body as its target (`ProjectilePayload.targetId`), so the shot can hit it. Only
+   * `RangedProjectileAttackStrategy` asks it, so it reads the shot rule's polygons, not only the
+   * walk-on ones. A solid polygon that stops every shot (the Stronghold's outer walls) does not
+   * name its body: the shot stops there anyway. Only enemy bodies (no team counts as enemy). When
+   * several such outlines hold the point (a gate's passage is both the gate's outline and the gate
+   * map object's), a structure comes first, then the first by id, so a shot at the gate names the
+   * gate. A sweep still hits both (DEC-284 (2)). The palace floor is only the palace map object's
+   * (DEC-344 (4)).
    *
    * @returns The body's id, or `null` when the point is on no such outline, on an enemy unit, or
    *   the attacker stands inside the outline or is unknown.
@@ -166,7 +164,7 @@ export class AreaHitQuery {
     const aimed: EntityId[] = [];
     entities.forEach((entity) => {
       const outline = entities.outlineOf(entity.id);
-      const crossed = outline === undefined ? [] : [...outline.walkOn, ...outline.shotsCross];
+      const crossed = outline === undefined ? [] : AreaHitQuery.flownOverPolygonsOf(outline);
       if (
         crossed.length > 0 &&
         entity.hasComponent(Transform) &&
@@ -183,6 +181,18 @@ export class AreaHitQuery {
     const isStructure = (id: EntityId): number =>
       entities.get(id)?.family === 'structure' ? 0 : 1;
     return aimed.sort((a, b) => isStructure(a) - isStructure(b) || compareById(a, b))[0] ?? null;
+  }
+
+  /**
+   * The polygons of `outline` that a shot not aimed at its body flies over, the one statement of
+   * that rule: the walk-on ones (a palace floor, a gate's passage, DEC-322 (1)) and the solid ones
+   * that shots cross (`Outline.shotsCross`: a camp fire's body, HC-Q105, Q104-9). Every other
+   * polygon stops such a shot (a fort, the Stronghold's outer walls and throne, DEC-373 (1)).
+   * `shotPolygonsOf` drops them and `aimedBodyOf` names a body by them. They are the same polygon
+   * objects as in `outline.polygons` (the `Outline` contract), so a drop by identity is exact.
+   */
+  private static flownOverPolygonsOf(outline: Outline): readonly Polygon[] {
+    return [...outline.walkOn, ...outline.shotsCross];
   }
 
   /**

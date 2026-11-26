@@ -46,7 +46,7 @@ export type StructureDefinition = EntityDefinitionBase & {
    * Whether a shot not aimed at it flies over its body, its collider circle
    * (`Collider.canShotsFlyOver`, `AreaHitQuery.stopsShot`): a forest camp, whose home sits unseen
    * inside its camp fire, so a shot flies over both (HC-Q105, DEC-373 correction 2026-11-26,
-   * HC-Q115). It has no effect on a structure with a map footprint: the outline rule comes first.
+   * HC-Q115). It has no effect on a structure with a `Footprint`: the outline rule comes first.
    * Absent: every shot stops on it.
    */
   readonly canShotsFlyOver?: true;
