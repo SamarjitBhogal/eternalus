@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Command } from './commands/Command.types';
-import { loadWeapons } from './content/weapons/loadWeapons';
-import { RAPTOR_TALONS } from './content/weapons/raptorTalons';
-import { WEAPONS } from './content/weapons/weaponCatalogue';
+import { weaponsWithoutTalonBleed } from './__fixtures__/weaponsWithoutTalonBleed';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { NullLogger } from './diagnostics/NullLogger';
@@ -62,14 +60,7 @@ describe('Simulation: aimed attacks (DEC-184, DEC-319)', () => {
   it('sweeps the body in front of the aim with no target, spares the one behind, and stops on release', () => {
     // Talons without bleed (DEC-374 W5): bleed would kill the front dummy. This test checks the
     // sweep, not bleed.
-    const noBleed = loadWeapons(
-      SETUP.config.tickRate,
-      WEAPONS.all().map((weapon) =>
-        weapon.id === RAPTOR_TALONS.id
-          ? { ...weapon, attacks: weapon.attacks.map((attack) => ({ ...attack, onHit: [] })) }
-          : weapon,
-      ),
-    );
+    const noBleed = weaponsWithoutTalonBleed(SETUP.config.tickRate);
     const live = new Simulation({
       config: SETUP.config,
       seed: SETUP.seed,

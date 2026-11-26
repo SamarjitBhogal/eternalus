@@ -22,6 +22,15 @@ describe('DefaultWeaponAllowedRule', () => {
     ]);
   });
 
+  it('skips a mob even when its default loadout names a weapon the class list would reject', () => {
+    const armedMob = {
+      ...MOB_DEFINITIONS.get('light-minion'),
+      defaultLoadout: { primaryWeaponId: 'magus-staff' },
+    };
+
+    expect(RULE.check(armedMob)).toEqual([]);
+  });
+
   it('skips a default weapon id that names no weapon (KnownWeaponRule reports it)', () => {
     const armed = { ...WARRIOR, defaultLoadout: { primaryWeaponId: 'nope' } };
 

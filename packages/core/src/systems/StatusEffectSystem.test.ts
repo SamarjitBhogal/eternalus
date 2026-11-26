@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadAbilities } from '../content/abilities/loadAbilities';
 
+import { weaponsWithoutTalonBleed } from '../__fixtures__/weaponsWithoutTalonBleed';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -29,8 +30,6 @@ import { DefaultSystemPipeline } from './DefaultSystemPipeline';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import type { System, SystemContext } from './System.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
-import { RAPTOR_TALONS } from '../content/weapons/raptorTalons';
-import { WEAPONS } from '../content/weapons/weaponCatalogue';
 
 const CONFIG = createDefaultGameConfig();
 const statusSystem = (applier: StatusEffectApplier) =>
@@ -211,14 +210,7 @@ describe('statuses in the tick', () => {
   it('a blinded unit still lands its hits: blind has no hard miss (DEC-42)', () => {
     // Talons without bleed (DEC-374 W5): bleed would kill the dummy before the third hit. This test
     // checks blind, not bleed.
-    const noBleed = loadWeapons(
-      CONFIG.tickRate,
-      WEAPONS.all().map((weapon) =>
-        weapon.id === RAPTOR_TALONS.id
-          ? { ...weapon, attacks: weapon.attacks.map((attack) => ({ ...attack, onHit: [] })) }
-          : weapon,
-      ),
-    );
+    const noBleed = weaponsWithoutTalonBleed(CONFIG.tickRate);
     const { state, warrior, dummy, apply, run, ticksOf } = setUp(noBleed);
     const { interval } = warrior.getComponent(Combat).attack;
     state.entities.setAttackTarget(warrior.id, dummy.id);
@@ -227,6 +219,32 @@ describe('statuses in the tick', () => {
     run(tickPipeline(state), 2 * interval + 1); // inside the 45 ticks of blind
 
     expect(ticksOf('damage-applied')).toEqual([0, interval, 2 * interval]);
+  });
+
+  it('a talon hit lands a bleed, and a later bleed tick is credited to the attacker (DEC-374 W5)', () => {
+    const { state, warrior, dummy, run, events } = setUp();
+    state.entities.setAttackTarget(warrior.id, dummy.id);
+
+    run(tickPipeline(state), 31);
+
+    expect(
+      events.flatMap((event) =>
+        event.type === 'damage-applied'
+          ? [
+              {
+                tick: event.tick,
+                amount: event.payload.amount,
+                kind: event.payload.source.kind,
+                attackerId: event.payload.source.attackerId,
+              },
+            ]
+          : [],
+      ),
+    ).toEqual([
+      { tick: 0, amount: 45, kind: 'weapon', attackerId: warrior.id },
+      { tick: 21, amount: 45, kind: 'weapon', attackerId: warrior.id },
+      { tick: 30, amount: 10, kind: 'status', attackerId: warrior.id },
+    ]);
   });
 
   it('an enraged unit hits 15% harder', () => {
