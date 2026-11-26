@@ -55,6 +55,11 @@ export type GameEventMap = {
     readonly absorbed: number;
     readonly source: DamageSource;
   };
+  /**
+   * A hit that a damage step took to 0 (an unbreakable structure, friendly fire): nothing reached
+   * `Health`. The Cathedral gem answers it (DEC-292).
+   */
+  readonly 'damage-blocked': { readonly targetId: EntityId; readonly source: DamageSource };
   readonly 'entity-died': { readonly entityId: EntityId; readonly killer: DamageSource };
   readonly 'structure-destroyed': {
     readonly entityId: EntityId;

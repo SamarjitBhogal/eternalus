@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { useAppSelector } from '../../bridge/hooks';
 import type { HudAllegiance } from '../../bridge/hud.types';
 import { selectAllegianceFlagUrls } from '../../bridge/selectors/selectAllegianceFlagUrls';
+import { selectIsDuel } from '../../bridge/selectors/selectIsDuel';
 import { selectObjectives } from '../../bridge/selectors/selectObjectives';
 import { contentSlice } from '../../bridge/slices/contentSlice';
 import type { RootState } from '../../bridge/store';
@@ -36,11 +37,15 @@ const letterAt = (index: number): string =>
  * The capture objectives (Figma 62:425): per lane, the shield of its absolute owner with its letter
  * (inked by the owner's tokens, `data-team`), the allegiance flag and the capture bar. In the
  * `minimums` colour set each shield gets a token ring (OD-11 b); the `figma` set draws none.
+ * Renders nothing in a Duel, which has no capture objectives
+ * (`DUEL_RULES.arena.hasCaptureObjectives`, SCRUM-446).
  */
-export function ObjectiveTracker(): ReactElement {
+export function ObjectiveTracker(): ReactElement | null {
   const objectives = useAppSelector(selectObjectives);
   const chrome = useAppSelector(selectChrome);
   const flagUrls = useAppSelector(selectAllegianceFlagUrls);
+  const isDuel = useAppSelector(selectIsDuel);
+  if (isDuel) return null;
   return (
     <div role="group" aria-label={STRINGS.hud.objectives} className={styles.tracker}>
       {objectives.map((objective, index) => {
