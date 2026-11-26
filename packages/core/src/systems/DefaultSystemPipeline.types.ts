@@ -66,4 +66,9 @@ export type DefaultSystemPipelineOptions = {
    * structures from.
    */
   readonly structures?: Pick<ContentCatalogue<StructureDefinition>, 'get'>;
+  /**
+   * How long an enemy hit still earns a gem kill (DEC-346): the assist window, from the scoring
+   * `Simulation` loads once for the match.
+   */
+  readonly assistWindowTicks: number;
 };

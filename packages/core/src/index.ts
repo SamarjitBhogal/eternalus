@@ -107,6 +107,7 @@ export type {
   AbilitySlotSnapshot,
   CaptureSnapshot,
   EntitySnapshot,
+  GemSnapshot,
   MatchSnapshot,
   Snapshot,
 } from './state/Snapshot.types';
@@ -142,4 +143,5 @@ export type { MatchNavigation } from './map/MatchPathfinderFactory.types';
 export type { MapObject, MapObjectKind, MapObjectSnapshot } from './content/maps/mapObjects.types';
 export { findBuildingAt } from './map/findBuildingAt';
 export { findMapObjectAt } from './map/findMapObjectAt';
+export { findGemAt } from './state/findGemAt';
 export { findUnitAt } from './state/findUnitAt';

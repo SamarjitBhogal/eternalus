@@ -1,10 +1,12 @@
 import { Abilities } from '../components/Abilities';
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
+import { CathedralGemState } from '../components/CathedralGemState';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { CombatClock } from '../components/CombatClock';
+import { LastEnemyHit } from '../components/LastEnemyHit';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
@@ -247,6 +249,10 @@ export class StateHasher {
         capture.ownedSinceTick,
       ]);
     }
+    const gem = entity.findComponent(CathedralGemState);
+    if (gem !== undefined) {
+      fields.push(['gem', ...gem.fields]);
+    }
     const veterancy = entity.findComponent(Veterancy);
     if (veterancy !== undefined) {
       fields.push([
@@ -269,6 +275,11 @@ export class StateHasher {
     const clock = entity.findComponent(CombatClock);
     if (clock !== undefined) {
       fields.push(['combat-clock', ...clock.fields]);
+    }
+    // Names the killer of a death by the gem (DEC-346), so it changes the match's future.
+    const lastEnemyHit = entity.findComponent(LastEnemyHit);
+    if (lastEnemyHit !== undefined) {
+      fields.push(['last-enemy-hit', ...lastEnemyHit.fields]);
     }
     return fields;
   }

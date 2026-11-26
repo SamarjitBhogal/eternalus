@@ -17,12 +17,14 @@ const footprintOf = (id: string): number => {
  */
 const AFTER_BUFF_TOWERS = { kind: 'allied-buff-towers-down', fraction: 2 / 3 } as const; // TUNE
 
+/** A body no hit ever damages: one health it never loses, never breakable. */
+const NEVER_DAMAGED = { baseHealth: 1, breakability: { kind: 'never' } } as const;
+
 /** Every camp (forest and corner): only its group's home, never damaged. */
 const CAMP_BODY = {
+  ...NEVER_DAMAGED, // a camp is only its group's home
   kind: 'camp',
-  baseHealth: 1, // never damaged: a camp is only its group's home
   footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
-  breakability: { kind: 'never' },
 } as const;
 
 /**
@@ -80,4 +82,16 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
     })),
     // The corner camp is a `Camp` too: the home of its boss (guard plan `corner-camp`).
     { ...CAMP_BODY, id: 'corner-camp', displayName: 'Corner Camp' },
+    {
+      // Built at the `cathedral` feature, whose id it shares: the gem's own body, apart from the
+      // building (DEC-292). Never damaged: the gem is unbreakable (DISC-11, DEC-292); the shared
+      // spread is DEC-346 (tidy-ups).
+      ...NEVER_DAMAGED,
+      id: 'cathedral',
+      kind: 'cathedral-gem',
+      displayName: 'Cathedral gem',
+      // TUNE: DEC-291 keeps the gem a 10 × 16 diamond; its hit and touch circle is the diamond's
+      // half-width, in world units (`CathedralGemView` draws the diamond from this radius)
+      footprintRadius: 5,
+    },
   ]);

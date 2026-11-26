@@ -254,6 +254,35 @@ Reply inline (`Decision: …`).
     follow-up PR after the freeze, which can also make `isInReach` and `doesDiscReachPolygon` one
     function.
 
+- [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
+      You asked "what about the forest camps? why can they never break?". Today a camp's body is only
+      its group's home (`CAMP_BODY`: "a camp is only its group's home"): the camp's mobs are what
+      players fight, and no reference doc gives the camp body health of its own. Should a camp
+      become breakable (and if so, what happens to its mobs and respawns)? A breakable camp leaves
+      the shared `NEVER_DAMAGED` spread with a one-line change.
+
+- [ ] **Better than design: four Cathedral gem items (#132 pre-PR critic, 2026-11-25).** Not
+      built in #132; each would be a small follow-up PR if you agree. (BTD3) One body: the gem's
+      movement block is a separate map-object plinth that copies the gem's radius; a static
+      blocking collider on `CathedralGem` itself would keep one shape. (BTD4) A flag on the status:
+      the credited sources are the list `CATHEDRAL_GEM.statusIds`; a per-status flag (for example
+      `creditsLastEnemyHitter`) would let a future hazard opt in with no pipeline edit. (BTD5)
+      Legends only: `LastEnemyHit` is kept on every unit an enemy hits, while your words were
+      "the dying legend"; should a minion or mob killed by the gem also count for its last enemy
+      damager (and pay XP), or only a Legend? (BTD6) Enemy status damage: an enemy's bleed tick
+      has no attacker, so it never counts as the last enemy hit; carrying the applier's id on
+      status damage would count it. Decision: …
+
+- [ ] **Better than design: two Cathedral gem items (#132 re-review, swholtzman, 2026-11-22).**
+      (BTD1) The holder is stored twice: `CathedralGemState.holder` copies the capture zone's owner
+      from `capture-point-owner-changed`, while the zone's `Capturable.owner` already holds it.
+      Keeping the zone's id and reading its owner when the snapshot is made gives one source of
+      truth, and the hash needs no holder field. (BTD2) One finder per targetable kind:
+      `PlayerCommands.targetAt` gains `findGemAt` beside `findUnitAt` and `findMapObjectAt`, so
+      each new targetable structure adds a finder and an edit there. One "targetable" snapshot
+      flag and one finder would keep it closed to change. Not built in #132. OK to do each in a
+      small follow-up PR?
+
 - [ ] **`feat/duel-arena-only-legends` (PR #145, SCRUM-445, SCRUM-446, SCRUM-447, SCRUM-450):
       one owner item left.** Q1 and Q2 are answered and built: DEC-348 (2026-11-23: no
       structures, no minions or host units, trees, houses and rocks stay, the gem stays; the
@@ -3674,6 +3703,24 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-23 — **Your answers on the five Cathedral gem cards (DEC-346)** (`feat/cathedral-gem-hittable`,
+  PR #132): recorded as DEC-346. The gem blocks movement (an unbreakable plinth under it) and a
+  touch no longer strikes; a death by the gem counts for the victim's last enemy damager within the
+  30 s assist window, else nobody's kill or XP; both "tick" readings stay; the Cathedral interior
+  builder is split and camps and the gem share one "never damaged" entry. Closes "The Cathedral
+  gem: four rules DEC-292 leaves open", "split the Cathedral interior builder" and "one shared
+  'never damaged' structure entry". Decision: DEC-346. The Duel design (circle strike, laser) is a
+  follow-up PR once the six "GEM duel" cards are answered; your camp question is a new item.
+
+- 2026-11-21 — **Your picks on the Cathedral gem (DEC-291, DEC-292)** (`feat/cathedral-gem-hittable`,
+  PR #132, which now also carries PR #124): recorded as DEC-291 and DEC-292. The gem keeps its
+  10 × 16 diamond and shows the holder's colour (blue Light, blood-red-purple Dark, purple-violet
+  neutral); it is its own unbreakable body; a hit or a touch stuns and burns the hitter, and the gem
+  pulses and glows purple, brighter and wider with more hits. Closes "The Cathedral gem's look",
+  "The gem's lightning on attackers: 11 open rules" and "a general retaliation rule vs a gem-only
+  one" (built gem-only, with its statuses and glow as content: `CATHEDRAL_GEM`). Three rules the
+  ruling leaves open are a new item under Decisions.
 
 - 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
   recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a
