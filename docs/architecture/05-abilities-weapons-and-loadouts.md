@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-26
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -1309,13 +1309,14 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     `passiveOptions` is an ability.
   - **New stats (§8; DEC-337).** `abilityPotency` multiplies the damage of an ability's `damage`
     steps.
-    `abilityDuration` stretches the time of the statuses that a `buff` or `debuff` step applies
+    `abilityDuration` stretches the time of the statuses that a `buff`, `debuff` or `knockback`
+    step applies
     (`CastContext.statusDuration(step)`, at least one tick; a status with no end stays without
     one). `ultimateGain` multiplies each gain of the ultimate meter, not a loss (§6;
     `UltimateCharge`), so the meter still moves only on an event (DISC-44). Erudition holds all
     three (`content/status-effects/erudition.ts`). Basic attacks do not change: a status's
-    `onHit` steps (`HitEffects`) read 1 for both ability stats. The statuses that a knock-back
-    applies (`staggered`, `knockup`) are not stretched (DEC-337 (4)). A status with
+    `onHit` steps (`HitEffects`) read 1 for both ability stats. A knock-back's push keeps its
+    travel time, and its `staggered` and `knockup` are stretched like any debuff (DEC-337 (4)). A status with
     `hasFixedDuration` is not stretched either, because its time matches a step of its ability
     (Fury's wind-up; DEC-361).
   - **Modifier scaled by lost health (§8).** A `StatModifier` can have `byLostHealth: { fullAt }`:

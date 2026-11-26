@@ -707,7 +707,7 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-23 (DEC-330): "A: fix it in a small PR before PR 8 merges". Not built yet;
     the fix PR comes after the PR 8 follow-up.
 
-- [ ] **HC-B40 — Better than the design, your sign-off: eight small changes that the Magus
+- [x] **HC-B40 — Better than the design, your sign-off: eight small changes that the Magus
       passives critic proposes (`feat/magus-passives`, architecture critic rounds 1 and 2,
       2026-11-23; eternalus-149, eternalus-150, eternalus-151).** Nothing that the player sees
       changes. Seven are built under your standing rule (DEC-223), recorded as DEC-361. One (3) is
@@ -733,6 +733,9 @@ Reply inline (`Decision: …`).
   - (8) Built (round 2). Code only: `StatusEffectApplier.durationFor` holds the stretch rule
     beside the status data. It replaces the methods `durationOf` and `hasFixedDuration`; the
     status field `hasFixedDuration` stays.
+  - **Answered 2026-11-26 in DEC-361** (Owner Calls page v98): "A: sign off all seven (built)".
+    (3) stays a follow-up. The DEC-337 (4) card was answered on the same page: "B: stretch them
+    by 20% too", so a knock-back step now stretches its statuses; they still need no flag.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

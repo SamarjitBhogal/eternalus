@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Movement } from '../../components/Movement';
 import { StatusEffects } from '../../components/StatusEffects';
 import { loadKnockback } from '../../content/abilities/loadKnockback';
+import { loadStatusEffects } from '../../content/status-effects/loadStatusEffects';
 import type { Entity } from '../../entities/Entity';
 import { casterState } from '../__fixtures__/casterState';
 import { castSteps } from '../__fixtures__/castSteps';
@@ -109,6 +110,22 @@ describe('KnockbackEffect', () => {
     expect(statusesOf(enemy)).toEqual(['staggered', 'knockup']);
     expect(statusesOf(ally)).toEqual([]);
     expect(ally.getComponent(Movement).isForced).toBe(false);
+  });
+
+  it('stretches the stagger and the knock-up for an Erudition caster, not the push (DEC-337 (4))', () => {
+    const { state, caster, spawn } = setUp();
+    caster.getComponent(StatusEffects).apply(loadStatusEffects(30, 2).get('erudition'), null, 0);
+    const enemy = spawn('warrior', 2, 0);
+    const expiryOf = (statusId: string) =>
+      enemy.getComponent(StatusEffects).active.find(({ definition }) => definition.id === statusId)
+        ?.expiresTick;
+
+    castSteps(state, caster.id, [{ ...PUSH, knockup: true }]);
+
+    // Staggered 0.3 s (9 ticks) × 1.2 = 10.8, rounded 11; knock-up 0.8 s (24 ticks) × 1.2 = 28.8, 29.
+    expect(expiryOf('staggered')).toBe(state.tick + 11);
+    expect(expiryOf('knockup')).toBe(state.tick + 29);
+    expect(travel(enemy).ticks).toBe(TRAVEL_TICKS);
   });
 
   it('leaves a target with no Movement (a structure) where it is', () => {
