@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-26
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -436,6 +436,11 @@ and `lightsShot`. So where the dated notes above say that a shot's walls come fr
 `doesShapeStopShot` uses game words but lives in `utils/`: `state/` (`WorldObjectStore`) may not
 import `physics/`, and `physics/` may not import `state/` or `content/`, so `utils/` is the one
 layer both can call (as for `isPointInBlockingArea`, DEC-334).
+
+**2026-11-26 (branch `feat/shots-over-lava`; HC-Q105, DEC-373 (2)).** Camp fires now light arrows:
+`MapSceneryBuilder` sets `canShotsCross` and `canLightShots` on each `<camp>-fire` object, so the
+2026-11-23 note's "Camp fires do not light arrows yet" no longer holds. The palace kitchen hearths
+still stop shots.
 
 ## Related
 

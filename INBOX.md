@@ -793,6 +793,10 @@ Reply inline (`Decision: …`).
       and part of DEC-322 (1). Lane A builds the answer in its own PR on PR 2. Code names:
       `Simulation.spawnStructures` (one body object per structure today), `WorldObjectStore`,
       `AreaHitQuery` rule 1.
+  - Answered 2026-11-26 (DEC-373 (1), Owner Calls v98): "B: only the outer walls and the throne;
+    room walls keep their own health". The palace's inner ring keeps its own health too (DEC-373
+    (1) reading). Lane A builds it in `feat/palace-stronghold-pool`. Tick this item when that
+    branch is built.
 
 - [ ] **FYI for Samarjit (minion AI owner): three changes to minion AI in PR 2
       (`feat/melee-sweeps`).** Nothing to decide. (1) DEC-326 (2): a minion that is already
@@ -816,7 +820,7 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-23 (DEC-345, Owner Calls v68): "B: shots fly over lakes and lava rivers —
     Arrows shot over lava/fire catch fire and apply burn." Built in `feat/shots-over-lava`.
 
-- [ ] **HC-Q105 — Does an arrow fly over a camp fire and catch fire? (`feat/shots-over-lava`,
+- [x] **HC-Q105 — Does an arrow fly over a camp fire and catch fire? (`feat/shots-over-lava`,
       follow-up to HC-Q89, DEC-345 (3)).** Asked on Owner Calls v71, 2026-11-23, by
       COMBAT-WEAPONS-ABILITIES-59. Your HC-Q89 note: "Arrows shot over lava/fire catch fire and
       apply burn." The only fires on the map are the camp fires in the forest camps. A camp fire
@@ -832,8 +836,12 @@ Reply inline (`Decision: …`).
     fly over lava but do not light. (2) A lit arrow stays lit until it lands; flying over a lake
     does not put it out. (3) A lit arrow burns units only; towers and walls take no burn. The
     reference table says buildings take burn too, but buildings have no status effects yet.
+  - Answered 2026-11-26 (DEC-373 (2), Owner Calls v98): "A: yes, shots fly over camp fires and
+    arrows catch fire there". Built in `feat/shots-over-lava`. The three readings above got no
+    note, so they stay as built. The palace kitchen hearths are not camp fires and still stop
+    shots (DEC-373 (2)).
 
-- [ ] **HC-B41 — Better than the design, built under your standing rule (DEC-223), sign-off
+- [x] **HC-B41 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: two code tidy-ups in the shots-over-lava work (`feat/shots-over-lava`, HC-Q89,
       pre-PR gate round 1, 2026-11-23; COMBAT-WEAPONS-ABILITIES-62).** Built and tested;
       recorded as DEC-360. Nothing waits on you. No change for the player. (1) Each map shape
@@ -853,6 +861,7 @@ Reply inline (`Decision: …`).
     of code for bridge decks: "where does this unit or shot first touch a map shape?" and "does
     this shot touch lava?". Before, each check had its own copy. No change for the player. Code
     names: `CollisionResolver.contactWith`, used by `firstContact` and `touches`.
+  - Signed off 2026-11-26 (DEC-360, Owner Calls v98): "A: sign off all four (built)".
 
 - [ ] **HC-Q92 — Does destroying a wall turret pay a reward? (`feat/wall-turrets`, PR 4,
       Owner Calls card "WT destroyed reward").** Options: (A, built) yes: structure XP and points,
