@@ -33,6 +33,7 @@ const PLAYER: EntitySnapshot = {
   aether: { current: 95, max: 160 },
   area: null,
   capture: null,
+  gem: null,
 };
 
 /** The simulation's side of the bridge's listener table: who listens to what, and a way to emit. */
@@ -105,6 +106,7 @@ const zoneSnapshot = (
     lockedBy: null,
     presence: { light: 0, dark: 0, neutral: 0 },
   },
+  gem: null,
   ...(mapFeatureId !== undefined && { mapFeatureId }),
 });
 
@@ -121,6 +123,7 @@ const structureOf = (feature: MapFeature, current: number, max: number): EntityS
   aether: null,
   area: null,
   capture: null,
+  gem: null,
   mapFeatureId: feature.id,
 });
 
@@ -341,7 +344,7 @@ describe('MatchBridge', () => {
     const { map, bridge, captures } = setUp();
     const cathedral = map.features.find((feature) => feature.kind === 'cathedral');
     if (cathedral === undefined) throw new Error('The map has no cathedral.');
-    // The planned Cathedral structure and the Cathedral zone are built from one feature.
+    // A Cathedral structure (the gem today) and the Cathedral zone are built from one feature.
     const zone = zoneSnapshot(cathedral.position, 'light', 0.75, cathedral.id);
     bridge.publishAll(snapshotAt(0, [zone, structureOf(cathedral, 5_000, 5_000)]), null);
 
@@ -456,6 +459,7 @@ describe('MatchBridge', () => {
       aether: null,
       area: null,
       capture: null,
+      gem: null,
     };
     const start = snapshotAt(0, [bystander]);
     const { bridge, structures: published } = setUp(undefined, start);

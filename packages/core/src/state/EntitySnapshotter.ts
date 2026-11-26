@@ -1,5 +1,6 @@
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
+import { CathedralGemState } from '../components/CathedralGemState';
 import { Health } from '../components/Health';
 import { MapFeatureLink } from '../components/MapFeatureLink';
 import { MapObjectBody } from '../components/MapObjectBody';
@@ -36,6 +37,7 @@ export class EntitySnapshotter {
     const aether = entity.findComponent(Aether);
     const capture = entity.findComponent(Capturable);
     const link = entity.findComponent(MapFeatureLink);
+    const gem = entity.findComponent(CathedralGemState);
     return {
       id: entity.id,
       kind: entity.kind,
@@ -75,6 +77,15 @@ export class EntitySnapshotter {
               checkpoints: this.checkpoints,
               lockedBy: capture.lockedBy,
               presence: capture.presence,
+            },
+      gem:
+        gem === undefined
+          ? null
+          : {
+              holder: gem.holder,
+              glowTicksLeft: gem.glowTicksLeft,
+              glowHits: gem.glowHits,
+              ticksSinceHit: gem.ticksSinceHit,
             },
     };
   }

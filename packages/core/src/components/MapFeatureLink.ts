@@ -3,7 +3,7 @@
  * `Simulation` builds from the map (architecture 07 §1, §7). The snapshot carries it as
  * `EntitySnapshot.mapFeatureId`, so the client binds a HUD tile or capture point to its entity by
  * identity, never by position (DEC-221 (3), DEC-231). An entity built from no feature has none.
- * One feature may back several entities (the Cathedral's capture zone and its planned structure,
+ * One feature may back several entities (the Cathedral's capture zone and its gem structure,
  * DEC-233), so a consumer selects by feature id and by the group it reads; that at most one of
  * them carries each group is checked by `map-feature-groups-unique` (DEC-252).
  *

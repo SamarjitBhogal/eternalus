@@ -5,7 +5,8 @@ import { BotSummary } from './BotSummary';
 import { DuelBot } from './DuelBot';
 import { QueueLoadRun } from './QueueLoadRun';
 import { BotNames } from './BotNames';
-import { CLOSE_GRACE_MS, EXIT_FAIL, EXIT_OK, MS_PER_SECOND } from './BotRun.constants';
+import { MS_PER_SECOND } from '../time/time.constants';
+import { CLOSE_GRACE_MS, EXIT_FAIL, EXIT_OK } from './BotRun.constants';
 
 /**
  * Plays the online Duel with scripted players to check the server end to end (ADR 0016): every

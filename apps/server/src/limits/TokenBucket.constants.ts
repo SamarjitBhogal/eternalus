@@ -1,6 +1,3 @@
-/** Milliseconds in a second: bucket rates are per second. */
-export const MS_PER_SECOND = 1000;
-
 /**
  * The most messages a connection may send in a burst (ADR 0016 point 7). Intents arrive at the
  * tick rate (30/s), so this holds two seconds of them.
