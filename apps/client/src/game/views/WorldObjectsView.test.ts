@@ -61,6 +61,55 @@ describe('WorldObjectsView', () => {
     expect(view.revision).toBe(1);
     expect(renderer.calls.filter((call) => call.op === 'fillPolygon').length).toBeGreaterThan(0);
   });
+  it("draws a pylon's own bar under it and its turret's bar above it, each by its own health (DEC-375)", () => {
+    const pylon: MapObject = { ...HOUSE, id: 'pylon', kind: 'turret' };
+    const view = new WorldObjectsView([pylon]);
+    const renderer = new RecordingRenderer();
+    view.show([
+      {
+        id: 'pylon',
+        entityId: 'entity-2',
+        health: { current: 300, max: 600 },
+        isDestroyed: false,
+        carriedHealth: { current: 150, max: 600 },
+      },
+    ]);
+    view.draw(renderer, AREA);
+    const bars = renderer.calls.flatMap((call) =>
+      call.op === 'fillPolygon' && call.args[1] === S.barHealth
+        ? [{ y: call.args[0][0]?.y, width: (call.args[0][1]?.x ?? 0) - (call.args[0][0]?.x ?? 0) }]
+        : [],
+    );
+
+    expect(bars).toEqual([
+      { y: 10 + S.barGap, width: S.barWidth / 2 },
+      { y: -S.barGap - S.barHeight, width: S.barWidth / 4 },
+    ]);
+  });
+  it("keeps a ruined pylon's own bar with its ruin once its turret fell, and draws no bar for a destroyed one (DEC-375)", () => {
+    const pylon: MapObject = { ...HOUSE, id: 'pylon', kind: 'turret' };
+    const view = new WorldObjectsView([pylon]);
+    const renderer = new RecordingRenderer();
+    const ruin: MapObjectSnapshot = {
+      id: 'pylon',
+      entityId: 'entity-2',
+      health: { current: 300, max: 600 },
+      isDestroyed: false,
+      isRuined: true,
+    };
+    const barFills = () =>
+      renderer.calls.filter((call) => call.op === 'fillPolygon' && call.args[1] === S.barHealth);
+    view.show([ruin]);
+    view.draw(renderer, AREA);
+    const ruinBars = barFills().length;
+    renderer.calls.length = 0;
+    view.show([{ ...ruin, isDestroyed: true, health: { current: 0, max: 600 } }]);
+    view.draw(renderer, AREA);
+
+    expect(ruinBars).toBe(1);
+    expect(barFills()).toEqual([]);
+    expect(renderer.calls.length).toBeGreaterThan(0);
+  });
   it('keeps a fallen log visible when its original trunk footprint is offscreen', () => {
     const tree = {
       ...HOUSE,

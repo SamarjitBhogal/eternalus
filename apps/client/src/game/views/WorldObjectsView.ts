@@ -50,7 +50,11 @@ export class WorldObjectsView implements WorldLayer {
    * is hidden.
    */
   public readonly isFallen = (id: string): boolean => this.fallen.has(id);
-  /** Draws nearby health bars and low ruined silhouettes without changing collision geometry. */
+  /**
+   * Draws nearby health bars and low ruined silhouettes without changing collision geometry. An
+   * object's own bar sits under it; the structure it carries shows its bar above it (a wall turret
+   * on its pylon, DEC-375). A ruin with health left (a pylon whose turret fell) keeps its bar.
+   */
   public draw(renderer: Renderer, view = this.currentView?.()): void {
     if (view === undefined) return;
     for (const state of this.states) {
@@ -72,18 +76,12 @@ export class WorldObjectsView implements WorldLayer {
         visibleBounds.y > view.y + view.height
       )
         continue;
-      if (look !== undefined) look.draw(renderer);
-      else if (state.health !== null && view.width < S.healthBarViewLimit) {
-        const width = Math.min(S.barWidth, Math.max(S.barHeight, bounds.width));
-        const x = bounds.x + (bounds.width - width) / 2;
-        const y = bounds.y + bounds.height + S.barGap;
-        this.rect(renderer, { x, y, width, height: S.barHeight }, S.barBackground);
-        this.rect(
-          renderer,
-          { x, y, width: (width * state.health.current) / state.health.max, height: S.barHeight },
-          S.barHealth,
-        );
-      }
+      look?.draw(renderer);
+      if (state.isDestroyed || view.width >= S.healthBarViewLimit) continue;
+      if (state.health !== null)
+        this.bar(renderer, bounds, state.health, bounds.y + bounds.height + S.barGap);
+      if (state.carriedHealth !== undefined)
+        this.bar(renderer, bounds, state.carriedHealth, bounds.y - S.barGap - S.barHeight);
     }
   }
   /** Draws destroyed and ruined exterior objects on the minimap without health-bar clutter. */
@@ -142,6 +140,22 @@ export class WorldObjectsView implements WorldLayer {
       width: Math.max(...xs) - Math.min(...xs),
       height: Math.max(...ys) - Math.min(...ys),
     };
+  }
+  /** One health bar centred across `bounds`, its top at `y`, filled by the health left. */
+  private bar(
+    renderer: Renderer,
+    bounds: WorldRect,
+    health: NonNullable<MapObjectSnapshot['health']>,
+    y: number,
+  ): void {
+    const width = Math.min(S.barWidth, Math.max(S.barHeight, bounds.width));
+    const x = bounds.x + (bounds.width - width) / 2;
+    this.rect(renderer, { x, y, width, height: S.barHeight }, S.barBackground);
+    this.rect(
+      renderer,
+      { x, y, width: (width * health.current) / health.max, height: S.barHeight },
+      S.barHealth,
+    );
   }
   private rect(renderer: Renderer, b: WorldRect, color: string): void {
     renderer.fillPolygon(
