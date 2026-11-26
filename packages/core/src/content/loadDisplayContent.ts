@@ -19,6 +19,7 @@ import { LOCKED_CLASSES } from './legends/locked/lockedClassCatalogue';
 import type { LockedClassDefinition } from './legends/locked/lockedClasses.types';
 import { LEGEND_SPECS } from './legends/specs/legendSpecCatalogue';
 import type { LegendSpecDefinition } from './legends/specs/legendSpecs.types';
+import { LANE_MINIONS } from './mobs/laneMinions';
 import { MAP_FEATURE_DEFINITIONS } from './maps/mapFeatureDefinitions';
 import type { MapFeatureKind } from './maps/maps.types';
 import { VERDICT_LINES } from './narrative/verdictLines';
@@ -93,6 +94,8 @@ export type DisplayContent = {
     readonly id: string;
     readonly displayName: string;
   }[];
+  /** The three lane minions by id and display name: the developer menu's mob picker (13 §4). */
+  readonly laneMinions: readonly { readonly id: string; readonly displayName: string }[];
   /** Each playable team's display name (the team badge and the roster labels). */
   readonly teamNames: Readonly<Record<PlayableTeam, string>>;
   /** The profile screen's display name (the main menu item and the screen's title). */
@@ -195,6 +198,7 @@ export const loadDisplayContent = (
       displayName,
     })),
     statuses: STATUS_EFFECTS.all().map(({ id, displayName }) => ({ id, displayName })),
+    laneMinions: LANE_MINIONS,
     teamNames: TEAM_DISPLAY_NAMES,
     profileDisplayName: PROFILE_DISPLAY_NAME,
     botRoster,

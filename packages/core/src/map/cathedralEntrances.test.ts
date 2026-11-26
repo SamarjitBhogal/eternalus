@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { MapGenerator } from './MapGenerator';
 import { MapPresentationBuilder } from './MapPresentationBuilder';
 import { MapObjectBuilder } from './MapObjectBuilder';
@@ -48,13 +49,23 @@ describe('cathedral lane entrances', () => {
             .some((o) => o.footprints.some((shape) => doesCircleOverlapPolygon(centre, 1, shape))),
         ).toBe(false);
       }
+      // The lane crosses the Cathedral from door to door. Only the gem's plinth stands on its line
+      // (DEC-346: the gem blocks movement); a line just south of the plinth stays open end to end.
+      const blockersAt = (x: number, y: number) =>
+        objects
+          .filter((o) => o.buildingId === building?.id && o.isBlocking)
+          .filter((o) =>
+            o.footprints.some((shape) =>
+              doesCircleOverlapPolygon({ x: (x * width) / 1600, y: (y * height) / 900 }, 1, shape),
+            ),
+          )
+          .map(({ id }) => id);
+      const plinthEdge = G.cathedral.y + STRUCTURE_DEFINITIONS.get('cathedral').footprintRadius;
       for (let x = G.westDoor.x; x <= G.eastDoor.x + G.eastDoor.width; x += 2) {
-        const point = { x: (x * width) / 1600, y: (455 * height) / 900 };
-        expect(
-          objects
-            .filter((o) => o.buildingId === building?.id && o.isBlocking)
-            .some((o) => o.footprints.some((shape) => doesCircleOverlapPolygon(point, 1, shape))),
-        ).toBe(false);
+        expect(blockersAt(x, 455).filter((id) => id !== 'cathedral-interior-gem-plinth')).toEqual(
+          [],
+        );
+        expect(blockersAt(x, plinthEdge + 2)).toEqual([]);
       }
     },
   );

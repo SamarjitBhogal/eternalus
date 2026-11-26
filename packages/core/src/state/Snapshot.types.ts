@@ -14,8 +14,8 @@ import type { Polygon } from '../utils/geometry.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
- * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`, `Capturable`
- * or `StatusEffects`), never a made-up default.
+ * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`, `Capturable`,
+ * `StatusEffects` or `CathedralGemState`), never a made-up default.
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
@@ -50,6 +50,8 @@ export type EntitySnapshot = {
    * takes none (a structure). The client draws Fury's wind-up from it (DEC-283).
    */
   readonly statuses: readonly StatusSnapshot[] | null;
+  /** The Cathedral gem's state (`CathedralGemState`, DEC-291, DEC-292); `null` for the rest. */
+  readonly gem: GemSnapshot | null;
 };
 
 /** One active status as the client sees it: its id and how far through its time it is. */
@@ -59,6 +61,18 @@ export type StatusSnapshot = {
   readonly ticksActive: number;
   /** Ticks until it ends; `null` for a status that lasts until removed. */
   readonly ticksLeft: number | null;
+};
+
+/** The Cathedral gem as the client sees it: whose colour it shows, and its glow. */
+export type GemSnapshot = {
+  /** Who holds the Cathedral (DEC-291: the gem shows that team's colour). */
+  readonly holder: Team;
+  /** Ticks the glow still lasts; 0 when it is dark. */
+  readonly glowTicksLeft: number;
+  /** Hits since the glow last went dark: more hits glow brighter and wider (DEC-292). */
+  readonly glowHits: number;
+  /** Ticks since the last hit (0 on the tick it was struck), or `null` before the first. */
+  readonly ticksSinceHit: number | null;
 };
 
 /** A Legend's level and XP as the client sees it (architecture 03 §5, the HUD's XP ring). */

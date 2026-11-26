@@ -78,7 +78,7 @@ const setUp = () => {
   };
   /** Hands a capture point to `to`, as `CaptureSystem` does when a capture completes. */
   const own = (pointId: string, to: Team): void => {
-    state.entities.get(pointId)?.getComponent(Capturable).setOwner(to);
+    state.entities.get(pointId)?.getComponent(Capturable).setOwner(to, state.tick);
   };
   /** Ends `ticks` ticks as the director does: one fold each. */
   const run = (ticks = 1): void => {

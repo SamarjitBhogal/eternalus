@@ -26,6 +26,7 @@ const unit: EntitySnapshot = {
   area: null,
   capture: null,
   statuses: null,
+  gem: null,
 };
 
 /** The colours `HealthBarView` fills for `entity`, in drawing order. */

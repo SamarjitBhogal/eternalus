@@ -8,6 +8,7 @@ import type { MatchResult } from '@eternalus/core';
 import type { HudSlotId, InputAction, InputChord } from './Binding.types';
 import type { AssetId, DisplayCatalogue, RasterBox } from './catalogue.types';
 import type { CrashReportState } from './CrashReport.types';
+import type { DevCommand, DeveloperMenuState } from './developerMenu.types';
 import type { LegendClassId, MatchEnding, PlayableTeam } from './domain.types';
 import type {
   Announcement,
@@ -49,7 +50,7 @@ export type MenuRoute =
   | 'duel-versus';
 
 /** Overlays that can open over the match. */
-export type Overlay = 'pause' | 'settings';
+export type Overlay = 'pause' | 'settings' | 'leave-duel';
 
 /** Everything the UI can ask the game to do. Components emit these and never write the store. */
 export type UiIntent =
@@ -67,6 +68,8 @@ export type UiIntent =
   | { readonly kind: 'clear-class-selection' }
   | { readonly kind: 'cancel-match' }
   | { readonly kind: 'leave-match' }
+  /** Forfeit the online Duel in progress (the opponent wins) and return to the main menu. */
+  | { readonly kind: 'forfeit' }
   /** Leaves the win/lose screen before its countdown ends (DEC-78). */
   | { readonly kind: 'continue' }
   | { readonly kind: 'open-overlay'; readonly overlay: Overlay }
@@ -93,7 +96,9 @@ export type UiIntent =
     }
   /** The player's note on a crash (the crash popup, DEC-106). */
   | { readonly kind: 'save-crash-note'; readonly note: string }
-  | { readonly kind: 'dismiss-crash-report' };
+  | { readonly kind: 'dismiss-crash-report' }
+  /** The developer menu's gameplay button: `Match` enqueues the command; ignored while the menu is off (13 §4). */
+  | { readonly kind: 'dev-command'; readonly command: DevCommand };
 
 /** One Legend shown on the selection and loading screens, built before the simulation exists. */
 export type RosterEntry = {
@@ -232,6 +237,10 @@ export type BridgeEventMap = {
   'duel-versus': DuelVersus;
   /** The Duel's scoreboard, on the HUD cadence; only in a Duel. */
   'duel-state': DuelHudState;
+  /** The Duel opponent's connection: `graceMs` is the reconnect window while they are away, `null` once connected. */
+  'duel-opponent-presence': { readonly graceMs: number | null };
+  /** This player's Duel connection dropped and is reconnecting (DEC-349), or no longer is. */
+  'duel-connection': { readonly isReconnecting: boolean };
   /**
    * The match ended, once per match (13 §5): core's result, and its length in match seconds (the
    * bridge knows the tick rate, the UI does not; DEC-129 (1)), the countdown not counted (DEC-278).
@@ -260,6 +269,8 @@ export type BridgeEventMap = {
   announcement: Announcement;
   /** The player's minimap key showed (`true`) or hid (`false`) the minimap (DEC-147). */
   'minimap-visibility': { readonly isShown: boolean };
+  /** The developer menu's state: open, and its pickers (13 §4). */
+  'developer-menu': DeveloperMenuState;
   /** The whole settings state, published whenever it changes. */
   settings: SettingsSliceState;
 };

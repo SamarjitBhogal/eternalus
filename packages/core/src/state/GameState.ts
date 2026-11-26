@@ -28,6 +28,7 @@ import { GuardStore } from './GuardStore';
 import { HordeStore } from './HordeStore';
 import { LaneStructures } from './LaneStructures';
 import type { CollisionQuery } from './CollisionQuery.types';
+import { RespawnQueue } from './RespawnQueue';
 import type { MatchWorld } from './MatchWorld';
 import type { PathQuery } from './PathQuery.types';
 import type { EntitySnapshot, HordeSnapshot, Snapshot } from './Snapshot.types';
@@ -68,6 +69,8 @@ export class GameState {
   public readonly hordes = new HordeStore();
   /** Every structure's guard posts (architecture 18 §7). */
   public readonly guards = new GuardStore();
+  /** Dead Legends waiting to return to their Stronghold (FR-051). */
+  public readonly respawns = new RespawnQueue();
   /** Each team's ally damage per lane since its last heavy wave (DEC-89, architecture 18 §3.3). */
   public readonly allyDamage = new AllyDamageStore();
   /** Hordes asked for this tick (developer menu), fulfilled by `SpawnSystem` in order. */
@@ -157,7 +160,7 @@ export class GameState {
       this.phaseChanges.push(change);
     });
     new AllyDamageTally(this.events, this.entities, this.world, this.allyDamage);
-    this.charges = new ChargeLedger(this.events);
+    this.charges = new ChargeLedger(this.events, this.respawns);
   }
 
   /** The lane structures as they stood at match start (architecture 18 §6.2); empty until indexed. */

@@ -5,6 +5,7 @@ import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { Abilities } from '../components/Abilities';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
+import { LastEnemyHit } from '../components/LastEnemyHit';
 import { Movement } from '../components/Movement';
 import { StatusEffects } from '../components/StatusEffects';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
@@ -207,6 +208,18 @@ describe('DuelRoundSystem', () => {
     run();
 
     expect(bar.castsInProgress).toEqual([]);
+  });
+
+  it("forgets a reset Legend's last enemy hit, so it earns no gem kill in the next round (DEC-346)", () => {
+    const { add, hit, run } = setUp();
+    const light = add('light', true);
+    const dark = add('dark', true);
+    light.addComponent(new LastEnemyHit(dark.id, 0));
+    hit(dark, light);
+
+    run();
+
+    expect(light.findComponent(LastEnemyHit)).toBeUndefined();
   });
 
   it('ends in a draw when both teams reach the target on one tick', () => {

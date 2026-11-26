@@ -69,6 +69,7 @@ const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => (
   area: null,
   capture: null,
   statuses: null,
+  gem: null,
 });
 const PLAYER: EntitySnapshot = { ...unit(ACTOR, 'light', 20, 20), family: 'legend' };
 /** A dark-team minion standing on the house, so the house and the unit overlap. */
@@ -194,6 +195,26 @@ describe('PlayerCommands', () => {
     expect(queued('cast-ability')).toBe(0);
   });
 
+  it('aims at the Cathedral gem over the house behind it, and at a unit over the gem (DEC-292)', () => {
+    const { input, tick, enqueueCommand } = setUp();
+    const gem: EntitySnapshot = {
+      ...unit('gem-1', 'neutral', 2, 2),
+      kind: 'cathedral-gem',
+      family: 'structure',
+      gem: { holder: 'neutral', glowTicksLeft: 0, glowHits: 0, ticksSinceHit: null } as const,
+    };
+    input.isAttacking = true;
+    input.aim = { x: 2, y: 2 };
+
+    tick([PLAYER, gem]);
+    tick([PLAYER, gem, ENEMY]);
+
+    expect(enqueueCommand.mock.calls.map(([command]) => command)).toEqual([
+      { type: 'attack-target', actorId: ACTOR, targetId: 'gem-1' },
+      { type: 'attack-target', actorId: ACTOR, targetId: ENEMY.id },
+    ]);
+  });
+
   it('queues no attack while the canvas gestures own the press (minimap or explorer)', () => {
     const { input, commands, queued, tick } = setUp();
     input.isAttacking = true;
@@ -291,5 +312,20 @@ describe('PlayerCommands', () => {
       { type: 'move', actorId: ACTOR, direction: { x: 1, y: 0 } },
       { type: 'stop', actorId: ACTOR },
     ]);
+  });
+
+  it('sends held movement and the held attack again when the Legend returns from a respawn', () => {
+    const { input, queued, tick } = setUp();
+    input.move = { x: 1, y: 0 };
+    input.isAttacking = true;
+    input.aim = { x: 2, y: 2 };
+    tick();
+    tick([]);
+    tick([]);
+    expect([queued('move'), queued('attack-target')]).toEqual([1, 1]);
+
+    tick([PLAYER]);
+
+    expect([queued('move'), queued('attack-target')]).toEqual([2, 2]);
   });
 });

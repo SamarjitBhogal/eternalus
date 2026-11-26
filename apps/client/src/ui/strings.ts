@@ -97,10 +97,18 @@ export const STRINGS = {
     /** The name the field starts with. */
     defaultName: 'Player',
   },
-  duelVersus: { title: 'Duel online', versus: 'VS' },
+  duelVersus: {
+    title: 'Duel online',
+    versus: 'VS',
+    matchFound: (own: string, opponent: string): string =>
+      `Match found: ${own} VS ${opponent}. The match starts in a moment.`,
+  },
   duelQueue: {
     title: 'Duel online',
     searching: 'Searching for an opponent…',
+    explanation:
+      'You are in the Duel queue. We are looking for an opponent; this usually takes a moment.',
+    waitedLabel: 'Time in queue',
     cancel: 'Cancel',
   },
   /**
@@ -200,6 +208,34 @@ export const STRINGS = {
       'aim-then-click': 'Aim, then click (the key selects, a click casts)',
     } satisfies Record<CastMode, string>,
   },
+  /**
+   * The confirmation before leaving an online Duel: leaving forfeits (DEC-250 (4)), the opponent
+   * wins (DEC-251), the server keeps running the match.
+   */
+  duelLeave: {
+    title: 'Leave the Duel?',
+    text: 'If you leave, you forfeit the match and your opponent wins. The match does not pause.',
+    stay: 'Stay',
+    leave: 'Leave',
+  },
+  /** The developer menu (13 §4; `?dev=1` only). */
+  developerMenu: {
+    title: 'Developer menu',
+    spawnMobs: 'Spawn mobs',
+    team: 'Team',
+    mob: 'Mob',
+    count: 'Count',
+    origin: 'Origin',
+    spawn: 'Spawn',
+    legends: 'Legends',
+    legendClass: 'Class',
+    add: 'Add',
+    legendToRemove: 'Legend to remove',
+    removeLegend: 'Remove Legend',
+    removeEntity: 'Remove entity',
+    entityId: 'Entity id',
+    remove: 'Remove',
+  },
   pause: { title: 'Paused', resume: 'Resume', settings: 'Settings', leave: 'Leave match' },
   /** The match viewport; the explorer labels show only with the developer flag (13 §4, DEC-32). */
   viewport: {
@@ -281,12 +317,20 @@ export const STRINGS = {
     allyTile: (who: string, className: string | null): string =>
       className === null ? who : `${who}, ${className}`,
   },
+  /** The opponent's dropped connection is held for the reconnect window (DEC-297 (1)). */
+  duelOpponent: {
+    lostConnection: 'Your opponent lost connection. Waiting for them to come back…',
+    secondsLeft: 'Seconds left to reconnect',
+    seconds: (seconds: number): string => `${String(seconds)} s`,
+  },
   /** The match HUD (62:231); slot names reuse `ACTION_LABELS`, gameplay names are content. */
   hud: {
     label: 'Match HUD',
     duelScore: 'Duel score',
     /** "3 - 1" with the target beside it: "first to 10". */
     duelFirstTo: (target: number): string => `first to ${String(target)}`,
+    /** While a dropped Duel connection is being restored (the owner's words, DEC-349). */
+    duelReconnecting: 'Reconnecting...',
     matchCountdown: 'Match start',
     countdownStart: 'START',
     health: 'Health',

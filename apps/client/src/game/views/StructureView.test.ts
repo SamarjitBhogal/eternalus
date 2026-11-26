@@ -30,6 +30,7 @@ describe('StructureView', () => {
         area: null,
         capture: null,
         statuses: null,
+        gem: null,
       },
       position: { x: 0, y: 0 },
       facing: { x: 1, y: 0 },

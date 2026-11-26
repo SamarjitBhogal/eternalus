@@ -17,6 +17,11 @@ export type ProgressionContent = {
   readonly xpSources: XpSourcesDefinition;
   /** The ultimate meter's fill table (`content/progression/ultimateCharge.ts`). */
   readonly ultimateCharge: UltimateChargeDefinition;
+  /**
+   * When set, every Legend that spawns starts at its curve's cap, its health and aether raised by
+   * each level (a Duel, `DUEL_RULES.legendsStartAtMaxLevel`, SCRUM-444). Mobs are untouched.
+   */
+  readonly legendsStartAtMaxLevel?: boolean;
 };
 
 /** One kill waiting for this system's pass. */
@@ -41,5 +46,18 @@ type TeamAward = {
   readonly maxLevels?: number;
 };
 
-/** One award waiting for this system's pass. */
-export type Award = KillAward | TeamAward;
+/**
+ * XP a Legend was owed while it waited to respawn, paid to it in the pass after it returns
+ * (DEC-186 "pay on respawn"); `maxLevels` is the owed team-kill's cap, applied then.
+ */
+type RespawnAward = {
+  readonly kind: 'respawn';
+  readonly recipientId: EntityId;
+  readonly victimId: EntityId;
+  readonly victimTeam: Team;
+  readonly xp: number;
+  readonly maxLevels?: number;
+};
+
+/** One award this system gives, waiting for its pass. */
+export type Award = KillAward | TeamAward | RespawnAward;

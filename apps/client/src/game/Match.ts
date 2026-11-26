@@ -1,4 +1,10 @@
-import { type EntityId, type EntitySnapshot, makeLogRecord, type Snapshot } from '@eternalus/core';
+import {
+  CORNER_CAMP_RING,
+  type EntityId,
+  type EntitySnapshot,
+  makeLogRecord,
+  type Snapshot,
+} from '@eternalus/core';
 
 import type { CastMode } from '../bridge/slices/settingsSlice';
 import { isDead } from '../bridge/selectors/isDead';
@@ -6,7 +12,9 @@ import { AbilityCasts } from './AbilityCasts';
 import { AimTargeting } from './AimTargeting';
 import { BuildingRoofs } from './BuildingRoofs';
 import { GameLoop } from './engine/loop/GameLoop';
+import { DeveloperMenuController } from './DeveloperMenuController';
 import { HealthBarVisibility } from './HealthBarVisibility';
+import { LegendBodies } from './LegendBodies';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
 import type { WorldPoint, WorldRect } from './engine/render/Renderer.types';
 import {
@@ -25,6 +33,7 @@ import { createDefaultStatusCueRegistry } from './views/defaultStatusCueRegistry
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
 import { AimOverlayView } from './views/AimOverlayView';
+import { LegendBodyLayer } from './views/LegendBodyLayer';
 import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';
@@ -55,6 +64,8 @@ export class Match implements LoopTarget {
   /** Which units draw a world health bar, and on which side; it listens to the simulation's events. */
   private readonly healthBars: HealthBarVisibility;
 
+  private readonly bodies: LegendBodies;
+
   /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */
   private readonly objects: WorldObjectsView;
 
@@ -83,6 +94,9 @@ export class Match implements LoopTarget {
 
   private readonly playerId: EntityId | null;
 
+  /** The developer menu's key, state and `dev-command` path (13 §4); inert unless enabled. */
+  public readonly developerMenu: DeveloperMenuController;
+
   /** What the canvas gestures do to this match: camera, minimap, roofs, explorer attack. */
   public readonly controls: MatchViewControls;
 
@@ -98,6 +112,8 @@ export class Match implements LoopTarget {
     this.current = simulation.snapshot();
     this.playerId = deps.remote?.legendId ?? this.current.match.humanLegendId;
     this.healthBars.observe(this.current, this.playerId);
+    this.bodies = new LegendBodies(simulation);
+    this.bodies.observe(this.current);
     this.entities = new EntityLayer(
       createDefaultViewRegistry((kind) => {
         logger.log(
@@ -136,10 +152,12 @@ export class Match implements LoopTarget {
     this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
     const { isDestroyed } = this.objects;
     this.aiming = new AimTargeting(deps.abilities, this.playerId, deps.dashReach);
+    const featureSizes = { 'corner-camp': 2 * CORNER_CAMP_RING.radius } as const;
     const scene = new SceneView([
-      new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed),
+      new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed, featureSizes),
       new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
       this.objects,
+      new LegendBodyLayer(this.bodies.bodies),
       this.entities,
       this.aimOverlay,
     ]);
@@ -149,6 +167,12 @@ export class Match implements LoopTarget {
     this.loop = new GameLoop(scheduler, this, {
       tickMs,
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
+    });
+    this.developerMenu = new DeveloperMenuController({
+      isEnabled: deps.isDeveloperMenuEnabled === true,
+      simulation,
+      bus: bridge.bus,
+      map,
     });
     this.bridge = new MatchBridge({
       ...bridge,
@@ -191,6 +215,7 @@ export class Match implements LoopTarget {
    */
   public start(): void {
     this.bridge.publishAll(this.current, this.playerId);
+    this.developerMenu.publish();
     this.deps.bridge.bus.emit('minimap-visibility', { isShown: this.world.miniMap.isVisible });
     this.loop.start();
   }
@@ -242,6 +267,7 @@ export class Match implements LoopTarget {
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
     this.healthBars.observe(this.current, this.playerId);
+    this.bodies.observe(this.current);
     this.roofs.playerAt(this.livingPlayerAt());
     if (this.bridge.afterTick(this.current, this.playerId)) {
       this.deps.observer.ended();
@@ -285,6 +311,8 @@ export class Match implements LoopTarget {
   public destroy(): void {
     this.loop.destroy();
     this.healthBars.destroy();
+    this.bodies.destroy();
+    this.developerMenu.destroy();
     this.bridge.destroy();
   }
 

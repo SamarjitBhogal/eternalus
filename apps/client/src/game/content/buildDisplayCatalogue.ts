@@ -308,6 +308,7 @@ export function buildDisplayCatalogue(inputs: {
     contrastMode: presentation.contrastMode,
     uiEnhancements: overrides.uiEnhancements ?? presentation.uiEnhancements,
     hud: hudCatalogue(content.mapFeatures, presentation.hud),
+    laneMinions: content.laneMinions,
     teamNames: content.teamNames,
     botRoster: content.botRoster,
     abilities: content.abilities,

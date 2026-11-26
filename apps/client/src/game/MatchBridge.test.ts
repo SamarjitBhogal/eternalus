@@ -35,6 +35,7 @@ const PLAYER: EntitySnapshot = {
   area: null,
   capture: null,
   statuses: null,
+  gem: null,
 };
 
 /** The simulation's side of the bridge's listener table: who listens to what, and a way to emit. */
@@ -97,6 +98,7 @@ const structureOf = (feature: MapFeature, current: number, max: number): EntityS
   area: null,
   capture: null,
   statuses: null,
+  gem: null,
   mapFeatureId: feature.id,
 });
 
@@ -513,6 +515,7 @@ describe('MatchBridge', () => {
       area: null,
       capture: null,
       statuses: null,
+      gem: null,
     };
     const start = snapshotAt(0, [bystander]);
     const { bridge, structures: published } = setUp(undefined, start);

@@ -121,6 +121,7 @@ describe('Simulation', () => {
         area: null,
         capture: null,
         statuses: [],
+        gem: null,
       },
     ]);
   });

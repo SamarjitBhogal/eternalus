@@ -7,6 +7,7 @@ describe('@eternalus/core public API', () => {
   it('exports exactly the documented runtime values', () => {
     expect(Object.keys(core).sort()).toEqual([
       'AStarPathfinder',
+      'CORNER_CAMP_RING',
       'ConfigValidationError',
       'DEFAULT_MAP_CONFIG',
       'DUEL_RULES',
@@ -23,6 +24,7 @@ describe('@eternalus/core public API', () => {
       'StateHasher',
       'createDefaultGameConfig',
       'findBuildingAt',
+      'findGemAt',
       'findMapObjectAt',
       'findUnitAt',
       'isPlayableTeam',

@@ -45,6 +45,8 @@ export type DefaultSystemPipelineOptions = {
    */
   /** Where a Duel's Legends start and return to after each kill; omitted outside a Duel. */
   readonly duelStarts?: Readonly<Record<PlayableTeam, Vec2>>;
+  /** Whether `SpawnSystem` runs (SCRUM-445); `true` when omitted, `false` in a Duel's arena. */
+  readonly spawnsMobs?: boolean;
   readonly hordes?: {
     readonly factory: EntityFactory;
     /** The index `state.space` exposes; `null` for a match without a map. */
@@ -64,4 +66,9 @@ export type DefaultSystemPipelineOptions = {
    * structures from.
    */
   readonly structures?: Pick<ContentCatalogue<StructureDefinition>, 'get'>;
+  /**
+   * How long an enemy hit still earns a gem kill (DEC-346): the assist window, from the scoring
+   * `Simulation` loads once for the match.
+   */
+  readonly assistWindowTicks: number;
 };

@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-22
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -12,6 +12,7 @@ paths:
     'apps/client/src/game/views/**',
     'apps/client/src/game/Match.ts',
     'apps/client/src/game/HealthBarVisibility.ts',
+    'apps/client/src/game/LegendBodies.ts',
   ]
 related:
   [
@@ -262,6 +263,10 @@ flowchart LR
   the status's time passes, read from the snapshot (`EntitySnapshot.statuses`); the look is in
   `WindupRingsView.constants.ts`. `main.tsx` passes the registry's `statusIds` to the display
   catalogue's boot check, which refuses a status core does not have (ADR 0023).
+- Fallen Legend bodies: `LegendBodies` (`game/`) reads `entity-removed` with the cause `died`
+  through `Simulation.on` and keeps where each Legend last stood, from the latest snapshot; the
+  view draws those bodies greyed out for the rest of the match (DEC-295). Presentation only: core
+  keeps no bodies, and a respawned Legend is a living entity again.
 - `MinimapView` runs at a lower cadence into the `'minimap'` layer (`06-map-and-minimap.md` §8).
 
 ## 9. Performance budget and how it is measured

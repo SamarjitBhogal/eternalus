@@ -32,6 +32,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   area: null,
   capture: null,
   statuses: null,
+  gem: null,
 });
 
 const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
