@@ -13,7 +13,12 @@ import type { LevelCurveDefinition } from './progression/progression.types';
 import type { BotRosterDefinition } from './teams/botRoster.types';
 import { BotRosterClassRule } from './validation/BotRosterClassRule';
 import { BotRosterDifficultyRule } from './validation/BotRosterDifficultyRule';
-import type { ContentRule, UnitDefinitionRule } from './validation/ContentValidator.types';
+import type {
+  ContentRule,
+  UnitDefinitionRule,
+  WeaponAccessCatalogue,
+} from './validation/ContentValidator.types';
+import { DefaultWeaponAllowedRule } from './validation/DefaultWeaponAllowedRule';
 import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
 import { KitInPoolRule } from './validation/KitInPoolRule';
 import { KnownAbilityRefsRule } from './validation/KnownAbilityRefsRule';
@@ -26,14 +31,15 @@ import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
 import { SpecClassExistsRule } from './validation/SpecClassExistsRule';
+import { SpecWeaponAllowedRule } from './validation/SpecWeaponAllowedRule';
 import { WEAPONS } from './weapons/weaponCatalogue';
-import type { WeaponDefinition } from './weapons/weapons.types';
 
 /**
  * Every shipped content rule. The one place that lists them: a new rule is one line here.
  *
  * @param curves - The level curves a Legend may name; the shipped set by default.
- * @param weapons - The weapons a Legend's default weapon must name; the shipped set by default.
+ * @param weapons - The weapons a Legend's default weapon must name, each with the classes that may
+ *   use it; the shipped set by default.
  * @param abilities - The abilities a Legend class's pool and default kit may name; the shipped set
  *   by default.
  * @param legends - The Legend classes the ability rules read pools from; the shipped set by default.
@@ -41,7 +47,7 @@ import type { WeaponDefinition } from './weapons/weapons.types';
  */
 export const createDefaultContentRules = (
   curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has'> = LEVEL_CURVE_CATALOGUE,
-  weapons: Pick<ContentCatalogue<WeaponDefinition>, 'has'> = WEAPONS,
+  weapons: WeaponAccessCatalogue = WEAPONS,
   abilities: Pick<ContentCatalogue<AbilityBase>, 'has' | 'get'> = ABILITIES,
   legends: Pick<ContentCatalogue<LegendDefinition>, 'has' | 'get'> = LEGEND_CLASSES,
   projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'has'> = PROJECTILES,
@@ -52,6 +58,7 @@ export const createDefaultContentRules = (
   new KnownLevelCurveRule(curves),
   new LevelScalingRule(),
   new KnownWeaponRule(weapons),
+  new DefaultWeaponAllowedRule(weapons),
   new KnownProjectileRule(projectiles),
   new KnownAbilityRefsRule(abilities, legends),
   new KitInPoolRule(legends),
@@ -68,10 +75,7 @@ export const createDefaultContentRules = (
 export const createLegendSpecRules = (
   legends: ContentCatalogue<LegendDefinition>,
   abilities: Pick<ContentCatalogue<AbilityBase>, 'has' | 'get'> = ABILITIES,
-  weapons: Pick<
-    ContentCatalogue<Pick<WeaponDefinition, 'id' | 'allowedClasses' | 'uniqueTo'>>,
-    'has' | 'get'
-  > = WEAPONS,
+  weapons: WeaponAccessCatalogue = WEAPONS,
 ): readonly ContentRule<LegendSpecDefinition>[] => [
   new KebabCaseIdRule(),
   new SpecClassExistsRule(legends),
@@ -79,6 +83,7 @@ export const createLegendSpecRules = (
   new KnownAbilityRefsRule(abilities, legends),
   new KitInPoolRule(legends),
   new KnownSpecWeaponRule(weapons),
+  new SpecWeaponAllowedRule(legends, weapons),
 ];
 
 /** Every shipped locked-class rule. A new locked-class rule is one line here. */
