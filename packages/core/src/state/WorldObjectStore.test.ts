@@ -85,7 +85,7 @@ describe('WorldObjectStore', () => {
     world.removed(entity.id);
     world.removed('unknown');
     expect(world.snapshot()[0]).toMatchObject({
-      isDestroyed: true,
+      condition: 'destroyed',
       health: { current: 0, max: 100 },
     });
   });
@@ -124,7 +124,7 @@ describe('WorldObjectStore', () => {
       id: 'fort',
       entityId: tower.id,
       health: { current: 60, max: 100 },
-      isDestroyed: false,
+      condition: 'standing',
     });
     expect(world.objectFor(tower.id)).toBeUndefined();
     // The tower dies: until it is retired, and after, its fort still blocks.
@@ -137,8 +137,7 @@ describe('WorldObjectStore', () => {
       id: 'fort',
       entityId: null,
       health: null,
-      isDestroyed: false,
-      isRuined: true,
+      condition: 'ruin',
     });
     expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBe('fort');
     expect(world.destroyedIds.has('fort')).toBe(false);
@@ -183,7 +182,7 @@ describe('WorldObjectStore', () => {
       id: 'pylon',
       entityId: pylonId,
       health: { current: 500, max: 600 },
-      isDestroyed: false,
+      condition: 'standing',
       carriedHealth: { current: 60, max: 100 },
     });
     expect(world.carrierOf(turret.id)).toBe(pylonId);
@@ -198,8 +197,7 @@ describe('WorldObjectStore', () => {
       id: 'pylon',
       entityId: pylonId,
       health: { current: 500, max: 600 },
-      isDestroyed: false,
-      isRuined: true,
+      condition: 'ruin',
     });
     expect(world.contentsOf('pylon')).toEqual([]);
     expect(world.carrierOf(turret.id)).toBeUndefined();
@@ -209,7 +207,8 @@ describe('WorldObjectStore', () => {
     pylonHealth?.applyDamage(500);
     entities.remove(pylonId, 'died');
     world.removed(pylonId);
-    expect(world.snapshot()[0]).toMatchObject({ isDestroyed: true });
+    // A ruin first, then destroyed: destroyed wins (DEC-376).
+    expect(world.snapshot()[0]).toMatchObject({ condition: 'destroyed' });
     expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBeNull();
   });
 

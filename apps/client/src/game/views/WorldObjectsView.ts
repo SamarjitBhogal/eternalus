@@ -77,7 +77,7 @@ export class WorldObjectsView implements WorldLayer {
       )
         continue;
       look?.draw(renderer);
-      if (state.isDestroyed || view.width >= S.healthBarViewLimit) continue;
+      if (state.condition === 'destroyed' || view.width >= S.healthBarViewLimit) continue;
       if (state.health !== null)
         this.bar(renderer, bounds, state.health, bounds.y + bounds.height + S.barGap);
       if (state.carriedHealth !== undefined)
@@ -107,7 +107,7 @@ export class WorldObjectsView implements WorldLayer {
     state: MapObjectSnapshot,
   ): RuinLook | undefined {
     if (!WorldObjectsView.isFallenState(state)) return undefined;
-    return state.isDestroyed ? geometry.ruins : geometry.pieces;
+    return state.condition === 'destroyed' ? geometry.ruins : geometry.pieces;
   }
   /** One ruin per footprint polygon; an object with one polygon reuses its whole-box ruin. */
   private static piecesOf(object: MapObject, whole: RuinLook): RuinLook {
@@ -129,7 +129,7 @@ export class WorldObjectsView implements WorldLayer {
   }
   /** Destroyed, or a structure's body left standing as a ruin: both draw as ruins. */
   private static isFallenState(state: MapObjectSnapshot): boolean {
-    return state.isDestroyed || state.isRuined === true;
+    return state.condition !== 'standing';
   }
   private static boxOf(points: readonly { readonly x: number; readonly y: number }[]): WorldRect {
     const xs = points.map((p) => p.x);

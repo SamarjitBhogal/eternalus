@@ -56,7 +56,12 @@ const HOUSE: MapObject = {
   ],
 };
 const HOUSE_STATES: readonly MapObjectSnapshot[] = [
-  { id: 'house', entityId: HOUSE_ENTITY, health: { current: 100, max: 100 }, isDestroyed: false },
+  {
+    id: 'house',
+    entityId: HOUSE_ENTITY,
+    health: { current: 100, max: 100 },
+    condition: 'standing',
+  },
 ];
 
 const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => ({
@@ -284,7 +289,7 @@ describe('PlayerCommands', () => {
 
   it("queues no attack on the explorer's click on open ground or a destroyed object", () => {
     const { commands, enqueueCommand } = setUp();
-    const destroyed = HOUSE_STATES.map((state) => ({ ...state, isDestroyed: true }));
+    const destroyed = HOUSE_STATES.map((state) => ({ ...state, condition: 'destroyed' as const }));
 
     commands.attackObjectAt(ACTOR, { x: 10, y: 10 }, snapshotOf([PLAYER]));
     commands.attackObjectAt(ACTOR, { x: 2, y: 2 }, snapshotOf([PLAYER], destroyed));

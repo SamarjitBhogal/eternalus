@@ -394,7 +394,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
     expect(towers.length).toBeGreaterThan(0);
     for (const { tower, health, fort } of bodies) {
       expect(tower).toBeDefined();
-      expect(fort).toMatchObject({ entityId: tower, isDestroyed: false });
+      expect(fort).toMatchObject({ entityId: tower, condition: 'standing' });
       expect(fort?.health).toEqual({ current: health?.current, max: health?.max });
     }
     expect(

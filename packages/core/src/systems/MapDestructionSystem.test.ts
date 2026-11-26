@@ -75,7 +75,7 @@ describe('MapDestructionSystem', () => {
 
     expect(hits).toHaveLength(2);
     expect(state.entities.size).toBe(0);
-    expect(worldObjects.snapshot().every((o) => o.isDestroyed)).toBe(true);
+    expect(worldObjects.snapshot().every((o) => o.condition === 'destroyed')).toBe(true);
   });
 
   it('fells every content in full though a damage step would weaken the hit (DEC-375)', () => {

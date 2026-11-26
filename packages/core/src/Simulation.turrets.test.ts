@@ -68,7 +68,7 @@ describe('Simulation wall turrets', () => {
       const pylon = mapObjects.find(({ id }) => id === feature.id);
       expect(pylon).toMatchObject({
         health: { current: 600, max: 600 },
-        isDestroyed: false,
+        condition: 'standing',
         carriedHealth: turret?.health,
       });
       expect(entities.find(({ id }) => id === pylon?.entityId)).toMatchObject({
@@ -182,16 +182,12 @@ describe('Simulation wall turrets', () => {
       id: feature.id,
       entityId: pylonId,
       health: { current: 600, max: 600 },
-      isDestroyed: false,
-      isRuined: true,
+      condition: 'ruin',
     });
     expect(state.worldObjects?.blockingAt(probe, 0.3)).toBe(feature.id);
     expect(grid?.isWalkableAt(probe.x, probe.y)).toBe(false);
     expect(simulation.dashReach(from, direction, gap, 0.3)).toBeLessThan(gap);
-    expect(mapObjects.find(({ id }) => id === tower.id)).toMatchObject({
-      isDestroyed: false,
-      isRuined: true,
-    });
+    expect(mapObjects.find(({ id }) => id === tower.id)).toMatchObject({ condition: 'ruin' });
     expect(state.worldObjects?.blockingAt(inFort, 0.5)).toBe(tower.id);
   });
 

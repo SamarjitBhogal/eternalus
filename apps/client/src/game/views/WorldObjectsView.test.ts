@@ -22,7 +22,7 @@ const STATE: MapObjectSnapshot = {
   id: 'house',
   entityId: 'entity-1',
   health: { current: 50, max: 100 },
-  isDestroyed: false,
+  condition: 'standing',
 };
 const AREA = { x: 0, y: 0, width: 32, height: 32 };
 describe('WorldObjectsView', () => {
@@ -36,7 +36,7 @@ describe('WorldObjectsView', () => {
     expect(fills[1]?.args[1]).toBe(S.barHealth);
     expect(fills[1]?.args[0][1]?.x).toBe(5);
     renderer.calls.length = 0;
-    view.show([{ ...STATE, isDestroyed: true, health: { current: 0, max: 100 } }]);
+    view.show([{ ...STATE, condition: 'destroyed', health: { current: 0, max: 100 } }]);
     view.draw(renderer, AREA);
     expect(view.isFallen('house')).toBe(true);
     expect(view.revision).toBe(1);
@@ -46,14 +46,14 @@ describe('WorldObjectsView', () => {
     expect(ruinColors).toContain(RUIN_PALETTE.flame);
     expect(ruinColors).toContain(RUIN_PALETTE.smoke);
     expect(ruinColors).not.toContain(S.barHealth);
-    view.show([{ ...STATE, isDestroyed: true }]);
+    view.show([{ ...STATE, condition: 'destroyed' }]);
     expect(view.revision).toBe(1);
   });
   it("draws a structure's ruined body (a dead turret's pylon) as ruins, though it still stands and blocks (DEC-341)", () => {
     const pylon: MapObject = { ...HOUSE, id: 'pylon', kind: 'turret' };
     const view = new WorldObjectsView([pylon]);
     const renderer = new RecordingRenderer();
-    view.show([{ id: 'pylon', entityId: null, health: null, isDestroyed: false, isRuined: true }]);
+    view.show([{ id: 'pylon', entityId: null, health: null, condition: 'ruin' }]);
     view.draw(renderer, AREA);
     view.drawMinimap(renderer);
 
@@ -70,7 +70,7 @@ describe('WorldObjectsView', () => {
         id: 'pylon',
         entityId: 'entity-2',
         health: { current: 300, max: 600 },
-        isDestroyed: false,
+        condition: 'standing',
         carriedHealth: { current: 150, max: 600 },
       },
     ]);
@@ -94,8 +94,7 @@ describe('WorldObjectsView', () => {
       id: 'pylon',
       entityId: 'entity-2',
       health: { current: 300, max: 600 },
-      isDestroyed: false,
-      isRuined: true,
+      condition: 'ruin',
     };
     const barFills = () =>
       renderer.calls.filter((call) => call.op === 'fillPolygon' && call.args[1] === S.barHealth);
@@ -103,7 +102,7 @@ describe('WorldObjectsView', () => {
     view.draw(renderer, AREA);
     const ruinBars = barFills().length;
     renderer.calls.length = 0;
-    view.show([{ ...ruin, isDestroyed: true, health: { current: 0, max: 600 } }]);
+    view.show([{ ...ruin, condition: 'destroyed', health: { current: 0, max: 600 } }]);
     view.draw(renderer, AREA);
 
     expect(ruinBars).toBe(1);
@@ -125,7 +124,7 @@ describe('WorldObjectsView', () => {
     };
     const view = new WorldObjectsView([tree]);
     const renderer = new RecordingRenderer();
-    view.show([{ ...STATE, isDestroyed: true }]);
+    view.show([{ ...STATE, condition: 'destroyed' }]);
     view.draw(renderer, { x: 10, y: 0, width: 10, height: 10 });
     expect(
       renderer.calls.some(
@@ -170,7 +169,7 @@ describe('WorldObjectsView', () => {
     const WIDE = { x: 0, y: 0, width: 64, height: 64 };
     const ruinFills = (view: WorldObjectsView, flags: Partial<MapObjectSnapshot>) => {
       const renderer = new RecordingRenderer();
-      view.show([{ id: 'fort', entityId: null, health: null, isDestroyed: false, ...flags }]);
+      view.show([{ id: 'fort', entityId: null, health: null, condition: 'standing', ...flags }]);
       view.draw(renderer, WIDE);
       const draw = [...renderer.calls];
       renderer.calls.length = 0;
@@ -186,7 +185,7 @@ describe('WorldObjectsView', () => {
     const colours = new Set<unknown>(OBJECT_RUINS.house.pieces.map(({ color }) => color));
 
     it('draws a ruined body as one ruin per piece, none in the court between', () => {
-      const { draw, minimap } = ruinFills(new WorldObjectsView([FORT]), { isRuined: true });
+      const { draw, minimap } = ruinFills(new WorldObjectsView([FORT]), { condition: 'ruin' });
       for (const calls of [draw, minimap]) {
         const drawn = polygons(calls);
         expect(drawn.length).toBe(OBJECT_RUINS.house.pieces.length * BOXES.length);
@@ -201,7 +200,7 @@ describe('WorldObjectsView', () => {
     });
 
     it('still draws a destroyed body as one ruin over the whole box', () => {
-      const { draw, minimap } = ruinFills(new WorldObjectsView([FORT]), { isDestroyed: true });
+      const { draw, minimap } = ruinFills(new WorldObjectsView([FORT]), { condition: 'destroyed' });
       for (const calls of [draw, minimap]) {
         const drawn = polygons(calls);
         expect(drawn.length).toBe(OBJECT_RUINS.house.pieces.length);
@@ -212,7 +211,7 @@ describe('WorldObjectsView', () => {
     it('keeps a ruined body visible when only its last piece is in view', () => {
       const view = new WorldObjectsView([FORT]);
       const renderer = new RecordingRenderer();
-      view.show([{ id: 'fort', entityId: null, health: null, isDestroyed: false, isRuined: true }]);
+      view.show([{ id: 'fort', entityId: null, health: null, condition: 'ruin' }]);
       view.draw(renderer, { x: 21, y: 0, width: 8, height: 8 });
       expect(polygons(renderer.calls).length).toBeGreaterThan(0);
     });

@@ -2,7 +2,11 @@ import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { TeamMembership } from '../components/TeamMembership';
-import type { MapObject, MapObjectSnapshot } from '../content/maps/mapObjects.types';
+import type {
+  MapObject,
+  MapObjectCondition,
+  MapObjectSnapshot,
+} from '../content/maps/mapObjects.types';
 import type { Entity } from '../entities/Entity';
 import type { EntityStore } from './EntityStore';
 import type { WorldObjectRecord, WorldObjectStoreOptions } from './WorldObjectStore.types';
@@ -204,14 +208,19 @@ export class WorldObjectStore {
     return null;
   }
 
+  /** Destroyed wins over a ruin: a pylon can be a ruin first and fall later (DEC-375). */
+  private conditionOf(id: string): MapObjectCondition {
+    if (this.destroyed.has(id)) return 'destroyed';
+    return this.ruined.has(id) ? 'ruin' : 'standing';
+  }
+
   /** Snapshot state contains no simulation components or mutable references. */
   public snapshot(): readonly MapObjectSnapshot[] {
     return this.records.map(({ object, entityId, health, carried }) => ({
       id: object.id,
       entityId,
       health: health === null ? null : { current: health.current, max: health.max },
-      isDestroyed: this.destroyed.has(object.id),
-      ...(this.ruined.has(object.id) && { isRuined: true as const }),
+      condition: this.conditionOf(object.id),
       ...(carried !== undefined && {
         carriedHealth: { current: carried.health.current, max: carried.health.max },
       }),

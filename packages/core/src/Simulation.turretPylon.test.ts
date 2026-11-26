@@ -89,7 +89,7 @@ describe('Simulation wall turret pylons (DEC-375)', () => {
         cause: 'kill',
       },
     ]);
-    expect(m.pylon()).toMatchObject({ entityId: m.pylonId, isDestroyed: true });
+    expect(m.pylon()).toMatchObject({ entityId: m.pylonId, condition: 'destroyed' });
     expect(m.pylon()?.carriedHealth).toBeUndefined();
   });
 
@@ -121,15 +121,15 @@ describe('Simulation wall turret pylons (DEC-375)', () => {
       id: m.feature.id,
       entityId: m.pylonId,
       health: { current: 500, max: 600 },
-      isDestroyed: false,
-      isRuined: true,
+      condition: 'ruin',
     });
     expect(m.removedAt.get(m.pylonId)).toBeGreaterThan(m.removedAt.get(m.turretId) ?? Infinity);
     expect(m.destroyed).toEqual([m.turretId]);
     expect(m.xp.filter(({ entityId }) => entityId === m.legendId)).toEqual([
       expect.objectContaining({ victimId: m.turretId, amount: XP_SOURCES.destroyerOnly.turret }),
     ]);
-    expect(m.pylon()).toMatchObject({ isDestroyed: true, isRuined: true });
+    // A ruin first, then destroyed: destroyed wins (DEC-376).
+    expect(m.pylon()).toMatchObject({ condition: 'destroyed' });
   });
 
   it('gives the same state hash for two runs in which a pylon falls and takes its turret', () => {
