@@ -6,7 +6,7 @@ import type { Outline } from './Outline.types';
  * corner towers and keep, the Stronghold's palace outline, or a gate's outline (DEC-217 (17)),
  * from the map object of the same id (07 §1, the definition's `hasMapFootprint`), plus the solid
  * polygons of the other map objects that are part of its body (the Stronghold's outer walls and
- * throne, `MapObject.bodyOf`, DEC-373 (1)). Attack reach to the structure is measured to these
+ * throne, `MapObject.partOf`, DEC-373 (1)). Attack reach to the structure is measured to these
  * outlines instead of its collider circle, so a melee hit on the fort is a hit on the tower
  * (DEC-185) and melee at the palace wall reaches the Stronghold (DEC-185 D); a chase closes on
  * their nearest point, or holds inside them (`ReachQuery.aimPointOf`). For a definition with

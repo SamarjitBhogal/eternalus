@@ -71,6 +71,8 @@ type BodySpec = {
   readonly isUnbreakable?: boolean;
   /** With a team and an outline: units walk on it (a gate's passage). */
   readonly isWalkOn?: boolean;
+  /** With an outline: the solid polygons of its other body objects (DEC-373 (1)). */
+  readonly solid?: readonly Polygon[];
 };
 
 /** A circle, a shooter, or a structure with an outline. */
@@ -78,11 +80,14 @@ class Body extends Entity {
   public readonly kind = 'dummy';
   public readonly family = 'mob';
   protected installComponents(context: unknown): void {
-    const { at, radius, attack, outline, team, isUnbreakable, isWalkOn } = context as BodySpec;
+    const { at, radius, attack, outline, team, isUnbreakable, isWalkOn, solid } =
+      context as BodySpec;
     this.addComponent(new Transform(at, radius));
     if (attack !== undefined) this.addComponent(new Combat({ basic: attack }));
     if (outline !== undefined) {
-      this.addComponent(new Footprint(outline, { isWalkOn: isWalkOn === true }));
+      this.addComponent(
+        new Footprint(outline, { isWalkOn: isWalkOn === true, solid: solid ?? [] }),
+      );
     }
     if (team !== undefined) {
       this.addComponent(new TeamMembership(team));
@@ -358,6 +363,28 @@ describe('LineOfFire', () => {
 
       expect(lineOfFire.isClear(state, bot, enemy)).toBe(true);
       expect(lineOfFire.isClear(state, bot, closedGate)).toBe(false);
+    });
+
+    it('is blocked by the solid polygons of an outline it does not aim at, not by its walk-on ones (DEC-373 (1))', () => {
+      const floorOnLine = scene();
+      const wallOnLine = scene();
+      // A Stronghold that takes no damage now: a walk-on floor and a solid outer wall.
+      const stronghold = { radius: 1, team: 'dark', isUnbreakable: true, isWalkOn: true } as const;
+      floorOnLine.add({
+        ...stronghold,
+        at: { x: 5, y: 0 },
+        outline: [box(4, -2, 2, 4)],
+        solid: [box(4, 4, 2, 1)],
+      });
+      wallOnLine.add({
+        ...stronghold,
+        at: { x: 5, y: 6 },
+        outline: [box(4, 4, 2, 4)],
+        solid: [box(4.5, -2, 1, 4)],
+      });
+
+      expect(lineOfFire.isClear(floorOnLine.state, floorOnLine.bot, floorOnLine.enemy)).toBe(true);
+      expect(lineOfFire.isClear(wallOnLine.state, wallOnLine.bot, wallOnLine.enemy)).toBe(false);
     });
   });
 });
