@@ -33,6 +33,7 @@ are the **planned** layout; create them as code is added.
 | `systems/`      | Per-tick logic implementing `System`. Never import another system.                                              | everything except `ai/`                                                                    |
 | `ai/`           | Bot controllers: return a `Decision`, never mutate state.                                                       | `state/`, `commands/`, `config/`, `teams/`, `utils/`, content types                        |
 | `Simulation.ts` | Composes everything; the only thing the client drives                                                           | everything                                                                                 |
+| `simulation/`   | The parts `Simulation.ts` composes the match from; imported only by it                                          | everything                                                                                 |
 
 Every folder may import `teams/` (it imports nothing; DEC-171), whether or not its row names it.
 `match/` also uses the `Logger` port, `makeLogRecord` and `DebugConfig` of `diagnostics/`, as

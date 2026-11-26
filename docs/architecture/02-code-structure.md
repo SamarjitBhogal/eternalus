@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-25
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -41,6 +41,7 @@ exists today; the map slice's interim pieces are in
 core/src/
   index.ts             public API (the only import surface)
   Simulation.ts        facade: enqueueCommand(), step(), snapshot(), on(), hash()
+  simulation/          the composition root's parts: world, map entities, match content, default pipeline, RosterSpawner, ReplayRecorder
   config/              GameConfig + validateGameConfig() + createDefaultGameConfig(), countdownTicks(), MATCH_PHASES, MatchTimelineEntry types, VictoryConditionId
   content/             Type Object definitions by kebab-case ID, one subfolder per family
   utils/               Vec2, geometry, SeededRandom, deterministicMath, fnv1a, IdGenerator, RingBuffer
@@ -80,6 +81,7 @@ core/src/
 | `diagnostics/`  | Invariants, the runner, the `Logger` port, diagnostic event types, the replay and property-test harnesses | `state/`, `utils/`; types of `commands/` and `config/` (DEC-20)                                                          | `Invariant`, `InvariantRunner`, `invariants/*Invariant.ts`, `Logger.types.ts`, `DiagnosticEvent.types.ts`, `replay.ts`, `Replay.types.ts`, `randomCommands.ts`                                                                                                          |
 | `systems/`      | Per-tick logic; one class per system; the ordered pipeline                                                | Everything below it except another system                                                                                | `System`, `SystemContext.types.ts`, `SystemPipeline`, `DefaultSystemPipeline.ts`, `*System.ts`                                                                                                                                                                          |
 | `Simulation.ts` | Composes the above; the only thing the client drives                                                      | Everything                                                                                                               | `Simulation`                                                                                                                                                                                                                                                            |
+| `simulation/`   | The parts `Simulation`'s constructor composes the match from; imported only by `Simulation.ts`            | Everything                                                                                                               | `RosterSpawner`, `ReplayRecorder`, `buildDefaultPipeline()`                                                                                                                                                                                                             |
 
 Every folder may import `teams/`, which imports nothing (DEC-171), whether or not its "May
 import" cell names it.
