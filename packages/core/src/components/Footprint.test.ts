@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { MapObject } from '../content/maps/mapObjects.types';
 import { Footprint } from './Footprint';
 
 describe('Footprint', () => {
@@ -53,6 +54,44 @@ describe('Footprint', () => {
     expect(footprint.solid).toEqual([wall]);
     expect(footprint.bounds).toEqual({ x: 0, y: 0, width: 8, height: 10 });
     expect(new Footprint([wall], { solid: [floor] }).solid).toEqual([wall, floor]);
+  });
+
+  describe('ofBody', () => {
+    const square = (x: number) => [
+      { x, y: 0 },
+      { x: x + 2, y: 0 },
+      { x: x + 2, y: 2 },
+      { x, y: 2 },
+    ];
+    const object = (id: string, x: number, isBlocking: boolean): MapObject => ({
+      id,
+      kind: 'wall',
+      footprints: [square(x)],
+      isBlocking,
+    });
+
+    it("builds a structure's body: its own object's polygons, then its parts as solid ones", () => {
+      const palace = object('palace', 0, false);
+      const fort = object('fort', 0, true);
+      const wall = object('wall', 10, true);
+
+      const walkOn = Footprint.ofBody(palace, [wall]);
+      expect(walkOn?.walkOn).toEqual([square(0)]);
+      expect(walkOn?.solid).toEqual([square(10)]);
+
+      const solid = Footprint.ofBody(fort, []);
+      expect(solid?.walkOn).toEqual([]);
+      expect(solid?.solid).toEqual([square(0)]);
+    });
+
+    it('builds a body of parts alone as solid, and none for a structure with neither', () => {
+      const parts = Footprint.ofBody(undefined, [object('a', 0, true), object('b', 10, true)]);
+
+      expect(parts?.polygons).toEqual([square(0), square(10)]);
+      expect(parts?.walkOn).toEqual([]);
+      expect(parts?.solid).toEqual([square(0), square(10)]);
+      expect(Footprint.ofBody(undefined, [])).toBeUndefined();
+    });
   });
 
   it('rejects no polygon, or one with fewer than 3 corners', () => {

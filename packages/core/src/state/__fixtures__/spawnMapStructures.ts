@@ -4,6 +4,7 @@ import { loadTurrets } from '../../content/structures/loadTurrets';
 import { STRUCTURE_DEFINITIONS } from '../../content/structures/structureCatalogue';
 import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
 import { EntityFactory } from '../../entities/EntityFactory';
+import { structureBodyParts } from '../../map/structureBodyParts';
 import { compareById } from '../../utils/compareById';
 import { IdGenerator } from '../../utils/IdGenerator';
 import type { GameState } from '../GameState';
@@ -32,6 +33,14 @@ export const spawnMapStructures = (
     compareById(a.id, b.id),
   );
   const bodies = new Map(mapObjects.map((object) => [object.id, object]));
+  const parts = structureBodyParts(
+    mapObjects,
+    new Set(
+      features.flatMap(({ id, definitionId }) =>
+        STRUCTURE_DEFINITIONS.has(definitionId) ? [id] : [],
+      ),
+    ),
+  );
   for (const { id, definitionId, position, team, laneId } of features) {
     if (STRUCTURE_DEFINITIONS.has(definitionId)) {
       const { kind, hasMapFootprint } = STRUCTURE_DEFINITIONS.get(definitionId);
@@ -41,15 +50,8 @@ export const spawnMapStructures = (
         ...(laneId !== undefined && { laneId }),
       });
       const own = hasMapFootprint === true ? bodies.get(id) : undefined;
-      if (own !== undefined) {
-        const solid = mapObjects.filter((object) => object.partOf === id && object.isBlocking);
-        structure.addComponent(
-          new Footprint(own.footprints, {
-            isWalkOn: !own.isBlocking,
-            solid: solid.flatMap(({ footprints }) => footprints),
-          }),
-        );
-      }
+      const footprint = Footprint.ofBody(own, parts.get(id) ?? []);
+      if (footprint !== undefined) structure.addComponent(footprint);
       state.entities.add(structure);
     }
   }

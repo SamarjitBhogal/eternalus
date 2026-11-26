@@ -1,3 +1,4 @@
+import type { MapObject } from '../content/maps/mapObjects.types';
 import type { Polygon, Rect } from '../utils/geometry.types';
 import type { Outline } from './Outline.types';
 
@@ -55,5 +56,24 @@ export class Footprint implements Outline {
     const x = Math.min(...xs);
     const y = Math.min(...ys);
     this.bounds = { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
+  }
+
+  /**
+   * The footprint of a structure's body (07 §1), the one place that builds it: the polygons of its
+   * map object of the same id (`own`, for a definition that `hasMapFootprint`), walked on when that
+   * object does not block, then the solid polygons of the objects that are part of its body
+   * (`parts`, `structureBodyParts`, DEC-373 (1)).
+   *
+   * @returns The footprint, or `undefined` when the structure has neither.
+   */
+  public static ofBody(
+    own: MapObject | undefined,
+    parts: readonly MapObject[],
+  ): Footprint | undefined {
+    const solid = parts.flatMap(({ footprints }) => footprints);
+    if (own !== undefined) {
+      return new Footprint(own.footprints, { isWalkOn: !own.isBlocking, solid });
+    }
+    return solid.length > 0 ? new Footprint(solid) : undefined;
   }
 }

@@ -89,6 +89,7 @@ import { CollisionResolver } from './physics/CollisionResolver';
 import type { StaticCollisionIndex } from './physics/StaticCollisionIndex';
 import { MatchPathfinderFactory } from './map/MatchPathfinderFactory';
 import { staticCollisionIndexOf } from './map/staticCollisionIndexOf';
+import { structureBodyParts } from './map/structureBodyParts';
 import { zoneAreaOf } from './map/zoneArea';
 import { loadProjectiles } from './content/projectiles/loadProjectiles';
 import { loadTurrets } from './content/structures/loadTurrets';
@@ -428,6 +429,12 @@ export class Simulation {
       compareById(a.id, b.id),
     );
     const bodies = new Map(mapObjects.map((object) => [object.id, object]));
+    const parts = structureBodyParts(
+      mapObjects,
+      new Set(
+        features.flatMap(({ id, definitionId }) => (structures.has(definitionId) ? [id] : [])),
+      ),
+    );
     const owners = new Map<string, string>();
     for (const { id, definitionId, position, team, laneId } of features) {
       if (structures.has(definitionId)) {
@@ -440,17 +447,11 @@ export class Simulation {
         };
         const structure = factory.create(kind, definitionId, placement);
         const own = hasMapFootprint === true ? bodies.get(id) : undefined;
-        if (own !== undefined) {
-          const solid = mapObjects.filter((object) => object.partOf === id && object.isBlocking);
-          structure.addComponent(
-            new Footprint(own.footprints, {
-              isWalkOn: !own.isBlocking,
-              solid: solid.flatMap(({ footprints }) => footprints),
-            }),
-          );
-          for (const body of [own, ...solid]) {
-            if (body.isBlocking) owners.set(body.id, structure.id);
-          }
+        const body = parts.get(id) ?? [];
+        const footprint = Footprint.ofBody(own, body);
+        if (footprint !== undefined) structure.addComponent(footprint);
+        for (const object of [own, ...body]) {
+          if (object?.isBlocking === true) owners.set(object.id, structure.id);
         }
         state.entities.add(structure);
       }

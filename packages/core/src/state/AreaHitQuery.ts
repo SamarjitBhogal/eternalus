@@ -1,4 +1,5 @@
 import { Health } from '../components/Health';
+import type { Outline } from '../components/Outline.types';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { Entity } from '../entities/Entity';
@@ -74,7 +75,7 @@ export class AreaHitQuery {
     { entity, outline }: ShotStopBody,
   ): readonly Polygon[] {
     if (outline === null) return [];
-    return entity.id === shot.targetId ? outline.polygons : outline.solid;
+    return AreaHitQuery.hitPolygonsOf(outline, entity.id === shot.targetId);
   }
 
   /**
@@ -122,8 +123,11 @@ export class AreaHitQuery {
           outline.walkOn.length > 0 &&
           AreaHitQuery.isAimedByPoint(entities, attackerTeam, outline.walkOn, aim.point, from));
       const body = { id, position: transform.position };
-      const polygons = isAimed ? outline.polygons : outline.solid;
-      if (polygons.some((polygon) => area.overlapsOutline(polygon, body))) {
+      if (
+        AreaHitQuery.hitPolygonsOf(outline, isAimed).some((polygon) =>
+          area.overlapsOutline(polygon, body),
+        )
+      ) {
         hits.push(id);
       }
     });
@@ -162,6 +166,14 @@ export class AreaHitQuery {
     const isStructure = (id: EntityId): number =>
       entities.get(id)?.family === 'structure' ? 0 : 1;
     return aimed.sort((a, b) => isStructure(a) - isStructure(b) || compareById(a, b))[0] ?? null;
+  }
+
+  /**
+   * The polygons of `outline` a hit can land on (rule 1): every one when the hit aims at the body,
+   * else only the solid ones, so it passes over a walk-on floor.
+   */
+  private static hitPolygonsOf(outline: Outline, isAimed: boolean): readonly Polygon[] {
+    return isAimed ? outline.polygons : outline.solid;
   }
 
   /** The attacker's team and position as the store holds them now; both absent once it is gone. */
