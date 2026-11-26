@@ -242,7 +242,7 @@ export class ProjectileSystem implements System {
       ) {
         continue;
       }
-      const time = ProjectileSystem.contactTime(body, from, delta, radius);
+      const time = ProjectileSystem.contactTime(body, payload, from, delta, radius);
       if (time === null) continue;
       if (body.entity.id === payload.targetId) target = { body, time };
       if (first === null || time < first.time) first = { body, time };
@@ -263,19 +263,25 @@ export class ProjectileSystem implements System {
     );
   }
 
-  /** The share (0 to 1) of the move at which it touches the body, 0 if it starts touching. */
+  /**
+   * The share (0 to 1) of the move at which it touches the body, 0 if it starts touching. An
+   * outline is touched only on the polygons that stop the shot (`AreaHitQuery.shotPolygonsOf`).
+   */
   private static contactTime(
-    { transform, outline }: ShotBody,
+    body: ShotBody,
+    shot: ProjectilePayload,
     from: Vec2,
     delta: Vec2,
     radius: number,
   ): number | null {
+    const { transform, outline } = body;
     if (outline === null) {
       return sweepDisc(from, delta, radius, transform.position, transform.radius);
     }
-    if (isPointInAnyPolygon(from, outline.polygons)) return 0;
+    const polygons = AreaHitQuery.shotPolygonsOf(shot, body);
+    if (isPointInAnyPolygon(from, polygons)) return 0;
     let first: number | null = null;
-    for (const polygon of outline.polygons) {
+    for (const polygon of polygons) {
       const time = sweepCircle(from, delta, radius, polygon)?.time;
       if (time !== undefined && (first === null || time < first)) first = time;
     }

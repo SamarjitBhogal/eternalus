@@ -20,6 +20,8 @@ type BodySpec = {
   readonly radius?: number;
   readonly outline?: readonly Polygon[];
   readonly isWalkOn?: boolean;
+  /** Solid polygons added to a walk-on outline (the Stronghold's outer walls, DEC-373 (1)). */
+  readonly solid?: readonly Polygon[];
   readonly isUnbreakable?: boolean;
   readonly hasHealth?: boolean;
 };
@@ -40,7 +42,12 @@ class Body extends Entity {
     collider.setUnbreakable(spec.isUnbreakable === true);
     this.addComponent(collider);
     if (spec.outline !== undefined) {
-      this.addComponent(new Footprint(spec.outline, { isWalkOn: spec.isWalkOn === true }));
+      this.addComponent(
+        new Footprint(spec.outline, {
+          isWalkOn: spec.isWalkOn === true,
+          ...(spec.solid === undefined ? {} : { solid: spec.solid }),
+        }),
+      );
     }
   }
 }
@@ -54,6 +61,8 @@ const square = (x: number, y: number, size: number): Polygon => [
 
 /** A palace floor (walk-on), 10 m square from (0, -5); the attacker is light. */
 const FLOOR = square(0, -5, 10);
+/** A solid wall beside the floor, part of the same body (the Stronghold's outer wall). */
+const WALL = square(12, -5, 2);
 const NO_AIM: AreaAim = { targetId: null, point: null };
 
 /** An area that holds exactly the bodies with the given ids. */
@@ -177,6 +186,40 @@ describe('AreaHitQuery.find', () => {
     expect(find(area, { targetId: 'floor', point: null })).toEqual(['floor']);
   });
 
+  it('hits a mixed outline on its solid polygons with no aim, and on its walk-on ones only when aimed (DEC-373 (1))', () => {
+    const { add, find } = setUp({ x: 2, y: 0 });
+    add('stronghold', {
+      at: { x: 5, y: 0 },
+      team: 'dark',
+      outline: [FLOOR],
+      isWalkOn: true,
+      solid: [WALL],
+    });
+    const touching = (polygon: Polygon): HitArea => ({
+      overlapsBody: () => false,
+      overlapsOutline: (touched) => touched === polygon,
+    });
+
+    // The attacker stands on the floor: a swing that touches only the floor misses, one that
+    // touches the wall hits.
+    expect(find(touching(FLOOR))).toEqual([]);
+    expect(find(touching(WALL))).toEqual(['stronghold']);
+    expect(find(touching(FLOOR), { targetId: 'stronghold', point: null })).toEqual(['stronghold']);
+    // An aim point on the solid wall is not an aim at the floor.
+    const outside = setUp({ x: -2, y: 0 });
+    outside.add('stronghold', {
+      at: { x: 5, y: 0 },
+      team: 'dark',
+      outline: [FLOOR],
+      isWalkOn: true,
+      solid: [WALL],
+    });
+    expect(outside.find(touching(FLOOR), { targetId: null, point: { x: 13, y: -4 } })).toEqual([]);
+    expect(outside.find(touching(FLOOR), { targetId: null, point: { x: 5, y: 0 } })).toEqual([
+      'stronghold',
+    ]);
+  });
+
   it('does not take the aim point for the floor when a living enemy unit covers it (findUnitAt)', () => {
     const covered = setUp();
     covered.add('floor', { at: { x: 5, y: 0 }, team: 'dark', outline: [FLOOR], isWalkOn: true });
@@ -247,6 +290,20 @@ describe('AreaHitQuery.aimedBodyOf', () => {
       .applyDamage(1000);
 
     expect(query.aimedBodyOf(entities, attacker.id, { x: 5, y: 0 })).toBeNull();
+  });
+
+  it('names a mixed outline by its walk-on polygons only, not by its solid ones (DEC-373 (1))', () => {
+    const { entities, add, attacker, query } = setUp();
+    add('stronghold', {
+      at: { x: 5, y: 0 },
+      team: 'dark',
+      outline: [FLOOR],
+      isWalkOn: true,
+      solid: [WALL],
+    });
+
+    expect(query.aimedBodyOf(entities, attacker.id, { x: 5, y: 0 })).toBe('stronghold');
+    expect(query.aimedBodyOf(entities, attacker.id, { x: 13, y: -4 })).toBeNull();
   });
 
   it('names a gate passage that takes no damage now, so the shot stops there (rule 2)', () => {
@@ -336,5 +393,32 @@ describe('AreaHitQuery.stopsShot', () => {
     };
     scene.entities.remove(removed.id, 'dev-removed');
     expect(AreaHitQuery.stopsShot(scene.entities, shotAt(), removedBody)).toBe(false);
+  });
+
+  it('stops every shot on a mixed outline, on its solid polygons unless the shot aims at it (DEC-373 (1))', () => {
+    const scene = setUp();
+    const spec = {
+      at: { x: 5, y: 0 },
+      team: 'dark',
+      outline: [FLOOR],
+      isWalkOn: true,
+      solid: [WALL],
+    } as const;
+    const polygonsFor = (id: string, targetId: string | null) => {
+      const entity = scene.entities.get(id);
+      if (entity === undefined) throw new Error(`no ${id}`);
+      return AreaHitQuery.shotPolygonsOf(shotAt(targetId), {
+        entity,
+        health: entity.getComponent(Health),
+        membership: entity.findComponent(TeamMembership),
+        outline: scene.entities.outlineOf(id) ?? null,
+      });
+    };
+
+    expect(stops(scene, 'stronghold', spec)).toBe(true);
+    expect(polygonsFor('stronghold', null)).toEqual([WALL]);
+    expect(polygonsFor('stronghold', 'stronghold')).toEqual([FLOOR, WALL]);
+    scene.add('round', { at: { x: 3, y: 0 }, team: 'dark' });
+    expect(polygonsFor('round', null)).toEqual([]);
   });
 });

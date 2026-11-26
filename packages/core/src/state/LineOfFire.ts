@@ -123,11 +123,12 @@ export class LineOfFire implements LineOfFireQuery {
       const outline = state.entities.outlineOf(entity.id) ?? null;
       const body = { entity, health, membership: entity.findComponent(TeamMembership), outline };
       if (!AreaHitQuery.stopsShot(state.entities, shot, body)) return;
+      const polygons = AreaHitQuery.shotPolygonsOf(shot, body);
       isBlocked =
         outline === null
           ? distanceToSegment(transform.position, from, to) <= radius + transform.radius
-          : isPointInAnyPolygon(from, outline.polygons) ||
-            outline.polygons.some((polygon) => doesCapsuleReachPolygon(from, to, radius, polygon));
+          : isPointInAnyPolygon(from, polygons) ||
+            polygons.some((polygon) => doesCapsuleReachPolygon(from, to, radius, polygon));
     });
     return isBlocked;
   }

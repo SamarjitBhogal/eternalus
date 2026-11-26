@@ -43,6 +43,8 @@ it('is an outline: its footprints, walked on when the object does not block', ()
   const rock = { ...palace, id: 'rock', kind: 'rock' as const, isBlocking: true };
 
   expect(new MapObjectBody(palace).polygons).toEqual([floor]);
-  expect(new MapObjectBody(palace).isWalkOn).toBe(true);
-  expect(new MapObjectBody(rock).isWalkOn).toBe(false);
+  expect(new MapObjectBody(palace).walkOn).toEqual([floor]);
+  expect(new MapObjectBody(palace).solid).toEqual([]);
+  expect(new MapObjectBody(rock).walkOn).toEqual([]);
+  expect(new MapObjectBody(rock).solid).toEqual([floor]);
 });

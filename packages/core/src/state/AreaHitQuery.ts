@@ -1,5 +1,4 @@
 import { Health } from '../components/Health';
-import type { Outline } from '../components/Outline.types';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { Entity } from '../entities/Entity';
@@ -7,7 +6,7 @@ import { isUnitFamily } from '../entities/unitFamilies';
 import type { Team } from '../teams/teams.types';
 import { compareById } from '../utils/compareById';
 import { isPointInAnyPolygon } from '../utils/geometry';
-import type { Vec2 } from '../utils/geometry.types';
+import type { Polygon, Vec2 } from '../utils/geometry.types';
 import type {
   AreaAim,
   AreaAttacker,
@@ -27,10 +26,12 @@ import type { EntityId } from './EntityStore.types';
  * a map object, a structure footprint) is tested by its polygons; any other body by its collider
  * circle. Then two rules apply:
  *
- * 1. A walk-on outline (a palace floor, a gate's passage) is hit only when the hit aims at it
- *    (DEC-322 (1)): it is the locked target, or the aim point is on the outline, on no enemy unit
- *    (the rule of `findUnitAt`) and the attacker stands outside the outline. A swing inside the
- *    enemy palace does not hit the Stronghold; from outside, aiming at the palace floor does.
+ * 1. A walk-on polygon (a palace floor, a gate's passage) is hit only when the hit aims at its
+ *    body (DEC-322 (1)): the body is the locked target, or the aim point is on its walk-on
+ *    polygons, on no enemy unit (the rule of `findUnitAt`) and the attacker stands outside them. A
+ *    solid polygon is hit by every hit that touches it. A swing inside the enemy palace does not
+ *    hit the Stronghold's floor; from outside, aiming at the palace floor does. A swing that
+ *    touches the Stronghold's outer walls or its throne hits it (solid, DEC-373 (1)).
  * 2. A body that takes no damage now (`EntityStore.takesNoDamage`) is never hit: it takes no
  *    damage and runs no on-hit step (DEC-317 addendum). A shot stops on it (`ProjectileSystem`).
  *
@@ -46,7 +47,7 @@ export class AreaHitQuery {
   /**
    * Whether `shot` stops on `body` when it touches it (DEC-317 addendum, DEC-322 (1)): the body is
    * alive and still in the world, not the shot's owner and not on its team (no team counts as
-   * enemy), and, for a walk-on outline, the entity the shot aims at (`shot.targetId`), so a shot
+   * enemy), and, for an outline, has a polygon that stops the shot (`shotPolygonsOf`), so a shot
    * flies over the ground units stand on. A body that takes no damage now
    * (`EntityStore.takesNoDamage`) stops it too, and nothing lands on it. The one rule by which
    * `ProjectileSystem` flies a shot and `LineOfFire` predicts it.
@@ -57,9 +58,23 @@ export class AreaHitQuery {
       !health.isDead &&
       entity.id !== shot.ownerId &&
       membership?.team !== shot.team &&
-      (outline?.isWalkOn !== true || entity.id === shot.targetId) &&
+      (outline === null || AreaHitQuery.shotPolygonsOf(shot, body).length > 0) &&
       entities.has(entity.id)
     );
+  }
+
+  /**
+   * The polygons of `body`'s outline that `shot` can touch it on (DEC-322 (1)): every one when the
+   * shot aims at the body (`shot.targetId`), else only the solid ones (a fort, the Stronghold's
+   * outer walls and throne, DEC-373 (1)), so a shot flies over a walk-on floor. None for a body
+   * that is only its collider circle.
+   */
+  public static shotPolygonsOf(
+    shot: ShotAim,
+    { entity, outline }: ShotStopBody,
+  ): readonly Polygon[] {
+    if (outline === null) return [];
+    return entity.id === shot.targetId ? outline.polygons : outline.solid;
   }
 
   /**
@@ -101,18 +116,14 @@ export class AreaHitQuery {
         }
         return;
       }
-      if (
-        outline.isWalkOn &&
-        aim.targetId !== id &&
-        !(
-          aim.point !== null &&
-          AreaHitQuery.isAimedByPoint(entities, attackerTeam, outline, aim.point, from)
-        )
-      ) {
-        return;
-      }
+      const isAimed =
+        aim.targetId === id ||
+        (aim.point !== null &&
+          outline.walkOn.length > 0 &&
+          AreaHitQuery.isAimedByPoint(entities, attackerTeam, outline.walkOn, aim.point, from));
       const body = { id, position: transform.position };
-      if (outline.polygons.some((polygon) => area.overlapsOutline(polygon, body))) {
+      const polygons = isAimed ? outline.polygons : outline.solid;
+      if (polygons.some((polygon) => area.overlapsOutline(polygon, body))) {
         hits.push(id);
       }
     });
@@ -120,11 +131,12 @@ export class AreaHitQuery {
   }
 
   /**
-   * The walk-on outline that `attackerId` aims at with `point` under rule 1, which its shot then
-   * names as its target (`ProjectilePayload.targetId`), so the shot can hit it. Only enemy bodies
-   * (no team counts as enemy). When several walk-on outlines hold the point (a palace floor is both
-   * the Stronghold's outline and the palace map object's), a structure comes first, then the first
-   * by id, so a shot at the palace names the Stronghold. A sweep still hits both (DEC-284 (2)).
+   * The body whose walk-on polygons `attackerId` aims at with `point` under rule 1, which its shot
+   * then names as its target (`ProjectilePayload.targetId`), so the shot can hit it. Only enemy
+   * bodies (no team counts as enemy). When several walk-on outlines hold the point (a palace floor
+   * is both the Stronghold's outline and the palace map object's), a structure comes first, then
+   * the first by id, so a shot at the palace names the Stronghold. A sweep still hits both
+   * (DEC-284 (2)).
    *
    * @returns The body's id, or `null` when the point is on no such outline, on an enemy unit, or
    *   the attacker stands inside the outline or is unknown.
@@ -133,13 +145,13 @@ export class AreaHitQuery {
     const { team: attackerTeam, position: from } = AreaHitQuery.attackerIn(entities, attackerId);
     const aimed: EntityId[] = [];
     entities.forEach((entity) => {
-      const outline = entities.outlineOf(entity.id);
+      const walkOn = entities.outlineOf(entity.id)?.walkOn ?? [];
       if (
-        outline?.isWalkOn === true &&
+        walkOn.length > 0 &&
         entity.hasComponent(Transform) &&
         AreaHitQuery.isAlive(entity) &&
         !AreaHitQuery.isAlly(entity, attackerTeam) &&
-        AreaHitQuery.isOnOutlineFromOutside(outline, point, from)
+        AreaHitQuery.isOnOutlineFromOutside(walkOn, point, from)
       ) {
         aimed.push(entity.id);
       }
@@ -160,23 +172,25 @@ export class AreaHitQuery {
     };
   }
 
-  /** Rule 1 by aim point: on the outline, the attacker outside it, and on no enemy unit. */
+  /**
+   * Rule 1 by aim point: on the walk-on polygons, the attacker outside them, and on no enemy unit.
+   */
   private static isAimedByPoint(
     entities: EntityStore,
     attackerTeam: Team | undefined,
-    outline: Outline,
+    walkOn: readonly Polygon[],
     point: Vec2,
     from: Vec2 | undefined,
   ): boolean {
     return (
-      AreaHitQuery.isOnOutlineFromOutside(outline, point, from) &&
+      AreaHitQuery.isOnOutlineFromOutside(walkOn, point, from) &&
       !AreaHitQuery.isEnemyUnitAt(entities, attackerTeam, point)
     );
   }
 
-  /** Whether `point` is on the outline and `from` (the attacker) is known and outside it. */
+  /** Whether `point` is on the polygons and `from` (the attacker) is known and outside them. */
   private static isOnOutlineFromOutside(
-    { polygons }: Outline,
+    polygons: readonly Polygon[],
     point: Vec2,
     from: Vec2 | undefined,
   ): boolean {
