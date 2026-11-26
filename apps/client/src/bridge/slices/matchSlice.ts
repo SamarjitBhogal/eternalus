@@ -21,6 +21,8 @@ type MatchSliceState = {
   readonly duel: MatchEnding | null;
   /** The Duel's scoreboard; `null` outside a Duel. */
   readonly duelHud: DuelHudState | null;
+  /** The reconnect window of a disconnected Duel opponent, in ms; `null` while they are connected. */
+  readonly opponentGraceMs: number | null;
   /** Whether this player's Duel connection dropped and is reconnecting (DEC-349). */
   readonly isReconnecting: boolean;
 };
@@ -34,6 +36,7 @@ const initialState: MatchSliceState = {
   versus: null,
   duel: null,
   duelHud: null,
+  opponentGraceMs: null,
   isReconnecting: false,
 };
 
@@ -76,6 +79,10 @@ export const matchSlice = createSlice({
       ...state,
       duelHud: action.payload,
     }),
+    opponentPresenceChanged: (state, action: PayloadAction<number | null>) => ({
+      ...state,
+      opponentGraceMs: action.payload,
+    }),
     connectionChanged: (state, action: PayloadAction<boolean>) => ({
       ...state,
       isReconnecting: action.payload,
@@ -94,5 +101,6 @@ export const matchSlice = createSlice({
     selectMatchCountdown: (state) => state.clock?.countdown ?? null,
     selectStructures: (state) => state.structures,
     selectCapturePoints: (state) => state.capturePoints,
+    selectOpponentGraceMs: (state) => state.opponentGraceMs,
   },
 });

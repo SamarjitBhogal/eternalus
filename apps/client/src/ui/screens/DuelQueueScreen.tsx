@@ -4,6 +4,7 @@ import { emitIntent } from '../../bridge/eventBus';
 import { Button } from '../components/Button';
 import { Panel } from '../components/Panel';
 import { ScreenFrame } from '../components/ScreenFrame';
+import { WaitTimer } from '../components/WaitTimer';
 import { STRINGS } from '../strings';
 
 /**
@@ -15,6 +16,8 @@ export function DuelQueueScreen(): ReactElement {
     <ScreenFrame>
       <Panel title={STRINGS.duelQueue.title}>
         <p role="status">{STRINGS.duelQueue.searching}</p>
+        <p>{STRINGS.duelQueue.explanation}</p>
+        <WaitTimer label={STRINGS.duelQueue.waitedLabel} />
         <Button
           autoFocus
           onClick={() => {

@@ -199,6 +199,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                                                                      | `HordeSystem`, `ProjectilePool`, invariants                                                                                                                   |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                                                        | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage)                                                                      |
 | `human-reseated`                    | `{ from: EntityId \| null, to: EntityId \| null }`     | `MatchRecord.reseatHuman` (sim mode, DEC-294)                                                           | `Scoring`                                                                                                                                                     |
+| `damage-blocked`                    | `{ targetId, source: DamageSource }`                   | `DamagePipeline` (a step took the hit to 0)                                                             | `CathedralGemSystem` (DEC-292)                                                                                                                                |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                                                         | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                                                                                       |
 | `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                                                                       | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212)                                                                       |
 | `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                      | `StructureSystem`                                                                                       | `HordeSystem` (gate holding), views                                                                                                                           |
@@ -206,7 +207,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                                                                       | HUD, views                                                                                                                                                    |
 | `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                                                         | HUD, `MinimapView`                                                                                                                                            |
 | `checkpoint-reached`                | `{ pointId, team, checkpoint, presentLegendIds }`      | `CaptureSystem`                                                                                         | `Scoring` (DEC-214, DEC-223), checkpoint spawners (Phase 3)                                                                                                   |
-| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                                                         | `MatchDirector`, `StatusEffectSystem`, `ZoneLevelUpSystem` (DEC-258)                                                                                          |
+| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                                                         | `MatchDirector`, `StatusEffectSystem`, `ZoneLevelUpSystem` (DEC-258), `CathedralGemSystem` (the gem's holder)                                                 |
 | `minion-level-earned`               | `{ entityId }`                                         | `VeterancySystem` (kills, 18 MS-16)                                                                     | `MinionLevelSystem` (one minion level, DEC-168, DEC-353)                                                                                                      |
 | `minion-levels-granted`             | `{ entityId, levels, sourceId }`                       | `ZoneLevelUpSystem` (07 §7, DEC-258)                                                                    | `MinionLevelSystem` (one minion level, DEC-168, DEC-353)                                                                                                      |
 | `phase-changed`                     | `{ from, to }`                                         | `MatchRecord.setPhase` (called by `MatchDirector`)                                                      | `Announcer`                                                                                                                                                   |
@@ -278,6 +279,12 @@ export type EntitySnapshot = {
     readonly current: number;
     readonly max: number;
   } | null; // any entity with an aether pool (every Legend), not only the player (DEC-230)
+  readonly gem: {
+    readonly holder: Team; // who holds the Cathedral: the gem shows that team's colour (DEC-291)
+    readonly glowTicksLeft: number;
+    readonly glowHits: number; // hits since the glow last went dark (DEC-292)
+    readonly ticksSinceHit: number | null;
+  } | null; // the Cathedral gem's CathedralGemState only
   readonly statusIds: readonly StatusEffectId[];
   readonly anim: AnimState;
 };
@@ -510,7 +517,8 @@ each closed by the session or phase named:
   (`x`, `y`, `radius`, `facing`), `health` (`current`, `max`), `progression` (a Legend's `level`,
   the `xp` inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the
   level curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
-  `area` (a zone's polygons) and `capture` (a capture point's state and presence) groups only.
+  `area` (a zone's polygons), `capture` (a capture point's state and presence) and `gem` (the
+  Cathedral gem's holder and glow) groups only.
   `MatchPhase` lives in `config/matchPhases.ts`; the match director is built (12 §13).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
   `WorldMap` grid) with no structures index yet (minion plan M2c), and the grid keeps no flow

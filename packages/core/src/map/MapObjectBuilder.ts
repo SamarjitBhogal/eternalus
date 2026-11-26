@@ -3,7 +3,11 @@ import type { MapObject } from '../content/maps/mapObjects.types';
 import type { PlayableTeam } from '../teams/teams.types';
 import { MapGenerationError } from './MapGenerationError';
 
-/** Collects explicit authored footprints; floors, roof projections and shadows never block. */
+/**
+ * Collects explicit authored footprints; floors, roof projections and shadows never block. The
+ * doorways a Duel closes become walkable objects that `Simulation` blocks in such a Duel
+ * (SCRUM-450).
+ */
 export class MapObjectBuilder {
   /**
    * Reuses the same world-space polygons that draw each physical object's solid surfaces.
@@ -28,6 +32,18 @@ export class MapObjectBuilder {
         isBlocking: true,
         ...(piece.buildingId === undefined ? {} : { buildingId: piece.buildingId }),
         ...(piece.visibility === 'interior' ? { isInterior: true as const } : {}),
+      });
+    }
+    for (const piece of presentation.scenery) {
+      if (piece.isDuelBarrier !== true) continue;
+      // Indestructible like its building (`MAP_OBJECT_HEALTH.cathedral`), walkable outside a Duel.
+      objects.set(piece.id, {
+        id: piece.id,
+        kind: 'cathedral',
+        footprints: [piece.shape],
+        isBlocking: false,
+        isDuelBarrier: true,
+        ...(piece.buildingId === undefined ? {} : { buildingId: piece.buildingId }),
       });
     }
     for (const feature of map.features) {
