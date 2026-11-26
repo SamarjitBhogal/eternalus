@@ -66,12 +66,12 @@ import { SystemPipeline } from './SystemPipeline';
  * capture points, the match director, then invariants last. Combat runs after movement, so a unit
  * with a target in reach faces it, not its own way (DEC-192). This is the one place a system is
  * added, at its position in the tick (architecture 02 §9). It builds the match's one
- * `DamagePipeline` and one `StatusEffectApplier` (with the status effects loaded for this match's
- * config, checked against the ability registry: `checkStatusLinks`) and hands them to the systems
- * that need them, so a damage step applies to every hit and every status event comes from one
- * place. What a landed shot does is one `ProjectileImpact` per impact kind, from
- * `createDefaultProjectileImpacts`; the match's one `EntityFactory` builds the shots `CombatSystem`
- * fires and the units `SpawnSystem` spawns.
+ * `DamagePipeline`, one `StatusEffectApplier` (with the status effects loaded for this match's
+ * config, checked against the ability registry: `checkStatusLinks`) and one `TargetQuery`, and
+ * hands them to the systems that need them, so a damage step applies to every hit and every status
+ * event comes from one place. What a landed shot does is one `ProjectileImpact` per impact kind,
+ * from `createDefaultProjectileImpacts`; the match's one `EntityFactory` builds the shots
+ * `CombatSystem` fires and the units `SpawnSystem` spawns.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */

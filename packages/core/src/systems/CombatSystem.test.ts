@@ -31,6 +31,7 @@ import { AreaHitQuery } from '../state/AreaHitQuery';
 import { ReachQuery } from '../state/ReachQuery';
 import { StateHasher } from '../state/StateHasher';
 import { CombatSystem } from './CombatSystem';
+import type { CombatSystemOptions } from './CombatSystem.types';
 import type { SystemContext } from './System.types';
 
 const CONFIG = createDefaultGameConfig();
@@ -61,9 +62,7 @@ const setUp = (collisions: CollisionQuery | null = null) => {
   const context: SystemContext = { state, logger: new NullLogger() };
   const attack = (target: Entity) => state.entities.setAttackTarget(warrior.id, target.id);
   /** A combat system on a fresh damage pipeline, firing with this world's factory. */
-  const combatSystem = (
-    reach: Pick<ReachQuery, 'isInReach' | 'facingPointOf'> = new ReachQuery(),
-  ): CombatSystem =>
+  const combatSystem = (reach: CombatSystemOptions['reach'] = new ReachQuery()): CombatSystem =>
     new CombatSystem({ damage: new DamagePipeline(), factory, areas: new AreaHitQuery(), reach });
   return { state, warrior, spawn, context, attack, combatSystem };
 };

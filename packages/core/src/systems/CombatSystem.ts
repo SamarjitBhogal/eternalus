@@ -6,8 +6,6 @@ import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
-import type { AreaHitQuery } from '../state/AreaHitQuery';
-import type { ReachQuery } from '../state/ReachQuery';
 import type { HitRunner } from '../state/HitRunner.types';
 import { normalizeInto } from '../utils/vec2';
 import type { MutableVec2 } from '../utils/vec2.types';
@@ -51,9 +49,9 @@ export class CombatSystem implements System {
   private readonly strategies: StrategyRegistry;
   private readonly factory: EntityFactory;
   /** The match's one hit rule for areas, which the sweep and the shot apply. */
-  private readonly areas: AreaHitQuery;
+  private readonly areas: CombatSystemOptions['areas'];
   /** The match's one aim rule: reach and the point a unit faces. */
-  private readonly reach: Pick<ReachQuery, 'isInReach' | 'facingPointOf'>;
+  private readonly reach: CombatSystemOptions['reach'];
 
   /** Creates the system from its injected parts (`CombatSystemOptions`). */
   public constructor({

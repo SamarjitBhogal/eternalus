@@ -1,7 +1,7 @@
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { EntityFactory } from '../entities/EntityFactory';
+import type { AttackContext } from '../entities/strategies/AttackStrategy.types';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
-import type { AreaHitQuery } from '../state/AreaHitQuery';
 import type { HitRunner } from '../state/HitRunner.types';
 import type { ReachQuery } from '../state/ReachQuery';
 
@@ -12,7 +12,7 @@ export type CombatSystemOptions = {
   /** The match's one entity factory: it builds the projectiles ranged attacks fire. */
   readonly factory: EntityFactory;
   /** The match's one hit rule for areas, which the sweep and the shot apply (`Simulation`'s). */
-  readonly areas: AreaHitQuery;
+  readonly areas: AttackContext['areas'];
   /** The match's one aim rule: reach and the point a unit faces (`Simulation`'s). */
   readonly reach: Pick<ReachQuery, 'isInReach' | 'facingPointOf'>;
   /**

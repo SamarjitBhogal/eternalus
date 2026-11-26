@@ -754,7 +754,7 @@ Reply inline (`Decision: …`).
     suggestions in a follow-up". (1) and (2) stay. Lane A builds R2-A8 and R2-A10 in its next PR
     after PR 2.
 
-- [ ] **HC-B39 — Better than the design, built under your standing rule (DEC-223), sign-off
+- [x] **HC-B39 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: two more code tidy-ups in the HC-B35 follow-up (`refactor/query-injection`,
       pre-PR gate round 1, 2026-11-23; COMBAT-WEAPONS-ABILITIES-61).** Built and tested;
       recorded as DEC-359. Nothing waits on you. No change for the player. (1) The match makes
@@ -763,6 +763,9 @@ Reply inline (`Decision: …`).
       (2) Each class that uses the shared reach rule or hit rule asks only for the one or two
       functions it calls (`Pick<ReachQuery, ...>`, `Pick<AreaHitQuery, ...>`). Say "no" to
       either and it goes back.
+  - Answered 2026-11-26 (Owner Calls v98): "A: sign off both (built) — if a critic agrees". An
+    independent critic agreed on both items (2026-11-26). Its should-fix and nits are built
+    (DEC-359 addendum 2026-11-26).
 
 - [ ] **HC-Q87 — Inside the enemy palace, your weapon never hits the Stronghold
       (`feat/melee-sweeps`, PR 2, critic R2-A2).** Confirm. Your answer to HC-Q76 was "A: aim at
