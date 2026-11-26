@@ -16,23 +16,6 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **HC-B44 — Better than the design, not built, sign-off asked: three follow-ups to the frame
-      checks (`docs/rule7-frame-latency` critic on DEC-336, 2026-11-25); no decision blocks the
-      PR.** (1) How many missed frames may a 60 s gate run have? DEC-336 took zero as a default.
-      Three facts speak against a plain zero. One recorded run missed a frame on a quiet machine
-      with every enhancement off (CPU slowed fourfold; not explained). Phase 3 and phase 6
-      accept frames of up to 50 ms when the terrain changes. The first frame after a pause or
-      a hidden tab is always long. (a) Zero stays, and the count skips the first frame after the
-      loop starts or resumes. (b) As (a), and a terrain change in the run may cause one frame of
-      up to 50 ms. (c) A small limit that you name (for example 3 in 60 s). (2) A frame that reads
-      exactly 16.8 ms can fall over the first histogram edge through floating-point noise (the
-      rule-7 script had this fault at 16.7 ms). Proposal: `PerfMonitor` rounds each interval to
-      the clock's step before it picks a bucket, and it takes the 16.8 ms or the 16.67 ms limit
-      from `crossOriginIsolated`. Only Chrome is measured; other browsers round differently.
-      (3) The phase 6 gate for the oldest laptop says "median frame ≤ 33 ms". Two 60 Hz frames
-      are 33.3 ms, so a laptop that holds 30 fps fails it. Proposal: write "two 60 Hz frames".
-      Agent's recommendation: (1) (b), (2) yes, (3) yes.
-
 - [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only
       its group's home (`CAMP_BODY`: "a camp is only its group's home"): the camp's mobs are what
@@ -3434,6 +3417,21 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Done
 
+- 2026-11-26 — **Your answers on HC-B44, the three follow-ups to the frame checks**
+  (`docs/rule7-frame-latency`, PR #149): recorded as DEC-368. (1) "None, but do not count the
+  first frame after a start or a pause, and allow one frame of up to 50 ms when the terrain
+  changes". (2) "Yes, round first and pick the limit from the page". (3) "Write "two 60 Hz
+  frames"". `PerfMonitor` is not built, so the change is docs only. These are your design docs:
+  architecture 08 §9 (new "Two 60 Hz frames" and "Missed-frame count" terms; `PerfMonitor` does
+  not record the skipped interval, rounds each interval and takes the first edge from
+  `crossOriginIsolated`); phase 6 sprint 6.1 (the oldest-laptop gate, the bridge test); phase 3
+  sprint 3.2 (terrain gates: at most one missed frame); and pointers to the count in the plan
+  README, phase 1 and phase 6. Five points are not your words, so DEC-368 records them as
+  readings: the zero limit is now yours, not a `Recommendation:` number; a pause also covers a
+  hidden tab; a terrain change is a destruction (a structure, an obstacle or a felled tree), not
+  a gate that opens or closes, because gates open many times a minute; the 50 ms allowance is one
+  frame for each terrain change; "two 60 Hz frames" is 33.6 ms in the game.
+
 - 2026-11-25 — **Your pick on HC-B28, frame checks** (`docs/rule7-frame-latency`, PR #149):
   recorded as DEC-336. "Fix all three: bucket edges at one frame, 25 ms (missed) and 50 ms; one
   definition in 08 §9; the gates count missed frames". `PerfMonitor` is not built, so the change
@@ -3448,7 +3446,7 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   cross-origin isolated; the tick and render histograms of architecture 15 keep their buckets;
   rule 7 points to 08 §9; a bucket holds the frames up to and including its edge; the overlay
   reads the median from the first bucket. The critic's three follow-ups are card HC-B44 (open,
-  above).
+  above) (answered 2026-11-26: DEC-368).
 
 - 2026-11-23 — **Your answers on the five Cathedral gem cards (DEC-346)** (`feat/cathedral-gem-hittable`,
   PR #132): recorded as DEC-346. The gem blocks movement (an unbreakable plinth under it) and a

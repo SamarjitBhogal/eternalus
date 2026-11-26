@@ -4,7 +4,7 @@ description: Sprint checklists for the deterministic simulation kernel, the firs
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [plan, phase-1, simulation, map, engine, input]
 paths: ['packages/core/src/**', 'apps/client/src/game/**', 'apps/client/src/bridge/**']
 related:
@@ -212,7 +212,7 @@ Follows [08-game-engine.md](../architecture/08-game-engine.md),
 **Success metric:** with 300 dummies moving, the entity layer renders at a median frame time ≤
 one 60 Hz frame, with no missed frame and no frame above 50 ms, during a 60 s run on the
 reference laptop (`PerfOverlay`). [Architecture 08](../architecture/08-game-engine.md) §9 defines
-"one 60 Hz frame" and "missed frame" (DEC-328, DEC-336).
+"one 60 Hz frame", "missed frame" and the missed-frame count (DEC-328, DEC-336, DEC-368).
 
 ## Sprint 1.5 — Input and player
 
@@ -252,15 +252,15 @@ laptop; a teammate who did not write the code walks the map in the browser with 
 
 ## Success metrics (phase level)
 
-| Metric                                          | Target                                                                                                     |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Replay determinism                              | 10 seeds × 3,000 ticks, identical hashes every 100 ticks                                                   |
-| Tick time (`npm run bench`, 300 dummies)        | p95 ≤ 4 ms on the reference dev laptop                                                                     |
-| Frame rate (300 dummies on screen)              | median ≤ one 60 Hz frame, no missed frame, no frame > 50 ms over 60 s (terms: architecture 08 §9; DEC-336) |
-| Config-driven map + minimap                     | `numLanes` 3 → 5 passes in tests with 0 code changes                                                       |
-| Collision anomalies in the random-movement soak | 0                                                                                                          |
-| Coverage                                        | core ≥ 82%, client ≥ 55% lines/functions/statements                                                        |
-| Lint, knip, docs check                          | green                                                                                                      |
+| Metric                                          | Target                                                                                                                            |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Replay determinism                              | 10 seeds × 3,000 ticks, identical hashes every 100 ticks                                                                          |
+| Tick time (`npm run bench`, 300 dummies)        | p95 ≤ 4 ms on the reference dev laptop                                                                                            |
+| Frame rate (300 dummies on screen)              | median ≤ one 60 Hz frame, no missed frame, no frame > 50 ms over 60 s (terms and the count: architecture 08 §9; DEC-336, DEC-368) |
+| Config-driven map + minimap                     | `numLanes` 3 → 5 passes in tests with 0 code changes                                                                              |
+| Collision anomalies in the random-movement soak | 0                                                                                                                                 |
+| Coverage                                        | core ≥ 82%, client ≥ 55% lines/functions/statements                                                                               |
+| Lint, knip, docs check                          | green                                                                                                                             |
 
 ## Exit criteria
 
