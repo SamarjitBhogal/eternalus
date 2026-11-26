@@ -94,7 +94,7 @@ export function MatchScreen({ viewport }: ScreenProps): ReactElement {
               });
             }}
           >
-            Spawn Boss
+            {STRINGS.hud.spawnBoss}
           </button>
         )}
       </section>
