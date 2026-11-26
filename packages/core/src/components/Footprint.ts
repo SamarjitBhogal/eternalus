@@ -42,4 +42,9 @@ export class Footprint implements Outline {
     const y = Math.min(...ys);
     this.bounds = { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
   }
+
+  /** A shot not aimed at the structure flies over a walk-on outline, and stops on a solid one. */
+  public get canShotsFlyOver(): boolean {
+    return this.isWalkOn;
+  }
 }

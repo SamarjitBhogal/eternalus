@@ -25,4 +25,12 @@ export class MapObjectBody implements Outline {
   public get isWalkOn(): boolean {
     return !this.object.isBlocking;
   }
+
+  /**
+   * Whether a shot not aimed at the object flies over it (`Outline.canShotsFlyOver`): it is walked
+   * on, or shots cross its footprint (`MapObject.canShotsCross`, a camp fire, HC-Q105).
+   */
+  public get canShotsFlyOver(): boolean {
+    return this.isWalkOn || this.object.canShotsCross === true;
+  }
 }

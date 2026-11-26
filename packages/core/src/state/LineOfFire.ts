@@ -25,10 +25,11 @@ import { ReachQuery } from './ReachQuery';
  * centre, whose circle it touches its radius sooner. The line is clear when that contact is within
  * the shot's `range` and touched before the first wall (`isTouchedBeforeWall` on
  * `CollisionQuery.shotReach`): the rule `ProjectileSystem` lands a shot by, so a fort that is also a
- * wall reads clear. A body that takes no damage now (a forest camp) blocks the line too, when the
- * shot would stop on it (`AreaHitQuery.stopsShot`, the rule `ProjectileSystem` flies a shot by)
- * more than `BODY_BEFORE_WALL_MARGIN` before it touches the target, as `ProjectileSystem` breaks a
- * near tie for the target. A body that takes damage does not: the shot lands on it. An attack
+ * wall reads clear. A body that takes no damage now (a wall turret before its rule) blocks the line
+ * too, when the shot would stop on it (`AreaHitQuery.stopsShot`, the rule `ProjectileSystem` flies a
+ * shot by) more than `BODY_BEFORE_WALL_MARGIN` before it touches the target, as `ProjectileSystem`
+ * breaks a near tie for the target. A forest camp's home does not: shots fly over it (HC-Q105). A
+ * body that takes damage does not either: the shot lands on it. An attack
  * needs a line only when it fires a projectile. An attacker inside the target's outline hits it at
  * once. The attacker's centre is the shot's launch point: a shape that holds it does not block
  * the line, as it does not stop the shot (DEC-334), so a wall turret sees past its own pylon.

@@ -72,6 +72,21 @@ describe('Structure', () => {
     expect(gate.getComponent(Collider).isUnbreakable).toBe(true);
   });
 
+  it("gives its collider the definition's canShotsFlyOver, and none without it (a forest camp, HC-Q105)", () => {
+    const camp = new FakeTower('entity-1', 'fake-camp');
+    const tower = new FakeTower('entity-2', 'fake-buff-tower');
+
+    camp.spawn({
+      definition: { ...DEFINITION, canShotsFlyOver: true },
+      position: { x: 0, y: 0 },
+      team: 'neutral',
+    });
+    tower.spawn({ definition: DEFINITION, position: { x: 0, y: 0 }, team: 'dark' });
+
+    expect(camp.getComponent(Collider).canShotsFlyOver).toBe(true);
+    expect(tower.getComponent(Collider).canShotsFlyOver).toBe(false);
+  });
+
   it('keeps the map feature it was built from, and none without one', () => {
     const tower = new FakeTower('entity-1', 'fake-buff-tower');
     const spawned = new FakeTower('entity-2', 'fake-buff-tower');

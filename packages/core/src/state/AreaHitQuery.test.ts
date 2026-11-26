@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Collider } from '../components/Collider';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
+import { MapObjectBody } from '../components/MapObjectBody';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { Entity } from '../entities/Entity';
@@ -22,6 +23,10 @@ type BodySpec = {
   readonly isWalkOn?: boolean;
   readonly isUnbreakable?: boolean;
   readonly hasHealth?: boolean;
+  /** With an outline: it is a map object's (`MapObjectBody`) that shots cross (a camp fire). */
+  readonly canShotsCross?: true;
+  /** Its collider says a shot not aimed at it flies over it (a forest camp's home). */
+  readonly canShotsFlyOver?: boolean;
 };
 
 /** A body with a position, health, an optional team, collider and outline; a structure unless told. */
@@ -36,10 +41,23 @@ class Body extends Entity {
     this.addComponent(new Transform(spec.at, radius));
     if (spec.hasHealth !== false) this.addComponent(new Health(100));
     if (spec.team !== undefined) this.addComponent(new TeamMembership(spec.team));
-    const collider = new Collider({ kind: 'circle', radius }, 'unit');
+    const collider = new Collider({ kind: 'circle', radius }, 'unit', false, {
+      canShotsFlyOver: spec.canShotsFlyOver === true,
+    });
     collider.setUnbreakable(spec.isUnbreakable === true);
     this.addComponent(collider);
-    if (spec.outline !== undefined) {
+    if (spec.outline !== undefined && spec.canShotsCross === true) {
+      const footprints = spec.outline;
+      this.addComponent(
+        new MapObjectBody({
+          id: this.id,
+          kind: 'furniture',
+          footprints,
+          isBlocking: true,
+          canShotsCross: true,
+        }),
+      );
+    } else if (spec.outline !== undefined) {
       this.addComponent(new Footprint(spec.outline, { isWalkOn: spec.isWalkOn === true }));
     }
   }
@@ -262,6 +280,13 @@ describe('AreaHitQuery.aimedBodyOf', () => {
     expect(query.aimedBodyOf(entities, attacker.id, { x: 5, y: 0 })).toBe('gate');
   });
 
+  it('names a camp fire under the aim point: a body shots fly over, though units do not walk on it (HC-Q105)', () => {
+    const { entities, add, attacker, query } = setUp();
+    add('fire', { at: { x: 5, y: 0 }, outline: [FLOOR], canShotsCross: true });
+
+    expect(query.aimedBodyOf(entities, attacker.id, { x: 5, y: 0 })).toBe('fire');
+  });
+
   it('names the first by id when two walk-on outlines hold the point', () => {
     const { entities, add, attacker, query } = setUp();
     add('palace-object', { at: { x: 5, y: 0 }, outline: [FLOOR], isWalkOn: true });
@@ -295,7 +320,7 @@ describe('AreaHitQuery.stopsShot', () => {
 
     expect(stops(scene, 'enemy', { at, team: 'dark' })).toBe(true);
     expect(stops(scene, 'teamless', { at })).toBe(true);
-    expect(stops(scene, 'camp', { at, team: 'neutral', isUnbreakable: true })).toBe(true);
+    expect(stops(scene, 'no-damage', { at, team: 'neutral', isUnbreakable: true })).toBe(true);
     expect(stops(scene, 'ally', { at, team: 'light' })).toBe(false);
     const owner = scene.attacker;
     expect(
@@ -310,6 +335,29 @@ describe('AreaHitQuery.stopsShot', () => {
         },
       ),
     ).toBe(false);
+  });
+
+  it('stops a shot on a body shots fly over only when the shot aims at it: a camp fire, a forest camp (HC-Q105, HC-Q115)', () => {
+    const scene = setUp();
+    const fire = { at: { x: 5, y: 0 }, outline: [FLOOR], canShotsCross: true } as const;
+    const camp = {
+      at: { x: 5, y: 0 },
+      team: 'neutral',
+      isUnbreakable: true,
+      canShotsFlyOver: true,
+    } as const;
+
+    expect(stops(scene, 'fire', fire)).toBe(false);
+    expect(stops(scene, 'aimed-fire', fire, 'aimed-fire')).toBe(true);
+    expect(stops(scene, 'camp', camp)).toBe(false);
+    expect(stops(scene, 'aimed-camp', camp, 'aimed-camp')).toBe(true);
+  });
+
+  it('lets a sword hit a camp fire it sweeps, aimed or not: the melee rule reads walk-on only', () => {
+    const { add, find } = setUp();
+    add('fire', { at: { x: 5, y: 0 }, outline: [FLOOR], canShotsCross: true });
+
+    expect(find(holding('fire'))).toEqual(['fire']);
   });
 
   it('stops a shot on a walk-on outline only when the shot aims at it, and never on a dead or removed body (DEC-322 (1))', () => {

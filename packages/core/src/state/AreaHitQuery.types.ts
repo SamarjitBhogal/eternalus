@@ -60,7 +60,10 @@ export type AreaAttacker = {
 export type ShotAim = {
   readonly ownerId: EntityId;
   readonly team: Team;
-  /** The locked target, or the walk-on outline the aim point was on; `null` for neither. */
+  /**
+   * The locked target, or the outline shots fly over that the aim point was on
+   * (`AreaHitQuery.aimedBodyOf`); `null` for neither.
+   */
   readonly targetId: EntityId | null;
 };
 

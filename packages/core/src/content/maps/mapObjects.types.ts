@@ -23,7 +23,11 @@ export type MapObjectKind =
  * without them stops a shot. A unit or a dash collides with the footprint whatever they say.
  */
 export type MapObjectFlags = {
-  /** A shot flies over the footprint: it does not stop the shot. A unit or a dash still stops. */
+  /**
+   * A shot flies over the footprint: it is no wall to a shot. A unit or a dash still stops. On an
+   * object with health (a camp fire), a shot aimed at the object still lands on it
+   * (`MapObjectBody.canShotsFlyOver`, `AreaHitQuery.stopsShot`, HC-Q105).
+   */
   readonly canShotsCross?: true;
   /**
    * A shot that flies over the footprint, outside its passages, catches fire (if its definition
