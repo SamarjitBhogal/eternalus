@@ -78,6 +78,7 @@ export class DeveloperMenuController {
   public observeLegends(
     entities: readonly Pick<EntitySnapshot, 'id' | 'family' | 'team' | 'definitionId'>[],
   ): void {
+    if (!this.deps.isEnabled) return;
     const legends = entities
       .filter(({ family }) => family === 'legend')
       .map(({ id, team, definitionId }) => ({

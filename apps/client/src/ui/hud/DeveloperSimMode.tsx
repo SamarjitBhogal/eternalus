@@ -26,6 +26,8 @@ export function DeveloperSimMode({
   const controlFieldId = useId();
   const followFieldId = useId();
   const labels = STRINGS.developerMenu;
+  // A dead or removed Legend leaves the list; keep its option so the select shows what is followed.
+  const awayId = legends.some(({ id }) => id === followedLegendId) ? null : followedLegendId;
   return (
     <fieldset className={styles.group}>
       <legend>{labels.simMode}</legend>
@@ -83,6 +85,11 @@ export function DeveloperSimMode({
           }}
         >
           <option value="">{labels.followNone}</option>
+          {awayId !== null && (
+            <option value={awayId}>
+              {awayId} ({labels.followAway})
+            </option>
+          )}
           {legends.map(({ id, label }) => (
             <option key={id} value={id}>
               {label}

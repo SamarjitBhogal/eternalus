@@ -244,6 +244,16 @@ describe('DeveloperMenu buttons', () => {
     ]);
   });
 
+  it('keeps a followed Legend that left the list selected, so None can release it', () => {
+    const { container, intents, stop } = mount(null, 'e9');
+    const follow = field(container, 'Follow');
+    expect((follow as HTMLSelectElement).value).toBe('e9');
+    expect(follow.textContent).toContain('e9 (not in the match now)');
+    pick(container, 'Follow', '');
+    stop();
+    expect(intents).toEqual([{ kind: 'dev-follow', legendId: null }]);
+  });
+
   it('Remove Legend sends exactly one dev-remove-legend with the typed id, and nothing without one (DEC-293)', () => {
     const { container, intents, stop } = mount();
     click(container, 'Remove Legend');
