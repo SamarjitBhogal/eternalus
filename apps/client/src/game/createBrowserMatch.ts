@@ -121,7 +121,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         roster: request.roster,
       });
       match = new Match({
-        ...(sheet === undefined ? {} : { playerSheet: sheet }),
+        playerSheet: sheet,
         simulation,
         world: request.world,
         tickRate: gameConfig.tickRate,

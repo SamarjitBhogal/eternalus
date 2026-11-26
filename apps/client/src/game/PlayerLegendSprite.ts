@@ -2,7 +2,7 @@ import type { EntityId, Snapshot } from '@eternalus/core';
 
 import { createLegendView } from './createLegendView';
 import { LegendAnimation } from './LegendAnimation';
-import type { MatchDeps } from './Match.types';
+import type { PlayerLegendSpriteDeps } from './PlayerLegendSprite.types';
 import type { EntityView } from './views/EntityView.types';
 
 /**
@@ -28,10 +28,7 @@ export class PlayerLegendSprite {
    * that draws its frames. With no sheet or no player, nothing is subscribed and `view` is
    * `undefined`.
    */
-  public constructor(
-    deps: Pick<MatchDeps, 'playerSheet' | 'tickRate' | 'simulation' | 'renderer' | 'logger'>,
-    playerId: EntityId | null,
-  ) {
+  public constructor(deps: PlayerLegendSpriteDeps, playerId: EntityId | null) {
     const { playerSheet, tickRate, simulation, renderer, logger } = deps;
     this.animation = new LegendAnimation(
       playerId,

@@ -92,7 +92,7 @@ export type MatchDeps = {
    * The player's sprite sheet in a local match (`LEGEND_SPRITE_SHEETS`, looked up by the match
    * factory). Left out in an online Duel, or for a sub-class without a sheet: the Legend is a disc.
    */
-  readonly playerSheet?: LegendSpriteSheet;
+  readonly playerSheet?: LegendSpriteSheet | undefined;
   readonly simulation: MatchSimulation;
   /** Set for an online Duel: replaces the local `PlayerCommands` and the snapshot's human Legend. */
   readonly remote?: RemotePlayer;

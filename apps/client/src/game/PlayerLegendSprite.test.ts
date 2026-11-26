@@ -1,17 +1,14 @@
 import {
-  createDefaultGameConfig,
   type EntitySnapshot,
   type GameEventMap,
   MemoryLogger,
-  NullLogger,
-  Simulation,
+  type Simulation,
 } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
-import type { MatchSimulation } from './Match.types';
 import { PlayerLegendSprite } from './PlayerLegendSprite';
 
 const TICK_RATE = 30;
@@ -37,22 +34,10 @@ const HERO: EntitySnapshot = {
 /** A simulation whose events come from `bus`, so a test can count its listeners. */
 function busSimulation(): {
   readonly bus: TypedEventBus<GameEventMap>;
-  readonly simulation: MatchSimulation;
+  readonly simulation: Pick<Simulation, 'on' | 'tick'>;
 } {
   const bus = new TypedEventBus<GameEventMap>();
-  const snapshot = new Simulation({
-    config: createDefaultGameConfig(),
-    seed: 1,
-    logger: new NullLogger(),
-  }).snapshot();
-  const simulation: MatchSimulation = {
-    tick: 0,
-    on: bus.on.bind(bus),
-    step: () => undefined,
-    snapshot: () => snapshot,
-    enqueueCommand: () => undefined,
-  };
-  return { bus, simulation };
+  return { bus, simulation: { tick: 0, on: bus.on.bind(bus) } };
 }
 
 /** The frame the sprite's view draws for `HERO`, read from the `drawSprite` call. */
@@ -85,7 +70,7 @@ describe('PlayerLegendSprite', () => {
     const { simulation } = busSimulation();
     const sprite = new PlayerLegendSprite(
       {
-        ...(KNIGHT_SHEET === undefined ? {} : { playerSheet: KNIGHT_SHEET }),
+        playerSheet: KNIGHT_SHEET,
         tickRate: TICK_RATE,
         simulation,
         renderer: new RecordingRenderer(KNIGHT_GRID),
@@ -114,7 +99,7 @@ describe('PlayerLegendSprite', () => {
     const { bus, simulation } = busSimulation();
     const sprite = new PlayerLegendSprite(
       {
-        ...(KNIGHT_SHEET === undefined ? {} : { playerSheet: KNIGHT_SHEET }),
+        playerSheet: KNIGHT_SHEET,
         tickRate: TICK_RATE,
         simulation,
         renderer: new RecordingRenderer(KNIGHT_GRID),

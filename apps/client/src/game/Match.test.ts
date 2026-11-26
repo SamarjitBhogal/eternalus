@@ -122,7 +122,7 @@ const setUp = (
   const input = new ScriptedIntent();
   const logger = new MemoryLogger();
   const match = new Match({
-    ...(playerSheet === undefined ? {} : { playerSheet }),
+    playerSheet,
     simulation,
     world,
     tickRate: config.tickRate,
@@ -495,6 +495,27 @@ describe('Match', () => {
       renderer.calls.filter((call) => call.op === 'drawSprite').map((call) => call.args[0]),
     ).toContainEqual({ atlasId: 'knight-sprites', frame: 0 });
     expect(logger.records.filter(({ severityText }) => severityText === 'WARN')).toEqual([]);
+    match.destroy();
+  });
+
+  it("draws a walk frame of the render's tick once the player's Legend has moved", () => {
+    const { match, renderer, input } = setUp(undefined, false, KNIGHT_SHEET, {
+      'knight-sprites': { columns: 6, rows: 10 },
+    });
+    input.move = { x: 1, y: 0 };
+    for (let tick = 0; tick < 10; tick += 1) match.tick();
+    renderer.calls.length = 0;
+
+    // Tick 10 plus half a tick is 0.35 s: the 0.84 s walk row has 6 frames, so frame 2 of it.
+    match.render(0.5);
+
+    const drawn = renderer.calls.findLast((call) => call.op === 'drawSprite')?.args[0];
+    const frame = drawn?.frame ?? Number.NaN;
+    expect(drawn?.atlasId).toBe('knight-sprites');
+    // Rows 1 to 4 are the walk rows; row 0 is idle, and frame 0 is where an unset clock stays.
+    expect(Math.floor(frame / 6)).toBeGreaterThanOrEqual(1);
+    expect(Math.floor(frame / 6)).toBeLessThanOrEqual(4);
+    expect(frame % 6).toBe(2);
     match.destroy();
   });
 

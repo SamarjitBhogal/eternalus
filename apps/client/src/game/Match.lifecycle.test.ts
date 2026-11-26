@@ -17,6 +17,7 @@ import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
+import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, MS_PER_SECOND } from './Match.constants';
 import type { MatchObserver, PreparedWorld } from './Match.types';
@@ -367,6 +368,30 @@ describe('Match lifecycle', () => {
     // The health bars' two subscriptions (DEC-195), the Legend bodies' `entity-removed` (DEC-295)
     // and the bridge's `match-ended`; each is dropped once.
     const types = ['damage-applied', 'entity-removed', 'entity-removed', 'match-ended'];
+    expect(on.mock.calls.map(([type]) => type)).toEqual(types);
+    expect(dropped).toEqual(types);
+  });
+
+  it("drops the player's sprite listener too on destroy, when the player has a sprite sheet", () => {
+    const { deps, dropped, on } = matchDeps();
+    const match = new Match({
+      ...deps,
+      playerSheet: LEGEND_SPRITE_SHEETS.knight,
+      renderer: new RecordingRenderer({ 'knight-sprites': { columns: 6, rows: 10 } }),
+    });
+    match.start();
+
+    match.destroy();
+
+    // The sprite's `damage-applied` listener (DEC-298) joins the health bars' two, the Legend
+    // bodies' `entity-removed` and the bridge's `match-ended`; each is dropped once.
+    const types = [
+      'damage-applied',
+      'damage-applied',
+      'entity-removed',
+      'entity-removed',
+      'match-ended',
+    ];
     expect(on.mock.calls.map(([type]) => type)).toEqual(types);
     expect(dropped).toEqual(types);
   });
