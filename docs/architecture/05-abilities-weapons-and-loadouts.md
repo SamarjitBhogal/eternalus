@@ -712,9 +712,11 @@ client's look of the shot follow it.
 | Obsidian bow (`obsidian-bow`, name pending) | bow        | ranged magical projectile; `onHit: sundered` (stacks)                                   | —         | MVP                     |
 | A Fine Line (`a-fine-line`)                 | staff      | melee physical + ranged magical, both `pierce`                                          | —         | MVP                     |
 | Staff (`magus-staff`)                       | staff      | melee physical, ranged magical; `grants: ['spell-potency']`                             | magus     | MVP                     |
+| Long sword (`long-sword`)                   | sword      | melee physical (DEC-374 W1)                                                             | —         | MVP (DEC-374)           |
+| Great sword (`great-sword`)                 | sword      | melee physical; heavier, harder and wider than the long sword (DEC-374 W4)              | —         | MVP (DEC-374)           |
 | Wuuthrad (`wuuthrad`)                       | battle-axe | melee physical, long reach; heavy: `concussion`; `damageMultipliers.sentinel`           | —         | MVP-if-time             |
 | Lightbringer (`lightbringer`)               | sword      | melee magical + physical; heavy (cooldown): stun, concussion, blind; parry: blind, stun | —         | MVP-if-time             |
-| Short blades (`short-blades`)               | glove      | fast melee; throwable (a persistent projectile, retrieve or regenerate)                 | warrior   | MVP-if-time             |
+| Dual blades (`dual-blades`)                 | sword      | fast melee; throwable (a persistent projectile, retrieve or regenerate)                 | warrior   | MVP-if-time             |
 | Barricades (`barricades`)                   | —          | movement lock, `mass` change, moving collider, knockback absorption                     | sentinel  | post-MVP ("needs work") |
 
 **Implementation status (SCRUM-183 / SCRUM-287, first slice).** `content/weapons/` holds
@@ -824,13 +826,24 @@ spawns with the weapon of its spec. `LegendSpecDefinition.primaryWeaponId` (`str
 start weapon; `null` falls back to the class's `defaultLoadout.primaryWeaponId`, as `kit: null`
 falls back to `defaultKit`. `content/legends/specs/primaryWeaponIdOf.ts` holds the rule (the
 sibling of `kitOf`) and `Legend.basicAttack` calls it. `KnownSpecWeaponRule` rejects a spec weapon
-id that names no weapon. This is the build of §12's `LoadoutTemplate.primaryWeaponId` at the spec,
-the one place that varies per Legend today; the class default stays as the fallback and the
-`defaultLoadout` of a class is unchanged. New weapons: `long-sword`, `great-sword`, `dual-blades`
-(class `sword`, melee sweep, open to every class). Raptor Talons and the Obsidian Bow have an
+id that names no weapon, and a weapon that the spec's class may not use (`allowedClasses`,
+`uniqueTo`): the spec part of §12's `WeaponAllowedRule`. This is the build of §12's
+`LoadoutTemplate.primaryWeaponId` at the spec, the one place that varies per Legend today; the class
+default stays as the fallback and the `defaultLoadout` of a class is unchanged. New weapons, each
+of class `sword` with a melee sweep: `long-sword` and `great-sword` (open to every class) and
+`dual-blades` (Warrior only). Raptor Talons and the Obsidian Bow have an
 attack `onHit` step: one stack of `bleed` and of the new `sundered` status (`damageTaken`, +5 %
 per stack, added) on each hit. The Colossus' Bastions are not built: reference 07 names no weapon
-class for them (DEC-374 (7)).
+class for them (DEC-374 (7), `INBOX.md` HC-Q118). Differences from the design text, each
+acceptable: (D1) the start weapon is on the spec, with the class's `defaultLoadout` as the fallback
+(§12 builds a loadout from the class, `autoBuildLoadout(classId, content)`; ADR 0026 decision 1
+reads the spec only to choose the kit): DEC-57 sets the start weapon per Legend, recipe R2 applies
+the spec over the class definition, DEC-374 (6). (D2) Reference 07's Short blades have the id
+`dual-blades`; the table had `short-blades` (card W2, DEC-374 (2); DEC-64 reads DEC-57's dual
+blades as the Short blades). (D3) Their class is `sword`; the table had `glove` (DEC-57: "dual
+blades (two swords)"). (D6) `long-sword` and `great-sword` were not in the table (cards W1 and W4,
+DEC-374 (1) and (3)). The table rows of the dual blades, the long sword and the great sword now
+match the code.
 
 ## 11. Artifacts (gadgets Z and C)
 

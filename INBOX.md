@@ -881,6 +881,16 @@ Reply inline (`Decision: …`).
       are one weapon file and one line in the Colossus spec. Code names: `WeaponClass` in
       `content/weapons/weapons.types.ts`; DEC-374 (7).
 
+- [ ] **HC-B48 — Better than the design, sign-off asked: read a Legend's sub-class once when it
+      spawns (`feat/start-weapons`, PR 3, critic round 1, 2026-11-26;
+      COMBAT-WEAPONS-ABILITIES-68).** Not built yet. Nothing changes in play. Today a Legend
+      that spawns reads its sub-class twice: once for its start weapon and once for its
+      abilities. Better: one step reads the sub-class once and gives the abilities, the start
+      weapon and, after PR #156, the second weapon. When: in PR #156's loadout code, after #156
+      merges. Say "no" and the two reads stay. Code names: `loadoutOf(spec, legend)` replaces
+      `kitOf`, `primaryWeaponIdOf` and #156's inline `spec?.secondaryWeaponId ?? null`, in the
+      `Loadout` construction of `Legend`; DEC-374.
+
 - [ ] **HC-B38 — Better than the design, sign-off asked: 5 code ideas from the critic
       (`feat/wall-turrets`, PR 4, critic rounds 4 and 5, 2026-11-23; PR-REVIEW-ASSIST-38/39).**
       Nothing changes in play. Say "no" to a built item and it goes back.
@@ -3597,6 +3607,11 @@ Reply inline (`Decision: …`).
       `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
       rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
       (SCRUM-290).
+  - Answered for point (2) (DEC-57, 2026-10-28; built by DEC-374 on `feat/start-weapons`,
+    2026-11-26): each Legend spawns with the start weapon of its sub-class. The Zealot has the
+    Raptor Talons, the Templar the dual blades, the Paladin the great sword, the Bulwark Wuuthrad
+    and every Magus Legend the staff. The Colossus's Bastions wait for HC-Q118. This note does
+    not answer points (1) and (3), so the box stays open.
 - [x] **ObjectPool — pooled `GameEvents` payloads (SCRUM-427, branch `feat/object-pool`).** The
       `ObjectPool` base is built in `utils/` (phase 1 plan, sprint 1.2: "pool resets fields on
       acquire and nulls references on release"). The item's "done when" (high-frequency
