@@ -168,6 +168,18 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(still);
   });
 
+  it('changes with the form of a status that steers (Fear runs or cowers, DEC-382 (R3 D))', () => {
+    const hashWith = (form: 'flee-source' | 'cower'): number => {
+      const { state, soldier } = stateWithSoldier();
+      const statuses = new StatusEffects();
+      soldier.addComponent(statuses);
+      statuses.apply(loadStatusEffects(30, 2).get('feared'), null, 0, undefined, form);
+      return hasher.hash(state);
+    };
+
+    expect(hashWith('cower')).not.toBe(hashWith('flee-source'));
+  });
+
   it('hashes an ability bar only once a slot leaves its initial state, then each slot field', () => {
     const { state, soldier } = stateWithSoldier();
     const before = hasher.hash(state);

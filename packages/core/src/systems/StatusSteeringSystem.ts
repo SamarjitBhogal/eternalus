@@ -4,9 +4,10 @@ import type { StrategyRegistry } from '../entities/strategies/defaultStrategyReg
 import type { System, SystemContext } from './System.types';
 
 /**
- * Steers every unit a status steers (Fear's flight, DEC-203): each tick it sets the heading of the
- * holder's steering status (`StatusEffects.steering`, the newest one) from where the status's source
- * stands (`StatusEffectRuntime.sourceId`), through the strategy of the status's `steering` kind.
+ * Steers every unit a status steers (Fear's flight or cower, DEC-203, DEC-382 (R3 D)): each tick it
+ * sets the heading of the holder's steering status (`StatusEffects.steering`, the newest one) from
+ * where the status's source stands (`StatusEffectRuntime.sourceId`), through the strategy of the
+ * form that application took (`StatusEffectRuntime.steering`).
  * `MovementSystem` then walks the holder along that heading in place of its own, so the steer of a
  * command, a controller or `PathingSystem` waits underneath and takes over when the status ends.
  * It runs after the AI and the commands of this tick (and after `PathingSystem`'s steer for this
@@ -24,14 +25,14 @@ export class StatusSteeringSystem implements System {
     state.entities.forEach((entity) => {
       const status = entity.findComponent(StatusEffects)?.steering;
       const position = entity.findComponent(Transform)?.position;
-      if (status?.definition.steering === undefined || position === undefined) {
+      if (status?.steering == null || position === undefined) {
         return;
       }
       const source =
         status.sourceId === null
           ? undefined
           : state.entities.get(status.sourceId)?.findComponent(Transform)?.position;
-      this.steerings[status.definition.steering].steer(position, source, status.heading);
+      this.steerings[status.steering].steer(position, source, status.heading);
     });
   }
 }

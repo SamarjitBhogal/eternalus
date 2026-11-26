@@ -2,6 +2,7 @@ import { HORDE_STEERING } from '../../content/ai/hordeSteering';
 import type { StatusSteeringKind } from '../../content/status-effects/statusEffects.types';
 import type { AttackStrategyId, MovementStrategyId } from '../../content/units/units.types';
 import type { AttackStrategy } from './AttackStrategy.types';
+import { CowerSteeringStrategy } from './CowerSteeringStrategy';
 import { FleeSourceSteeringStrategy } from './FleeSourceSteeringStrategy';
 import { LaneFollowMovementStrategy } from './LaneFollowMovementStrategy';
 import { LeashedChaseMovementStrategy } from './LeashedChaseMovementStrategy';
@@ -35,5 +36,6 @@ export const createDefaultStrategyRegistry = (): StrategyRegistry => ({
   },
   steering: {
     'flee-source': new FleeSourceSteeringStrategy(),
+    cower: new CowerSteeringStrategy(),
   },
 });

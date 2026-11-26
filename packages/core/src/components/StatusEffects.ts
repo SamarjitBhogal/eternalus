@@ -2,6 +2,7 @@ import type {
   StatusEffectDefinition,
   StatusFlag,
   StatusStat,
+  StatusSteeringKind,
 } from '../content/status-effects/statusEffects.types';
 import { StatusEffectRuntime } from './StatusEffectRuntime';
 
@@ -46,19 +47,22 @@ export class StatusEffects {
    * by its stacking rule. Use `combat/StatusEffectApplier`, which also emits `status-applied`.
    *
    * @param durationTicks - This application's duration when its source overrides the definition's.
+   * @param steering - This application's form, of the definition's `steering` forms; the first
+   *   form when omitted.
    */
   public apply(
     definition: StatusEffectDefinition,
     sourceId: string | null,
     tick: number,
     durationTicks?: number,
+    steering?: StatusSteeringKind,
   ): void {
     const existing = this.find(definition.id);
     if (existing === undefined) {
       const runtime = this.spare.pop() ?? new StatusEffectRuntime(definition);
-      this.activeList.push(runtime.start(definition, sourceId, tick, durationTicks));
+      this.activeList.push(runtime.start(definition, sourceId, tick, durationTicks, steering));
     } else {
-      existing.reapply(sourceId, tick, durationTicks);
+      existing.reapply(sourceId, tick, durationTicks, steering);
     }
     this.recompute();
   }
@@ -123,8 +127,9 @@ export class StatusEffects {
   }
 
   /**
-   * The newest active, unbroken status that steers this entity (`definition.steering`, Fear), whose
-   * `heading` `MovementSystem` walks along in place of the entity's own; `undefined` with none.
+   * The newest active, unbroken status that steers this entity (`StatusEffectRuntime.steering`,
+   * Fear), whose `heading` `MovementSystem` walks along in place of the entity's own (a zero
+   * heading stands); `undefined` with none.
    */
   public get steering(): StatusEffectRuntime | undefined {
     return this.steeringStatus;
@@ -159,7 +164,7 @@ export class StatusEffects {
       if (isBroken) {
         continue;
       }
-      if (definition.steering !== undefined) {
+      if (status.steering !== null) {
         this.steeringStatus = status;
       }
       for (const { stat, op, value } of definition.modifiers) {

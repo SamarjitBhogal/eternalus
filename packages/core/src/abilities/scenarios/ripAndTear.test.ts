@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Health } from '../../components/Health';
+import { StatusEffects } from '../../components/StatusEffects';
 import { TEST_DEBUG_CONFIG } from '../../diagnostics/InvariantRunner.constants';
 import type { EntityId } from '../../state/EntityStore.types';
 import type { GameEventMap } from '../../state/GameEvents.types';
@@ -8,25 +9,41 @@ import type { GameState } from '../../state/GameState';
 import { abilityMatch, type ScenarioSpawn } from '../__fixtures__/abilityMatch';
 
 /**
- * Rip & Tear (DEC-204, DEC-206, balancing.md:186; readings R1-R3): a 90-degree fan 3 m past the
- * Sentinel's body (1.25 m, so 4.25 m from its centre) along the aim; 90 damage, 180 under 30%
- * health; at or below 10% the enemy dies; under 30% it is knocked back 1.5 m (less for a heavier
- * one, DEC-208); one bleed stack; then Fear (2 s) on every survivor in the fan or the circle of the
- * fan's range, never on a Sentinel (DEC-207). The light Sentinel stands at (50, 50) and aims east.
+ * Rip & Tear (DEC-204, DEC-206, balancing.md:186; DEC-382 (R1 A, R2 A, R3 D)): a 90-degree fan 3 m
+ * past the Sentinel's body (1.25 m, so 4.25 m from its centre) along the aim; 90 damage, 180 under
+ * 30% health; at or below 10% the enemy dies; under 30% it is knocked back 1.5 m (less for a
+ * heavier one, DEC-208); one bleed stack; then Fear on every survivor in the fan or the circle of
+ * the fan's range, never on a Sentinel (DEC-207). Each Fear runs away or cowers, for 2 to 4 s, both
+ * drawn from the match's seeded RNG (R3 D). The light Sentinel stands at (50, 50) and aims east.
  * Each health threshold is read when its step runs (R2). Every invariant runs each tick and throws.
  */
 const SELF = { x: 50, y: 50 };
 const EAST = { x: 60, y: 50 };
 const SENTINEL: ScenarioSpawn = { kind: 'sentinel', team: 'light', at: SELF };
 
-/** The match with `others` after the Sentinel, and a way to leave a unit with `left` health. */
-const match = (others: readonly ScenarioSpawn[]) => {
-  const scenario = abilityMatch([SENTINEL, ...others], { debug: TEST_DEBUG_CONFIG });
+/** Match seeds on which the first Fear runs away (`FLEES`) or cowers (`COWERS`); each test checks. */
+const FLEES = 1;
+const COWERS = 2;
+
+/**
+ * The match with `others` after the Sentinel, a way to leave a unit with `left` health, and the
+ * form and drawn time (ticks) of a unit's active Fear.
+ */
+const match = (others: readonly ScenarioSpawn[], seed = FLEES) => {
+  const scenario = abilityMatch([SENTINEL, ...others], { seed, debug: TEST_DEBUG_CONFIG });
   const { state } = scenario.sim as unknown as { readonly state: GameState };
   const leave = (id: EntityId | undefined, left: number): void => {
     const health = state.entities.get(id ?? '')?.getComponent(Health);
     if (health === undefined) throw new Error(`no unit "${String(id)}"`);
     health.applyDamage(health.current - left);
+  };
+  const fear = (id: EntityId | undefined) => {
+    const status = state.entities
+      .get(id ?? '')
+      ?.getComponent(StatusEffects)
+      .active.find(({ definition }) => definition.id === 'feared');
+    if (status?.expiresTick == null) throw new Error(`"${String(id)}" is not feared`);
+    return { form: status.steering, ticks: status.expiresTick - status.periodAnchorTick };
   };
   const deaths: GameEventMap['entity-died'][] = [];
   const charged: string[] = [];
@@ -34,7 +51,7 @@ const match = (others: readonly ScenarioSpawn[]) => {
   scenario.sim.on('ultimate-charged', ({ entityId, cause }) =>
     charged.push(`${entityId} ${cause}`),
   );
-  return { ...scenario, leave, deaths, charged };
+  return { ...scenario, leave, fear, deaths, charged };
 };
 
 /** The log lines about `id`, without the id. */
@@ -93,30 +110,35 @@ describe('Rip & Tear (scenario)', () => {
     expect(at(heavy).y).toBeCloseTo(50, 5);
   });
 
-  it('fears every survivor in the circle of the fan’s range, behind the Sentinel too, for 2 s (DEC-206 (2))', () => {
-    const { ids, cast, run, lost, log } = match([
+  it('fears every survivor in the circle of the fan’s range, behind the Sentinel too, for 2 to 4 s (DEC-206 (2), R3 D)', () => {
+    const { ids, cast, run, lost, log, fear } = match([
       { kind: 'warrior', team: 'dark', at: { x: 47, y: 50 } },
       { kind: 'warrior', team: 'dark', at: { x: 44, y: 50 } },
     ]);
     const [sentinel, behind, beyond] = ids;
 
     cast(sentinel ?? '', 'ability-2', EAST);
-    run(70);
+    run(1);
+    const { ticks } = fear(behind);
+    run(130);
 
+    expect(ticks).toBe(96); // the seed's draw from 60 to 120 ticks: 3.2 s
     expect([behind, beyond].map(lost)).toEqual([0, 0]);
-    expect(linesOf(log, behind)).toEqual(['1 feared on', '61 feared off']);
+    expect(linesOf(log, behind)).toEqual(['1 feared on', `${String(1 + ticks)} feared off`]);
     expect(linesOf(log, beyond)).toEqual([]);
   });
 
-  it('runs a feared enemy straight away at half speed; its move, attack and cast commands do nothing (R3)', () => {
-    const { ids, sim, cast, run, at, lost, log } = match([
-      { kind: 'warrior', team: 'dark', at: { x: 47.5, y: 50 } },
-    ]);
+  it('runs a feared enemy straight away at half speed; its move, attack and cast commands do nothing (R3 D)', () => {
+    const { ids, sim, cast, run, at, lost, log, fear } = match(
+      [{ kind: 'warrior', team: 'dark', at: { x: 47.5, y: 50 } }],
+      FLEES,
+    );
     const [sentinel, warrior] = ids;
     const actorId = warrior ?? '';
 
     cast(sentinel ?? '', 'ability-2', EAST);
     run(1);
+    expect(fear(warrior).form).toBe('flee-source');
     sim.enqueueCommand({ type: 'move', actorId, direction: { x: 1, y: 0 } });
     sim.enqueueCommand({ type: 'attack-target', actorId, targetId: sentinel ?? '' });
     sim.enqueueCommand({
@@ -138,31 +160,55 @@ describe('Rip & Tear (scenario)', () => {
     expect(log).toContain(`2 rejected ${actorId} cannot-cast`);
   });
 
-  it('gives the walk back to the unit’s own commands when the fear ends', () => {
-    const { ids, sim, cast, run, at } = match([
-      { kind: 'warrior', team: 'dark', at: { x: 47.5, y: 50 } },
-    ]);
+  it('stands a cowering enemy where it is; its move command does nothing (R3 D)', () => {
+    const { ids, sim, cast, run, at, fear } = match(
+      [{ kind: 'warrior', team: 'dark', at: { x: 47.5, y: 50 } }],
+      COWERS,
+    );
     const [sentinel, warrior] = ids;
 
     cast(sentinel ?? '', 'ability-2', EAST);
     run(1);
+    expect(fear(warrior).form).toBe('cower');
+    const struck = at(warrior);
     sim.enqueueCommand({ type: 'move', actorId: warrior ?? '', direction: { x: 0, y: 1 } });
-    run(59); // to tick 60, the last feared tick: the fear ends at tick 61
+    run(40);
+
+    expect(at(warrior)).toEqual(struck);
+  });
+
+  it.each([
+    ['flees', FLEES],
+    ['cowers', COWERS],
+  ])('gives the walk back to the unit’s own commands when the fear ends (it %s)', (_form, seed) => {
+    const { ids, sim, cast, run, at, fear } = match(
+      [{ kind: 'warrior', team: 'dark', at: { x: 47.5, y: 50 } }],
+      seed,
+    );
+    const [sentinel, warrior] = ids;
+
+    cast(sentinel ?? '', 'ability-2', EAST);
+    run(1);
+    const { ticks } = fear(warrior);
+    sim.enqueueCommand({ type: 'move', actorId: warrior ?? '', direction: { x: 0, y: 1 } });
+    run(ticks - 1); // to the last feared tick: the fear ends at tick 1 + ticks
     const freed = at(warrior);
     run(16);
 
-    expect(freed.y).toBeCloseTo(50, 5); // fleeing west, not walking north, while feared
+    expect(freed.y).toBeCloseTo(50, 5); // fleeing west or cowering, not walking north, while feared
     expect(at(warrior).y).toBeGreaterThan(freed.y + 1);
   });
 
   it('keeps a feared unit running its last way once the source is gone', () => {
-    const { ids, sim, cast, run, at } = match([
-      { kind: 'warrior', team: 'dark', at: { x: 47.5, y: 47.5 } },
-    ]);
+    const { ids, sim, cast, run, at, fear } = match(
+      [{ kind: 'warrior', team: 'dark', at: { x: 47.5, y: 47.5 } }],
+      FLEES,
+    );
     const [sentinel, warrior] = ids;
 
     cast(sentinel ?? '', 'ability-2', EAST);
     run(5);
+    expect(fear(warrior).form).toBe('flee-source');
     sim.enqueueCommand({ type: 'dev-remove-entity', entityId: sentinel ?? '' });
     run(1);
     const gone = at(warrior);

@@ -57,6 +57,30 @@ describe('loadStatusEffects', () => {
     expect(loadStatusEffects(30, 2).get('stun').onHit).toBeUndefined();
   });
 
+  it('loads Fear’s time range in ticks and its forms as authored (DEC-382 (R3 D))', () => {
+    expect(loadStatusEffects(30, 2).get('feared')).toMatchObject({
+      durationTicks: 60,
+      maxDurationTicks: 120,
+      steering: ['flee-source', 'cower'],
+    });
+    expect(loadStatusEffects(30, 2).get('stun').maxDurationTicks).toBeUndefined();
+  });
+
+  it('rejects a time range with no start or one that ends before it starts, and a steer with no form', () => {
+    const broken = [
+      { ...STUN, id: 'endless', durationSeconds: null, maxDurationSeconds: 4 },
+      { ...STUN, id: 'backward', durationSeconds: 2, maxDurationSeconds: 1 },
+      { ...STUN, id: 'formless', steering: [] },
+    ] as const;
+
+    expect(() => loadStatusEffects(30, 2, broken)).toThrow(
+      /"endless": maxDurationSeconds needs a durationSeconds no longer than it[\s\S]*"backward": maxDurationSeconds needs a durationSeconds no longer than it[\s\S]*"formless": steering needs at least one form/,
+    );
+    expect(() =>
+      loadStatusEffects(30, 2, [{ ...STUN, id: 'even', onExpire: [], maxDurationSeconds: 2 }]),
+    ).not.toThrow();
+  });
+
   it('rejects broken content at load, naming every problem', () => {
     const broken = [
       { ...STUN, id: 'Bad_Id', maxStacks: 2 },

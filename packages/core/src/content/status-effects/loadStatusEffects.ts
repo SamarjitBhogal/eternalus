@@ -15,6 +15,14 @@ const problemsOf = (authored: AuthoredStatusEffect, status: StatusEffectDefiniti
   if (authored.durationSeconds !== null && !isPositive(authored.durationSeconds)) {
     problems.push('durationSeconds must be positive');
   }
+  const { maxDurationSeconds } = authored;
+  if (
+    maxDurationSeconds !== undefined &&
+    (authored.durationSeconds === null || !(maxDurationSeconds >= authored.durationSeconds))
+  ) {
+    problems.push('maxDurationSeconds needs a durationSeconds no longer than it');
+  }
+  if (status.steering?.length === 0) problems.push('steering needs at least one form');
   if (authored.periodic !== null && !isPositive(authored.periodic.everySeconds)) {
     problems.push('everySeconds must be positive');
   }
@@ -43,10 +51,13 @@ const load = (
   rate: TickRate,
   structuresPerLane: number,
 ): StatusEffectDefinition => {
-  const { durationSeconds, maxStacks, periodic, onHit, ...rest } = status;
+  const { durationSeconds, maxDurationSeconds, maxStacks, periodic, onHit, ...rest } = status;
   return {
     ...rest,
     durationTicks: durationSeconds === null ? null : rate.toTicks(durationSeconds),
+    ...(maxDurationSeconds === undefined
+      ? {}
+      : { maxDurationTicks: rate.toTicks(maxDurationSeconds) }),
     maxStacks: maxStacks === 'structures-per-lane' ? structuresPerLane : maxStacks,
     periodic: periodic && {
       everyTicks: rate.toTicks(periodic.everySeconds),
