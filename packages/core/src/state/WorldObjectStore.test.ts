@@ -143,6 +143,73 @@ describe('WorldObjectStore', () => {
     expect(world.destroyedIds.has('fort')).toBe(false);
   });
 
+  it("makes every body object of one structure share its health, keeps them out of a building's contents, and leaves each one a ruin once the structure is gone (DEC-373 (1))", () => {
+    const factory = fixtureFactory();
+    const entities = new EntityStore();
+    const stronghold = factory.create('obstacle', MAP_OBJECT_DEFINITIONS.rock.id, {
+      position: { x: 5, y: 5 },
+    });
+    entities.add(stronghold);
+    const square = (x: number): MapObject['footprints'] => [
+      [
+        { x, y: 0 },
+        { x: x + 2, y: 0 },
+        { x: x + 2, y: 2 },
+        { x, y: 2 },
+      ],
+    ];
+    const piece = (id: string, x: number, kind: MapObject['kind']): MapObject => ({
+      id,
+      kind,
+      isBlocking: true,
+      footprints: square(x),
+      buildingId: 'palace',
+    });
+    const world = new WorldObjectStore({
+      objects: [
+        piece('outer-wall', 0, 'wall'),
+        piece('throne', 10, 'furniture'),
+        piece('room-wall', 20, 'wall'),
+      ],
+      factory,
+      entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+      owners: new Map([
+        ['outer-wall', stronghold.id],
+        ['throne', stronghold.id],
+      ]),
+    });
+    const roomWall = world.snapshot()[2]?.entityId;
+
+    // One entity of its own: the room wall. The wall and the throne are the Stronghold's pool.
+    expect(entities.size).toBe(2);
+    stronghold.getComponent(Health).applyDamage(30);
+    expect(world.snapshot().slice(0, 2)).toEqual([
+      {
+        id: 'outer-wall',
+        entityId: stronghold.id,
+        health: { current: 70, max: 100 },
+        isDestroyed: false,
+      },
+      {
+        id: 'throne',
+        entityId: stronghold.id,
+        health: { current: 70, max: 100 },
+        isDestroyed: false,
+      },
+    ]);
+    // A collapse of the palace breaks the room wall, not the Stronghold's body.
+    expect(world.contentsOf('palace')).toEqual([roomWall]);
+    entities.remove(stronghold.id, 'died');
+    world.removed(stronghold.id);
+    expect(world.snapshot().slice(0, 2)).toEqual([
+      { id: 'outer-wall', entityId: null, health: null, isDestroyed: false, isRuined: true },
+      { id: 'throne', entityId: null, health: null, isDestroyed: false, isRuined: true },
+    ]);
+    expect(world.blockingAt({ x: 1, y: 1 }, 0.5)).toBe('outer-wall');
+    expect(world.blockingAt({ x: 11, y: 1 }, 0.5)).toBe('throne');
+  });
+
   it('skips an object whose footprint box misses the circle, without testing its shape', () => {
     let reads = 0;
     const corner = (x: number, y: number): Vec2 => ({

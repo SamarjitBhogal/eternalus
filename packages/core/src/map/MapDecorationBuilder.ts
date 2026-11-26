@@ -1,7 +1,11 @@
 import { cos, sin } from '../utils/deterministicMath';
 import type { MapDecoration, MapDecorationLayer } from '../content/maps/maps.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
-import type { MapObjectArt, MapObjectFlags, MapObjectKind } from '../content/maps/mapObjects.types';
+import type {
+  MapObjectArt,
+  MapObjectKind,
+  MapObjectTraits,
+} from '../content/maps/mapObjects.types';
 
 /** Shared polygon assembly for authored map scenery and interior architecture. */
 export abstract class MapDecorationBuilder {
@@ -16,10 +20,11 @@ export abstract class MapDecorationBuilder {
   /**
    * Assigns physical ownership explicitly while the object's art is authored.
    *
-   * @param flags - What a shot does over the object (`MapObjectFlags`); none for most objects.
+   * @param traits - What a shot does over the object (`MapObjectFlags`) and the structure it is
+   *   part of the body of (`partOf`); none for most objects.
    */
-  protected beginObject(id: string, kind: MapObjectKind, flags: MapObjectFlags = {}): void {
-    this.object = { id, kind, isFootprint: false, ...flags };
+  protected beginObject(id: string, kind: MapObjectKind, traits: MapObjectTraits = {}): void {
+    this.object = { id, kind, isFootprint: false, ...traits };
   }
 
   /** Subsequent ground marks belong to no physical object. */

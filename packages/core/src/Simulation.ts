@@ -407,11 +407,13 @@ export class Simulation {
    * and lane. Features without a structure definition (walls, corner camps) stay map data.
    * A structure whose definition `hasMapFootprint` takes the footprints of its feature's map object
    * of the same id as its `Footprint` (a lane tower's fort, DEC-185; the Stronghold's palace,
-   * DEC-185 D; a gate's own outline, DEC-217 (17); a wall turret's pylon). A blocking such object
-   * (a fort, a pylon) is the structure's body: it has no health of its own (one pool, DEC-185 B).
-   * Towers share one pool (DEC-217 (13)), and so do wall turrets: the palace's and the gates' objects
-   * do not block, so they keep their own health, and their outline is walked on
-   * (`Footprint.isWalkOn`): a shot flies over it unless it was fired at the structure. A body
+   * DEC-185 D; a gate's own outline, DEC-217 (17); a wall turret's pylon), and the footprints of
+   * the blocking objects that are `partOf` it as solid polygons (the Stronghold's outer walls and
+   * throne, DEC-373 (1)). Each blocking such object (a fort, a pylon, an outer wall, the throne) is
+   * the structure's body: it has no health of its own (one pool, DEC-185 B). Towers, wall turrets
+   * and the Stronghold share one pool with their body. The palace's and the gates' objects of the
+   * same id do not block, so they keep their own health, and their outline is walked on
+   * (`Footprint.walkOn`): a shot flies over it unless it was fired at the structure. A body
    * outlives its structure as a ruin that blocks (`WorldObjectStore.removed`, DEC-341).
    *
    * @returns Map object id → the id of the structure it is the body of.
@@ -437,11 +439,19 @@ export class Simulation {
           ...(laneId !== undefined && { laneId }),
         };
         const structure = factory.create(kind, definitionId, placement);
-        const body = hasMapFootprint === true ? bodies.get(id) : undefined;
-        if (body !== undefined) {
-          structure.addComponent(new Footprint(body.footprints, { isWalkOn: !body.isBlocking }));
+        const own = hasMapFootprint === true ? bodies.get(id) : undefined;
+        if (own !== undefined) {
+          const solid = mapObjects.filter((object) => object.partOf === id && object.isBlocking);
+          structure.addComponent(
+            new Footprint(own.footprints, {
+              isWalkOn: !own.isBlocking,
+              solid: solid.flatMap(({ footprints }) => footprints),
+            }),
+          );
+          for (const body of [own, ...solid]) {
+            if (body.isBlocking) owners.set(body.id, structure.id);
+          }
         }
-        if (body?.isBlocking === true) owners.set(body.id, structure.id);
         state.entities.add(structure);
       }
     }

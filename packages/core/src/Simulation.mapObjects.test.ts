@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Deploying } from './components/Deploying';
 import { Footprint } from './components/Footprint';
 import { MapObjectBody } from './components/MapObjectBody';
+import { TeamMembership } from './components/TeamMembership';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DEFAULT_MAP_LAYOUT } from './content/maps/defaultMapLayout';
 import type { MapObject } from './content/maps/mapObjects.types';
@@ -191,7 +192,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
     HORDE_WALK_TIMEOUT_MS,
   );
 
-  it("gives each lane tower its fort's footprint as its Footprint, the Stronghold its palace outline, and a gate its own outline (DEC-185, D; DEC-217 (17))", () => {
+  it("gives each lane tower its fort's footprint as its Footprint, the Stronghold its palace outline with its outer walls and throne, and a gate its own outline (DEC-185, D; DEC-217 (17); DEC-373 (1))", () => {
     const config = createDefaultGameConfig();
     const map = new MapGenerator().generate(config, 1);
     const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
@@ -216,10 +217,22 @@ describe('Simulation with a roster and map objects (as the client builds a match
     expect(fort).toBe(12);
     expect(shapes.get('spawner-tower')).toBe(fort);
     expect(shapes.get('buff-tower')).toBe(fort);
+    // The palace floor is walked on; the outer walls and the throne (`partOf`) are solid.
+    const palace = mapObjects.find(({ id }) => id === 'light-stronghold');
+    const body = mapObjects.filter(({ partOf }) => partOf === 'light-stronghold');
+    let stronghold: Footprint | undefined;
+    entities.forEach((entity) => {
+      if (entity.kind === 'stronghold' && entity.findComponent(TeamMembership)?.team === 'light') {
+        stronghold = entity.findComponent(Footprint);
+      }
+    });
+    expect(palace?.footprints.length).toBeGreaterThan(0);
+    expect(body.length).toBeGreaterThan(40);
+    expect(stronghold?.walkOn).toEqual(palace?.footprints);
+    expect(stronghold?.solid).toEqual(body.flatMap(({ footprints }) => footprints));
     expect(shapes.get('stronghold')).toBe(
-      mapObjects.find(({ kind }) => kind === 'stronghold')?.footprints.length,
+      (palace?.footprints.length ?? 0) + (stronghold?.solid.length ?? -1),
     );
-    expect(shapes.get('stronghold')).toBeGreaterThan(0);
     expect(shapes.get('gate')).toBe(
       mapObjects.find(({ kind }) => kind === 'gate')?.footprints.length,
     );

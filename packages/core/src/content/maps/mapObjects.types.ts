@@ -32,8 +32,17 @@ export type MapObjectFlags = {
   readonly canLightShots?: true;
 };
 
+/**
+ * What a map builder says about an object besides its art: what it does to a shot
+ * (`MapObjectFlags`), and the structure it is part of the body of (`MapObject.partOf`).
+ */
+export type MapObjectTraits = MapObjectFlags & {
+  /** The feature whose structure this object is part of the body of (`MapObject.partOf`). */
+  readonly partOf?: string;
+};
+
 /** Authored ownership: all art of one object changes together when that object is destroyed. */
-export type MapObjectArt = MapObjectFlags & {
+export type MapObjectArt = MapObjectTraits & {
   readonly id: string;
   readonly kind: MapObjectKind;
   readonly isFootprint: boolean;
@@ -48,6 +57,14 @@ export type MapObject = MapObjectFlags & {
   readonly buildingId?: string;
   readonly isInterior?: true;
   readonly passages?: readonly Polygon[];
+  /**
+   * The id of the feature whose structure this object is part of the body of: the Stronghold's
+   * outer walls and its throne (DEC-373 (1)). A blocking such object has no health of its own:
+   * a hit on it is a hit on the structure (one pool, as a lane tower's fort, DEC-185 B), and it
+   * outlives the structure as a ruin that blocks (DEC-341). Its polygons are solid polygons of the
+   * structure's `Footprint`.
+   */
+  readonly partOf?: string;
   /**
    * The side that built it: its Stronghold and everything of that palace, its gates, wall
    * segments, turrets and lane towers. Only the other side may break it (DEC-121 (a)). Absent on

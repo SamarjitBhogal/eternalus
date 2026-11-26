@@ -12,7 +12,8 @@ import type { GameState } from '../GameState';
  * Builds the map's structures the way `Simulation` does, with ids from 1001 up so the units a test
  * spawns keep `entity-1`, `entity-2`, …, then indexes them. As in `Simulation.spawnStructures`, a
  * structure whose definition `hasMapFootprint` gets the `Footprint` of its feature's map object of
- * the same id in `mapObjects` (a lane tower's fort, the Stronghold's palace), blocking or not.
+ * the same id in `mapObjects` (a lane tower's fort, the Stronghold's palace), blocking or not, with
+ * the blocking objects that are `partOf` it as solid polygons (DEC-373 (1)).
  * Turrets carry the shipped ammo.
  */
 export const spawnMapStructures = (
@@ -39,9 +40,15 @@ export const spawnMapStructures = (
         team,
         ...(laneId !== undefined && { laneId }),
       });
-      const body = hasMapFootprint === true ? bodies.get(id) : undefined;
-      if (body !== undefined) {
-        structure.addComponent(new Footprint(body.footprints, { isWalkOn: !body.isBlocking }));
+      const own = hasMapFootprint === true ? bodies.get(id) : undefined;
+      if (own !== undefined) {
+        const solid = mapObjects.filter((object) => object.partOf === id && object.isBlocking);
+        structure.addComponent(
+          new Footprint(own.footprints, {
+            isWalkOn: !own.isBlocking,
+            solid: solid.flatMap(({ footprints }) => footprints),
+          }),
+        );
       }
       state.entities.add(structure);
     }

@@ -15,14 +15,18 @@ export class WorldObjectStore {
   /** The ids of the structure bodies that outlive their structure: they block and draw as ruins. */
   private readonly ruined = new Set<string>();
 
-  /** A standing structure's id → the index of the record of the map object that is its body. */
-  private readonly owned = new Map<string, number>();
+  /**
+   * A standing structure's id → the indices of the records of the map objects that are its body
+   * (a fort; the Stronghold's outer walls and throne, DEC-373 (1)).
+   */
+  private readonly owned = new Map<string, number[]>();
 
   /**
    * Spawns physical objects through the existing registry/factory; terrain has no health entity.
    * An object named in `owners` gets no entity of its own: its health is its structure's (one pool,
-   * DEC-185 B: a lane tower's fort map object, DEC-217 (13); a wall turret's pylon), so a hit on it
-   * is a hit on the structure. It outlives its structure as a ruin that still blocks (`removed`).
+   * DEC-185 B: a lane tower's fort map object, DEC-217 (13); a wall turret's pylon; the
+   * Stronghold's outer walls and throne, DEC-373 (1)), so a hit on it is a hit on the structure. It
+   * outlives its structure as a ruin that still blocks (`removed`).
    *
    * @param options - The objects, how to spawn them, and the structures some of them are bodies of.
    */
@@ -40,7 +44,9 @@ export class WorldObjectStore {
       const owner = entities.get(owners.get(object.id) ?? '');
       const health = owner?.findComponent(Health);
       if (owner !== undefined && health !== undefined) {
-        this.owned.set(owner.id, this.records.length);
+        const indices = this.owned.get(owner.id) ?? [];
+        indices.push(this.records.length);
+        this.owned.set(owner.id, indices);
         this.records.push({ object, entityId: owner.id, health, bounds });
         continue;
       }
@@ -68,21 +74,22 @@ export class WorldObjectStore {
   }
 
   /**
-   * Marks only actual retired entities destroyed; a roof toggle never changes this state. A
-   * retired structure's own map object (a lane tower's fort, a wall turret's pylon) stays standing
-   * and blocking, with no health left to take: it is a ruin from then on (DEC-341, HC-Q91; fort
-   * pieces become ruins that block, DEC-219 (a), DEC-227 Q-C).
+   * Marks only actual retired entities destroyed; a roof toggle never changes this state. Each map
+   * object of a retired structure's body (a lane tower's fort, a wall turret's pylon, the
+   * Stronghold's outer walls and throne) stays standing and blocking, with no health left to take:
+   * it is a ruin from then on (DEC-341, HC-Q91; fort pieces become ruins that block, DEC-219 (a),
+   * DEC-227 Q-C).
    */
   public removed(entityId: string): void {
     const object = this.entityObjects.get(entityId);
     if (object !== undefined) this.destroyed.add(object.id);
-    const index = this.owned.get(entityId);
-    const record = index === undefined ? undefined : this.records[index];
-    if (index !== undefined && record !== undefined) {
-      this.owned.delete(entityId);
+    for (const index of this.owned.get(entityId) ?? []) {
+      const record = this.records[index];
+      if (record === undefined) continue;
       this.ruined.add(record.object.id);
       this.records[index] = { ...record, entityId: null, health: null };
     }
+    this.owned.delete(entityId);
   }
 
   /** Exact map object for a live or retired entity. */
@@ -90,10 +97,16 @@ export class WorldObjectStore {
     return this.entityObjects.get(entityId);
   }
 
-  /** Physical contents belonging to a destroyed building, in deterministic placement order. */
+  /**
+   * Physical contents belonging to a destroyed building, in deterministic placement order. A
+   * structure's body is not content: it has no health of its own, so a collapse does not break it
+   * (the Stronghold's outer walls and throne stand in its palace, DEC-373 (1)).
+   */
   public contentsOf(buildingId: string): readonly string[] {
-    return this.records.flatMap((record) =>
-      record.object.buildingId === buildingId && record.entityId !== null ? [record.entityId] : [],
+    return this.records.flatMap(({ object, entityId }) =>
+      object.buildingId === buildingId && entityId !== null && !this.owned.has(entityId)
+        ? [entityId]
+        : [],
     );
   }
 

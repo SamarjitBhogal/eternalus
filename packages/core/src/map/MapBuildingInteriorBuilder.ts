@@ -16,7 +16,7 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
       this.cathedralDetails();
     },
     stronghold: (feature) => {
-      if (feature.team !== 'neutral') this.palace(G.palace.x, feature.team);
+      if (feature.team !== 'neutral') this.palace(G.palace.x, feature.team, feature.id);
     },
   };
   /** Builds the cross-shaped cathedral and both oval palace interiors in sketch coordinates. */
@@ -108,7 +108,8 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
           P.ivoryStone,
         );
   }
-  private palace(x: number, team: PlayableTeam): void {
+  /** One team's palace interior; `strongholdId` is its Stronghold's feature. */
+  private palace(x: number, team: PlayableTeam, strongholdId: string): void {
     const start = this.pieces.length;
     const id = `${team}-palace-interior`;
     const accent = team === 'light' ? P.lightTextile : P.darkTextile;
@@ -126,7 +127,8 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
     this.rect(`${id}-carpet-border`, x - 9, 394, 18, 155, P.carpetBorder);
     this.rect(`${id}-carpet`, x - 7, 397, 14, 152, accent);
     this.rect(`${id}-dais`, x - 32, 374, 64, 27, P.ivoryStone);
-    this.beginObject(`${id}-throne`, 'furniture');
+    // The throne is part of the Stronghold's body: one health pool (DEC-373 (1)).
+    this.beginObject(`${id}-throne`, 'furniture', { partOf: strongholdId });
     this.blockRect(
       `${id}-throne-back`,
       x + G.palace.throne.x - 10,

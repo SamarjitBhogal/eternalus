@@ -18,7 +18,9 @@ export const MAP_OBJECT_HEALTH = {
   stronghold: 10000,
   cathedral: null,
   // Unused while the tower stands: its fort shares the tower's one health pool (DEC-185 B;
-  // DEC-217 (13): only towers share a pool, the palace and gates keep their own health).
+  // DEC-217 (13)). The palace and the gates keep their own health; the Stronghold's outer walls
+  // and throne (`MapObject.partOf`) share the Stronghold's pool, so their `wall` and `furniture`
+  // health is unused (DEC-373 (1)).
   'spawner-tower': 3000,
   'buff-tower': 2500,
   turret: 600,

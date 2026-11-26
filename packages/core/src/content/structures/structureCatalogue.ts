@@ -31,7 +31,9 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       baseHealth: 10_000, // TUNE: balancing.md
       footprintRadius: footprintOf('stronghold'),
       breakability: { kind: 'always' },
-      hasMapFootprint: true, // DEC-185 D: melee at the palace wall is in reach
+      // DEC-185 D: melee at the palace wall is in reach. Its outer walls and throne (`partOf`) are
+      // its body: one health pool (DEC-373 (1)).
+      hasMapFootprint: true,
       hasFortBox: true, // DEC-217 (16): the palace box is a fort box for the chase rule
     },
     {
