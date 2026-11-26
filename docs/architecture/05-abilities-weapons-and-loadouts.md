@@ -716,7 +716,7 @@ client's look of the shot follow it.
 | Great sword (`great-sword`)                 | sword      | melee physical; heavier, harder and wider than the long sword (DEC-374 W4)              | —         | MVP (DEC-374)           |
 | Wuuthrad (`wuuthrad`)                       | battle-axe | melee physical, long reach; heavy: `concussion`; `damageMultipliers.sentinel`           | —         | MVP-if-time             |
 | Lightbringer (`lightbringer`)               | sword      | melee magical + physical; heavy (cooldown): stun, concussion, blind; parry: blind, stun | —         | MVP-if-time             |
-| Dual blades (`dual-blades`)                 | sword      | fast melee; throwable (a persistent projectile, retrieve or regenerate)                 | warrior   | MVP-if-time             |
+| Dual blades (`dual-blades`)                 | sword      | fast melee (DEC-374 W2); throwable (a persistent projectile, retrieve or regenerate)    | warrior   | MVP; throw MVP-if-time  |
 | Barricades (`barricades`)                   | —          | movement lock, `mass` change, moving collider, knockback absorption                     | sentinel  | post-MVP ("needs work") |
 
 **Implementation status (SCRUM-183 / SCRUM-287, first slice).** `content/weapons/` holds
@@ -1098,7 +1098,7 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | The framework (§2–§9), 3 abilities + ultimate per class, aether, charge rules, XP scaling, `Loadout` + validator + auto-build, `AbilityBar` glyphs                         | **MVP**                                                                             |
 | Veil, Blade Runner (both varieties), Rip & Tear, Slam, Imbue (both varieties), Shockwave; one ultimate per class (Fury; Berserk or Meteor Fall; Death Ray or Nova); Revive | **MVP** (third abilities and ultimate picks: INBOX; proposals in more-abilities.md) |
-| Raptor Talons, obsidian bow, A Fine Line, Magus staff; gadget slots Z/C                                                                                                    | **MVP**                                                                             |
+| Raptor Talons, obsidian bow, A Fine Line, Magus staff, dual blades, long sword, great sword (DEC-374); gadget slots Z/C                                                    | **MVP**                                                                             |
 | Wuuthrad, Lightbringer, Dual blades (throw), Mortar, Soul Orb, secondary weapon, passive slot, in-match loadout changes, Ultimate Plus, combos, `summon`                   | **MVP-if-time**                                                                     |
 | Ability tree, class-switch penalty, Barricades, Eagle Eye, Firestorm, `reveal`, armour set, skins, weapon abilities (`WeaponDefinition.abilityIds` reuses `Ability`)       | **post-MVP**                                                                        |
 

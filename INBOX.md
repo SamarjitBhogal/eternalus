@@ -881,9 +881,9 @@ Reply inline (`Decision: …`).
       are one weapon file and one line in the Colossus spec. Code names: `WeaponClass` in
       `content/weapons/weapons.types.ts`; DEC-374 (7).
 
-- [ ] **HC-B48 — Better than the design, sign-off asked: 2 code ideas from the critic
-      (`feat/start-weapons`, PR 3, critic rounds 1 and 2, 2026-11-26;
-      COMBAT-WEAPONS-ABILITIES-68).** Nothing changes in play.
+- [ ] **HC-B48 — Better than the design, sign-off asked: 3 code ideas from the critic
+      (`feat/start-weapons`, PR 3, critic rounds 1 to 3, 2026-11-26;
+      COMBAT-WEAPONS-ABILITIES-68 and -72).** Nothing changes in play.
       (1) Read a Legend's sub-class once when it spawns. Not built yet. Today a Legend
       that spawns reads its sub-class twice: once for its start weapon and once for its
       abilities. Better: one step reads the sub-class once and gives the abilities, the start
@@ -891,13 +891,20 @@ Reply inline (`Decision: …`).
       merges. Say "no" and the two reads stay. Code names: `loadoutOf(spec, legend)` replaces
       `kitOf`, `primaryWeaponIdOf` and #156's inline `spec?.secondaryWeaponId ?? null`, in the
       `Loadout` construction of `Legend`; DEC-374.
-      (2) Built (critic round 2): a weapon's class access is one rule, used for a sub-class's
-      start weapon and a class's default weapon (and #156's second weapon after it merges).
-      Before, only the start weapon was checked, and that check had its own copy of the rule.
-      Every sub-class and class in the game today passes it. Say "no" and the check goes back
-      to the start weapon only. Code names: `content/weapons/isWeaponAllowedFor.ts`,
-      `SpecWeaponAllowedRule`, `DefaultWeaponAllowedRule`, #156's `SecondaryWeaponRule`;
-      DEC-374 (10).
+      (2) Built (critic round 2): one check now decides which Legend classes may hold a weapon.
+      It runs on each sub-class's start weapon and each class's default weapon (and, after #156
+      merges, the second weapon). Before, only the start weapon was checked, and that check had
+      its own copy of the rule. Every sub-class and class in the game today passes it. Say "no"
+      and the check goes back to the start weapon only. Code names:
+      `content/weapons/isWeaponAllowedFor.ts`, `SpecWeaponAllowedRule`,
+      `DefaultWeaponAllowedRule`, #156's `SecondaryWeaponRule`; DEC-374 (10).
+      (3) Not built (critic round 3, after the last critic loop): the check in (2) runs in two
+      content rules, one for sub-classes and one for classes. Better: one rule that first finds
+      the weapon to check for a class or a sub-class, as the abilities check already does. Then
+      #156's second weapon adds one field, not a third rule. The gain is small: the two rules
+      already share the check itself. Options: (A) do it in a follow-up PR; (B) leave it as it
+      is. Code names: one `WeaponAllowedRule` (the 05 §12 name) with a
+      `weaponSubjectOf(definition, legends)` resolver, as `KitInPoolRule` + `kitSubjectOf`.
 
 - [ ] **HC-B38 — Better than the design, sign-off asked: 5 code ideas from the critic
       (`feat/wall-turrets`, PR 4, critic rounds 4 and 5, 2026-11-23; PR-REVIEW-ASSIST-38/39).**
