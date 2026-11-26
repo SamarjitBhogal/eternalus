@@ -27,5 +27,8 @@ Phase 4 / sprint 4.2 · feat/shots-over-lava · sholtzman + Claude Code (COMBAT-
   was written): `CHECK_EXIT=0` (`logs/check-2b1151f2-docs-tree.log`: core 373 files / 2519 tests,
   protocol 1/31, client 315/2214, server 21/85, documentation check passed). No golden replay
   hash changed. Table cell check and `prettier --check` clean on every edited Markdown file.
+  After critic round 2: full `npm run check` on `b76a3ef5`: `CHECK_EXIT=0`
+  (`logs/check-b76a3ef5.log`: core 373 files / 2519 tests, protocol 1/31, client 315/2214, server
+  21/85, documentation check passed).
 - Next step: CWA-67 runs the critic on the rework; the owner answers HC-Q115 and HC-Q116 on
   Owner Calls v100. C-5 (hearths) and C-9 (a flag preset) are not built.
