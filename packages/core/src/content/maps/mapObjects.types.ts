@@ -22,7 +22,7 @@ export type MapObjectKind =
  * What an object's footprint does to a shot (HC-Q89, DEC-345). A map builder sets them; an object
  * without them stops a shot. A unit or a dash collides with the footprint whatever they say.
  */
-export type MapObjectFlags = {
+type MapObjectFlags = {
   /** A shot flies over the footprint: it does not stop the shot. A unit or a dash still stops. */
   readonly canShotsCross?: true;
   /**
