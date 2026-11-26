@@ -281,6 +281,9 @@ describe('RespawnSystem', () => {
       .getComponent(StatusEffects)
       .apply(loadStatusEffects(CONFIG.tickRate, 2).get('bleed'), null, 0);
     legend.getComponent(Movement).steer({ x: 1, y: 0 });
+    // A knock-back that lands on the death tick: nothing moves a waiting Legend, so it would
+    // still be under way on return and slide the Legend off its Stronghold.
+    legend.getComponent(Movement).push({ x: 6, y: 0 }, 3);
     legend.getComponent(Combat).setTarget('entity-99');
     kill(match, legend.id);
 
@@ -289,6 +292,7 @@ describe('RespawnSystem', () => {
     expect(aether.current).toBe(aether.max);
     expect(legend.getComponent(StatusEffects).active).toEqual([]);
     expect(legend.getComponent(Movement).velocity).toEqual({ x: 0, y: 0 });
+    expect(legend.getComponent(Movement).isForced).toBe(false);
     expect(legend.getComponent(Combat).targetId).toBeNull();
     expect(legend.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
   });

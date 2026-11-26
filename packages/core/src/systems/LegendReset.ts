@@ -9,8 +9,8 @@ import type { Vec2 } from '../utils/geometry.types';
 /**
  * The reset every returning Legend gets, from `RespawnSystem` (FR-051) and `DuelRoundSystem`
  * (DEC-36): full health, no status effect, no movement (a dash or knock-back under way ends too),
- * no attack target, and back at `position`. Aether, facing and the AI brain are the caller's
- * concern.
+ * no attack target, and back at `position`. Aether, ability cooldowns, facing and the AI brain are
+ * the caller's concern.
  */
 export class LegendReset {
   /** Resets `legend` in place and moves it to `position`. */
