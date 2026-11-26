@@ -20,6 +20,12 @@ export type EntitySnapshot = {
    * to its structure by identity, never by position.
    */
   readonly mapFeatureId?: string;
+  /**
+   * A Legend's sub-class (spec) id from its roster slot (`RosterSlot.specId`), so the client draws
+   * its sprite sheet (DEC-378 (2)). Left out for every other entity and for a Legend whose slot
+   * names none.
+   */
+  readonly specId?: string;
   readonly id: EntityId;
   readonly kind: string;
   readonly family: string;

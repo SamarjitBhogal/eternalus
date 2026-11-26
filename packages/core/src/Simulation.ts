@@ -659,7 +659,8 @@ export class Simulation {
   /**
    * Spawns one roster slot's Legend at `position` on its team, facing the enemy Stronghold
    * (DEC-216 (6)), and announces it: a bot with its controller (whose brain starts with `memory`),
-   * the human with none, recorded as the human's Legend (DEC-172).
+   * the human with none, recorded as the human's Legend (DEC-172). The Legend keeps the slot's
+   * spec, if any (DEC-378 (2)).
    */
   private static spawnSlot(
     state: GameState,
@@ -668,19 +669,16 @@ export class Simulation {
     position: Vec2,
     memory: AiMemory,
   ): void {
-    const entity = legends.spawn(
-      state,
-      slot.definitionId,
-      slot.team,
-      position,
-      slot.pilot === 'bot'
-        ? {
-            controllerId: Simulation.controllerOf(slot),
-            profileId: slot.difficulty,
-            memory,
-          }
-        : undefined,
-    );
+    const entity = legends.spawn(state, slot.definitionId, slot.team, position, {
+      ...(slot.specId !== undefined && { specId: slot.specId }),
+      ...(slot.pilot === 'bot' && {
+        controller: {
+          controllerId: Simulation.controllerOf(slot),
+          profileId: slot.difficulty,
+          memory,
+        },
+      }),
+    });
     if (slot.pilot === 'human') {
       state.match.seatHuman(entity.id, slot.team);
     }

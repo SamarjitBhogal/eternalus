@@ -10,13 +10,14 @@ import { ZoneArea } from '../components/ZoneArea';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
+import { Legend } from '../entities/Legend';
 import { Structure } from '../entities/structures/Structure';
 import type { EntitySnapshot } from './Snapshot.types';
 
 /**
  * Projects one entity into its `EntitySnapshot` (architecture 03 §5): one group per component,
- * `null` when the entity has no such component (DEC-17); `mapObjectId` and `mapFeatureId` are
- * left out instead. A new component group is added here, never in `GameState` (DEC-232).
+ * `null` when the entity has no such component (DEC-17); `mapObjectId`, `mapFeatureId` and
+ * `specId` are left out instead. A new component group is added here, never in `GameState` (DEC-232).
  */
 export class EntitySnapshotter {
   /**
@@ -47,6 +48,7 @@ export class EntitySnapshotter {
         : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
       ...(entity instanceof Structure &&
         entity.mapFeatureId !== null && { mapFeatureId: entity.mapFeatureId }),
+      ...(entity instanceof Legend && entity.specId !== null && { specId: entity.specId }),
       team: entity.findComponent(TeamMembership)?.team ?? null,
       transform:
         transform === undefined

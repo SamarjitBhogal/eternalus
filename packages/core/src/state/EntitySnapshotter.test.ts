@@ -6,7 +6,11 @@ import { ZoneArea } from '../components/ZoneArea';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadLevelCurves } from '../content/progression/loadLevelCurves';
+import { loadWeapons } from '../content/weapons/loadWeapons';
 import { Entity } from '../entities/Entity';
+import { Warrior } from '../entities/legends/Warrior';
 import { Stronghold } from '../entities/structures/Stronghold';
 import { EntitySnapshotter } from './EntitySnapshotter';
 
@@ -21,6 +25,9 @@ class Bare extends Entity {
 }
 
 const CURVES = new ContentCatalogue<LevelCurveDefinition>([]);
+/** The shipped curves, which a Legend's `Progression` levels along. */
+const LEVEL_CURVES = loadLevelCurves();
+const WARRIOR = loadDefaultContent(30).get('warrior');
 const SQUARE = [
   { x: 0, y: 0 },
   { x: 4, y: 0 },
@@ -80,6 +87,26 @@ describe('EntitySnapshotter', () => {
     expect(snapshot.mapFeatureId).toBe('light-stronghold');
     expect(snapshotter.snapshotOf(loose)).not.toHaveProperty('mapFeatureId');
     expect(snapshotter.snapshotOf(new Bare('entity-3', 'bare'))).not.toHaveProperty('mapFeatureId');
+    expect(structuredClone(snapshot)).toEqual(snapshot);
+  });
+
+  it("names a Legend's spec, and leaves the key out for a Legend without one and every other entity", () => {
+    const placement = {
+      position: { x: 1, y: 2 },
+      team: 'light',
+      weapons: loadWeapons(30),
+    } as const;
+    const knight = new Warrior('entity-1', 'warrior');
+    knight.spawn({ ...placement, definition: WARRIOR, specId: 'knight' });
+    const plain = new Warrior('entity-2', 'warrior');
+    plain.spawn({ ...placement, definition: WARRIOR });
+    const snapshotter = new EntitySnapshotter(4, LEVEL_CURVES);
+
+    const snapshot = snapshotter.snapshotOf(knight);
+
+    expect(snapshot.specId).toBe('knight');
+    expect(snapshotter.snapshotOf(plain)).not.toHaveProperty('specId');
+    expect(snapshotter.snapshotOf(new Bare('entity-3', 'bare'))).not.toHaveProperty('specId');
     expect(structuredClone(snapshot)).toEqual(snapshot);
   });
 });

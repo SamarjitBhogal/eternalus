@@ -7,9 +7,20 @@ import type { BasicAttack } from './Unit.types';
 
 /** Abstract base for entities of the `legend` family. */
 export abstract class Legend extends Unit {
+  private spec: string | null = null;
+
   /** Always `'legend'`. */
   public override get family(): string {
     return 'legend';
+  }
+
+  /**
+   * The Legend (spec) of its class that its roster slot names (`RosterSlot.specId`), or `null`
+   * when the slot names none. It gives no stats. The snapshot carries it, so the client draws the
+   * Legend's sprite (DEC-378 (2)).
+   */
+  public get specId(): string | null {
+    return this.spec;
   }
 
   /**
@@ -26,12 +37,14 @@ export abstract class Legend extends Unit {
 
   /**
    * Installs the unit components, then the legend-only `Aether` (MP) pool and `Progression` (XP
-   * and level). Mobs and structures have neither.
+   * and level). Mobs and structures have neither. Keeps the spec the context names.
    */
   protected override installComponents(context: unknown): void {
     super.installComponents(context);
 
-    const { definition } = new SpawnContextReader(this).placed<LegendDefinition>(context);
+    const reader = new SpawnContextReader(this);
+    const { definition } = reader.placed<LegendDefinition>(context);
+    this.spec = reader.specId(context);
     this.addComponent(new Aether(definition.baseAether));
     // The id is checked at content load (`KnownLevelCurveRule`); `ProgressionSystem` resolves it.
     this.addComponent(new Progression(definition.levelCurveId));
