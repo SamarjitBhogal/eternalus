@@ -23,7 +23,7 @@ import { SELECTION_PRIMARY_RASTER_ASSETS } from './selectionPrimaryRasterAssets'
 import { SELECTION_RASTER_ASSETS } from './selectionRasterAssets';
 
 /**
- * The seven groups (14 §14); a new `AssetGroup` member fails the `expectTypeOf` case until added.
+ * Shipped groups (14 §14); a new `AssetGroup` member fails the `expectTypeOf` case until added.
  */
 const GROUPS = [
   'boot',
@@ -190,6 +190,8 @@ describe('ASSET_MANIFEST', () => {
 
   it('binds each attachment entry to its registered, documented reference (ADR 0028, DEC-298)', () => {
     const attached = assets.filter((entry) => entry.attachmentReferenceId !== undefined);
+    // Every registered reference has its entry: no reference is left unused.
+    expect(attached).toHaveLength(Object.keys(ATTACHMENT_REFERENCES).length);
     expect(attached.map(({ id }) => id)).toEqual([
       'assassin-sprites',
       'knight-sprites',
