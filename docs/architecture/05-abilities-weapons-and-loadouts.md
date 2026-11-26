@@ -1143,7 +1143,9 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     kill; the victim loses the death loss whoever killed it, never below 0. `damage-applied` on a
     structure or a listed boss by an attacker of another team pays per 1% of the target's max
     health, absorbed damage included (as scoring counts it, DEC-123). `checkpoint-reached` pays each
-    Legend in `presentLegendIds` (DEC-273). Assists are scoring's
+    Legend in `presentLegendIds` (DEC-273). `entity-spawned`: in a mode with a start share, each
+    Legend gains that share as it spawns, with the cause `start` (DEC-380 (1)). Assists are
+    scoring's
     alone: `LegendDeathRule` emits `assist-earned { legendId, victimId }` for each assist it
     awards (DEC-79's window), and the meter pays that; it keeps no assist window of its own.
     Checkpoints and assists pay on the next tick, because their emitters run after

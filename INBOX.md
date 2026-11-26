@@ -466,7 +466,11 @@ Reply inline (`Decision: …`).
       ultimate's start share, and `ProgressionSystem` reads it as `ProgressionContent.duel`. A
       new Duel progression rule is one more field there: `feat/legend-level-damage` adds
       `hasMatchXp` to it when it merges. 05 §13 and the doc 12 Duel note now name it. Keep it,
-      or undo it?
+      or undo it? Added 2026-11-26 (critic r3 R3-4, better than the design, not built): the
+      slice can be made mode-neutral (`ProgressionContent.modeRules`, a `ModeProgressionRules`
+      type in `content/progression/`), so a later mode with a start share does not fill a field
+      named `duel`. Planned in the branch that merges second and adds `hasMatchXp` (it changes the
+      slice anyway and has its own critic); #136 has had its three critic rounds.
       (3) **A Legend's statuses end when it dies (planned, better than the design).** Today
       `LegendReset` removes them without events when the Legend returns, so Fury does not end
       "at death" as its text says, and two places empty the `granted` slot. Better:

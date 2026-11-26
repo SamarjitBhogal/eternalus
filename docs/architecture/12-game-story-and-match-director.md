@@ -472,8 +472,8 @@ the match at the target. The score is `state.match.duel` and `Snapshot.match.due
 numbers (target, countdown, start offset) are `DUEL_RULES` in `content/duel/duelRules.ts`. What
 this note left as generated (mobs, objectives, the crystal, the Cathedral's entrances) is the
 2026-11-25 note below; FR-115's inert world beyond that is not built. Every Legend enters a Duel at
-its level curve's cap (`DUEL_RULES.legendsStartAtMaxLevel`, SCRUM-444; `ProgressionSystem` raises
-it when it spawns); only Legends are raised.
+its level curve's cap (`DUEL_RULES.progression.legendsStartAtMaxLevel`, SCRUM-444;
+`ProgressionSystem` raises it when it spawns); only Legends are raised.
 
 Update, 2026-11-26 (`feat/vanguard-kit`, #136, DEC-380 (1)): a Duel's progression rules are one
 slice, `DUEL_RULES.progression` (`DuelProgressionRules`): the max-level start above
