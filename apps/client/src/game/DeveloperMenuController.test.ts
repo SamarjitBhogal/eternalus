@@ -28,6 +28,7 @@ const ADD_LEGEND: Command<'dev-spawn-legend'> = {
   definitionId: 'warrior',
 };
 const REMOVE: Command<'dev-remove-entity'> = { type: 'dev-remove-entity', entityId: 'e1' };
+const BOSS: Command<'dev-spawn-boss'> = { type: 'dev-spawn-boss', definitionId: 'cathedral-boss' };
 
 const feature = (id: string, kind: MapFeatureKind, laneId?: string): MapFeature => ({
   id,
@@ -39,13 +40,14 @@ const feature = (id: string, kind: MapFeatureKind, laneId?: string): MapFeature 
   ...(laneId === undefined ? {} : { laneId }),
 });
 
-function setUp(isEnabled: boolean) {
+function setUp(isEnabled: boolean, isBossShortcutEnabled = false) {
   const bus = new TypedEventBus<BridgeEventMap>();
   const enqueueCommand = vi.fn<Simulation['enqueueCommand']>();
   const states: BridgeEventMap['developer-menu'][] = [];
   bus.on('developer-menu', (state) => states.push(state));
   const controller = new DeveloperMenuController({
     isEnabled,
+    isBossShortcutEnabled,
     simulation: { enqueueCommand },
     bus,
     map: { features: [feature('gate-a', 'gate', 'lane-1'), feature('camp-a', 'camp')] },
@@ -66,6 +68,17 @@ describe('DeveloperMenuController', () => {
     const { bus, enqueueCommand } = setUp(false);
     bus.emit('ui-intent', { kind: 'dev-command', command: SPAWN });
     expect(enqueueCommand).not.toHaveBeenCalled();
+  });
+
+  it('forwards only dev-spawn-boss through the boss shortcut, and ignores it with both flags off', () => {
+    const shortcut = setUp(false, true);
+    shortcut.bus.emit('ui-intent', { kind: 'dev-command', command: BOSS });
+    shortcut.bus.emit('ui-intent', { kind: 'dev-command', command: SPAWN });
+    expect(shortcut.enqueueCommand.mock.calls).toEqual([[BOSS]]);
+
+    const off = setUp(false, false);
+    off.bus.emit('ui-intent', { kind: 'dev-command', command: BOSS });
+    expect(off.enqueueCommand).not.toHaveBeenCalled();
   });
 
   it('ignores other intents and stops listening when destroyed', () => {
