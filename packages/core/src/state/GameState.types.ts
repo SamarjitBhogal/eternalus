@@ -1,3 +1,4 @@
+import type { CollisionQuery } from './CollisionQuery.types';
 import type { ScheduledMark } from './MatchState.types';
 import type { PathQuery } from './PathQuery.types';
 import type { SpaceQuery } from './SpaceQuery.types';
@@ -46,4 +47,6 @@ export type GameStateIndexes = {
   readonly space?: SpaceQuery | null;
   /** A\* for Legends over the map's grid (architecture 10 §9). */
   readonly paths?: PathQuery | null;
+  /** The walls and edge that stop a dash as they stop walking (architecture 10 §7). */
+  readonly collisions?: CollisionQuery | null;
 };

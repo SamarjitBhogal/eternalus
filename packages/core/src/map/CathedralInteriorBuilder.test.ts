@@ -41,6 +41,7 @@ describe('CathedralInteriorBuilder', () => {
           footprints.map((polygon) => ({ id, polygon })),
         ),
       ),
+      { x: 0, y: 0, width: MAP.width, height: MAP.height },
     );
     const start = { x: gem.x + side.x * 15, y: gem.y + side.y * 15 };
 

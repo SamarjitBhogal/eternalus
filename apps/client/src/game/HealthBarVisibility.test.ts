@@ -78,6 +78,7 @@ const snapshotOf = (entities: EntitySnapshot[], humanLegendId: string | null = '
     countdownEndTick: 0,
     humanLegendId,
   },
+  player: null,
   entities,
   hordes: [],
   teams: {

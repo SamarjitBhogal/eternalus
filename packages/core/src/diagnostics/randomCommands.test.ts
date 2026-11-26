@@ -13,6 +13,7 @@ const snapshotWith = (...ids: string[]): Snapshot => ({
     countdownEndTick: 0,
     humanLegendId: null,
   },
+  player: null,
   entities: ids.map((id) => ({
     id,
     kind: 'walker',

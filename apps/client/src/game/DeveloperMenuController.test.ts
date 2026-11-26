@@ -109,7 +109,7 @@ describe('DeveloperMenuController', () => {
     expect(origin).toBeDefined();
     const rejected: string[] = [];
     simulation.on('command-rejected', ({ reason }) => rejected.push(reason));
-    const { laneMinions } = loadDisplayContent();
+    const { laneMinions } = loadDisplayContent(createDefaultGameConfig().tickRate);
     expect(laneMinions.length).toBeGreaterThan(0);
     for (const { id } of laneMinions) {
       bus.emit('ui-intent', {

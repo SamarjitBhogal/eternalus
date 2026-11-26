@@ -38,6 +38,7 @@ export class FakeDuelSimulation implements DuelSimulation {
       entities: [],
       hordes: [],
       teams: { light: EMPTY_TEAM, dark: EMPTY_TEAM },
+      player: null,
     };
   }
 

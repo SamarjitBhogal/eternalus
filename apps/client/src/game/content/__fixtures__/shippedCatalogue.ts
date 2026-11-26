@@ -3,7 +3,7 @@
  * `ASSET_MANIFEST`. Imported only by tests and the visual harness, never by a module `main.tsx`
  * reaches (the composition root passes the manifest's ids itself).
  */
-import { loadDisplayContent } from '@eternalus/core';
+import { createDefaultGameConfig, loadDisplayContent } from '@eternalus/core';
 
 import type { DisplayCatalogue } from '../../../bridge/catalogue.types';
 import { isSelectableSpec } from '../../../bridge/selectionRules';
@@ -19,6 +19,7 @@ export function shippedCatalogue(
   overrides: DisplayOverrides = NO_DISPLAY_OVERRIDES,
 ): CatalogueSource {
   return createCoreCatalogue({
+    tickRate: createDefaultGameConfig().tickRate,
     knownAssetIds: new Set(ASSET_MANIFEST.assets.map((entry) => entry.id)),
     overrides,
   });
@@ -51,7 +52,7 @@ export function catalogueWithUnselectableLegend(): {
   readonly classId: string;
   readonly specId: string;
 } {
-  const content = loadDisplayContent();
+  const content = loadDisplayContent(createDefaultGameConfig().tickRate);
   const sealed = content.specs.find((spec) =>
     content.specs.some((other) => other.id !== spec.id && other.classId === spec.classId),
   );
@@ -80,7 +81,7 @@ const RETIRED_NAMES = ['cantor', 'gravecaller', 'legionnaire', 'velite', 'centur
  * content id or a team id (`oracle`, `light`) is left out, because ids may name art.
  */
 export function rosterNamesThatAreNotIds(): readonly string[] {
-  const content = loadDisplayContent();
+  const content = loadDisplayContent(createDefaultGameConfig().tickRate);
   const ids = new Set([
     ...[...content.legends, ...content.specs, ...content.lockedClasses].map(({ id }) => id),
     ...Object.keys(content.teamNames),

@@ -365,6 +365,7 @@ describe('MiniMapView unit markers (DEC-187)', () => {
         countdownEndTick: 0,
         humanLegendId: null,
       },
+      player: null,
       entities: [minion],
       hordes: [],
       teams: { light: counters, dark: counters },

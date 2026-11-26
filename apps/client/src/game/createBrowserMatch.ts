@@ -1,6 +1,7 @@
 import { type GameConfig, makeLogRecord, SEVERITY, Simulation } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
+import { settingsSlice } from '../bridge/slices/settingsSlice';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
 import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { LogSink } from '../data/logging/LogSink.types';
@@ -34,7 +35,7 @@ export type BrowserMatchDeps = {
   readonly isDeveloperMenuEnabled?: boolean;
   readonly bus: TypedEventBus<BridgeEventMap>;
   /** The player's bindings when the match starts; later changes arrive as `settings` events. */
-  readonly settings: Pick<SettingsController, 'bindings'>;
+  readonly settings: Pick<SettingsController, 'bindings' | 'castMode'>;
   /** Stamps the match's log records (the engine clock; core never reads time). */
   readonly clock: SessionClock;
   /**
@@ -116,6 +117,9 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         camera,
         input,
         logger,
+        abilities: request.abilities,
+        dashReach: (origin, direction, distance, radius) =>
+          simulation.dashReach(origin, direction, distance, radius),
         observer: request.observer,
         isDeveloperMenuEnabled: deps.isDeveloperMenuEnabled === true,
         bridge: {
@@ -144,6 +148,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
       evidence: () => readEvidence(simulation, ring),
       currentTick: () => simulation.tick,
     });
+    match.setCastMode(settings.castMode ?? settingsSlice.getInitialState().gameplay.castMode);
     // A throw here has already been undone by the host (every listener, the match, the adapters).
     host.start();
     return host;

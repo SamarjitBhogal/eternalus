@@ -21,7 +21,9 @@ import path from 'node:path';
 import { planChecks, parsePorcelainZ } from './changedFiles.mjs';
 import { readHookInput, repoRoot, run, tail } from './hookInput.mjs';
 
-const TIMEOUT_MS = 290_000;
+// DEC-265: a full `check:quick` takes about 354 s on the owner's machine; `.claude/settings.json`
+// gives the hook 620 s, above this limit.
+const TIMEOUT_MS = 600_000;
 
 const input = await readHookInput();
 

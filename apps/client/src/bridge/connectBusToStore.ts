@@ -62,6 +62,7 @@ export function connectBusToStore(
       dispatch(match.connectionChanged(isReconnecting)),
     ),
     bus.on('hud-state', ({ player }) => dispatch(hudSlice.actions.hudStateChanged(player))),
+    bus.on('aiming-slot', ({ slot }) => dispatch(hudSlice.actions.aimingSlotChanged(slot))),
     bus.on('structure-state', ({ structures }) => dispatch(match.structuresChanged(structures))),
     bus.on('capture-state', ({ points }) => dispatch(match.capturePointsChanged(points))),
     bus.on('announcement', (line) => dispatch(hudSlice.actions.announced(line))),

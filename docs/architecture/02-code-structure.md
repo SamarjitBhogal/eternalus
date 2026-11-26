@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-20
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -53,7 +53,7 @@ core/src/
   map/                 MapGenerator (+ MapBuilder), WorldMap, LaneGeometry, symmetry (types: content/maps)
   physics/             SpatialHash, Circle, ConvexPolygon, sat, sweptTests, Kinematics, CollisionResolver
   ai/                  Controller interface + controllers, Perception queries, aggro rules (data)
-  abilities/           Ability, AbilityRuntime, effects/, restrictions/, AbilityRegistry
+  abilities/           Ability, AbilityRuntime, effects/, restrictions/, shapes/, AbilityRegistry
   combat/              DamagePipeline, DamageSource, DeathResolver
   match/               MatchDirector, MatchPhase states, MatchTimeline, Scoring, VictoryCondition + defaults
   loadout/             Loadout model, validateLoadout(), autoBuildLoadout()
@@ -73,7 +73,7 @@ core/src/
 | `commands/`     | Everything a player, bot or developer menu can ask for, and how it is applied                             | `state/`, `entities/`, `utils/`                                                                                          | `Command.types.ts`, `CommandQueue`, `applyCommand.ts`, `CommandHandler.types.ts`, `handlers/*Handler.ts`, `defaultCommandHandlers.ts`                                                                                                                                   |
 | `map/`          | Config + seed → `MapDefinition`; the runtime `WorldMap` with cost grid and flow fields                    | `config/`, `content/`, `teams/`, `utils/`, `physics/`                                                                    | `MapGenerator`, `MapBuilder`, `WorldMap`, `LaneGeometry`, `symmetry.ts` (map types in `content/maps/maps.types.ts`)                                                                                                                                                     |
 | `combat/`       | Damage resolution, death causes, applying statuses                                                        | `components/`, `content/`, `state/`, `utils/`                                                                            | `DamagePipeline`, `DamagePipeline.types.ts`, `DamageStep.types.ts`, `<Name>Step.ts`, `defaultDamageSteps.ts`, `DeathResolver`                                                                                                                                           |
-| `abilities/`    | Ability behaviour built from effect and restriction strategies                                            | `combat/`, `components/`, `content/`, `state/`, `utils/`                                                                 | `Ability`, `AbilityRuntime`, `effects/*Effect.ts`, `restrictions/*Restriction.ts`, `AbilityRegistry`, `defaultAbilityRegistry.ts`                                                                                                                                       |
+| `abilities/`    | Ability behaviour built from effect and restriction strategies                                            | `combat/`, `components/`, `content/`, `state/`, `utils/`                                                                 | `Ability`, `AbilityRuntime`, `effects/*Effect.ts`, `restrictions/*Restriction.ts`, `shapes/*Shape.ts` (ADR 0026), `AbilityRegistry`, `defaultAbilityRegistry.ts`                                                                                                        |
 | `loadout/`      | The loadout model and its validation against content                                                      | `content/`, `utils/`                                                                                                     | `Loadout.types.ts`, `validateLoadout.ts`, `autoBuildLoadout.ts`                                                                                                                                                                                                         |
 | `ai/`           | Controllers that read state and emit `Command`s; perception; aggro data                                   | `state/` (read), `commands/`, `config/`, `content/` (types), `teams/`, `utils/`                                          | `Controller`, `PlayerController`, `BotLegendController`, `MinionController`, `GuardController`, `TurretController`, `BossController`, `RoverController`, `Perception`                                                                                                   |
 | `match/`        | Phases, timeline, scoring, victory                                                                        | `state/`, `config/`, `components/`, `entities/` (types, DEC-221), `utils/`, `teams/`, content types, some `diagnostics/` | `MatchDirector`, `phases/*Phase.ts`, `MatchTimeline`, `Scoring`, `ScoreKeeper.types.ts`, `ScoringRule.types.ts`, `rules/*Rule.ts`, `defaultScoringRules.ts`, `VictoryCondition.types.ts`, `defaultVictoryConditions.ts`                                                 |
@@ -225,7 +225,7 @@ changes the shape of the world, it is config. If a player may change it, it is a
 | `EntityRegistry`            | `core/src/entities/defaultEntityRegistry.ts`                                         | A concrete entity class for an `EntityKind`                                                                                    |
 | `StrategyRegistry`          | `core/src/entities/strategies/defaultStrategyRegistry.ts`                            | A movement, targeting, attack or pick-up strategy                                                                              |
 | Damage steps                | `core/src/combat/defaultDamageSteps.ts`                                              | A rule every hit runs through, at its position                                                                                 |
-| `AbilityRegistry`           | `core/src/abilities/defaultAbilityRegistry.ts`                                       | An `AbilityEffect` or `AbilityRestriction` class                                                                               |
+| `AbilityRegistry`           | `core/src/abilities/defaultAbilityRegistry.ts`                                       | An `AbilityEffect`, `AbilityRestriction` or `AreaShape` class (ADR 0026)                                                       |
 | `ControllerRegistry`        | `core/src/ai/defaultControllerRegistry.ts`                                           | A `Controller` for a `ControllerId`                                                                                            |
 | Content catalogues          | `core/src/content/<family>/<family>Catalogue.ts`                                     | A definition (legend, mob, ability, weapon, ...)                                                                               |
 | Breakability rules          | `core/src/content/structures/breakability.ts` (`BREAKABILITY_EVALUATORS`)            | An evaluator for a `BreakabilityRule` kind                                                                                     |
@@ -339,10 +339,11 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
   `bridge/selectors/` folder and the new `assetsSlice` ([13](13-game-interface.md) §10).
 - **Game.** `game/content/` builds the display catalogue the UI reads from core's display content
   (`coreCatalogue.ts`, `buildDisplayCatalogue.ts` and the presentation files) in place of
-  `placeholderCatalogue.ts`. `main.tsx` calls `createCoreCatalogue` with the manifest's asset ids
-  and the developer overrides, so no `game/content/` module reads `data/`; the shipped catalogue for
-  tests is `game/content/__fixtures__/shippedCatalogue.ts`. `game/session/` gains
-  `selectionAssetGroups.ts`, `fillRosters.ts` (LOCK IN's roster fill, DEC-61) and
+  `placeholderCatalogue.ts`. `main.tsx` calls `createCoreCatalogue` with its config's tick rate,
+  the manifest's asset ids and the developer overrides, so no `game/content/` module reads
+  `data/`; the shipped catalogue for tests is `game/content/__fixtures__/shippedCatalogue.ts`.
+  `game/session/` gains `selectionAssetGroups.ts`, `fillRosters.ts` (LOCK IN's roster fill,
+  DEC-61) and
   `createRosterRng.ts` (its random stream, injected as `SessionControllerDeps.createRosterRng`) and
   loses `runPlaceholderLoad.ts`; new are `game/MatchBridge.ts`,
   `game/MatchHost.ts`, `game/createBrowserMatch.ts` and `game/prepareMatchWorld.ts`;
@@ -351,8 +352,9 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
   display data, the locked class cards (DEC-48), the team display names and the bot roster (DEC-61,
   DEC-102), each validated through the content rules, the map features' display names (DEC-49;
   ADR 0018) and the profile screen's display name; core also exports the types `LegendClassId`,
-  `BotRosterDefinition` and `EnemyRoverRule`. It takes optional catalogues, each defaulting to the
-  shipped one. The specs live in `packages/core/src/content/legends/specs/` (each says whether it
+  `BotRosterDefinition` and `EnemyRoverRule`. It takes the tick rate (`GameConfig.tickRate`, for
+  the ability strategies' own tuning) and optional catalogues, each defaulting to the shipped one.
+  The specs live in `packages/core/src/content/legends/specs/` (each says whether it
   can be picked, `isSelectable`, which gates LOCK IN; the client adds only art, accents and icons),
   the locked cards in `content/legends/locked/`, the team names in
   `content/teams/teamDisplayNames.ts`, the bot roster in `content/teams/botRoster.ts` (checked by
@@ -371,6 +373,33 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
   control are gone. New is `game/BuildingRoofs.ts`, the one owner of roof cutaways: the
   player's building and the developer explorer's clicks (DEC-143; [06](06-map-and-minimap.md)
   §10).
+
+Ability framework (`feat/ability-framework`, 2026-11-13, updated 2026-11-14; ADR 0026). Files the branch added:
+
+- **Core.** `abilities/` holds `AbilityRegistry`, `ComposedAbility`, `defaultAbilityRegistry.ts`,
+  `CastValidator`, `CastInstance`, `TargetQuery`, `dashReach.ts`, `effects/`,
+  `restrictions/` and `shapes/`. The slot state is `components/Abilities.ts` and
+  `components/AbilitySlotRuntime.ts`, not an `AbilityRuntime` in `abilities/`, because
+  `components/` may not import `abilities/`. `content/abilities/` holds the ability files, the
+  catalogue, `loadAbilities.ts`, `aetherRegen.ts`, `knockback.ts` and `loadKnockback.ts`. Also new:
+  `commands/handlers/CastAbilityHandler.ts`, `systems/AbilitySystem.ts`,
+  `systems/AetherRegenSystem.ts`, `state/SlotReadiness.types.ts`, `state/PlayerSnapshotter.ts`,
+  `ai/pickReadySlot.ts` and the two invariants in `diagnostics/invariants/`. `abilities/` imports
+  one module beyond its §2 "May import" cell: `entities/unitFamilies` (`DamageEffect.ts`; ADR
+  0026, `packages/core/AGENTS.md`). `CastValidator` implements `state/SlotReadiness.types.ts`,
+  and `Simulation` builds one per match for the handler, `AbilitySystem`, the snapshot and the
+  bots. The one `Aim` type lives in `components/AbilitySlotRuntime.types.ts`;
+  `commands/Command.types.ts` re-exports it, as it re-exports `AbilitySlot` from `content/`: two
+  type imports outside `commands/`' "May import" cell (ADR 0026 decision 2). The kit rule ("the
+  spec's kit, else the class's") is `content/legends/specs/kitOf.ts`, exported for the client's
+  kit rows; `Legend` reads specs from the source the `EntityFactory` puts in the spawn context. A
+  dash reaches the walls through `state/CollisionQuery.types.ts` (`GameState.collisions`): the
+  match's one `CollisionResolver`, which `CollisionSystem` shares, on the index
+  `map/staticCollisionIndexOf.ts` builds for `Simulation`.
+- **Client.** `game/AbilityCasts.ts` (the two cast modes), `game/content/kitRows.ts`,
+  `game/AimTargeting.ts` (what the overlay draws, with the `MatchDeps.dashReach` port),
+  `game/views/AimOverlayView.ts` with `aimShapePainters.ts`, and `ui/components/InfoPanelKit.tsx`
+  ([13](13-game-interface.md) §10).
 
 ## Related
 

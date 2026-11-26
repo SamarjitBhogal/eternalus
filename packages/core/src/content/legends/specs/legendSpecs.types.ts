@@ -1,3 +1,5 @@
+import type { AbilityKit } from '../../abilities/AbilityDefinition.types';
+
 /**
  * The three role-rating bars (Figma 58:323), each a fraction from 0 to 1; `RoleRatingRangeRule`
  * checks it.
@@ -66,4 +68,9 @@ export type LegendSpecDefinition = {
   /** `null` while the owner has given none. */
   readonly roleRatings: RoleRatings | null;
   readonly detailNames: SpecDetailNames;
+  /**
+   * The abilities this Legend equips (DEC-198); `null` = its class's `defaultKit`. Every id comes
+   * from the class's `abilityPool` (`KitInPoolRule`).
+   */
+  readonly kit: AbilityKit | null;
 };

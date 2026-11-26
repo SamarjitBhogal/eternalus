@@ -4,6 +4,7 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
+import { loadAbilities } from '../content/abilities/loadAbilities';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadScoring } from '../content/match/loadScoring';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
@@ -31,6 +32,7 @@ const setUp = (assistWindowTicks = loadScoring(config.tickRate).assistWindowTick
     invariants: new DefaultInvariantRunner({
       debug: TEST_DEBUG_CONFIG,
       logger,
+      abilities: loadAbilities(config.tickRate),
       curves: loadLevelCurves(),
       phaseOrder: MATCH_PHASES,
       terminalPhases: TERMINAL_MATCH_PHASES,

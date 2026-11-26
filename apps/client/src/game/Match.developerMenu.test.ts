@@ -1,4 +1,10 @@
-import { createDefaultGameConfig, type InputIntent, NullLogger, Simulation } from '@eternalus/core';
+import {
+  createDefaultGameConfig,
+  type InputIntent,
+  loadDisplayContent,
+  NullLogger,
+  Simulation,
+} from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
@@ -37,6 +43,7 @@ const setUp = (isDeveloperMenuEnabled: boolean) => {
     camera: new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT),
     input: { read: () => IDLE },
     logger: new NullLogger(),
+    abilities: loadDisplayContent(config.tickRate).abilities,
     observer: { crashed: () => undefined, ended: () => undefined },
     isDeveloperMenuEnabled,
     bridge: { bus, publishEveryTicks: HUD_PUBLISH_EVERY_TICKS, captureKinds: [] },

@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { matchResultFixture } from '../bridge/__fixtures__/matchResultFixtures';
 import type { BridgeEventMap, RosterEntry } from '../bridge/events';
+import type { CastMode } from '../bridge/slices/settingsSlice';
 import type { PlayerHudSnapshot } from '../bridge/hud.types';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import type { LogSink } from '../data/logging/LogSink.types';
@@ -46,7 +47,10 @@ function evidenceOf(running: RunningMatch): MatchEvidence {
 function setUp(
   canvas = new FakeViewportCanvas(),
   sinks: readonly LogSink[] = [],
-  isDeveloperMenuEnabled = false,
+  {
+    castMode = null,
+    isDeveloperMenuEnabled = false,
+  }: { readonly castMode?: CastMode | null; readonly isDeveloperMenuEnabled?: boolean } = {},
 ) {
   const window = new FakeBrowserTarget();
   const document = new FakeBrowserTarget();
@@ -57,7 +61,7 @@ function setUp(
     gameConfig: CONFIG,
     isDeveloperMenuEnabled,
     bus,
-    settings: { bindings: null },
+    settings: { bindings: null, castMode },
     clock: new FakeSessionClock(),
     sinks,
   });
@@ -78,6 +82,7 @@ function setUp(
     world,
     captureKinds: ['capture-point', 'cathedral'],
     roster: [PLAYER_SLOT],
+    abilities: [],
     observer,
   });
   /** Every listener on the window, the document and the canvas. */
@@ -93,11 +98,9 @@ describe('createBrowserMatch', () => {
   ])(
     'passes ?dev=1 to the match: F1 opens the developer menu only when it is enabled ($isDeveloperMenuEnabled)',
     ({ isDeveloperMenuEnabled, opened }) => {
-      const { window, bus, factory, viewport, request } = setUp(
-        undefined,
-        [],
+      const { window, bus, factory, viewport, request } = setUp(undefined, [], {
         isDeveloperMenuEnabled,
-      );
+      });
       const states: boolean[] = [];
       bus.on('developer-menu', ({ isOpen }) => states.push(isOpen));
       const running = factory(request(), viewport);
@@ -182,6 +185,22 @@ describe('createBrowserMatch', () => {
     expect(listeners()).toBe(0);
     expect(window.pendingFrames).toBe(0);
     expect(bus.listenerCount()).toBe(busBefore + 1);
+  });
+
+  it("starts with the settings' cast mode: aim-then-click selects an ability key instead of casting", () => {
+    const { window, bus, factory, viewport, request } = setUp(new FakeViewportCanvas(), [], {
+      castMode: 'aim-then-click',
+    });
+    const slots: (string | null)[] = [];
+    bus.on('aiming-slot', ({ slot }) => slots.push(slot));
+    const running = factory(request(), viewport);
+
+    window.dispatchEvent(Object.assign(new Event('keydown'), { code: 'Digit1', key: '1' }));
+    window.runFrame(0);
+    window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
+
+    expect(slots).toEqual(['ability-1']);
+    running.destroy();
   });
 
   it('links each capture point the HUD lists to its zone in the simulation (PR #64)', () => {

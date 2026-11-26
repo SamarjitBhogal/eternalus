@@ -1,3 +1,6 @@
+import { CastValidator } from './abilities/CastValidator';
+import { dashReach } from './abilities/dashReach';
+import { createDefaultAbilityRegistry } from './abilities/defaultAbilityRegistry';
 import { AiSystem } from './ai/AiSystem';
 import type { AiMemory } from './content/ai/ai.types';
 import {
@@ -25,7 +28,9 @@ import { loadAggroRules } from './content/ai/aggro/loadAggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
 import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from './content/ai/rover';
+import { loadAbilities } from './content/abilities/loadAbilities';
 import { LEGEND_KIND_IDS } from './content/legends/legendKinds';
+import { LEGEND_SPECS } from './content/legends/specs/legendSpecCatalogue';
 import type { MapDefinition } from './content/maps/maps.types';
 import type { MapObject } from './content/maps/mapObjects.types';
 import type { GameConfig } from './config/GameConfig.types';
@@ -36,6 +41,7 @@ import { RANKS_FORMATION } from './content/mobs/formations/ranks';
 import type { EntityId } from './state/EntityStore.types';
 import { assignLanes } from './state/assignLanes';
 import { formationSlot } from './state/formationSlot';
+import type { SlotReadiness } from './state/SlotReadiness.types';
 import { unitClassOf } from './content/ai/unitClasses';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
 import type { ContentCatalogue } from './content/ContentCatalogue';
@@ -75,7 +81,10 @@ import type {
   StructureSource,
 } from './Simulation.types';
 import { SpaceIndex } from './physics/SpaceIndex';
+import { CollisionResolver } from './physics/CollisionResolver';
+import type { StaticCollisionIndex } from './physics/StaticCollisionIndex';
 import { MatchPathfinderFactory } from './map/MatchPathfinderFactory';
+import { staticCollisionIndexOf } from './map/staticCollisionIndexOf';
 import { zoneAreaOf } from './map/zoneArea';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
@@ -99,9 +108,7 @@ export class Simulation {
   private readonly botQueue = new CommandQueue();
   /** Commands from `enqueueCommand` (player, developer menu). Each one enters the replay log. */
   private readonly externalQueue = new CommandQueue();
-  private readonly handlers: CommandHandlers = createDefaultCommandHandlers({
-    rover: { controllerId: 'rover', profileId: ROVER_BOT.id, memory: {} },
-  });
+  private readonly handlers: CommandHandlers;
   private readonly commandContext: CommandContext;
   private readonly systemContext: SystemContext;
   private readonly pipeline: SystemPipeline;
@@ -121,6 +128,8 @@ export class Simulation {
 
   /** The level curves `ProgressionSystem` levels Legends along; the snapshot reports XP on them. */
   private readonly curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has' | 'get'>;
+  /** The match's one cast rule (`CastValidator`), as the snapshot reads it. */
+  private readonly readiness: SlotReadiness;
 
   /**
    * Creates a match from its options (architecture 03 §6).
@@ -139,6 +148,7 @@ export class Simulation {
     levelCurves,
     roster = [],
     weapons,
+    abilities,
     guardPlans,
     duel,
     structures = STRUCTURE_DEFINITIONS,
@@ -163,14 +173,18 @@ export class Simulation {
             arena,
             map?.features.find(({ kind }) => kind === 'cathedral')?.id,
           );
-    const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
+    const { space, world, paths, walls, collisions } = Simulation.buildWorld(
+      map,
+      validConfig,
+      mapObjects,
+    );
     // Without the default pipeline no director runs, so no mark would ever fire: list none.
     const schedule = systems === undefined ? timeline.schedule() : [];
     this.state = new GameState(
       validConfig,
       seed,
       world,
-      { space, paths },
+      { space, paths, collisions },
       { schedule, countdownEndTick: timelineFrameOf(validConfig).countdownEndTick },
     );
     const duelStarts =
@@ -180,7 +194,15 @@ export class Simulation {
     const curves = levelCurves ?? loadLevelCurves();
     this.curves = curves;
     const weaponSource = weapons ?? loadWeapons(tickRate);
-    const controllers = Simulation.createControllers(tickRate);
+    const registry = abilities ?? createDefaultAbilityRegistry(loadAbilities(tickRate), tickRate);
+    // One cast rule per match: the handler, `AbilitySystem`, the snapshot and the bots share it.
+    const validator = new CastValidator(registry);
+    this.handlers = createDefaultCommandHandlers({
+      rover: { controllerId: 'rover', profileId: ROVER_BOT.id, memory: {} },
+      cast: validator,
+    });
+    this.readiness = validator;
+    const controllers = Simulation.createControllers(validator, tickRate);
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
     const objectsById = new Map(
       Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
@@ -198,6 +220,7 @@ export class Simulation {
       Simulation.withStructures(definitions, structures),
       undefined,
       weaponSource,
+      LEGEND_SPECS,
     );
     const owners = Simulation.spawnStructures(this.state, factory, {
       structures,
@@ -212,16 +235,23 @@ export class Simulation {
     if (mapObjects !== undefined && map === undefined)
       throw new Error('Map objects require a generated map');
     if (mapObjects !== undefined) {
-      this.state.worldObjects = new WorldObjectStore({
+      // A skipped removal here leaves a broken wall in the collision index (critic r2 F1).
+      if (walls === null) throw new Error('Map objects require a collision index');
+      const worldObjects = new WorldObjectStore({
         objects: mapObjects,
         factory: this.commandContext.factory,
         entities: this.state.entities,
         definitions: MAP_OBJECT_DEFINITIONS,
         owners,
       });
-      this.state.events.on('entity-removed', ({ entityId }) =>
-        this.state.worldObjects?.removed(entityId),
-      );
+      this.state.worldObjects = worldObjects;
+      this.state.events.on('entity-removed', ({ entityId }) => {
+        worldObjects.removed(entityId);
+        // At once, so walking and a dash both stop seeing it from now on (critic r2 F1). A retired
+        // tower's fort is not its own entity (`objectFor` gives nothing), so it stays, as it blocks.
+        const object = worldObjects.objectFor(entityId);
+        if (object !== undefined) walls.remove(object.id);
+      });
     }
     this.systemContext = { state: this.state, logger };
     if (systems === undefined) {
@@ -239,6 +269,7 @@ export class Simulation {
         invariants: new DefaultInvariantRunner({
           debug,
           logger,
+          abilities: registry.definitions,
           curves,
           phaseOrder: MATCH_PHASES,
           terminalPhases: TERMINAL_MATCH_PHASES,
@@ -253,6 +284,8 @@ export class Simulation {
             : { legendsStartAtMaxLevel: DUEL_RULES.legendsStartAtMaxLevel }),
         },
         director,
+        abilities: registry,
+        validator,
         // One scoring load: a gem kill's window is the assists' window (DEC-346).
         assistWindowTicks: scoring.assistWindowTicks,
         ...(duelStarts === undefined ? {} : { duelStarts }),
@@ -261,10 +294,7 @@ export class Simulation {
           factory,
           space,
           ...(guardPlans === undefined ? {} : { guards: guardPlans }),
-          collisions:
-            map === undefined || mapObjects === undefined
-              ? []
-              : [new CollisionSystem(map, mapObjects)],
+          collisions: collisions === null ? [] : [new CollisionSystem(collisions)],
           decide: [
             new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
               this.botQueue.enqueue(command);
@@ -291,6 +321,15 @@ export class Simulation {
       );
     });
     this.recordCheckpoint();
+  }
+
+  /**
+   * How far a dash of a caster of `radius` from `from` along `direction` (a unit vector) may go
+   * before a wall or the map's edge stops it, up to `distance` metres: `DashEffect`'s own rule on
+   * the match's own walls. A read-only query for aim previews; it changes nothing.
+   */
+  public dashReach(from: Vec2, direction: Vec2, distance: number, radius: number): number {
+    return dashReach(this.state.collisions, from, direction, distance, radius);
   }
 
   /** Number of ticks completed. */
@@ -344,7 +383,7 @@ export class Simulation {
   /** The current state as a structured-clone-safe snapshot. */
   // ponytail: one shared snapshot for every seat; a per-seat Veil-filtered snapshot goes here.
   public snapshot(): Snapshot {
-    return this.state.snapshot(this.curves);
+    return this.state.snapshot(this.curves, this.readiness);
   }
 
   /** Subscribes to a game event; returns the function that unsubscribes. */
@@ -668,19 +707,16 @@ export class Simulation {
     position: Vec2,
     memory: AiMemory,
   ): void {
-    const entity = legends.spawn(
-      state,
-      slot.definitionId,
-      slot.team,
-      position,
-      slot.pilot === 'bot'
-        ? {
-            controllerId: Simulation.controllerOf(slot),
-            profileId: slot.difficulty,
-            memory,
-          }
-        : undefined,
-    );
+    const entity = legends.spawn(state, slot.definitionId, slot.team, position, {
+      ...(slot.specId !== undefined && { specId: slot.specId }),
+      ...(slot.pilot === 'bot' && {
+        controller: {
+          controllerId: Simulation.controllerOf(slot),
+          profileId: slot.difficulty,
+          memory,
+        },
+      }),
+    });
     if (slot.pilot === 'human') {
       state.match.seatHuman(entity.id, slot.team);
     }
@@ -707,25 +743,36 @@ export class Simulation {
    * object's footprints, minus its passages. A feature whose object is walkable (a Stronghold's
    * floor, whose walls and furniture are objects of their own) is not stamped; other blocking
    * features keep their stamp, which also fills a tower's hollow core so no path ends in a pocket
-   * the walls close off.
+   * the walls close off. Also with `mapObjects`, `walls` is the one static collision index, from
+   * which a destroyed object is removed, and `collisions` the one `CollisionResolver` on it and the
+   * map's bounds: `CollisionSystem` moves units with it and the state's `collisions` port cuts
+   * dashes with it.
    */
   private static buildWorld(
     map: MapDefinition | undefined,
     config: GameConfig,
-    mapObjects: readonly MapObject[] = [],
+    mapObjects: readonly MapObject[] | undefined,
   ): {
     readonly space: SpaceIndex | null;
     readonly world: MatchWorld | null;
     readonly paths: AStarPathfinder | null;
+    readonly walls: StaticCollisionIndex | null;
+    readonly collisions: CollisionResolver | null;
   } {
     if (map === undefined) {
-      return { space: null, world: null, paths: null };
+      return { space: null, world: null, paths: null, walls: null, collisions: null };
     }
     const { grid, paths } = new MatchPathfinderFactory().create(map, config, mapObjects);
+    const walls = mapObjects === undefined ? null : staticCollisionIndexOf(map, mapObjects);
     return {
       space: new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE),
       world: new MatchWorld(map, grid),
       paths,
+      walls,
+      collisions:
+        walls === null
+          ? null
+          : new CollisionResolver(walls, { x: 0, y: 0, width: map.width, height: map.height }),
     };
   }
 
@@ -733,8 +780,8 @@ export class Simulation {
    * Every controller, with the shipped content it reads (architecture 11 §2); the aggro profiles
    * are loaded at `tickRate`.
    */
-  private static createControllers(tickRate: number): ControllerRegistry {
-    const bots = { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES };
+  private static createControllers(readiness: SlotReadiness, tickRate: number): ControllerRegistry {
+    const bots = { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES, readiness };
     return createDefaultControllerRegistry({
       leash: { aggro: loadAggroRules(tickRate), classOf: unitClassOf },
       botLegend: bots,

@@ -1,8 +1,12 @@
+import { CastValidator } from '../abilities/CastValidator';
+import { createDefaultAbilityRegistry } from '../abilities/defaultAbilityRegistry';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { createDefaultDamageSteps } from '../combat/defaultDamageSteps';
 import { KillCredit } from '../combat/KillCredit';
 import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
+import { AETHER_REGEN } from '../content/abilities/aetherRegen';
+import { loadAbilities } from '../content/abilities/loadAbilities';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { LEGEND_RESPAWN_SECONDS } from '../content/progression/legendRespawn';
 import { loadStuckDetection } from '../content/ai/loadStuckDetection';
@@ -20,6 +24,8 @@ import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { StructureDefinition } from '../content/structures/structures.types';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
+import { AbilitySystem } from './AbilitySystem';
+import { AetherRegenSystem } from './AetherRegenSystem';
 import type { GameState } from '../state/GameState';
 import type { Rect } from '../utils/geometry.types';
 import { CaptureSystem } from './CaptureSystem';
@@ -57,16 +63,19 @@ import { SystemPipeline } from './SystemPipeline';
 
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
- * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
- * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
- * progression (kill XP), minion veterancy, structure losses and breakability, spawning (none in a
- * Duel, SCRUM-445), enraging, out-of-combat healing (DEC-188), respawn (queues the dead Legends,
- * FR-051), death, capture points, the Cathedral gem, the match director, then invariants last.
- * Combat runs after movement, so a unit with a target in reach faces it, not its own way
+ * progress, the queued casts, aether regeneration, statuses, movement, collision (DEC-121 (c):
+ * every later reader sees resolved positions), the neighbour index, stuck detection (DEC-193),
+ * steering, combat, map destruction, progression (kill XP), minion veterancy, structure losses and
+ * breakability, spawning (none in a Duel, SCRUM-445), enraging, the Duel round (a Duel only: it
+ * heals and moves a fallen Duel Legend before death), out-of-combat healing (DEC-188), respawn
+ * (queues the dead Legends, FR-051), death, capture points, the Cathedral gem (none in a Duel),
+ * zone level-ups, minion levels (after every level source), the match director, then invariants
+ * last. Combat runs after movement, so a unit with a target in reach faces it, not its own way
  * (DEC-192). This is the one place a system is added, at its position in the tick (architecture
- * 02 §9). It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the
- * status effects loaded for this match's config) and hands them to the systems that need them, so
- * a damage step applies to every hit and every status event comes from one place.
+ * 02 §9).
+ * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status effects
+ * loaded for this match's config) and hands them to the systems that need them, so a damage step
+ * applies to every hit and every status event comes from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
@@ -78,6 +87,11 @@ export class DefaultSystemPipeline extends SystemPipeline {
     duelStarts,
     spawnsMobs = true,
     hordes,
+    abilities = createDefaultAbilityRegistry(
+      loadAbilities(state.config.tickRate),
+      state.config.tickRate,
+    ),
+    validator = new CastValidator(abilities),
     structures = STRUCTURE_DEFINITIONS,
     assistWindowTicks,
   }: DefaultSystemPipelineOptions) {
@@ -123,6 +137,9 @@ export class DefaultSystemPipeline extends SystemPipeline {
     }
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
+      new AbilitySystem(abilities, validator, damage, statuses),
+      // After the casts, so a cast spends before the tick's regeneration (plan arch call 13).
+      new AetherRegenSystem(AETHER_REGEN, tickRate),
       new StatusEffectSystem(damage, statuses),
       new MovementSystem(),
       ...(hordes?.collisions ?? []),

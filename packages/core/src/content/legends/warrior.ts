@@ -22,6 +22,11 @@ export const WARRIOR = {
   weaponBias: 'light',
   damageFocus: 'mixed',
   pickUp: 'pick-up',
+  abilityPool: ['blade-runner', 'veil', 'hamstring', 'fury'], // DEC-198: every ability and ultimate of the class
+  defaultKit: {
+    abilities: ['blade-runner', 'veil', 'hamstring'], // DEC-209 (2): keys 1-3, similar effects share a key
+    ultimate: 'fury', // DEC-209 (2): key 4
+  },
   passiveOptions: [],
   defaultAction: null,
   referenceHeight: 2.1, // TUNE: ~7 ft (Master Chief)

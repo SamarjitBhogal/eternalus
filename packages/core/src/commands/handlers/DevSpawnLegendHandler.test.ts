@@ -13,6 +13,7 @@ import { EntityRegistry } from '../../entities/EntityRegistry';
 import { Legend } from '../../entities/Legend';
 import { WorldMap } from '../../map/WorldMap';
 import { GameState } from '../../state/GameState';
+import { allReady } from '../../state/__fixtures__/stubReadiness';
 import { MatchWorld } from '../../state/MatchWorld';
 import { TWO_LANE_MAP } from '../../state/__fixtures__/twoLaneMap';
 import type { Team } from '../../teams/teams.types';
@@ -94,7 +95,9 @@ describe('DevSpawnLegendHandler', () => {
 
     expect(spawned).toEqual([{ entityId: 'entity-1', kind: 'hero', team: 'dark' }]);
     expect(
-      context.state.snapshot(LEVEL_CURVE_CATALOGUE).entities.map(({ transform }) => transform),
+      context.state
+        .snapshot(LEVEL_CURVE_CATALOGUE, allReady)
+        .entities.map(({ transform }) => transform),
     ).toEqual([{ x: 190, y: 30, radius: 0.5, facing: { x: 1, y: 0 } }]);
     expect(context.state.entities.controllerOf('entity-1')).toMatchObject({
       controllerId: 'rover',

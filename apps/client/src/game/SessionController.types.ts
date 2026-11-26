@@ -1,4 +1,10 @@
-import type { Logger, MapFeatureKind, RosterSlot, SeededRandom } from '@eternalus/core';
+import type {
+  AbilityDisplay,
+  Logger,
+  MapFeatureKind,
+  RosterSlot,
+  SeededRandom,
+} from '@eternalus/core';
 
 import type { DisplayCatalogue } from '../bridge/catalogue.types';
 import type {
@@ -37,6 +43,8 @@ export type MatchRequest = {
    * over the catalogue's difficulties.
    */
   readonly roster: readonly RosterSlot[];
+  /** Every ability's display data: `catalogue.abilities` (the range overlay draws from it). */
+  readonly abilities: readonly AbilityDisplay[];
   /**
    * Hears the match: `crashed` if its game loop stops because a tick or a frame threw (DEC-106),
    * `ended` once after the tick that ended it (`match-ended`; game-loop plan A8); the match runs on

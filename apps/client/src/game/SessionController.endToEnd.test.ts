@@ -97,6 +97,7 @@ describe('SessionController with the real match, end to end', () => {
         camera,
         input: new DeviceIntentSource([keyboard, mouse], mapper),
         logger: new NullLogger(),
+        abilities: request.abilities,
         observer: request.observer,
         bridge: {
           bus,

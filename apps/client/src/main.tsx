@@ -132,6 +132,7 @@ const resources = new ResourceController({
 // Loaded once at boot (a content error stops it here): the session runs on it and the viewport
 // names the teams from it.
 const catalogue = createCoreCatalogue({
+  tickRate: gameConfig.tickRate,
   knownAssetIds: new Set(ASSET_MANIFEST.assets.map((entry) => entry.id)),
   overrides: developer.displayOverrides,
 }).load();

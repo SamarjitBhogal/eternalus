@@ -4,6 +4,7 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { LastEnemyHit } from '../components/LastEnemyHit';
+import { Movement } from '../components/Movement';
 import { StatusEffects } from '../components/StatusEffects';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { Transform } from '../components/Transform';
@@ -139,6 +140,20 @@ describe('DuelRoundSystem', () => {
     run();
 
     expect(statuses.active).toHaveLength(0);
+  });
+
+  it('ends the dash or knock-back of a reset Legend, so it does not slide off its start point', () => {
+    const { add, hit, run } = setUp();
+    const light = add('light', true);
+    const dark = add('dark', true);
+    const movement = new Movement({ maxSpeed: 1, acceleration: 1, mass: 1 });
+    movement.push({ x: 6, y: 0 }, 3);
+    light.addComponent(movement);
+    hit(dark, light);
+
+    run();
+
+    expect(movement.isForced).toBe(false);
   });
 
   it("forgets a reset Legend's last enemy hit, so it earns no gem kill in the next round (DEC-346)", () => {

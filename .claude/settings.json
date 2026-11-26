@@ -104,7 +104,7 @@
             "type": "command",
             "command": "node",
             "args": ["scripts/hooks/stop-check.mjs"],
-            "timeout": 300
+            "timeout": 620
           }
         ]
       }

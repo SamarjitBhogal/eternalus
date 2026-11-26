@@ -1,4 +1,4 @@
-import { loadDisplayContent } from '@eternalus/core';
+import { createDefaultGameConfig, loadDisplayContent } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import type { ColourToken, LegendClassCard, LegendSpecCard } from '../../bridge/catalogue.types';
@@ -10,7 +10,7 @@ import { createCoreCatalogue, NO_DISPLAY_OVERRIDES } from './coreCatalogue';
 
 const catalogue = shippedCatalogue().load();
 /** The core content the catalogue joins; its own tests pin the roster values (DEC-48, DEC-49). */
-const CONTENT = loadDisplayContent();
+const CONTENT = loadDisplayContent(createDefaultGameConfig().tickRate);
 
 const classCard = (classId: string): LegendClassCard => {
   const card = catalogue.legendClasses.find((candidate) => candidate.classId === classId);
@@ -187,6 +187,7 @@ describe('coreCatalogue', () => {
 
   it('checks its asset ids against the ids the composition root gives it', () => {
     const catalogue = createCoreCatalogue({
+      tickRate: createDefaultGameConfig().tickRate,
       knownAssetIds: new Set(),
       overrides: NO_DISPLAY_OVERRIDES,
     });

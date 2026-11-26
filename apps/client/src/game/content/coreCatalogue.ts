@@ -15,17 +15,20 @@ export const NO_DISPLAY_OVERRIDES: DisplayOverrides = {
 /**
  * The shipped catalogue: core display content (validated by `loadDisplayContent`) joined with the
  * client presentation, its asset ids checked against `knownAssetIds`, with developer overrides
- * applied. `main.tsx`, the composition root, passes the asset manifest's ids and
- * `readDeveloperFlags(location.search).displayOverrides`; this module reads no data/ facade.
+ * applied. `main.tsx`, the composition root, passes its config's tick rate, the asset manifest's
+ * ids and `readDeveloperFlags(location.search).displayOverrides`; this module reads no data/
+ * facade.
  */
 export function createCoreCatalogue(inputs: {
+  /** Ticks per second (`GameConfig.tickRate`): core loads the ability strategies' tuning at it. */
+  readonly tickRate: number;
   readonly knownAssetIds: ReadonlySet<AssetId>;
   readonly overrides: DisplayOverrides;
 }): CatalogueSource {
   return {
     load: () =>
       buildDisplayCatalogue({
-        content: loadDisplayContent(),
+        content: loadDisplayContent(inputs.tickRate),
         presentation: CATALOGUE_PRESENTATION,
         knownAssetIds: inputs.knownAssetIds,
         overrides: inputs.overrides,

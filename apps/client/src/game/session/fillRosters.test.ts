@@ -1,4 +1,4 @@
-import { loadDisplayContent, SeededRandom } from '@eternalus/core';
+import { createDefaultGameConfig, loadDisplayContent, SeededRandom } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { classCardFixture, specCardFixture } from '../../bridge/__fixtures__/catalogueFixtures';
@@ -29,7 +29,7 @@ const DRAFT = buildMatchSetup({
   seed: 7,
   rng: new LcgRng(7),
   legendClasses: CLASSES,
-  botRoster: loadDisplayContent().botRoster,
+  botRoster: loadDisplayContent(createDefaultGameConfig().tickRate).botRoster,
   legendsPerTeam: 10,
   playerName: 'Ada',
 });

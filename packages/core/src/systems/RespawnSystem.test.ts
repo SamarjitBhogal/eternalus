@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { Abilities } from '../components/Abilities';
+import { ULTIMATE_SLOT } from '../components/Abilities.constants';
 import { Aether } from '../components/Aether';
 import { Combat } from '../components/Combat';
 import { LastEnemyHit } from '../components/LastEnemyHit';
@@ -280,6 +282,9 @@ describe('RespawnSystem', () => {
       .getComponent(StatusEffects)
       .apply(loadStatusEffects(CONFIG.tickRate, 2).get('bleed'), null, 0);
     legend.getComponent(Movement).steer({ x: 1, y: 0 });
+    // A knock-back that lands on the death tick: nothing moves a waiting Legend, so it would
+    // still be under way on return and slide the Legend off its Stronghold.
+    legend.getComponent(Movement).push({ x: 6, y: 0 }, 3);
     legend.getComponent(Combat).setTarget('entity-99');
     kill(match, legend.id);
 
@@ -288,8 +293,37 @@ describe('RespawnSystem', () => {
     expect(aether.current).toBe(aether.max);
     expect(legend.getComponent(StatusEffects).active).toEqual([]);
     expect(legend.getComponent(Movement).velocity).toEqual({ x: 0, y: 0 });
+    expect(legend.getComponent(Movement).isForced).toBe(false);
     expect(legend.getComponent(Combat).targetId).toBeNull();
     expect(legend.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
+  });
+
+  it('returns with every ability but the ultimate ready; the ultimate keeps its cooldown and charge (FR-117, DEC-295 (1))', () => {
+    const match = setUp();
+    const legend = addLegend(match);
+    const bar = legend.getComponent(Abilities);
+    // Still running when the Legend returns, DELAY ticks after its death.
+    const stillCooling = match.state.tick + DELAY * 2;
+    for (const runtime of bar.slots) {
+      runtime.cooldownUntilTick = stillCooling;
+    }
+    const ultimate = bar.slots.find(({ slot }) => slot === ULTIMATE_SLOT);
+    if (ultimate === undefined) throw new Error('The bar has an ultimate slot.');
+    ultimate.charge = 0.4;
+    kill(match, legend.id);
+
+    for (let tick = 0; tick <= DELAY; tick += 1) match.step();
+
+    expect(match.state.entities.has(legend.id)).toBe(true);
+    expect(bar.slots.filter(({ slot }) => slot !== ULTIMATE_SLOT)).not.toHaveLength(0);
+    for (const runtime of bar.slots.filter(({ slot }) => slot !== ULTIMATE_SLOT)) {
+      expect([runtime.slot, runtime.isCoolingDown(match.state.tick)]).toEqual([
+        runtime.slot,
+        false,
+      ]);
+    }
+    expect(ultimate.cooldownUntilTick).toBe(stillCooling);
+    expect(ultimate.charge).toBe(0.4);
   });
 
   it("forgets the last enemy hit of the Legend's earlier life, so that hit earns no gem kill (DEC-346)", () => {

@@ -1,3 +1,4 @@
+import { Abilities } from '../components/Abilities';
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
@@ -173,6 +174,14 @@ export class StateHasher {
     if (movement !== undefined && (movement.heading.x !== 0 || movement.heading.y !== 0)) {
       fields.push(['heading', movement.heading.x, movement.heading.y]);
     }
+    // Forced motion (a dash or knock-back, ADR 0026 decision 4) adds a field only while a push is
+    // under way, so a match where nobody was pushed hashes as before.
+    if (movement?.isForced === true) {
+      fields.push([
+        'forced',
+        ...movement.forcedPushes.flatMap(({ x, y, ticksLeft }) => [x, y, ticksLeft]),
+      ]);
+    }
     const collider = entity.findComponent(Collider);
     if (collider !== undefined) {
       // Only an unbreakable collider adds a field, so states without walls hash as before.
@@ -193,6 +202,23 @@ export class StateHasher {
     const aether = entity.findComponent(Aether);
     if (aether !== undefined) {
       fields.push(['aether', aether.current, aether.max]);
+    }
+    // Ability slots add a field only once one leaves its initial state (no cooldown, no charge,
+    // nothing queued), so a match where nobody cast hashes as before.
+    const slots = (entity.findComponent(Abilities)?.slots ?? []).filter(
+      ({ cooldownUntilTick, charge, pendingCast }) =>
+        cooldownUntilTick !== 0 || charge !== 0 || pendingCast !== null,
+    );
+    if (slots.length > 0) {
+      fields.push([
+        'abilities',
+        ...slots.map(({ slot, cooldownUntilTick, charge, pendingCast }) => [
+          slot,
+          cooldownUntilTick,
+          charge,
+          pendingCast && [pendingCast.point.x, pendingCast.point.y, pendingCast.targetId],
+        ]),
+      ]);
     }
     const statuses = entity.findComponent(StatusEffects);
     if (statuses !== undefined && statuses.active.length > 0) {

@@ -16,6 +16,244 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [x] **HC-Q48 — Accept ADR 0026, the ability framework's build decisions
+      (`feat/ability-framework`, 2026-11-13).** `docs/decisions/0026-ability-framework.md`
+      (proposed) records seven decisions
+      the framework PR took beyond or against architecture 05, 04 and 10: (1) kits from a class
+      pool, with an optional kit per Legend read through `RosterSlot.specId`, which amends ADR 0018
+      point 2 ("nothing in the simulation or in a running match reads it"); (2) one
+      `CastValidator` for the cast handler, `AbilitySystem`, the HUD snapshot and the bots; (3) an
+      ability with no effects is `unavailable`, and a missing strategy stops the boot; (4) forced
+      motion instead of impulses for dashes and knock-backs; (5) aether regeneration in its own
+      system, with exact amounts; (6) where the two new systems run in the tick; (7) area shapes
+      behind a registry, shared with the aim overlay. The code is built on the branch. Accept, or
+      name the decisions to change. On acceptance, ADR 0018's Status line gets "amended by 0026".
+  - Answered 2026-11-16 (DEC-263): "Accept all seven" (A1a). Done on `feat/ability-framework`:
+    ADR 0026 accepted; ADR 0018's Status line names the amendment.
+- [x] **HC-B5 — Better than the design, for sign-off: five parts of the ability framework
+      (`feat/ability-framework`, 2026-11-13) — sign-off per item.** All five are built.
+      (1) **Aether regeneration is its own system.** Design (05 §6): `AbilitySystem` adds
+      `aetherRegenPerTick`, a field on `Abilities`. Built: `AetherRegenSystem` refills every
+      `Aether` pool right after `AbilitySystem` (ADR 0026 decisions 5 and 6). Better: each class
+      has one reason to change, and the rate is computed from the maximum and base aether every
+      tick, so it cannot go stale after a level-up or an aura change.
+      (2) **A `SlotReadiness` port.** Design (05 §6, §15): `AbilityRuntime.canCast` decides, and
+      the snapshot's `isReady` has no stated source. Built: `abilities/CastValidator` is the one
+      rule and implements `state/SlotReadiness.types.ts` itself (since HC-B6 (4); first built with
+      an adapter, `abilities/CastReadiness`), and `Simulation` gives it to the snapshot and the
+      bots (ADR 0026 decision 2). Better: the HUD, the bots, the
+      handler and `AbilitySystem` judge a cast by one rule, and the folder import rules hold.
+      (3) **Forced motion instead of impulses.** Design (10 §2, 05 §3): every push is an impulse,
+      velocity change `J / mass`. Built: `Movement.push` spreads a displacement over a number of
+      ticks; a knock-back's distance shrinks with the target's mass, and knock-backs in one tick
+      add up (DEC-208; ADR 0026 decision 4). Better: `Movement` re-points its velocity every tick,
+      so an impulse would be gone a tick later; a push gives each knock-back an exact distance
+      that content tunes.
+      (4) **A kit per Legend, read through `specId`.** Design (04 §5, 05 §2): a fixed
+      `abilityIds` and `ultimateId` per class; ADR 0018 point 2: the simulation does not read the
+      Legend pick. Built: `abilityPool` and `defaultKit` per class, an optional `kit` per Legend
+      spec, and `RosterSlot.specId` (DEC-198; ADR 0026 decision 1). Better: DEC-198's "each Legend
+      has its own default kit" needs no code per Legend, and a custom loadout later picks from the
+      same pool.
+      (5) **`HudBlockReason` is core's type.** Before: the client restated 05 §6's reasons in
+      `bridge/hud.types.ts` "until core exports it". Built: `HudBlockReason` is core's
+      `AbilityRejectReason`, exported from `@eternalus/core`. Better: one list; a new reason (here
+      `unavailable`) reaches the HUD with no client edit.
+      Where DEC-198, DEC-201 or DEC-208 require it, 04 §5, 05 §2, §3, §6, §7 and 10 §2 already
+      say this (each change cites its ruling). Approve all, approve some, or say no; a "no" reworks the
+      code and those lines.
+  - Answered 2026-11-16 (DEC-263): "Approve all five" (A2a). All five are built on
+    `feat/ability-framework`; the design text already says them.
+- [x] **HC-B6 — Better than the design, for sign-off: seven more parts of the ability framework,
+      from critic round 1 (`feat/ability-framework`, 2026-11-14) — sign-off per item.** All seven
+      are built, under your 2026-11-09 rule "pick the best architectural outcome, build it now".
+      (1) **A dash stops where walking stops.** First built: the dash was clamped on the 5 m nav
+      grid, so a Blade Runner cast beside a wall moved 0 m and still cost aether. Built now:
+      `dashReach` uses the radius-aware sweep of `physics/CollisionResolver` through a
+      `CollisionQuery` port on `MatchWorld` (ADR 0026 decision 4). The cast and the aim overlay
+      use the same function. Critic round 2 (2026-11-14) built three more parts of it: the
+      map-bounds rule lives once, inside the resolver (`move` keeps a unit inside the map,
+      `reach` cuts a dash at its edge); the `CollisionQuery` port moved from `MatchWorld` to
+      `GameState`, beside `space` and `paths`, so `MatchWorld` is map data again; and one
+      `CollisionResolver` per match is injected into both `CollisionSystem` and that port, on the
+      one index a destroyed object leaves at once (a dash cast the tick after an object breaks
+      now goes through, as walking does).
+      (2) **A `DashReach` port for the client.** `MatchDeps.dashReach` replaces `dashReach` on the
+      `MatchSimulation` pick; the Duel's stub is gone, and the overlay view gets a finished target
+      and never calls the simulation.
+      (3) **One `Aim` type.** `components/AbilitySlotRuntime.types.ts` holds it and `commands/`
+      re-exports it; `CastAim` is deleted, so `state/` no longer imports `commands/`. The
+      `commands/` row of `packages/core/AGENTS.md` now names the types of `content/` and
+      `components/` it re-exports (critic round 2).
+      (4) **One `CastValidator` per match, and it is the `SlotReadiness` port.** The `CastCheck`
+      port and `abilities/CastReadiness` are deleted (ADR 0026 decision 2 is rewritten to this). A
+      slot's HUD state is judged with no aim (`slotBlockedBy`), not with an invented one.
+      (5) **One kit rule.** `kitOf` ("the spec's kit, else the class default") is one core content
+      function; `Legend` and the client's kit rows both use it. Legend specs reach `Legend`
+      through an injected source, as weapons do.
+      (6) **Strategies validate and describe themselves.** Each effect and shape strategy has
+      `validate(spec)` and `describe(spec)`; the registry runs them at boot. `loadAbilities` and
+      `loadDisplayContent` know no effect or shape kind (05 §3 put `validate` on the strategy; it
+      takes no `content` argument, a strategy gets content in its constructor).
+      (7) **Ability areas hit buildings by their footprints,** with the geometry basic attacks
+      use, not a 0.5 m circle at the centre (DEC-209 (1) now holds for houses, forts and towers).
+      Approve all, approve some, or say no; a "no" reworks the code.
+  - Answered 2026-11-16 (DEC-263): "Approve all seven" (A3a). All seven are built on
+    `feat/ability-framework`; the two `packages/core/AGENTS.md` rows are approved too (A4a).
+  - Correction 2026-11-19 (critic on the phase/3 merge of #126, #121, #120, #119): (7) holds for
+    the destructible map objects that are entities of their own (`WorldObjectStore`), not for
+    towers. A tower owns its fort's map object and has only a structure `Footprint`, so an ability
+    area hits it by its collider circle. The question is HC-Q64.
+- [ ] **HC-Q54 — Derive each class's ability pool from the abilities' `classId`?
+      (`feat/ability-framework`; changes DEC-198's shape, not built).** Today `abilityPool` on
+      the class lists every ability, and each ability also names its `classId`: two sources, and
+      no rule checks that the pool is complete. Deriving the pool removes `abilityPool`,
+      `KitInPoolRule` and its test (about 45 lines); an extra approved ability (DEC-11) then joins
+      a pool by content alone. Derive it, or keep the explicit list?
+- [ ] **HC-Q55 — What does a Duel show for abilities? (`feat/ability-framework`, critic finding
+      C6, not changed).** A Duel casts no abilities, but the seat on the snapshot's player team
+      still sees its ability slots as ready; the other seat sees none
+      (`GameState.snapshot` fills `player` for one Legend only). Hiding `player` in a Duel also
+      hides that seat's aether and level data. Options: hide the ability bar in a Duel; send
+      `player` per seat once Duels cast abilities; or leave it until then. **Added 2026-11-16
+      (critic on the phase/3 merge, which met #102's round reset):** when Duels cast, the round
+      reset (`DuelRoundSystem`) must also apply FR-117 (every non-ultimate ability ready; the
+      ultimate waits on your answer to plan §9 question 36) and decide aether and shields. It now
+      ends a dash or knock-back under way (built, with a test). Better-than-design idea from the
+      critic: a list of reset steps (like the scoring rules) instead of one hand-written reset, so
+      a new component joins the reset without editing `DuelRoundSystem`. Say whether to build it
+      with Duel casting.
+- [ ] **HC-Q56 — Four ideas from critic round 2 and one from round 3, not built: your call
+      (`feat/ability-framework`, 2026-11-14).** (1) **Name and home of the display loader.**
+      `abilities/loadShippedDisplayContent` is exported as `loadDisplayContent` and wraps
+      `content/loadDisplayContent`: two functions with one public name, and `abilities/` holds a
+      loader that also checks Legends, specs and the bot roster. The reviewer proposes a
+      composition file beside `Simulation.ts` and a distinct inner name. (2) **One `sources`
+      object for `EntityFactory`,** which now has five positional parameters. (3) **Drop the
+      generic loader types** (`AuthoredAbilityWith`, `AbilityDefinitionWith`, the `loadAbilities`
+      overloads, about 25 lines): they exist so the Fake Bolt litmus can load an unlisted effect
+      kind with full types; one cast in that test would replace them. (4) **Merge `slotBlockedBy`
+      into `blockedBy` with an aim that can be null** (about 12 lines). `CastValidator.blockedBy`
+      already takes a null aim; only the `SlotReadiness` port keeps two methods. The session kept
+      (3) and (4) as built: (3) is what the litmus proves, and (4) keeps the HUD check apart from
+      the cast check. (5) **One subscriber for "a map object is retired"** (critic round 3):
+      `Simulation` (marks the object destroyed and takes it out of the collision index) and
+      `DefaultSystemPipeline` both listen to `entity-removed` for map objects; one owner of that
+      reaction would keep the two from drifting apart. Say which to build.
+- [ ] **HC-Q49 — Five tuning values the ability framework uses until you set them (`TUNE`,
+      `feat/ability-framework`).** (1) Blade Runner's path width: 1.5 m, the 05 §4 sketch value
+      (`content/abilities/bladeRunner.ts`). (2) Blade Runner's end-stun radius: 1.5 m, the same
+      sketch value and file. (3) The aura radius for the aether refill: 12 m, `balancing.md`
+      "Auras" (`content/abilities/aetherRegen.ts`). (4) Knock-back: travel time 0.25 s, base mass
+      1 (the Vanguard's mass), and the formula distance × base mass / max(base mass, target mass)
+      (`content/abilities/knockback.ts`); DEC-208 (1) says only that a heavier target moves less.
+      With these, a Sentinel (mass 6) moves a sixth of the distance and a Magus (mass 2) half.
+      (5) How the refill grows with capacity (DEC-201 (3), "Proceed, mark TUNE"): in the same
+      ratio as the maximum aether, so a full refill takes the same time at every level. Keep each
+      value, or give yours.
+- [ ] **HC-Q50 — Does a right click also cancel an aimed ability? (`feat/ability-framework`).** In
+      aim-then-click mode, Esc cancels a selected ability and does not open the pause menu
+      (DEC-200, DEC-209 (3)). The branch builds Esc only. Keep Esc only, or add the right mouse
+      button as a second way to cancel.
+- [ ] **HC-Q51 — Review the kit ability descriptions (`feat/ability-framework`; DEC-199).** The
+      Legend panels and View Details now show each kit ability's description from content
+      (`packages/core/src/content/abilities/<id>.ts`). Blade Runner, Slam and Shockwave quote the
+      game doc's Abilities table. The other nine texts were written in the session and name no
+      source; the build plan lists Veil, Fury, Rip & Tear, Berserk, Imbue and Death Ray for your
+      review first. Rip & Tear's text now follows DEC-204 and DEC-206 (corrected on this branch,
+      `8d230e9a`): enemies under 30% health are knocked back, those at 10% or less die, and
+      survivors get Fear. Give the texts you want, or approve them.
+- [ ] **HC-Q52 — The Legend specs' `detailNames` ability rows are now unused
+      (`feat/ability-framework`).** The kit rows come from the abilities' content (DEC-199), so the
+      client no longer reads a spec's `detailNames` (`ultimate`, `ability-1` to `ability-3`). No
+      content rule checks them: only the TypeScript type and `legendSpecCatalogue.test.ts` hold
+      them (corrected 2026-11-14; this item first said "core still validates them"). The class
+      `detailNames` rows are still read. Removing the spec rows (about 28 lines) also removes the
+      Oracle names "Severed Accord" and "Unison Ward" (DEC-103), which are in no other content
+      file. Remove the spec rows, move those two names into ability content first, or keep the
+      rows for another use?
+- [ ] **HC-Q53 — Seven readings the framework session took, for you to confirm
+      (`feat/ability-framework`; none blocks the PR).** (1) An airborne target can still be
+      pushed: DEC-208's stacking is kept over `more-abilities.md` §7, whose `knockup` row says an
+      airborne unit cannot "be pushed further". (2) Blade Runner knocks back along the whole path
+      (sideways off the dash line) and stuns only at the end (game doc: "knocks back enemies in
+      your way and stuns anyone at the end of your path"). (3) A dash's end steps run at cast, at
+      the point where the dash will stop, while the caster is still on the way (0.3 s). (4) The
+      structure multiplier applies to every target that is not a unit: structures, obstacles and
+      map objects (DEC-209 (1)). (5) Ability potency grows linearly:
+      amount × (1 + 0.04 × (level − 1)) (`balancing.md`, +4% per level). (6) Inside several allied auras a Legend gets the
+      largest refill bonus; bonuses never add up. (7) The default cast mode is quick cast. Keep
+      each, or say which to change.
+- [ ] **HC-S12 — Scheduled: follow-ups of the ability framework (`feat/ability-framework`,
+      2026-11-13).** Already scheduled by your rulings: (a) the ultimate meter, with Fury, in the
+      Vanguard PR (DEC-202; phase-4 sprint 4.3); (b) situational bot casting in its own follow-up
+      PR: a heal when the bot or nearby allies have low health, a courage ability on first entering
+      combat, an execute when an enemy is in range (DEC-205); (c) a page of proposed numbers for the
+      seven abilities with no price in `balancing.md`, before they ship (DEC-197); (d) boss masses
+      with the boss content (DEC-208 (2)). Not scheduled yet, approve a PR for each or drop it:
+      (e) status `onExpire`, which the 0.2 s landing stagger after a knock-up and `control-immune`
+      after hard control need (`more-abilities.md` §7; 05 §8); (f) icons for the kit abilities,
+      which have none, and new Oracle icons (its Legend panel still shows the old preview icons
+      beside the new kit names); (g) the aether cost on the HUD bar (the snapshot carries it); (h)
+      a check in the browser of the Legend panels, whose ability bands changed size.
+      **Added 2026-11-19 (critic on the phase/3 merge of #99), to (d):** the boss content is now
+      here without its weight. `content/mobs/capturePointBoss.ts` has `mass: 3.125` ("as the heavy
+      minion"), so a Slam moves the capture point boss about 0.96 m and a Sentinel (mass 6,
+      `content/legends/sentinel.ts`) 0.5 m: the mini-boss is lighter than the class DEC-208 (2)
+      says it matches. Your "10-12" is on another scale than this repo's (Warrior 1, Sentinel 6).
+      Set the mini-boss mass to the Sentinel's (6), to 10-12 on this scale, or to another value?
+      The merge does not change it: it is a game-design number, in Aryan Walanj's boss content.
+  - Answered 2026-11-20 (DEC-284): (d) "The Sentinel's mass: 6", with the note "middle boss is
+    heavier. 10-12. Outer bosses are comparable to Sentinels.", settled on the notes page as "Yes:
+    the outer boss gets the Sentinel's mass (6)". The capture point boss gets mass 6 in a
+    follow-up PR after the freeze; the middle boss gets its mass in the PR that builds it. (e) to
+    (h): "Schedule all four after the freeze", one small PR each or one PR for (f) to (h); the
+    `control-immune` part of (e) shipped (94e3c0f1), the 0.2 s landing stagger is still to build.
+    Every part of this item is now scheduled (phase 4 plan, sprint 4.2 status of 2026-11-20); it
+    stays open until the PRs are built.
+
+- [x] **HC-Q63 — What may `guard-within-leash` allow after a knock-back?
+      (`feat/ability-framework`, 2026-11-19; critic on the phase/3 merge, finding 2; reasoning,
+      not reproduced).** The invariant (`diagnostics/invariants/GuardWithinLeashInvariant.ts`;
+      architecture 15 §3, 18 §7) allows a guard its leash plus `leashTolerance` (5.5 m,
+      `content/structures/guardPlans.ts`): one decision's walk plus its farthest stance (DEC-144,
+      DEC-181 (H2)), with about 0.06 m of margin for the capture point boss. Forced motion is not
+      in that sum. Slam pushes a light guard (mass 0.5, at or under the base mass 1) 3 m and
+      Shockwave 2.5 m, and knock-backs on one target in the same tick add up (DEC-208 (3)), so a
+      push can move a guard near its limit past it. The match then logs an ERROR (release setting) or throws (test setting,
+      `InvariantRunner.constants.ts`). No test or golden replay reaches it today. The gap came with
+      the ability framework's knock-back; #99 adds zone guards to it. A larger fixed tolerance does
+      not close it, because pushes add up and chain. Options: (A) **recommended:** the guard's post
+      keeps how far a push left it past its limit, and the invariant allows that extra distance
+      until the guard is back inside (the extra can only shrink as the guard walks home); (B) the
+      invariant skips a guard while a push moves it and while it walks home (diagnostics would
+      need the controller's state); (C) leave it, and accept false errors after pushes. Doc 18 is
+      SamarjitBhogal's. A, B or C? A or B is a follow-up PR (this track takes no new work before
+      the freeze).
+  - Answered 2026-11-20 (DEC-284): (A) "The post keeps the extra distance". Not built; a
+    follow-up PR after the freeze.
+- [x] **HC-Q64 — Should an ability area hit a structure by its outline, as a basic attack does?
+      (`feat/ability-framework`, 2026-11-19; critic on the phase/3 merge of #126, #121, #120,
+      #119, finding S1; not built).** A basic attack measures reach to the target's outline: its
+      map object's footprints, else its structure `Footprint` (a lane tower's fort and the
+      Stronghold's palace, DEC-185; a gate's outline since #119, DEC-217 (17);
+      `EntityStore.outlineOf`). An ability area (`abilities/TargetQuery`) uses only map-object
+      footprints, and the collider circle for every other body (a gate structure's is 3 m). So a
+      melee Legend at a gate's far corner reaches the gate structure with a basic attack, but a
+      Slam (4 m) cast from the same point does not hit it. Towers and the Stronghold are the same
+      since the framework was built (see the HC-B6 correction). The code change is one line
+      (`TargetQuery` reads `outlineOf`), but it changes damage: by DEC-217 (13) "the Stronghold
+      palace and the gates keep their own health", so one area cast would then hit the map object
+      and the structure. Options: (A) areas use the outline, and one cast may damage both (the
+      critic's better-than-design idea: one outline rule for reach, chase and areas); (B) areas
+      use the outline, but a cast damages one of the two (say which); (C) keep it as built. With A
+      or B, `EntityStore.isInReach` and `utils/circlePolygon.doesDiscReachPolygon` (the same rule
+      in two places today) can also become one function (the critic's second idea). A or B is a
+      follow-up PR (this track takes no new work before the freeze).
+  - Answered 2026-11-20 (DEC-284): (A) "Outline; one cast may damage both". Not built; a
+    follow-up PR after the freeze, which can also make `isInReach` and `doesDiscReachPolygon` one
+    function.
+
 - [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only
       its group's home (`CAMP_BODY`: "a camp is only its group's home"): the camp's mobs are what
@@ -44,6 +282,21 @@ Reply inline (`Decision: …`).
       each new targetable structure adds a finder and an edit there. One "targetable" snapshot
       flag and one finder would keep it closed to change. Not built in #132. OK to do each in a
       small follow-up PR?
+
+- [ ] **Better than design: the Esc key reads both of its flags from the store (#123 merge critic
+      round 2, BTD-1, 2026-11-25). Built under your standing rule; sign-off asked, nothing
+      blocks the PR.** After the phase/3 merge, Esc depended on two yes/no values: "an ability is
+      aimed" and "this is an online Duel". The hook read the first from the store at the key
+      press, but `MatchScreen` passed the second in. The two values went into
+      `pressPauseMenuKey` side by side, so a swap compiled and passed every test. Built:
+      `usePauseMenuKey` reads both from the store at the key press (`selectAimingSlot`,
+      `selectIsDuel`), and `pressPauseMenuKey` takes them as one named object
+      (`{ isAiming, isDuel }`). New tests: an aimed ability in a Duel only cancels the aim; and,
+      through the hook in a browser test, Esc first cancels the aim, then opens the leave
+      confirmation. A swap of the two values now fails a test. No design rule changes. Doc 13's
+      `MatchScreen` row now names what the screen and its pause key read (`selectAimingSlot`,
+      `selectIsDuel`) and the `cancel-aim` intent; the row named neither before. Approve, or say
+      to revert to the smaller fix (one test, no signature change).
 
 - [ ] **`feat/duel-arena-only-legends` (PR #145, SCRUM-445, SCRUM-446, SCRUM-447, SCRUM-450):
       one owner item left.** Q1 and Q2 are answered and built: DEC-348 (2026-11-23: no
@@ -118,7 +371,6 @@ Reply inline (`Decision: …`).
       with `npm run check`)? Also: GitHub answers "Dependabot alerts are disabled for this
       repository" (HTTP 403). Turn them on (repository settings, owner), or keep relying on a manual
       `npm audit`?
-
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
@@ -382,6 +634,40 @@ Reply inline (`Decision: …`).
     better-than-design items (DEC-287): the loader also turns the held minute into ticks, so
     `createDefaultScoringRules` takes no tick rate, and the authored and loaded scoring types
     share one `weights` base.
+
+- [ ] **HC-B13 — Better than the design, not built, sign-off asked: three ability-loader tidies
+      (`feat/ability-framework` merge critic after PR #125, 2026-11-20); no decision blocks PR
+      #123.** The critic's one blocker is fixed on the branch: the knock-back's travel time is now
+      ticks from `loadKnockback`, not converted on each cast (03 §8, DEC-241).
+      (1) **Aether rate per tick at load.** `AetherRegenSystem` divides
+      `AETHER_REGEN.perSecondAtBase` by the tick rate on each tick. That is not a DEC-241
+      violation (DEC-241 is about times; DEC-262 (1) moved only the healing rates). Proposal:
+      `loadAetherRegen(tickRate)` gives `perTickAtBase`, checked with `assertNonNegativeFinite`
+      (`per s`), and the system keeps no tick rate. Cost: the new order of operations changes 520
+      of 6.2 million per-tick amounts by one 2^-16 step, so a replay hash can change; the seed-11
+      replay needs a re-run, and ADR 0026 decision 5 needs a new DEC (an accepted ADR is not
+      rewritten).
+      (2) **One rounding rule in `TickRate`.** `ticksOf` in `loadAbilities.ts` (0 stays 0, any other
+      time is at least one tick) is a third rounding rule outside `TickRate`. Proposal: move it
+      into `TickRate` as a named method with its test, as DEC-262 (3) did for `perTick`.
+      (3) **One finite check.** `isNonNegative` in `loadAbilities.ts` repeats the test inside
+      `assertNonNegativeFinite`. Proposal: export one `isNonNegativeFinite` next to the assert and
+      use it in both.
+      (4) **One tick rate for the ability content** (fix re-check critic). Each caller now writes
+      `createDefaultAbilityRegistry(loadAbilities(tickRate), tickRate)`: the same rate twice, and
+      the factory loads the knock-back while it is given the abilities and statuses. Core's
+      `loadDisplayContent(tickRate)` takes a rate that no description reads. Proposal: one
+      `loadAbilityContent(tickRate)` gives `{ abilities, knockback }` and the factory only
+      composes. The built design is correct; this is a tidy.
+      (5) **One step-time module** (merge critic of `feat/vanguard-kit` after this branch's
+      `7a952b48`, 2026-11-20). The code is on `feat/vanguard-kit` (PR #136), not on this branch:
+      `content/abilities/loadStatusEffects.ts` imports `timeProblems` and `stepInTicks` from
+      `loadAbilities.ts`, so `loadAbilities.ts` is a step-time library for two loaders. Proposal:
+      move `timeProblems`, `stepInTicks`, `inTicks`, `ticksOf` and `isNonNegative` into one module
+      (for example `content/abilities/loadEffectSteps.ts`). It goes with (2) and (3).
+      Also seen (not in this branch's diff, same class as HC-B9): `CaptureSystem` converts
+      `captureSeconds` and `revertSeconds` to ticks in its constructor.
+      Build (1) to (4) in PR #123 and (5) in PR #136, in a later PR, or keep the code as it is?
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**

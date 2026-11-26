@@ -39,7 +39,7 @@ export function MatchScreen({ viewport }: ScreenProps): ReactElement {
   const overlay = useAppSelector((state) => state.session.overlay);
   const openerRef: PauseOpenerRef = useRef<Element | null>(null);
   const isDuel = useAppSelector(selectIsDuel);
-  usePauseMenuKey(overlay, openerRef, isDuel);
+  usePauseMenuKey(overlay, openerRef);
   useDuelUnloadGuard(isDuel);
   const isInert = overlay !== null;
   return (

@@ -9,7 +9,7 @@ import styles from './ResourceBar.module.css';
 describe('AetherBar', () => {
   it('shows the Figma aether 4700 of 5640 as the Aether meter with its numeral', () => {
     const html = renderWithStore(<AetherBar className="placed" />, {
-      hud: { player: FIGMA_HUD_PLAYER, announcements: [] },
+      hud: { player: FIGMA_HUD_PLAYER, announcements: [], aimingSlot: null },
     });
     expect(numeral(html)).toBe('4700');
     expect(html).toContain('aria-valuetext="4700 of 5640"');
