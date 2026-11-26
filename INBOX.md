@@ -872,6 +872,15 @@ Reply inline (`Decision: …`).
       was at most 1 level. Options: (A, built) keep 2 levels; (B) cap it at 1 level, as the boss
       reward is capped (DEC-237). Also: when a minion lands the last hit, no one gets the XP.
 
+- [ ] **HC-Q118 — What type of weapon are the Colossus's Bastions? (`feat/start-weapons`, PR 3
+      W3, Owner Calls v100).** You said yes to the Bastions at 120 damage every 1.6 s (DEC-374).
+      They are not built yet, because each weapon has one weapon type and reference 07 gives the
+      Bastions none. Until you answer, the Colossus starts with the Wuuthrad battle axe. The type
+      does not change how a weapon hits. Options: (A, recommended) a new type, Shield, because the
+      Bastions are walls on the arms; (B) Glove, like the Raptor Talons. Either way the Bastions
+      are one weapon file and one line in the Colossus spec. Code names: `WeaponClass` in
+      `content/weapons/weapons.types.ts`; DEC-374 (7).
+
 - [ ] **HC-B38 — Better than the design, sign-off asked: 5 code ideas from the critic
       (`feat/wall-turrets`, PR 4, critic rounds 4 and 5, 2026-11-23; PR-REVIEW-ASSIST-38/39).**
       Nothing changes in play. Say "no" to a built item and it goes back.
