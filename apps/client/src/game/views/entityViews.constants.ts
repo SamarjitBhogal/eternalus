@@ -24,6 +24,9 @@ export const LEGEND_BODY_COLOR = 'rgba(128, 128, 128, 0.55)';
 /** How much wider than the Legend its outline is. */
 export const LEGEND_OUTLINE_SCALE = 1.25;
 
+/** Shared Legend display diameter, approved for the stand-in art by DEC-238. */
+export const LEGEND_VISUAL_DIAMETER = 5.2;
+
 /** Colour of the outline that keeps mobs visible on their own team's ground (the Stronghold). */
 export const MOB_OUTLINE_COLOR = '#1b1b1b';
 
@@ -104,10 +107,3 @@ export const MINI_MAP_OUTLINE_COLORS: Readonly<Record<Team, string>> = {
 
 /** Mini map layer of Legends' markers: above the mobs' (layer 0), so a Legend stays on top. */
 export const MINI_MAP_LEGEND_LAYER = 1;
-
-/**
- * World width of a drawn Legend sprite. DEC-238 (owner, 2026-11-10) approves larger Legend draw
- * sizes as stand-in art; its row and this value land with PR #90 (`feat/visuals-and-design`).
- */
-// TUNE: owner 2026-11-10 (DEC-238): stand-in art size
-export const LEGEND_VISUAL_DIAMETER = 5.2;

@@ -1,9 +1,12 @@
-import { TEAM_COLORS } from './MapView.constants';
 import type { EntitySnapshot } from '@eternalus/core';
-import { describe, expect, it, vi } from 'vitest';
-import { LegendSpriteView } from './LegendSpriteView';
-import { SPRITE_GROUND_OFFSETS } from '../LegendAnimation.constants';
+import { describe, expect, it } from 'vitest';
+
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
+import { FOCUS_RING_COLOR } from './entityViews.constants';
+import { LegendSpriteView } from './LegendSpriteView';
+import { LEGEND_SPRITE_RING_SCALE } from './LegendSpriteView.constants';
+import { LegendView } from './LegendView';
+import { TEAM_COLORS } from './MapView.constants';
 
 const entity: EntitySnapshot = {
   id: 'hero',
@@ -20,34 +23,52 @@ const entity: EntitySnapshot = {
   gem: null,
 };
 const state = { entity, position: { x: 1, y: 2 }, isFocused: true, facing: { x: 0, y: 1 } };
+const FRAME = { atlasId: 'oracle-sprites', frame: 3 } as const;
+
 describe('LegendSpriteView', () => {
-  it('draws an atlas frame and keeps the team ring and Legend minimap marker', () => {
-    const renderer = new RecordingRenderer(),
-      view = new LegendSpriteView(() => ({ atlasId: 'oracle-sprites', frame: 3 }), 6.8);
-    // The height above the feet: the health bar sits on top of it.
-    expect(view.draw(state, renderer)).toBeCloseTo(6.8 * (1 - SPRITE_GROUND_OFFSETS.magus));
-    expect(renderer.calls.find((call) => call.op === 'drawSprite')?.args[0]).toEqual({
-      atlasId: 'oracle-sprites',
-      frame: 3,
+  it('draws the frame with its feet on the position, then the team ring and the focus ring', () => {
+    const renderer = new RecordingRenderer();
+    new LegendSpriteView(() => FRAME, 6.8, 0.25).draw(state, renderer);
+    const glyphs = renderer.calls.flatMap((call) => (call.op === 'drawWorldGlyph' ? [call] : []));
+
+    // The cell's bottom edge is 0.25 x 6.8 below the feet, so the feet stand on (1, 2).
+    expect(renderer.calls[0]).toEqual({
+      op: 'drawSprite',
+      args: [FRAME, { x: 1, y: 2 + 6.8 * 0.25 }, 6.8],
     });
-    expect(renderer.calls.find((call) => call.op === 'drawWorldGlyph')?.args[2]).toBe(
+    expect(glyphs[0]?.args).toEqual([
+      { shape: 'ring', size: 6.8 * LEGEND_SPRITE_RING_SCALE },
+      { x: 1, y: 2 },
       TEAM_COLORS.dark,
-    );
-    renderer.calls.length = 0;
-    view.drawMinimap(state, renderer);
+    ]);
+    expect(glyphs.at(-1)?.args).toEqual([
+      { shape: 'ring', size: 6.8 },
+      { x: 1, y: 2 },
+      FOCUS_RING_COLOR,
+    ]);
+  });
+
+  it('reports the sprite top above the position as its radius, so the health bar sits above it', () => {
+    const view = new LegendSpriteView(() => FRAME, 6.8, 0.25);
+
+    expect(view.visualRadiusOf(entity)).toBeCloseTo(6.8 * 0.75);
+  });
+
+  it('draws any other Legend as the ordinary Legend view, with its footprint radius', () => {
+    const view = new LegendSpriteView(() => null, 6.8, 0.25);
+    const drawn = new RecordingRenderer();
+    const ordinary = new RecordingRenderer();
+    view.draw(state, drawn);
+    new LegendView().draw(state, ordinary);
+
+    expect(drawn.calls).toEqual(ordinary.calls);
+    expect(view.visualRadiusOf(entity)).toBe(0.75);
+  });
+
+  it('keeps the Legend minimap marker', () => {
+    const renderer = new RecordingRenderer();
+    new LegendSpriteView(() => FRAME, 6.8, 0.25).drawMinimap(state, renderer);
+
     expect(renderer.calls.some((call) => call.op === 'drawGlyph')).toBe(true);
-  });
-  it('uses the existing Legend fallback when the atlas is unavailable', () => {
-    const renderer = new RecordingRenderer();
-    vi.spyOn(renderer, 'drawSprite').mockReturnValue(false);
-    const view = new LegendSpriteView(() => ({ atlasId: 'missing', frame: 0 }), 6.8);
-    expect(view.draw(state, renderer)).toBeUndefined();
-    expect(renderer.calls.filter((call) => call.op === 'drawWorldGlyph').length).toBeGreaterThan(1);
-  });
-  it('keeps the fallback when no selected sprite is provided', () => {
-    const renderer = new RecordingRenderer();
-    new LegendSpriteView(() => null, 6.8).draw(state, renderer);
-    expect(renderer.calls.some((call) => call.op === 'drawSprite')).toBe(false);
-    expect(renderer.calls.some((call) => call.op === 'drawWorldGlyph')).toBe(true);
   });
 });

@@ -6,8 +6,13 @@ import type { GlyphSpec, ScreenRect, SpriteRef, WorldPoint, WorldRect } from './
  * implementation that touches `CanvasRenderingContext2D`; tests pass recording fakes.
  */
 export interface Renderer {
-  /** Copies a prepared frame centred above its feet; false lets views draw a fallback. */
-  drawSprite(sprite: SpriteRef, feet: WorldPoint, size: number): boolean;
+  /**
+   * Draws one atlas frame with its bottom centre at `anchor`, `width` world units wide; the height
+   * follows the shape of the atlas cell. Draws nothing when `hasSprite(sprite)` is false.
+   */
+  drawSprite(sprite: SpriteRef, anchor: WorldPoint, width: number): void;
+  /** Whether `drawSprite` can draw `sprite`: the renderer holds its atlas, and the atlas has the frame. */
+  hasSprite(sprite: SpriteRef): boolean;
   /** Sets the drawing area in device pixels and how many device pixels make one CSS pixel. */
   resize(screenWidth: number, screenHeight: number, pixelRatio?: number): void;
   /**

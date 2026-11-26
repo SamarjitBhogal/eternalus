@@ -30,6 +30,15 @@ describe('ResultsState', () => {
     expect(countdown).toEqual([RESULTS_COUNTDOWN_MS, RESULTS_COUNTDOWN_MS - 1_000]);
   });
 
+  it("also releases the sprite sheet group of the match's pick", () => {
+    const context = new FakeSessionContext();
+    context.recordSelection({ classId: 'magus', specId: 'oracle' });
+
+    new ResultsState().enter(context);
+
+    expect(context.calls.releaseAssets).toEqual([['match'], ['atlas-oracle']]);
+  });
+
   it('goes to the menu when the countdown ends, not before (DEC-78)', () => {
     const { context, countdown } = setUp();
 

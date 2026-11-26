@@ -16,6 +16,18 @@ describe('MenuState', () => {
     expect(routes).toEqual(['home']);
   });
 
+  it("also releases the sprite sheet group of the match's pick, before it drops the setup", () => {
+    const context = new FakeSessionContext();
+    context.recordSelection({ classId: 'magus', specId: 'oracle' });
+
+    new MenuState().enter(context);
+
+    expect(context.calls.releaseAssets).toEqual([['match'], ['atlas-oracle']]);
+    expect(context.order.indexOf('releaseAssets')).toBeLessThan(
+      context.order.indexOf('clearMatchSetup'),
+    );
+  });
+
   it('joins the Duel queue on start-duel and shows the waiting screen', () => {
     const context = new FakeSessionContext();
     const routes: string[] = [];

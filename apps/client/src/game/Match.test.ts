@@ -94,7 +94,12 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
  * mobs the map's structures spawn, it plays in sim mode instead: no map, so no roster (a roster
  * needs the map).
  */
-const setUp = (content?: Content, withMapObjects = false, playerSpecId: string | null = null) => {
+const setUp = (
+  content?: Content,
+  withMapObjects = false,
+  playerSpecId: string | null = null,
+  atlases: ConstructorParameters<typeof RecordingRenderer>[0] = {},
+) => {
   // No countdown: core's countdown holds all movement, and these tests walk from the start.
   const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
   const world = prepareMatchWorld(config, SEED);
@@ -108,7 +113,7 @@ const setUp = (content?: Content, withMapObjects = false, playerSpecId: string |
     ...(withMapObjects ? { mapObjects: world.mapObjects } : {}),
   });
   const scheduler = new FakeFrameScheduler();
-  const renderer = new RecordingRenderer();
+  const renderer = new RecordingRenderer(atlases);
   const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
   const input = new ScriptedIntent();
   const logger = new MemoryLogger();
@@ -476,13 +481,31 @@ describe('Match', () => {
     expect(aim?.x).toBeCloseTo(view.x + view.width / 2);
     expect(aim?.y).toBeCloseTo(view.y + view.height / 2);
   });
-});
 
-it('renders the selected Knight through the live match view registry', () => {
-  const { match, renderer } = setUp(undefined, false, 'knight');
-  match.render(0);
-  expect(
-    renderer.calls.filter((call) => call.op === 'drawSprite').map((call) => call.args[0]),
-  ).toContainEqual({ atlasId: 'knight-sprites', frame: 0 });
-  match.destroy();
+  it('renders the selected Knight through the live match view registry', () => {
+    const { match, renderer, logger } = setUp(undefined, false, 'knight', {
+      'knight-sprites': { columns: 6, rows: 10 },
+    });
+    match.render(0);
+    expect(
+      renderer.calls.filter((call) => call.op === 'drawSprite').map((call) => call.args[0]),
+    ).toContainEqual({ atlasId: 'knight-sprites', frame: 0 });
+    expect(logger.records.filter(({ severityText }) => severityText === 'WARN')).toEqual([]);
+    match.destroy();
+  });
+
+  it('draws the selected Knight as a disc, with one WARN, when the renderer has no atlas', () => {
+    const { match, renderer, logger } = setUp(undefined, false, 'knight');
+    match.render(0);
+
+    expect(renderer.calls.some((call) => call.op === 'drawSprite')).toBe(false);
+    expect(
+      logger.records.map(({ severityText, scope, attributes }) => [
+        severityText,
+        scope,
+        attributes,
+      ]),
+    ).toEqual([['WARN', 'client.views', { atlasId: 'knight-sprites' }]]);
+    match.destroy();
+  });
 });

@@ -35,4 +35,19 @@ describe('RecordingRenderer', () => {
   it('returns world points unchanged from toScreen', () => {
     expect(new RecordingRenderer().toScreen({ x: 3, y: 4 })).toEqual({ x: 3, y: 4 });
   });
+
+  it('has a sprite by the same rule as Canvas2dRenderer: a given grid that holds the frame', () => {
+    const renderer = new RecordingRenderer({ oracle: { columns: 6, rows: 10 } });
+    const has = (atlasId: string, frame: number): boolean => renderer.hasSprite({ atlasId, frame });
+
+    expect([has('oracle', 0), has('oracle', 59)]).toEqual([true, true]);
+    expect([has('missing', 0), has('oracle', 60), has('oracle', -1), has('oracle', 1.5)]).toEqual([
+      false,
+      false,
+      false,
+      false,
+    ]);
+    expect(new RecordingRenderer().hasSprite({ atlasId: 'oracle', frame: 0 })).toBe(false);
+    expect(renderer.calls[0]).toEqual({ op: 'hasSprite', args: [{ atlasId: 'oracle', frame: 0 }] });
+  });
 });

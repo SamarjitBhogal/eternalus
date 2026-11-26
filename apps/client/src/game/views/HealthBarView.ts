@@ -21,7 +21,7 @@ export class HealthBarView {
     { entity, position }: EntityDrawState,
     side: HealthBarSide,
     renderer: Renderer,
-    visibleHeight?: number,
+    visualRadius?: number,
   ): void {
     const { health, transform } = entity;
     if (health === null || transform === null) {
@@ -29,7 +29,7 @@ export class HealthBarView {
     }
     const width = transform.radius * 2 * HEALTH_BAR_WIDTH_SCALE;
     const x = position.x - width / 2;
-    const y = position.y - (visibleHeight ?? transform.radius) - HEALTH_BAR_GAP - HEALTH_BAR_HEIGHT;
+    const y = position.y - (visualRadius ?? transform.radius) - HEALTH_BAR_GAP - HEALTH_BAR_HEIGHT;
     const filled = (health.current / health.max) * width;
     renderer.fillPolygon(rectangle(x, y, width, HEALTH_BAR_HEIGHT), HEALTH_BAR_TRACK_COLOR);
     renderer.fillPolygon(rectangle(x, y, filled, HEALTH_BAR_HEIGHT), HEALTH_BAR_FILL_COLORS[side]);

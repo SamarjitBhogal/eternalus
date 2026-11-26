@@ -1,10 +1,6 @@
 import type { EntitySnapshot, Simulation, Snapshot, Unsubscribe } from '@eternalus/core';
-import type { SpriteRef } from './engine/render/Renderer.types';
-import {
-  LEGEND_ANIMATION,
-  LEGEND_ATLAS_ROWS,
-  LEGEND_SPRITE_SHEETS,
-} from './LegendAnimation.constants';
+import type { SpriteRef, WorldPoint } from './engine/render/Renderer.types';
+import { LEGEND_ANIMATION, LEGEND_ATLAS_ROWS } from './LegendAnimation.constants';
 
 /** Match-owned presentation state driven by the player's weapon hits and observed motion. */
 export class LegendAnimation {
@@ -12,17 +8,18 @@ export class LegendAnimation {
   private walkRow: number = LEGEND_ATLAS_ROWS.south;
   private isMoving = false;
   private idleRow: number = LEGEND_ATLAS_ROWS.idle;
-  private readonly atlasId: string | null;
   private readonly unsubscribe: readonly Unsubscribe[];
-  /** Only the selected player's skin is replaced; other Legends retain their existing view. */
+  /**
+   * Animates only the player's Legend (`playerId`) from the atlas `atlasId` (the player's sheet);
+   * with either `null`, every frame is `null` and nothing is subscribed.
+   */
   public constructor(
     private readonly playerId: string | null,
-    specId: string | null,
+    private readonly atlasId: string | null,
     private readonly tickRate: number,
     simulation: Pick<Simulation, 'on' | 'tick'>,
   ) {
-    this.atlasId = LEGEND_SPRITE_SHEETS[specId ?? '']?.atlasId ?? null;
-    if (playerId === null || this.atlasId === null) {
+    if (playerId === null || atlasId === null) {
       this.unsubscribe = [];
       return;
     }
@@ -37,35 +34,16 @@ export class LegendAnimation {
   public observe(previous: Snapshot | null, current: Snapshot): void {
     const before = previous?.entities.find((entity) => entity.id === this.playerId)?.transform;
     const after = current.entities.find((entity) => entity.id === this.playerId)?.transform;
-    const dx =
-      before === undefined || before === null || after === undefined || after === null
-        ? 0
-        : after.x - before.x;
-    const dy =
-      before === undefined || before === null || after === undefined || after === null
-        ? 0
-        : after.y - before.y;
-    this.isMoving = Math.abs(dx) + Math.abs(dy) > Number.EPSILON;
+    const hasBoth =
+      before !== undefined && before !== null && after !== undefined && after !== null;
+    const step = hasBoth ? { x: after.x - before.x, y: after.y - before.y } : { x: 0, y: 0 };
+    this.isMoving = Math.abs(step.x) + Math.abs(step.y) > Number.EPSILON;
     const facing = after?.facing;
     if (facing !== undefined) {
-      this.idleRow =
-        Math.abs(facing.x) > Math.abs(facing.y)
-          ? facing.x > 0
-            ? LEGEND_ATLAS_ROWS.east
-            : LEGEND_ATLAS_ROWS.west
-          : facing.y < 0
-            ? LEGEND_ATLAS_ROWS.north
-            : LEGEND_ATLAS_ROWS.idle;
+      this.idleRow = LegendAnimation.rowFor(facing, LEGEND_ATLAS_ROWS.idle);
     }
     if (this.isMoving) {
-      this.walkRow =
-        Math.abs(dx) > Math.abs(dy)
-          ? dx > 0
-            ? LEGEND_ATLAS_ROWS.east
-            : LEGEND_ATLAS_ROWS.west
-          : dy > 0
-            ? LEGEND_ATLAS_ROWS.south
-            : LEGEND_ATLAS_ROWS.north;
+      this.walkRow = LegendAnimation.rowFor(step, LEGEND_ATLAS_ROWS.south);
     }
   }
   /** Returns a frame only for a living selected Legend with a known sheet. */
@@ -104,5 +82,16 @@ export class LegendAnimation {
   /** Releases every event subscription with the match. */
   public destroy(): void {
     for (const unsubscribe of this.unsubscribe) unsubscribe();
+  }
+
+  /**
+   * The atlas row of a direction: east or west when it is mostly sideways, else north when it
+   * points up the screen, else `southRow` (the idle row for a facing, the south walk for a step).
+   */
+  private static rowFor(direction: WorldPoint, southRow: number): number {
+    if (Math.abs(direction.x) > Math.abs(direction.y)) {
+      return direction.x > 0 ? LEGEND_ATLAS_ROWS.east : LEGEND_ATLAS_ROWS.west;
+    }
+    return direction.y < 0 ? LEGEND_ATLAS_ROWS.north : southRow;
   }
 }

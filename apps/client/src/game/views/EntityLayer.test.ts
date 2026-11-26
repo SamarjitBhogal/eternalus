@@ -55,7 +55,7 @@ const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
 class SpyView implements EntityView {
   public readonly drawn: EntityDrawState[] = [];
 
-  public draw(state: EntityDrawState): undefined {
+  public draw(state: EntityDrawState): void {
     this.drawn.push(state);
   }
 
@@ -64,16 +64,20 @@ class SpyView implements EntityView {
   }
 }
 
-/** A view that draws nothing and reports a fixed visible height, as a drawn sprite does. */
+/** A view that draws nothing and reports a fixed artwork radius, as a drawn sprite does. */
 class TallView implements EntityView {
-  public constructor(private readonly height: number) {}
+  public constructor(private readonly radius: number) {}
 
-  public draw(): number {
-    return this.height;
+  public draw(): void {
+    // The health-bar test below needs only the radius.
   }
 
   public drawMinimap(): void {
     // The health-bar test below needs the main view only.
+  }
+
+  public visualRadiusOf(): number {
+    return this.radius;
   }
 }
 
@@ -269,7 +273,7 @@ describe('EntityLayer', () => {
     expect(calls.findIndex((call) => call.op === 'fillPolygon')).toBe(calls.length - 4);
   });
 
-  it('lifts a bar above the height its view returns, not the footprint (a drawn sprite)', () => {
+  it('lifts a bar above the radius its view reports, not the footprint (a drawn sprite)', () => {
     const layer = new EntityLayer(
       new ViewRegistry(new TallView(3)),
       () => false,

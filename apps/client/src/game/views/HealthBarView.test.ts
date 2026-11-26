@@ -67,7 +67,7 @@ describe('HealthBarView', () => {
     expect(fill?.[2]?.x).toBeCloseTo(10 - width / 2 + width * 0.3);
   });
 
-  it('lifts the track above a drawn sprite: the visible height replaces the footprint radius', () => {
+  it('lifts the track above a drawn sprite: the artwork radius replaces the footprint radius', () => {
     const renderer = new RecordingRenderer();
     new HealthBarView().draw(
       { entity: unit, position: { x: 10, y: 20 }, facing: EAST, isFocused: false },

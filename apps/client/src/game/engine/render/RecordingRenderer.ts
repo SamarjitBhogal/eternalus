@@ -1,21 +1,33 @@
+import { atlasWithFrame } from './atlasWithFrame';
 import type { Renderer } from './Renderer';
+import type { AtlasGrid } from './Renderer.types';
 import type { RecordedCall } from './RecordingRenderer.types';
 
 /**
  * A `Renderer` that draws nothing and records every call, in order (architecture 09 §1: every
  * port has a recording fake). Tests use it to check what a view asked the screen to do
- * without a canvas. `toScreen` returns the point unchanged. Narrow `calls` on `op` to read a
- * call's arguments with their types.
+ * without a canvas. `toScreen` returns the point unchanged; `hasSprite` answers by the same rule
+ * as `Canvas2dRenderer` (`atlasWithFrame`) for the atlas grids it is given. Narrow `calls` on
+ * `op` to read a call's arguments with their types.
  */
 export class RecordingRenderer implements Renderer {
   /** Every call so far, oldest first. */
   public readonly calls: RecordedCall[] = [];
 
-  /** Records an atlas frame request without decoding images. */
-  public drawSprite(...args: Parameters<Renderer['drawSprite']>): boolean {
+  /** Creates a recorder that holds the given atlas grids by manifest id (none by default). */
+  public constructor(private readonly atlases: Readonly<Record<string, AtlasGrid>> = {}) {}
+
+  /** Records the call. */
+  public drawSprite(...args: Parameters<Renderer['drawSprite']>): void {
     this.calls.push({ op: 'drawSprite', args });
-    return true;
   }
+
+  /** Records the call and answers whether one of its atlas grids holds the frame. */
+  public hasSprite(...args: Parameters<Renderer['hasSprite']>): boolean {
+    this.calls.push({ op: 'hasSprite', args });
+    return atlasWithFrame(this.atlases, args[0]) !== undefined;
+  }
+
   /** Records the call. */
   public resize(...args: Parameters<Renderer['resize']>): void {
     this.calls.push({ op: 'resize', args });

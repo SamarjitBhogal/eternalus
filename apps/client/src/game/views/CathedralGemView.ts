@@ -13,7 +13,7 @@ import type { EntityDrawState, EntityView } from './EntityView.types';
  */
 export class CathedralGemView implements EntityView {
   /** Draws the glow, the pulse, then the gem on top. */
-  public draw({ entity, position }: EntityDrawState, renderer: Renderer): undefined {
+  public draw({ entity, position }: EntityDrawState, renderer: Renderer): void {
     const radius = entity.transform?.radius ?? 0;
     if (entity.gem !== null) {
       CathedralGemView.drawGlow(entity.gem, radius, position, renderer);

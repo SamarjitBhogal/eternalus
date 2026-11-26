@@ -12,13 +12,14 @@ import type { PlayerHudSnapshot } from '../bridge/hud.types';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import type { LogSink } from '../data/logging/LogSink.types';
 import { RingBufferSink } from '../data/logging/RingBufferSink';
+import { SpriteAtlasAsset } from '../data/resources/SpriteAtlasAsset';
 import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { createBrowserMatch, type BrowserMatchDeps } from './createBrowserMatch';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
 import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
-import { MS_PER_SECOND } from './Match.constants';
+import { LOG_RING_CAPACITY, MS_PER_SECOND } from './Match.constants';
 import type { MatchObserver, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { prepareMatchWorld } from './prepareMatchWorld';
@@ -89,16 +90,9 @@ function setUp(
 }
 
 describe('createBrowserMatch', () => {
-  it('loads only the selected atlas and releases it with the match', async () => {
-    const group = 'atlas-colossus';
-    const resources = {
-      load: vi.fn(() => Promise.resolve({ group, failed: [] } as const)),
-      release: vi.fn(),
-      atlases: vi.fn(() => ({})),
-    };
-    const { factory, viewport, request } = setUp(undefined, [], resources);
-    const matchRequest = request();
-    const player: RosterEntry = {
+  describe("the player's sprite atlas (loaded by match-loading, 13 §2)", () => {
+    /** A Colossus player in the dark team, the request's only ally. */
+    const COLOSSUS: RosterEntry = {
       legendId: 'player',
       displayName: 'Player',
       team: 'dark',
@@ -108,16 +102,40 @@ describe('createBrowserMatch', () => {
       specId: 'colossus',
       isPlayer: true,
     };
-    const running = factory(
-      { ...matchRequest, setup: { ...matchRequest.setup, allies: [player] } },
-      viewport,
-    );
-    await Promise.resolve();
-    expect(resources.load.mock.calls).toHaveLength(1);
-    expect(resources.load).toHaveBeenCalledWith(group, expect.any(Function));
-    expect(resources.atlases).toHaveBeenCalledWith(group);
-    running.destroy();
-    expect(resources.release).toHaveBeenCalledExactlyOnceWith(group);
+    /** Starts a Colossus match over `atlases`; returns its WARN records and the atlas lookups. */
+    const startWith = (atlases: Readonly<Record<string, SpriteAtlasAsset>>) => {
+      const ring = new RingBufferSink(LOG_RING_CAPACITY);
+      const resources = { atlases: vi.fn(() => atlases) };
+      const { factory, viewport, request } = setUp(undefined, [ring], resources);
+      const matchRequest = request();
+      const running = factory(
+        { ...matchRequest, setup: { ...matchRequest.setup, allies: [COLOSSUS] } },
+        viewport,
+      );
+      const warnings = ring
+        .tail(LOG_RING_CAPACITY)
+        .map(({ scope, attributes }) => [scope, attributes]);
+      running.destroy();
+      return { warnings, lookups: resources.atlases.mock.calls };
+    };
+
+    it("hands the atlas of the player's sheet to the renderer: the sprite view, no WARN", () => {
+      const image = { width: 384, height: 640, close: vi.fn() };
+      const { warnings, lookups } = startWith({
+        'colossus-sprites': new SpriteAtlasAsset(image, 6, 10),
+      });
+
+      expect(lookups).toEqual([['atlas-colossus']]);
+      expect(warnings).toEqual([]);
+      // The session owns the atlas: the match neither loads nor closes it.
+      expect(image.close).not.toHaveBeenCalled();
+    });
+
+    it('still starts the match when the atlas did not load: a disc and one WARN', () => {
+      const { warnings } = startWith({});
+
+      expect(warnings).toEqual([['client.views', { atlasId: 'colossus-sprites' }]]);
+    });
   });
 
   it.each([

@@ -5,6 +5,7 @@ import { firstAvailableSpecId } from '../../content/__fixtures__/shippedCatalogu
 import { FakeSessionContext } from '../../FakeSessionContext';
 import { flushMicrotasks, testResources, testSession } from '../../testSessionDeps';
 import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from '../sessionTiming.constants';
+import { matchAssetGroups } from '../matchAssetGroups';
 import { MatchLoadingState } from './MatchLoadingState';
 
 /** The Legend these tests pick for the sentinel class. */
@@ -39,8 +40,45 @@ describe('MatchLoadingState', () => {
     const { context, groups, onReady } = entered();
     expect(groups).toEqual(['match']);
     onReady?.();
-    expect(context.order).toEqual(['loadAssets', 'prepareWorld', 'transition']);
+    expect(context.order).toEqual(['selection', 'loadAssets', 'prepareWorld', 'transition']);
     expect(context.calls.transition).toEqual([['match']]);
+  });
+
+  it("loads the sprite sheet group of the player's pick after the match group", () => {
+    const context = new FakeSessionContext();
+    context.recordSelection({ classId: 'sentinel', specId: 'colossus' });
+    new MatchLoadingState().enter(context);
+
+    expect(context.calls.loadAssets.map(([groups]) => groups)).toEqual([
+      ['match', 'atlas-colossus'],
+    ]);
+  });
+
+  it('opens the match when the sprite sheet fails to load: the sheet stays unloaded', async () => {
+    const [, sheet] = matchAssetGroups({ classId: 'sentinel', specId: SENTINEL_LEGEND });
+    if (sheet === undefined) throw new Error(`${SENTINEL_LEGEND} has no sprite sheet`);
+    const { resources, loader } = testResources([sheet]);
+    const session = testSession({ resources });
+    const settle = async (): Promise<void> => {
+      do {
+        loader.resolveAll();
+        await flushMicrotasks();
+      } while (loader.pendingCount > 0);
+    };
+    session.controller.start();
+    await settle();
+    session.intent({ kind: 'start-match' });
+    await settle();
+    session.intent({ kind: 'select-class', classId: 'sentinel', specId: SENTINEL_LEGEND });
+    session.intent({ kind: 'confirm-selection' });
+    session.clock.advance(SELECT_COUNTDOWN_MS);
+    session.clock.advance(REVEAL_COUNTDOWN_MS);
+    await settle();
+
+    expect(session.phases.slice(-2)).toEqual(['match-loading', 'match']);
+    expect(loader.calls.map(({ url }) => url)).toContain(`/test/${sheet}.webp`);
+    expect(resources.isLoaded(sheet)).toBe(false);
+    expect(session.logger.records).toEqual([]);
   });
 
   it('aborts the match when the world cannot be built', () => {

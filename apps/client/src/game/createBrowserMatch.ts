@@ -16,7 +16,7 @@ import { Canvas2dRenderer } from './engine/render/Canvas2dRenderer';
 import type { SessionClock } from './engine/time/SessionClock.types';
 import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
-import { LEGEND_SPRITE_SHEETS } from './LegendAnimation.constants';
+import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, LOG_RING_CAPACITY } from './Match.constants';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
@@ -28,7 +28,12 @@ import type { MatchFactory } from './SessionController.types';
 
 /** What the browser match factory is built from; `main.tsx` passes window, document and the page singletons. */
 export type BrowserMatchDeps = {
-  readonly resources?: Pick<ResourceController, 'load' | 'release' | 'atlases'>;
+  /**
+   * The loaded sprite atlases: `match-loading` loaded the player's sheet group before the match
+   * (13 §2), and the factory hands its atlases to the renderer. Left out (the Duel factory,
+   * tests), the renderer gets none and the player's Legend is a disc.
+   */
+  readonly resources?: Pick<ResourceController, 'atlases'>;
   /** The frame scheduler (`RafFrameScheduler`) is built on it, so the type names rAF. */
   readonly window: HostWindow & Pick<Window, 'requestAnimationFrame' | 'cancelAnimationFrame'>;
   readonly document: HostDocument;
@@ -75,7 +80,9 @@ function readEvidence(simulation: Simulation, ring: RingBufferSink): MatchEviden
  * builds the adapters (renderer, camera, devices, mapper, logger, frame scheduler), a fresh
  * `Simulation(setup.seed)` on `request.world`'s map and map objects with `request.roster` (the
  * setup's bots and the player's human slot) as its roster, the `Match` on the same world and its
- * `MatchHost`, then starts the host, which owns everything from then on. The match log records the seed first.
+ * `MatchHost`, then starts the host, which owns everything from then on. The renderer gets the
+ * atlas of the player's sprite sheet, which `match-loading` loaded and the session releases (13 §2).
+ * The match log records the seed first.
  * @throws What the renderer or `Match` threw, after destroying every adapter already built
  *   (0 listeners, 0 pending frames).
  */
@@ -83,12 +90,12 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
   return (request, viewport) => {
     const { window, gameConfig, settings, resources } = deps;
     const playerSpecId = request.setup.allies.find((entry) => entry.isPlayer)?.specId ?? null;
-    const atlasGroup = LEGEND_SPRITE_SHEETS[playerSpecId ?? '']?.group;
-    let isAtlasOwner = true;
+    const sheet = LEGEND_SPRITE_SHEETS[playerSpecId ?? ''];
     // Core spawns the roster's human slot, the player's Rover, at the team's Stronghold: a map
     // without one throws in `Simulation`, below.
     const config = withPlayerTeam(gameConfig, request.setup.playerTeam);
-    const renderer = Canvas2dRenderer.fromCanvas(viewport.canvas);
+    const atlases = sheet === undefined ? {} : (resources?.atlases(sheet.group) ?? {});
+    const renderer = Canvas2dRenderer.fromCanvas(viewport.canvas, atlases);
     if (renderer === null) {
       throw new Error('This browser cannot draw on a 2D canvas.');
     }
@@ -147,35 +154,12 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
       input,
       bus: deps.bus,
       mapper,
-      adapters: [
-        renderer,
-        camera,
-        {
-          destroy: () => {
-            isAtlasOwner = false;
-            if (atlasGroup !== undefined) resources?.release(atlasGroup);
-          },
-        },
-      ],
+      adapters: [renderer, camera],
       evidence: () => readEvidence(simulation, ring),
       currentTick: () => simulation.tick,
     });
     // A throw here has already been undone by the host (every listener, the match, the adapters).
     host.start();
-    if (atlasGroup !== undefined && resources !== undefined) {
-      void resources
-        .load(atlasGroup, () => undefined)
-        .then(() => {
-          if (isAtlasOwner) renderer.setAtlases(resources.atlases(atlasGroup));
-        })
-        .catch((error: unknown) => {
-          logger.log(
-            makeLogRecord('WARN', 'client.resources', 'Legend atlas load failed', {
-              attributes: { error: String(error) },
-            }),
-          );
-        });
-    }
     return host;
   };
 }

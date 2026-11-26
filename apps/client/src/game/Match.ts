@@ -8,11 +8,13 @@ import {
 
 import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
+import { createLegendView } from './createLegendView';
 import { GameLoop } from './engine/loop/GameLoop';
 import { DeveloperMenuController } from './DeveloperMenuController';
 import { HealthBarVisibility } from './HealthBarVisibility';
 import { LegendAnimation } from './LegendAnimation';
 import { LegendBodies } from './LegendBodies';
+import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
 import type { WorldPoint, WorldRect } from './engine/render/Renderer.types';
 import {
@@ -29,9 +31,7 @@ import type { PlayerActions } from './PlayerActions';
 import { PlayerCommands } from './PlayerCommands';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
-import { LEGEND_VISUAL_DIAMETER } from './views/entityViews.constants';
 import { LegendBodyLayer } from './views/LegendBodyLayer';
-import { LegendSpriteView } from './views/LegendSpriteView';
 import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';
@@ -80,7 +80,10 @@ export class Match implements LoopTarget {
   private previous: Snapshot | null = null;
 
   private current: Snapshot;
+
   private readonly legendAnimation: LegendAnimation;
+
+  /** The tick the current frame shows (the snapshot's tick plus the frame's `alpha`). */
   private frameTick = 0;
 
   private readonly playerId: EntityId | null;
@@ -101,9 +104,10 @@ export class Match implements LoopTarget {
     const { map, presentation, mapObjects } = world;
     this.current = simulation.snapshot();
     this.playerId = deps.remote?.legendId ?? this.current.match.humanLegendId;
+    const sheet = LEGEND_SPRITE_SHEETS[deps.playerSpecId ?? ''];
     this.legendAnimation = new LegendAnimation(
       this.playerId,
-      deps.playerSpecId ?? null,
+      sheet?.atlasId ?? null,
       tickRate,
       simulation,
     );
@@ -120,10 +124,12 @@ export class Match implements LoopTarget {
             ),
           );
         },
-        new LegendSpriteView(
-          (entity) => this.legendAnimation.frame(entity, this.frameTick),
-          LEGEND_VISUAL_DIAMETER,
-        ),
+        createLegendView({
+          sheet,
+          renderer: deps.renderer,
+          logger,
+          frameOf: (entity) => this.legendAnimation.frame(entity, this.frameTick),
+        }),
       ),
       isDead,
       this.healthBars.healthBarOf,

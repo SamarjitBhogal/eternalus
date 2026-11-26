@@ -1,5 +1,6 @@
 import type { SessionPhase, UiIntent } from '../../../bridge/events';
 import type { SessionContext, SessionState } from '../../SessionController.types';
+import { matchAssetGroups } from '../matchAssetGroups';
 import { RESULTS_COUNTDOWN_MS } from '../sessionTiming.constants';
 import { startCountdown } from '../startCountdown';
 
@@ -15,12 +16,14 @@ export class ResultsState implements SessionState {
   private cancelLoad = (): void => undefined;
 
   /**
-   * Releases the match's assets (the match is already destroyed), loads the `selection` group
-   * (a failed load is logged by the session and the screen shows without its art) and starts the
-   * countdown.
+   * Releases the match's assets (`matchAssetGroups`; the match is already destroyed), loads the
+   * `selection` group (a failed load is logged by the session and the screen shows without its
+   * art) and starts the countdown.
    */
   public enter(context: SessionContext): void {
-    context.releaseAssets('match');
+    for (const group of matchAssetGroups(context.selection())) {
+      context.releaseAssets(group);
+    }
     this.cancelLoad = context.loadAssets(
       ['selection'],
       () => undefined,

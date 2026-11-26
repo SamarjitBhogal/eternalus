@@ -3,7 +3,7 @@ import { createDefaultGameConfig, NullLogger, Simulation } from '@eternalus/core
 import { describe, expect, it } from 'vitest';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import { LegendAnimation } from './LegendAnimation';
-import { LEGEND_SPRITE_SHEETS } from './LegendAnimation.constants';
+import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
 
 const hero: EntitySnapshot = {
   id: 'hero',
@@ -32,10 +32,10 @@ const events = () => {
 
 describe('LegendAnimation on Phase 3', () => {
   it.each(Object.entries(LEGEND_SPRITE_SHEETS).map(([spec, { atlasId }]) => [spec, atlasId]))(
-    'selects the %s sheet and leaves other entities unchanged',
-    (spec, atlasId) => {
+    'draws from the %s sheet it is given and leaves other entities unchanged',
+    (_spec, atlasId) => {
       const { simulation } = events();
-      const animation = new LegendAnimation(hero.id, spec, 30, simulation);
+      const animation = new LegendAnimation(hero.id, atlasId, 30, simulation);
       expect(animation.frame(hero, 0)).toEqual({ atlasId, frame: 0 });
       expect(animation.frame({ ...hero, id: 'bot' }, 0)).toBeNull();
       expect(animation.frame({ ...hero, health: { current: 0, max: 800 } }, 0)).toBeNull();
@@ -49,7 +49,7 @@ describe('LegendAnimation on Phase 3', () => {
     [0, -1, 2],
   ])('walks in direction %s,%s without bleeding into another row', (x, y, row) => {
     const { simulation } = events();
-    const animation = new LegendAnimation(hero.id, 'oracle', 30, simulation);
+    const animation = new LegendAnimation(hero.id, 'oracle-sprites', 30, simulation);
     const snapshot = base();
     animation.observe(
       { ...snapshot, entities: [hero] },
@@ -65,7 +65,7 @@ describe('LegendAnimation on Phase 3', () => {
   });
   it('keeps the last facing frame while idle without cycling a walk pose', () => {
     const { simulation } = events();
-    const animation = new LegendAnimation(hero.id, 'oracle', 30, simulation);
+    const animation = new LegendAnimation(hero.id, 'oracle-sprites', 30, simulation);
     const snapshot = base();
     animation.observe(null, {
       ...snapshot,
@@ -77,7 +77,7 @@ describe('LegendAnimation on Phase 3', () => {
   });
   it('uses actual weapon damage for staff attack animation and releases its listeners', () => {
     const { bus, simulation } = events();
-    const animation = new LegendAnimation(hero.id, 'oracle', 30, simulation);
+    const animation = new LegendAnimation(hero.id, 'oracle-sprites', 30, simulation);
     bus.emit('damage-applied', {
       targetId: 'tree',
       amount: 1,

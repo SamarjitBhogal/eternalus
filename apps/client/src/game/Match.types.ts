@@ -87,6 +87,10 @@ type RemotePlayer = {
 
 /** Everything a `Match` is wired from (architecture 08 §7). */
 export type MatchDeps = {
+  /**
+   * The player's sub-class (its stable content id) in a local match. It picks the sprite sheet
+   * (`LEGEND_SPRITE_SHEETS`); left out or `null` (an online Duel), the player's Legend is a disc.
+   */
   readonly playerSpecId?: string | null;
   readonly simulation: MatchSimulation;
   /** Set for an online Duel: replaces the local `PlayerCommands` and the snapshot's human Legend. */
