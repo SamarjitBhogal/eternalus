@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-26
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -135,8 +135,10 @@ Owner: _ (sim lane). Week 8.
 - [ ] **`WeaponDefinition` content** (`TUNE`: classes Glove, Bow, Sword, Spear/Battle axe,
       Staff; named weapons Raptor Talons, the unnamed bow, A Fine Line, Wuuthrad, Lightbringer;
       unique class weapons Barricades (needs work; **MVP-if-time**), Staff, Short blades;
-      non-unique weapons usable by any class). Owner: _. Test: validation rejects a class-locked
-      weapon in the wrong loadout. Done when: a new weapon is a content entry.
+      non-unique weapons usable by any class; each Legend's start weapon (DEC-57), with the
+      Paladin's long sword (DEC-354 (1)); Wuuthrad stays in the catalogue). Owner: _. Test:
+      validation rejects a class-locked weapon in the wrong loadout. Done when: a new weapon is a
+      content entry.
 - [ ] **`AttackStrategy` implementations** (`melee`, `ranged-projectile`, `melee-with-ranged- flex`; heavy attack with cooldown for Wuuthrad and Lightbringer; parry as a status).
       Owner: _. Test: each named weapon's documented effect (bleed, protection reduction stacks,
       piercing, concussion, lightning stun) as a scenario. Done when: weapons select strategies
@@ -160,8 +162,10 @@ Owner: _ (sim lane). Week 8.
 
 - [ ] **`Loadout` domain model + validation** (primary and secondary weapon, passive, artifacts
       1–2, armour set, abilities 1–3, per-class skin; validated against content and class
-      restrictions; auto-build default per class). Owner: _. Test: an invalid combination
-      reports every violation; the auto-build validates for all three classes. Done when: the
+      restrictions; auto-build default per Legend: a `defaultLoadout` on each
+      `LegendSpecDefinition`, from Sprint 4.4's start weapons (DEC-354 (1); sub-class gameplay,
+      `INBOX.md` HC-Q17)). Owner: _. Test: an invalid combination reports every violation; the
+      auto-build validates for every Legend. Done when: the
       same validator runs in core tests and the Phase 5 `LoadoutScreen`.
 - [ ] **`Progression` component + `ProgressionSystem`** (XP from kills, assists, structures,
       checkpoints, camps and boss events; level curve; scaling of ability potency, health and

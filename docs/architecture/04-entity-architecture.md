@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-26
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -327,9 +327,11 @@ one-line content change. Renaming the class is a file rename plus the imports an
 clause of its subclasses (an IDE refactor), exactly as the requirements doc asks. The content
 **id** (`'warrior'`) is the one thing that does not change once a save or a release stores it,
 because replays, loadouts and match history reference it; if the team ever insists, that is a
-persistence migration (Recommendation: do not). No saves or release exist yet (ADR 0023): until
-they do, renaming an id is a content refactor, and a reference it misses must fail the checks (a
-test or the boot-time content validation), never silently.
+persistence migration (Recommendation: do not). Saves already store three kinds of id
+([14](14-persistence-and-resources.md) §7): a saved loadout stores a Legend id and weapon ids, and
+saved settings store input-action ids. These ids do not change. Any other id (ADR 0023): until a
+save or a release stores it, renaming it is a content refactor, and a reference it misses must
+fail the checks (a test or the boot-time content validation), never silently.
 
 ## 11. Object pooling
 

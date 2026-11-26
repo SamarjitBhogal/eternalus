@@ -4,7 +4,7 @@ description: Draft plan for the two Sprint 3 requirements the course instructor 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [plan, multiplayer, duel, server, scalability, sprint-2, sprint-3]
 related:
   - 'docs/plan/README.md'
@@ -241,7 +241,7 @@ owner's matchmaking factors must be explicit inputs (question 49).
 ### Implementation status: guest identity and presence (2026-11-13, SCRUM-430)
 
 The server issues each connection an opaque guest id (`welcome`) and the client keeps it through
-`PersistenceController` (in memory until IndexedDB lands). `PresenceBook` (`apps/server/src/presence/`)
+`PersistenceController` (on IndexedDB since `feat/loadout-per-legend`, so it survives a reload). `PresenceBook` (`apps/server/src/presence/`)
 reads each guest's state from the queue and the host. A queued or in-match guest that disconnects
 keeps its queue slot or seat for the reconnect window (`RECONNECT_WINDOW_MS` in `@eternalus/protocol`,
 10 s, DEC-297 (1));

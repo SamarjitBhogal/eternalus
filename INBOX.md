@@ -75,6 +75,13 @@ Reply inline (`Decision: …`).
       and (2)); the follow-up PR `feat/loadout-per-legend` builds both. (8) The locked view reads
       "Weapon: <name>" again: the review meant `Recommendation:` as a code label, not as player
       text.
+      _Agent note (2026-11-26, `feat/loadout-per-legend`):_ (1) and (2) are built. The game saves
+      one loadout per Legend (`specId`), and the HUD weapon slot shows the held weapon's picture,
+      or an empty slot when it has none. (3) to (7) stay open. FYI, no answer needed: the
+      Loadout screen's new radio group is labelled "Legend" (DEC-49's term). The Colossus now
+      shows the battle axe on the HUD, because it holds Wuuthrad today (DEC-114 kept that slot
+      empty). The Vanguard Legends hold the raptor talons, which have no picture, so their slot
+      stays empty.
 
 - [ ] **`feat/loadout-indexeddb` (SCRUM-31, SCRUM-311), `IndexedDbStorageAdapter` — four points
       the docs leave open.** (1) Wiring the adapter puts schema v1 on players' disks once it
@@ -95,6 +102,29 @@ Reply inline (`Decision: …`).
       WARN reporter. When `main.tsx` passes the fallback (in `feat/loadout-per-legend`), that
       callback writes an ERROR record, as 14 §10's table says, so the failure becomes an error
       report; say so if you want WARN. (3) and (4) stay open.
+      _Agent note (2026-11-26, `feat/loadout-per-legend`, S5):_ (1) is built. The settings store is
+      keyed `[profileId, group]`, loadouts are saved per Legend, and then `main.tsx` turned on
+      IndexedDB (`IndexedDbStorageAdapter.inBrowser()`, through `game/createPersistence.ts`). (2) is
+      built with ERROR: `createPersistence` passes the fallback, and its `reportError` writes an
+      ERROR `client.persistence` record, so the switch becomes an error report. Your choice of WARN
+      or ERROR is still open; ERROR is in use. (3) and (4) stay open.
+
+- [ ] **`feat/loadout-per-legend` (DEC-354) — two layout calls before saves reach players.**
+      (1) **The saved loadout record.** Architecture 14 §7 gives a nested `SavedLoadoutDtoV1`
+      (`name`, `updatedAt`, and the loadout inside a `loadout` field). The branch saves a flat
+      `LoadoutDtoV1`: `schemaVersion`, `id`, `profileId`, `specId`, `primaryWeaponId`. A profile
+      keeps one loadout per Legend (DEC-354 (1)), so a loadout `name` has no use. Option A: keep
+      the flat record and change 14 §7 to match. Option B: nest it now, as 14 §7 says.
+      `Recommendation:` A. Later fields (abilities, artifacts) land as optional fields with no
+      `schemaVersion` bump (DEC-125). After players have saves, a change of layout needs an
+      upgrade step (14 §5).
+      (2) **Who finds a Legend's class.** Today the client finds a Legend's class from content
+      (`legendLoadoutOptions`) and asks core with the class id. The critic found a better design:
+      core reads the Legend from `Loadout.specId` (already in 05 §12's sketch) and finds the class
+      itself, so the client, the bots and replays use one rule. Option A: move it into core in
+      this branch. Option B: move it with the weapon work of phase 4 Sprints 4.4 and 4.5, which
+      adds a `defaultLoadout` per Legend. `Recommendation:` A, per your 2026-11-09 rule (build the
+      best design now). It changes the public core API (`Loadout`, `autoBuildLoadout`).
 
 - [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only
@@ -585,6 +615,9 @@ Reply inline (`Decision: …`).
     10 s window, so a reconnect after a drop the server has not seen is queued, not seated; the
     client leaves that queue and retries, and if the server never sees the drop inside the window
     the Duel is lost. Shorten the heartbeat, or end the old seat when its guest id comes back?
+  - **Changed by `feat/loadout-per-legend` (2026-11-26)**: (6) storage is now IndexedDB, so the
+    saved guest id also survives a page reload. It is lost only when IndexedDB does not open and
+    storage falls back to memory.
 
 - [ ] **Per-address connection cap and `X-Forwarded-For` (SCRUM-432 critic, 2026-11-12) — owner /
       security, not introduced by this branch.** `ClientAddress.resolve` (`apps/server/src/transport/`)
@@ -2434,6 +2467,10 @@ Reply inline (`Decision: …`).
     too. I see this could be a whole WI. For now we start building out the selection screen. Next
     sprint we do the rest." Recorded in DEC-70. **Waits for:** the next sprint's plan tasks for
     sub-class gameplay, which agents propose, and the backlog row's move.
+  - _Agent note (2026-11-26, `feat/loadout-per-legend`):_ DEC-354 (1) starts the auto-build from
+    the Legend, and the Paladin gets a long sword. The phase 4 plan now has both: each Legend's
+    start weapon (DEC-57) in Sprint 4.4, and a `defaultLoadout` per Legend in Sprint 4.5. They are
+    part of this item's sub-class gameplay.
 - [ ] **HC-Q18 — Making roster changes cheap: four decisions (not urgent; they save time later;
       OD-38).** An audit renamed a sub-class title, a Legend name, a class display name and a
       Legend id on scratch copies to see what each change touches. The cheap fixes are now built in

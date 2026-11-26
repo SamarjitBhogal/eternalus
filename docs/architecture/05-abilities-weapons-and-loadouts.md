@@ -711,7 +711,7 @@ export type LoadoutSlot =
 export type AbilityChoice = { readonly abilityId: AbilityId; readonly varietyId: VarietyId | null };
 export type Loadout = {
   readonly classId: LegendId;
-  readonly specId: LegendSpecId | null; // gameplay spec (ADR 0018); null until built (HC-Q17)
+  readonly specId: LegendSpecId | null; // the Legend (ADR 0018); a saved loadout is per Legend (DEC-354 (1)); its gameplay: HC-Q17
   readonly primaryWeaponId: WeaponId; // MVP
   readonly secondaryWeaponId: WeaponId | null; // MVP-if-time
   readonly passiveId: AbilityId | null; // MVP-if-time (Magus: Studious or Necromancy)
@@ -727,8 +727,9 @@ export interface LoadoutRule {
   readonly id: string;
   check(loadout: Loadout, content: ContentCatalogue): readonly LoadoutProblem[];
 }
+export type LoadoutField = 'class' | LoadoutSlot; // DEC-354 (3) (b)
 export type LoadoutProblem = {
-  readonly slot: LoadoutSlot;
+  readonly field: LoadoutField;
   readonly ruleId: string;
   readonly message: string;
 };
@@ -757,7 +758,8 @@ diagnostic event and the factory substitutes `autoBuildLoadout`, reference 08) a
 `autoBuildLoadout`, so there is one definition of "sensible". A saved loadout belongs to a Legend:
 the profile keeps one per Legend (`specId`), not per class, and the auto-build starts from that
 Legend (DEC-354 (1); [14](14-persistence-and-resources.md) §7). `repairLoadout` is what
-`LoadoutRepository` calls when a saved loadout names content that no longer exists. Changing an
+the client's `LoadoutController` calls when a saved loadout names content that no longer exists
+(DEC-354 (3)). Changing an
 ability or the ultimate in-match (**MVP-if-time**) goes through the `Loadout` component's
 `apply(loadout)`, which calls `AbilityRuntime.reset` on every changed slot: full cooldown, meter
 to zero (game doc).
@@ -1024,12 +1026,10 @@ catalogue's weapon art, keyed by weapon id. A weapon without art shows an empty 
   is no `hud-kit` event. The slot display names are `null` and the icons are client-side asset ids
   until ability content exists (INBOX HC-Q3); a live match shows only the art that fits the picked
   Legend (its class's emblem and gadget) and leaves every other frame empty (DEC-101, DEC-114).
-  Since `feat/loadout-per-legend` (DEC-354 (2)), `EntitySnapshot` carries `combat` (`weaponId`)
-  for every entity with `Combat`, and the weapon panel shows the art of the weapon the Legend
-  holds. The art is client presentation keyed by weapon id (`HUD_PRESENTATION.weaponArt` in
-  `hudPresentation.ts`); `buildDisplayCatalogue` checks at boot that each key is a core weapon and
-  each art is in the asset manifest. A weapon without art shows an empty slot. The per-class and
-  per-Legend weapon art of DEC-114 is removed. The `xp` and `xpToNext` comments of the
+  The held weapon (DEC-354 (2), `feat/loadout-per-legend`): every entity with `Combat` has the
+  snapshot group `combat`, the art is `HUD_PRESENTATION.weaponArt` in `hudPresentation.ts`, and
+  `buildDisplayCatalogue` checks at boot that each key is a core weapon and each art is in the
+  asset manifest. The per-class and per-Legend weapon art of DEC-114 is removed. The `xp` and `xpToNext` comments of the
   `progression` group in [03 §5](03-game-model.md#5-snapshot) (in §15's `PlayerSnapshot` until DEC-232) record the
   owner's reading of the XP ring (2026-10-18).
 

@@ -52,9 +52,9 @@ it can be filled later, and is an open question.
 
 - The loadout **can be configured pre-game, with an auto-build option** (game doc).
 - Auto-build fills every slot with the Legend's default choices from content: it starts from the
-  Legend, not the class (DEC-354 (1)). (`Recommendation:` a `defaultLoadout` per
-  `LegendDefinition`; the same defaults are what bot Legends use, so the bots and the auto-build
-  never disagree.)
+  Legend, not the class (DEC-354 (1)). (`Recommendation:` a `defaultLoadout` per Legend, on its
+  `LegendSpecDefinition`, not on the class's `LegendDefinition`; the same defaults are what bot
+  Legends use, so the bots and the auto-build never disagree.)
 - The `LoadoutScreen` (React, `apps/client/src/ui/screens/`) edits a `Loadout` value validated
   against content by `packages/core/src/loadout/` (class restrictions, one item per slot, a
   variety only where the ability defines one). Status: **MVP**.

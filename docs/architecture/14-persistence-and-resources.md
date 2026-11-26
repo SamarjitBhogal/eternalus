@@ -112,7 +112,7 @@ adapter, not the repository). Repositories return domain types mapped from DTOs 
 | Repository               | Store(s)   | Domain type it returns                                                       | Methods (sketch)                                                                                                                |
 | ------------------------ | ---------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | `ProfileRepository`      | `profiles` | `Profile` (name, aggregate stats, achievements, timestamps)                  | `get(id)`, `list()`, `create(name)`, `save(profile)`, `applyMatch(tx, profileId, result, achievements)` (inside a unit of work) |
-| `LoadoutRepository`      | `loadouts` | core `Loadout` (repaired by `repairLoadout` when content moved)              | `listByProfile(profileId)`, `getByProfileAndLegend(profileId, specId)`, `save(profileId, loadout)`, `delete(id)`                |
+| `LoadoutRepository`      | `loadouts` | core `Loadout` (`LoadoutController` repairs it when content moved, §8)       | `listByProfile(profileId)`, `getByProfileAndLegend(profileId, specId)`, `save(profileId, loadout)`, `delete(id)`                |
 | `SettingsRepository`     | `settings` | `Settings` = `{ bindings, audio, video, accessibility, developer, storage }` | `load(profileId)` (defaults for missing groups), `saveGroup(profileId, group, value)`                                           |
 | `MatchHistoryRepository` | `matches`  | `MatchHistoryRecord` (core `MatchResult` + identity and time)                | `listByProfile(profileId, { limit, before })` newest first via `by_profile_and_date`, `get(id)`, `append(tx, record)`           |
 | `ReplayRepository`       | `replays`  | core `Replay` ([03](03-game-model.md) §9)                                    | `get(matchId)`, `put(tx, matchId, profileId, replay)`, `listOldest(count)` (for eviction), `delete(matchId)`                    |
@@ -352,8 +352,9 @@ export async function readOrQuarantine<T>(
 A corrupt record is copied to `quarantine`, removed from the live store, logged at WARN through
 `Logger` and replaced by a default; it is never fatal and no screen can crash on stored data
 (plan Phase 5, sprint 5.1). Semantic checks that need knowledge `data/` may not import are
-injected: the bindings validator receives `knownActions` from `main.tsx`, and `LoadoutRepository`
-calls core's `repairLoadout` (public API) for content ids that no longer exist.
+injected: the bindings validator receives `knownActions` from `main.tsx`. A saved loadout that
+names content ids that no longer exist is repaired above `data/`: the client's `LoadoutController`
+calls core's `repairLoadout` (public API) and logs it, so `data/` needs no content (DEC-354 (3)).
 
 ## 9. Durable storage, quota, eviction, export and import
 
@@ -516,33 +517,31 @@ DEC-354 (1)) in the v1 `loadouts` store. Its key `id` is `loadoutKey(profileId, 
 is §3's `getByProfileAndLegend`; `listByProfile`, `delete` and §5's indexes are not built,
 because the storage port has no index reads: the caller names the Legends. The DTO check is shape
 only. A weapon id content no longer has is not quarantined: the client's `LoadoutController`
-repairs it with core's `repairLoadout` and logs it, in place of §8's repository-side repair, so
+repairs it with core's `repairLoadout` and logs it (§8), so
 `data/` needs no content and the screen learns which Legends were repaired. The owner signed off
 this place for the repair (DEC-354 (3)). Records saved per class before DEC-354 (1)
 (`local/warrior`) are not migrated and never read: no released build stored them, and class ids
-and Legend ids do not overlap. Core is still keyed by class: the client finds a Legend's class
-from content (`legendLoadoutOptions`), validates and repairs the loadout as that class, and the
-auto-build is the class's `defaultLoadout` (`autoBuildLoadout(classId)`). The per-Legend start
-weapons (DEC-57) come with the weapon PR (DEC-354 (1)).
+and Legend ids do not overlap. Core is still keyed by class
+([05](05-abilities-weapons-and-loadouts.md) §18, "Loadout").
 
-**IndexedDB (`feat/loadout-indexeddb`, 2026-11-20; `feat/loadout-screen`, 2026-11-25).**
-`IndexedDbStorageAdapter` (over `idbPromises.ts`, no dependency) is built by `inBrowser()` from
-the page's `indexedDB`; it types against narrow `Idb*Api` interfaces
-(`IndexedDbStorageAdapter.types.ts`) that the browser's objects satisfy. `open` runs the
-`createStores` ladder inside `onupgradeneeded`; a `work` that throws aborts its transaction; on
-`versionchange` the connection closes. Open failures are a `StorageError` (`unavailable`,
-`version`, `blocked`; the other §10 kinds wait for a caller). `main.tsx` does not inject it yet:
-it injects `MemoryStorageAdapter`, so nothing is saved past the session, because the owner wants
-the layout changed before disk saves turn on (DEC-354 (5)). `feat/loadout-per-legend` moves the
-settings store to §7's `[profileId, group]` key (done), keys loadouts per Legend (done) and then
-injects this adapter. An optional `fallback` (`StorageFallback`) makes `PersistenceController` wrap its adapter
-in `FallbackStorageAdapter`: when `open` fails, it reports the failure through the fallback's
-`reportError` and continues on `MemoryStorageAdapter`; `blocked` falls back at once. `main.tsx`
-does not pass a `fallback` yet; when it does (`feat/loadout-per-legend`), `reportError` writes an
-ERROR record, as §10 says. No `degraded` status yet.
-§12's contract suite and the adapter's own cases (reads and writes, upgrade, newer version,
-blocked, abort, `versionchange`) run against `fake-indexeddb` (DEC-354 (4)), one fresh
-`IDBFactory` per test. This is built. The hand-written fake is deleted.
+**IndexedDB (`feat/loadout-indexeddb`, 2026-11-20; `feat/loadout-screen`, 2026-11-25;
+`feat/loadout-per-legend`, 2026-11-26).** `IndexedDbStorageAdapter` (over `idbPromises.ts`, no
+dependency) is built by `inBrowser()` from the page's `indexedDB`; it types against narrow
+`Idb*Api` interfaces (`IndexedDbStorageAdapter.types.ts`) that the browser's objects satisfy.
+`open` runs the `createStores` ladder inside `onupgradeneeded`; a `work` that throws aborts its
+transaction; on `versionchange` the connection closes. Open failures are a `StorageError`
+(`unavailable`, `version`, `blocked`; the other §10 kinds wait for a caller). `main.tsx` builds
+`PersistenceController` through `game/createPersistence.ts` and injects
+`IndexedDbStorageAdapter.inBrowser()`, so settings, loadouts and the guest id survive a reload
+(DEC-354 (5)). `createPersistence` also passes a `fallback` (`StorageFallback`), so
+`PersistenceController` wraps its adapter in `FallbackStorageAdapter`: when `open` fails, the
+fallback's `reportError` writes an ERROR `client.persistence` record, as §10 says, which becomes
+an error report, and storage continues on `MemoryStorageAdapter`, so nothing is saved past the
+session. `blocked` falls back at once. The owner has not yet chosen between ERROR and WARN for
+this record (`INBOX.md`); ERROR is in use. `createPersistence` lives in `game/` because it builds
+log records, and `data/` imports core types only (§1). No `degraded` status yet. §12's contract
+suite and the adapter's own cases (reads and writes, upgrade, newer version, blocked, abort,
+`versionchange`) run against `fake-indexeddb` (DEC-354 (4)), one fresh `IDBFactory` per test.
 
 Built in Sprint 1 (session F), settings only: `PersistenceController` with `open`,
 `loadSettings`, `saveSettings` and `close` (the Sprint 1 brief's facade, in place of §2's
@@ -551,8 +550,10 @@ Built in Sprint 1 (session F), settings only: `PersistenceController` with `open
 come with their first caller); `MemoryStorageAdapter`, which runs transactions one at a time in
 call order, and the `describeStorageAdapter` contract suite; `schema/migrations.ts` v1 with the
 `settings` and `quarantine` stores only; `SettingsRepository` (a class, no interface yet), which
-reads through the shared `readOrQuarantine`. Interim gaps, to settle before
-`IndexedDbStorageAdapter` (S2) fixes v1 on disk:
+reads through the shared `readOrQuarantine`. Interim gaps. `main.tsx` now injects
+`IndexedDbStorageAdapter` (above), so v1 is on disk: closing a gap that changes a stored record
+follows §13's "A field or a settings group" (an optional field, or a `schemaVersion` bump with an
+upgrade step):
 
 - Settings are one `SettingsGroupDtoV1` record per profile and group, keyed `[profileId, group]`
   (DEC-354 (5)). The groups built are `bindings`, `audio`, `video` and `accessibility`. The
@@ -565,8 +566,8 @@ reads through the shared `readOrQuarantine`. Interim gaps, to settle before
   `dto/SettingsDto.ts`; when S2 adds the second DTO, the common ones move to a shared
   `dto/dtoCheck.ts` beside `DtoCheck.types.ts` (PR #24 review).
 - A quarantine is reported through an injected `warn` callback, because `data/` imports core
-  types only (§1); `main.tsx` turns it into a `Logger` record. No `degraded` status or memory
-  fallback yet (§10): a failed open leaves the settings on defaults.
+  types only (§1); `game/createPersistence.ts` turns it into a `Logger` record. No `degraded`
+  status yet (§10). The memory fallback is built (see "IndexedDB" above).
 - **Stored chord modifiers (2026-10-30).** A stored keyboard chord has an optional `modifiers`
   field (DEC-105), added inside schema version 1: records saved before it still read, because the
   field is optional, so no upgrade step was needed and none was written. §13's recipe "A field or

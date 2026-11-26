@@ -54,9 +54,8 @@ Owner: _ (persistence owner). Week 6. In `apps/client/src/data/persistence/`. Fo
 - [ ] **`IndexedDbStorageAdapter`** (a ~40-line promise wrapper: `requestToPromise`,
       `transactionDone`, `openDatabase`; `onversionchange` closes and raises a "reload" event;
       `QuotaExceededError` and `VersionError` mapped to typed `StorageError`s). Owner: _.
-      Test: the contract suite against an IndexedDB fake (`Recommendation:` `fake-indexeddb`, a
-      dev dependency needing human approval per `AGENTS.md`; fallback: a hand-written fake of the
-      used subset) plus one manual browser run. Done when: it is the only file naming `IDBDatabase`.
+      Test: the contract suite against `fake-indexeddb` (a test-only devDependency the owner
+      approved, DEC-354 (4)) plus one manual browser run. Done when: it is the only file naming `IDBDatabase`.
 - [ ] **Versioned schema + migration ladder** in `schema/` (`DB_VERSION`; a `Migration[]`
       ladder; `onupgradeneeded` runs `if (oldVersion < n)` steps; v1 stores `profiles`,
       `loadouts` (index `by_profile`), `settings`, `matches` (indexes `by_profile`,
@@ -294,12 +293,12 @@ passes the keyboard-only walk.
 
 ## Risks
 
-| Risk                                                                     | Mitigation                                                                                                                                                                      |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| IndexedDB fake needs a new dependency; browser APIs hard to test in Node | Ask early (INBOX); the contract suite is adapter-agnostic, so a hand-written fake is the fallback; injected decoders, fake `navigator.storage` and `fetch`, `react-dom/server`. |
-| Safari eviction and private windows lose data                            | `persist()` at first launch, status in settings, export/import JSON, memory fallback with a "not saved" banner (Phase 6.4).                                                     |
-| Settings DTO churn breaks saved data                                     | Migrations and `schemaVersion` from day 1; quarantine instead of crashes; the corrupt-record fixture set grows with each bug.                                                   |
-| Phase 4 `<KeyGlyph/>` lands late; menu scope creep                       | Stub glyph until 4.7 merges, acceptance test first; skins, armour slot and multiple profiles stay post-MVP ([backlog](backlog-post-mvp.md)).                                    |
+| Risk                                               | Mitigation                                                                                                                                   |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Browser APIs hard to test in Node                  | `fake-indexeddb` for IndexedDB (approved, DEC-354 (4)); injected decoders, fake `navigator.storage` and `fetch`, `react-dom/server`.         |
+| Safari eviction and private windows lose data      | `persist()` at first launch, status in settings, export/import JSON, memory fallback with a "not saved" banner (Phase 6.4).                  |
+| Settings DTO churn breaks saved data               | Migrations and `schemaVersion` from day 1; quarantine instead of crashes; the corrupt-record fixture set grows with each bug.                |
+| Phase 4 `<KeyGlyph/>` lands late; menu scope creep | Stub glyph until 4.7 merges, acceptance test first; skins, armour slot and multiple profiles stay post-MVP ([backlog](backlog-post-mvp.md)). |
 
 ## Related
 
