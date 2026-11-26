@@ -38,7 +38,9 @@ export const WARRIOR = {
     acceleration: 45, // TUNE: m/s², top speed after about 0.13 s (4 ticks)
     mass: 1, // TUNE:
   },
-  defaultLoadout: { primaryWeaponId: 'raptor-talons' }, // TUNE: default weapon (05 §10 table) until the owner picks one (INBOX)
+  // The class's weapon (05 §10 table), used only when no spec is named (dev spawn, core tests,
+  // golden replays): each Warrior spec names its own start weapon (DEC-374 (11)).
+  defaultLoadout: { primaryWeaponId: 'raptor-talons' },
   levelCurveId: 'legend',
   levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 }, // TUNE: balancing.md
 } as const satisfies LegendDefinition;

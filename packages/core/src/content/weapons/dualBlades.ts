@@ -1,9 +1,10 @@
 import type { AuthoredWeaponDefinition } from './weapons.types';
 
 /**
- * Dual Blades: a sword, fast melee physical with a short reach (reference 07 "Short blades"), open
- * to every class. The Templar starts with them. One arc per swing: no two-arc dual wield (DEC-304)
- * and no throwing (DEC-374 (W2)).
+ * Dual Blades: two swords (DEC-57), fast melee physical with a short reach. They are reference 07's
+ * "Short blades" (DEC-64), the Warrior's unique weapon (reference 07 unique weapons, 05 §10 table).
+ * The Templar starts with them. One arc per swing: no two-arc dual wield (DEC-304) and no throwing
+ * (DEC-374 (W2)).
  *
  * TUNE: every number was set by the owner in DEC-374 (W2).
  */
@@ -20,6 +21,7 @@ export const DUAL_BLADES = {
       arcDegrees: 100, // TUNE: DEC-304, DEC-374 (W2)
     },
   ],
-  allowedClasses: 'any',
-  uniqueTo: null,
+  // Warrior only: reference 07 unique weapons (Warrior: short blades), DEC-64, 05 §10 table
+  allowedClasses: ['warrior'],
+  uniqueTo: 'warrior',
 } as const satisfies AuthoredWeaponDefinition;

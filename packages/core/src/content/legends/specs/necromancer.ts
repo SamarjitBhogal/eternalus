@@ -14,7 +14,7 @@ export const NECROMANCER = {
   roleLabel: null,
   description: null,
   roleRatings: null,
-  primaryWeaponId: 'magus-staff', // DEC-374; TUNE: the owner's start weapon per Legend (DEC-57)
+  primaryWeaponId: 'magus-staff', // DEC-374; DEC-57
   detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
   kit: null, // the class default kit; no Legend has its own yet
 } as const satisfies LegendSpecDefinition;

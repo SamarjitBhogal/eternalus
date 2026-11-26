@@ -102,9 +102,11 @@ describe('loadDisplayContent', () => {
   });
 
   it('rejects a Legend whose class is not a loaded Legend class', () => {
+    // The Oracle's Magus-only staff is not allowed for that class either (`KnownSpecWeaponRule`).
     expect(() => load({ specs: SPECS_WITH_HARBINGER })).toThrow(
       new ContentValidationError(
-        'Invalid content: skywatcher: classId "harbinger" is not a Legend class',
+        'Invalid content: skywatcher: classId "harbinger" is not a Legend class; ' +
+          'skywatcher: primaryWeaponId "magus-staff" is not allowed for class "harbinger"',
       ),
     );
   });

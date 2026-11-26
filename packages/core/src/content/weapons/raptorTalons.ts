@@ -1,7 +1,8 @@
 import type { AuthoredWeaponDefinition } from './weapons.types';
 
 /**
- * Raptor Talons: a glove, melee physical (reference 07, 05 §10). The Warrior's default weapon and the Zealot's start weapon.
+ * Raptor Talons: a glove, melee physical (reference 07, 05 §10). The Warrior's default weapon and
+ * the Zealot's start weapon.
  *
  * TUNE: the numbers are the Warrior's basic attack from `balancing.md` until the owner sets weapon
  * numbers (INBOX). Each hit adds one stack of `bleed` (Hamstring's bleed; DEC-374 (W5)).

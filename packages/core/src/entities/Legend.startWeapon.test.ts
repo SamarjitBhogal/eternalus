@@ -12,7 +12,9 @@ import { loadAbilities } from '../content/abilities/loadAbilities';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { LEGEND_SPECS } from '../content/legends/specs/legendSpecCatalogue';
+import { WARRIOR } from '../content/legends/warrior';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
+import type { UnitAttack } from '../content/units/units.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { NullLogger } from '../diagnostics/NullLogger';
 import type { DamageSource } from '../state/GameEvents.types';
@@ -69,6 +71,21 @@ const setUp = (definitionId: string, specId: string | null) => {
   return { state, attacker, target, damage, statuses, hits, amounts, fight };
 };
 
+/** The basic (first) attack of the loaded weapon `weaponId`, as its content has it. */
+const basicAttackOf = (weaponId: string): UnitAttack => {
+  const [attack] = WEAPONS.get(weaponId).attacks;
+  if (attack === undefined) {
+    throw new Error(`The weapon "${weaponId}" has no attack.`);
+  }
+  return attack;
+};
+
+/** What a Warrior holds of `weaponId`: its basic attack, plus the class's melee reach (DEC-305). */
+const asWarriorHolds = (weaponId: string): UnitAttack => {
+  const attack = basicAttackOf(weaponId);
+  return { ...attack, reach: attack.reach + WARRIOR.meleeReach };
+};
+
 const stacksOf = (entity: Entity, statusId: string): number =>
   entity.getComponent(StatusEffects).active.find((status) => status.definition.id === statusId)
     ?.stacks ?? 0;
@@ -88,6 +105,15 @@ describe('a Legend spawns with its spec weapon (DEC-374)', () => {
       amount: damage,
       source: { attackerId: 'entity-1', kind: 'weapon', definitionId: weaponId },
     });
+  });
+
+  it.each([
+    ['knight', 'dual-blades'],
+    ['paladin', 'great-sword'],
+  ])('a warrior of spec %s holds the whole %s attack, with the class reach', (specId, weaponId) => {
+    const { attacker } = setUp('warrior', specId);
+
+    expect(attacker.getComponent(Combat).attack).toMatchObject(asWarriorHolds(weaponId));
   });
 
   it("falls back to the class's weapon when no spec is named", () => {
@@ -127,13 +153,14 @@ describe('a Legend spawns with its spec weapon (DEC-374)', () => {
     ).toEqual([]);
     expect(swordsman.getComponent(Combat).weaponId).toBe('long-sword');
     expect(swordsman.getComponent(Combat).attack.damage).toBe(60);
+    expect(swordsman.getComponent(Combat).attack).toMatchObject(asWarriorHolds('long-sword'));
   });
 });
 
 describe('Raptor Talons bleed (DEC-374 W5)', () => {
   it('adds one bleed stack on each hit, and stops at 3', () => {
     const { target, fight } = setUp('warrior', 'assassin');
-    const interval = Math.ceil(0.7 * CONFIG.tickRate);
+    const { interval } = basicAttackOf('raptor-talons');
 
     fight(1);
     expect(stacksOf(target, 'bleed')).toBe(1);
@@ -169,5 +196,23 @@ describe('Obsidian Bow sundered (DEC-374 W6)', () => {
     expect(nextHit()).toBeCloseTo(115);
     expect(nextHit()).toBeCloseTo(115);
     expect(stacksOf(target, 'sundered')).toBe(3);
+  });
+
+  it('wears off 4 s after the arrow hit', () => {
+    const { state, attacker, target, statuses, hits } = setUp('warrior', 'assassin');
+    const expiresTick = state.tick + 4 * CONFIG.tickRate; // DEC-374 (W6): 4 s
+    /** Steps the match to `tick`, removing the statuses that are over (`StatusEffectSystem`). */
+    const runTo = (tick: number): void => {
+      while (state.tick < tick) {
+        state.advanceTick();
+        statuses.expire(state, target.id);
+      }
+    };
+
+    hits.afterHit(state, attacker.id, target.id, basicAttackOf('obsidian-bow'));
+    runTo(expiresTick - 1);
+    expect(stacksOf(target, 'sundered')).toBe(1);
+    runTo(expiresTick);
+    expect(stacksOf(target, 'sundered')).toBe(0);
   });
 });
