@@ -15,6 +15,7 @@ paths:
     'apps/client/src/game/LegendBodies.ts',
     'apps/client/src/game/LegendAnimation*',
     'apps/client/src/game/createLegendView.ts',
+    'apps/client/src/game/PlayerLegendSprite*',
     'apps/client/src/game/legendSpriteSheets*',
   ]
 related:

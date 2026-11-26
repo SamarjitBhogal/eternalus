@@ -30,8 +30,9 @@ Reply inline (`Decision: …`).
       architecture 14 §11's `'image'` type plus a JSON frame table. (BTD4) Scaling at draw time:
       one `drawImage` with smoothing off scales the cell to the current zoom. Architecture 08 §4
       pre-scales the frames when the atlas loads, which cannot give 1:1 copies at every zoom.
-      (BTD5) The frame time in `EntityDrawState`: the sprite view reads `Match.frameTick`
-      through a closure today, a hidden order dependency on `render()`. Decision: …
+      (BTD5) The frame time in `EntityDrawState`: the sprite view reads the frame tick that
+      `Match.render` sets through `PlayerLegendSprite.setFrameTick`, a hidden order dependency
+      on `render()`. Decision: …
 
 - [ ] **Better than design: two more Legend sprite items (#170 critic round 2, 2026-11-26).** Not
       built in #170. Owner Calls cards PR170 (13) and (14) ask the same. (BTD7)
