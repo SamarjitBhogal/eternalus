@@ -11,10 +11,12 @@ import type { System, SystemContext } from './System.types';
  * tick's forced motion (dashes and knock-backs, `Movement.push`) is added to the position in one
  * move, so `CollisionSystem` sweeps both against walls and world bounds alike. The entity faces
  * the way it walked, its own velocity (DEC-192): a still entity keeps its facing, and forced motion
- * does not turn it. Statuses scale the top speed (`moveSpeed`) or hold the entity's own walking
- * (`cannot-move`); forced motion still moves a stunned or airborne entity (Slam knocks back and up
- * at once). A status that steers the entity (Fear) gives this tick's heading in place of its own
- * (`StatusEffects.steering`, set by `StatusSteeringSystem`). While the match holds units idle (`state.match.isIdleHeld`, the countdown) every
+ * does not turn it. Statuses scale the top speed (`moveSpeed`) and the rate at which it speeds up
+ * toward a heading (`acceleration`, Berserk), or hold the entity's own walking (`cannot-move`);
+ * forced motion still moves a stunned or airborne entity (Slam knocks back and up at once). A
+ * status that steers the entity (Fear) gives this tick's heading in place of its own
+ * (`StatusEffects.steering`, set by `StatusSteeringSystem`); a zero heading (a cower) slows it to a
+ * stop. While the match holds units idle (`state.match.isIdleHeld`, the countdown) every
  * entity is held, forced motion included, which waits for the hold to end. Allocates nothing per
  * entity (architecture 10 §2).
  */
@@ -36,7 +38,11 @@ export class MovementSystem implements System {
           isHeld || statuses?.has('cannot-move') === true
             ? 0
             : (statuses?.multiplier('moveSpeed') ?? 1);
-        movement.advance(speedScale, statuses?.steering?.heading);
+        movement.advance(
+          speedScale,
+          statuses?.steering?.heading,
+          statuses?.multiplier('acceleration') ?? 1,
+        );
         if (isHeld || !movement.isForced) {
           transform.moveBy(movement.velocity);
         } else {

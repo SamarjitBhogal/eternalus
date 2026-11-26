@@ -135,6 +135,19 @@ describe('Movement', () => {
     expect(movement.heading).toEqual({ x: 1, y: 0 });
   });
 
+  it('speeds up by acceleration × accelerationScale toward a heading, slows down by acceleration alone', () => {
+    const movement = new Movement({ maxSpeed: 10, acceleration: 1, mass: 1 });
+    movement.steer({ x: 1, y: 0 });
+
+    movement.advance(1, undefined, 1.5);
+    movement.advance(1, undefined, 1.5);
+    expect(movement.speed).toBe(3);
+
+    movement.steer({ x: 0, y: 0 });
+    movement.advance(1, undefined, 1.5);
+    expect(movement.speed).toBe(2);
+  });
+
   it('reports the top speed the last advance allowed, above maxSpeed for a scale above 1', () => {
     const movement = new Movement(STATS);
     movement.steer({ x: 1, y: 0 });

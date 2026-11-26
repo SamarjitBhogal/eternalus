@@ -1,8 +1,14 @@
 import type { AbilityEffectSpec, AuthoredEffectSpec } from '../abilities/AbilityDefinition.types';
 
-/** A number a status scales: each reader asks `StatusEffects.multiplier(stat)` for one value. `aetherCost` multiplies what a cast costs (read by the cast path in the next slice). `size` scales the body's radius (`BodySizeSystem`). */
+/** A number a status scales: each reader asks `StatusEffects.multiplier(stat)` for one value. `aetherCost` multiplies what a cast costs (read by the cast path in the next slice). `size` scales the body's radius (`BodySizeSystem`). `acceleration` scales how fast the holder speeds up toward its heading, not how fast it slows down (`MovementSystem`; Berserk, DEC-382 (R5 B)). */
 export type StatusStat =
-  'moveSpeed' | 'attackSpeed' | 'damageDealt' | 'damageTaken' | 'aetherCost' | 'size';
+  | 'moveSpeed'
+  | 'acceleration'
+  | 'attackSpeed'
+  | 'damageDealt'
+  | 'damageTaken'
+  | 'aetherCost'
+  | 'size';
 
 /**
  * A yes/no rule a status imposes. `cannot-cast` waits for `AbilitySystem` (phase 4);
