@@ -12,7 +12,8 @@ import { createDefaultDamageSteps } from './defaultDamageSteps';
  * without `Health` (an indestructible obstacle) is never damaged.
  *
  * Emits `damage-applied` for every hit that lands and `entity-died` with the killer for the hit
- * that takes health to 0; `DeathSystem` removes the dead later in the tick.
+ * that takes health to 0; `DeathSystem` removes the dead later in the tick. A fall (`collapse`)
+ * is announced the same way.
  *
  * Every rule that changes a hit (friendly fire, statuses, structure multipliers, breakability) is a
  * `DamageStep`, run in order before `Health`; add one in `defaultDamageSteps.ts`.
@@ -51,12 +52,38 @@ export class DamagePipeline {
     if (final === 0) {
       return { applied: false, reason: 'blocked' };
     }
+    return DamagePipeline.land(state, targetId, health, final, source);
+  }
 
-    const { toShields, toBase } = health.applyDamage(final);
+  /**
+   * Takes all of `targetId`'s health from `source` in one hit that no step changes: it falls with
+   * what it stands on or in (a building's contents, 07 §13; a wall turret on its pylon, DEC-375).
+   * No modifier can leave it alive, so it falls on the same tick. It is announced as `apply`
+   * announces a lethal hit, so the fall scores and pays as a last hit does.
+   */
+  public collapse(state: GameState, targetId: EntityId, source: DamageSource): DamageResult {
+    const health = state.entities.get(targetId)?.findComponent(Health);
+    if (health === undefined) {
+      return { applied: false, reason: state.entities.has(targetId) ? 'no-health' : 'no-target' };
+    }
+    if (health.isDead) {
+      return { applied: false, reason: 'already-dead' };
+    }
+    return DamagePipeline.land(state, targetId, health, health.total, source);
+  }
+
+  /** Takes `amount` off `health` and announces the hit, and the death when it kills. */
+  private static land(
+    state: GameState,
+    targetId: EntityId,
+    health: Health,
+    amount: number,
+    source: DamageSource,
+  ): DamageResult {
+    const { toShields, toBase } = health.applyDamage(amount);
     state.events.emit('damage-applied', { targetId, amount: toBase, absorbed: toShields, source });
 
-    // Not `health.isDead`: TypeScript still narrows it to false from the check above.
-    const killed = health.current === 0;
+    const killed = health.isDead;
     if (killed) {
       state.events.emit('entity-died', { entityId: targetId, killer: source });
     }

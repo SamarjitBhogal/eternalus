@@ -19,6 +19,7 @@ import { Transform } from './components/Transform';
 import { TurretAmmoRule } from './state/TurretAmmoRule';
 import type { GameEventMap } from './state/GameEvents.types';
 import { TRAINING_DUMMY } from './content/mobs/trainingDummy';
+import { DamagePipeline } from './combat/DamagePipeline';
 import {
   config,
   MAP,
@@ -58,20 +59,32 @@ describe('Simulation wall turrets', () => {
     }
   });
 
-  it("makes each turret's pylon map object its body: one health pool, no entity of its own", () => {
-    const { simulation, turretOf } = setUp();
+  it("gives each turret's pylon map object its own entity, 600 health and the turret's breakability, and carries the turret's health on it (DEC-375)", () => {
+    const { simulation, state, turretOf } = setUp();
     const { entities, mapObjects = [] } = simulation.snapshot();
 
     for (const feature of TURRET_FEATURES) {
       const turret = turretOf(feature);
       const pylon = mapObjects.find(({ id }) => id === feature.id);
-      expect(pylon).toMatchObject({ entityId: turret?.id, isDestroyed: false });
-      expect(pylon?.health).toEqual(turret?.health);
+      expect(pylon).toMatchObject({
+        health: { current: 600, max: 600 },
+        isDestroyed: false,
+        carriedHealth: turret?.health,
+      });
+      expect(entities.find(({ id }) => id === pylon?.entityId)).toMatchObject({
+        definitionId: 'map-object-turret',
+        team: feature.team,
+        mapObjectId: feature.id,
+      });
+      // Like the turret, the pylon takes no damage until two BuffTowers fall (DEC-341 (1)).
+      expect(state.entities.takesNoDamage(pylon?.entityId ?? '')).toBe(true);
     }
-    expect(entities.filter(({ definitionId }) => definitionId === 'map-object-turret')).toEqual([]);
+    expect(
+      entities.filter(({ definitionId }) => definitionId === 'map-object-turret'),
+    ).toHaveLength(TURRET_FEATURES.length);
   });
 
-  it("takes a hit on a turret into its one pool, which its pylon's map object shows", () => {
+  it("takes a hit on the turret into its pool only, and a hit on its pylon into the pylon's only (DEC-375)", () => {
     // Breakable from the start, so a hit lands before two BuffTowers fall.
     const breakable = new ContentCatalogue<StructureDefinition>(
       STRUCTURE_DEFINITIONS.all().map((definition) =>
@@ -80,38 +93,37 @@ describe('Simulation wall turrets', () => {
           : definition,
       ),
     );
-    const { simulation, run, turretOf } = setUp({ structures: breakable });
+    const match = setUp({ structures: breakable });
+    const { simulation, state, run, turretOf } = match;
     const feature = LIGHT_TURRET ?? TURRET_FEATURES[0];
     if (feature === undefined) throw new Error('The generated map has no turret.');
-    run(countdownTicks(config.match.countdownSeconds, config.tickRate) + 1);
-    simulation.enqueueCommand({
-      type: 'dev-spawn',
-      kind: 'warrior',
-      definitionId: 'warrior',
-      team: 'dark',
-      at: outside(feature, 0.5),
-      count: 1,
-    });
-    run(1);
-    const warrior = simulation
-      .snapshot()
-      .entities.find(({ kind, team }) => kind === 'warrior' && team === 'dark');
+    run(COUNTDOWN + 1);
+    const warriorId = spawnDark(match, 'warrior', 'warrior', outside(feature, 0.5));
     const turretId = turretOf(feature)?.id ?? '';
-    simulation.enqueueCommand({
-      type: 'attack-target',
-      actorId: warrior?.id ?? '',
-      targetId: turretId,
-    });
-    run(config.tickRate * 3);
-    const { mapObjects = [] } = simulation.snapshot();
-    const health = turretOf(feature)?.health;
-    const pylon = mapObjects.find(({ id }) => id === feature.id);
+    const pylonOf = () => simulation.snapshot().mapObjects?.find(({ id }) => id === feature.id);
+    const pylonId = pylonOf()?.entityId ?? '';
+    // One hit on each body, through the damage pipeline as a real hit lands (a sweep hits both).
+    const source = { attackerId: warriorId, kind: 'weapon', definitionId: 'test' } as const;
+    const damage = new DamagePipeline();
+    damage.apply(state, turretId, 100, source);
+    run(1);
+    const afterTurretHit = pylonOf();
+    damage.apply(state, pylonId, 50, source);
+    run(1);
 
-    expect(health?.current).toBeLessThan(600);
-    expect(pylon).toMatchObject({ entityId: turretId, health });
+    expect(afterTurretHit).toMatchObject({
+      entityId: pylonId,
+      health: { current: 600, max: 600 },
+      carriedHealth: { current: 500, max: 600 },
+    });
+    expect(pylonOf()).toMatchObject({
+      health: { current: 550, max: 600 },
+      carriedHealth: { current: 500, max: 600 },
+    });
+    expect(turretOf(feature)?.health).toEqual({ current: 500, max: 600 });
   });
 
-  it("keeps a destroyed turret's pylon standing and blocking, its footprint and nav cells kept, as a fallen lane tower's fort (DEC-341, HC-Q91)", () => {
+  it("keeps a destroyed turret's pylon standing and blocking, with its own health, its footprint and nav cells kept, as a fallen lane tower's fort (DEC-341, HC-Q91, DEC-375)", () => {
     // The lethal hits below skip the damage pipeline, which the test invariants refuse.
     const { simulation, state, run, turretOf } = setUp({ debug: RELEASE_DEBUG_CONFIG });
     const tower = MAP.features.find(
@@ -149,6 +161,7 @@ describe('Simulation wall turrets', () => {
     const gap = Math.hypot(toProbe.x, toProbe.y);
     const direction = { x: toProbe.x / gap, y: toProbe.y / gap };
     const { grid } = state.world ?? {};
+    const pylonId = state.worldObjects?.carrierOf(turretOf(feature)?.id ?? '');
 
     expect(state.worldObjects?.blockingAt(probe, 0.3)).toBe(feature.id);
     expect(grid?.isWalkableAt(probe.x, probe.y)).toBe(false);
@@ -165,9 +178,10 @@ describe('Simulation wall turrets', () => {
     const { entities, mapObjects = [] } = simulation.snapshot();
 
     expect(entities.filter(({ id }) => id === turretOf(feature)?.id || id === towerId)).toEqual([]);
-    expect(mapObjects.find(({ id }) => id === feature.id)).toMatchObject({
-      entityId: null,
-      health: null,
+    expect(mapObjects.find(({ id }) => id === feature.id)).toEqual({
+      id: feature.id,
+      entityId: pylonId,
+      health: { current: 600, max: 600 },
       isDestroyed: false,
       isRuined: true,
     });

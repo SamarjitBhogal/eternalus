@@ -53,4 +53,9 @@ export type MapObjectSnapshot = {
    * structure is gone: it still stands and blocks, and it draws as ruins (DEC-341, HC-Q91).
    */
   readonly isRuined?: true;
+  /**
+   * The health of the structure it carries, while that stands (a wall turret on its pylon,
+   * DEC-375). `health` is then the object's own.
+   */
+  readonly carriedHealth?: { readonly current: number; readonly max: number };
 };

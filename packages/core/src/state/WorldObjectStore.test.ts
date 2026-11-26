@@ -5,6 +5,7 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import type { MapObject } from '../content/maps/mapObjects.types';
+import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import type { Vec2 } from '../utils/geometry.types';
 
@@ -141,6 +142,75 @@ describe('WorldObjectStore', () => {
     });
     expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBe('fort');
     expect(world.destroyedIds.has('fort')).toBe(false);
+  });
+
+  it("gives an object that carries a structure (a wall turret's pylon) its own entity, health and the structure's breakability, and leaves it standing with them, as a ruin, once the structure is gone (DEC-375)", () => {
+    const factory = fixtureFactory();
+    const entities = new EntityStore();
+    const turret = factory.create('obstacle', MAP_OBJECT_DEFINITIONS.rock.id, {
+      position: { x: 5, y: 5 },
+    });
+    turret.getComponent(Collider).setUnbreakable(true);
+    entities.add(turret);
+    const pylon: MapObject = {
+      id: 'pylon',
+      kind: 'turret',
+      isBlocking: true,
+      footprints: [
+        [
+          { x: 0, y: 0 },
+          { x: 10, y: 0 },
+          { x: 10, y: 10 },
+        ],
+      ],
+    };
+    const world = new WorldObjectStore({
+      objects: [pylon],
+      factory,
+      entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+      carried: new Map([['pylon', turret.id]]),
+    });
+    const pylonId = world.snapshot()[0]?.entityId ?? '';
+    const pylonHealth = entities.get(pylonId)?.getComponent(Health);
+
+    // Its own entity and pool; a hit on one pool leaves the other as it was.
+    expect(entities.size).toBe(2);
+    expect(pylonId).not.toBe(turret.id);
+    turret.getComponent(Health).applyDamage(40);
+    pylonHealth?.applyDamage(100);
+    expect(world.snapshot()[0]).toEqual({
+      id: 'pylon',
+      entityId: pylonId,
+      health: { current: 500, max: 600 },
+      isDestroyed: false,
+      carriedHealth: { current: 60, max: 100 },
+    });
+    expect(world.carrierOf(turret.id)).toBe(pylonId);
+    expect(world.contentsOf('pylon')).toEqual([turret.id]);
+    expect(entities.takesNoDamage(pylonId)).toBe(true);
+
+    // The turret goes: the pylon stands as a ruin that blocks, with its own health.
+    turret.getComponent(Health).applyDamage(60);
+    entities.remove(turret.id, 'died');
+    world.removed(turret.id);
+    expect(world.snapshot()[0]).toEqual({
+      id: 'pylon',
+      entityId: pylonId,
+      health: { current: 500, max: 600 },
+      isDestroyed: false,
+      isRuined: true,
+    });
+    expect(world.contentsOf('pylon')).toEqual([]);
+    expect(world.carrierOf(turret.id)).toBeUndefined();
+    expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBe('pylon');
+
+    // The pylon falls later on its own: it is destroyed and blocks no more.
+    pylonHealth?.applyDamage(500);
+    entities.remove(pylonId, 'died');
+    world.removed(pylonId);
+    expect(world.snapshot()[0]).toMatchObject({ isDestroyed: true });
+    expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBeNull();
   });
 
   it('skips an object whose footprint box misses the circle, without testing its shape', () => {

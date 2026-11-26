@@ -96,6 +96,7 @@ import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
 import { WorldObjectStore } from './state/WorldObjectStore';
+import type { WorldObjectStoreOptions } from './state/WorldObjectStore.types';
 import { MAP_OBJECT_DEFINITIONS } from './content/maps/mapObjectDefinitions';
 import { CollisionSystem } from './systems/CollisionSystem';
 import type { PlayableTeam } from './teams/teams.types';
@@ -223,7 +224,7 @@ export class Simulation {
       LEGEND_SPECS,
       turrets.ammo,
     );
-    const owners = Simulation.spawnStructures(this.state, factory, structures, mapObjects);
+    const bodies = Simulation.spawnStructures(this.state, factory, structures, mapObjects);
     this.state.indexStructures();
     // Before the pipeline: zones can be guard homes, which SpawnSystem finds when it is built.
     const zones = Simulation.spawnZones(this.state, factory);
@@ -238,14 +239,15 @@ export class Simulation {
         factory: this.commandContext.factory,
         entities: this.state.entities,
         definitions: MAP_OBJECT_DEFINITIONS,
-        owners,
+        ...bodies,
       });
       this.state.worldObjects = worldObjects;
       this.state.events.on('entity-removed', ({ entityId }) => {
         worldObjects.removed(entityId);
         // At once, so walking and a dash both stop seeing it from now on (critic r2 F1). A retired
-        // structure's body (a tower's fort, a turret's pylon) is not its own entity (`objectFor`
-        // gives nothing), so it stays as a ruin that blocks (DEC-341, HC-Q91).
+        // structure is not a map object (`objectFor` gives nothing), so its body (a tower's fort,
+        // a turret's pylon) stays as a ruin that blocks (DEC-341, HC-Q91). A pylon that falls
+        // itself is its own entity, so it goes (DEC-375).
         const object = worldObjects.objectFor(entityId);
         if (object !== undefined) walls.remove(object.id);
       });
@@ -408,28 +410,32 @@ export class Simulation {
    * A structure whose definition `hasMapFootprint` takes the footprints of its feature's map object
    * of the same id as its `Footprint` (a lane tower's fort, DEC-185; the Stronghold's palace,
    * DEC-185 D; a gate's own outline, DEC-217 (17); a wall turret's pylon). A blocking such object
-   * (a fort, a pylon) is the structure's body: it has no health of its own (one pool, DEC-185 B).
-   * Towers share one pool (DEC-217 (13)), and so do wall turrets: the palace's and the gates' objects
-   * do not block, so they keep their own health, and their outline is walked on
-   * (`Footprint.isWalkOn`): a shot flies over it unless it was fired at the structure. A body
-   * outlives its structure as a ruin that blocks (`WorldObjectStore.removed`, DEC-341).
+   * (a fort) is the structure's body: it has no health of its own (one pool, DEC-185 B). Only towers
+   * share one pool (DEC-217 (13)): the palace's and the gates' objects do not block, so they keep
+   * their own health, and their outline is walked on (`Footprint.isWalkOn`): a shot flies over it
+   * unless it was fired at the structure. An object that carries its structure (a wall turret's
+   * pylon, `isCarriedByBody`, DEC-375) keeps its own health too, and its fall takes the structure
+   * with it. A body outlives its structure as a ruin that blocks (`WorldObjectStore.removed`,
+   * DEC-341).
    *
-   * @returns Map object id → the id of the structure it is the body of.
+   * @returns Map object id → the id of the structure it is the body of (`owners`) or carries
+   *   (`carried`).
    */
   private static spawnStructures(
     state: GameState,
     factory: EntityFactory,
     structures: StructureSource,
     mapObjects: readonly MapObject[] = [],
-  ): ReadonlyMap<string, string> {
+  ): Required<Pick<WorldObjectStoreOptions, 'owners' | 'carried'>> {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
       compareById(a.id, b.id),
     );
     const bodies = new Map(mapObjects.map((object) => [object.id, object]));
     const owners = new Map<string, string>();
+    const carried = new Map<string, string>();
     for (const { id, definitionId, position, team, laneId } of features) {
       if (structures.has(definitionId)) {
-        const { kind, hasMapFootprint } = structures.get(definitionId);
+        const { kind, hasMapFootprint, isCarriedByBody } = structures.get(definitionId);
         const placement = {
           position,
           team,
@@ -441,11 +447,12 @@ export class Simulation {
         if (body !== undefined) {
           structure.addComponent(new Footprint(body.footprints, { isWalkOn: !body.isBlocking }));
         }
-        if (body?.isBlocking === true) owners.set(body.id, structure.id);
+        if (body !== undefined && isCarriedByBody === true) carried.set(body.id, structure.id);
+        else if (body?.isBlocking === true) owners.set(body.id, structure.id);
         state.entities.add(structure);
       }
     }
-    return owners;
+    return { owners, carried };
   }
 
   /**

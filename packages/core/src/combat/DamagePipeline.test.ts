@@ -106,4 +106,26 @@ describe('DamagePipeline', () => {
       reason: 'no-target',
     });
   });
+
+  it('collapses a target in one hit that no step reduces, and names the killer (DEC-375)', () => {
+    const state = setUp();
+    healthOf(state).addShield('entity-50', 10);
+    const halving = { name: 'halving', adjust: ({ amount }: { amount: number }) => amount / 2 };
+    const pipeline = new DamagePipeline([halving]);
+
+    const fall = pipeline.collapse(state, 'entity-1', SOURCE);
+    const again = pipeline.collapse(state, 'entity-1', SOURCE);
+
+    const max = healthOf(state).max;
+    expect(fall).toEqual({ applied: true, amount: max, absorbed: 10, killed: true });
+    expect(again).toEqual({ applied: false, reason: 'already-dead' });
+    expect(pipeline.collapse(state, 'entity-404', SOURCE)).toEqual({
+      applied: false,
+      reason: 'no-target',
+    });
+    expect(state.events.recentEvents().map(({ type, payload }) => [type, payload])).toEqual([
+      ['damage-applied', { targetId: 'entity-1', amount: max, absorbed: 10, source: SOURCE }],
+      ['entity-died', { entityId: 'entity-1', killer: SOURCE }],
+    ]);
+  });
 });

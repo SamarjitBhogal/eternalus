@@ -14,7 +14,9 @@ import type { System, SystemContext } from './System.types';
  * Keeps the structures' lifecycle (architecture 07 §3, §8, §11): announces each structure that
  * died this tick with `structure-destroyed` (its kind, team and lane), and re-evaluates every
  * structure's `BreakabilityRule`, flipping `Collider.isUnbreakable` and emitting
- * `structure-breakability-changed` when it changes. Runs
+ * `structure-breakability-changed` when it changes. The map object that carries a structure (a
+ * wall turret's pylon, DEC-375) flips with it, so the pylon cannot fall, and take the turret with
+ * it, before the turret may take damage (DEC-341 (1)). Runs
  * after every system that deals damage and before `DeathSystem`, so the dead are still in the
  * store when they are announced. Never calls another system: the effects of a loss are listeners.
  */
@@ -76,6 +78,11 @@ export class StructureSystem implements System {
       return;
     }
     collider.setUnbreakable(!isBreakable);
+    const carrier = state.worldObjects?.carrierOf(structure.id);
+    state.entities
+      .get(carrier ?? '')
+      ?.findComponent(Collider)
+      ?.setUnbreakable(!isBreakable);
     state.events.emit('structure-breakability-changed', {
       entityId: structure.id,
       isBreakable,
