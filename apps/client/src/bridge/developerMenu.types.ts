@@ -29,6 +29,8 @@ export type DeveloperMenuState = {
    * `null` when it follows none.
    */
   readonly followedLegendId: string | null;
+  /** The Legends in the match, for sim mode's Follow picker. */
+  readonly legends: readonly DeveloperMenuOption[];
   /** The controller ids sim mode's buttons send: the human's (`player`) and the Rover's (core's). */
   readonly controllerIds: { readonly player: string; readonly rover: string };
 };

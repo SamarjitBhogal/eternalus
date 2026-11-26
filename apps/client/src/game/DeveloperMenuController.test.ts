@@ -91,6 +91,24 @@ describe('DeveloperMenuController', () => {
     expect(enqueueCommand).not.toHaveBeenCalled();
   });
 
+  it('publishes the Legends of a snapshot for Follow once, and again only when they change', () => {
+    const { states, controller } = setUp(true, null);
+    const legend = (id: string) => ({
+      id,
+      family: 'legend',
+      team: 'dark' as const,
+      definitionId: 'warrior',
+    });
+    const mob = { id: 'm1', family: 'mob', team: 'dark' as const, definitionId: 'minion' };
+    controller.observeLegends([legend('e1'), mob]);
+    controller.observeLegends([legend('e1'), mob]);
+    controller.observeLegends([legend('e1'), legend('e2')]);
+    expect(states.map((state) => state.legends.map(({ id }) => id))).toEqual([
+      ['e1'],
+      ['e1', 'e2'],
+    ]);
+  });
+
   it('follows nothing while a human is seated, or while the menu is not enabled', () => {
     const seated = setUp(true);
     seated.bus.emit('ui-intent', { kind: 'dev-follow', legendId: 'entity-4' });

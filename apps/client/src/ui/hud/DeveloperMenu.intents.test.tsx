@@ -25,6 +25,10 @@ function mount(humanLegendId: string | null = 'e1', followedLegendId: string | n
       isOpen: true,
       humanLegendId,
       followedLegendId,
+      legends: [
+        { id: 'e7', label: 'e7 (dark warrior)' },
+        { id: 'e8', label: 'e8 (light sentinel)' },
+      ],
       controllerIds: { player: 'player', rover: 'rover' },
       origins: [
         { id: 'gate-a', label: 'gate-a' },
@@ -215,26 +219,27 @@ describe('DeveloperMenu buttons', () => {
     ]);
   });
 
-  it('Follow and Stop following send one client-only dev-follow with no human, and nothing with one', () => {
+  it('Follow lists the Legends of the store, sends a client-only dev-follow (None releases) with no human, and is off with one', () => {
     const seated = mount();
-    type(seated.container, 'Legend id', 'e7');
-    click(seated.container, 'Follow');
+    expect(field(seated.container, 'Follow').hasAttribute('disabled')).toBe(true);
     seated.stop();
-    expect(seated.intents).toEqual([]);
     act(() => {
       root?.unmount();
     });
     seated.container.remove();
 
-    const { container, intents, stop } = mount(null, 'e3');
-    click(container, 'Follow');
-    expect(intents).toEqual([]);
-    type(container, 'Legend id', ' e7 ');
-    click(container, 'Follow');
-    click(container, 'Stop following');
+    const { container, intents, stop } = mount(null, 'e7');
+    const follow = field(container, 'Follow');
+    expect([...follow.querySelectorAll('option')].map((o) => o.textContent)).toEqual([
+      'None',
+      'e7 (dark warrior)',
+      'e8 (light sentinel)',
+    ]);
+    pick(container, 'Follow', 'e8');
+    pick(container, 'Follow', '');
     stop();
     expect(intents).toEqual([
-      { kind: 'dev-follow', legendId: 'e7' },
+      { kind: 'dev-follow', legendId: 'e8' },
       { kind: 'dev-follow', legendId: null },
     ]);
   });

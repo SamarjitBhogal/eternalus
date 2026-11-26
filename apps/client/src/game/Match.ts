@@ -237,6 +237,7 @@ export class Match implements LoopTarget {
     if (this.playerId !== previousPlayerId) {
       this.developerMenu.publish();
     }
+    this.developerMenu.observeLegends(this.current.entities);
     this.healthBars.observe(this.current, this.playerId);
     this.bodies.observe(this.current);
     this.roofs.playerAt(this.livingPlayerAt());
