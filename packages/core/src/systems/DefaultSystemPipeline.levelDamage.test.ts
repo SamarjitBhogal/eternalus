@@ -77,6 +77,7 @@ const firstHit = (units: DefinitionSource, level: number): number => {
 describe('DefaultSystemPipeline basic-attack level scaling (DEC-380 (2))', () => {
   it("scales a Legend's weapon hit by the match's own unit definitions", () => {
     // 1 + 0.5 × (3 − 1) = 2 with the injected 0.5; the catalogue's own value would give less.
+    expect(firstHit(STEEP_UNITS, 1)).toBeGreaterThan(0);
     expect(firstHit(STEEP_UNITS, 3)).toBeCloseTo(2 * firstHit(STEEP_UNITS, 1));
   });
 });

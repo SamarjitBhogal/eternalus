@@ -1,6 +1,7 @@
 import { Progression } from '../components/Progression';
+import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { EntityDefinitionBase } from '../content/EntityDefinition.types';
 import { LEGEND_KINDS } from '../content/legends/legendKinds';
-import type { DefinitionSource } from '../entities/EntityFactory.types';
 import type { GameState } from '../state/GameState';
 import type { DamageHit, DamageStep } from './DamageStep.types';
 
@@ -22,7 +23,9 @@ export class BasicAttackLevelStep implements DamageStep {
    * @param units - The match's unit definitions (the same source as `ProgressionSystem`); a Legend
    * class's `levelScaling.basicAttackPerLevel` is read from it.
    */
-  public constructor(private readonly units: DefinitionSource) {}
+  public constructor(
+    private readonly units: Pick<ContentCatalogue<EntityDefinitionBase>, 'has' | 'get'>,
+  ) {}
 
   /** Returns a Legend's weapon hit × its basic-attack potency, any other hit unchanged. */
   public adjust({ amount, source }: DamageHit, state: GameState): number {

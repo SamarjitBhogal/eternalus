@@ -40,8 +40,8 @@ export class ProgressionSystem implements System {
   private readonly pending: Award[] = [];
 
   /**
-   * @param state - The match whose `entity-died` events this system listens to (none when
-   * `content.hasMatchXp` is false).
+   * @param state - The match whose events this system listens to: the award events unless
+   * `content.hasMatchXp` is false, and `entity-spawned` when `legendsStartAtMaxLevel` is set.
    * @param content - The unit definitions, level curves and XP sources it prices and levels with.
    */
   public constructor(

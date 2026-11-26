@@ -2,7 +2,8 @@ import type { DamageStep } from './DamageStep.types';
 import { BasicAttackLevelStep } from './BasicAttackLevelStep';
 import { BreakabilityStep } from './BreakabilityStep';
 import { LEGEND_CLASSES } from '../content/legends/legendCatalogue';
-import type { DefinitionSource } from '../entities/EntityFactory.types';
+import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { EntityDefinitionBase } from '../content/EntityDefinition.types';
 import { BOSS_MINION_DAMAGE_TAKEN, MINION_STRENGTH } from '../content/mobs/minionModifiers';
 import { MOB_DEFINITIONS } from '../content/mobs/mobCatalogue';
 import { BossMinionDamageStep } from './BossMinionDamageStep';
@@ -18,7 +19,7 @@ import { StatusModifierStep } from './StatusModifierStep';
  * (`ProgressionContent.units`); the Legend classes alone when not given.
  */
 export const createDefaultDamageSteps = (
-  units: DefinitionSource = LEGEND_CLASSES,
+  units: Pick<ContentCatalogue<EntityDefinitionBase>, 'has' | 'get'> = LEGEND_CLASSES,
 ): readonly DamageStep[] => [
   new BreakabilityStep(),
   new FriendlyFireStep(),
