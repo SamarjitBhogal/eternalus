@@ -14,8 +14,8 @@ import { weaponSourceOf } from './weaponSourceOf';
  * along `aim.direction` (no lead) and carries a `ProjectilePayload` with a weapon impact and the
  * body it aims at: the locked target, or else the outline shots fly over that the aim point is on
  * (a walk-on outline, a camp fire: `AreaHitQuery.aimedBodyOf`, DEC-322 (1)), so the shot can hit
- * that outline and flies over the others. `CombatSystem` hands it a unit direction, so a shot always moves. It passes its owner
- * by; `ProjectileSystem` flies and lands it, from the next tick.
+ * that outline and flies over the others. `CombatSystem` hands it a unit direction, so a shot
+ * always moves. It passes its owner by; `ProjectileSystem` flies and lands it, from the next tick.
  */
 export class RangedProjectileAttackStrategy implements AttackStrategy {
   /**

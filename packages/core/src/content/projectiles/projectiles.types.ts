@@ -32,8 +32,8 @@ type ProjectileDefinitionWith<Step> = EntityDefinitionBase & {
   readonly endDuration: number;
   /**
    * Effect steps run on the body this shot lands on when the shot is lit: before it landed, it
-   * flew over a shape that lights shots (a lava river, `CollisionQuery.lightsShot`; HC-Q89,
-   * DEC-345). Absent: the shot cannot catch fire.
+   * flew over a shape flagged `canLightShots` (a lava river, a camp fire,
+   * `CollisionQuery.lightsShot`; HC-Q89, DEC-345). Absent: the shot cannot catch fire.
    */
   readonly litOnHit?: readonly Step[];
 };

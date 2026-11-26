@@ -311,6 +311,7 @@ describe('AreaHitQuery.stopsShot', () => {
       health: entity.getComponent(Health),
       membership: entity.findComponent(TeamMembership),
       outline: entities.outlineOf(id) ?? null,
+      collider: entity.findComponent(Collider),
     });
   };
 
@@ -332,6 +333,7 @@ describe('AreaHitQuery.stopsShot', () => {
           health: owner.getComponent(Health),
           membership: undefined,
           outline: null,
+          collider: owner.findComponent(Collider),
         },
       ),
     ).toBe(false);
@@ -373,6 +375,7 @@ describe('AreaHitQuery.stopsShot', () => {
       health: dead.getComponent(Health),
       membership: undefined,
       outline: null,
+      collider: dead.findComponent(Collider),
     };
     expect(AreaHitQuery.stopsShot(scene.entities, shotAt(), body)).toBe(false);
     const removed = scene.add('removed', { at: { x: 3, y: 0 }, team: 'dark' });
@@ -381,6 +384,7 @@ describe('AreaHitQuery.stopsShot', () => {
       health: removed.getComponent(Health),
       membership: undefined,
       outline: null,
+      collider: removed.findComponent(Collider),
     };
     scene.entities.remove(removed.id, 'dev-removed');
     expect(AreaHitQuery.stopsShot(scene.entities, shotAt(), removedBody)).toBe(false);

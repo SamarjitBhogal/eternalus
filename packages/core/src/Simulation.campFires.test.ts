@@ -102,20 +102,39 @@ const match = () => {
     return shot;
   };
   const healthOf = (entity: Entity): number => entity.getComponent(Health).current;
-  return { state, campOf, shootAcross, healthOf };
+  /** The map feature id of every camp fire on the map, in map order. */
+  const campIds = (): readonly string[] =>
+    mapObjects
+      .filter(({ id }) => id.endsWith('-camp-fire'))
+      .map(({ id }) => id.slice(0, -'-camp-fire'.length));
+  return { state, campOf, campIds, shootAcross, healthOf };
 };
 
 describe('Simulation: arrows over the camp fires (HC-Q105, DEC-373, HC-Q115)', () => {
-  it("flies an arrow not aimed at the camp over a forest camp's fire and the camp's home at its centre, and lights it", () => {
-    const { state, campOf, shootAcross, healthOf } = match();
-    const { centre, fire, camp } = campOf(FOREST_CAMP);
+  it("flies an arrow not aimed at the camp over every camp fire and the camp's home at its centre, and lights it", () => {
+    const { state, campOf, campIds, shootAcross, healthOf } = match();
+    expect(campIds()).toHaveLength(16);
 
-    const shot = shootAcross(centre);
+    const results = campIds().map((featureId) => {
+      const { centre, fire, camp } = campOf(featureId);
+      const shot = shootAcross(centre);
+      return {
+        featureId,
+        isCampAtCentre:
+          camp === undefined ||
+          (camp.getComponent(Transform).position.x === centre.x &&
+            camp.getComponent(Transform).position.y === centre.y),
+        isShotFlying: state.entities.has(shot.id),
+        isShotLit: shot.findComponent(ProjectileFlight)?.isLit === true,
+        isFireUnharmed: healthOf(fire) === fire.getComponent(Health).max,
+      };
+    });
 
-    expect(camp?.getComponent(Transform).position).toEqual(centre);
-    expect(state.entities.has(shot.id)).toBe(true);
-    expect(shot.getComponent(ProjectileFlight).isLit).toBe(true);
-    expect(healthOf(fire)).toBe(fire.getComponent(Health).max);
+    expect(
+      results.filter(
+        (r) => !(r.isCampAtCentre && r.isShotFlying && r.isShotLit && r.isFireUnharmed),
+      ),
+    ).toEqual([]);
   });
 
   it("does the same at a corner camp's fire, which has no camp structure", () => {

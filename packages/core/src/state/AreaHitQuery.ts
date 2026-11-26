@@ -1,4 +1,3 @@
-import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import type { Outline } from '../components/Outline.types';
 import { TeamMembership } from '../components/TeamMembership';
@@ -169,10 +168,8 @@ export class AreaHitQuery {
    * Whether a shot not aimed at the body flies over it: its outline says so, or, for a body that is
    * only its collider circle, its collider (a forest camp's home, HC-Q115).
    */
-  private static canFlyOver({ entity, outline }: ShotStopBody): boolean {
-    return outline === null
-      ? entity.findComponent(Collider)?.canShotsFlyOver === true
-      : outline.canShotsFlyOver;
+  private static canFlyOver({ collider, outline }: ShotStopBody): boolean {
+    return outline === null ? collider?.canShotsFlyOver === true : outline.canShotsFlyOver;
   }
 
   /** Rule 1 by aim point: on the outline, the attacker outside it, and on no enemy unit. */

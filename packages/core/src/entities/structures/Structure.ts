@@ -12,7 +12,8 @@ import { SpawnContextReader } from '../SpawnContextReader';
  * Abstract base for static things with health: buildings, walls, gates, turrets, camps and the
  * Cathedral. Installs `Transform`, `Health`, `TeamMembership` and a static `Collider` from a
  * `StructureDefinition` (with its `canShotsFlyOver`, a forest camp), and a `ControllerBinding` when
- * the definition names a controller (a turret), as `Unit` does. Concrete structures and their extra components arrive in Phase 2.
+ * the definition names a controller (a turret), as `Unit` does. Concrete structures and their
+ * extra components arrive in Phase 2.
  *
  * @see docs/architecture/07-structures-obstacles-and-destructibles.md (The Structure family)
  */

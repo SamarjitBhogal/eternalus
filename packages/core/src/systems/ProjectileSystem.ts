@@ -1,3 +1,4 @@
+import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { ProjectileFlight } from '../components/ProjectileFlight';
@@ -210,6 +211,7 @@ export class ProjectileSystem implements System {
         health,
         membership: entity.findComponent(TeamMembership),
         outline: state.entities.outlineOf(entity.id) ?? null,
+        collider: entity.findComponent(Collider),
       });
     });
     this.isGathered = true;

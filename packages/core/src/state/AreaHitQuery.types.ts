@@ -1,3 +1,4 @@
+import type { Collider } from '../components/Collider';
 import type { Health } from '../components/Health';
 import type { Outline } from '../components/Outline.types';
 import type { TeamMembership } from '../components/TeamMembership';
@@ -74,4 +75,6 @@ export type ShotStopBody = {
   readonly membership: TeamMembership | undefined;
   /** What a shot touches; `null` for a body that is only its collider circle. */
   readonly outline: Outline | null;
+  /** Its collider, read once so the rule need not look it up per shot; `undefined` for none. */
+  readonly collider: Collider | undefined;
 };
