@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
+import { StatusEffectApplier } from '../../combat/StatusEffectApplier';
 import { Movement } from '../../components/Movement';
 import { StatusEffects } from '../../components/StatusEffects';
+import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { loadKnockback } from '../../content/abilities/loadKnockback';
+import { loadStatusEffects } from '../../content/status-effects/loadStatusEffects';
 import type { Entity } from '../../entities/Entity';
+import { CollisionResolver } from '../../physics/CollisionResolver';
+import { StaticCollisionIndex } from '../../physics/StaticCollisionIndex';
+import type { GameEventMap } from '../../state/GameEvents.types';
+import { GameState } from '../../state/GameState';
+import type { Rect } from '../../utils/geometry.types';
 import { casterState } from '../__fixtures__/casterState';
 import { castSteps } from '../__fixtures__/castSteps';
 import { KnockbackEffect } from './KnockbackEffect';
@@ -134,5 +142,85 @@ describe('KnockbackEffect', () => {
     expect(new KnockbackEffect(TUNING).describe(PUSH)).toEqual([
       { kind: 'knockback', shape: AREA },
     ]);
+  });
+});
+
+/**
+ * The caster (a light Warrior at the origin) and a dark Warrior 2 m east of it (radius 0.5), in a
+ * state whose walls are one rock from `rockX` to `rockX + 1` across the push's way, inside
+ * `bounds`, and every hit that lands.
+ */
+const walledSetUp = (
+  rockX: number | null,
+  bounds: Rect = { x: -50, y: -50, width: 100, height: 100 },
+) => {
+  const { factory, caster } = casterState();
+  const rock =
+    rockX === null
+      ? []
+      : [
+          {
+            id: 'rock',
+            polygon: [
+              { x: rockX, y: -10 },
+              { x: rockX + 1, y: -10 },
+              { x: rockX + 1, y: 10 },
+              { x: rockX, y: 10 },
+            ],
+          },
+        ];
+  const collisions = new CollisionResolver(new StaticCollisionIndex(rock), bounds);
+  const state = new GameState(createDefaultGameConfig(), 1, null, { collisions });
+  state.entities.add(caster);
+  const target = factory.create('warrior', 'warrior', { position: { x: 2, y: 0 }, team: 'dark' });
+  state.entities.add(target);
+  const hits: GameEventMap['damage-applied'][] = [];
+  state.events.on('damage-applied', (hit) => hits.push(hit));
+  return { state, caster, target, hits };
+};
+
+describe('KnockbackEffect into a wall (DEC-382, HC-B43 (6))', () => {
+  it('deals the impact damage, 40, credited to the caster, when a rock stops the push short', () => {
+    const { state, caster, target, hits } = walledSetUp(4); // the push ends at x 5; the rock stops it at 3.5
+
+    castSteps(state, caster.id, [PUSH]);
+
+    expect(TUNING.impactDamage).toBe(40);
+    expect(hits).toEqual([
+      {
+        targetId: target.id,
+        amount: 40,
+        absorbed: 0,
+        source: { attackerId: caster.id, kind: 'ability', definitionId: 'test-cast' },
+      },
+    ]);
+  });
+
+  it('deals nothing in the open, nor when the rock stands just past the end of the push', () => {
+    const open = walledSetUp(null);
+    const pastEnd = walledSetUp(5.6); // the body ends at x 5.5
+
+    castSteps(open.state, open.caster.id, [PUSH]);
+    castSteps(pastEnd.state, pastEnd.caster.id, [PUSH]);
+
+    expect(open.hits).toEqual([]);
+    expect(pastEnd.hits).toEqual([]);
+  });
+
+  it('deals nothing when the map’s edge stops the push: the edge is not a wall', () => {
+    const { state, caster, hits } = walledSetUp(null, { x: -50, y: -50, width: 54.5, height: 100 });
+
+    castSteps(state, caster.id, [PUSH]); // the body's centre stops at x 4, short of 5
+
+    expect(hits).toEqual([]);
+  });
+
+  it('runs the hit through the damage pipeline: a Berserk target takes 0.7 of it', () => {
+    const { state, caster, target, hits } = walledSetUp(4);
+    new StatusEffectApplier(loadStatusEffects(30, 2)).apply(state, target.id, 'berserk', null);
+
+    castSteps(state, caster.id, [PUSH]);
+
+    expect(hits.map(({ amount }) => amount)).toEqual([40 * 0.7]);
   });
 });

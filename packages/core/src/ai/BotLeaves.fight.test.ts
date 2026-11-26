@@ -105,11 +105,17 @@ const fightTurn = (attack: UnitAttack, collisions: CollisionQuery | null): BotTu
   };
 };
 
-const WALLED: CollisionQuery = { reach: () => 4, pushOut: (at) => at, hasRoom: () => true };
+const WALLED: CollisionQuery = {
+  reach: () => 4,
+  pushOut: (at) => at,
+  hasRoom: () => true,
+  hitsWall: () => false,
+};
 const OPEN: CollisionQuery = {
   reach: (_from, _direction, distance) => distance,
   pushOut: (at) => at,
   hasRoom: () => true,
+  hitsWall: () => false,
 };
 
 /** The headings the turn commanded; `(0, 0)` is a halt, which is how a bot holds. */
@@ -166,6 +172,7 @@ describe('BotLeaves.fight: line of fire for a ranged attack', () => {
       reach: (_from, _direction, distance) => distance - CONTACT_EPSILON,
       pushOut: (at) => at,
       hasRoom: () => true,
+      hitsWall: () => false,
     };
     const turn = fightTurn(RANGED, touching);
 

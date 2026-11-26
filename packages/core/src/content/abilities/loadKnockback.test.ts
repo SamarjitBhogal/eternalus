@@ -11,6 +11,7 @@ describe('loadKnockback', () => {
       travelTicks: 8, // 0.25 s at 30 ticks per second is 7.5, rounded up
       staggerStatusId: KNOCKBACK.staggerStatusId,
       knockupStatusId: KNOCKBACK.knockupStatusId,
+      impactDamage: 40, // DEC-382 (HC-B43 (6))
     });
     expect(loadKnockback(10).travelTicks).toBe(3);
   });
@@ -25,6 +26,15 @@ describe('loadKnockback', () => {
     );
     expect(() => loadKnockback(30, { ...KNOCKBACK, travelSeconds: Number.NaN })).toThrow(
       'Invalid knock-back: travelSeconds is NaN s',
+    );
+  });
+
+  it('rejects an impact damage that is negative or not a number', () => {
+    expect(() => loadKnockback(30, { ...KNOCKBACK, impactDamage: -1 })).toThrow(
+      'Invalid knock-back: impactDamage is -1',
+    );
+    expect(() => loadKnockback(30, { ...KNOCKBACK, impactDamage: Number.NaN })).toThrow(
+      ContentValidationError,
     );
   });
 });

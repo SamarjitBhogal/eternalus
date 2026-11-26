@@ -18,6 +18,7 @@ const wallAt = (wallX: number) => {
     },
     pushOut: (at) => at,
     hasRoom: () => true,
+    hitsWall: () => false,
   };
   return { collisions, asked };
 };

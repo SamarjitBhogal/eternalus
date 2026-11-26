@@ -131,6 +131,41 @@ describe('CollisionResolver', () => {
     });
   });
 
+  describe('hitsWall (a knock-back into a wall, DEC-382, HC-B43 (6))', () => {
+    const EAST = { x: 1, y: 0 };
+    const wall = () =>
+      new CollisionResolver(
+        new StaticCollisionIndex([{ id: 'wall', polygon: rect(5, -20, 1, 40) }]),
+        OPEN,
+      );
+
+    it('is true where the wall stops the move short, from a gap or from touching it', () => {
+      expect(wall().hitsWall({ x: 0, y: 0 }, EAST, 8, 0.5)).toBe(true);
+      expect(wall().hitsWall({ x: 4.5, y: 0 }, EAST, 1, 0.5)).toBe(true);
+      expect(wall().hitsWall({ x: 0, y: 0 }, { x: Math.SQRT1_2, y: Math.SQRT1_2 }, 8, 0.5)).toBe(
+        true,
+      );
+    });
+
+    it('is false where the move ends short of the wall, runs along it, or leaves it', () => {
+      expect(wall().hitsWall({ x: 0, y: 0 }, EAST, 4, 0.5)).toBe(false);
+      expect(wall().hitsWall({ x: 4.4, y: 0 }, { x: 0, y: 1 }, 8, 0.5)).toBe(false);
+      expect(wall().hitsWall({ x: 4.4, y: 0 }, { x: -1, y: 0 }, 8, 0.5)).toBe(false);
+    });
+
+    it('is false where the edge of the bounds stops the move first: the edge is not a wall', () => {
+      const bounds = { x: 0, y: 0, width: 200, height: 60 };
+      const open = new CollisionResolver(new StaticCollisionIndex([]), bounds);
+      const beyondEdge = new CollisionResolver(
+        new StaticCollisionIndex([{ id: 'outside', polygon: rect(200.2, 0, 5, 60) }]),
+        bounds,
+      );
+
+      expect(open.hitsWall({ x: 195, y: 30 }, EAST, 8, 0.5)).toBe(false);
+      expect(beyondEdge.hitsWall({ x: 195, y: 30 }, EAST, 8, 0.5)).toBe(false);
+    });
+  });
+
   describe('pushOut', () => {
     it('leaves a circle that overlaps no wall where it is', () => {
       const resolver = new CollisionResolver(

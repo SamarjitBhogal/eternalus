@@ -1167,7 +1167,12 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **Motion and statuses.** Dashes and knock-backs are forced motion (`Movement.push`; ADR 0026
     decision 4); a knock-back's base mass and travel time are in
     `content/abilities/knockback.ts`, and `loadKnockback` converts the travel time to ticks at load
-    (03 §8, DEC-241). Every knock-back target gets `staggered` (cannot cast);
+    (03 §8, DEC-241). A target whose knock-back a wall stops short (a map object, a wall, a
+    placed wall or a structure; not the map's edge) takes the knock-back's `impactDamage` (40),
+    once per push, credited to the caster, through the `DamagePipeline` (DEC-382, `INBOX.md`
+    HC-B43 (6); the test is `CollisionQuery.hitsWall`, [10](10-physics.md)). The push-out of a
+    unit under a new Shield Wall does not deal it yet. Every knock-back target gets `staggered`
+    (cannot cast);
     `knockup` (shown as "Airborne") stops moving, attacking and casting. An airborne target can
     still be pushed: DEC-208's stacking is kept over `more-abilities.md` §7's "cannot be pushed
     further" (`INBOX.md` HC-Q53). The 0.2 s landing stagger and `control-immune` wait for status

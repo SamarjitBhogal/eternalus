@@ -13,8 +13,8 @@ import type { CirclePenetration } from '../utils/circlePolygon.types';
  * Resolves continuous circle motion against static polygons, sliding along walls and corners, and
  * keeps every circle inside the world's bounds. The one collision rule of a match: `Simulation`
  * builds one and gives it to `CollisionSystem`, which walks units with `move`, and to the state as
- * its `CollisionQuery` port, which cuts a dash with `reach` (architecture 10 §7, ADR 0026
- * decision 4).
+ * its `CollisionQuery` port, which cuts a dash with `reach` and finds a knock-back into a wall with
+ * `hitsWall` (architecture 10 §7, ADR 0026 decision 4).
  *
  * @remarks ponytail: a mover that starts overlapping a polygon is never stopped by that polygon
  * when its move ends no deeper (`startsInside`), so a move longer than the polygon is thick can
@@ -58,15 +58,26 @@ export class CollisionResolver {
    * whole `distance` when nothing is in the way. Read-only, like `move`.
    */
   public reach(from: Vec2, direction: Vec2, distance: number, radius: number): number {
-    const { x, y, width, height } = this.bounds;
-    const reach = Math.min(
-      distance,
-      CollisionResolver.toEdge(from.x, direction.x, x, width, radius),
-      CollisionResolver.toEdge(from.y, direction.y, y, height, radius),
-    );
-    const displacement = { x: direction.x * reach, y: direction.y * reach };
+    const open = this.toBounds(from, direction, distance, radius);
+    const displacement = { x: direction.x * open, y: direction.y * open };
     const contact = this.firstContact(from, displacement, radius);
-    return reach * (contact === null ? 1 : CollisionResolver.shortOf(contact, displacement));
+    return open * (contact === null ? 1 : CollisionResolver.shortOf(contact, displacement));
+  }
+
+  /**
+   * Whether a wall stops a circle of `radius` that moves `distance` metres from `from` along
+   * `direction` (a unit vector) in a straight line: the circle touches a wall more than
+   * `CONTACT_EPSILON` before the end of the move. The edge of the bounds is not a wall, and a
+   * move the edge stops first touches no wall. `reach`'s sweep, without the slide. Read-only.
+   */
+  public hitsWall(from: Vec2, direction: Vec2, distance: number, radius: number): boolean {
+    const open = this.toBounds(from, direction, distance, radius);
+    const contact = this.firstContact(
+      from,
+      { x: direction.x * open, y: direction.y * open },
+      radius,
+    );
+    return contact !== null && open * contact.time < distance - CONTACT_EPSILON;
   }
 
   /**
@@ -134,6 +145,19 @@ export class CollisionResolver {
       if (Math.hypot(delta.x, delta.y) <= CONTACT_EPSILON) return position;
     }
     return position;
+  }
+
+  /**
+   * How far, up to `distance`, a circle of `radius` moves from `from` along `direction` before it
+   * meets the edge of the bounds.
+   */
+  private toBounds(from: Vec2, direction: Vec2, distance: number, radius: number): number {
+    const { x, y, width, height } = this.bounds;
+    return Math.min(
+      distance,
+      CollisionResolver.toEdge(from.x, direction.x, x, width, radius),
+      CollisionResolver.toEdge(from.y, direction.y, y, height, radius),
+    );
   }
 
   /** `delta` without the part that takes a circle of `radius` at `from` past the bounds. */
