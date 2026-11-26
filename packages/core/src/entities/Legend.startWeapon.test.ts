@@ -20,6 +20,7 @@ import { NullLogger } from '../diagnostics/NullLogger';
 import type { DamageSource } from '../state/GameEvents.types';
 import { GameState } from '../state/GameState';
 import { CombatSystem } from '../systems/CombatSystem';
+import { StatusEffectSystem } from '../systems/StatusEffectSystem';
 import { createDefaultEntityRegistry } from './defaultEntityRegistry';
 import type { Entity } from './Entity';
 import { EntityFactory } from './EntityFactory';
@@ -155,6 +156,13 @@ describe('a Legend spawns with its spec weapon (DEC-374)', () => {
     expect(swordsman.getComponent(Combat).attack.damage).toBe(60);
     expect(swordsman.getComponent(Combat).attack).toMatchObject(asWarriorHolds('long-sword'));
   });
+
+  it('keeps the dual blades for the Warrior only (DEC-374 (9))', () => {
+    expect(WEAPONS.get('dual-blades')).toMatchObject({
+      allowedClasses: ['warrior'],
+      uniqueTo: 'warrior',
+    });
+  });
 });
 
 describe('Raptor Talons bleed (DEC-374 W5)', () => {
@@ -199,13 +207,14 @@ describe('Obsidian Bow sundered (DEC-374 W6)', () => {
   });
 
   it('wears off 4 s after the arrow hit', () => {
-    const { state, attacker, target, statuses, hits } = setUp('warrior', 'assassin');
+    const { state, attacker, target, damage, statuses, hits } = setUp('warrior', 'assassin');
     const expiresTick = state.tick + 4 * CONFIG.tickRate; // DEC-374 (W6): 4 s
-    /** Steps the match to `tick`, removing the statuses that are over (`StatusEffectSystem`). */
+    const statusSystem = new StatusEffectSystem(damage, statuses);
+    /** Steps the match to `tick`, running the status system on each tick. */
     const runTo = (tick: number): void => {
       while (state.tick < tick) {
         state.advanceTick();
-        statuses.expire(state, target.id);
+        statusSystem.update({ state, logger: new NullLogger() });
       }
     };
 
