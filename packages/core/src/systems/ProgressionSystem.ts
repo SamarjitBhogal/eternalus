@@ -29,6 +29,8 @@ import type { Award, ProgressionContent } from './ProgressionSystem.types';
  * structure and boss awards, and a kill its projectile or damage over time lands after it died.
  * It gets that XP once it is back (`legend-respawned`, DEC-186 "pay on respawn"): the listener
  * buffers it and the next tick's pass pays it by the same path, with the cause `respawn`.
+ * With `content.hasMatchXp: false` (a Duel, DEC-380 (1)) it listens for none of these awards, so
+ * nothing earns match XP; the max-level start still applies.
  */
 export class ProgressionSystem implements System {
   public readonly name = 'progression';
@@ -43,6 +45,24 @@ export class ProgressionSystem implements System {
     state: GameState,
     private readonly content: ProgressionContent,
   ) {
+    if (content.hasMatchXp !== false) {
+      this.listenForAwards(state);
+    }
+    if (content.legendsStartAtMaxLevel === true) {
+      state.events.on('entity-spawned', ({ entityId }) => {
+        const entity = state.entities.get(entityId);
+        if (entity !== undefined) {
+          this.startAtMaxLevel(entity);
+        }
+      });
+    }
+  }
+
+  /**
+   * Buffers every award this match pays: a kill (`entity-died`), a destroyed structure and XP owed
+   * to a Legend that has respawned. Not called when the match has no match XP (DEC-380 (1)).
+   */
+  private listenForAwards(state: GameState): void {
     state.events.on('entity-died', ({ entityId, killer }) => {
       const victim = state.entities.get(entityId);
       const killerId = killer.attackerId;
@@ -59,7 +79,7 @@ export class ProgressionSystem implements System {
         // compared, so neutral camp mobs still pay.
         return;
       }
-      const teamKill = content.xpSources.teamKills[victim.definitionId];
+      const teamKill = this.content.xpSources.teamKills[victim.definitionId];
       if (teamKill !== undefined) {
         // shortcut: the team is the killer's, read from the store or the respawn queue, so a boss
         // killed by a hit from a mob already removed (e.g. its projectile) pays nobody; upgrade
@@ -91,18 +111,10 @@ export class ProgressionSystem implements System {
           team: opponentOf(team),
           victimId: entityId,
           victimTeam: team,
-          xp: content.xpSources.structureDestroyed,
+          xp: this.content.xpSources.structureDestroyed,
         });
       }
     });
-    if (content.legendsStartAtMaxLevel === true) {
-      state.events.on('entity-spawned', ({ entityId }) => {
-        const entity = state.entities.get(entityId);
-        if (entity !== undefined) {
-          this.startAtMaxLevel(entity);
-        }
-      });
-    }
     // The listener only buffers: the XP is paid in this system's own pass on the next tick, as
     // architecture 03 §4 requires of a listener that changes state.
     state.events.on('legend-respawned', ({ entityId, owedXp }) => {

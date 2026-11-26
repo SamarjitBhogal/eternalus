@@ -250,7 +250,10 @@ export class Simulation {
           xpSources: XP_SOURCES,
           ...(duel === undefined
             ? {}
-            : { legendsStartAtMaxLevel: DUEL_RULES.legendsStartAtMaxLevel }),
+            : {
+                legendsStartAtMaxLevel: DUEL_RULES.legendsStartAtMaxLevel,
+                hasMatchXp: DUEL_RULES.hasMatchXp,
+              }),
         },
         director,
         // One scoring load: a gem kill's window is the assists' window (DEC-346).

@@ -48,4 +48,9 @@ export const DUEL_RULES = {
    * mob added from the developer menu keeps its normal level.
    */
   legendsStartAtMaxLevel: true,
+  /**
+   * A Duel earns no match XP: kills pay none, as every Legend is already at the cap (DEC-380 (1)).
+   * Profile XP, once built, is apart from this.
+   */
+  hasMatchXp: false,
 } as const;

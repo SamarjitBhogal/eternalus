@@ -47,5 +47,9 @@ export const MAGUS = {
   },
   defaultLoadout: { primaryWeaponId: 'magus-staff' }, // TUNE: default weapon (05 §10 table) until the owner picks one (INBOX)
   levelCurveId: 'legend',
-  levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 }, // TUNE: balancing.md
+  levelScaling: {
+    healthPerLevel: 0.08, // TUNE: balancing.md
+    aetherPerLevel: 10, // TUNE: balancing.md
+    basicAttackPerLevel: 0.08, // TUNE: DEC-380 (2), keeps pace with health until playtests
+  },
 } as const satisfies LegendDefinition;

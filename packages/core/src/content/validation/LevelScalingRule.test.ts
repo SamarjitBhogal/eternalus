@@ -12,7 +12,7 @@ describe('LevelScalingRule', () => {
     expect(new LevelScalingRule().check(WARRIOR)).toEqual([]);
     const flat: LegendDefinition = {
       ...WARRIOR,
-      levelScaling: { healthPerLevel: 0, aetherPerLevel: 0 },
+      levelScaling: { healthPerLevel: 0, aetherPerLevel: 0, basicAttackPerLevel: 0 },
     };
     expect(new LevelScalingRule().check(flat)).toEqual([]);
     expect(new LevelScalingRule().check(TRAINING_DUMMY)).toEqual([]);
@@ -21,12 +21,17 @@ describe('LevelScalingRule', () => {
   it('flags negative or non-finite per-level scaling', () => {
     const broken: LegendDefinition = {
       ...WARRIOR,
-      levelScaling: { healthPerLevel: -0.08, aetherPerLevel: Number.NaN },
+      levelScaling: {
+        healthPerLevel: -0.08,
+        aetherPerLevel: Number.NaN,
+        basicAttackPerLevel: Number.POSITIVE_INFINITY,
+      },
     };
 
     expect(new LevelScalingRule().check(broken)).toEqual([
       'levelScaling.healthPerLevel must be a finite number of at least 0',
       'levelScaling.aetherPerLevel must be a finite number of at least 0',
+      'levelScaling.basicAttackPerLevel must be a finite number of at least 0',
     ]);
   });
 });

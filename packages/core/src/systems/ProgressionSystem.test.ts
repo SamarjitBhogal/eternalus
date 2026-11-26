@@ -36,7 +36,8 @@ const XP_SOURCES = {
   teamKills: { 'capture-point-boss': { xp: 500, maxLevels: 2 } },
 };
 
-const setUp = () => {
+/** `rules` holds the match mode's progression rules (a Duel's `hasMatchXp: false`). */
+const setUp = (rules: { readonly hasMatchXp?: boolean } = {}) => {
   const state = new GameState(CONFIG, 1);
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
@@ -53,6 +54,7 @@ const setUp = () => {
     units: UNITS,
     curves: CURVES,
     xpSources: XP_SOURCES,
+    ...rules,
   });
   const kill = (killer: Entity | null, victim: Entity) => {
     state.events.emit('entity-died', {
@@ -230,6 +232,25 @@ describe('ProgressionSystem', () => {
     };
 
     expect(hash()).toBe(hash());
+  });
+
+  it('pays no match XP for a kill, a structure or a respawn when the match has none (a Duel, DEC-380 (1))', () => {
+    const { state, spawn, kill, run, payloads, destroyStructure } = setUp({ hasMatchXp: false });
+    const warrior = spawn('warrior', 'warrior', 'light');
+
+    kill(warrior, spawn('light-mob', 'light-minion', 'dark'));
+    kill(warrior, spawn('magus', 'magus', 'dark'));
+    destroyStructure('dark');
+    state.events.emit('legend-respawned', {
+      entityId: warrior.id,
+      team: 'light',
+      position: { x: 0, y: 0 },
+      owedXp: [{ cause: 'kill', victimId: 'entity-gone', victimTeam: 'dark', xp: 300 }],
+    });
+    run();
+
+    expect(warrior.getComponent(Progression)).toMatchObject({ xp: 0, level: 1 });
+    expect(payloads('xp-gained')).toEqual([]);
   });
 
   describe('structure destroyed (DEC-186)', () => {

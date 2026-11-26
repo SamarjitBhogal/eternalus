@@ -16,6 +16,8 @@ export type LevelScalingDefinition = {
   readonly healthPerLevel: number;
   /** Flat max aether added per level. */
   readonly aetherPerLevel: number;
+  /** Fraction of a basic-attack (weapon) hit added per level (0.08 = +8%). */
+  readonly basicAttackPerLevel: number;
 };
 
 /** How much XP a kill is worth (06 "XP sources"); a mob's own XP is its `xpValue` (04 §5). */

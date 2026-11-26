@@ -22,6 +22,15 @@ describe('Progression', () => {
     expect(progression.level).toBe(4);
   });
 
+  it('reads potency as 1 + perLevel × (level − 1): 1 at level 1, growing with each level', () => {
+    const progression = new Progression('test');
+
+    expect(progression.potency({ perLevel: 0.08 })).toBe(1);
+    progression.addXp(450, CURVE); // level 4
+    expect(progression.potency({ perLevel: 0.08 })).toBeCloseTo(1.24);
+    expect(progression.potency({ perLevel: 0 })).toBe(1);
+  });
+
   it('never passes the cap, but keeps counting XP', () => {
     const progression = new Progression('test');
 
