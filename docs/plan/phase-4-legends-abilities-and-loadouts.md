@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-26
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -179,6 +179,8 @@ assist, checkpoint, camp and boss XP and potency scaling remain, so the box stay
 destroying team; a dead Legend is paid on respawn once GL-12 exists). The curve and the Legend
 kill and structure numbers follow DEC-190. They are not final and can change after the soak
 metric "Legend level at 10 and 20 minutes".
+**Status (2026-11-26, `feat/legend-level-damage`):** basic-attack potency is built (DEC-380 (2):
+`Progression.potency`, `BasicAttackLevelStep`); ability potency remains.
 
 **Success metric:** a bot-vs-bot match ends with every Legend at a level consistent with its
 XP events (asserted by an invariant), and loadout validation rejects 100% of a fixture set of

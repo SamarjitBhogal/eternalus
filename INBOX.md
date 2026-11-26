@@ -119,6 +119,15 @@ Reply inline (`Decision: …`).
       repository" (HTTP 403). Turn them on (repository settings, owner), or keep relying on a manual
       `npm audit`?
 
+- [ ] **HC-B49 move `DefinitionSource` to `content/` (`feat/legend-level-damage` critic round 2,
+      2026-11-26; better than the design, owner sign-off pending)** — `DefinitionSource` is the
+      port that looks up a definition by id. It lives in `entities/EntityFactory.types.ts`.
+      `entities/` and `systems/` use it. The level damage step in `combat/` needs the same lookup,
+      but architecture 02 §2 does not let `combat/` import `entities/`. So that branch types it as
+      `Pick<ContentCatalogue<EntityDefinitionBase>, 'has' | 'get'>`, the same shape under a second
+      name. Proposal: move `DefinitionSource` to `content/` (for example beside
+      `ContentCatalogue`), so every layer uses one name and no import rule changes. A later
+      `refactor(core)` PR; it touches files that branch does not. Decision: …
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
@@ -887,6 +896,18 @@ Reply inline (`Decision: …`).
     so a max-level Legend has about 4.9 times its level-1 health against the same damage, and a
     Duel kill takes about 2.5 to 3 times as long as before (the core Duel tests' fights went from
     4–8 s to 12–18 s). Is that the Duel pace you want, or should `killTarget` or damage change?
+  - 2026-11-26: (4) and (5) answered (DEC-380, Owner Calls v98 "PR142 (1)" and "(2)"). This also
+    answers 2026-11-12 (7). (4) A Duel earns no match XP (`DUEL_RULES.hasMatchXp: false`).
+    (5) Damage grows with level: a Legend's weapon hit by its class's `basicAttackPerLevel`, its
+    abilities by their own `perLevel`. Built in `feat/legend-level-damage`, except ability
+    scaling, which #136, #162 and #175 build (see the DEC-380 row). Three points for you: (a) 0.08 per level is the build's default,
+    not your number. It is the same as `healthPerLevel` (`TUNE`). Confirm it or give another.
+    (b) The scaled weapon hit lands on every target: Legends, mobs, structures, bosses, camps and
+    the Cathedral gem. A tower's, a boss's or the gem's health does not grow to match. So a level-10 Legend hits a tower
+    or a boss 1.72 times as hard as at level 1, and a level-50 Legend 4.92 times. Keep that, or
+    scale only hits on Legends? (Owner Calls card HC-Q119.) (c) Architecture 05 §13 is your design text. It does not name
+    `hasMatchXp` or say that a weapon hit reads the level when it lands. Only the §18 status note
+    says so. Add it to §13 if you want it in the design. Decision: …
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
       of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only

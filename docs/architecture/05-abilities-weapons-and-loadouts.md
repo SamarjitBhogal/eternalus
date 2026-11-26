@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -584,7 +584,9 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 `combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The steps today are
 `BreakabilityStep` (first: an unbreakable wall or gate rejects the hit before any multiplier,
 which gives the same result as §9's late check; 07 §3), `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
-`INBOX.md`), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8), `MinionStrengthStep`
+`INBOX.md`), `BasicAttackLevelStep` (a Legend's `weapon` hit × its `Progression.potency` at its
+class's `basicAttackPerLevel`, §13, DEC-380 (2); an ability hit is scaled at cast instead, so it
+is not scaled twice), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8), `MinionStrengthStep`
 (the minion strength-by-distance curve, its base-stat point moved toward the enemy for each lane
 tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16) and
 `BossMinionDamageStep` (a boss takes only its share of a lane minion's hit, balancing.md; the
@@ -946,7 +948,11 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
   `xp-granted` reward path. Not built yet: the share radius and damage bias, assists, checkpoint and
   camp XP, the Eternal's flat 5 levels (DEC-237) (their systems do not exist),
-  basic-attack and ability potency per level, `upgradeIds` and the ultimate charge rules. Numbers are
+  ability potency per level, `upgradeIds` and the ultimate charge rules. Basic-attack potency
+  is built (DEC-380 (2)): `Progression.potency` and `BasicAttackLevelStep` (§9) multiply a Legend's
+  weapon hit by `1 + basicAttackPerLevel × (level − 1)`, read when the hit lands. A match mode can
+  turn match XP off (`ProgressionContent.hasMatchXp: false`, a Duel's rule, DEC-380 (1)):
+  `ProgressionSystem` then listens for no award, and the max-level start still applies. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
   soak metric can change them) and live in `content/progression/`.
 - **Legend respawn (`fix/legend-respawn`, GL-12, DEC-295).** FR-051 and DEC-80, with the
