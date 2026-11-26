@@ -16,6 +16,7 @@ const entity: EntitySnapshot = {
   progression: null,
   area: null,
   capture: null,
+  gem: null,
 };
 const state = { entity, position: { x: 1, y: 2 }, isFocused: true, facing: { x: 0, y: 1 } };
 describe('LegendSpriteView', () => {

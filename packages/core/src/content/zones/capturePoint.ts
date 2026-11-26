@@ -6,4 +6,7 @@ export const CAPTURE_POINT: ZoneDefinition = {
   kind: 'capture-point',
   displayName: 'Capture Point',
   minimapGlyph: { shape: 'ring', size: 5, colourRole: 'objective' },
+  // TUNE: balancing.md `Recommendation:` "after 90 s of continuous ownership, friendly minions
+  // spawned on that lane get +1 minion level (max 3)", approved by DEC-258 (every capture point).
+  levelUp: { holdSeconds: 90, levels: 1 },
 };

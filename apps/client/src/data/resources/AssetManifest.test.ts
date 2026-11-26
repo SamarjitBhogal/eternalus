@@ -23,7 +23,7 @@ import { SELECTION_PRIMARY_RASTER_ASSETS } from './selectionPrimaryRasterAssets'
 import { SELECTION_RASTER_ASSETS } from './selectionRasterAssets';
 
 /**
- * The seven groups (14 §14); a new `AssetGroup` member fails the `expectTypeOf` case until added.
+ * Shipped groups (14 §14); a new `AssetGroup` member fails the `expectTypeOf` case until added.
  */
 const GROUPS = [
   'boot',
@@ -165,10 +165,23 @@ describe('ASSET_MANIFEST', () => {
     expect(files.filter((file) => !/^[0-9a-f]{64}$/.test(file.hash))).toEqual([]);
   });
 
-  it('licenses every entry and verifies URL/Figma or documented attachment provenance (ADR 0028)', () => {
+  it('licenses every entry and requires a Figma node or HTTPS source for non-attachments', () => {
     expect(assets.filter((entry) => !(entry.licence in ASSET_LICENCES))).toEqual([]);
+    const nonAttachments = assets.filter(
+      ({ attachmentReferenceId }) => attachmentReferenceId === undefined,
+    );
+    expect(nonAttachments.filter((entry) => !/\b\d+:\d+\b|https:\/\//.test(entry.source))).toEqual(
+      [],
+    );
+  });
+
+  it('validates each registered attachment against its provenance record (ADR 0028)', () => {
+    const attachments = assets.filter(
+      ({ attachmentReferenceId }) => attachmentReferenceId !== undefined,
+    );
+    expect(attachments).toHaveLength(Object.keys(ATTACHMENT_REFERENCES).length);
     expect(
-      assets.filter(
+      attachments.filter(
         (entry) =>
           !hasAssetProvenance(entry, ATTACHMENT_REFERENCES, {
             'docs/reference/legend-sprite-provenance.md': legendProvenance,
@@ -217,7 +230,7 @@ describe('ASSET_MANIFEST', () => {
     );
 
     expect(misplaced).toEqual([]);
-    expect(filesPerGroup).toEqual(GROUPS.map(() => 1));
+    expect(filesPerGroup).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
   it('is the concatenation of the declared group files', () => {

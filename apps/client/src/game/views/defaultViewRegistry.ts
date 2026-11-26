@@ -1,5 +1,6 @@
 import type { EntityView } from './EntityView.types';
 import { CapturePointView } from './CapturePointView';
+import { CathedralGemView } from './CathedralGemView';
 import { DefaultEntityView } from './DefaultEntityView';
 import { LegendView } from './LegendView';
 import { MobView } from './MobView';
@@ -21,5 +22,6 @@ export const createDefaultViewRegistry = (
   registry.registerFamily('mob', new MobView());
   registry.registerFamily('structure', new StructureView());
   registry.registerKind('capture-point', new CapturePointView());
+  registry.registerKind('cathedral-gem', new CathedralGemView());
   return registry;
 };

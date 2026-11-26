@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-25
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -12,6 +12,7 @@ paths:
     'apps/client/src/game/views/**',
     'apps/client/src/game/Match.ts',
     'apps/client/src/game/HealthBarVisibility.ts',
+    'apps/client/src/game/LegendBodies.ts',
   ]
 related:
   [
@@ -123,7 +124,7 @@ export interface Renderer {
   resize(cssWidth: number, cssHeight: number, dpr: number): void;
   beginFrame(): void; // clears 'entities' and 'overlay'; 'terrain' only where chunks are dirty
   layer(name: RenderLayer): void; // subsequent draw calls go to this layer
-  drawSprite(sprite: SpriteRef, x: number, y: number, options?: SpriteOptions): void;
+  drawSprite(sprite: SpriteRef, feet: WorldPoint, size: number): boolean;
   drawPolygon(points: readonly Vec2Like[], style: PolygonStyle): void;
   drawText(text: string, x: number, y: number, style: TextStyle): void;
   drawGlyph(glyph: GlyphSpec, x: number, y: number, colour: string): void; // minimap markers
@@ -245,7 +246,9 @@ flowchart LR
   order (`apps/client/AGENTS.md`): terrain layer → entities sorted by interpolated `y` → overlay.
 - `ViewRegistry` (Registry pattern) maps entity `kind` → `EntityView`; `DefaultEntityView` draws
   a definition sprite for kinds without a bespoke view. Views read snapshots through `import type`
-  only and never mutate state (rule 6).
+  only and never mutate state (rule 6). The `EntityView.draw` contract returns
+  `number | undefined`: a view may report its rendered height above its anchor for health-bar
+  placement. An undefined height uses the snapshot radius.
 - Interpolation: views draw `prev + (current - prev) × alpha` for position. The facing uses the
   same blend, scaled back to length 1 (`EntityLayer.turn`), and snaps at the midpoint when the two
   facings are opposite (a zero blend takes `current`). Entities that appeared this tick draw at `current` (no ghost from the
@@ -255,6 +258,10 @@ flowchart LR
   by `HealthBarVisibility` (DEC-195), which reads `damage-applied` and `entity-removed` through
   `Simulation.on`, as §6 designs `SoundView`; `Match` injects its rule into the layer, because
   views read only snapshots.
+- Fallen Legend bodies: `LegendBodies` (`game/`) reads `entity-removed` with the cause `died`
+  through `Simulation.on` and keeps where each Legend last stood, from the latest snapshot; the
+  view draws those bodies greyed out for the rest of the match (DEC-295). Presentation only: core
+  keeps no bodies, and a respawned Legend is a living entity again.
 - `MinimapView` runs at a lower cadence into the `'minimap'` layer (`06-map-and-minimap.md` §8).
 
 ## 9. Performance budget and how it is measured
@@ -301,7 +308,10 @@ The design keeps the move cheap:
 
 ## 11. Implementation status
 
-Legend sprite rendering uses the current port drawSprite(sprite, feet, size), which returns whether it drew a frame. Canvas2dRenderer prepares destination-size frames lazily in a bounded cache and copies them without resampling. LegendSpriteView uses its ordinary Legend fallback while an atlas loads or the frame cannot be drawn.
+The selected player's Legend uses atlas frames for idle, movement, and basic attacks.
+The renderer prepares destination-size frames lazily in a bounded cache and returns whether
+it drew the sprite. The Legend view falls back to the standard drawing when the atlas is
+unavailable.
 
 HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
 

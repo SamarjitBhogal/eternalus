@@ -14,6 +14,13 @@ export const FOCUS_RING_SCALE = 1.8;
 /** Colour of the outline that makes Legends stand out from mobs. */
 export const LEGEND_OUTLINE_COLOR = '#ffffff';
 
+/**
+ * Colour of a fallen Legend's body (DEC-295: "greyed-out"), whatever its team: a translucent grey
+ * that reads as scenery on every ground.
+ */
+// TUNE: owner 2026-11-20 (DEC-295): look provisional until class art lands
+export const LEGEND_BODY_COLOR = 'rgba(128, 128, 128, 0.55)';
+
 /** How much wider than the Legend its outline is. */
 export const LEGEND_OUTLINE_SCALE = 1.25;
 
@@ -98,5 +105,5 @@ export const MINI_MAP_OUTLINE_COLORS: Readonly<Record<Team, string>> = {
 /** Mini map layer of Legends' markers: above the mobs' (layer 0), so a Legend stays on top. */
 export const MINI_MAP_LEGEND_LAYER = 1;
 
-/** Legend presentation diameter shared with the visuals branch (DEC-238). */
+/** TUNE: provisional sprite diameter shared with PR #90. Sprite use awaits owner sign-off. */
 export const LEGEND_VISUAL_DIAMETER = 5.2;

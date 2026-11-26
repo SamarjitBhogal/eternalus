@@ -1,26 +1,13 @@
 import type { EntitySnapshot, Simulation, Snapshot, Unsubscribe } from '@eternalus/core';
 import type { SpriteRef } from './engine/render/Renderer.types';
-import {
-  LEGEND_ANIMATION,
-  LEGEND_ATLAS_ROWS,
-  LEGEND_CAST_ROWS,
-  LEGEND_CAST_SECONDS,
-  LEGEND_EFFECT_HISTORY,
-  LEGEND_SKINS,
-  RANGED_LEGEND_SKINS,
-  ATTACK_REACTIVE_CASTS,
-} from './LegendAnimation.constants';
-import type { LegendCastFrame, LegendCastPose, LegendPose } from './LegendAnimation.types';
+import { LEGEND_ANIMATION, LEGEND_ATLAS_ROWS, LEGEND_ATLASES } from './LegendAnimation.constants';
 
 /** Match-owned presentation state driven by successful simulation events and observed motion. */
 export class LegendAnimation {
-  private pose: LegendPose | null = null;
+  private attackTick: number | null = null;
   private walkRow: number = LEGEND_ATLAS_ROWS.south;
   private isMoving = false;
   private idleRow: number = LEGEND_ATLAS_ROWS.idle;
-  private position = { x: 0, y: 0 };
-  private direction = { x: 1, y: 0 };
-  private casts: readonly LegendCastPose[] = [];
   private readonly unsubscribe: readonly Unsubscribe[];
   /** Only the selected player's skin is replaced; other Legends retain their existing view. */
   public constructor(
@@ -29,17 +16,14 @@ export class LegendAnimation {
     private readonly tickRate: number,
     simulation: Pick<Simulation, 'on' | 'tick'>,
   ) {
-    if (playerId === null || LEGEND_SKINS[specId ?? ''] === undefined) {
+    if (playerId === null || LEGEND_ATLASES[specId ?? ''] === undefined) {
       this.unsubscribe = [];
       return;
     }
     this.unsubscribe = [
       simulation.on('damage-applied', ({ source }) => {
         if (source.attackerId === playerId && source.kind === 'weapon')
-          this.attack(simulation.tick);
-      }),
-      simulation.on('ability-cast', (event) => {
-        if (event.casterId === playerId) this.cast(event.abilityId, simulation.tick);
+          this.attackTick = simulation.tick;
       }),
     ];
   }
@@ -56,7 +40,6 @@ export class LegendAnimation {
         ? 0
         : after.y - before.y;
     this.isMoving = Math.abs(dx) + Math.abs(dy) > Number.EPSILON;
-    if (after !== undefined && after !== null) this.position = { x: after.x, y: after.y };
     const facing = after?.facing;
     if (facing !== undefined) {
       this.idleRow =
@@ -77,13 +60,11 @@ export class LegendAnimation {
           : dy > 0
             ? LEGEND_ATLAS_ROWS.south
             : LEGEND_ATLAS_ROWS.north;
-      const length = Math.hypot(dx, dy);
-      this.direction = { x: dx / length, y: dy / length };
     }
   }
   /** Returns a frame only for a living selected Legend with a known sheet. */
   public frame(entity: EntitySnapshot, tick: number): SpriteRef | null {
-    const atlasId = LEGEND_SKINS[this.specId ?? ''];
+    const atlasId = LEGEND_ATLASES[this.specId ?? '']?.atlasId;
     if (
       entity.id !== this.playerId ||
       entity.family !== 'legend' ||
@@ -92,16 +73,20 @@ export class LegendAnimation {
       atlasId === undefined
     )
       return null;
-    const elapsed = this.pose === null ? Infinity : (tick - this.pose.startedTick) / this.tickRate;
-    const isCasting = this.pose !== null && elapsed >= 0 && elapsed < this.pose.duration;
-    const row = isCasting ? (this.pose?.row ?? 0) : this.isMoving ? this.walkRow : this.idleRow;
-    const seconds = isCasting
+    const elapsed = this.attackTick === null ? Infinity : (tick - this.attackTick) / this.tickRate;
+    const isAttacking = elapsed >= 0 && elapsed < LEGEND_ANIMATION.attackSeconds;
+    const row = isAttacking
+      ? LEGEND_ATLAS_ROWS.attack
+      : this.isMoving
+        ? this.walkRow
+        : this.idleRow;
+    const seconds = isAttacking
       ? elapsed
       : !this.isMoving && this.idleRow !== LEGEND_ATLAS_ROWS.idle
         ? 0
         : tick / this.tickRate;
-    const duration = isCasting
-      ? (this.pose?.duration ?? 1)
+    const duration = isAttacking
+      ? LEGEND_ANIMATION.attackSeconds
       : this.isMoving
         ? LEGEND_ANIMATION.walkSeconds
         : LEGEND_ANIMATION.idleSeconds;
@@ -109,61 +94,8 @@ export class LegendAnimation {
       Math.floor((seconds / duration) * LEGEND_ANIMATION.frames) % LEGEND_ANIMATION.frames;
     return { atlasId, frame: row * LEGEND_ANIMATION.frames + frame };
   }
-  /** Retains recent non-Magus casts at their original location, with a strict lifetime and cap. */
-  public effects(tick: number): readonly LegendCastFrame[] {
-    const atlasId = LEGEND_SKINS[this.specId ?? ''];
-    if (atlasId === undefined) return [];
-    return this.casts.flatMap((cast) => {
-      const age = (tick - cast.startedTick) / this.tickRate;
-      if (age < 0 || age >= LEGEND_EFFECT_HISTORY.seconds) return [];
-      return [
-        {
-          atlasId,
-          ...(cast.abilityId === undefined ? {} : { abilityId: cast.abilityId }),
-          row: cast.row,
-          origin: cast.origin,
-          direction: cast.direction,
-          progress: Math.min(1, age / cast.duration),
-          fade:
-            1 - Math.max(0, age - cast.duration) / (LEGEND_EFFECT_HISTORY.seconds - cast.duration),
-        },
-      ];
-    });
-  }
-  private attack(tick: number): void {
-    // A real hit must not cut a longer preview back to its first attack frame.
-    if (
-      !RANGED_LEGEND_SKINS.has(this.specId ?? '') &&
-      !ATTACK_REACTIVE_CASTS.has(this.pose?.abilityId ?? '') &&
-      this.pose !== null &&
-      this.pose.row >= LEGEND_ATLAS_ROWS.firstCast &&
-      tick < this.pose.startedTick + this.pose.duration * this.tickRate
-    )
-      return;
-    this.pose = {
-      row: LEGEND_ATLAS_ROWS.attack,
-      startedTick: tick,
-      duration: LEGEND_ANIMATION.attackSeconds,
-    };
-  }
-  private cast(abilityId: string, tick: number): void {
-    const row = LEGEND_CAST_ROWS[abilityId];
-    if (row === undefined) return;
-    const duration = LEGEND_CAST_SECONDS[abilityId] ?? LEGEND_ANIMATION.castSeconds;
-    this.pose = { row, startedTick: tick, duration, abilityId };
-    if (!RANGED_LEGEND_SKINS.has(this.specId ?? ''))
-      this.casts = [
-        ...this.casts.slice(1 - LEGEND_EFFECT_HISTORY.limit),
-        {
-          ...this.pose,
-          origin: this.position,
-          direction: this.direction,
-        },
-      ];
-  }
   /** Releases every event subscription with the match. */
   public destroy(): void {
     for (const unsubscribe of this.unsubscribe) unsubscribe();
-    this.casts = [];
   }
 }

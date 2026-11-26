@@ -6,7 +6,11 @@ import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { EntityLayer } from './EntityLayer';
 import type { HealthBarSide } from './HealthBarView.types';
 import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_MOB_GLYPH } from './entityViews.constants';
-import { HEALTH_BAR_FILL_COLORS, HEALTH_BAR_TRACK_COLOR } from './HealthBarView.constants';
+import {
+  HEALTH_BAR_FILL_COLORS,
+  HEALTH_BAR_GAP,
+  HEALTH_BAR_TRACK_COLOR,
+} from './HealthBarView.constants';
 import type { WorldLayer } from './SceneView.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
 import { ViewRegistry } from './ViewRegistry';
@@ -27,6 +31,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   aether: null,
   area: null,
   capture: null,
+  gem: null,
 });
 
 const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
@@ -50,8 +55,11 @@ const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
 class SpyView implements EntityView {
   public readonly drawn: EntityDrawState[] = [];
 
-  public draw(state: EntityDrawState): undefined {
+  public constructor(private readonly visibleHeight?: number) {}
+
+  public draw(state: EntityDrawState): number | undefined {
     this.drawn.push(state);
+    return this.visibleHeight;
   }
 
   public drawMinimap(): void {
@@ -249,5 +257,19 @@ describe('EntityLayer', () => {
     expect(track?.[2]?.y).toBeLessThan(20);
     // The bars come after all three units, so no unit hides one.
     expect(calls.findIndex((call) => call.op === 'fillPolygon')).toBe(calls.length - 4);
+  });
+
+  it('places the health bar above the height reported by the registered view', () => {
+    const visibleHeight = 3;
+    const layer = new EntityLayer(
+      new ViewRegistry(new SpyView(visibleHeight)),
+      () => false,
+      () => 'enemy',
+    );
+    layer.show(null, snapshot(1, [member('foe', 'mob', 10)]), 0, null);
+    const renderer = new RecordingRenderer();
+    layer.draw(renderer);
+    const track = renderer.calls.find((call) => call.op === 'fillPolygon');
+    expect(track?.args[0][2]?.y).toBeCloseTo(-visibleHeight - HEALTH_BAR_GAP);
   });
 });
