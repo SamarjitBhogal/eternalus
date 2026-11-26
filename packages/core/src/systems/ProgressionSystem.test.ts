@@ -36,7 +36,7 @@ const XP_SOURCES = {
   teamKills: { 'capture-point-boss': { xp: 500, maxLevels: 2 } },
 };
 
-const setUp = () => {
+const setUp = (legendsStartAtMaxLevel = false) => {
   const state = new GameState(CONFIG, 1);
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
@@ -53,7 +53,11 @@ const setUp = () => {
     units: UNITS,
     curves: CURVES,
     xpSources: XP_SOURCES,
+    ...(legendsStartAtMaxLevel ? { legendsStartAtMaxLevel } : {}),
   });
+  const announceSpawn = (entity: Entity, team: Team) => {
+    state.events.emit('entity-spawned', { entityId: entity.id, kind: entity.kind, team });
+  };
   const kill = (killer: Entity | null, victim: Entity) => {
     state.events.emit('entity-died', {
       entityId: victim.id,
@@ -75,7 +79,7 @@ const setUp = () => {
   const destroyStructure = (team: Team, kind = 'spawner-tower') => {
     state.events.emit('structure-destroyed', { entityId: 'entity-gone', kind, team, lane: null });
   };
-  return { state, spawn, kill, run, payloads, destroyStructure };
+  return { state, spawn, announceSpawn, kill, run, payloads, destroyStructure };
 };
 
 describe('ProgressionSystem', () => {
@@ -482,5 +486,74 @@ describe('ProgressionSystem', () => {
       state.respawns.forEach(({ owedXp }) => (owed = owedXp.length));
       expect(owed).toBe(0);
     });
+  });
+});
+
+describe('ProgressionSystem with legendsStartAtMaxLevel (a Duel, SCRUM-444)', () => {
+  /** The short curve's cap is 4, so a raise to the cap is 3 levels (100 + 150 + 200 = 450 XP). */
+  const LEVELS_RAISED = 3;
+
+  it("raises a spawned Legend to its curve's cap with each level's raises, at full health", () => {
+    const { spawn, announceSpawn } = setUp(true);
+    const warrior = spawn('warrior', 'warrior', 'light');
+    const health = warrior.getComponent(Health);
+    const aether = warrior.getComponent(Aether);
+    const [maxHealth, maxAether] = [health.max, aether.max];
+
+    announceSpawn(warrior, 'light');
+
+    expect(warrior.getComponent(Progression)).toMatchObject({ level: 4, xp: 450 });
+    const raise = WARRIOR.baseHealth * WARRIOR.levelScaling.healthPerLevel * LEVELS_RAISED;
+    expect(health.max).toBeCloseTo(maxHealth + raise);
+    expect(health.current).toBeCloseTo(health.max);
+    expect(aether.max).toBe(maxAether + WARRIOR.levelScaling.aetherPerLevel * LEVELS_RAISED);
+    expect(aether.current).toBe(aether.max);
+  });
+
+  it('announces no award: no xp-gained and no level-up', () => {
+    const { spawn, announceSpawn, run, payloads } = setUp(true);
+    const warrior = spawn('warrior', 'warrior', 'light');
+    announceSpawn(warrior, 'light');
+    run();
+
+    expect(warrior.getComponent(Progression).level).toBe(4);
+    expect(payloads('xp-gained')).toEqual([]);
+    expect(payloads('level-up')).toEqual([]);
+  });
+
+  it('leaves a mob as it is', () => {
+    const { spawn, announceSpawn } = setUp(true);
+    const minion = spawn('light-mob', 'light-minion', 'light');
+    const maxHealth = minion.getComponent(Health).max;
+
+    expect(() => {
+      announceSpawn(minion, 'light');
+    }).not.toThrow();
+    expect(minion.getComponent(Health).max).toBe(maxHealth);
+  });
+
+  it('raises nothing more when a Legend at the cap spawns again', () => {
+    const { spawn, announceSpawn } = setUp(true);
+    const warrior = spawn('warrior', 'warrior', 'light');
+    announceSpawn(warrior, 'light');
+    const [maxHealth, maxAether] = [
+      warrior.getComponent(Health).max,
+      warrior.getComponent(Aether).max,
+    ];
+
+    announceSpawn(warrior, 'light');
+
+    expect(warrior.getComponent(Progression)).toMatchObject({ level: 4, xp: 450 });
+    expect(warrior.getComponent(Health).max).toBe(maxHealth);
+    expect(warrior.getComponent(Aether).max).toBe(maxAether);
+  });
+
+  it('keeps a spawned Legend at level 1 without the rule', () => {
+    const { spawn, announceSpawn } = setUp();
+    const warrior = spawn('warrior', 'warrior', 'light');
+
+    announceSpawn(warrior, 'light');
+
+    expect(warrior.getComponent(Progression)).toMatchObject({ level: 1, xp: 0 });
   });
 });
