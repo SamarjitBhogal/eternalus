@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-26
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -309,14 +309,15 @@ lock the outer zones (`lockedBy`) until they die (`MatchDirector` timeline).
 
 ## 8. Structure destruction effects
 
-| Event                          | Effect (all data in content)                                                                        | MVP status |
-| ------------------------------ | --------------------------------------------------------------------------------------------------- | ---------- |
-| any lane structure destroyed   | `enraged` status on enemy minions in that lane (lane gets harder)                                   | MVP        |
-| `SpawnerTower` destroyed       | stronghold guard table shrinks; walls lose a bar if it was a shield source                          | MVP        |
-| `BuffTower` destroyed          | its shield bars removed everywhere; team buff and enemy debuff aura end                             | MVP        |
-| `Gate`/`WallSegment` destroyed | footprint cleared; flow fields rebuilt; minimap terrain dirty                                       | MVP        |
-| `Stronghold` destroyed         | `match-ended` with the winner                                                                       | MVP        |
-| `Turret` destroyed             | its pylon stays as a ruin that blocks (DEC-341 (2)); XP only to the destroyer (DEC-341 (3), 05 §18) | MVP        |
+| Event                          | Effect (all data in content)                                                                                                                   | MVP status |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| any lane structure destroyed   | `enraged` status on enemy minions in that lane (lane gets harder)                                                                              | MVP        |
+| `SpawnerTower` destroyed       | stronghold guard table shrinks; walls lose a bar if it was a shield source                                                                     | MVP        |
+| `BuffTower` destroyed          | its shield bars removed everywhere; team buff and enemy debuff aura end                                                                        | MVP        |
+| `Gate`/`WallSegment` destroyed | footprint cleared; flow fields rebuilt; minimap terrain dirty                                                                                  | MVP        |
+| `Stronghold` destroyed         | `match-ended` with the winner                                                                                                                  | MVP        |
+| `Turret` destroyed             | its pylon stays as a ruin that blocks, with its own health (DEC-341 (2), DEC-375); XP only to the destroyer (DEC-341 (3), 05 §18)              | MVP        |
+| a turret's pylon destroyed     | the turret on it falls on the same tick, with the pylon's killer as its killer (DEC-375; `MapDestructionSystem`, on the pylon's `entity-died`) | MVP        |
 
 Every effect is a listener on `structure-destroyed` in the owning system; `StructureSystem` never
 calls another system (rule 12).
@@ -467,13 +468,20 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
 - **Wall turrets, part 1 (`feat/wall-turrets`, 2026-11-22; §1, §5).** Each `turret` map feature
   builds a `Turret` structure: definition `turret` in `content/structures/structureCatalogue.ts`
   (base health from balancing.md, the map pylon's radius, no lane, the walls' breakability rule,
-  DEC-341). Its pylon map object blocks, so it is the turret's body: one health pool
-  (`hasMapFootprint`, as a lane tower's fort, DEC-185 B, DEC-332). Like a fort, the pylon
-  outlives the turret: it stays as a ruin that blocks, and its footprint and nav cells stay
-  (DEC-341, HC-Q91). `WorldObjectStore.removed` marks every such body ruined, and the snapshot
-  carries `MapObjectSnapshot.isRuined`, so the client draws a fallen tower's fort and a dead
-  turret's pylon as ruins (06; the fort's walls still block, DEC-217 (12), until the tower-ruins
-  work (#98) lands). A destroyed turret sends `structure-destroyed`. It
+  DEC-341). Reach to the turret is measured to its pylon map object (`hasMapFootprint`). The
+  pylon carries the turret (`isCarriedByBody`, DEC-375, which replaces the one health pool of
+  DEC-332 (1)): it has its own entity and health (a provisional `TUNE` in
+  `content/maps/mapObjectDefinitions.ts`), and it breaks under the turret's rule
+  (`StructureSystem` flips both). Its fall takes the turret with it on the same tick:
+  `MapDestructionSystem` fells what the pylon carries with `DamagePipeline.collapse`, with the
+  pylon's killer as its killer, so the turret's XP goes to the Legend that felled the pylon. Like
+  a fort, the pylon outlives the turret: it stays as a ruin that blocks, with its own health, and
+  its footprint and nav cells stay (DEC-341, HC-Q91). `WorldObjectStore.removed` marks every such
+  body a ruin, and the snapshot's `MapObjectSnapshot.condition` is `ruin` (DEC-376), so the client
+  draws a fallen tower's fort and a dead turret's pylon as ruins (06; the fort's walls still
+  block, DEC-217 (12), until the tower-ruins work (#98) lands). The snapshot also carries the
+  turret's health on its pylon (`carriedHealth`), so the client draws the turret's bar above the
+  pylon and the pylon's own bar below it. A destroyed turret sends `structure-destroyed`. It
   pays structure points (DEC-212; whether it should is open in DEC-341), but no team-wide
   structure XP: its XP (`xpSources.destroyerOnly`) goes only to the Legend that lands the killing
   hit (DEC-341, HC-Q92). The

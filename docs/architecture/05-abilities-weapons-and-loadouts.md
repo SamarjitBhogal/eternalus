@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-26
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -591,7 +591,9 @@ every ability, weapon, status tick and gate fire names a `DamageSource`: "extra 
 Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `CombatSystem`.
 
 **Implementation status (sprint 2.2, PR #34).** `DamagePipeline.apply(state, targetId, amount,
-source)` is built and is the only caller of `Health.applyDamage`. Each modifier above is a
+source)` is built. `DamagePipeline` is the only caller of `Health.applyDamage`: through `apply`,
+and through `collapse`, a fall that no step changes (a building's contents, a wall turret on its
+fallen pylon, DEC-375). Each modifier above is a
 `DamageStep` (`adjust(hit, state) → amount`, 0 blocks) and **the order is the list in
 `combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The steps today are
 `BreakabilityStep` (first: an unbreakable wall or gate rejects the hit before any multiplier,
