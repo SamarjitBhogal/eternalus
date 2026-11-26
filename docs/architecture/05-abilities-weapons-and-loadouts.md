@@ -570,9 +570,13 @@ strength-by-distance curve), target statuses (`sundered`, `marked`, `hexed`), th
 `damageMultipliers` keyed by the attacker's `damageClass`
 ([07 §4](07-structures-obstacles-and-destructibles.md#4-gates)), `Collider.isUnbreakable`
 (rejects), then `Health.applyDamage`. `DeathResolver` turns an overflow into `entity-died {
-entityId, killer: DamageSource }` and records the cause for `DeathSystem` (rule B). That is why
-every ability, weapon, status tick and gate fire names a `DamageSource`: "extra effective against
-Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `CombatSystem`.
+entityId, killer: DamageSource }` and records the cause for `DeathSystem` (rule B). A death by
+attacker-less damage that credits a killer (the Cathedral gem's statuses, DEC-346) names the
+victim's last enemy damager inside the assist window as the attacker, keeping the gem's source kind
+and id; it is decided there, once, so every reader of `entity-died` sees the same killer. Only a
+hit in the victim's current life counts: a respawn or a Duel round reset forgets the last one.
+That is why every ability, weapon, status tick and gate fire names a `DamageSource`: "extra
+effective against Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `CombatSystem`.
 
 **Implementation status (sprint 2.2, PR #34).** `DamagePipeline.apply(state, targetId, amount,
 source)` is built and is the only caller of `Health.applyDamage`. Each modifier above is a
@@ -587,7 +591,9 @@ tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16) and
 shares are `BOSS_MINION_DAMAGE_TAKEN` in `content/mobs/minionModifiers.ts`). Interim differences:
 no `DamageType` yet (nothing reads it; it joins `DamageHit` and
 `apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
-`DeathResolver` is not a separate class yet. `BossMinionDamageStep` stands in for the target's
+`DeathResolver` is not a separate class yet. The gem's kill credit is `KillCredit`, which the
+pipeline asks on each landed hit (it keeps the `LastEnemyHit` component) and before
+`entity-died`. `BossMinionDamageStep` stands in for the target's
 `damageMultipliers` keyed by the attacker's `damageClass` above: mobs have neither field yet, so
 the step keys its own table by boss id and finds a lane minion by horde membership; a
 `damageClass` on lane minions and `damageMultipliers` on the boss replace it. `GameState.killerOf` keeps this tick's killers, so
@@ -784,7 +790,9 @@ export type LevelScalingDefinition = {
 `Recommendation:` balancing.md), emits `level-up { entityId, level }`, raises the `Health` base
 max and `Abilities.maxAether` by the class's `LevelScalingDefinition`, and applies the
 `UltimateChargeRule`s (§6). Ability potency is read at cast time (`CastContext.potency`), so
-`AbilitySystem` needs no listener. The **ability tree** (post-MVP, D12) is an extension point,
+`AbilitySystem` needs no listener. A match mode can start every Legend at its curve's cap
+(`ProgressionContent.legendsStartAtMaxLevel`, a Duel's rule): `ProgressionSystem` raises each Legend
+as it spawns, with the same per-level raises, and announces no award. The **ability tree** (post-MVP, D12) is an extension point,
 not a design: an `AbilityUpgradeDefinition` (`{ id, abilityId, tier, unlockLevel, patches }`) is
 applied by `AbilityRegistry.resolve` exactly like a variety, `Progression.upgradeIds` records the
 choice, and an `upgrade-ability` command carries the `near-structure` restriction from §5; "only

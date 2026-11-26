@@ -254,7 +254,9 @@ match is not remembered and gets a fresh id when it comes back. The `forfeit` me
 the sender's own match (DEC-297 (2)). The client reconnects on its own (DEC-349): when its
 connection drops once paired, `DuelSession` is `reconnecting`, the HUD shows "Reconnecting...", and
 it retries with back-off, presenting the seat's guest id, until the server gives the seat back
-(`match-found` again; the same Duel goes on) or the window ends, and only then is the Duel lost.
+(`match-found` again; the same Duel goes on) or the window ends, and only then is the Duel lost. The server tells the other player about the gap (`opponent-presence`:
+`disconnected` with the window's length, then `reconnected`); the client shows it as a banner
+with a countdown and sends `forfeit` on a deliberate leave from the Duel's leave dialog.
 
 ### Implementation status: Glicko-2 rating and skill-based pairing (2026-11-13, SCRUM-431)
 
