@@ -21,7 +21,7 @@ export class ResultsState implements SessionState {
    * art) and starts the countdown.
    */
   public enter(context: SessionContext): void {
-    for (const group of matchAssetGroups(context.selection())) {
+    for (const group of matchAssetGroups(context.rosters())) {
       context.releaseAssets(group);
     }
     this.cancelLoad = context.loadAssets(

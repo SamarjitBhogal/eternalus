@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { filledRostersFixture } from '../../__fixtures__/filledRosters';
 import { FakeSessionContext } from '../../FakeSessionContext';
 import { MenuState } from './MenuState';
 
@@ -16,13 +17,13 @@ describe('MenuState', () => {
     expect(routes).toEqual(['home']);
   });
 
-  it("also releases the sprite sheet group of the match's pick, before it drops the setup", () => {
+  it('also releases the sprite sheet group of every Legend in the match, before it drops the setup', () => {
     const context = new FakeSessionContext();
-    context.recordSelection({ classId: 'magus', specId: 'oracle' });
+    context.lockedRosters = filledRostersFixture({ player: 'oracle', enemies: ['knight'] });
 
     new MenuState().enter(context);
 
-    expect(context.calls.releaseAssets).toEqual([['match'], ['atlas-oracle']]);
+    expect(context.calls.releaseAssets).toEqual([['match'], ['atlas-oracle'], ['atlas-knight']]);
     expect(context.order.indexOf('releaseAssets')).toBeLessThan(
       context.order.indexOf('clearMatchSetup'),
     );

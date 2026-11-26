@@ -16,9 +16,9 @@ import { Canvas2dRenderer } from './engine/render/Canvas2dRenderer';
 import type { SessionClock } from './engine/time/SessionClock.types';
 import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
-import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, LOG_RING_CAPACITY } from './Match.constants';
+import { matchLegendSheets } from './matchLegendSheets';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { MatchHost } from './MatchHost';
 import type { HostDocument, HostWindow } from './MatchHost.types';
@@ -29,9 +29,9 @@ import type { MatchFactory } from './SessionController.types';
 /** What the browser match factory is built from; `main.tsx` passes window, document and the page singletons. */
 export type BrowserMatchDeps = {
   /**
-   * The loaded sprite atlases: `match-loading` loaded the player's sheet group before the match
-   * (13 §2), and the factory hands its atlases to the renderer. Left out (the Duel factory,
-   * tests), the renderer gets none and the player's Legend is a disc.
+   * The loaded sprite atlases: `match-loading` loaded the sheet group of every Legend in the
+   * rosters before the match (13 §2), and the factory hands their atlases to the renderer. Left
+   * out (the Duel factory, tests), the renderer gets none and every Legend is a disc.
    */
   readonly resources?: Pick<ResourceController, 'atlases'>;
   /** The frame scheduler (`RafFrameScheduler`) is built on it, so the type names rAF. */
@@ -81,20 +81,24 @@ function readEvidence(simulation: Simulation, ring: RingBufferSink): MatchEviden
  * `Simulation(setup.seed)` on `request.world`'s map and map objects with `request.roster` (the
  * setup's bots and the player's human slot) as its roster, the `Match` on the same world and its
  * `MatchHost`, then starts the host, which owns everything from then on. The renderer gets the
- * atlas of the player's sprite sheet, which `match-loading` loaded and the session releases (13 §2),
- * and the `Match` gets the sheet. The match log records the seed first.
+ * atlases of every Legend's sprite sheet (`matchLegendSheets`), which `match-loading` loaded and
+ * the session releases (13 §2), and the `Match` gets the sheets (DEC-378 (2)). The match log
+ * records the seed first.
  * @throws What the renderer or `Match` threw, after destroying every adapter already built
  *   (0 listeners, 0 pending frames).
  */
 export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
   return (request, viewport) => {
     const { window, gameConfig, settings, resources } = deps;
-    const playerSpecId = request.setup.allies.find((entry) => entry.isPlayer)?.specId ?? null;
-    const sheet = LEGEND_SPRITE_SHEETS[playerSpecId ?? ''];
+    const legendSheets = matchLegendSheets(request.setup);
     // Core spawns the roster's human slot, the player's Rover, at the team's Stronghold: a map
     // without one throws in `Simulation`, below.
     const config = withPlayerTeam(gameConfig, request.setup.playerTeam);
-    const atlases = sheet === undefined ? {} : (resources?.atlases(sheet.group) ?? {});
+    const atlases = Object.fromEntries(
+      [...legendSheets.values()].flatMap(({ group }) =>
+        Object.entries(resources?.atlases(group) ?? {}),
+      ),
+    );
     const renderer = Canvas2dRenderer.fromCanvas(viewport.canvas, atlases);
     if (renderer === null) {
       throw new Error('This browser cannot draw on a 2D canvas.');
@@ -121,7 +125,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         roster: request.roster,
       });
       match = new Match({
-        playerSheet: sheet,
+        legendSheets,
         simulation,
         world: request.world,
         tickRate: gameConfig.tickRate,

@@ -1,9 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { AssetGroup, AssetUrls, SessionPhase, UiIntent } from '../bridge/events';
+import type {
+  AssetGroup,
+  AssetUrls,
+  FilledRosters,
+  SessionPhase,
+  UiIntent,
+} from '../bridge/events';
 import { assetsSlice } from '../bridge/slices/assetsSlice';
 import { firstAvailableSpecId, shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
+import { matchLegendSheets } from './matchLegendSheets';
 import type {
   SessionContext,
   SessionControllerDeps,
@@ -202,6 +209,24 @@ describe('SessionController asset groups', () => {
     expect(session.controller.phase).toBe('menu');
     expect(isLoadedInMatch).toBe(true);
     expect(session.resources.isLoaded(sheet.group)).toBe(false);
+  });
+
+  it('loads the sheet group of every Legend in the filled rosters, and frees each on leave-match', async () => {
+    const session = sessionWithResults();
+    const locked: FilledRosters[] = [];
+    session.bus.on('selection-locked', (rosters) => locked.push(rosters));
+    session.controller.start();
+    await session.resolveLoads();
+    await session.toMatch();
+    const groups = [...matchLegendSheets(locked[0] ?? null).values()].map(({ group }) => group);
+    const loadedInMatch = groups.filter((group) => session.resources.isLoaded(group));
+
+    session.intent({ kind: 'leave-match' });
+
+    // The player's sheet and the bots' sheets: more than one group (DEC-378 (2)).
+    expect(groups.length).toBeGreaterThan(1);
+    expect(loadedInMatch).toEqual(groups);
+    expect(groups.filter((group) => session.resources.isLoaded(group))).toEqual([]);
   });
 
   it('shows the selection group on the win/lose screen and empties it on the way to the menu', async () => {

@@ -29,6 +29,9 @@ const TICK_MS = MS_PER_SECOND / CONFIG.tickRate;
 const STILL: InputIntent = { move: { x: 0, y: 0 }, aim: null, triggered: [] };
 const PLAYER: PlayerChoice = { legend: 'magus', team: 'dark' };
 const WARRIOR: PlayerChoice = { legend: 'warrior', team: 'light' };
+/** The sheets by sub-class id that the match factory would pass for `specIds` (DEC-378 (2)). */
+const sheetsFor = (...specIds: readonly string[]) =>
+  new Map(Object.entries(LEGEND_SPRITE_SHEETS).filter(([specId]) => specIds.includes(specId)));
 
 /** Freezes `value` and everything inside it, so any write to the world throws. */
 function deepFreeze<T>(value: T): T {
@@ -47,12 +50,13 @@ function matchDeps(
   world: PreparedWorld = prepareMatchWorld(CONFIG, 1),
   player: PlayerChoice = PLAYER,
   simulationLogger: Logger = new NullLogger(),
+  bots: readonly RosterSlot[] = [],
 ) {
   const bus = new TypedEventBus<BridgeEventMap>();
   const clocks: MatchClock[] = [];
   bus.on('match-clock', (clock) => clocks.push(clock));
   const simulation = new Simulation({
-    ...withPlayer(CONFIG, player),
+    ...withPlayer(CONFIG, player, bots),
     seed: 1,
     logger: simulationLogger,
     map: world.map,
@@ -372,18 +376,18 @@ describe('Match lifecycle', () => {
     expect(dropped).toEqual(types);
   });
 
-  it("drops the player's sprite listener too on destroy, when the player has a sprite sheet", () => {
+  it("drops the sprites' listener too on destroy, when the player has a sprite sheet", () => {
     const { deps, dropped, on } = matchDeps();
     const match = new Match({
       ...deps,
-      playerSheet: LEGEND_SPRITE_SHEETS.knight,
+      legendSheets: sheetsFor('knight'),
       renderer: new RecordingRenderer({ 'knight-sprites': { columns: 6, rows: 10 } }),
     });
     match.start();
 
     match.destroy();
 
-    // The sprite's `damage-applied` listener (DEC-298) joins the health bars' two, the Legend
+    // The sprites' `damage-applied` listener (DEC-378) joins the health bars' two, the Legend
     // bodies' `entity-removed` and the bridge's `match-ended`; each is dropped once.
     const types = [
       'damage-applied',
@@ -392,6 +396,56 @@ describe('Match lifecycle', () => {
       'entity-removed',
       'match-ended',
     ];
+    expect(on.mock.calls.map(([type]) => type)).toEqual(types);
+    expect(dropped).toEqual(types);
+  });
+
+  it('adds one sprite listener for every Legend in the match, and drops it on destroy', () => {
+    const bots: readonly RosterSlot[] = [
+      {
+        pilot: 'bot',
+        team: 'dark',
+        definitionId: 'warrior',
+        role: 'laner',
+        difficulty: 'normal',
+        specId: 'knight',
+      },
+      {
+        pilot: 'bot',
+        team: 'light',
+        definitionId: 'sentinel',
+        role: 'rover',
+        difficulty: 'rover',
+        specId: 'juggernaut',
+      },
+    ];
+    const oracle: PlayerChoice = { ...PLAYER, specId: 'oracle' };
+    const { deps, dropped, on } = matchDeps(undefined, oracle, new NullLogger(), bots);
+    const match = new Match({
+      ...deps,
+      legendSheets: sheetsFor('oracle', 'knight', 'juggernaut'),
+      renderer: new RecordingRenderer({
+        'oracle-sprites': { columns: 6, rows: 10 },
+        'knight-sprites': { columns: 6, rows: 10 },
+        'juggernaut-sprites': { columns: 6, rows: 10 },
+      }),
+    });
+    match.start();
+    deps.scheduler.advance(0);
+    deps.scheduler.runFrames(3, TICK_MS);
+
+    match.destroy();
+
+    // Three Legends with sprites, one sprites' `damage-applied` listener (DEC-378); each listener
+    // is dropped once.
+    const types = [
+      'damage-applied',
+      'damage-applied',
+      'entity-removed',
+      'entity-removed',
+      'match-ended',
+    ];
+    expect(match.snapshot.entities.filter(({ specId }) => specId !== undefined)).toHaveLength(3);
     expect(on.mock.calls.map(([type]) => type)).toEqual(types);
     expect(dropped).toEqual(types);
   });

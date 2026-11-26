@@ -136,6 +136,37 @@ describe('createBrowserMatch', () => {
 
       expect(warnings).toEqual([['client.views', { atlasId: 'colossus-sprites' }]]);
     });
+
+    it("hands the atlases of every Legend's sheet to the renderer, each group once (DEC-378)", () => {
+      const ring = new RingBufferSink(LOG_RING_CAPACITY);
+      const image = () => ({ width: 384, height: 640, close: vi.fn() });
+      const byGroup: Readonly<Record<string, Readonly<Record<string, SpriteAtlasAsset>>>> = {
+        'atlas-colossus': { 'colossus-sprites': new SpriteAtlasAsset(image(), 6, 10) },
+        'atlas-oracle': { 'oracle-sprites': new SpriteAtlasAsset(image(), 6, 10) },
+      };
+      const resources = { atlases: vi.fn((group: string) => byGroup[group] ?? {}) };
+      const { factory, viewport, request } = setUp(undefined, [ring], resources);
+      const matchRequest = request();
+      const oracle: RosterEntry = {
+        ...COLOSSUS,
+        legendId: 'bot',
+        specId: 'oracle',
+        isPlayer: false,
+      };
+
+      const running = factory(
+        {
+          ...matchRequest,
+          setup: { ...matchRequest.setup, allies: [COLOSSUS, oracle], enemies: [oracle] },
+        },
+        viewport,
+      );
+      const warnings = ring.tail(LOG_RING_CAPACITY).filter(({ scope }) => scope === 'client.views');
+      running.destroy();
+
+      expect(resources.atlases.mock.calls).toEqual([['atlas-colossus'], ['atlas-oracle']]);
+      expect(warnings).toEqual([]);
+    });
   });
 
   it.each([

@@ -12,7 +12,7 @@ import juggernaut2x from '../../assets/match/legends/juggernaut-sprites@2x.webp'
 
 /**
  * User-authorised character art: provenance in ADR 0028 and
- * `docs/reference/legend-sprite-provenance.md`; the proposed byte budget in ADR 0027 (draft).
+ * `docs/reference/legend-sprite-provenance.md`; the accepted byte budget in ADR 0027 (DEC-378 (3)).
  */
 export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
   {

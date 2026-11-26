@@ -2,10 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { AssetGroup } from '../../../bridge/events';
 import { firstAvailableSpecId } from '../../content/__fixtures__/shippedCatalogue';
+import { filledRostersFixture } from '../../__fixtures__/filledRosters';
 import { FakeSessionContext } from '../../FakeSessionContext';
+import { LEGEND_SPRITE_SHEETS } from '../../legendSpriteSheets';
 import { flushMicrotasks, testResources, testSession } from '../../testSessionDeps';
 import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from '../sessionTiming.constants';
-import { matchAssetGroups } from '../matchAssetGroups';
 import { MatchLoadingState } from './MatchLoadingState';
 
 /** The Legend these tests pick for the sentinel class. */
@@ -40,13 +41,13 @@ describe('MatchLoadingState', () => {
     const { context, groups, onReady } = entered();
     expect(groups).toEqual(['match']);
     onReady?.();
-    expect(context.order).toEqual(['selection', 'loadAssets', 'prepareWorld', 'transition']);
+    expect(context.order).toEqual(['rosters', 'loadAssets', 'prepareWorld', 'transition']);
     expect(context.calls.transition).toEqual([['match']]);
   });
 
   it("loads the sprite sheet group of the player's pick after the match group", () => {
     const context = new FakeSessionContext();
-    context.recordSelection({ classId: 'sentinel', specId: 'colossus' });
+    context.lockedRosters = filledRostersFixture({ player: 'colossus' });
     new MatchLoadingState().enter(context);
 
     expect(context.calls.loadAssets.map(([groups]) => groups)).toEqual([
@@ -54,8 +55,22 @@ describe('MatchLoadingState', () => {
     ]);
   });
 
+  it("loads every roster Legend's sheet group after the match group, the player's first, each once", () => {
+    const context = new FakeSessionContext();
+    context.lockedRosters = filledRostersFixture({
+      player: 'colossus',
+      allies: ['oracle', 'colossus'],
+      enemies: ['juggernaut', null, 'oracle'],
+    });
+    new MatchLoadingState().enter(context);
+
+    expect(context.calls.loadAssets.map(([groups]) => groups)).toEqual([
+      ['match', 'atlas-colossus', 'atlas-oracle', 'atlas-juggernaut'],
+    ]);
+  });
+
   it('opens the match when the sprite sheet fails to load: the sheet stays unloaded', async () => {
-    const [, sheet] = matchAssetGroups({ classId: 'sentinel', specId: SENTINEL_LEGEND });
+    const sheet = LEGEND_SPRITE_SHEETS[SENTINEL_LEGEND]?.group;
     if (sheet === undefined) throw new Error(`${SENTINEL_LEGEND} has no sprite sheet`);
     const { resources, loader } = testResources([sheet]);
     const session = testSession({ resources });

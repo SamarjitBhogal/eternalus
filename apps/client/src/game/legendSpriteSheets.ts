@@ -14,9 +14,10 @@ const SPRITE_GROUND_OFFSETS = {
 /**
  * The one table of the sub-classes that have a sprite sheet (the stable content id: Heretic is
  * `necromancer`): its manifest id, the asset group that loads it, and where its feet stand. Its
- * users: `matchAssetGroups` (the session loads and releases the group) and `createBrowserMatch`
- * (the renderer gets the loaded atlas, and `Match` gets the sheet for the player's Legend view and
- * animation).
+ * one reader is `matchLegendSheets`, which picks the sheets of a match's Legends. Through it,
+ * `matchAssetGroups` (the session loads and releases the groups) and `createBrowserMatch` (the
+ * renderer gets the loaded atlases, and `Match` gets the sheets for every Legend's view and
+ * animation, DEC-378 (2)) use it.
  */
 export const LEGEND_SPRITE_SHEETS: Readonly<Record<string, LegendSpriteSheet>> = {
   assassin: {

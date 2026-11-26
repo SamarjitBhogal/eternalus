@@ -51,4 +51,20 @@ describe('rosterSlots', () => {
       'hard',
     ]);
   });
+
+  it('carries a Legend’s spec id to its slot so the kit is the Legend’s, and none without one', () => {
+    const slots = rosterSlots(
+      {
+        allies: [
+          { ...entry('light', 0, 'magus', true), specId: 'oracle' },
+          entry('light', 1, 'warrior'),
+        ],
+        enemies: [{ ...entry('dark', 0, 'magus'), specId: 'catalyst' }],
+      },
+      DIFFICULTIES,
+    );
+
+    expect(slots.map((slot) => slot.specId)).toEqual(['oracle', undefined, 'catalyst']);
+    expect('specId' in (slots[1] ?? {})).toBe(false);
+  });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MenuRoute, UiIntent } from '../../../bridge/events';
+import { filledRostersFixture } from '../../__fixtures__/filledRosters';
 import { FakeSessionContext } from '../../FakeSessionContext';
 import { RESULTS_COUNTDOWN_MS } from '../sessionTiming.constants';
 import { ResultsState } from './ResultsState';
@@ -30,13 +31,13 @@ describe('ResultsState', () => {
     expect(countdown).toEqual([RESULTS_COUNTDOWN_MS, RESULTS_COUNTDOWN_MS - 1_000]);
   });
 
-  it("also releases the sprite sheet group of the match's pick", () => {
+  it('also releases the sprite sheet group of every Legend in the match', () => {
     const context = new FakeSessionContext();
-    context.recordSelection({ classId: 'magus', specId: 'oracle' });
+    context.lockedRosters = filledRostersFixture({ player: 'oracle', allies: ['colossus'] });
 
     new ResultsState().enter(context);
 
-    expect(context.calls.releaseAssets).toEqual([['match'], ['atlas-oracle']]);
+    expect(context.calls.releaseAssets).toEqual([['match'], ['atlas-oracle'], ['atlas-colossus']]);
   });
 
   it('goes to the menu when the countdown ends, not before (DEC-78)', () => {

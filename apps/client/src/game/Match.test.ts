@@ -5,6 +5,7 @@ import {
   MapPresentationBuilder,
   MemoryLogger,
   NullLogger,
+  type RosterSlot,
   Simulation,
   type Vec2,
 } from '@eternalus/core';
@@ -29,8 +30,29 @@ import { FOCUS_RING_COLOR } from './views/entityViews.constants';
 
 const SEED = 1;
 const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
-/** The Knight's sprite sheet, which the match factory would pass for a Knight pick. */
-const KNIGHT_SHEET = LEGEND_SPRITE_SHEETS.knight;
+/** The player as a Knight (a warrior sub-class), so its snapshot names the Knight's sheet. */
+const KNIGHT_PLAYER: PlayerChoice = { ...PLAYER, specId: 'knight' };
+/** The sheets by sub-class id that the match factory would pass for `specIds` (DEC-378 (2)). */
+const sheetsFor = (...specIds: readonly string[]): ReadonlyMap<string, LegendSpriteSheet> =>
+  new Map(Object.entries(LEGEND_SPRITE_SHEETS).filter(([specId]) => specIds.includes(specId)));
+const KNIGHT_GRID = { 'knight-sprites': { columns: 6, rows: 10 } };
+/** The dark Rover bot, an Oracle (a magus sub-class). */
+const ORACLE_BOT: RosterSlot = {
+  pilot: 'bot',
+  team: 'dark',
+  definitionId: 'magus',
+  role: 'rover',
+  difficulty: 'rover',
+  specId: 'oracle',
+};
+
+/** What a sprite test adds to a match: the sheets, the loaded atlases, the player and the bots. */
+type SpriteSetUp = {
+  readonly legendSheets?: ReadonlyMap<string, LegendSpriteSheet>;
+  readonly atlases?: ConstructorParameters<typeof RecordingRenderer>[0];
+  readonly player?: PlayerChoice;
+  readonly bots?: readonly RosterSlot[];
+};
 
 /**
  * The centre of the HUD minimap ring on the tests' 1280 × 720 canvas (device pixels), from the
@@ -98,12 +120,8 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
  * mobs the map's structures spawn, it plays in sim mode instead: no map, so no roster (a roster
  * needs the map).
  */
-const setUp = (
-  content?: Content,
-  withMapObjects = false,
-  playerSheet?: LegendSpriteSheet,
-  atlases: ConstructorParameters<typeof RecordingRenderer>[0] = {},
-) => {
+const setUp = (content?: Content, withMapObjects = false, sprites: SpriteSetUp = {}) => {
+  const { legendSheets, atlases = {}, player = PLAYER, bots = [] } = sprites;
   // No countdown: core's countdown holds all movement, and these tests walk from the start.
   const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
   const world = prepareMatchWorld(config, SEED);
@@ -112,7 +130,7 @@ const setUp = (
     seed: SEED,
     logger: new NullLogger(),
     ...(content === undefined
-      ? { ...withPlayer(config, PLAYER), map: generated }
+      ? { ...withPlayer(config, player, bots), map: generated }
       : { config, content }),
     ...(withMapObjects ? { mapObjects: world.mapObjects } : {}),
   });
@@ -122,7 +140,7 @@ const setUp = (
   const input = new ScriptedIntent();
   const logger = new MemoryLogger();
   const match = new Match({
-    playerSheet,
+    legendSheets,
     simulation,
     world,
     tickRate: config.tickRate,
@@ -487,8 +505,10 @@ describe('Match', () => {
   });
 
   it('renders the selected Knight through the live match view registry', () => {
-    const { match, renderer, logger } = setUp(undefined, false, KNIGHT_SHEET, {
-      'knight-sprites': { columns: 6, rows: 10 },
+    const { match, renderer, logger } = setUp(undefined, false, {
+      legendSheets: sheetsFor('knight'),
+      atlases: KNIGHT_GRID,
+      player: KNIGHT_PLAYER,
     });
     match.render(0);
     expect(
@@ -499,8 +519,10 @@ describe('Match', () => {
   });
 
   it("draws a walk frame of the render's tick once the player's Legend has moved", () => {
-    const { match, renderer, input } = setUp(undefined, false, KNIGHT_SHEET, {
-      'knight-sprites': { columns: 6, rows: 10 },
+    const { match, renderer, input } = setUp(undefined, false, {
+      legendSheets: sheetsFor('knight'),
+      atlases: KNIGHT_GRID,
+      player: KNIGHT_PLAYER,
     });
     input.move = { x: 1, y: 0 };
     for (let tick = 0; tick < 10; tick += 1) match.tick();
@@ -520,7 +542,10 @@ describe('Match', () => {
   });
 
   it('draws the selected Knight as a disc, with one WARN, when the renderer has no atlas', () => {
-    const { match, renderer, logger } = setUp(undefined, false, KNIGHT_SHEET);
+    const { match, renderer, logger } = setUp(undefined, false, {
+      legendSheets: sheetsFor('knight'),
+      player: KNIGHT_PLAYER,
+    });
     match.render(0);
 
     expect(renderer.calls.some((call) => call.op === 'drawSprite')).toBe(false);
@@ -531,6 +556,43 @@ describe('Match', () => {
         attributes,
       ]),
     ).toEqual([['WARN', 'client.views', { atlasId: 'knight-sprites' }]]);
+    match.destroy();
+  });
+
+  it("draws a bot Legend from its own sub-class's sheet, as the player's from its own", () => {
+    const { match, renderer, logger } = setUp(undefined, false, {
+      legendSheets: sheetsFor('knight', 'oracle'),
+      atlases: { ...KNIGHT_GRID, 'oracle-sprites': { columns: 6, rows: 10 } },
+      player: KNIGHT_PLAYER,
+      bots: [ORACLE_BOT],
+    });
+    match.render(0);
+
+    const atlases = renderer.calls.flatMap((call) =>
+      call.op === 'drawSprite' ? [call.args[0].atlasId] : [],
+    );
+    expect(atlases.sort()).toEqual(['knight-sprites', 'oracle-sprites']);
+    expect(logger.records.filter(({ severityText }) => severityText === 'WARN')).toEqual([]);
+    match.destroy();
+  });
+
+  it("draws a bot Legend whose sheet did not load as a disc, while the player's gets its sprite", () => {
+    const { match, renderer, logger } = setUp(undefined, false, {
+      legendSheets: sheetsFor('knight', 'oracle'),
+      atlases: KNIGHT_GRID,
+      player: KNIGHT_PLAYER,
+      bots: [ORACLE_BOT],
+    });
+    match.render(0);
+
+    const atlases = renderer.calls.flatMap((call) =>
+      call.op === 'drawSprite' ? [call.args[0].atlasId] : [],
+    );
+    expect(atlases).toEqual(['knight-sprites']);
+    expect(
+      logger.records.map(({ severityText, attributes }) => [severityText, attributes]),
+    ).toEqual([['WARN', { atlasId: 'oracle-sprites' }]]);
+    expect(match.snapshot.entities.filter(({ specId }) => specId === 'oracle')).toHaveLength(1);
     match.destroy();
   });
 });

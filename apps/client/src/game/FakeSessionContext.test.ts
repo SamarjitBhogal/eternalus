@@ -63,6 +63,7 @@ describe('FakeSessionContext', () => {
       clearMatchSetup: [[]],
       selection: [],
       recordSelection: [],
+      rosters: [],
       joinDuelQueue: [['Ana']],
       leaveDuelQueue: [[]],
       forfeitDuel: [[]],
@@ -138,6 +139,17 @@ describe('FakeSessionContext', () => {
       after: null,
     });
     expect(context.calls.recordSelection).toEqual([[pick], [null]]);
+  });
+
+  it('answers rosters() with lockedRosters, null until a test sets them', () => {
+    const context = new FakeSessionContext();
+    const before = context.rosters();
+    const rosters = { allies: [], enemies: [] };
+
+    context.lockedRosters = rosters;
+
+    expect({ before, after: context.rosters() }).toEqual({ before: null, after: rosters });
+    expect(context.calls.rosters).toEqual([[], []]);
   });
 
   it('builds a new FakeRunningMatch per createMatch and keeps each in order', () => {

@@ -6,6 +6,7 @@ import type {
   BridgeEventMap,
   ClassSelection,
   CreditEntry,
+  FilledRosters,
   MatchSetupDraft,
   SessionPhase,
   SessionReason,
@@ -137,6 +138,11 @@ export interface SessionContext {
   selection(): ClassSelection | null;
   /** Records the pick, or clears it with `null`, and publishes `class-selection`. */
   recordSelection(selection: ClassSelection | null): void;
+  /**
+   * The rosters LOCK IN filled for the current setup, the player's entry among them, or `null`
+   * before LOCK IN and in an online Duel. `matchAssetGroups` reads them.
+   */
+  rosters(): FilledRosters | null;
   /**
    * LOCK IN (DEC-61): fills both rosters from the setup and the pick (`fillRosters`) and publishes
    * them as `selection-locked`. The setup itself stays as built, for a rematch.

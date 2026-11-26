@@ -89,10 +89,11 @@ type RemotePlayer = {
 /** Everything a `Match` is wired from (architecture 08 §7). */
 export type MatchDeps = {
   /**
-   * The player's sprite sheet in a local match (`LEGEND_SPRITE_SHEETS`, looked up by the match
-   * factory). Left out in an online Duel, or for a sub-class without a sheet: the Legend is a disc.
+   * The sprite sheets of the match's Legends by sub-class id, in a local match
+   * (`matchLegendSheets`, called by the match factory; DEC-378 (2)). Each Legend's snapshot names
+   * its sub-class. Left out in an online Duel: every Legend is a disc.
    */
-  readonly playerSheet?: LegendSpriteSheet | undefined;
+  readonly legendSheets?: ReadonlyMap<string, LegendSpriteSheet> | undefined;
   readonly simulation: MatchSimulation;
   /** Set for an online Duel: replaces the local `PlayerCommands` and the snapshot's human Legend. */
   readonly remote?: RemotePlayer;

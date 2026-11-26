@@ -11,7 +11,7 @@ export class MenuState implements SessionState {
    * released), drops any previous setup and shows the home route.
    */
   public enter(context: SessionContext): void {
-    for (const group of matchAssetGroups(context.selection())) {
+    for (const group of matchAssetGroups(context.rosters())) {
       context.releaseAssets(group);
     }
     context.clearMatchSetup();

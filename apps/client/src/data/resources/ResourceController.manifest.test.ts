@@ -9,8 +9,8 @@ import { UiImageLoader } from './loaders/UiImageLoader';
 import { ResourceController } from './ResourceController';
 
 /**
- * Byte totals per group at a pixel ratio of 1 and 2: the accepted (HC-Q15, OD-7) and proposed
- * (draft ADR 0027) budgets.
+ * Byte totals per group at a pixel ratio of 1 and 2: the accepted budgets (HC-Q15, OD-7; the
+ * Legend sprite sheets: ADR 0027, DEC-378 (3)).
  */
 const BUDGETS: readonly (readonly [AssetGroup, number, number])[] = [
   ['boot', 25_888, 25_888],
@@ -22,8 +22,8 @@ const BUDGETS: readonly (readonly [AssetGroup, number, number])[] = [
   ['selection-primary-raster', 1_041_660, 281_268],
   // OD-28: the battle axe with the owner's Noise grain, +206 B (1x) and +1,322 B (2x) on OD-7's 141,440 / 358,580.
   ['match', 141_646, 359_902],
-  // Proposed, not accepted: the Legend sprite sheets at their size today (draft ADR 0027, DEC-298
-  // (6); the owner rules on Owner Calls card PR170 (3)). A match loads only the player's sheet.
+  // The Legend sprite sheets, accepted as written, lossless (ADR 0027, DEC-378 (3)). A match
+  // loads the sheet of every Legend in it (DEC-378 (2)).
   ['atlas-assassin', 150_240, 519_994],
   ['atlas-knight', 202_298, 700_854],
   ['atlas-paladin', 234_572, 826_646],
@@ -63,7 +63,7 @@ function shippedResources(pixelRatio: number) {
 }
 
 describe('ResourceController with the shipped manifest', () => {
-  it('totals each group at the accepted (HC-Q15, OD-7) and proposed (draft ADR 0027) budgets, at both densities', () => {
+  it('totals each group at the accepted budgets (HC-Q15, OD-7; ADR 0027), at both densities', () => {
     const atDpr1 = shippedResources(1).resources;
     const atDpr2 = shippedResources(2).resources;
 

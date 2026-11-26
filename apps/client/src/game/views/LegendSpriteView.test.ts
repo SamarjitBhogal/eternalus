@@ -24,11 +24,13 @@ const entity: EntitySnapshot = {
 };
 const state = { entity, position: { x: 1, y: 2 }, isFocused: true, facing: { x: 0, y: 1 } };
 const FRAME = { atlasId: 'oracle-sprites', frame: 3 } as const;
+/** `FRAME` on a sheet whose feet stand a quarter of the cell above its bottom edge. */
+const SPRITE = { frame: FRAME, groundOffset: 0.25 } as const;
 
 describe('LegendSpriteView', () => {
   it('draws the frame with its feet on the position, then the team ring and the focus ring', () => {
     const renderer = new RecordingRenderer();
-    new LegendSpriteView(() => FRAME, 6.8, 0.25).draw(state, renderer);
+    new LegendSpriteView(() => SPRITE, 6.8).draw(state, renderer);
     const glyphs = renderer.calls.flatMap((call) => (call.op === 'drawWorldGlyph' ? [call] : []));
 
     // The cell's bottom edge is 0.25 x 6.8 below the feet, so the feet stand on (1, 2).
@@ -49,13 +51,13 @@ describe('LegendSpriteView', () => {
   });
 
   it('reports the sprite top above the position as its radius, so the health bar sits above it', () => {
-    const view = new LegendSpriteView(() => FRAME, 6.8, 0.25);
+    const view = new LegendSpriteView(() => SPRITE, 6.8);
 
     expect(view.visualRadiusOf(entity)).toBeCloseTo(6.8 * 0.75);
   });
 
   it('draws any other Legend as the ordinary Legend view, with its footprint radius', () => {
-    const view = new LegendSpriteView(() => null, 6.8, 0.25);
+    const view = new LegendSpriteView(() => null, 6.8);
     const drawn = new RecordingRenderer();
     const ordinary = new RecordingRenderer();
     view.draw(state, drawn);
@@ -67,7 +69,7 @@ describe('LegendSpriteView', () => {
 
   it('keeps the Legend minimap marker', () => {
     const renderer = new RecordingRenderer();
-    new LegendSpriteView(() => FRAME, 6.8, 0.25).drawMinimap(state, renderer);
+    new LegendSpriteView(() => SPRITE, 6.8).drawMinimap(state, renderer);
 
     expect(renderer.calls.some((call) => call.op === 'drawGlyph')).toBe(true);
   });
