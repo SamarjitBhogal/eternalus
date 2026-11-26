@@ -22,7 +22,7 @@ import type { System, SystemContext } from './System.types';
  * it adds the same Legend object back at its team's Stronghold, facing the enemy Stronghold
  * (DEC-216 (6)), with full health and aether (DEC-295 (1)), no status effects, no movement and no
  * attack target; its id, level, XP, caps and loadout are its own, as it never left. Every ability
- * but the ultimate is ready (FR-117); the ultimate keeps its cooldown and charge (DEC-295 (1)).
+ * but the ultimate is ready (FR-117); the ultimate keeps its cooldown (FR-117) and charge (DEC-295 (1)).
  * A bot laner picks its lane again by the current threat (`assessLanes`, DEC-295 (2)). It announces
  * `entity-spawned` and `legend-respawned` (with the XP it is owed, which `ProgressionSystem` pays,
  * DEC-186). A match without a Stronghold for the team queues nothing: its Legends stay gone. A

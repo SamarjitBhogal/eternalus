@@ -283,6 +283,20 @@ Reply inline (`Decision: …`).
       flag and one finder would keep it closed to change. Not built in #132. OK to do each in a
       small follow-up PR?
 
+- [ ] **Better than design: the Esc key reads both of its flags from the store (#123 merge critic
+      round 2, BTD-1, 2026-11-25). Built under your standing rule; sign-off asked, nothing
+      blocks the PR.** After the phase/3 merge, Esc depended on two yes/no values: "an ability is
+      aimed" and "this is an online Duel". The hook read the first from the store at the key
+      press, but `MatchScreen` passed the second in. The two values went into
+      `pressPauseMenuKey` side by side, so a swap compiled and passed every test. Built:
+      `usePauseMenuKey` reads both from the store at the key press (`selectAimingSlot`,
+      `selectIsDuel`), and `pressPauseMenuKey` takes them as one named object
+      (`{ isAiming, isDuel }`). New tests: an aimed ability in a Duel only cancels the aim; and,
+      through the hook in a browser test, Esc first cancels the aim, then opens the leave
+      confirmation. A swap of the two values now fails a test. No design text changes: doc 13
+      does not name the hook's inputs. Approve, or say to revert to the smaller fix (one test,
+      no signature change).
+
 - [ ] **`feat/duel-arena-only-legends` (PR #145, SCRUM-445, SCRUM-446, SCRUM-447, SCRUM-450):
       one owner item left.** Q1 and Q2 are answered and built: DEC-348 (2026-11-23: no
       structures, no minions or host units, trees, houses and rocks stay, the gem stays; the

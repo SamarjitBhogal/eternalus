@@ -842,7 +842,8 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
     selection changes, not with the throttled `hud-state`, because the Esc key reads it at
     keydown; it lands in `hudSlice.aimingSlot` (`selectAimingSlot`; the bar highlights that
     slot). While a slot is selected and no overlay is open, `usePauseMenuKey` sends the intent
-    `cancel-aim` instead of opening the pause menu (DEC-200); `MatchHost` calls
+    `cancel-aim` instead of opening the pause menu (or, in an online Duel, the leave
+    confirmation) (DEC-200); `MatchHost` calls
     `Match.cancelAim`, and a pause also drops the selection.
   - **Range overlay.** `game/views/AimOverlayView.ts` draws the selected ability's area from
     each effect step's area in the display data (`AbilityDisplay.steps`), one painter per shape
