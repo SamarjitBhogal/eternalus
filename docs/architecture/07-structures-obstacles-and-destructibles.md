@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-26
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -563,6 +563,24 @@ lava river) or when its blocking area holds the shot's launch point (DEC-334). T
 (`CollisionResolver.shotReach`) and `WorldObjectStore.blockingAt` both use it, so
 `NoMapObjectOverlapInvariant` does not flag a shot over a lake or a lava river, and still flags a
 unit in one.
+
+**Implementation status, 2026-11-26 (branch `feat/palace-stronghold-pool`, DEC-373 (1)).** The
+Stronghold's outer wall ring and its throne are the Stronghold's body, as a lane tower's fort is
+the tower's body (one pool, DEC-185 (B)). This changes the 2026-11-05 note above ("only towers
+share one pool with their fort", DEC-217 (13)) for these objects only. The palace's inner ring,
+its room walls, its floor, its other furniture and the gates keep their own health. A map object
+names the structure it is part of with `MapObject.partOf`, which `MapPalaceWallsBuilder` and
+`MapBuildingInteriorBuilder` set. `Simulation.spawnStructures` adds the footprints of the blocking
+`partOf` objects to the structure's `Footprint` as solid polygons, and names them in the owners
+of `WorldObjectStore`, so they get no entity and no health of their own. An `Outline` now has the
+polygon lists `walkOn` and `solid` in place of `isWalkOn` (the 2026-11-20 note above), so one
+outline holds the walk-on palace floor and the solid outer walls and throne. Rule 1 of
+`AreaHitQuery` aims only by the walk-on polygons, and every hit that touches a solid polygon hits
+the body. `AreaHitQuery.shotPolygonsOf` gives the polygons that stop a shot, for
+`ProjectileSystem` and `LineOfFire`. A structure can own many body records in `WorldObjectStore`:
+`removed` leaves each one a ruin that blocks (DEC-341), and `contentsOf` skips a structure's body,
+so the collapse of the palace map object does not kill the Stronghold. The Stronghold's fort box
+(DEC-217 (16)) is now the box round its outer ring.
 
 ## Related
 

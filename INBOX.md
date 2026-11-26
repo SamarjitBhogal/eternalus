@@ -780,7 +780,7 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-23 (DEC-344 (2), Owner Calls v68): "A: keep it (built): ability hits count
     as attacks". No change.
 
-- [ ] **HC-Q104 — Do all the palace walls and the throne share the Stronghold's health?
+- [x] **HC-Q104 — Do all the palace walls and the throne share the Stronghold's health?
       (`feat/melee-sweeps` stack, follow-up to HC-Q87, DEC-344 (4)).** Asked on Owner Calls v71,
       2026-11-23, by COMBAT-WEAPONS-ABILITIES-59. Your HC-Q87 note: a hit on the Stronghold's
       walls or its throne damages the Stronghold; floors and furniture do not. Today each palace
@@ -797,6 +797,9 @@ Reply inline (`Decision: …`).
     room walls keep their own health". The palace's inner ring keeps its own health too (DEC-373
     (1) reading). Lane A builds it in `feat/palace-stronghold-pool`. Tick this item when that
     branch is built.
+  - Built 2026-11-26 in `feat/palace-stronghold-pool` (DEC-373 (1) addendum): the outer walls
+    and the throne are part of the Stronghold's body (`MapObject.partOf`) and have no health of
+    their own; the inner ring and the room walls keep their own health and break on their own.
 
 - [ ] **FYI for Samarjit (minion AI owner): three changes to minion AI in PR 2
       (`feat/melee-sweeps`).** Nothing to decide. (1) DEC-326 (2): a minion that is already
