@@ -3,6 +3,7 @@ import type { PersistedSettings } from './dto/SettingsDto';
 import { FallbackStorageAdapter } from './FallbackStorageAdapter';
 import { LOCAL_PROFILE_ID } from './PersistenceController.constants';
 import type { PersistenceControllerDeps } from './PersistenceController.types';
+import { GuestRepository } from './repositories/GuestRepository';
 import { LoadoutRepository } from './repositories/LoadoutRepository';
 import { SettingsRepository } from './repositories/SettingsRepository';
 import { STORAGE_SCHEMA } from './schema/migrations';
@@ -10,13 +11,14 @@ import type { StorageAdapter } from './StorageAdapter.types';
 
 /**
  * The single entry point to everything the game saves (architecture 14 §2, rule 13). Callers
- * never see a transaction, a store name or a DTO. Settings and loadouts for now; profiles, match
- * history and replays join as one repository each.
+ * never see a transaction, a store name or a DTO. Settings, loadouts and the guest id for now;
+ * profiles, match history and replays join as one repository each.
  */
 export class PersistenceController {
   private readonly adapter: StorageAdapter;
   private readonly settings: SettingsRepository;
   private readonly loadouts: LoadoutRepository;
+  private readonly guest: GuestRepository;
 
   /** Builds the facade over the injected adapter. Call `open()` before anything else. */
   public constructor(deps: PersistenceControllerDeps) {
@@ -25,6 +27,7 @@ export class PersistenceController {
       fallback === undefined ? deps.adapter : new FallbackStorageAdapter(deps.adapter, fallback);
     this.settings = new SettingsRepository(this.adapter, knownActions, now, warn);
     this.loadouts = new LoadoutRepository(this.adapter, now, warn);
+    this.guest = new GuestRepository(this.adapter, { now, warn });
   }
 
   /**
@@ -57,6 +60,16 @@ export class PersistenceController {
   /** Saves the loadout of one class, replacing the previous one. */
   public saveLoadout(classId: string, loadout: PersistedLoadout): Promise<void> {
     return this.loadouts.save(LOCAL_PROFILE_ID, classId, loadout);
+  }
+
+  /** The guest id the Duel server issued, or `null` when none is saved (or it was corrupt). */
+  public loadGuestId(): Promise<string | null> {
+    return this.guest.load(LOCAL_PROFILE_ID);
+  }
+
+  /** Saves the guest id, replacing the previous one. */
+  public saveGuestId(guestId: string): Promise<void> {
+    return this.guest.save(LOCAL_PROFILE_ID, guestId);
   }
 
   /** Closes storage. */

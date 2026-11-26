@@ -518,7 +518,8 @@ add (the `veteran` damage bonus, DEC-164); `value` counts once per stack, and a 
 ticks count from the first application. Every unit gets `StatusEffects`; anything without it
 (structures) is immune. The component recomputes its multiplier table and flags when its list
 changes, not per tick. `combat/StatusEffectApplier` (not in the sketch above) is the one way in and out and emits every
-status event: `apply` (by id) emits `status-applied`; `remove` ends a status early (auras, holds)
+status event: `apply` (by id) emits `status-applied`; `removeStacks` takes stacks off with one
+`status-stacks-lost` (a lost minion level, DEC-353), or `status-expired` when none stay; `remove` ends a status early (auras, holds)
 and `expire`, called by `StatusEffectSystem`, removes the timed-out ones, both with
 `status-expired`. `DefaultSystemPipeline` loads the statuses for the match's config and builds the
 one applier, next to the one `DamagePipeline`, so later producers (turret concussion 2.3, gate
@@ -783,7 +784,9 @@ export type LevelScalingDefinition = {
 `Recommendation:` balancing.md), emits `level-up { entityId, level }`, raises the `Health` base
 max and `Abilities.maxAether` by the class's `LevelScalingDefinition`, and applies the
 `UltimateChargeRule`s (§6). Ability potency is read at cast time (`CastContext.potency`), so
-`AbilitySystem` needs no listener. The **ability tree** (post-MVP, D12) is an extension point,
+`AbilitySystem` needs no listener. A match mode can start every Legend at its curve's cap
+(`ProgressionContent.legendsStartAtMaxLevel`, a Duel's rule): `ProgressionSystem` raises each Legend
+as it spawns, with the same per-level raises, and announces no award. The **ability tree** (post-MVP, D12) is an extension point,
 not a design: an `AbilityUpgradeDefinition` (`{ id, abilityId, tier, unlockLevel, patches }`) is
 applied by `AbilityRegistry.resolve` exactly like a variety, `Progression.upgradeIds` records the
 choice, and an `upgrade-ability` command carries the `near-structure` restriction from §5; "only

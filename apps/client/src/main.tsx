@@ -103,15 +103,24 @@ const developer = readDeveloperFlags(window.location.search);
 connectBusToStore(eventBus, store.dispatch);
 // What the Loadout screen offers per class, and the rules loadouts are checked and repaired by (08).
 const displayContent = loadDisplayContent();
-// Memory only, so nothing is saved past the session: disk saves (IndexedDB, with a memory fallback
-// that logs at ERROR) turn on after the settings and loadout layout changes (DEC-354 (5)).
 const persistence = new PersistenceController({
+  // Memory only until the settings layout (per group) and per-Legend loadout keys land: writing
+  // today's shape to players' browsers would need a migration for a schema that never shipped
+  // (owner answer 5, DEC-354). The follow-up PR turns IndexedDbStorageAdapter.inBrowser() on.
   adapter: new MemoryStorageAdapter(),
   knownActions: new Set(INPUT_ACTIONS),
   now: () => Date.now(),
   warn: (body, attributes) => {
     logger.log(makeLogRecord('WARN', 'client.persistence', body, { attributes }));
   },
+});
+// Settings, loadouts and the guest id load once storage is open.
+const storageOpen = persistence.open().catch((error: unknown) => {
+  logger.log(
+    makeLogRecord('ERROR', 'client.persistence', 'storage did not open', {
+      attributes: { error: String(error) },
+    }),
+  );
 });
 const settings = new SettingsController({
   bus: eventBus,
@@ -184,6 +193,10 @@ const session = new SessionController({
         ? duelServerUrl
         : DEFAULT_DUEL_SERVER_URL,
     ),
+  guestIds: {
+    load: () => storageOpen.then(() => persistence.loadGuestId()),
+    save: (guestId) => persistence.saveGuestId(guestId),
+  },
   logger,
   resources,
   credits: describeCredits(ASSET_MANIFEST.assets, ASSET_LICENCES),
@@ -193,16 +206,7 @@ session.start();
 
 // Settings and loadouts load in the background: the store has no bindings until the settings
 // event arrives, and the Loadout screen no choices until the loadouts event does.
-void persistence
-  .open()
-  .catch((error: unknown) => {
-    logger.log(
-      makeLogRecord('ERROR', 'client.persistence', 'storage did not open', {
-        attributes: { error: String(error) },
-      }),
-    );
-  })
-  .then(() => Promise.all([settings.start(), loadouts.start()]));
+void storageOpen.then(() => Promise.all([settings.start(), loadouts.start()]));
 
 const attachViewport = (viewport: MatchViewport): (() => void) => session.attachViewport(viewport);
 createRoot(rootElement).render(

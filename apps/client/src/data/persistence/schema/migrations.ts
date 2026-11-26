@@ -6,6 +6,9 @@ export const SETTINGS_STORE = 'settings';
 /** Saved loadouts, one record per profile and class (architecture 14 §7). */
 export const LOADOUT_STORE = 'loadouts';
 
+/** The guest id the Duel server issued, one record per profile (ADR 0016 point 5). */
+export const GUEST_STORE = 'guest';
+
 /** Records that failed validation on read, kept for bug reports (architecture 14 §8). */
 export const QUARANTINE_STORE = 'quarantine';
 
@@ -23,6 +26,7 @@ export const STORAGE_SCHEMA: StorageSchema = {
       createStores: [
         { name: SETTINGS_STORE, keyPath: 'profileId' },
         { name: LOADOUT_STORE, keyPath: 'id' },
+        { name: GUEST_STORE, keyPath: 'profileId' },
         { name: QUARANTINE_STORE, keyPath: 'id', autoIncrement: true },
       ],
     },
