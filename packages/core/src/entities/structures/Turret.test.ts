@@ -73,13 +73,20 @@ describe('Turret', () => {
     };
 
     expect(spawn('entity-1', contextWith({}, null))).toThrow(
-      'Turret "entity-1" needs an ammo source to load its ammo.',
+      'Structure "entity-1" needs an ammo source to load its ammo.',
     );
+    const { id, kind, displayName, baseHealth, footprintRadius, breakability } =
+      STRUCTURE_DEFINITIONS.get('turret');
+    const unarmed = {
+      ...contextWith({}),
+      definition: { id, kind, displayName, baseHealth, footprintRadius, breakability },
+    };
+    expect(spawn('entity-4', unarmed)).toThrow('Turret "entity-4" names no ammo.');
     expect(spawn('entity-2', contextWith({ ammo: [] }))).toThrow(
       'A turret needs at least one ammo.',
     );
     expect(spawn('entity-3', contextWith({ ammo: ['no-such-bolt'] }))).toThrow(
-      'Turret "entity-3": unknown ammo "no-such-bolt".',
+      'Structure "entity-3": unknown ammo "no-such-bolt".',
     );
   });
 });

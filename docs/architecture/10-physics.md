@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-25
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -198,7 +198,11 @@ Overlap tests are therefore not enough:
   sprint). **Swept when fast**: any unit whose displacement this tick exceeds its radius.
   Projectiles are swept by `ProjectileSystem`, not by the resolver's step 1: a shot is not pushed
   or slid, it ends at the first body or wall it touches (05 §10, DEC-314). Walls still come from
-  the resolver's `CollisionQuery.reach`. The resolver's steps below are for units.
+  the resolver's `CollisionQuery.reach`. The resolver's steps below are for units. An arc shot
+  (`ProjectileFlight.isArc`, 05 §10, DEC-342) is the exception: `ProjectileSystem` does not sweep
+  it while it flies, so no wall, body or map edge stops it. It moves to its range, which its
+  attack set to the aim point, and lands there (`ArcLanding`). It is then ended and hits nothing
+  more.
 - The test casts the segment `previousPosition → position` (expanded by the circle's radius, i.e.
   a capsule) against `StaticColliderIndex` entries flagged `isUnbreakable`, plus closed gates and
   map bounds; the earliest time of impact `t ∈ [0, 1]` wins; the mover is placed at
@@ -399,6 +403,16 @@ piece toward the court can cross that piece again further along the ring and pas
 ring's size puts that second crossing far from the turret, near the end of the bolt's range (not
 measured). The sentence in §4 that concave footprints are split into convex colliders does not hold
 for wall pieces; that was so before PR 4.
+
+**2026-11-23 (branch `feat/tower-orbs`; DEC-342).** Both wall turret bolts and the tower orb are
+arc shots (`ProjectileFlight.isArc`, 05 §10). `ProjectileSystem` does not sweep an arc shot while
+it flies (§7), and `NoMapObjectOverlapInvariant` skips it. So three statements of the 2026-11-22
+DEC-334 note no longer hold for the bolts: a mountain at a turret does not stop its bolts at
+launch, the invariant does not flag them, and the release client logs no ERROR for them. No shot
+in play uses the launch-shape rule now: a unit's centre is never in a blocking area, and every
+shot that starts inside one is an arc shot. The rule stays: `LineOfFire` and straight shots keep
+it, and a straight orb (the owner chose the arc, DEC-366) would need it. The corner mountains on the
+wall ring (HC-Q95) still need the map fix; they no longer show as bolt errors.
 
 ## Related
 

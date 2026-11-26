@@ -184,6 +184,20 @@ describe('loadTurrets', () => {
     );
   });
 
+  it('rejects a turret with no ammo list, and ammo on a structure the turret controller does not drive (createStructureRules)', () => {
+    const unarmed = { ...TURRET };
+    delete unarmed.ammo;
+    const uncontrolled = { ...TURRET };
+    delete uncontrolled.controller;
+
+    expect(() => load([AMMO], [PROFILE], [unarmed])).toThrow(
+      'Structure "test-turret-structure": a turret needs an ammo list.',
+    );
+    expect(() => load([AMMO], [PROFILE], [uncontrolled])).toThrow(
+      'Structure "test-turret-structure": a structure with ammo needs controller "turret".',
+    );
+  });
+
   it('checks no ammo list for a structure that names none', () => {
     expect(() => load([AMMO], [PROFILE], [STRUCTURE_DEFINITIONS.get('gate')])).not.toThrow();
   });

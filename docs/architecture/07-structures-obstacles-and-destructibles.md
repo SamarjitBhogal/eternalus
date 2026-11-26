@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-25
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -180,7 +180,9 @@ export type TurretState = {
 ```
 
 The turret's `StructureDefinition` names its ammo (best first) and its controller and AI profile
-(DEC-335); `switch-ammo` is a command, so the loaded ammo is hashed state.
+(DEC-335); `switch-ammo` is a command, so the loaded ammo is hashed state. The two lane towers
+(spawner and buff) shoot through the same path: their definitions name the same controller, a
+`lane-tower` profile and the `tower-orb` ammo (DEC-302, DEC-342; §13).
 
 `TurretController` (in `ai/`) drives auto mode: acquire the first enemy in range, keep it while
 alive and in range, prefer by a data priority list, switch ammo to the first
@@ -480,10 +482,11 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   ammo table of §5 is `content/structures/turretAmmo.ts` (`bolt-default`, `bolt-heavy`): each
   ammo is a `RangedAttack` plus `onHit` steps (the heavy bolt's concussion), with
   `preferredAgainst` for the ammo choice; `loadTurrets` converts its times to ticks and validates
-  it. Its projectiles are `turret-bolt` and `turret-heavy-bolt`. Their 35 m range is `TUNE` with
-  no reference value (a bolt starts at the turret's centre, so it covers the pylon, the turret's
-  range and the lead) until the arc shot of DEC-341 (HC-Q93) replaces the straight flight in the
-  tower-orb PR (Owner Calls "WT orb page", DEC-341 (4)).
+  it. Its projectiles are `turret-bolt` and `turret-heavy-bolt`. They are arc shots (05 §10,
+  DEC-341 (4), built in the tower-orb PR, DEC-342): a bolt flies over walls and bodies to its aim
+  point, lands there and lodges. Its `range` in `content/projectiles/` is only a cap (`TUNE`, no
+  reference value: a bolt starts at the turret's centre, so it covers the pylon, the turret's
+  range and the lead).
   `TurretController` picks the target
   and the ammo and computes the aim point (11 §4.5, §10). Part 2 (next item) builds the shot.
 - **Wall turrets, part 2 (`feat/wall-turrets`, 2026-11-22; §5, DEC-334).** Turrets fire. The
@@ -501,9 +504,17 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   turret as the killer (`definitionId` `turret`). The turret has no score row, no `Progression`
   and no ultimate meter, so the kill gives no kill points, no XP and no ultimate charge to anyone;
   Legends that hit the victim in the assist window still get their assists. `StateHasher` hashes
-  the loaded ammo. Not built: the arc shot of DEC-341 (HC-Q93; the tower-orb PR, Owner Calls
-  "WT orb page", DEC-341 (4), builds it; until then bolts fly their 35 m range), the `turret-control-changed` and `turret-fired` events, manual control
-  and tower orbs.
+  the loaded ammo. Not built: the `turret-control-changed` and `turret-fired` events, and manual
+  control.
+- **Tower orbs (`feat/tower-orbs`, 2026-11-23; §5, DEC-302, DEC-342).** The two lane towers (the
+  spawner tower and the buff tower) shoot orbs from their gem. They use the same `Structure` ammo
+  path as the wall turret: the definition names `controller: 'turret'`, an `aiProfile` and its
+  ammo, and `Structure` installs the `TurretState` and `Combat` for any definition with ammo (no
+  copy in `Turret`). The profile is `lane-tower` (`content/ai/turret.ts`, 11 §4.5) and the ammo is
+  `tower-orb` (`content/structures/turretAmmo.ts`): an arc shot with a splash (05 §10), so a fort
+  wall or a body in the way does not stop it. A tower's health, aura, waves and ruins do not
+  change. The orb numbers (range, damage, interval, blast, flight, target order) are the owner's
+  answers (DEC-366). The footprint, the lead margin and the burst time stay `TUNE`.
 
 **2026-10-27 (PR #30, map objects).** Generated map objects currently reuse the `Obstacle`
 entity with a `MapObjectBody` component while the full structure family remains planned.

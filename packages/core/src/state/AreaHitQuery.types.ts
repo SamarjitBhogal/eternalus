@@ -36,12 +36,15 @@ export type AreaAim = {
 
 /**
  * Which bodies a hit may touch, relative to the attacker. An entity with no team (a map object) is
- * nobody's ally, so it counts as an enemy. The abilities' `TargetFilter` has this shape.
+ * nobody's ally, so it counts as an enemy. The abilities' `TargetFilter` is a subset of this
+ * shape; 05 §3 adds `families` to it at its first use.
  */
 export type AreaFilter = {
   readonly team: 'enemies' | 'allies' | 'all';
   /** Whether the attacker itself may be hit; absent = no. */
   readonly includeSelf?: boolean;
+  /** The entity families that may be hit (05 §3 `TargetFilter.families`); absent = every family. */
+  readonly families?: readonly string[];
 };
 
 /**

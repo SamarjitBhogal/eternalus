@@ -1,4 +1,5 @@
 import { Transform } from '../../components/Transform';
+import { loadTurrets } from '../../content/structures/loadTurrets';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import type { GameConfig } from '../../config/GameConfig.types';
 import { timelineFrameOf } from '../../config/timelineFrameOf';
@@ -89,6 +90,9 @@ export const setUp = (config: GameConfig = createDefaultGameConfig()) => {
     createDefaultEntityRegistry(),
     STRUCTURE_DEFINITIONS,
     new IdGenerator(1000),
+    null,
+    null,
+    loadTurrets(30).ammo,
   );
   /** Adds a dark structure on lane-0, indexes the structures and puts `memberId` in a light horde. */
   const objective = (definitionId: string, x: number, memberId: string, progress = 0) => {

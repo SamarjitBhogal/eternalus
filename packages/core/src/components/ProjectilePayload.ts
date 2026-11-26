@@ -47,4 +47,12 @@ export class ProjectilePayload {
     this.impact = data.impact;
     this.origin = { x: data.origin.x, y: data.origin.y };
   }
+
+  /**
+   * The radius of the blast it bursts in where it lands (its attack's `projectile.splash`,
+   * DEC-342), or `null` for a shot with no blast.
+   */
+  public get blastRadius(): number | null {
+    return this.impact.attack.projectile.splash?.radius ?? null;
+  }
 }

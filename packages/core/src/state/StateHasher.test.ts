@@ -336,6 +336,34 @@ describe('StateHasher', () => {
     expect(later).not.toBe(ending);
   });
 
+  it("changes with a shot's range and where it slows, which an arc shot cuts to its aim point (DEC-342)", () => {
+    const hashWith = (range: number, slowFrom: number, shortenTo?: number): number => {
+      const { state, soldier } = stateWithSoldier();
+      soldier.addComponent(
+        new ProjectilePayload({
+          ownerId: 'a',
+          team: 'light',
+          ownerLevel: 1,
+          source: { attackerId: 'a', kind: 'weapon', definitionId: 'magus-staff' },
+          targetId: null,
+          impact: { kind: 'weapon', attack: SHOT_ATTACK },
+          origin: { x: 1, y: 0 },
+        }),
+      );
+      const flight = new ProjectileFlight(range, slowFrom, 5, true);
+      if (shortenTo !== undefined) flight.shortenTo(shortenTo);
+      soldier.addComponent(flight);
+      return hasher.hash(state);
+    };
+    const base = hashWith(100, 80);
+
+    expect(hashWith(100, 80)).toBe(base);
+    expect(hashWith(100, 60)).not.toBe(base);
+    expect(hashWith(100, 80, 90)).not.toBe(base);
+    // Cut below where it slows, both change: the same as a shot authored that way.
+    expect(hashWith(100, 80, 50)).toBe(hashWith(50, 50));
+  });
+
   it('adds a speed limit only once one is set, so an entity without one hashes as before', () => {
     const { state, soldier } = stateWithSoldier();
     const movement = soldier.getComponent(Movement);

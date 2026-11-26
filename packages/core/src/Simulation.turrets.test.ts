@@ -300,14 +300,14 @@ describe('Simulation wall turrets', () => {
     expect(shots).toBe(0);
   });
 
-  it('skips a nearer enemy behind a cliff for one it has a line of fire to, and sees past its own pylon (DEC-334)', () => {
+  it('takes the nearest enemy behind a cliff and hits it with an arc bolt launched inside its own pylon: an arc bolt needs no line of fire (DEC-342)', () => {
     const match = setUp();
     const { state, run, turretOf } = match;
     const feature = LIGHT_TURRET;
     if (feature === undefined) throw new Error('The generated map has no light turret.');
     const turretId = turretOf(feature)?.id ?? '';
     const hidden = spawnDark(match, 'light-mob', 'training-dummy', outside(feature, 2));
-    const open = spawnDark(match, 'light-mob', 'training-dummy', outside(feature, 4, 60));
+    spawnDark(match, 'light-mob', 'training-dummy', outside(feature, 4, 60));
     const centre = state.entities.placeOf(turretId)?.position ?? { x: 0, y: 0 };
     const pylon = state.entities.outlineOf(turretId)?.polygons ?? [];
     const hit: string[] = [];
@@ -316,17 +316,15 @@ describe('Simulation wall turrets', () => {
     });
     run(COUNTDOWN + 3);
 
-    // The nearer dummy ranks first; the cliff stops its line, so the turret takes the open one.
+    // The nearer dummy ranks first, and the cliff does not stop an arc bolt: the turret takes it.
     expect(isPointInAnyPolygon(centre, pylon)).toBe(true);
-    expect(state.ai.get(turretId)?.memory).toEqual({ targetId: open });
-    expect(state.entities.attackAimOf(turretId)).toEqual(state.entities.placeOf(open)?.position);
+    expect(state.ai.get(turretId)?.memory).toEqual({ targetId: hidden });
+    expect(state.entities.attackAimOf(turretId)).toEqual(state.entities.placeOf(hidden)?.position);
     run(DEFAULT_BOLT.attack.interval);
-    expect(hit).toContain(open);
-    expect(hit).not.toContain(hidden);
-    expect(state.entities.get(hidden)?.getComponent(Health).current).toBe(DUMMY_HEALTH);
+    expect(hit).toContain(hidden);
   });
 
-  it('drops a held target whose line of fire closes behind a cliff, as one that leaves range', () => {
+  it('keeps a held target that moves behind a cliff, because its arc bolt needs no line of fire (DEC-342)', () => {
     const match = setUp();
     const { state, run, turretOf } = match;
     const feature = LIGHT_TURRET;
@@ -335,18 +333,12 @@ describe('Simulation wall turrets', () => {
     const dummyId = spawnDark(match, 'light-mob', 'training-dummy', outside(feature, 4, 60));
     run(COUNTDOWN + 3);
     expect(state.ai.get(turretId)?.memory).toEqual({ targetId: dummyId });
-    let shots = 0;
-    state.events.on('entity-spawned', ({ kind }) => {
-      if (kind === 'projectile') shots += 1;
-    });
 
     state.entities.get(dummyId)?.getComponent(Transform).moveTo(outside(feature, 2));
     run(4);
 
-    expect(state.ai.get(turretId)?.memory).toEqual({ targetId: null });
-    expect(state.entities.attackAimOf(turretId)).toBeNull();
-    run(DEFAULT_BOLT.attack.interval);
-    expect(shots).toBe(0);
+    expect(state.ai.get(turretId)?.memory).toEqual({ targetId: dummyId });
+    expect(state.entities.attackAimOf(turretId)).not.toBeNull();
   });
 
   it('leads a unit that crosses its range at constant velocity, and its bolt hits it (predictive aim)', () => {
