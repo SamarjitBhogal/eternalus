@@ -70,26 +70,21 @@ export class StatusEffectApplier {
    * `status-expired`. Returns whether it was active.
    */
   public remove(state: GameState, targetId: EntityId, statusId: string): boolean {
-    const target = state.entities.get(targetId);
-    const statuses = target?.findComponent(StatusEffects);
+    const statuses = state.entities.get(targetId)?.findComponent(StatusEffects);
     const active = statuses?.active.find((status) => status.definition.id === statusId);
-    if (target === undefined || statuses === undefined || active === undefined) {
+    if (statuses === undefined || active === undefined) {
       return false;
     }
     const { sourceId, definition } = active;
-    const slot = target.findComponent(Abilities)?.slot('granted');
     statuses.remove(statusId);
-    if (StatusEffectApplier.holdsGrantOf(slot, definition)) {
-      StatusEffectApplier.regrant(slot, statuses);
-    }
-    state.events.emit('status-expired', { entityId: targetId, statusId, sourceId });
+    StatusEffectApplier.ended(state, targetId, statuses, definition, sourceId);
     return true;
   }
 
   /**
    * Takes `count` stacks off status `statusId` on `targetId` (a lost minion level) with one event:
-   * `status-expired` when no stack is left, else `status-stacks-lost` with the stacks left.
-   * Returns whether it was active.
+   * `status-stacks-lost` with the stacks left, or, when none is left, the end `remove` gives
+   * (`granted` slot, `status-expired`). Returns whether it was active.
    */
   public removeStacks(
     state: GameState,
@@ -98,13 +93,14 @@ export class StatusEffectApplier {
     count: number,
   ): boolean {
     const statuses = state.entities.get(targetId)?.findComponent(StatusEffects);
-    const sourceId = statuses?.active.find((status) => status.definition.id === statusId)?.sourceId;
-    const stacks = sourceId === undefined ? undefined : statuses?.removeStacks(statusId, count);
-    if (sourceId === undefined || stacks === undefined) {
+    const active = statuses?.active.find((status) => status.definition.id === statusId);
+    if (statuses === undefined || active === undefined) {
       return false;
     }
+    const { sourceId, definition } = active;
+    const stacks = statuses.removeStacks(statusId, count) ?? 0;
     if (stacks === 0) {
-      state.events.emit('status-expired', { entityId: targetId, statusId, sourceId });
+      StatusEffectApplier.ended(state, targetId, statuses, definition, sourceId);
     } else {
       state.events.emit('status-stacks-lost', { entityId: targetId, statusId, sourceId, stacks });
     }
@@ -157,6 +153,26 @@ export class StatusEffectApplier {
     if (isRegrantDue) {
       StatusEffectApplier.regrant(slot, statuses);
     }
+  }
+
+  /**
+   * Ends status `definition`, which has just left `statuses` on `targetId` before its time
+   * (`remove`, or `removeStacks` with no stack left): when the holder's `granted` slot held its
+   * grant, the slot takes the grant of the last status still active, or empties. Then it emits
+   * `status-expired`.
+   */
+  private static ended(
+    state: GameState,
+    targetId: EntityId,
+    statuses: StatusEffects,
+    definition: StatusEffectDefinition,
+    sourceId: EntityId | null,
+  ): void {
+    const slot = state.entities.get(targetId)?.findComponent(Abilities)?.slot('granted');
+    if (StatusEffectApplier.holdsGrantOf(slot, definition)) {
+      StatusEffectApplier.regrant(slot, statuses);
+    }
+    state.events.emit('status-expired', { entityId: targetId, statusId: definition.id, sourceId });
   }
 
   /** Whether `slot` (the holder's `granted` slot) holds the ability `definition` grants. */

@@ -63,6 +63,12 @@ const legendOf = (sim: Simulation, snapshot: Snapshot, team: PlayableTeam) => {
 /** How far either side of the gem the walker below steps south to go round it (DEC-346). */
 const ROUND_THE_GEM = 15;
 
+/** One step from `from` towards `to`; near the gem (DEC-346) it goes south, to slide round it. */
+const towards = (from: Vec2, to: Vec2): Vec2 => ({
+  x: Math.sign(to.x - from.x),
+  y: Math.abs(from.x - (cathedral?.x ?? 0)) < ROUND_THE_GEM ? 1 : Math.sign(to.y - from.y),
+});
+
 /**
  * Steps until `done` holds (at most `limit` ticks), the light Legend walking at the dark one and
  * hitting it. The gem between the start points blocks movement (DEC-346), so near it the walker
@@ -73,12 +79,7 @@ const fightUntil = (sim: Simulation, done: (snapshot: Snapshot) => boolean, limi
     const snapshot = sim.snapshot();
     const { id: light, legend: from } = legendOf(sim, snapshot, 'light');
     const { id: dark, legend: to } = legendOf(sim, snapshot, 'dark');
-    const at = { x: from.transform?.x ?? 0, y: from.transform?.y ?? 0 };
-    const isByTheGem = Math.abs(at.x - (cathedral?.x ?? 0)) < ROUND_THE_GEM;
-    const direction = {
-      x: Math.sign((to.transform?.x ?? 0) - at.x),
-      y: isByTheGem ? 1 : Math.sign((to.transform?.y ?? 0) - at.y),
-    };
+    const direction = towards(from.transform ?? { x: 0, y: 0 }, to.transform ?? { x: 0, y: 0 });
     sim.enqueueCommand({ type: 'move', actorId: light, direction });
     sim.enqueueCommand({ type: 'attack-target', actorId: light, targetId: dark });
     sim.step();
@@ -93,10 +94,6 @@ const fightUntil = (sim: Simulation, done: (snapshot: Snapshot) => boolean, limi
 const walkUpTo = (sim: Simulation, distance: number, limit = 6000) => {
   const light = sim.humanLegendIdOf('light') ?? '';
   const dark = sim.humanLegendIdOf('dark') ?? '';
-  const towards = (from: Vec2, to: Vec2): Vec2 => ({
-    x: Math.sign(to.x - from.x),
-    y: Math.abs(from.x - (cathedral?.x ?? 0)) < ROUND_THE_GEM ? 1 : Math.sign(to.y - from.y),
-  });
   for (let i = 0; i < limit; i += 1) {
     const snapshot = sim.snapshot();
     const from = legendOf(sim, snapshot, 'light').legend.transform ?? { x: 0, y: 0 };
