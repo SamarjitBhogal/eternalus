@@ -522,11 +522,12 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   A death by the gem's statuses counts for the victim's last enemy damager within the assist
   window, or nobody (DEC-346): `KillCredit`, called by `DamagePipeline` before `entity-died`, so
   every reader of the killer agrees; the last enemy hit is the hashed `LastEnemyHit` component.
-  Weapons reach the gem today, and so does an ability area that overlaps the gem's circle: it
-  strikes its caster too (`TargetQuery`, DEC-292). The player's aim picks the gem before the
-  plinth (`findGemAt` before `findMapObjectAt`). The projectile PR (#148) stops a shot on static shapes: whichever of
-  #132 and #148 merges second must let a shot aimed at the gem reach the gem's circle before the
-  plinth around it (and make a stray shot strike it, DEC-292: contact "by accident" strikes).
+  Weapons reach the gem today, and so does a damaging ability area (not an ally-only one) that
+  overlaps the gem's circle: it strikes its caster too (`TargetQuery`, DEC-292). The player's aim
+  picks the gem before the plinth (`findGemAt` before `findMapObjectAt`). The projectile PR (#148)
+  stops a shot on static shapes: whichever of #132 and #148 merges second must let a shot aimed
+  at the gem reach the gem's circle before the plinth around it (and make a stray shot strike it,
+  DEC-292: contact "by accident" strikes).
   Bots and minions never pick the gem as a target: perception sees only units, and a lane's
   objectives are playable-team structures only (`LaneStructures`). The gem's content id is
   `cathedral`, because `spawnStructures` builds one structure per map feature, matched by the
