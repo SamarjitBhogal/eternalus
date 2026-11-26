@@ -34,6 +34,10 @@ describe('Footprint', () => {
     expect(new Footprint([floor]).solid).toEqual([floor]);
     expect(new Footprint([floor], { isWalkOn: true }).walkOn).toEqual([floor]);
     expect(new Footprint([floor], { isWalkOn: true }).solid).toEqual([]);
+    // A shot flies over a walk-on outline unless it aims at it (DEC-322 (1)), and stops on a
+    // solid one: a structure's footprint has no solid polygon that shots cross (Q104-9).
+    expect(new Footprint([floor]).shotsCross).toEqual([]);
+    expect(new Footprint([floor], { isWalkOn: true }).shotsCross).toEqual([]);
   });
 
   it('adds the solid polygons of its other body objects to a walk-on outline (DEC-373 (1))', () => {

@@ -37,9 +37,11 @@ import type { EntityId } from './EntityStore.types';
  * 2. A body that takes no damage now (`EntityStore.takesNoDamage`) is never hit: it takes no
  *    damage and runs no on-hit step (DEC-317 addendum). A shot stops on it (`ProjectileSystem`).
  *
- * It also holds the one rule for which bodies stop a shot (`stopsShot`), which `ProjectileSystem`
- * flies shots by and `LineOfFire` predicts them by. Ids come back in `compareById` order, so every
- * run hits in the same order. Stateless.
+ * It also holds the one rule for which bodies stop a shot (`stopsShot`, `shotPolygonsOf`), which
+ * `ProjectileSystem` flies shots by and `LineOfFire` predicts them by. A shot not aimed at a body
+ * flies over more polygons than a swing passes: also the solid polygons shots cross
+ * (`Outline.shotsCross`: a camp fire is not walked on, but a shot flies over it, HC-Q105). Ids come
+ * back in `compareById` order, so every run hits in the same order. Stateless.
  *
  * ponytail: a walk over the store, not the `SpatialHash`, O(entities) per area. Only Legends
  * sweep and casts are rare. Ceiling: many sweepers (mob weapons); upgrade to a `SpatialHash`
@@ -49,34 +51,43 @@ export class AreaHitQuery {
   /**
    * Whether `shot` stops on `body` when it touches it (DEC-317 addendum, DEC-322 (1)): the body is
    * alive and still in the world, not the shot's owner and not on its team (no team counts as
-   * enemy), and, for an outline, has a polygon that stops the shot (`shotPolygonsOf`), so a shot
-   * flies over the ground units stand on. A body that takes no damage now
-   * (`EntityStore.takesNoDamage`) stops it too, and nothing lands on it. The one rule by which
-   * `ProjectileSystem` flies a shot and `LineOfFire` predicts it.
+   * enemy), and the shot can touch it: for an outline, it has a polygon that stops the shot
+   * (`shotPolygonsOf`); for a body that is only its collider circle, its collider does not let
+   * shots fly over (`Collider.canShotsFlyOver`: a forest camp's home, HC-Q115) or the shot aims at
+   * it (`shot.targetId`). So a shot not aimed at the body flies over the ground units stand on, a
+   * camp fire and a forest camp's home (HC-Q105), and stops on the Stronghold's outer walls and
+   * throne (Q104-9). A body that takes no damage now (`EntityStore.takesNoDamage`) stops it too,
+   * and nothing lands on it. The one rule by which `ProjectileSystem` flies a shot and
+   * `LineOfFire` predicts it.
    */
   public static stopsShot(entities: EntityStore, shot: ShotAim, body: ShotStopBody): boolean {
-    const { entity, health, membership, outline } = body;
+    const { entity, health, membership, outline, collider } = body;
     return (
       !health.isDead &&
       entity.id !== shot.ownerId &&
       membership?.team !== shot.team &&
-      (outline === null || AreaHitQuery.shotPolygonsOf(shot, body).length > 0) &&
+      (outline === null
+        ? collider?.canShotsFlyOver !== true || entity.id === shot.targetId
+        : AreaHitQuery.shotPolygonsOf(shot, body).length > 0) &&
       entities.has(entity.id)
     );
   }
 
   /**
    * The polygons of `body`'s outline that `shot` can touch it on (DEC-322 (1)): every one when the
-   * shot aims at the body (`shot.targetId`), else only the solid ones (a fort, the Stronghold's
-   * outer walls and throne, DEC-373 (1)), so a shot flies over a walk-on floor. None for a body
-   * that is only its collider circle.
+   * shot aims at the body (`shot.targetId`). Else only the solid ones that shots do not cross (a
+   * fort, the Stronghold's outer walls and throne, DEC-373 (1)), so a shot flies over a walk-on
+   * floor and over a camp fire (`Outline.shotsCross`, HC-Q105, Q104-9). None for a body that is
+   * only its collider circle.
    */
   public static shotPolygonsOf(
     shot: ShotAim,
     { entity, outline }: ShotStopBody,
   ): readonly Polygon[] {
     if (outline === null) return [];
-    return AreaHitQuery.hitPolygonsOf(outline, entity.id === shot.targetId);
+    const isAimed = entity.id === shot.targetId;
+    const polygons = AreaHitQuery.hitPolygonsOf(outline, isAimed);
+    return isAimed ? polygons : polygons.filter((polygon) => !outline.shotsCross.includes(polygon));
   }
 
   /**
@@ -136,12 +147,16 @@ export class AreaHitQuery {
   }
 
   /**
-   * The body whose walk-on polygons `attackerId` aims at with `point` under rule 1, which its shot
-   * then names as its target (`ProjectilePayload.targetId`), so the shot can hit it. Only enemy
-   * bodies (no team counts as enemy). When several walk-on outlines hold the point (a gate's
-   * passage is both the gate's outline and the gate map object's), a structure comes first, then
-   * the first by id, so a shot at the gate names the gate. A sweep still hits both (DEC-284 (2)).
-   * The palace floor is only the palace map object's (DEC-344 (4)).
+   * The body that `attackerId` aims at with `point` under rule 1, on a polygon that a shot not
+   * aimed at the body flies over: a walk-on polygon or an `Outline.shotsCross` one (a camp fire,
+   * HC-Q105, Q104-9). Its shot then names the body as its target (`ProjectilePayload.targetId`), so
+   * the shot can hit it. Only `RangedProjectileAttackStrategy` asks it, so it reads the shot rule's
+   * polygons, not only the walk-on ones. A solid polygon that stops every shot (the Stronghold's
+   * outer walls) does not name its body: the shot stops there anyway. Only enemy bodies (no
+   * team counts as enemy). When several such outlines hold the point (a gate's passage is both the
+   * gate's outline and the gate map object's), a structure comes first, then the first by id, so a
+   * shot at the gate names the gate. A sweep still hits both (DEC-284 (2)). The palace floor is
+   * only the palace map object's (DEC-344 (4)).
    *
    * @returns The body's id, or `null` when the point is on no such outline, on an enemy unit, or
    *   the attacker stands inside the outline or is unknown.
@@ -150,13 +165,14 @@ export class AreaHitQuery {
     const { team: attackerTeam, position: from } = AreaHitQuery.attackerIn(entities, attackerId);
     const aimed: EntityId[] = [];
     entities.forEach((entity) => {
-      const walkOn = entities.outlineOf(entity.id)?.walkOn ?? [];
+      const outline = entities.outlineOf(entity.id);
+      const crossed = outline === undefined ? [] : [...outline.walkOn, ...outline.shotsCross];
       if (
-        walkOn.length > 0 &&
+        crossed.length > 0 &&
         entity.hasComponent(Transform) &&
         AreaHitQuery.isAlive(entity) &&
         !AreaHitQuery.isAlly(entity, attackerTeam) &&
-        AreaHitQuery.isOnOutlineFromOutside(walkOn, point, from)
+        AreaHitQuery.isOnOutlineFromOutside(crossed, point, from)
       ) {
         aimed.push(entity.id);
       }

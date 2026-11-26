@@ -1,3 +1,4 @@
+import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { ProjectileFlight } from '../components/ProjectileFlight';
@@ -33,26 +34,30 @@ import type { System, SystemContext } from './System.types';
  * the `ProjectileImpact` of the payload's impact kind (a weapon's: its damage, fallen off over the
  * distance from the origin, then the owner's on-hit effects), the hit is recorded on the owner
  * (`EntityStore.recordHits`, DEC-322 (2)), and the shot is removed as `consumed`. A body that
- * takes no damage now (`EntityStore.takesNoDamage`: a forest camp, a wall or gate before its rule)
+ * takes no damage now (`EntityStore.takesNoDamage`: a wall or gate before its rule, a forest camp)
  * stops the shot like any body, but nothing lands: no damage, no on-hit step, no hit recorded
- * (DEC-317 addendum). A gate's outline is walk-on, so only a shot aimed at the gate stops on it.
+ * (DEC-317 addendum). A gate's outline is walk-on and shots fly over a forest camp's home
+ * (HC-Q105), so only a shot aimed at one of them stops on it.
  *
  * Which bodies stop a shot is `AreaHitQuery.stopsShot`, the rule `LineOfFire` predicts by: live
  * things with `Health` other than the owner and its team (neutral bodies count as enemies). A body
  * with an outline (`Footprint`, `MapObjectBody`) is hit on the polygons that stop the shot
- * (`AreaHitQuery.shotPolygonsOf`), at once when the shot starts inside one. A walk-on polygon (a
- * palace floor, a gate's passage) is hit only by a shot aimed at its entity (`payload.targetId`:
- * the locked target, or the body whose walk-on polygons the aim point was on, DEC-322 (1)), so a
- * shot flies over the ground units stand on; a solid polygon (a fort, the Stronghold's outer walls
- * and throne, DEC-373 (1)) stops every shot. A body is gathered once a tick, and each move tests
- * only those whose box it reaches.
+ * (`AreaHitQuery.shotPolygonsOf`), at once when the shot starts inside one. A shot aimed at the
+ * entity (`payload.targetId`: the locked target, or the body whose walk-on or `shotsCross`
+ * polygons the aim point was on, DEC-322 (1)) can hit each of its polygons. Any other shot flies
+ * over the walk-on polygons (a palace floor, a gate's passage) and the solid polygons shots cross
+ * (`Outline.shotsCross`: a camp fire's body, HC-Q105), and stops on every other solid polygon (a
+ * fort, the Stronghold's outer walls and throne, DEC-373 (1), Q104-9). A body with no outline is
+ * hit on its collider circle; a shot not aimed at it flies over it when its collider says so
+ * (`Collider.canShotsFlyOver`: a forest camp's home). A body is gathered once a tick, and each
+ * move tests only those whose box it reaches.
  * Ties go to the first body in store order, except that the shot's target takes a near tie
  * (`isTouchedBeforeWall` on the first body's contact): a palace wall whose face is the palace
  * floor's edge does not take a shot fired at the floor (DEC-317 (8)).
  *
- * A shot flies over a shape flagged `canShotsCross` (a lake, a lava river: the collision rule
+ * A shot flies over a shape flagged `canShotsCross` (a map builder sets it: the collision rule
  * skips it for a shot, so it is no wall here). A shot whose definition has `litOnHit` steps
- * catches fire when its move touches a shape flagged `canLightShots` (a lava river,
+ * catches fire when its move touches a shape flagged `canLightShots` (a map builder sets it,
  * `CollisionQuery.lightsShot`). When the move lands on a body, only the part before that body is
  * tested: a shot that crosses lava and lands in the same move lands lit, and one that lands before
  * it reaches the lava does not. It stays lit until it lands or ends. A lit shot that lands damage
@@ -210,6 +215,7 @@ export class ProjectileSystem implements System {
         health,
         membership: entity.findComponent(TeamMembership),
         outline: state.entities.outlineOf(entity.id) ?? null,
+        collider: entity.findComponent(Collider),
       });
     });
     this.isGathered = true;

@@ -30,4 +30,12 @@ export class MapObjectBody implements Outline {
   public get solid(): readonly Polygon[] {
     return this.object.isBlocking ? this.object.footprints : [];
   }
+
+  /**
+   * Its solid footprints when shots cross them (`MapObject.canShotsCross`: a camp fire, HC-Q105),
+   * so a shot not aimed at the object flies over it (`Outline.shotsCross`); none otherwise.
+   */
+  public get shotsCross(): readonly Polygon[] {
+    return this.object.canShotsCross === true ? this.solid : [];
+  }
 }

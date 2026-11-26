@@ -67,8 +67,10 @@ type BodySpec = {
   readonly outline?: readonly Polygon[];
   /** A team gives it a `TeamMembership`, `Health` and a collider: a body a shot can stop on. */
   readonly team?: Team;
-  /** With a team: it takes no damage now (a forest camp). */
+  /** With a team: it takes no damage now (a wall turret before its rule). */
   readonly isUnbreakable?: boolean;
+  /** With a team: its collider says a shot not aimed at it flies over it (a forest camp). */
+  readonly canShotsFlyOver?: boolean;
   /** With a team and an outline: units walk on it (a gate's passage). */
   readonly isWalkOn?: boolean;
   /** With an outline: the solid polygons of its other body objects (DEC-373 (1)). */
@@ -80,7 +82,7 @@ class Body extends Entity {
   public readonly kind = 'dummy';
   public readonly family = 'mob';
   protected installComponents(context: unknown): void {
-    const { at, radius, attack, outline, team, isUnbreakable, isWalkOn, solid } =
+    const { at, radius, attack, outline, team, isUnbreakable, isWalkOn, solid, canShotsFlyOver } =
       context as BodySpec;
     this.addComponent(new Transform(at, radius));
     if (attack !== undefined) this.addComponent(new Combat({ basic: attack }));
@@ -92,7 +94,9 @@ class Body extends Entity {
     if (team !== undefined) {
       this.addComponent(new TeamMembership(team));
       this.addComponent(new Health(100));
-      const collider = new Collider({ kind: 'circle', radius }, 'unit');
+      const collider = new Collider({ kind: 'circle', radius }, 'unit', false, {
+        canShotsFlyOver: canShotsFlyOver === true,
+      });
       collider.setUnbreakable(isUnbreakable === true);
       this.addComponent(collider);
     }
@@ -317,7 +321,7 @@ describe('LineOfFire', () => {
   });
 
   describe('bodies that take no damage (the rule that stops a shot, AreaHitQuery.stopsShot)', () => {
-    /** A light bot at the origin, a dark enemy at 10 and a neutral forest camp between them at 5. */
+    /** A light bot at the origin and a dark enemy at 10; a test adds a body between them at 5. */
     const scene = () => {
       const { state, add, shooter } = world([]);
       const bot = shooter({ x: 0, y: 0 }, RANGED, 'light');
@@ -325,26 +329,40 @@ describe('LineOfFire', () => {
       return { state, add, bot, enemy };
     };
 
-    it('is blocked by a camp that takes no damage between the bot and its enemy, and clear once it takes damage again (B9)', () => {
+    it('is blocked by a body that takes no damage between the bot and its enemy, and clear once it takes damage again (B9)', () => {
       const { state, add, bot, enemy } = scene();
-      const camp = add({ at: { x: 5, y: 0.5 }, radius: 1, team: 'neutral', isUnbreakable: true });
+      const body = add({ at: { x: 5, y: 0.5 }, radius: 1, team: 'neutral', isUnbreakable: true });
 
       expect(lineOfFire.isClear(state, bot, enemy)).toBe(false);
-      expect(lineOfFire.isClear(state, bot, camp)).toBe(true);
+      expect(lineOfFire.isClear(state, bot, body)).toBe(true);
 
-      state.entities.get(camp)?.getComponent(Collider).setUnbreakable(false);
+      state.entities.get(body)?.getComponent(Collider).setUnbreakable(false);
       expect(lineOfFire.isClear(state, bot, enemy)).toBe(true);
     });
 
-    it('is blocked when the shot width only grazes the camp, and clear past that width', () => {
+    it('is blocked when the shot width only grazes such a body, and clear past that width', () => {
       const grazed = scene();
       const passed = scene();
-      const camp = { radius: 1, team: 'neutral', isUnbreakable: true } as const;
-      grazed.add({ ...camp, at: { x: 5, y: 1 + SHOT_RADIUS / 2 } });
-      passed.add({ ...camp, at: { x: 5, y: 1 + SHOT_RADIUS * 1.5 } });
+      const body = { radius: 1, team: 'neutral', isUnbreakable: true } as const;
+      grazed.add({ ...body, at: { x: 5, y: 1 + SHOT_RADIUS / 2 } });
+      passed.add({ ...body, at: { x: 5, y: 1 + SHOT_RADIUS * 1.5 } });
 
       expect(lineOfFire.isClear(grazed.state, grazed.bot, grazed.enemy)).toBe(false);
       expect(lineOfFire.isClear(passed.state, passed.bot, passed.enemy)).toBe(true);
+    });
+
+    it("is not blocked by a forest camp's home, which shots fly over, and a camp aimed at is still clear (HC-Q105, HC-Q115)", () => {
+      const { state, add, bot, enemy } = scene();
+      const camp = add({
+        at: { x: 5, y: 0.5 },
+        radius: 1,
+        team: 'neutral',
+        isUnbreakable: true,
+        canShotsFlyOver: true,
+      });
+
+      expect(lineOfFire.isClear(state, bot, enemy)).toBe(true);
+      expect(lineOfFire.isClear(state, bot, camp)).toBe(true);
     });
 
     it('is not blocked by such a body that is the target, an ally, behind the target, or a walk-on outline it does not aim at', () => {

@@ -564,6 +564,12 @@ lava river) or when its blocking area holds the shot's launch point (DEC-334). T
 `NoMapObjectOverlapInvariant` does not flag a shot over a lake or a lava river, and still flags a
 unit in one.
 
+**2026-11-26 (branch `feat/shots-over-lava`; HC-Q105, DEC-373 correction, HC-Q115).** `Outline`
+now has `canShotsFlyOver` (a walk-on outline, or a map object flagged `canShotsCross`).
+`StructureDefinition.canShotsFlyOver` reaches the structure's `Collider`, so a shot not aimed at the
+structure flies over its body. The forest camps set it. It has no effect on a structure with a map
+footprint, because the outline rule comes first. The rule is in 10 §7.
+
 **Implementation status, 2026-11-26 (branch `feat/palace-stronghold-pool`, DEC-373 (1)).** The
 Stronghold's outer wall ring and its throne are the Stronghold's body, as a lane tower's fort is
 the tower's body (one pool, DEC-185 (B)). This changes the 2026-11-05 note above ("only towers
@@ -594,6 +600,12 @@ throne. From outside, an aim at the floor hits the palace map object. Its fort b
 round the outer ring. (3) The client draws a body object by its own state, not by its building's:
 a standing outer wall keeps its art and its health bar after the palace map object falls, and a
 ruined one keeps its ruins (`SceneryView`, `WorldObjectsView`).
+
+**2026-11-26, merge of `feat/shots-over-lava` into `feat/palace-stronghold-pool` (Q104-9).** The
+shots-over-lava note above names `Outline.canShotsFlyOver`. The merge replaces it with the
+polygon list `Outline.shotsCross`, so the Stronghold's outer walls and throne still stop every
+shot not aimed at it. `StructureDefinition.canShotsFlyOver` and `Collider.canShotsFlyOver` stay
+as that note says. The rule is in the 10 §12 note of the same merge.
 
 ## Related
 

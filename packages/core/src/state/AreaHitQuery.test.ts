@@ -3,10 +3,17 @@ import { describe, expect, it, vi } from 'vitest';
 import { Collider } from '../components/Collider';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
+import { MapObjectBody } from '../components/MapObjectBody';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import type { MapObject } from '../content/maps/mapObjects.types';
 import { Entity } from '../entities/Entity';
+import { MapGenerator } from '../map/MapGenerator';
+import { MapObjectBuilder } from '../map/MapObjectBuilder';
+import { MapPresentationBuilder } from '../map/MapPresentationBuilder';
 import type { Team } from '../teams/teams.types';
+import { isPointInAnyPolygon } from '../utils/geometry';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { AreaHitQuery } from './AreaHitQuery';
 import type { AreaAim, HitArea } from './AreaHitQuery.types';
@@ -24,6 +31,10 @@ type BodySpec = {
   readonly solid?: readonly Polygon[];
   readonly isUnbreakable?: boolean;
   readonly hasHealth?: boolean;
+  /** With an outline: it is a map object's (`MapObjectBody`) that shots cross (a camp fire). */
+  readonly canShotsCross?: true;
+  /** Its collider says a shot not aimed at it flies over it (a forest camp's home). */
+  readonly canShotsFlyOver?: boolean;
 };
 
 /** A body with a position, health, an optional team, collider and outline; a structure unless told. */
@@ -38,10 +49,23 @@ class Body extends Entity {
     this.addComponent(new Transform(spec.at, radius));
     if (spec.hasHealth !== false) this.addComponent(new Health(100));
     if (spec.team !== undefined) this.addComponent(new TeamMembership(spec.team));
-    const collider = new Collider({ kind: 'circle', radius }, 'unit');
+    const collider = new Collider({ kind: 'circle', radius }, 'unit', false, {
+      canShotsFlyOver: spec.canShotsFlyOver === true,
+    });
     collider.setUnbreakable(spec.isUnbreakable === true);
     this.addComponent(collider);
-    if (spec.outline !== undefined) {
+    if (spec.outline !== undefined && spec.canShotsCross === true) {
+      const footprints = spec.outline;
+      this.addComponent(
+        new MapObjectBody({
+          id: this.id,
+          kind: 'furniture',
+          footprints,
+          isBlocking: true,
+          canShotsCross: true,
+        }),
+      );
+    } else if (spec.outline !== undefined) {
       this.addComponent(
         new Footprint(spec.outline, {
           isWalkOn: spec.isWalkOn === true,
@@ -319,6 +343,13 @@ describe('AreaHitQuery.aimedBodyOf', () => {
     expect(query.aimedBodyOf(entities, attacker.id, { x: 5, y: 0 })).toBe('gate');
   });
 
+  it('names a camp fire under the aim point: a body shots fly over, though units do not walk on it (HC-Q105)', () => {
+    const { entities, add, attacker, query } = setUp();
+    add('fire', { at: { x: 5, y: 0 }, outline: [FLOOR], canShotsCross: true });
+
+    expect(query.aimedBodyOf(entities, attacker.id, { x: 5, y: 0 })).toBe('fire');
+  });
+
   it('names the first by id when two walk-on outlines hold the point', () => {
     const { entities, add, attacker, query } = setUp();
     add('palace-object', { at: { x: 5, y: 0 }, outline: [FLOOR], isWalkOn: true });
@@ -343,6 +374,7 @@ describe('AreaHitQuery.stopsShot', () => {
       health: entity.getComponent(Health),
       membership: entity.findComponent(TeamMembership),
       outline: entities.outlineOf(id) ?? null,
+      collider: entity.findComponent(Collider),
     });
   };
 
@@ -352,7 +384,7 @@ describe('AreaHitQuery.stopsShot', () => {
 
     expect(stops(scene, 'enemy', { at, team: 'dark' })).toBe(true);
     expect(stops(scene, 'teamless', { at })).toBe(true);
-    expect(stops(scene, 'camp', { at, team: 'neutral', isUnbreakable: true })).toBe(true);
+    expect(stops(scene, 'no-damage', { at, team: 'neutral', isUnbreakable: true })).toBe(true);
     expect(stops(scene, 'ally', { at, team: 'light' })).toBe(false);
     const owner = scene.attacker;
     expect(
@@ -364,9 +396,33 @@ describe('AreaHitQuery.stopsShot', () => {
           health: owner.getComponent(Health),
           membership: undefined,
           outline: null,
+          collider: owner.findComponent(Collider),
         },
       ),
     ).toBe(false);
+  });
+
+  it('stops a shot on a body shots fly over only when the shot aims at it: a camp fire, a forest camp (HC-Q105, HC-Q115)', () => {
+    const scene = setUp();
+    const fire = { at: { x: 5, y: 0 }, outline: [FLOOR], canShotsCross: true } as const;
+    const camp = {
+      at: { x: 5, y: 0 },
+      team: 'neutral',
+      isUnbreakable: true,
+      canShotsFlyOver: true,
+    } as const;
+
+    expect(stops(scene, 'fire', fire)).toBe(false);
+    expect(stops(scene, 'aimed-fire', fire, 'aimed-fire')).toBe(true);
+    expect(stops(scene, 'camp', camp)).toBe(false);
+    expect(stops(scene, 'aimed-camp', camp, 'aimed-camp')).toBe(true);
+  });
+
+  it('lets a sword hit a camp fire it sweeps, aimed or not: the melee rule reads walk-on only', () => {
+    const { add, find } = setUp();
+    add('fire', { at: { x: 5, y: 0 }, outline: [FLOOR], canShotsCross: true });
+
+    expect(find(holding('fire'))).toEqual(['fire']);
   });
 
   it('stops a shot on a walk-on outline only when the shot aims at it, and never on a dead or removed body (DEC-322 (1))', () => {
@@ -382,6 +438,7 @@ describe('AreaHitQuery.stopsShot', () => {
       health: dead.getComponent(Health),
       membership: undefined,
       outline: null,
+      collider: dead.findComponent(Collider),
     };
     expect(AreaHitQuery.stopsShot(scene.entities, shotAt(), body)).toBe(false);
     const removed = scene.add('removed', { at: { x: 3, y: 0 }, team: 'dark' });
@@ -390,6 +447,7 @@ describe('AreaHitQuery.stopsShot', () => {
       health: removed.getComponent(Health),
       membership: undefined,
       outline: null,
+      collider: removed.findComponent(Collider),
     };
     scene.entities.remove(removed.id, 'dev-removed');
     expect(AreaHitQuery.stopsShot(scene.entities, shotAt(), removedBody)).toBe(false);
@@ -412,6 +470,7 @@ describe('AreaHitQuery.stopsShot', () => {
         health: entity.getComponent(Health),
         membership: entity.findComponent(TeamMembership),
         outline: scene.entities.outlineOf(id) ?? null,
+        collider: entity.findComponent(Collider),
       });
     };
 
@@ -420,5 +479,95 @@ describe('AreaHitQuery.stopsShot', () => {
     expect(polygonsFor('stronghold', 'stronghold')).toEqual([FLOOR, WALL]);
     scene.add('round', { at: { x: 3, y: 0 }, team: 'dark' });
     expect(polygonsFor('round', null)).toEqual([]);
+  });
+});
+
+describe('AreaHitQuery: the shot rule on the seed 1 map (Q104-9, merge of #169)', () => {
+  const config = createDefaultGameConfig();
+  const map = new MapGenerator().generate(config, 1);
+  const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+  const objectOf = (id: string): MapObject => {
+    const object = mapObjects.find((candidate) => candidate.id === id);
+    if (object === undefined) throw new Error(`No map object ${id}`);
+    return object;
+  };
+  const STRONGHOLD = 'dark-stronghold';
+  /** The Stronghold's body objects: its outer walls and its throne (`partOf`, DEC-373 (1)). */
+  const PARTS = mapObjects.filter(({ partOf }) => partOf === STRONGHOLD);
+  const OUTER_WALL = objectOf(`${STRONGHOLD}-outer-boundary-0`);
+  const THRONE = objectOf('dark-palace-interior-throne');
+  /** The camp fire of a forest camp (HC-Q105): it blocks, and shots cross it. */
+  const FIRE = objectOf('west-camp-corridor-0-0-camp-fire');
+
+  /** The middle of an object's first footprint. */
+  const middleOf = ({ footprints }: MapObject): Vec2 => {
+    const points = footprints[0] ?? [];
+    return {
+      x: points.reduce((sum, { x }) => sum + x, 0) / points.length,
+      y: points.reduce((sum, { y }) => sum + y, 0) / points.length,
+    };
+  };
+  /** A spot `metres` east of the east edge of an object's box, level with its middle. */
+  const eastOf = (object: MapObject, metres: number): Vec2 => ({
+    x: Math.max(...object.footprints.flat().map(({ x }) => x)) + metres,
+    y: middleOf(object).y,
+  });
+  /** The `Footprint` a match builds for a structure's body (`Simulation.spawnStructures`). */
+  const footprintOf = (own: MapObject | undefined, parts: readonly MapObject[]): Footprint => {
+    const footprint = Footprint.ofBody(own, parts);
+    if (footprint === undefined) throw new Error('No footprint');
+    return footprint;
+  };
+  /** A light shot from the attacker, aimed at `targetId` or at no body. */
+  const shotAt = (targetId: string | null) =>
+    ({ ownerId: 'attacker', team: 'light', targetId }) as const;
+  /** What `ProjectileSystem` and `LineOfFire` hand the shot rule for a body. */
+  const shotBodyOf = (entities: EntityStore, entity: Entity) => ({
+    entity,
+    health: entity.getComponent(Health),
+    membership: entity.findComponent(TeamMembership),
+    outline: entities.outlineOf(entity.id) ?? null,
+    collider: entity.findComponent(Collider),
+  });
+
+  it('stops a shot not aimed at the Stronghold on its outer walls and throne, also when its outline holds a walk-on floor', () => {
+    const { entities, add } = setUp(eastOf(OUTER_WALL, 5));
+    // As built: the outer walls and throne, all solid (DEC-344 (4)).
+    const built = add('stronghold', { at: middleOf(THRONE), team: 'dark' });
+    built.addComponent(footprintOf(undefined, PARTS));
+    // The same parts beside the walk-on palace floor, as `Footprint.ofBody` builds them for a
+    // structure whose own object does not block: the outline a whole-outline flag gets wrong.
+    const mixed = add('mixed', { at: middleOf(THRONE), team: 'dark' });
+    mixed.addComponent(footprintOf(objectOf(STRONGHOLD), PARTS));
+    const parts = PARTS.flatMap(({ footprints }) => footprints);
+
+    for (const body of [built, mixed]) {
+      const shot = shotAt(null);
+      const polygons = AreaHitQuery.shotPolygonsOf(shot, shotBodyOf(entities, body));
+
+      expect(AreaHitQuery.stopsShot(entities, shot, shotBodyOf(entities, body))).toBe(true);
+      expect(polygons).toEqual(parts);
+      expect(polygons).toContain(OUTER_WALL.footprints[0]);
+      expect(polygons).toEqual(expect.arrayContaining([...THRONE.footprints]));
+    }
+    expect(AreaHitQuery.shotPolygonsOf(shotAt(null), shotBodyOf(entities, mixed))).not.toContain(
+      objectOf(STRONGHOLD).footprints[0],
+    );
+  });
+
+  it('lets a shot not aimed at a camp fire fly over it, and stops a shot aimed at it (HC-Q105)', () => {
+    const { entities, add, attacker, query } = setUp(eastOf(FIRE, 5));
+    const fire = add('fire', { at: middleOf(FIRE) });
+    fire.addComponent(new MapObjectBody(FIRE));
+    const onFire = middleOf(FIRE);
+
+    expect(isPointInAnyPolygon(onFire, FIRE.footprints)).toBe(true);
+    expect(AreaHitQuery.shotPolygonsOf(shotAt(null), shotBodyOf(entities, fire))).toEqual([]);
+    expect(AreaHitQuery.stopsShot(entities, shotAt(null), shotBodyOf(entities, fire))).toBe(false);
+    expect(query.aimedBodyOf(entities, attacker.id, onFire)).toBe('fire');
+    expect(AreaHitQuery.shotPolygonsOf(shotAt('fire'), shotBodyOf(entities, fire))).toEqual(
+      FIRE.footprints,
+    );
+    expect(AreaHitQuery.stopsShot(entities, shotAt('fire'), shotBodyOf(entities, fire))).toBe(true);
   });
 });

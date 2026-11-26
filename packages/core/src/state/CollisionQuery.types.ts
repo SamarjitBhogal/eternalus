@@ -22,8 +22,8 @@ export interface CollisionQuery {
 
   /**
    * `reach` for a shot launched at `launch`: a shape that does not stop a shot does not stop the
-   * sweep (`doesShapeStopShot`). That is a shape flagged `canShotsCross` (a map builder sets it on
-   * lakes and lava rivers, HC-Q89, DEC-345), and a shape whose blocking area (inside its polygon or
+   * sweep (`doesShapeStopShot`). That is a shape flagged `canShotsCross` (a map builder sets it,
+   * HC-Q89, DEC-345), and a shape whose blocking area (inside its polygon or
    * on its edge, inside none of its passages) holds `launch` (the launch-shape rule, DEC-334), so a
    * shot launched inside a wall turret's pylon and wall can leave them, also where the turret
    * stands on the joint of two wall pieces. A separate method, so a shot cannot leave out its
@@ -36,7 +36,7 @@ export interface CollisionQuery {
 
   /**
    * Whether a shot, a circle of `radius` that moves `delta` from `from`, touches a shape flagged
-   * `canLightShots` (a map builder sets it on lava rivers, HC-Q89, DEC-345) outside its passages,
+   * `canLightShots` (a map builder sets it, HC-Q89, DEC-345) outside its passages,
    * or starts in one. A passage (a bridge deck) does not light a shot, so a move along the deck
    * does not; a move that leaves the deck over the shape does. Read-only. `ProjectileSystem` lights
    * a shot it is true for, if the shot's definition lets it catch fire.

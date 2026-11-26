@@ -16,7 +16,7 @@ import type { Outline } from './Outline.types';
  * its outer walls and throne counts, DEC-217 (16); a gate's does not). A walk-on polygon
  * (`walkOn`: a gate's passage) is ground units stand on, so a shot flies over it unless it was
  * aimed at the structure (`ProjectileSystem`); a solid one (a fort, the Stronghold's outer walls)
- * is a body every shot can hit.
+ * is a body every shot can hit (`shotsCross` is empty).
  */
 export class Footprint implements Outline {
   /** Every polygon: the ones of the map object of the same id, then the `solid` extras. */
@@ -30,6 +30,13 @@ export class Footprint implements Outline {
 
   /** The solid polygons: the main ones unless they are walked on, and every `solid` extra. */
   public readonly solid: readonly Polygon[];
+
+  /**
+   * None: every solid polygon of a structure's body stops a shot not aimed at the structure. A
+   * `Footprint` does not read `MapObject.canShotsCross`; only a map object's own body does
+   * (`MapObjectBody.shotsCross`, a camp fire, HC-Q105).
+   */
+  public readonly shotsCross: readonly Polygon[] = [];
 
   /**
    * @param polygons - The outline of the map object of the same id, each with at least 3 corners.

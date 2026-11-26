@@ -64,6 +64,7 @@ describe('MapObjectBuilder', () => {
     );
     expect(fires.every((o) => o.canShotsCross === true && o.canLightShots === true)).toBe(true);
     expect(rest.some((o) => o.kind === 'rock' || o.kind === 'tree')).toBe(true);
+    expect(rest.some((o) => o.id.endsWith('-kitchen-hearth'))).toBe(true);
     expect(rest.every((o) => o.canShotsCross === undefined && o.canLightShots === undefined)).toBe(
       true,
     );

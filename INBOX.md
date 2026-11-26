@@ -881,6 +881,38 @@ Reply inline (`Decision: …`).
     arrows catch fire there". Built in `feat/shots-over-lava`. The three readings above got no
     note, so they stay as built. The palace kitchen hearths are not camp fires and still stop
     shots (DEC-373 (2)).
+  - Correction 2026-11-26 (critic Q105-C-1, C-2; DEC-373 correction): the first build set only the
+    flags, so the fire's own body and the forest camp's home still stopped shots; now a shot not
+    aimed at them flies over both (HC-Q115, HC-Q116).
+
+- [ ] **HC-Q115 — Does an arrow fly over the middle of a camp fire too? (`feat/shots-over-lava`,
+      follow-up to HC-Q105, DEC-373 correction 2026-11-26).** Asked on Owner Calls v100,
+      2026-11-26, by COMBAT-WEAPONS-ABILITIES-67. Each forest camp has an unseen home at the middle
+      of its camp fire. It takes no damage, and a body that takes no damage stopped every shot
+      (DEC-317 addendum (5), HC-Q77). Options: (A, built in this rework) an arrow that is not aimed
+      at the camp flies over the whole fire, middle included, and catches fire; an arrow aimed at
+      the camp still stops there, with no damage; (B) the arrow stops in the middle of the fire, as
+      before. Code names: `canShotsFlyOver` on the `forest-camp-*` structure definitions
+      (`structureCatalogue.ts`), `Collider.canShotsFlyOver`, `AreaHitQuery.stopsShot`.
+
+- [ ] **HC-Q116 — Do the fires in the palace kitchens also light arrows? (`feat/shots-over-lava`,
+      follow-up to HC-Q105).** Asked 2026-11-26 by COMBAT-WEAPONS-ABILITIES-67. Options: (A, today,
+      recommended) a kitchen hearth is furniture: it stops arrows and does not light them; (B) a
+      hearth works like a camp fire: shots fly over it, and an arrow catches fire there. Note: the
+      HC-Q105 card said that the camp fires were the only fires on the map. That was wrong: each
+      palace kitchen has a hearth. Not built either way; today's behaviour stays until you answer.
+      Code names: `<team>-palace-interior-kitchen-hearth` (`MapPalaceRoomsBuilder`).
+
+- [ ] **HC-B53 — Better than the design, not built: one place describes a body to the shot rule
+      (`feat/shots-over-lava`, #169, critic finding R3-2, 2026-11-26; COMBAT-WEAPONS-ABILITIES-70).**
+      No change for the player. To decide if a shot stops at a body, the game first writes down
+      what the body is (its shape, its collider, its team). Five places write that the same way:
+      two in the game and three in tests. Better: one function writes it, and the five places
+      call it; it can also hand over only "can shots fly over this body", not the whole collider.
+      Not built in #169: it changes the code's structure, and #169 has had its three critic
+      rounds. Build it in a small follow-up PR after #169 (A, recommended), or leave it (B)?
+      Code names: `ShotStopBody`, `ProjectileSystem.gather`, `LineOfFire.isBlocked`, a factory
+      such as `AreaHitQuery.bodyOf`.
 
 - [x] **HC-B41 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: two code tidy-ups in the shots-over-lava work (`feat/shots-over-lava`, HC-Q89,
