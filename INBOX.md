@@ -30,6 +30,24 @@ Reply inline (`Decision: …`).
       Options: (A) keep it (recommended, built); (B) undo it; (C) other (note). A, B or C?
   - **Answered 2026-11-23 by DEC-357** (Owner Calls page): "Keep it (built)".
 
+- [ ] **Dependency audit (re-run 2026-11-20): approve one upgrade PR for the `eslint` family and
+      `zod`, and say whether to turn on Dependabot alerts.** PR #113 already moved `vite` to 8.3.8
+      and `vitest` to 5.1.0. `npm audit` on `phase/3-sprint-3-work` (`5a7cc8dc`) now reports 10
+      findings (9 moderate, 1 high, none critical), all in dev tooling, none in the browser build or
+      the Duel server. High: `zod` 4.6.5 (memory exhaustion on oversized constrained collections,
+      GHSA-mrhx-c7xc-m3w5; fixed in 4.6.6), transitive through `knip` and
+      `eslint-plugin-react-hooks`. Moderate: `minimatch` 10.2.6 (glob DoS, GHSA-g3hv-75wg-m249),
+      reached through `eslint` 10.11.0 and `typescript-eslint` 8.70.1 and the
+      `@typescript-eslint/*` packages; the other 8 moderate findings are those packages. On
+      2026-11-13 npm proposed downgrades for this family; it now proposes upgrades (`eslint`
+      10.15.0, `typescript-eslint` 8.73.0, not semver-major, but past the exact versions pinned in
+      `package.json`, so `npm audit fix --force`), and `zod` 4.6.6 is a patch.
+      AGENTS.md says no new or upgraded dependencies without explicit human approval, and the
+      lockfile is never hand-edited. Approve: one dependency-upgrade PR for these (run by `npm`,
+      with `npm run check`)? Also: GitHub answers "Dependabot alerts are disabled for this
+      repository" (HTTP 403). Turn them on (repository settings, owner), or keep relying on a manual
+      `npm audit`?
+
 - [ ] **`refactor/tower-ruins-followups` critic (2026-11-14), better than the design — one item
       for the tidy PR (DEC-218), sign-off.** Not built: this branch stays small. (BT2) One `Band`
       type in `content/maps/maps.types.ts` (`readonly [number, number]`, a stretch of a lane as
@@ -60,6 +78,44 @@ Reply inline (`Decision: …`).
       PR #98's 2.5 m cells it reaches 30 m. Proposed: `pathSnapDistance` in world units, with the
       rings derived as `ceil(distance / cellSize)`. Whether 30 m still covers a Stronghold is a
       live question on #98.
+
+- [x] **Corner camp boss: new `TUNE` values, its display name, and better-than-design items B2
+      and N4 (Aryan Walanj, 2026-11-12; PR #91 `feat/bosses-p3`, your review S2, S3 and nit 3;
+      DEC-236).** (1) The values with no reference source, all `TUNE` in
+      `content/mobs/cornerBoss.ts`: footprint radius 1.5 m (about twice a heavy camp mob), attack
+      reach 2 m, max speed 2.5 m/s, acceleration 8 m/s², mass 12, vision radius 45 m (its aggro
+      radius, the ring's diameter, from `CORNER_CAMP_RING`). Its health (8,200), damage (205 per hit every 1.5 s) and team-wide XP (500,
+      DEC-237) are `balancing.md`'s MiniBoss row, sized for level-4 Legends, though this boss exists from
+      t = 0. Also `TUNE` (2026-11-17, PR #91 critic): the corner camp plan's leash tolerance
+      7 m (`content/structures/guardPlans.ts`), above DEC-181's 5.5 m, since this boss is bigger,
+      slower and reaches further than any guard (DEC-181's sum for it is about 6.08 m). Approve
+      them or give values. (2) The display name "Corner Camp Boss" (names are open
+      with HC-Q4). Approve or rename. (3) **B2 of the PR #91 body (your S2 calls it "your B2"; not your review's B2, the team XP), better than the design:** store the boss's health
+      and damage as multiples of `refHealth(level)` (10 × and 0.25 ×), as `balancing.md`
+      recommends, instead of absolute numbers. (4) **N4, better than the design:** the capture
+      point boss (`capturePointBoss.ts`, PR #99) uses the same MiniBoss row; once B2 is done, keep
+      that row in one shared constant, as `refHealth` multiples, that both bosses use. Approve
+      B2 and N4 (one follow-up PR), or drop them.
+  - **Answered 2026-11-20 by DEC-296** (PR #91 comments). (1) and (2) approved and cited in the
+    code; the mass follows the HC-S12 (d) answer, the same for both bosses: the corner boss has
+    the Sentinel's 6 (PR #91); the capture point boss gets 6 in the DEC-284 (3) follow-up PR.
+    (3) and (4) approved, not built yet: they go in the HC-B12 follow-up PR.
+
+- [x] **PR #91 critic (2026-11-13), better than the design: the ring size on the map feature
+      (Aryan Walanj, `feat/bosses-p3`, claudiodh's B4).** The corner camp's ring is now core
+      content (`CORNER_CAMP_RING`, `content/structures/cornerCampRing.ts`, radius 22.5 m; the
+      boss's vision and acquisition radius follow it: 45 m, the ring's diameter, since PR #91
+      B6, so the boss sees the whole ring from any post). The client draws it because core exports the constant and `Match` passes the size
+      into `MapView` (`featureSizes`). The critic proposes instead an optional ring radius on
+      `MapFeatureDefinition` (`content/maps/mapFeatureDefinitions.ts`), copied onto `MapFeature`
+      by the generator, which `MapView` draws from the map data it already gets. That drops the
+      new export, the constructor parameter and the size-0 placeholder in `FEATURE_STYLES`, and
+      the capture point's ring (still 45 m in `FEATURE_STYLES`) could use the same field. It also
+      suggested one shared camp post gap constant; done 2026-11-17 by the phase/3 merge
+      (`cornerCampRing.ts` reads `GUARD_LEASH.postGap`). Approve the ring field as a follow-up PR
+      (docs 06 and 07 updated with it), or keep the current wiring.
+  - **Answered 2026-11-20 by DEC-296** (PR #91 comments): the ring field is approved as a
+    follow-up PR, not built yet; the 22.5 m radius is approved.
 
 - [ ] **Teammate's boss spec (Aryan Walanj, 2026-11-11): amend reference 04?** A teammate's spec
       differs from `docs/reference/game-design/04-objectives-capture-points-and-bosses.md` in
@@ -133,7 +189,10 @@ Reply inline (`Decision: …`).
       are metres on the default 1600 × 900 world; on another world size `map/zoneArea.ts`
       stretches the floor and the leash does not follow.
 
-- [ ] AI56-F4 exemption for boss rows; claudiodh/Sam to confirm (asked on #99).
+- [x] AI56-F4 exemption for boss rows; claudiodh/Sam to confirm (asked on #99). Since
+      2026-11-17 (PR #91) the corner boss (`corner-boss`) is exempt too: it acquires across its
+      camp ring (`CORNER_CAMP_RING`), not leash less post gap (`aggroRules.test.ts`).
+  - **Answered 2026-11-20 by DEC-296** (PR #91 comments): the boss exemption is approved.
 
 - [ ] **Capture point boss: four better-than-design items (PR #99 critic, 2026-11-12) — Sam and
       the owner: approve or drop; no code change until then.** (1) **Zone lock read from state,
@@ -199,12 +258,20 @@ Reply inline (`Decision: …`).
       break. No spec gives the inner walls their own value. Should the `'wall'` features inside the
       Stronghold ring keep the WallSegment value, or get their own (which number)?
   - **Answered 2026-11-13 by DEC-247** (chat, PR #96). Not built yet (BUG-2).
+  - Where it lives: the inner walls are `'wall'` map objects built by
+    `packages/core/src/map/MapBuildingInteriorBuilder.ts` (cathedral partitions, chapel and apse
+    walls) and `packages/core/src/map/MapPalaceRoomsBuilder.ts` (palace room walls); their health
+    is the `wall` entry of `packages/core/src/content/maps/mapObjectDefinitions.ts`. A side's own
+    pieces refusing its attacks (DEC-121 (a), `combat/FriendlyFireStep.ts`) can also look slow.
 
 - [x] **BUG-3: minions attack obstacles (2026-11-12, PR #96, SCRUM-436).** Today a stuck unit
       paths around an obstacle (DEC-193); minions never attack obstacles or props. The playtest
       asked for minions to attack them. Keep DEC-193, or should minions attack obstacles (and
       which ones: props only, or blocking obstacles too)?
   - **Answered 2026-11-13 by DEC-248** (chat, PR #96). Not built yet (BUG-3).
+  - Where it lives: the lane minion's aggro rules (`content/ai/aggro/laneMinion.ts`) and
+    `ai/aggroRank.ts` rank only Legends, minions, turrets and the lane objective today; no rule
+    targets a prop or an obstacle.
 
 - [x] **`refactor/durations-at-load` critic (2026-11-14), better than the design — built, sign-off
       asked; no decision blocks the PR.** #86's healing system divided its two rates
@@ -247,6 +314,42 @@ Reply inline (`Decision: …`).
     better-than-design items (DEC-287): the loader also turns the held minute into ticks, so
     `createDefaultScoringRules` takes no tick rate, and the authored and loaded scoring types
     share one `weights` base.
+
+- [ ] **HC-B37 — Better than the design, built under your standing rule, sign-off asked: HC-Q95
+      critic (`feat/map-work-forts-towers`, 2026-11-23); no decision blocks the PR.**
+      Recorded as DEC-358 (owner decisions log). The map scenery is drawn on a 1600 × 900 sketch
+      and then stretched to the world. The scenery builder keeps a sketch copy of the map. In that
+      copy, the building positions were in sketch units, but the building outlines stayed in world
+      units. The outlines are now in sketch units too, so the copy uses one unit everywhere. No
+      scenery moves. The mountains that must stay off the Stronghold wall (HC-Q95) read the wall
+      outlines from that copy. A test on a stretched 2000 × 900 world fails when the outlines stay
+      in world units (deliberate break, recorded). Approve, or say to undo it. _Code:
+      `map/MapSceneryBuilder.ts` (constructor, `wallFootprints`)._
+
+- [x] **HC-Q95 — A corner mountain covers the end of the Stronghold wall
+      (`feat/map-work-forts-towers`, 2026-11-23; found by PR-REVIEW-ASSIST-34 in PR 4 (wall
+      turrets); card by PR-38-HELPER-51; Owner Calls card "HC-Q95 corner mountain on wall").**
+      At each end of the Stronghold wall, one corner mountain can grow over the wall. On every
+      test map (seeds 1 to 8), the north mountain covers the end turret; on 3 of 8 it also
+      covers the centre of the next turret. On some test maps the south mountain touches the
+      other end turret, and on 5 of 8 the north mountain also covers part of the lane 0 gate. The mountain blocks units and shots, so a turret inside it shoots
+      through rock and the lane 0 gate is narrower. Both sides are the same (mirrored). With PR 4,
+      every bolt of a turret that the mountain touches logs one error (seed 2: about one each
+      second for the whole match). In every option the cliffs behind the Stronghold stay, so the
+      back of the base stays closed. Options: (A) leave that mountain out: if a corner mountain
+      would touch the wall, a turret or a gate, the map does not draw it; the cliff behind is
+      still there (recommended; camps use a similar rule: a camp piece that cannot move clear of
+      a fort is left out); (B) make that mountain smaller until it is clear of the wall; (C) cut
+      the mountain in a straight line along the wall (new shape-cutting code, the largest
+      change). A, B or C? _Code: `map/MapMountainBuilder.ts` (`mountain-corner-nw-93-278` and
+      `mountain-corner-sw-93-278` and their mirrors); `MapSceneryBuilder.build` moves art under
+      the wall to the ground layer but keeps its block; the seal is `map/strongholdCliffs.ts`.
+      The bug is also on `phase/3-sprint-3-work`._
+  - **Answered 2026-11-23 by DEC-340** (Owner Calls page): "B: make that mountain smaller".
+    **Built** on `feat/map-work-forts-towers`: a mountain whose blocking mass touches the wall, a
+    turret or a gate is drawn a tenth smaller each time until it is clear. On the test maps (seeds
+    1 to 8, 3 and 5 lanes) a shrunk mountain keeps 40 % to 80 % of its width. A mountain that is
+    still not clear at a tenth of its size is left out; no test map needs this step.
 
 - [ ] **Lane minion acquisition radius raised to the leash (`feat/map-work-forts-towers`,
       DEC-323 (2), 2026-11-21) — FYI for SamarjitBhogal (minion owner); no decision needed.**
@@ -342,6 +445,25 @@ Reply inline (`Decision: …`).
   - **(2) done by DEC-234** (#85, 2026-11-09): the inside test runs once, in `aimPointOf`, which
     returns an `AimedAt` tag; `isInReach` and `facingPointOf` read it. The tidy PR builds no
     helper for it.
+- [ ] **Per-address connection cap and `X-Forwarded-For` (SCRUM-432 critic, 2026-11-12) — owner /
+      security, not introduced by this branch.** `ClientAddress.resolve` (`apps/server/src/transport/`)
+      takes the FIRST `X-Forwarded-For` entry when the peer is loopback. Behind `tailscale serve`
+      every peer is loopback, so if the proxy appends to a client-supplied header instead of
+      replacing it, a remote client can pick its own address and defeat the per-address cap (the
+      load bots do exactly this on purpose). Decide: take the LAST trusted hop, or verify what
+      `tailscale serve` does with the header.
+- [ ] **Duel creation cost and the 400-bot failure (SCRUM-432, PR #103 review S3, 2026-11-20) —
+      owner.** (1) The queue-load runs (`multiplayer-and-scalability-plan.md` §7, "Implementation
+      status: matchmaking under load") started about 8 Duels per second in one process (500
+      matches in 62.6 s). A one-off timing gave about 135 ms (132 to 147 ms) of synchronous work
+      per `CoreDuelSimulationFactory.create()`, probably map generation; not confirmed, the
+      timing file was not kept. ADR 0016 point 2 keeps Duels on the main thread until a measured
+      metric breaks the scalability research's ladder. Decide: (A) move Duel creation to a worker,
+      (B) pre-build Duels before pairs need them, or (C) accept it for now and re-measure in MP-5.
+      (2) 400 bots failed (2 to 8 joins never answered, two runs). The cause is unconfirmed: maybe
+      the `MAX_CONNECTIONS = 500` cap. DEC-37 asks for "hundreds or thousands" of players. Approve
+      a follow-up that finds the cause: an `onClose` handler in the bots, or a refusal counter in
+      the server.
 
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on

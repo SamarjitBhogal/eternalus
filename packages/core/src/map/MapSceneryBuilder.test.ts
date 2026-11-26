@@ -7,8 +7,9 @@ import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
 import { MapSceneryBuilder } from './MapSceneryBuilder';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
-import { doesPolygonOverlapRect } from '../utils/geometry';
+import { doesPolygonOverlapRect, doPolygonsOverlap } from '../utils/geometry';
 import { laneFortKeepOuts } from './fortInWorld';
+import { WALL_RING_KINDS } from './MapSceneryBuilder.constants';
 import { MapObjectBuilder } from './MapObjectBuilder';
 import { MapPresentationBuilder } from './MapPresentationBuilder';
 
@@ -131,6 +132,35 @@ describe('MapSceneryBuilder', () => {
     }
 
     expect(overlaps).toEqual([]);
+  });
+
+  it('keeps every mountain off the Stronghold wall, its turrets and gates, 3 and 5 lanes, across seeds and world sizes (HC-Q95)', () => {
+    const config = createDefaultGameConfig();
+    const touches: string[] = [];
+    // 2000 × 900 stretches the sketch in x only, so wall footprints need their own x and y scale.
+    const runs = [3, 5].flatMap((numLanes) => [
+      { numLanes },
+      { numLanes, worldWidth: 2000, worldHeight: 900 },
+    ]);
+    for (const run of runs) {
+      for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+        const map = new MapGenerator().generate({ map: { ...config.map, ...run } }, seed);
+        const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+        const mountains = objects.filter(({ id }) => /^(mountain|hill)-/.test(id));
+        for (const feature of map.features.filter(({ kind }) => WALL_RING_KINDS.has(kind))) {
+          const area = feature.footprint ?? [feature.position];
+          for (const mountain of mountains) {
+            if (mountain.footprints.some((shape) => doPolygonsOverlap(shape, area))) {
+              touches.push(
+                `${String(run.numLanes)} lanes, ${String(map.width)}x${String(map.height)}, seed ${String(seed)}: ${feature.id} ~ ${mountain.id}`,
+              );
+            }
+          }
+        }
+      }
+    }
+
+    expect(touches).toEqual([]);
   });
 
   it('keeps every camp whole: tents, fire and supplies stand in every camp, 3 and 5 lanes, across seeds (DEC-315)', () => {
