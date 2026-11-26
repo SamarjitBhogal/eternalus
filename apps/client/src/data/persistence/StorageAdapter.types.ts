@@ -35,7 +35,7 @@ export interface StorageTx {
 
 /**
  * The storage port (architecture 09 §7, 14 §4). Repositories and `PersistenceController` see
- * only this interface; `MemoryStorageAdapter` implements it now, `IndexedDbStorageAdapter` in S2.
+ * only this interface; `IndexedDbStorageAdapter` and `MemoryStorageAdapter` implement it.
  */
 export interface StorageAdapter {
   /** Opens the database, running every migration above the stored version. */

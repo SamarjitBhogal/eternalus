@@ -4,8 +4,8 @@ import type { DtoCheck } from '../dto/DtoCheck.types';
 import type { StorageKey } from '../StorageAdapter.types';
 
 /**
- * Reports a WARN-level event (a quarantined record). `main.tsx` routes it to the `Logger` port;
- * `data/` imports core types only, so it does not build log records itself.
+ * Reports a WARN-level event (a quarantined record). `game/createPersistence.ts` routes it to the
+ * `Logger` port; `data/` imports core types only, so it does not build log records itself.
  */
 export type WarnReporter = (body: string, attributes: LogAttributes) => void;
 

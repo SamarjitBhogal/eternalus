@@ -38,13 +38,6 @@ function openRaw(factory: IDBFactory, version: number): Promise<IDBDatabase> {
   });
 }
 
-/** One macrotask, so IndexedDB events queued behind the caller's microtasks have run. */
-function nextMacrotask(): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  });
-}
-
 describeStorageAdapter(
   'IndexedDbStorageAdapter (fake-indexeddb)',
   () => new IndexedDbStorageAdapter(new IDBFactory()),
@@ -110,9 +103,9 @@ describe('IndexedDbStorageAdapter over fake-indexeddb', () => {
     await expect(adapter.open(V2)).rejects.toMatchObject({ kind: 'blocked' });
 
     holder.close();
-    await nextMacrotask();
 
-    // The late connection was closed, so a raw delete is not blocked by it.
+    // IndexedDB runs the delete after the pending open. The late connection was closed, so the
+    // delete is not blocked by it.
     const deleted = await new Promise<boolean>((resolve) => {
       const request = factory.deleteDatabase(V1.name);
       request.onblocked = () => {

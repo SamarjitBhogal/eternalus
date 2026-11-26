@@ -2,11 +2,11 @@ import type { StorageFallback } from './FallbackStorageAdapter.types';
 import type { WarnReporter } from './repositories/readOrQuarantine.types';
 import type { StorageAdapter } from './StorageAdapter.types';
 
-/** What `main.tsx` injects into `PersistenceController`. */
+/** What `game/createPersistence.ts` (bound by `main.tsx`) injects into `PersistenceController`. */
 export type PersistenceControllerDeps = {
   /**
-   * `MemoryStorageAdapter` in the browser and in tests until the settings and loadout layout is
-   * final; then `IndexedDbStorageAdapter` in the browser (DEC-354 (5)).
+   * `IndexedDbStorageAdapter` in the browser (DEC-354 (5)); `MemoryStorageAdapter` or an
+   * `IndexedDbStorageAdapter` over `fake-indexeddb` in tests.
    */
   readonly adapter: StorageAdapter;
   /**
