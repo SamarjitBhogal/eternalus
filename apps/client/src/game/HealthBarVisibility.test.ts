@@ -60,6 +60,7 @@ const entity = (
   aether: null,
   area: null,
   capture: null,
+  gem: null,
 });
 
 const PLAYER = entity('me', 'legend', 'light');

@@ -10183,6 +10183,134 @@ Duel` > "starts both Legends at max level and spawns minions at their normal lev
   8, fail 0; then `prettier --check` and `npm run docs:check` with this entry.
 - Next step: the owner pushes the branch, then merges PR #135; then #137 needs a phase/3 merge.
 
+### 2026-11-14 — Phase 3 / sprint 3 work: the Cathedral gem — feat/cathedral-gem — Aryan Walanj + Claude Code
+
+- What was done: the Cathedral gem (DISC-11) is drawn at the Cathedral's centre as interior
+  scenery, presentation only: `cathedralGem()` in `MapBuildingInteriorBuilder` draws the
+  `cathedral-interior-gem` diamond from `BUILDING_GEOMETRY.cathedral.gem` (`TUNE` 5 × 8 half
+  extents) in `MAP_PALETTE.gemCrystal` (`TUNE` `#9fd3e3`). No entity, collider or map object, so
+  nothing can damage it. 07 Implementation status records the interim stand-in and what is not built yet (the
+  Cathedral structure and `Spawner`, lightning on attackers, the look over time, the
+  summon-greater-boss action). `INBOX.md` asks Sam about the gem's size, colour and visibility,
+  and offers the critic's better-than-design split of the Cathedral interior builder.
+- Tests: `MapBuildingInteriorBuilder.test.ts` "puts the gem at the centre of the Cathedral,
+  inside its roof, as scenery no unit can hit". Broken once by removing the `cathedralGem()`
+  call: "AssertionError: expected [] to have a length of 1 but got +0"; passes with it restored.
+- Pre-PR gate: critic (`architecture-reviewer`) approved, no blockers; its doc follow-ups are
+  applied (07 removal clause, two INBOX items). `/ponytail-review`: no cuts.
+- Checks run: npm run check on Aryan's laptop (Node 24.21.0): one run → EXIT=0, "Documentation
+  check passed." (count lines lost from scrollback). A second run failed only on timeouts on the
+  low-memory laptop: core "Tests 3 failed | 1334 passed (1337)" (Simulation.flowFields.test.ts
+  x2, diagnostics/replay.test.ts x1), client "Tests 1 failed | 1882 passed (1883)"
+  (createBrowserMatch.replay.test.ts), all "Test timed out", none in files this change touches.
+  The same code change on Linux (Node 24.22.3): EXIT=0, core "Tests 1337 passed (1337)",
+  protocol "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed
+  (79)".
+- Next step: Sam answers the gem INBOX item; the Cathedral structure carries the gem as its
+  `Spawner` (07 §1, phase 3) and the scenery piece is removed.
+
+### 2026-11-14 — Phase 3 / sprint 3 work: merge phase/3-sprint-3-work into the Cathedral gem — feat/cathedral-gem — Aryan Walanj + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` `88f5afd8` (#86) into
+  `feat/cathedral-gem`. Two conflicts resolved: 07 keeps `last-reviewed: 2026-11-14`;
+  `PROGRESS.md` keeps both sides, the phase branch's entries first and the gem entry last. No
+  code change.
+- Checks run: `MapBuildingInteriorBuilder.test.ts` "Tests 2 passed (2)"; `prettier --check` on
+  the two resolved files "All matched files use Prettier code style!"; `npm run docs:check`
+  "Documentation check passed."
+- Next step: push the branch and open the gem PR into `phase/3-sprint-3-work`.
+
+### 2026-11-15 — Phase 3 / sprint 3 work: the Cathedral gem is hittable but unbreakable — feat/cathedral-gem-hittable — Aryan Walanj + Claude Code
+
+- What was done: a neutral `Cathedral` structure stands on the gem (DISC-11): a `cathedral`
+  entry in `structureCatalogue.ts` (Camp pattern: `baseHealth` 1, breakability `never`,
+  `footprintRadius` `TUNE`, the drawn gem's half-width), `entities/structures/Cathedral.ts` and its
+  registry line. A Legend can target it; `BreakabilityStep` blocks every hit from its first tick.
+  The `cathedral-interior-gem` scenery stays the only drawing. No lightning, events or new
+  system. 07 Implementation status records it; `INBOX.md` holds the 11 lightning questions for
+  Sam, the general-vs-gem-only retaliation choice and the critic's catalogue DRY item. The
+  structure-list test now lists the Cathedral (`entity-3`).
+- Separate commit `6237a6e5` (test only): `Simulation.modifiers.test.ts` (Sam Holtzman's, from
+  `855684e0`) waited for a tower to fall with its team's minions on the lane, which depended on
+  entity id order: one extra entity (a training dummy, or the Cathedral) made it fail at 900 s
+  with every loss at 0 members. Its setup now sends a defending horde to each lane structure under
+  a quarter of its health; every assertion is unchanged. It passes on the base code, on the base
+  code with one extra entity, and with the Cathedral. Broken once (no enrage on a loss):
+  "AssertionError: expected [] to deeply equal [ 'entity-333', 'entity-334', …(6) ]".
+- Tests: `Cathedral.test.ts` (unbreakable from construction; on the drawn gem; a Legend's hits
+  are all blocked, same hash twice; enemy minions fighting on it never target it). Broken once
+  each: unbreakable only for `allied-buff-towers-down` → "expected false to be true"; the
+  registry line removed → all 4 fail; the three AI guards removed (unit-only index, neutral
+  filter, aggro rank) → "expected [ [ 'entity-44', 'entity-1' ], …(15) ] to deeply equal []".
+- Pre-PR gate: critic (`architecture-reviewer`) approved, no blockers; its three test nits are
+  applied and its better-than-design items are in `INBOX.md`. `/ponytail-review`: no cuts, so
+  `/ponytail` applied nothing.
+- Checks run: one `npm run check` → EXIT=0: core "Test Files 250 passed (250)", "Tests 1495
+  passed (1495)"; protocol "Tests 18 passed (18)"; client "Tests 1890 passed (1890)"; server
+  "Tests 79 passed (79)"; "Documentation check passed." Then `prettier --check` and
+  `npm run docs:check` on this file after this line was filled in.
+- Next step: Sam answers the lightning item; the gem strike follows on `feat/cathedral-gem-strike`.
+
+### 2026-11-18 — Phase 3 / sprint 3 work: merge phase/3 (`af54fe96`, PR #99) into the Cathedral gem — feat/cathedral-gem — Aryan Walanj + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `af54fe96` (PR #99 merged). Three
+  docs conflicted, no code: `INBOX.md` keeps both sides (the two gem items, then phase/3's
+  items); `docs/plan/PROGRESS.md` keeps both (phase/3's entries, then this branch's two gem
+  entries); doc 07 takes phase/3's `last-reviewed` (2026-11-16). `npm ci` installed phase/3's
+  lockfile (vite 8.3.8, vitest 5.1.0, PR #113); no dependency was added.
+- Checks run: one `npm run check` (2026-11-18 00:50-01:14) → exit 0: "All matched files use
+  Prettier code style!"; core "Test Files 267 passed (267)", "Tests 1638 passed (1638)";
+  protocol "Test Files 1 passed (1)", "Tests 29 passed (29)"; client "Test Files 298 passed
+  (298)", "Tests 2014 passed (2014)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)";
+  "✓ built in 3.15s"; "Documentation check passed."
+- Next step: merge this branch up the Cathedral stack (hittable first).
+
+### 2026-11-18 — Phase 3 / sprint 3 work: merge feat/cathedral-gem (phase/3 with PR #99) into the hittable gem — feat/cathedral-gem-hittable — Aryan Walanj + Claude Code
+
+- What was done: merged `feat/cathedral-gem` at `8d5c97c1` (phase/3 at `af54fe96`). Three docs
+  conflicted, no code: `INBOX.md` keeps both sides (this branch's lightning, retaliation and
+  "never damaged" items, then phase/3's items); `docs/plan/PROGRESS.md` keeps both in date
+  order; doc 07 takes the later `last-reviewed` (2026-11-16).
+- Checks run: one `npm run check` (2026-11-18 01:49-02:12) → exit 0: "All matched files use
+  Prettier code style!"; core "Test Files 268 passed (268)", "Tests 1642 passed (1642)";
+  protocol "Test Files 1 passed (1)", "Tests 29 passed (29)"; client "Test Files 298 passed
+  (298)", "Tests 2014 passed (2014)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)";
+  "✓ built in 3.09s"; "Documentation check passed."
+- Next step: merge this branch into `feat/cathedral-gem-strike`.
+
+### 2026-11-21 — Phase 3 / sprint 3 work: the Cathedral gem to DEC-291 and DEC-292 (PRs #124 and #132 as one) — feat/cathedral-gem-hittable — Aryan Walanj + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `54615afa` (`INBOX.md` and this file
+  conflicted; both sides kept). Built the owner's rulings DEC-291 and DEC-292, posted on #124 and
+  #132 on 2026-11-20. The gem is its own unbreakable body (`CathedralGem`, kind `cathedral-gem`,
+  in place of this branch's `Cathedral` structure). `DamagePipeline` emits `damage-blocked`.
+  `CathedralGemSystem` answers a blocked hit with an attacker, or a touch, with `gem-shock` (1 s
+  stun), `gem-burn` (12 every 0.2 s for 1.2 s, 72 in all) and `gem-warded` (5 s between touch
+  strikes), as environment damage, so they hurt neutrals too. The system is off in a Duel.
+  `CathedralGemState` (the holder and the glow) is hashed and sent in the snapshot as
+  `EntitySnapshot.gem`. `findGemAt` lets the player aim at the gem. `CathedralGemView` draws it
+  in the holder's colour, with a purple glow and pulse. The static scenery gem of #124 is
+  removed. Added the DEC-291 and DEC-292 rows and closed three `INBOX.md` items, with one new item
+  for the three rules DEC-292 leaves open. Docs 03, 04, 07 and 18 are updated. Broke once:
+  without the ward, every middle-lane opening minion died on the gem (`Simulation.flowFields`).
+  Also broke once: a blocking plinth broke the Cathedral entrance lane and the Duel, so it was
+  dropped. The first burn period of 0.25 s was not a whole number of ticks, so it is now 0.2 s.
+  Critic (`architecture-reviewer`): FAIL with one blocker (this entry) and should-fixes, all
+  applied. Ponytail review: ship; two small cuts applied.
+- Checks run: `npm run check` (2026-11-21 17:37-18:04) failed at core `test:coverage`. One failure
+  was real (a snapshot fixture without `gem`) and is fixed. The other six were timeouts under
+  coverage on this machine. The same steps in order, with core tests on `--maxWorkers=2`
+  (2026-11-21 18:15-18:49): format "All matched files use Prettier code style!", `check:no-js`,
+  lint, typecheck and knip exit 0; core "Test Files 1 failed | 279 passed (280)", "Tests 1 failed
+  | 1697 passed (1698)". The failure was `Simulation.duel.test.ts` "ends the match for the first
+  team to reach the kill target", "Test timed out in 60000ms". The same test times out on the base
+  (`feat/bosses-p3` at `2398b031`, 69.9 s) on this machine, and the gem system is off in a Duel.
+  Protocol "Tests 29 passed (29)"; client "Test Files 304 passed (304)", "Tests 2082 passed
+  (2082)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 2.68s";
+  "Documentation check passed."
+- Next step: CI on the pushed branch decides the Duel timeout. Close #124 in favour of #132. The
+  owner answers the three open gem rules in `INBOX.md`.
+
 ### 2026-11-15 — Phase 3 / minion plan M6b: checkpoint defenders (DEC-257, DEC-259) — feat/minion-m6b-checkpoint-defenders — SamarjitBhogal + Claude Code
 
 - What was done: the owner answered `INBOX.md` "Minion plan MVP gaps" (1) and (2) in chat

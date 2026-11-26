@@ -60,4 +60,9 @@ export type DefaultSystemPipelineOptions = {
    * match has map objects (`state.worldObjects`); the pipeline throws without it.
    */
   readonly ruinWall?: ObstacleDefinition;
+  /**
+   * How long an enemy hit still earns a gem kill (DEC-346): the assist window, from the scoring
+   * `Simulation` loads once for the match.
+   */
+  readonly assistWindowTicks: number;
 };

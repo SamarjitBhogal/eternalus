@@ -1,4 +1,6 @@
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { createDefaultDamageSteps } from '../combat/defaultDamageSteps';
+import { KillCredit } from '../combat/KillCredit';
 import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
@@ -10,6 +12,7 @@ import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
+import { CATHEDRAL_GEM } from '../content/structures/cathedralGem';
 import { loadSpawnWaves } from '../content/structures/loadSpawnWaves';
 import { OPENING_WAVE } from '../content/structures/spawnWaves';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
@@ -20,6 +23,7 @@ import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
 import type { Rect } from '../utils/geometry.types';
 import { CaptureSystem } from './CaptureSystem';
+import { CathedralGemSystem } from './CathedralGemSystem';
 import { CombatSystem } from './CombatSystem';
 import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
@@ -57,12 +61,12 @@ import { SystemPipeline } from './SystemPipeline';
  * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
  * progression (kill XP), minion veterancy, structure losses and breakability, spawning (none in a
  * Duel, SCRUM-445), enraging, out-of-combat healing (DEC-188), respawn (queues the dead Legends,
- * FR-051), death, capture points, the match director, then invariants last. Combat runs after
- * movement, so a unit with a target in reach faces it, not its own way (DEC-192). This is the one
- * place a system is added, at its position in the tick (architecture 02 §9). It builds the
- * match's one `DamagePipeline` and one `StatusEffectApplier` (with the status effects loaded for
- * this match's config) and hands them to the systems that need them, so a damage step applies to
- * every hit and every status event comes from one place.
+ * FR-051), death, capture points, the Cathedral gem, the match director, then invariants last.
+ * Combat runs after movement, so a unit with a target in reach faces it, not its own way
+ * (DEC-192). This is the one place a system is added, at its position in the tick (architecture
+ * 02 §9). It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the
+ * status effects loaded for this match's config) and hands them to the systems that need them, so
+ * a damage step applies to every hit and every status event comes from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
@@ -76,13 +80,20 @@ export class DefaultSystemPipeline extends SystemPipeline {
     hordes,
     structures = STRUCTURE_DEFINITIONS,
     ruinWall,
+    assistWindowTicks,
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
-    const damage = new DamagePipeline();
-    const veterancy = loadMinionVeterancy(tickRate);
-    const statuses = new StatusEffectApplier(
-      loadStatusEffects(tickRate, map.spawnTowersPerLane + map.buffTowersPerLane),
+    // A death by the gem counts for the victim's last enemy damager in the assist window (DEC-346).
+    const damage = new DamagePipeline(
+      createDefaultDamageSteps(),
+      new KillCredit(assistWindowTicks, CATHEDRAL_GEM.statusIds),
     );
+    const veterancy = loadMinionVeterancy(tickRate);
+    const loadedStatuses = loadStatusEffects(
+      tickRate,
+      map.spawnTowersPerLane + map.buffTowersPerLane,
+    );
+    const statuses = new StatusEffectApplier(loadedStatuses);
     const flowFields =
       hordes === undefined || state.world === null
         ? null
@@ -153,6 +164,11 @@ export class DefaultSystemPipeline extends SystemPipeline {
       ),
       new DeathSystem(),
       new CaptureSystem(state.config.match.capturePoints, tickRate, ZONE_LOCKING_MOBS),
+      // Off in a Duel: the world around the arena is switched off there (DEC-36), and the gem's
+      // Duel design waits on the owner's numbers (DEC-346, a follow-up PR).
+      ...(duelStarts === undefined
+        ? [new CathedralGemSystem(state, statuses, loadedStatuses, CATHEDRAL_GEM)]
+        : []),
       ...(hordes === undefined ? [] : [new ZoneLevelUpSystem(state, loadZoneLevelUp(tickRate))]),
       // After every level source, so kill and zone levels land on the tick they are announced.
       new MinionLevelSystem(state, statuses, progression.units, veterancy),
