@@ -20,10 +20,10 @@ export const TOWER_ORB = {
   },
   // TUNE: no reference value. The cap is the tower's reach from its centre (an orb starts there)
   // plus a lead margin: the aim point leads a moving target, so it can lie past the reach. The
-  // worst case is the fastest Legend (the Sentinel, 9 m/s) running straight away from the edge of
-  // the reach: `predictiveAim` with the launch delay puts that aim point about 20.9 m past the
-  // reach, so the margin is 21 m (pinned in `TurretController.laneTower.test.ts`). The shot flies
-  // only as far as its aim point (`isArc`).
+  // worst case is the fastest Legend in the catalogue running straight away at top speed from the
+  // edge of the reach, aimed by `predictiveAim` with the launch delay. The margin covers that aim
+  // point (pinned in `TurretController.test.ts`). The shot flies only as far as its aim point
+  // (`isArc`).
   range: LANE_TOWER_REACH_FROM_CENTRE + 21,
   slowFrom: LANE_TOWER_REACH_FROM_CENTRE + 21, // equal to range: an orb flies at full speed until it lands
   isArc: true, // DEC-366 (cards "ORB flight" and "ORB flight over cliffs"): it flies over walls and units

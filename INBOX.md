@@ -930,6 +930,17 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-26 (DEC-366): "As the wall turrets: if an enemy Legend hit one of your Legends
     near the tower in the last 3 s, shoot it at once; else the nearest enemy" (A, built).
 
+- [ ] **HC-Q114 — May a tower orb hit a Legend who runs out past 30 m? (`feat/tower-orbs`, card
+      "HC-Q114 orb lands past 30 m", tower-orb critic round 4 S3, 2026-11-26;
+      PR-REVIEW-ASSIST-46).** A lane tower picks targets only inside 30 m of its centre
+      (DEC-366). It aims an orb at the place where the target will be when the orb lands. When a
+      Legend at the edge runs straight away, that place is past 30 m, and the orb flies there, up
+      to its range cap (the reach plus the lead margin). Options: (A, built) the orb follows a
+      runner past 30 m, as the wall turret bolts do; (B) the orb never lands past 30 m, so a
+      Legend at the edge who runs straight away escapes the shot. The orb PR does not wait on the
+      answer: A needs no change, B changes one number. Code names: `range` of `TOWER_ORB` in
+      `content/projectiles/towerOrb.ts` (B sets it to the reach); `ai/predictiveAim.ts`.
+
 - [ ] **HC-B36 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: one health pool for a wall turret, and the wall turret code layout
       (`feat/wall-turrets`, PR 4, pre-PR gate round 1, 2026-11-22; PR-REVIEW-ASSIST-34).**

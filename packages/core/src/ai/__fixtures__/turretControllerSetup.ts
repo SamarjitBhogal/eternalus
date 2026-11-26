@@ -22,8 +22,10 @@ import { Unit } from '../../entities/Unit';
 import { Perception } from '../perception/Perception';
 import { TurretController } from '../TurretController';
 
-export const PROJECTILES = loadProjectiles(30);
-const TURRETS = loadTurrets(30);
+/** The tick rate every content table here is loaded at: speeds are in metres per tick of it. */
+export const TICK_RATE = 30;
+export const PROJECTILES = loadProjectiles(TICK_RATE);
+export const TURRETS = loadTurrets(TICK_RATE);
 /** A line of fire that is clear to every target. */
 export const CLEAR: LineOfFireQuery = { isClear: () => true };
 export const controller = new TurretController({
@@ -57,9 +59,9 @@ export const setUp = (
   );
   const units = new EntityFactory(
     createDefaultEntityRegistry(),
-    loadDefaultContent(30),
+    loadDefaultContent(TICK_RATE),
     undefined,
-    loadWeapons(30),
+    loadWeapons(TICK_RATE),
   );
   const structures = new EntityFactory(
     createDefaultEntityRegistry(),

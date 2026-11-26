@@ -5,9 +5,12 @@ import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { TurretState } from '../components/TurretState';
 import { AI_CADENCE } from '../content/ai/cadence';
+import { LEGEND_CLASSES } from '../content/legends/legendCatalogue';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import type { EntityId } from '../state/EntityStore.types';
 import { StateHasher } from '../state/StateHasher';
 import { TurretAmmoRule } from '../state/TurretAmmoRule';
+import { distance } from '../utils/geometry';
 import { AiSystem } from './AiSystem';
 import { predictiveAim } from './predictiveAim';
 import { ARC_LAUNCH_DELAY_TICKS } from './TurretController.constants';
@@ -19,6 +22,8 @@ import {
   PYLON,
   RANGE,
   setUp,
+  TICK_RATE,
+  TURRETS,
 } from './__fixtures__/turretControllerSetup';
 
 describe('TurretController', () => {
@@ -266,6 +271,36 @@ describe('TurretController', () => {
       },
     ]);
   });
+
+  it.each(['turret', 'spawner-tower', 'buff-tower'])(
+    'aims a %s shot inside the range cap of each of its ammo at the fastest Legend running away at top speed from the edge of its reach (the lead margin)',
+    (carrierId) => {
+      const fastest = LEGEND_CLASSES.all().reduce((best, legend) =>
+        legend.movementProfile.maxSpeed > best.movementProfile.maxSpeed ? legend : best,
+      );
+      const carrier = STRUCTURE_DEFINITIONS.get(carrierId);
+      const reach = TURRETS.profiles.get(carrier.aiProfile ?? '').range + carrier.footprintRadius;
+      const caps = (carrier.ammo ?? []).map(
+        (ammoId) => PROJECTILES.get(TURRETS.ammo.get(ammoId).attack.projectile.projectileId).range,
+      );
+      const { state, add, decide } = setUp(CLEAR, PROJECTILES, carrierId);
+      const target = add('dark', reach, fastest.id, fastest.id);
+      const movement = state.entities.get(target)?.getComponent(Movement);
+      const topSpeed = fastest.movementProfile.maxSpeed / TICK_RATE;
+      movement?.steer({ x: 1, y: 0 });
+      // A Legend reaches its top speed only after many seconds of running.
+      for (let tick = 0; tick < 10_000 && (movement?.speed ?? topSpeed) < topSpeed; tick += 1) {
+        movement?.advance();
+      }
+
+      const aim = decide().commands.find((command) => command.type === 'attack-aim')?.aim ?? null;
+
+      expect(movement?.speed).toBeCloseTo(topSpeed);
+      expect(aim).not.toBeNull();
+      expect(caps.length).toBeGreaterThan(0);
+      expect(distance(AT, aim ?? AT)).toBeLessThanOrEqual(Math.min(...caps));
+    },
+  );
 
   it('keeps its memory and sends nothing while it is dead', () => {
     const { turret, add, decide } = setUp();

@@ -55,6 +55,8 @@ const LANE_TOWER_FOOTPRINT = ((): number => {
 export const LANE_TOWER = {
   id: 'lane-tower',
   range: LANE_TOWER_REACH_FROM_CENTRE - LANE_TOWER_FOOTPRINT,
+  // DEC-366 (card "ORB targets"): "As the wall turrets", so the window and the override are the
+  // wall turret's; a change to them changes both.
   defendAllySeconds: WALL_TURRET.defendAllySeconds,
   overrides: WALL_TURRET.overrides,
   priority: ['nearest-enemy'], // DEC-366 (card "ORB targets")
