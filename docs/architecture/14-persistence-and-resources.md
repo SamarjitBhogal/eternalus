@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -530,8 +530,10 @@ it injects `MemoryStorageAdapter`, so nothing is saved past the session, because
 the layout changed before disk saves turn on (DEC-354 (5)). `feat/loadout-per-legend` moves the
 settings store to §7's `[profileId, group]` key, keys loadouts per Legend and then injects this
 adapter. An optional `fallback` (`StorageFallback`) makes `PersistenceController` wrap its adapter
-in `FallbackStorageAdapter`: when `open` fails, it reports the failure at ERROR, as §10 says, and
-continues on `MemoryStorageAdapter`; `blocked` falls back at once. No `degraded` status yet.
+in `FallbackStorageAdapter`: when `open` fails, it reports the failure through the fallback's
+`reportError` and continues on `MemoryStorageAdapter`; `blocked` falls back at once. `main.tsx`
+does not pass a `fallback` yet; when it does (`feat/loadout-per-legend`), `reportError` writes an
+ERROR record, as §10 says. No `degraded` status yet.
 §12's contract suite and the adapter's own cases (reads and writes, upgrade, newer version,
 blocked, abort, `versionchange`) run against a hand-written fake of the used subset
 (`__fixtures__/FakeIdb*.ts`); `fake-indexeddb` replaces it in `feat/loadout-per-legend`

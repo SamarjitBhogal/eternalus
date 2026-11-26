@@ -88,8 +88,10 @@ Reply inline (`Decision: …`).
       _Agent note (2026-11-25, PR #141):_ (1) Owner's answer (2026-11-23): "Change the layout
       first, then turn on disk saves" (DEC-354 (5)). `main.tsx` uses `MemoryStorageAdapter`
       again; the follow-up PR `feat/loadout-per-legend` changes the layout, then turns on
-      IndexedDB. (2) The fallback now logs at ERROR, as 14 §10's table says, so it becomes an
-      error report; say so if you want WARN. (3) and (4) stay open.
+      IndexedDB. (2) The fallback now reports through its own `reportError` callback, not the
+      WARN reporter. When `main.tsx` passes the fallback (in `feat/loadout-per-legend`), that
+      callback writes an ERROR record, as 14 §10's table says, so the failure becomes an error
+      report; say so if you want WARN. (3) and (4) stay open.
 
 - [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only

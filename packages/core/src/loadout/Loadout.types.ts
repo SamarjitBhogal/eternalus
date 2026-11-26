@@ -1,6 +1,6 @@
 /**
- * A slot of a `Loadout` (architecture 05 §12): only the primary weapon so far. Each slot the
- * `Loadout` gains joins this union, and `repairLoadout` maps it to its field.
+ * A slot of a `Loadout` (architecture 05 §12, DEC-354 (3)): only the primary weapon so far. Each
+ * slot the `Loadout` gains joins this union, and `repairLoadout` maps it to its field.
  */
 export type LoadoutSlot = 'primary-weapon';
 

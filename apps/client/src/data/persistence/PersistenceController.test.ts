@@ -92,7 +92,7 @@ describe('PersistenceController', () => {
     expect(await persistence.loadGuestId()).toBeNull();
   });
 
-  it('falls back to memory storage and reports it once at ERROR, not WARN (14 §10)', async () => {
+  it('falls back to memory storage and reports it once through reportError, not warn (14 §10)', async () => {
     const errors: string[] = [];
     const warnings: string[] = [];
     const persistence = new PersistenceController({

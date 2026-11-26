@@ -39,7 +39,7 @@ export const autoBuildLoadout = (classId: string, content: LoadoutContent): Load
 /**
  * `saved` with every slot that breaks a rule replaced by the auto-build's (reference 08: a saved
  * loadout naming content that no longer exists is repaired for the missing slot, never crashed
- * on), and the slots it replaced.
+ * on), and the slots it replaced, as `LoadoutSlot`s (DEC-354 (3)).
  *
  * @throws Error when the class itself does not exist (nothing to auto-build from).
  */
