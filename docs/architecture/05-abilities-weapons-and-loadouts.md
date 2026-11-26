@@ -703,7 +703,8 @@ one cast named after the weapon that fired it, credited to the owner (or to the 
 does: each projectile's `litOnHit` in `content/projectiles/` (authored in seconds, loaded in ticks
 by `loadProjectiles`, checked against the ability registry at boot by `checkAttackLinks`), and the
 statuses those steps apply in `content/status-effects/`. A shot with no `litOnHit` flies over such
-a shape and does not catch fire. A body with no `StatusEffects` takes the shot's damage and no status.
+a shape and does not catch fire. A body with no `StatusEffects` takes the shot's damage and no
+status.
 `ProjectileFlight` holds whether a shot is lit; the hash, `EntitySnapshot.projectile` and the
 client's look of the shot follow it.
 
@@ -821,16 +822,11 @@ ignores an unknown attacker. A live attacker's hit does not change. `attackInTic
 abilities, statuses, weapons and turret ammo.
 
 **Implementation status, 2026-11-26 (branch `feat/shots-over-lava`; HC-Q105, DEC-373 correction,
-HC-Q115).** The shot rule above names walk-on outlines. In the code, `AreaHitQuery.stopsShot`
-reads one shot property: `Outline.canShotsFlyOver` (a walk-on outline, or a map object flagged
-`canShotsCross`, such as a camp fire), or `Collider.canShotsFlyOver` for a body with no outline
-(set from `StructureDefinition.canShotsFlyOver`, on the forest camps). A shot not aimed at such a
-body flies over it; a shot aimed at it stops there, as at a walk-on outline (DEC-322 (1)). So a
-forest camp no longer stops every shot: the text above that names it as an example of a body that
-takes no damage does not hold for it (the owner confirms the reading in `INBOX.md` HC-Q115). Any
-other body that takes no damage now still stops every shot. `LineOfFire` uses the same rule. The
-melee rule (`AreaHitQuery.find`) still reads `isWalkOn`, so a sword still hits a camp fire that it
-sweeps.
+HC-Q115).** The shot rule above names walk-on outlines. In the code, `AreaHitQuery.stopsShot` lets
+a shot not aimed at a body fly over more bodies than that: the rule is in the 2026-11-26
+correction note in 10 §7. So a forest camp no longer stops every shot, and the text above that
+names it as a body that takes no damage does not hold for it. The owner is asked to confirm the
+reading (`INBOX.md` HC-Q115). `LineOfFire` uses the same rule.
 
 ## 11. Artifacts (gadgets Z and C)
 

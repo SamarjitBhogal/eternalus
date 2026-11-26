@@ -18,8 +18,10 @@ Phase 4 / sprint 4.2 · feat/shots-over-lava · sholtzman + Claude Code (COMBAT-
   (C-1, C-8), `Collider.canShotsFlyOver` from `StructureDefinition.canShotsFlyOver` on the forest
   camps (C-2), read by `AreaHitQuery.stopsShot` and `aimedBodyOf`; new full-map test
   `Simulation.campFires.test.ts`; the hearth test line (C-7); TSDoc (C-6); the flag text in
-  architecture 05 §10 and 10 §7 (C-3); dated notes in 05 §10, 06 and 10; DEC-373 correction;
-  `INBOX.md` HC-Q115, HC-Q116.
+  architecture 05 §10 and 10 §7 (C-3); dated notes in 05 §10, 06, 07 §13 and 10; DEC-373 correction;
+  `INBOX.md` HC-Q115, HC-Q116. Critic round 2 (PASS, Q105-R2-1 to -8) fixed: the full-map test
+  loops over all 16 camp fires; `ShotStopBody.collider` is read once, so `stopsShot` does no
+  `findComponent` per shot; TSDoc, wrapped lines and notes (05 and 06 point to 10).
   Fail-first: 12 tests red before the fix, 11 deliberate breaks red (`hc-q89/breaks.log`).
 - Checks run: full `npm run check` on `2b1151f2` plus the docs of this entry (before this line
   was written): `CHECK_EXIT=0` (`logs/check-2b1151f2-docs-tree.log`: core 373 files / 2519 tests,

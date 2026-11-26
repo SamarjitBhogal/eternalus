@@ -204,14 +204,15 @@ Overlap tests are therefore not enough:
   with two flags (`MapObjectFlags` in `content/maps/mapObjects.types.ts`): `canShotsCross` (a shot
   flies over it) and `canLightShots` (a shot that flies over it catches fire). The map builder
   that draws the object sets them (`MapDecorationBuilder.beginObject`), `MapObjectBuilder` copies
-  them to the `MapObject`, and the static index keeps them on each shape. One predicate decides whether a shape stops a shot: `doesShapeStopShot`
-  (`utils/geometry.ts`) is false when shots can cross the shape or when the shape's blocking area
+  them to the `MapObject`, and the static index keeps them on each shape. One predicate decides
+  whether a shape stops a shot: `doesShapeStopShot` (`utils/geometry.ts`) is false when shots can cross the shape or when the shape's blocking area
   holds the shot's launch point (the launch-shape rule, DEC-334). `CollisionQuery.shotReach` applies
   it (a shot must give its launch point); `CollisionQuery.reach`, for a mover or a dash, does not, so
   every blocking shape stops them (DEC-360).
   `WorldObjectStore.blockingAt` also applies it, for `NoMapObjectOverlapInvariant`, so the sweep
-  and the invariant agree. Every shape without `canShotsCross` stops a shot. `CollisionQuery.lightsShot` answers whether a circle that moves along a delta
-  touches (or starts in) a shape with `canLightShots`, outside its passages: a bridge deck (a
+  and the invariant agree. Every shape without `canShotsCross` stops a shot.
+  `CollisionQuery.lightsShot` answers whether a circle that moves along a delta touches (or starts
+  in) a shape with `canLightShots`, outside its passages: a bridge deck (a
   passage) does not light a shot, so a move along the deck does not, while a move that leaves the
   deck over the lava does. `ProjectileSystem` asks it for a shot whose definition has `litOnHit`
   steps, over the part of the move before the body the shot lands on (05 §10).

@@ -644,11 +644,9 @@ so it stops a shot. Collision reads the flags (10 §7); the map does not.
 
 `MapSceneryBuilder` now sets both flags, `canShotsCross` and `canLightShots`, on each camp fire
 object (`<camp>-fire`), through `MapDecorationBuilder.beginObject`. So the note above ("Every other
-object has neither") no longer holds for camp fires. A camp fire is furniture with health, so it is
-also a body: its `MapObjectBody` reads `canShotsCross` as a body shots fly over
-(`Outline.canShotsFlyOver`), and a shot aimed at the fire still lands on it (10, 2026-11-26
-correction note). The map still decides nothing about shots: it only sets the flags. The palace
-kitchen hearths (`MapPalaceRoomsBuilder`) carry no flag (`INBOX.md` HC-Q116).
+object has neither") no longer holds for camp fires. The fire's body follows the shot rule in the
+2026-11-26 correction note in 10 §7. The map still decides nothing about shots: it only sets the
+flags. The palace kitchen hearths (`MapPalaceRoomsBuilder`) carry no flag (`INBOX.md` HC-Q116).
 
 ## Related
 
