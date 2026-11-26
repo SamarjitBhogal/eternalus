@@ -50,7 +50,6 @@ import { ContentCatalogue } from './content/ContentCatalogue';
 import { UnknownDefinitionError } from './content/UnknownDefinitionError';
 import { loadDefaultContent } from './content/loadDefaultContent';
 import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
-import { compareById } from './utils/compareById';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
 import { ULTIMATE_CHARGE } from './content/progression/ultimateCharge';
@@ -89,7 +88,7 @@ import { CollisionResolver } from './physics/CollisionResolver';
 import type { StaticCollisionIndex } from './physics/StaticCollisionIndex';
 import { MatchPathfinderFactory } from './map/MatchPathfinderFactory';
 import { staticCollisionIndexOf } from './map/staticCollisionIndexOf';
-import { structureBodyParts } from './map/structureBodyParts';
+import { structureBodiesOf } from './map/structureBodiesOf';
 import { zoneAreaOf } from './map/zoneArea';
 import { loadProjectiles } from './content/projectiles/loadProjectiles';
 import { loadTurrets } from './content/structures/loadTurrets';
@@ -410,7 +409,7 @@ export class Simulation {
    * of the same id when its definition `hasMapFootprint` (a lane tower's fort, DEC-185; a gate's own
    * outline, DEC-217 (17); a wall turret's pylon), and the footprints of the blocking objects that
    * are `partOf` it as solid polygons (the Stronghold's outer walls and throne, DEC-373 (1), so
-   * melee at an outer wall reaches it, DEC-185 D; `structureBodyParts`). The palace floor is not
+   * melee at an outer wall reaches it, DEC-185 D; `structureBodiesOf`). The palace floor is not
    * part of the Stronghold (DEC-344 (4)). Each blocking such object (a fort, a pylon, an outer wall,
    * the throne) is the structure's body: it has no health of its own (one pool, DEC-185 B). Towers,
    * wall turrets and the Stronghold share one pool with their body. The gates' objects of the same
@@ -426,36 +425,25 @@ export class Simulation {
     structures: StructureSource,
     mapObjects: readonly MapObject[] = [],
   ): ReadonlyMap<string, string> {
-    const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
-      compareById(a.id, b.id),
-    );
-    const bodies = new Map(mapObjects.map((object) => [object.id, object]));
-    const parts = structureBodyParts(
-      mapObjects,
-      new Set(
-        features.flatMap(({ id, definitionId }) => (structures.has(definitionId) ? [id] : [])),
-      ),
-    );
+    const features = state.world?.definition.features ?? [];
     const owners = new Map<string, string>();
-    for (const { id, definitionId, position, team, laneId } of features) {
-      if (structures.has(definitionId)) {
-        const { kind, hasMapFootprint } = structures.get(definitionId);
-        const placement = {
-          position,
-          team,
-          mapFeatureId: id,
-          ...(laneId !== undefined && { laneId }),
-        };
-        const structure = factory.create(kind, definitionId, placement);
-        const own = hasMapFootprint === true ? bodies.get(id) : undefined;
-        const body = parts.get(id) ?? [];
-        const footprint = Footprint.ofBody(own, body);
-        if (footprint !== undefined) structure.addComponent(footprint);
-        for (const object of [own, ...body]) {
-          if (object?.isBlocking === true) owners.set(object.id, structure.id);
-        }
-        state.entities.add(structure);
-      }
+    for (const { feature, own, parts, bodyIds } of structureBodiesOf(
+      features,
+      mapObjects,
+      structures,
+    )) {
+      const { id, definitionId, position, team, laneId } = feature;
+      const placement = {
+        position,
+        team,
+        mapFeatureId: id,
+        ...(laneId !== undefined && { laneId }),
+      };
+      const structure = factory.create(structures.get(definitionId).kind, definitionId, placement);
+      const footprint = Footprint.ofBody(own, parts);
+      if (footprint !== undefined) structure.addComponent(footprint);
+      for (const bodyId of bodyIds) owners.set(bodyId, structure.id);
+      state.entities.add(structure);
     }
     return owners;
   }
