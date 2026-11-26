@@ -464,17 +464,17 @@ palace map object's walk-on outline only (DEC-344 (4)).
 
 **2026-11-26, merge of `feat/shots-over-lava` into `feat/palace-stronghold-pool` (Q104-9).** The
 shots-over-lava correction note and the palace-stronghold-pool note above meet in one shot rule,
-per polygon. `Outline.canShotsFlyOver` (for the whole
-outline) is gone, because one outline can hold walk-on and solid polygons. An `Outline` has a
-third polygon list, `shotsCross`: the solid polygons that a shot not aimed at the entity flies
-over. A `MapObjectBody` whose object has `canShotsCross` (a camp fire's body) puts its footprints
-there; a structure's `Footprint` has none. `AreaHitQuery.shotPolygonsOf` gives every polygon to a
-shot aimed at the entity, and to any other shot the solid polygons not in `shotsCross`. So such a
-shot flies over a walk-on floor and a camp fire, and stops on the Stronghold's outer walls and
-throne. A body with no outline still reads `Collider.canShotsFlyOver` (a forest camp's home).
-`AreaHitQuery.aimedBodyOf` names a body by its walk-on or `shotsCross` polygons. The melee rule
-(`AreaHitQuery.find`) reads `walkOn` and `solid` only. The 05 §10 and 07 notes that name
-`Outline.canShotsFlyOver` mean this rule now.
+per polygon. `Outline.canShotsFlyOver` (for the whole outline) is gone, because one outline can
+hold walk-on and solid polygons. An `Outline` has a third polygon list, `shotsCross`: the solid
+polygons that a shot not aimed at the entity flies over. A `MapObjectBody` whose object has
+`canShotsCross` (a camp fire's body) puts its footprints there; a structure's `Footprint` has
+none. `AreaHitQuery.shotPolygonsOf` gives every polygon to a shot aimed at the entity, and to any
+other shot the solid polygons not in `shotsCross`. So such a shot flies over a walk-on floor and a
+camp fire, and stops on the Stronghold's outer walls and throne. A body with no outline still
+reads `Collider.canShotsFlyOver` (a forest camp's home). `AreaHitQuery.aimedBodyOf` names a body
+by its walk-on or `shotsCross` polygons. The melee rule (`AreaHitQuery.find`) reads `walkOn` and
+`solid` only. The 07 note that names `Outline.canShotsFlyOver`, and the 05 §10 note (its 10 §7
+pointer means this §12 note), mean this rule now.
 
 ## Related
 
