@@ -1,9 +1,11 @@
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
+import { CathedralGemState } from '../components/CathedralGemState';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { CombatClock } from '../components/CombatClock';
+import { LastEnemyHit } from '../components/LastEnemyHit';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
@@ -86,6 +88,27 @@ export class StateHasher {
         posts.push([id, guardId, respawnAtTick]);
       });
       parts.push(['guards', ...posts]);
+    }
+    // Dead Legends waiting to respawn (DEC-295) are appended only while some wait, for the same
+    // reason: each one's team, return tick and owed XP, then the waiting Legend's own fields, as
+    // an entity in the store hashes them, since it is out of the store meanwhile.
+    if (state.respawns.size > 0) {
+      const waiting: unknown[] = [];
+      state.respawns.forEach(({ legend, team, returnsAtTick, owedXp }) => {
+        waiting.push([
+          team,
+          returnsAtTick,
+          owedXp.map(({ cause, victimId, victimTeam, xp, maxLevels }) => [
+            cause,
+            victimId,
+            victimTeam,
+            xp,
+            maxLevels ?? null,
+          ]),
+          StateHasher.fieldsOf(legend),
+        ]);
+      });
+      parts.push(['respawns', ...waiting]);
     }
     // Ally damage (DEC-89) is appended only while some is counted, for the same reason.
     if (state.allyDamage.size > 0) {
@@ -196,11 +219,24 @@ export class StateHasher {
         capture.reachedBy('light'),
         capture.reachedBy('dark'),
         capture.reachedBy('neutral'),
+        // The zone level-up's clock (DEC-258).
+        capture.ownedSinceTick,
       ]);
+    }
+    const gem = entity.findComponent(CathedralGemState);
+    if (gem !== undefined) {
+      fields.push(['gem', ...gem.fields]);
     }
     const veterancy = entity.findComponent(Veterancy);
     if (veterancy !== undefined) {
-      fields.push(['veterancy', veterancy.kills, veterancy.level]);
+      fields.push([
+        'veterancy',
+        veterancy.kills,
+        veterancy.level,
+        veterancy.earned,
+        veterancy.granted,
+        veterancy.grantedBy,
+      ]);
     }
     const progression = entity.findComponent(Progression);
     if (progression !== undefined) {
@@ -213,6 +249,11 @@ export class StateHasher {
     const clock = entity.findComponent(CombatClock);
     if (clock !== undefined) {
       fields.push(['combat-clock', ...clock.fields]);
+    }
+    // Names the killer of a death by the gem (DEC-346), so it changes the match's future.
+    const lastEnemyHit = entity.findComponent(LastEnemyHit);
+    if (lastEnemyHit !== undefined) {
+      fields.push(['last-enemy-hit', ...lastEnemyHit.fields]);
     }
     return fields;
   }

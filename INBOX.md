@@ -16,6 +16,91 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
+      You asked "what about the forest camps? why can they never break?". Today a camp's body is only
+      its group's home (`CAMP_BODY`: "a camp is only its group's home"): the camp's mobs are what
+      players fight, and no reference doc gives the camp body health of its own. Should a camp
+      become breakable (and if so, what happens to its mobs and respawns)? A breakable camp leaves
+      the shared `NEVER_DAMAGED` spread with a one-line change.
+
+- [ ] **Better than design: four Cathedral gem items (#132 pre-PR critic, 2026-11-25).** Not
+      built in #132; each would be a small follow-up PR if you agree. (BTD3) One body: the gem's
+      movement block is a separate map-object plinth that copies the gem's radius; a static
+      blocking collider on `CathedralGem` itself would keep one shape. (BTD4) A flag on the status:
+      the credited sources are the list `CATHEDRAL_GEM.statusIds`; a per-status flag (for example
+      `creditsLastEnemyHitter`) would let a future hazard opt in with no pipeline edit. (BTD5)
+      Legends only: `LastEnemyHit` is kept on every unit an enemy hits, while your words were
+      "the dying legend"; should a minion or mob killed by the gem also count for its last enemy
+      damager (and pay XP), or only a Legend? (BTD6) Enemy status damage: an enemy's bleed tick
+      has no attacker, so it never counts as the last enemy hit; carrying the applier's id on
+      status damage would count it. Decision: …
+
+- [ ] **Better than design: two Cathedral gem items (#132 re-review, swholtzman, 2026-11-22).**
+      (BTD1) The holder is stored twice: `CathedralGemState.holder` copies the capture zone's owner
+      from `capture-point-owner-changed`, while the zone's `Capturable.owner` already holds it.
+      Keeping the zone's id and reading its owner when the snapshot is made gives one source of
+      truth, and the hash needs no holder field. (BTD2) One finder per targetable kind:
+      `PlayerCommands.targetAt` gains `findGemAt` beside `findUnitAt` and `findMapObjectAt`, so
+      each new targetable structure adds a finder and an edit there. One "targetable" snapshot
+      flag and one finder would keep it closed to change. Not built in #132. OK to do each in a
+      small follow-up PR?
+
+- [ ] **`feat/duel-arena-only-legends` (PR #145, SCRUM-445, SCRUM-446, SCRUM-447, SCRUM-450):
+      one owner item left.** Q1 and Q2 are answered and built: DEC-348 (2026-11-23: no
+      structures, no minions or host units, trees, houses and rocks stay, the gem stays; the
+      Cathedral's walls cannot break in a Duel). (Q3) The decisions-log row for
+      SCRUM-449 (modifying DEC-78: a Duel result shows both players' final kill score and no
+      countdown), and whether `DUEL_RULES.arena` and `startOffset` belong in the replay setup
+      so a content change cannot alter an old Duel's replay. Decision: …
+
+- [ ] **Duel closed-door drawing (request, from PR #145, SCRUM-450).** The four Cathedral
+      doorways block in a Duel but look open. Draw them closed in a Duel or confirm the look is
+      fine. Also: PR #118 adds `bridge/selectors/selectIsDuel.ts`; PR #145 carries the same file
+      byte for byte, so one selector remains whichever merges first.
+
+- [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-legends`) — developer menu, slice 2
+      (add/remove Legends, FR-097) built; decisions for the owner.** (a) `dev-spawn-legend` takes
+      `{ team, definitionId }`, not the `{ team, definitionId, controllerId, at? }` of 13 section
+      4: the Legend always plays with the Rover controller (it takes no lane, so it needs no lane
+      memory, and it starts at the Stronghold like a roster Rover) with the `rover` difficulty.
+      A controller picker, a lane for a laner bot and a spawn point other than the Stronghold are
+      left out. (b) Removal reuses `dev-remove-entity`; there is no `dev-remove-legend` (the
+      existing command removes any entity and emits `entity-removed`). (c) FR-097 and FR-105 call
+      the removal cause `developer-menu`; the code's `RemovalCause` is `dev-removed` (used by tests,
+      invariants and 03). Not renamed here: do you want the rename? (d) The class picker lists the
+      selectable classes of the display catalogue (a class id is the Legend definition id). (e) The
+      team picker is now one control above both the mob and the Legend sections. (f) Refusals
+      (`cap-exceeded`, `not-a-legend`, `no-stronghold`) still reach only the log: the bridge has
+      no diagnostic event. (g) Adding or removing the human Legend and sim mode
+      (`dev-set-controller`, FR-099) stay for slice 3.
+      Decision: DEC-293 (2026-11-20, Owner Calls page) answers (a) and (b): "Small spawn, plus
+      `dev-remove-legend` that refuses the human outside sim mode". Built in PR #109: the spawn
+      stays `{ team, definitionId }`; `dev-remove-legend { entityId }` refuses the human's Legend
+      outside sim mode (`human-legend`). DEC-355 (2026-11-23, Owner Calls page) closes (c), (d)
+      and (e): "Keep all three as built" (`dev-removed` stays, the character-select class list,
+      one Team control). (f) and (g) stay open.
+
+- [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu`) — developer menu, slice 1 built;
+      the rest needs owner and core work.** Built: `?dev=1` enables the menu, F1
+      (`toggle-developer-menu`) opens it, and it spawns a horde of lane minions at a map structure
+      (`dev-spawn-mobs`) and removes an entity by id (`dev-remove-entity`). Not built, and why:
+      (a) the persisted `settings.developer.menuEnabled` toggle, because settings persistence does
+      not exist yet (only the query flag enables the menu; there is no session toggle either);
+      (b) add/remove Legends with class and team pickers (FR-097), which needs a new core
+      `dev-spawn-legend` command; (c) sim mode / `dev-set-controller` (FR-099), unsupported in
+      core; (d) invariant level, timeline jump, overlays, time scale, replay dump and fixture
+      (FR-110), pre-match config overrides; (e) teleport, which no requirement names (SCRUM-437
+      says to raise it as a feature request); (f) showing core's refusals (unit cap clipping,
+      `command-rejected`): the bridge carries no diagnostic event yet. The mob picker reads
+      the lane minions from `DisplayContent.laneMinions`, which core now publishes through
+      `loadDisplayContent`; no client list remains. Decide: (1) the menu's name ("Architect's
+      Table" is still only proposed); (2) built: core publishes its mob list in
+      `loadDisplayContent` (`DisplayContent.laneMinions`); (3) whether the next slice adds
+      `dev-spawn-legend` (FR-097); (4) `?dev=1` also works in release builds (the same
+      flag already turns on the explorer chrome): add a build-time guard? Online play: a remote
+      (online Duel) match must always keep the menu disabled (`Match.isDeveloperMenuEnabled` is
+      optional and off by default, and the online match factory must not pass it), otherwise dev
+      commands would be a cheat path.
 - [ ] **Dependency audit (re-run 2026-11-20): approve one upgrade PR for the `eslint` family and
       `zod`, and say whether to turn on Dependabot alerts.** PR #113 already moved `vite` to 8.3.8
       and `vitest` to 5.1.0. `npm audit` on `phase/3-sprint-3-work` (`5a7cc8dc`) now reports 10
@@ -231,7 +316,7 @@ Reply inline (`Decision: …`).
       parallel ability stack.
 
 - [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
-      but unhandled actions: `toggle-developer-menu` (BUG-4, a feature), `sprint`, `interact`,
+      but unhandled actions: `toggle-developer-menu` (handled since #107), `sprint`, `interact`,
       `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
       (no overlay exists) are in `InputAction`, bound in `keybindings.ts` and shown as rebindable
       in settings, yet nothing handles them. Decide whether to hide them from the bindings screen
@@ -349,6 +434,87 @@ Reply inline (`Decision: …`).
   - **(2) done by DEC-234** (#85, 2026-11-09): the inside test runs once, in `aimPointOf`, which
     returns an `AimedAt` tag; `isInReach` and `facingPointOf` read it. The tidy PR builds no
     helper for it.
+- [ ] **Server image and the connection cap behind a platform proxy (SCRUM-404, 2026-11-13) — owner
+      decision before deploying.** `apps/server/Dockerfile` builds the Duel server image (tested:
+      it runs, `HEALTHCHECK` is healthy and two bots finish a Duel against it). Open: (1)
+      `ClientAddress` reads `X-Forwarded-For` only when the peer is loopback (`tailscale serve`).
+      On Fly.io or Render the peer is the platform's proxy, not loopback, so every player would
+      share one address and the per-IP cap of 10 would limit the whole server to about 10
+      connections. Either add an environment switch that reads the forwarded address from the
+      platform's proxy (never from a directly reachable server) or raise the cap for that
+      deployment; this touches ADR 0016 point 7, so it is yours to choose. (2) The platform's
+      health check cannot reach `/health` (it listens on the container's loopback, `OPS_HOST`);
+      use a TCP check on the WebSocket port, or tell me to make `OPS_HOST` configurable. (3) TLS is
+      the platform's job; the client must be built with `VITE_DUEL_SERVER_URL=wss://<host>`. (4)
+      Which platform: see the comparison on SCRUM-404.
+
+- [ ] **Glicko-2 rating and skill-based pairing (SCRUM-431, 2026-11-13) — interim choices, owner to
+      confirm or change.** (1) Storage: ratings and records live in memory by guest id
+      (`PlayerRatings`); the server has no database, so a restart loses them, and a guest id only
+      survives a reconnect, not a new session: persistence needs plan question 35 (database) and
+      real accounts. (2) Rating period: each match is its own period (simple); a batch per day
+      would be closer to Glickman's advice. (3) Results: a leaver or disconnect-after-window counts
+      as a loss for the leaver and a win for the other; a draw (no winner, or a failed simulation
+      step) scores 0.5 and clears the streak. (4) Pairing: closest rating first; allowed gap =
+      100 + 25 per second of the longer waiter, unlimited after 30 s, checked on join and every 1 s
+      (all `// TUNE:` in `DuelQueue.constants.ts`). (5) Glicko-2 defaults 1500 / 350 / 0.06, tau 0.5
+      (`Glicko2.constants.ts`). (6) Nothing shows ratings to players and `match-found` does not carry
+      the opponent's rating (no protocol change); say if you want either. (7) The seat order is
+      still arrival order (question 45).
+      (8) Known limit: one person with two connections can farm wins when both seats are held (the
+      guest who disconnects second is dropped first), and a forfeit-then-return loop re-enters as a
+      fresh 1500 / 350; bounded because ratings are not shown. (9) Streak and matches are stored but
+      pairing does not use them yet (DEC-36 groundwork). (10) Plan question 47 (how long a player
+      waits) is answered by the 30 s timeout, pending your confirmation. (11) A held (disconnected)
+      queued guest can still be paired, and the sweeps make that likelier.
+  - **Answered in part 2026-11-20 by DEC-297 (3)**: the in-memory pairing is accepted as an
+    interim until sprint 4; FR-118 (ratings in a database) is scheduled for sprint 4; question 35
+    must be answered before sprint 4 starts. Still open: (2), (5), (6), (7), (10).
+  - **Changed by the PR #104 review fixes (2026-11-20)**: (1) a guest id and its rating now also
+    survive the end of a Duel and a new connection (every match end closes both sockets, which
+    used to forget them), for the newest `MAX_KNOWN_GUESTS` (10 000, `// TUNE:`, a memory bound)
+    gone guests, until a server restart. (8) When both seats end up held, the guest who left first
+    takes the loss (DEC-250 (4)); a forfeit-then-return now keeps the lower rating. (11) A held
+    queued guest is never paired; it keeps its place and wait time.
+
+- [ ] **Guest identity, presence and reconnect (SCRUM-430, 2026-11-13) — interim choices, owner to
+      confirm or change.** (1) Id: `randomUUID` (122 random bits), sent as `welcome`, a bearer token
+      never logged; a malformed or unknown id gets a fresh one. (2) Window: `RECONNECT_WINDOW_MS` =
+      10 s (`// TUNE:`), timed on the existing `TickScheduler` as a one-shot; plan question 44
+      (window, forfeit stats, deploys) is still yours. (3) Duplicate: only a HELD guest can be resumed; the id of a
+      still-connected guest is ignored (the new connection gets a fresh id), so nobody can kick a
+      live player. Abuse bounds (critic): at most `MAX_HELD_GUESTS` = 100 held guests (beyond it a
+      disconnect drops at once), and a match whose two seats are both held ends at once. (4) In-match: the new connection
+      takes the seat, is sent `match-found` again and then the next `state`; the opponent is told
+      about the gap (`opponent-presence`, PR #118), and a queued guest whose slot is held can still be paired (the match
+      starts with a seat that is waiting to come back). (5) New `forfeit` message (needs your confirmation; it only touches the sender's own match) so the queue-load
+      bots (and a future "leave match" button) end a match at once instead of closing a socket the
+      window now holds. (6) Storage: the id is saved through `PersistenceController` (new `guest`
+      store), which is in memory until IndexedDB lands, so it survives a reconnect but not a page
+      reload yet. (7) The client still ends the Duel as lost on a dropped socket; automatic rejoin
+      is a follow-up.
+  - **Answered in part 2026-11-20 by DEC-297 (1), (2)**: (2) the 10 s window is approved, and a
+    timed-out drop is a leave and a loss (DEC-250 (4)): the player who stayed wins after 10 s.
+    (5) `forfeit` is approved as built (the sender's own match only). Still open: (1), (3), (6),
+    (7), and the rest of plan question 44 (forfeit stats, deploys).
+  - **Changed by the PR #104 review fixes (2026-11-20)**: (4) a queued guest whose slot is held
+    is no longer paired; on a resume `welcome` comes before `queue-waiting` or `match-found`.
+  - **Changed by the PR #104 review round 3 (2026-11-22)**: only a guest with a finished match
+    (a `PlayerRatings` record) is remembered after its socket closes, so idle connect-and-close
+    loops cannot push rated guests out; an unrated guest that comes back gets a fresh id. Still
+    open for the owner: how long a remembered guest id should live (a time limit, not just the
+    `MAX_KNOWN_GUESTS` cap), and whether the game reconnects a dropped Duel player on its own (7).
+  - **Answered 2026-11-23 by DEC-349**: (7) the client reconnects on its own: "Build automatic
+    reconnect now, before this work merges: the player sees "Reconnecting..." and gets back in with
+    no click". Built in PR #104 (2026-11-25): `DuelSession` `reconnecting`, back-off retries inside
+    the 10 s window, the HUD's "Reconnecting...", lost only when the window ends. Still open: how
+    long a remembered guest id should live, and the architecture critic's pass on that lifetime
+    (the B1 design, a remembered rated guest; not yet run). New, for the team: the server notices a
+    half-open socket only through the heartbeat (`HEARTBEAT_INTERVAL_MS`, 15 s), longer than the
+    10 s window, so a reconnect after a drop the server has not seen is queued, not seated; the
+    client leaves that queue and retries, and if the server never sees the drop inside the window
+    the Duel is lost. Shorten the heartbeat, or end the old seat when its guest id comes back?
+
 - [ ] **Per-address connection cap and `X-Forwarded-For` (SCRUM-432 critic, 2026-11-12) — owner /
       security, not introduced by this branch.** `ClientAddress.resolve` (`apps/server/src/transport/`)
       takes the FIRST `X-Forwarded-For` entry when the peer is loopback. Behind `tailscale serve`
@@ -368,6 +534,32 @@ Reply inline (`Decision: …`).
       the `MAX_CONNECTIONS = 500` cap. DEC-37 asks for "hundreds or thousands" of players. Approve
       a follow-up that finds the cause: an `onClose` handler in the bots, or a refusal counter in
       the server.
+
+- [ ] **Tick time: bench evidence, four questions (`chore/minion-perf-check`, PR #83; rewritten
+      2026-11-22 to the current state).** `npm run bench` runs a 3-lane match with the shipped bot
+      roster (10 bot Legends per team), fills each team to 144 mobs, then to the cap, and times 900
+      ticks of the fight from the first death after the countdown. Latest run (2026-11-22, AMD
+      Ryzen AI 9 HX 370, Node 24, load about 6): p95 4.50 ms at 144/team (143/144 → 92/98 mobs over
+      the window), p95 4.85 ms / max 8.59 ms at 290/team (no target, DEC-137 (1)). This is
+      combat-window evidence, not an NFR-021 pass. NFR-025's per-system split (AI ≤ 1.5 ms) is not
+      measured: it waits for the `Profiler` port (15 §6). The 2026-11-07 figures in `PROGRESS.md`
+      are not comparable (that bench later lost its bots). Questions:
+      (1) **Reference laptop:** the targets name "the reference dev laptop"; which machine is it?
+      (2) **Sampling rule (CodeRabbit on PR #83):** the population falls during the timed fight.
+      Does NFR-021's "at 144 units per team" mean the fill, or must the bench hold 144 per team for
+      the whole window (respawning the dead)?
+      (3) **CI step sign-off:** the bench step in `ci.yml` (17 to 19 s per job) and the root `vite`
+      devDependency rest on the author's PR description (ADR 0018 (3)). Do you also want an ADR or
+      a DEC row, or should the step move to `workflow_dispatch` only? The `ci.yml` header and the
+      guardrails "CI gate" row still say CI mirrors `npm run check` one-to-one; they get one line
+      each once you answer.
+      (4) **Better than the design (DEC-139), optional:** move the bench scenario (roster, fill,
+      wait for contact) into a typed core module with a vitest test, leaving only the clock in the
+      `.mjs`; `tsc` would then catch API changes such as DEC-173's `pilot`, and a test would prove
+      the hordes fight without a timed CI step. Recommendation: yes, after (3).
+  - Answered 2026-11-23 (Owner Calls page, relayed on PR #83), recorded as DEC-351: (1) the CI
+    runner (`ubuntu-latest`); (2) the fill is enough, report the start and end counts; (3) the
+    step stays on every pull request, as built. Done in PR #83. Only (4) stays open.
 
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on
@@ -450,6 +642,25 @@ Reply inline (`Decision: …`).
       ternary and each rule counts only its own posts. Built today: `GroupGuardRespawn` counts
       only the home's own posts (same `checkpoint` marker), which closes the gap with no new
       field.
+      **Update 2026-11-23 (owner answers, relayed on PR #130):** (4)'s boss-group question, (6)
+      and (7) are answered as DEC-350: the boss group levels; a late team defender appears only
+      while its team still owns the point, and is cancelled when the point changes owner; at most
+      10 defenders per capture point. They are built in M6c. (3)(b), (5) and (9) still wait for
+      sign-off.
+
+- [x] **Minion M10 better-than-design items (`feat/minion-m10-zone-level-up`, 2026-11-15,
+      critic; DEC-139) — sign-off per item.** (a) A `MinionLevelSystem` after
+      `ZoneLevelUpSystem` that owns every minion level change: `VeterancySystem` would announce
+      kill levels by event too, so no listener changes state inside a handler (it removes 03 §4's
+      one exception). (b) `StatusEffects.removeStacks(id, n)` through the applier, so a lost level
+      emits one event, not a `status-expired` plus one `status-applied` per remaining level.
+      (c) The zone level-up's hold time and levels as fields of each capture-point
+      `ZoneDefinition`, looked up by id (balancing.md's knob table), not one global constant.
+      Approve any, or leave as built. Leaving (a) as built keeps 03 §4's one exception (a
+      listener that changes state in its handler), which then needs your sign-off in your own
+      words (PR #131 review S2, 2026-11-22).
+      **Answered 2026-11-23 (owner, relayed on PR #131), DEC-353:** "Build all three in #131
+      before it merges". Done in PR #131.
 
 - [ ] **Minion plan MVP gaps (3): who owns the zone cooldown reduction (2026-11-06, PR #81).**
       The zone's cooldown reduction (FR-041, 07 §7) is Legend-side, not minion work, and no plan
@@ -674,6 +885,18 @@ Reply inline (`Decision: …`).
     shield bars and anything else on the Legend (no ability cooldowns exist yet to reset).
     (9) `DUEL_RULES.startOffset` is read from live content, not the replay setup, so retuning it
     changes old Duel replays.
+  - 2026-11-20 (claudiodh, `feat/duel-legend-max-level`, SCRUM-444): every Legend in a Duel
+    starts at its level curve's cap (`DUEL_RULES.legendsStartAtMaxLevel`); a Duel has no minions
+    (owner, 2026-11-23). Decisions I took, each to confirm or change: (1) the start is
+    no XP award and no level-up, so it emits no `xp-gained` and no `level-up` (a later level-up
+    sound or toast would otherwise fire 49 times at the start). (2) The rule applies to every
+    Legend that spawns in a Duel, bots included (a Duel roster has none today). (3) Like
+    `startOffset`, the rule is read from live content, not the replay setup, so changing it
+    changes old Duel replays. (4) Legends still earn XP in a Duel; at the cap it lifts nothing.
+    (5) Effect to check: level raises only health and aether (basic-attack scaling is not built),
+    so a max-level Legend has about 4.9 times its level-1 health against the same damage, and a
+    Duel kill takes about 2.5 to 3 times as long as before (the core Duel tests' fights went from
+    4–8 s to 12–18 s). Is that the Duel pace you want, or should `killTarget` or damage change?
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
       of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only
@@ -743,6 +966,9 @@ Reply inline (`Decision: …`).
     happen as the owner wants. A dead Legend gets no structure XP today. The owner ruled that
     it is paid on respawn once respawn (GL-12) exists; a `ponytail:` note in
     `ProgressionSystem.ts` marks the stand-in.
+  - **Update 2026-11-22 (PR #100, DEC-186):** pay on respawn is built: XP a waiting Legend earns is
+    owed on its queue entry and paid in `ProgressionSystem`'s pass after it returns. The stand-in
+    note is removed.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
@@ -3217,6 +3443,24 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Done
 
+- 2026-11-23 — **Your answers on the five Cathedral gem cards (DEC-346)** (`feat/cathedral-gem-hittable`,
+  PR #132): recorded as DEC-346. The gem blocks movement (an unbreakable plinth under it) and a
+  touch no longer strikes; a death by the gem counts for the victim's last enemy damager within the
+  30 s assist window, else nobody's kill or XP; both "tick" readings stay; the Cathedral interior
+  builder is split and camps and the gem share one "never damaged" entry. Closes "The Cathedral
+  gem: four rules DEC-292 leaves open", "split the Cathedral interior builder" and "one shared
+  'never damaged' structure entry". Decision: DEC-346. The Duel design (circle strike, laser) is a
+  follow-up PR once the six "GEM duel" cards are answered; your camp question is a new item.
+
+- 2026-11-21 — **Your picks on the Cathedral gem (DEC-291, DEC-292)** (`feat/cathedral-gem-hittable`,
+  PR #132, which now also carries PR #124): recorded as DEC-291 and DEC-292. The gem keeps its
+  10 × 16 diamond and shows the holder's colour (blue Light, blood-red-purple Dark, purple-violet
+  neutral); it is its own unbreakable body; a hit or a touch stuns and burns the hitter, and the gem
+  pulses and glows purple, brighter and wider with more hits. Closes "The Cathedral gem's look",
+  "The gem's lightning on attackers: 11 open rules" and "a general retaliation rule vs a gem-only
+  one" (built gem-only, with its statuses and glow as content: `CATHEDRAL_GEM`). Three rules the
+  ruling leaves open are a new item under Decisions.
+
 - 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
   recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a
   baseline, plus newer CSS behind `@supports` with a fallback, as DEC-312 does. You named no
@@ -3249,6 +3493,15 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   UE-01's urgency on the character select and the match-start overlay, with UE-03 and the
   `uiEnhancements` switch built in the same PR; the bridge's countdown derivation is signed off.
   Reference 15 registers UE-01 as CD-48.
+
+- 2026-11-20 — **Legend respawn, interim (`fix/legend-respawn`, PR #100, GL-12).** Answered by
+  DEC-295 (owner, 2026-11-20): the same Legend object waits and returns reset (full health and
+  aether; ultimate charge kept apart), a bot laner re-plans its lane by the current threat, a
+  returning Legend ignores every cap, and a fallen Legend's body stays on the map greyed out. Built
+  in PR #100, with DEC-186's "pay on respawn". Critic items (a) `createWithId` and (d) the
+  factory coupling are gone with the redesign; (b) the ultimate charge waits for #123, which the
+  kept Legend object carries through death; (c) the loadout survives death, and of the cooldowns only the ultimate's charge and cooldown do, other abilities coming back fully cooled down (FR-117, no ability cooldown state exists yet); (e)
+  polling just before `DeathSystem` stays (it also keeps XP earned later in the same tick).
 
 - 2026-11-03 — **PR #56 — the `returning` state (DEC-144 G).** Decision (SamarjitBhogal,
   2026-11-03, recorded as DEC-155): (b) merge it into the resting state. `LeashBehaviour`, `MinionController` and

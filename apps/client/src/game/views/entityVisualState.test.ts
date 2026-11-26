@@ -18,6 +18,7 @@ describe('withVisualRadius', () => {
         aether: null,
         area: null,
         capture: null,
+        gem: null,
       },
       position: { x: 1, y: 2 },
       isFocused: true,

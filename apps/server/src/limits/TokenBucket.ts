@@ -1,5 +1,5 @@
 import type { Clock } from '../time/Clock.types';
-import { MS_PER_SECOND } from './TokenBucket.constants';
+import { MS_PER_SECOND } from '../time/time.constants';
 
 /**
  * A token bucket: `capacity` tokens at most, refilled at `refillPerSecond`. One per connection

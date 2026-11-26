@@ -27,6 +27,7 @@ const MINION: EntitySnapshot = {
   aether: null,
   area: null,
   capture: null,
+  gem: null,
 };
 
 const AT = { x: 0, y: 0 };

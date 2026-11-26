@@ -1,7 +1,7 @@
 import type { MapDefinition } from '../content/maps/maps.types';
 import type { WorldMap } from '../map/WorldMap';
 import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
-import type { Team } from '../teams/teams.types';
+import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { LaneRoutes } from './LaneRoutes';
 
@@ -43,5 +43,11 @@ export class MatchWorld {
     return target === undefined
       ? {}
       : { facing: { x: target.x - position.x, y: target.y - position.y } };
+  }
+
+  /** Where `team`'s Stronghold stands (a copy), or `undefined` when the map has none for it. */
+  public strongholdOf(team: PlayableTeam): Vec2 | undefined {
+    const stronghold = this.strongholds.get(team);
+    return stronghold === undefined ? undefined : { x: stronghold.x, y: stronghold.y };
   }
 }

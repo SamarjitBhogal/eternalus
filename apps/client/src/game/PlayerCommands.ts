@@ -1,6 +1,7 @@
 import {
   type EntityId,
   type EntitySnapshot,
+  findGemAt,
   findMapObjectAt,
   findUnitAt,
   type MapObject,
@@ -32,6 +33,9 @@ export class PlayerCommands implements PlayerActions {
 
   /** The unit or map object the held attack targeted last; `null` once released or stopped. */
   private attackTargetId: EntityId | null = null;
+
+  /** Whether the Legend was in the last snapshot: a Legend back from a respawn returns stopped. */
+  private wasPlayerPresent = false;
 
   /** Whether the canvas gestures own the main button's press (`setPointerClaimed`). */
   private isPointerClaimed = false;
@@ -65,6 +69,13 @@ export class PlayerCommands implements PlayerActions {
    */
   public apply(actorId: EntityId, snapshot: TargetSnapshot): boolean {
     const { move, isAttacking, aim } = this.input.read(this.camera);
+    const isPlayerPresent = snapshot.entities.some((entity) => entity.id === actorId);
+    if (isPlayerPresent && !this.wasPlayerPresent) {
+      // A Legend back from a respawn has no movement and no target: send the held input again.
+      this.lastMove = { x: 0, y: 0 };
+      this.attackTargetId = null;
+    }
+    this.wasPlayerPresent = isPlayerPresent;
     const attackAim = isAttacking === true && !this.isPointerClaimed ? aim : null;
     this.applyAttack(actorId, attackAim, snapshot);
     const isMoving = move.x !== 0 || move.y !== 0;
@@ -125,10 +136,14 @@ export class PlayerCommands implements PlayerActions {
   private readonly visualRadiusFor = (entity: EntitySnapshot): number =>
     this.views.viewFor(entity).visualRadiusOf?.(entity) ?? entity.transform?.radius ?? 0;
 
-  /** The unit under `point`, else the map object there: a unit is drawn on top of a building. */
+  /**
+   * The unit under `point`, else the Cathedral gem there (DEC-292), else the map object there: a
+   * unit is drawn on top of the gem, and the gem on top of the building.
+   */
   private targetAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): EntityId | null {
     return (
       findUnitAt(snapshot.entities, actorId, point, this.visualRadiusFor) ??
+      findGemAt(snapshot.entities, point) ??
       findMapObjectAt(this.mapObjects, snapshot.mapObjects ?? [], point)
     );
   }

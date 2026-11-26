@@ -24,6 +24,7 @@ const unit = (weight: MinionWeight, team: EntitySnapshot['team'] = 'light'): Ent
   aether: null,
   area: null,
   capture: null,
+  gem: null,
 });
 const draw = (entity: EntitySnapshot, isFocused = false): RecordingRenderer => {
   const renderer = new RecordingRenderer();
