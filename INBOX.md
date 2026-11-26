@@ -707,7 +707,7 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-23 (DEC-330): "A: fix it in a small PR before PR 8 merges". Not built yet;
     the fix PR comes after the PR 8 follow-up.
 
-- [x] **HC-B40 — Better than the design, your sign-off: eight small changes that the Magus
+- [ ] **HC-B40 — Better than the design, your sign-off: eight small changes that the Magus
       passives critic proposes (`feat/magus-passives`, architecture critic rounds 1 and 2,
       2026-11-23; eternalus-149, eternalus-150, eternalus-151).** Nothing that the player sees
       changes. Seven are built under your standing rule (DEC-223), recorded as DEC-361. One (3) is
@@ -734,8 +734,22 @@ Reply inline (`Decision: …`).
     beside the status data. It replaces the methods `durationOf` and `hasFixedDuration`; the
     status field `hasFixedDuration` stays.
   - **Answered 2026-11-26 in DEC-361** (Owner Calls page v98): "A: sign off all seven (built)".
-    (3) stays a follow-up. The DEC-337 (4) card was answered on the same page: "B: stretch them
-    by 20% too", so a knock-back step now stretches its statuses; they still need no flag.
+    (3) stays a follow-up, so this item stays open for (3) only; (3) is built after PRs #162 and
+    #163 merge.
+    The DEC-337 (4) card was answered on the same page: "B: stretch them by 20% too", so a
+    knock-back step now stretches its statuses; they still need no flag.
+
+- [ ] **HC-B51 — Better than the design, your sign-off: one way for an ability step to put on a
+      status (`feat/magus-passives`, PR #166 critic, 2026-11-26; eternalus-157).** Nothing that
+      the player sees changes. Built under your standing rule (DEC-223). Keep it, or undo it.
+  - Before: a step got the status code itself and a separate "how long" helper. A step that
+    forgot the helper put on a status without the Erudition stretch, and nothing caught it.
+  - Now: a step can only call `CastContext.applyStatus(target, step)`. It credits the caster
+    and always stretches the time (a status with `hasFixedDuration` keeps its time). The buff,
+    debuff and knock-back steps use it.
+  - Why now: `feat/sentinel-kit-room` and PR #175 change the same knock-back and debuff code,
+    and PR #162 changes the debuff code. Their old calls no longer compile after this PR, so a
+    merge cannot drop the stretch without notice.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

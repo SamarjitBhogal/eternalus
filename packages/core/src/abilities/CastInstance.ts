@@ -68,10 +68,11 @@ export class CastInstance {
       placement,
       scaled: (field, value) => value * (1 + (scaling[field]?.perLevel ?? 0) * (casterLevel - 1)),
       potency,
-      statusDuration: ({ statusId, durationTicks }) =>
-        statuses.durationFor(statusId, durationTicks, stretch),
+      applyStatus: (targetId, { statusId, durationTicks }) => {
+        const ticks = statuses.durationFor(statusId, durationTicks, stretch);
+        statuses.apply(state, targetId, statusId, casterId, ticks);
+      },
       damage,
-      statuses,
       targets: (shape, filter) => targets.find(state, casterId, shape, placement, filter),
       centreFor: (shape, point) => effects.shapeFor(shape.kind).centreFor(shape, placement, point),
       run: (step: EffectStep, at: ShapePlacement) => {

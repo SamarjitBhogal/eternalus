@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-26
 tags: [reference, decisions, game-design, inbox]
 related:
   [

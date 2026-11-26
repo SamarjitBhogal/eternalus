@@ -2,7 +2,6 @@ import type { KnockbackSpec, WithoutTimes } from '../../content/abilities/Abilit
 import type { KnockbackDefinition } from '../../content/abilities/knockback';
 import { Movement } from '../../components/Movement';
 import { Transform } from '../../components/Transform';
-import type { EntityId } from '../../state/EntityStore.types';
 import type { Vec2 } from '../../utils/geometry.types';
 import { normalize } from '../../utils/vec2';
 import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
@@ -17,9 +16,9 @@ import { mustBePositive } from '../specChecks';
  * the owner); knock-backs that reach one target in the same tick add up as vectors, because each
  * is its own push. A target exactly on the centre is pushed along the cast's direction, and not at
  * all when the cast has none (aimed at the caster). Every target the step reaches, moved or not,
- * is staggered; `knockup` also knocks it up. The cast's `stretch` (the caster's `abilityDuration`,
- * Erudition) lengthens both statuses, as it does every debuff's (DEC-337 (4)); the push keeps its
- * travel time.
+ * is staggered; `knockup` also knocks it up. Both statuses go through `CastContext.applyStatus`, so
+ * the cast's `stretch` (the caster's `abilityDuration`, Erudition) lengthens them, as it does
+ * every debuff's (DEC-337 (4)); the push keeps its travel time.
  */
 export class KnockbackEffect implements AbilityEffect<KnockbackSpec> {
   public readonly kind = 'knockback';
@@ -52,22 +51,11 @@ export class KnockbackEffect implements AbilityEffect<KnockbackSpec> {
           movement.push({ x: away.x * metres, y: away.y * metres }, travelTicks);
         }
       }
-      KnockbackEffect.applyStatus(cast, targetId, staggerStatusId);
+      cast.applyStatus(targetId, { statusId: staggerStatusId });
       if (spec.knockup === true) {
-        KnockbackEffect.applyStatus(cast, targetId, knockupStatusId);
+        cast.applyStatus(targetId, { statusId: knockupStatusId });
       }
     }
-  }
-
-  /** Applies `statusId` to `targetId` for its own time, stretched by the cast (DEC-337 (4)). */
-  private static applyStatus(cast: CastContext, targetId: EntityId, statusId: string): void {
-    cast.statuses.apply(
-      cast.state,
-      targetId,
-      statusId,
-      cast.casterId,
-      cast.statusDuration({ statusId }),
-    );
   }
 
   /** The unit vector from `centre` to `position`; the cast's direction when they coincide. */

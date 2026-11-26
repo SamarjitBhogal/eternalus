@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
+import { StatusEffects } from '../components/StatusEffects';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { AbilityDisplayStep } from '../content/loadDisplayContent';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
@@ -207,9 +208,20 @@ describe('CastInstance', () => {
   });
 
   describe('the ability stats of the cast (Erudition, DEC-337)', () => {
-    /** The context a step sees in a cast with `potency` and `stretch`. */
-    const contextWith = (potency: number, stretch: number): CastContext | undefined => {
-      const { state, caster } = casterState();
+    /**
+     * The context a step sees in a cast with `potency` and `stretch`, and a second body that is
+     * not the caster.
+     */
+    const contextWith = (
+      potency: number,
+      stretch: number,
+    ): { readonly cast: CastContext | undefined; readonly otherId: string } => {
+      const { state, factory, caster } = casterState();
+      const other = factory.create('warrior', 'warrior', {
+        position: { x: 0, y: 1 },
+        team: 'dark',
+      });
+      state.entities.add(other);
       const strike = new RecordingEffect('fake-strike');
       const registry = testAbilityRegistry([strike]);
       new CastInstance(
@@ -232,38 +244,64 @@ describe('CastInstance', () => {
           statuses: new StatusEffectApplier(STATUSES),
         },
       ).run(AT_ORIGIN);
-      return strike.log[0]?.cast;
+      return { cast: strike.log[0]?.cast, otherId: other.id };
     };
 
     it('gives the steps the cast’s potency', () => {
-      expect(contextWith(1.1, 1)?.potency).toBeCloseTo(1.1);
-      expect(contextWith(1, 1)?.potency).toBe(1);
+      expect(contextWith(1.1, 1).cast?.potency).toBeCloseTo(1.1);
+      expect(contextWith(1, 1).cast?.potency).toBe(1);
     });
 
-    it('stretches a step override by 1.2, rounded, and the status’s own duration when none is given', () => {
-      const cast = contextWith(1, 1.2);
+    /**
+     * How many ticks `step`'s status lasts on a body that is not the caster when a step of a cast
+     * with `stretch` applies it (`CastContext.applyStatus`), and who it is credited to; `null`
+     * ticks for a status with no end.
+     */
+    const applied = (
+      stretch: number,
+      step: { readonly statusId: string; readonly durationTicks?: number },
+    ) => {
+      const { cast, otherId } = contextWith(1, stretch);
+      if (cast === undefined) throw new Error('the cast ran its step');
+      cast.applyStatus(otherId, step);
+      const runtime = cast.state.entities
+        .get(otherId)
+        ?.getComponent(StatusEffects)
+        .active.find(({ definition }) => definition.id === step.statusId);
+      if (runtime === undefined) throw new Error(`"${step.statusId}" was applied`);
+      const { expiresTick, sourceId } = runtime;
+      return {
+        ticks: expiresTick === null ? null : expiresTick - cast.state.tick,
+        isFromCaster: sourceId === cast.casterId,
+      };
+    };
+    const ticksOf = (stretch: number, step: Parameters<typeof applied>[1]) =>
+      applied(stretch, step).ticks;
 
-      expect(cast?.statusDuration({ statusId: 'stun', durationTicks: 90 })).toBe(108);
-      expect(cast?.statusDuration({ statusId: 'stun', durationTicks: 15 })).toBe(18);
-      expect(cast?.statusDuration({ statusId: 'concussion' })).toBe(108);
-      expect(cast?.statusDuration({ statusId: 'stun', durationTicks: 8 })).toBe(10); // 9.6 rounds up
+    it('stretches a step override by 1.2, rounded, and the status’s own duration when none is given', () => {
+      expect(ticksOf(1.2, { statusId: 'stun', durationTicks: 90 })).toBe(108);
+      expect(ticksOf(1.2, { statusId: 'stun', durationTicks: 15 })).toBe(18);
+      expect(ticksOf(1.2, { statusId: 'concussion' })).toBe(108);
+      expect(ticksOf(1.2, { statusId: 'stun', durationTicks: 8 })).toBe(10); // 9.6 rounds up
+    });
+
+    it('credits the status it applies to the caster', () => {
+      expect(applied(1, { statusId: 'stun' }).isFromCaster).toBe(true);
     });
 
     it('leaves a duration alone with stretch 1, and a permanent status without one', () => {
-      expect(contextWith(1, 1)?.statusDuration({ statusId: 'stun', durationTicks: 90 })).toBe(90);
-      expect(contextWith(1, 1)?.statusDuration({ statusId: 'concussion' })).toBe(90);
-      expect(contextWith(1, 1.2)?.statusDuration({ statusId: 'enraged' })).toBeUndefined();
+      expect(ticksOf(1, { statusId: 'stun', durationTicks: 90 })).toBe(90);
+      expect(ticksOf(1, { statusId: 'concussion' })).toBe(90);
+      expect(ticksOf(1.2, { statusId: 'enraged' })).toBeNull();
     });
 
     it('keeps the time of a status with a fixed duration (Fury’s wind-up)', () => {
-      expect(contextWith(1, 1.2)?.statusDuration({ statusId: 'fury-windup' })).toBe(9);
-      expect(
-        contextWith(1, 1.2)?.statusDuration({ statusId: 'fury-windup', durationTicks: 6 }),
-      ).toBe(6);
+      expect(ticksOf(1.2, { statusId: 'fury-windup' })).toBe(9);
+      expect(ticksOf(1.2, { statusId: 'fury-windup', durationTicks: 6 })).toBe(6);
     });
 
     it('never lets a stretched status last under one tick', () => {
-      expect(contextWith(1, 0.3)?.statusDuration({ statusId: 'stun', durationTicks: 1 })).toBe(1);
+      expect(ticksOf(0.3, { statusId: 'stun', durationTicks: 1 })).toBe(1);
     });
   });
 });

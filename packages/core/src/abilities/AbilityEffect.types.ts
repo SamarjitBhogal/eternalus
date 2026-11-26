@@ -1,5 +1,4 @@
 import type { DamagePipeline } from '../combat/DamagePipeline';
-import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import type { Aim } from '../components/AbilitySlotRuntime.types';
 import type { AbilitySlot, WithoutTimes } from '../content/abilities/AbilityDefinition.types';
 import type { AbilityDisplayStep } from '../content/loadDisplayContent';
@@ -17,7 +16,7 @@ export type EffectStep = { readonly kind: string };
 
 /**
  * What an effect sees while it runs (05 §3 `CastContext`), built once per cast by `CastInstance`.
- * Effects change components through the pipeline and the applier given here, never by calling
+ * Effects change components through the pipeline and `applyStatus` given here, never by calling
  * each other or a system (rule 12).
  */
 export type CastContext = {
@@ -44,17 +43,18 @@ export type CastContext = {
    */
   readonly potency: number;
   /**
-   * How long a status a step applies lasts, in ticks, with the cast's `stretch` (`CastFacts`: the
-   * caster's `abilityDuration`, Erudition, DEC-337). The rule is `StatusEffectApplier.durationFor`.
+   * Applies status `step.statusId` to `targetId` through the match's one `StatusEffectApplier`,
+   * credited to the caster, for the step's `durationTicks` (else the status's own time) stretched
+   * by the cast's `stretch` (`CastFacts`: the caster's `abilityDuration`, Erudition, DEC-337). The
+   * rule is `StatusEffectApplier.durationFor`. It is the only way a step applies a status, so no
+   * step can miss the stretch (HC-B51).
    */
-  statusDuration(step: {
-    readonly statusId: string;
-    readonly durationTicks?: number;
-  }): number | undefined;
+  applyStatus(
+    targetId: EntityId,
+    step: { readonly statusId: string; readonly durationTicks?: number },
+  ): void;
   /** The match's one damage pipeline. */
   readonly damage: DamagePipeline;
-  /** The match's one status applier. */
-  readonly statuses: StatusEffectApplier;
   /** Every live entity that overlaps `shape` at this step's placement and passes `filter`, by id. */
   targets(shape: ShapeSpec, filter: TargetFilter): readonly EntityId[];
   /** The point of `shape` at this step's placement that a push at `point` moves away from. */

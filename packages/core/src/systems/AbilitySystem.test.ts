@@ -233,14 +233,17 @@ describe('AbilitySystem', () => {
     expect(bar.castsInProgress).toEqual([]);
   });
   it('gives a cast the ability stats its caster holds when the steps fire (Erudition, DEC-337)', () => {
-    const { caster, log, run } = setUp();
-    caster.getComponent(StatusEffects).apply(STATUSES.get('erudition'), null, 0);
+    const { state, caster, log, run } = setUp();
+    const statuses = caster.getComponent(StatusEffects);
+    statuses.apply(STATUSES.get('erudition'), null, 0);
     caster.getComponent(Abilities).slot('ability-1')?.queue(AIM);
 
     run();
+    log[0]?.cast.applyStatus(caster.id, { statusId: 'stun', durationTicks: 90 });
 
     expect(log[0]?.cast.potency).toBeCloseTo(1.1);
-    expect(log[0]?.cast.statusDuration({ statusId: 'stun', durationTicks: 90 })).toBe(108);
+    const stun = statuses.active.find(({ definition }) => definition.id === 'stun');
+    expect(stun?.expiresTick).toBe(state.tick + 108);
   });
 
   it('reads the ability stats again on the tick a later step fires (DEC-337 (7))', () => {

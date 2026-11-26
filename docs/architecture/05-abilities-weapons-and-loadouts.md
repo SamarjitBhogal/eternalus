@@ -1308,17 +1308,18 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     Sentinel's movement numbers (DEC-307), not a status. It exists so that every id in
     `passiveOptions` is an ability.
   - **New stats (§8; DEC-337).** `abilityPotency` multiplies the damage of an ability's `damage`
-    steps.
-    `abilityDuration` stretches the time of the statuses that a `buff`, `debuff` or `knockback`
-    step applies
-    (`CastContext.statusDuration(step)`, at least one tick; a status with no end stays without
-    one). `ultimateGain` multiplies each gain of the ultimate meter, not a loss (§6;
-    `UltimateCharge`), so the meter still moves only on an event (DISC-44). Erudition holds all
-    three (`content/status-effects/erudition.ts`). Basic attacks do not change: a status's
-    `onHit` steps (`HitEffects`) read 1 for both ability stats. A knock-back's push keeps its
-    travel time, and its `staggered` and `knockup` are stretched like any debuff (DEC-337 (4)). A status with
-    `hasFixedDuration` is not stretched either, because its time matches a step of its ability
-    (Fury's wind-up; DEC-361).
+    steps. `abilityDuration` stretches the time of every status that an ability's step applies:
+    `buff`, `debuff`, and the `staggered` and `knockup` of a `knockback` (DEC-337 (4)); at least
+    one tick, and a status with no end stays without one. A knock-back's push keeps its travel
+    time. A status with `hasFixedDuration` is never stretched, because its time matches a step of
+    its ability (Fury's wind-up; DEC-361). `ultimateGain` multiplies each gain of the ultimate
+    meter, not a loss (§6; `UltimateCharge`), so the meter still moves only on an event
+    (DISC-44). Erudition holds all three (`content/status-effects/erudition.ts`). Basic attacks do
+    not change: a status's `onHit` steps (`HitEffects`) read 1 for both ability stats.
+  - **How a step applies a status (§3; HC-B51, built, waiting for the owner's sign-off).**
+    `CastContext` does not carry the `StatusEffectApplier`. A step calls
+    `CastContext.applyStatus(targetId, step)`, which credits the caster and stretches the time
+    (`StatusEffectApplier.durationFor`), so no step can miss the stretch.
   - **Modifier scaled by lost health (§8).** A `StatModifier` can have `byLostHealth: { fullAt }`:
     no effect at full health, its full value at `fullAt` of max health or less, in a straight
     line between. Only `damageDealt` and `damageTaken` take it, and `0 <= fullAt < 1`
