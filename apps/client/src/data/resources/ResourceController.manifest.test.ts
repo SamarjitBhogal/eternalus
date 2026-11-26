@@ -19,6 +19,16 @@ const BUDGETS: readonly (readonly [AssetGroup, number, number])[] = [
   ['selection-primary-raster', 1_041_660, 281_268],
   // OD-28: the battle axe with the owner's Noise grain, +206 B (1x) and +1,322 B (2x) on OD-7's 141,440 / 358,580.
   ['match', 141_646, 359_902],
+  // Proposed, not accepted: the Legend sprite sheets at their size today (draft ADR 0027, DEC-298
+  // (6); the owner rules on Owner Calls card PR170 (3)). A match loads only the player's sheet.
+  ['atlas-assassin', 150_240, 519_994],
+  ['atlas-knight', 202_298, 700_854],
+  ['atlas-paladin', 234_572, 826_646],
+  ['atlas-colossus', 245_878, 873_836],
+  ['atlas-juggernaut', 264_830, 934_970],
+  ['atlas-catalyst', 399_098, 1_391_908],
+  ['atlas-oracle', 426_890, 1_487_658],
+  ['atlas-necromancer', 345_032, 1_210_002],
 ];
 
 /** The shipped manifest behind the browser adapters, with fake images and font faces. */

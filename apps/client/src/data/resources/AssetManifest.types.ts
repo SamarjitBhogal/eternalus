@@ -1,3 +1,5 @@
+import type { ATTACHMENT_REFERENCES } from './attachmentReferences';
+
 /**
  * Kebab-case id of an asset; also the basename of its files: `<id>.webp`, `<id>@2x.webp`, and
  * `<id>@<rendition>.webp` / `<id>@<rendition>@2x.webp` for a rendition. The bridge restates this
@@ -7,7 +9,9 @@ export type AssetId = string;
 
 /**
  * How an asset is decoded; one loader per type (14 §11). `ui-image`: an image the React screens
- * draw, decoded with `HTMLImageElement.decode()`; `font`: a `FontFace`.
+ * draw, decoded with `HTMLImageElement.decode()`; `font`: a `FontFace`; `sprite-atlas`: an image
+ * the canvas draws, decoded to an `ImageBitmap` and cut into a uniform grid of frames
+ * (`SpriteAtlasLoader`).
  */
 export type AssetType = 'ui-image' | 'font' | 'sprite-atlas';
 
@@ -16,7 +20,8 @@ export type AssetType = 'ui-image' | 'font' | 'sprite-atlas';
  * (`selection` for both class-step layouts and the Legend step, `selection-primary` and
  * `selection-alternate` for one layout's class step, `selection-primary-raster` and
  * `selection-raster` for the plates the `figma-raster` effects renderer draws); `match` in
- * `match-loading`.
+ * `match-loading`. Each `atlas-<sub-class>` group holds one Legend sprite sheet; `match-loading`
+ * loads only the player's, after `match` (`matchAssetGroups`; DEC-298 (6)).
  */
 export type AssetGroup =
   | 'boot'
@@ -53,6 +58,9 @@ export type RenditionKey =
   | 'refraction-idle'
   | 'refraction-picked'
   | 'mirrored';
+
+/** A registered contributor attachment (ADR 0028): a key of `ATTACHMENT_REFERENCES`. */
+type AttachmentReferenceId = keyof typeof ATTACHMENT_REFERENCES;
 
 /** Who licensed an asset; `ASSET_LICENCES` holds the text and notice. */
 export type LicenceId = 'owner' | 'user-authorised-art' | 'ofl-cinzel' | 'mit-phosphor';
@@ -100,8 +108,11 @@ type EntryBase = {
    * paints removed, the holes and the crop).
    */
   readonly source: string;
-  /** ADR 0028: a registered, documented user attachment shared by derived assets. */
-  readonly attachmentReferenceId?: string;
+  /**
+   * ADR 0028: the registered, documented contributor attachment the asset is made from (a key of
+   * `ATTACHMENT_REFERENCES`, so a typo fails the type check).
+   */
+  readonly attachmentReferenceId?: AttachmentReferenceId;
 };
 
 /** An image the React screens and the HUD draw, with its per-use renditions (I-45). */
@@ -123,10 +134,12 @@ export type FontEntry = EntryBase & {
   readonly weight: string;
 };
 
-/** One asset of the manifest. */
+/** A world sprite sheet the canvas draws: one image cut into a uniform grid of frames. */
 export type SpriteAtlasEntry = EntryBase & {
   readonly type: 'sprite-atlas';
+  /** Frames per row; the image width divides by it (`SpriteAtlasLoader` checks). */
   readonly columns: number;
+  /** Rows of frames; the image height divides by it (`SpriteAtlasLoader` checks). */
   readonly rows: number;
 };
 

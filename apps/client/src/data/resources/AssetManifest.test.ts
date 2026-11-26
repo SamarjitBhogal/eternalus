@@ -175,6 +175,19 @@ describe('ASSET_MANIFEST', () => {
     ).toEqual([]);
   });
 
+  it('types an attachment id as a registered reference, so a typo fails the type check', () => {
+    expectTypeOf<NonNullable<AssetManifestEntry['attachmentReferenceId']>>().toEqualTypeOf<
+      keyof typeof ATTACHMENT_REFERENCES
+    >();
+    expectTypeOf<keyof typeof ATTACHMENT_REFERENCES>().not.toEqualTypeOf<string>();
+    // The same rule at run time: every id the manifest names is registered.
+    expect(
+      assets.flatMap(({ attachmentReferenceId: id }) =>
+        id === undefined || id in ATTACHMENT_REFERENCES ? [] : [id],
+      ),
+    ).toEqual([]);
+  });
+
   it('binds each attachment entry to its registered, documented reference (ADR 0028, DEC-298)', () => {
     const attached = assets.filter((entry) => entry.attachmentReferenceId !== undefined);
     expect(attached.map(({ id }) => id)).toEqual([
