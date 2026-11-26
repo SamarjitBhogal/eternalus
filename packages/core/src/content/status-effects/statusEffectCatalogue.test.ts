@@ -19,6 +19,7 @@ describe('STATUS_EFFECTS', () => {
       'fury',
       'fury-windup',
       'burn',
+      'sundered',
     ]);
   });
 

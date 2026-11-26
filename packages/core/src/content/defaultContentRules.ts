@@ -18,6 +18,7 @@ import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
 import { KitInPoolRule } from './validation/KitInPoolRule';
 import { KnownAbilityRefsRule } from './validation/KnownAbilityRefsRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
+import { KnownSpecWeaponRule } from './validation/KnownSpecWeaponRule';
 import { KnownProjectileRule } from './validation/KnownProjectileRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
@@ -61,16 +62,19 @@ export const createDefaultContentRules = (
  *
  * @param legends - The loaded Legend classes a spec's `classId` must name.
  * @param abilities - The abilities a spec's own kit may name; the shipped set by default.
+ * @param weapons - The weapons a spec's own start weapon may name; the shipped set by default.
  */
 export const createLegendSpecRules = (
   legends: ContentCatalogue<LegendDefinition>,
   abilities: Pick<ContentCatalogue<AbilityBase>, 'has' | 'get'> = ABILITIES,
+  weapons: Pick<ContentCatalogue<WeaponDefinition>, 'has'> = WEAPONS,
 ): readonly ContentRule<LegendSpecDefinition>[] => [
   new KebabCaseIdRule(),
   new SpecClassExistsRule(legends),
   new RoleRatingRangeRule(),
   new KnownAbilityRefsRule(abilities, legends),
   new KitInPoolRule(legends),
+  new KnownSpecWeaponRule(weapons),
 ];
 
 /** Every shipped locked-class rule. A new locked-class rule is one line here. */

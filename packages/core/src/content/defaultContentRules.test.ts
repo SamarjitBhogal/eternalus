@@ -15,6 +15,7 @@ import { KitInPoolRule } from './validation/KitInPoolRule';
 import { KnownAbilityRefsRule } from './validation/KnownAbilityRefsRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
 import { KnownProjectileRule } from './validation/KnownProjectileRule';
+import { KnownSpecWeaponRule } from './validation/KnownSpecWeaponRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
@@ -80,6 +81,7 @@ describe('createLegendSpecRules', () => {
       RoleRatingRangeRule,
       KnownAbilityRefsRule,
       KitInPoolRule,
+      KnownSpecWeaponRule,
     ]);
   });
 
@@ -91,6 +93,7 @@ describe('createLegendSpecRules', () => {
         id: 'Bad_Id',
         classId: 'harbinger',
         roleRatings: { damage: 0.5, support: 1.5, control: 0.5 },
+        primaryWeaponId: 'nope',
       },
     ]);
 
@@ -102,7 +105,8 @@ describe('createLegendSpecRules', () => {
     }).toThrow(
       'Invalid content: Bad_Id: id must be kebab-case; ' +
         'Bad_Id: classId "harbinger" is not a Legend class; ' +
-        'Bad_Id: roleRatings.support must be a fraction from 0 to 1',
+        'Bad_Id: roleRatings.support must be a fraction from 0 to 1; ' +
+        'Bad_Id: primaryWeaponId "nope" names no weapon',
     );
   });
 });

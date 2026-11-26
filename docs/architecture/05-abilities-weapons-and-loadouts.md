@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-26
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -818,6 +818,19 @@ as before. A dash step of a gone caster does nothing (`DashEffect`), and `Entity
 ignores an unknown attacker. A live attacker's hit does not change. `attackInTicks` and
 `timeProblems` now live in `content/timesInTicks.ts` with `stepInTicks`, shared by the loaders of
 abilities, statuses, weapons and turret ammo.
+
+**Implementation status, 2026-11-26 (branch `feat/start-weapons`, lane A PR 3; DEC-374).** A Legend
+spawns with the weapon of its spec. `LegendSpecDefinition.primaryWeaponId` (`string | null`) is the
+start weapon; `null` falls back to the class's `defaultLoadout.primaryWeaponId`, as `kit: null`
+falls back to `defaultKit`. `content/legends/specs/primaryWeaponIdOf.ts` holds the rule (the
+sibling of `kitOf`) and `Legend.basicAttack` calls it. `KnownSpecWeaponRule` rejects a spec weapon
+id that names no weapon. This is the build of §12's `LoadoutTemplate.primaryWeaponId` at the spec,
+the one place that varies per Legend today; the class default stays as the fallback and the
+`defaultLoadout` of a class is unchanged. New weapons: `long-sword`, `great-sword`, `dual-blades`
+(class `sword`, melee sweep, open to every class). Raptor Talons and the Obsidian Bow have an
+attack `onHit` step: one stack of `bleed` and of the new `sundered` status (`damageTaken`, +5 %
+per stack, added) on each hit. The Colossus' Bastions are not built: reference 07 names no weapon
+class for them (DEC-374 (7)).
 
 ## 11. Artifacts (gadgets Z and C)
 

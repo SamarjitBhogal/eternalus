@@ -67,6 +67,11 @@ export type LegendSpecDefinition = {
   readonly description: string | null;
   /** `null` while the owner has given none. */
   readonly roleRatings: RoleRatings | null;
+  /**
+   * The weapon this Legend spawns with (05 §12 `LoadoutTemplate.primaryWeaponId`; DEC-374); `null` =
+   * its class's `defaultLoadout`. `KnownSpecWeaponRule` checks that it names a weapon.
+   */
+  readonly primaryWeaponId: string | null;
   readonly detailNames: SpecDetailNames;
   /**
    * The abilities this Legend equips (DEC-198); `null` = its class's `defaultKit`. Every id comes

@@ -96,12 +96,15 @@ describe('loadWeapons', () => {
     expect(broken).toThrow('Weapon "test-talons": debuff durationSeconds must not be negative.');
   });
 
-  it('ships each class default weapon', () => {
+  it('ships each class default weapon and the sword catalogue', () => {
     expect(loadWeapons(30).ids).toEqual([
       'raptor-talons',
       'wuuthrad',
       'magus-staff',
       'obsidian-bow',
+      'long-sword',
+      'great-sword',
+      'dual-blades',
     ]);
   });
 
