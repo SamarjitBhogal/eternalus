@@ -72,7 +72,7 @@ describe('BasicAttackLevelStep', () => {
     expect(at(from(null))).toBe(10);
     expect(at(from(dummy))).toBe(10);
     state.entities.remove(warrior.id, 'died');
-    expect(at({ ...from(null), attackerId: warrior.id })).toBe(10);
+    expect(at(from(warrior))).toBe(10);
   });
 
   it('runs in the default damage steps: a max-level Legend hits harder than a level-1 one', () => {

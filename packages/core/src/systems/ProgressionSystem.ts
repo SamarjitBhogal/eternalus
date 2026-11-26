@@ -7,6 +7,8 @@ import type { LegendDefinition } from '../content/legends/legends.types';
 import type { LevelScalingDefinition } from '../content/progression/progression.types';
 import { MOB_KINDS } from '../content/mobs/mobKinds';
 import type { Entity } from '../entities/Entity';
+import type { EntityId } from '../state/EntityStore.types';
+import type { DamageSource } from '../state/GameEvents.types';
 import type { GameState } from '../state/GameState';
 import type { OwedXp } from '../state/RespawnQueue.types';
 import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
@@ -38,7 +40,8 @@ export class ProgressionSystem implements System {
   private readonly pending: Award[] = [];
 
   /**
-   * @param state - The match whose `entity-died` events this system listens to.
+   * @param state - The match whose `entity-died` events this system listens to (none when
+   * `content.hasMatchXp` is false).
    * @param content - The unit definitions, level curves and XP sources it prices and levels with.
    */
   public constructor(
@@ -64,43 +67,7 @@ export class ProgressionSystem implements System {
    */
   private listenForAwards(state: GameState): void {
     state.events.on('entity-died', ({ entityId, killer }) => {
-      const victim = state.entities.get(entityId);
-      const killerId = killer.attackerId;
-      if (killerId === null || victim === undefined) {
-        return;
-      }
-      const victimTeam = victim.findComponent(TeamMembership)?.team;
-      // A killer waiting to respawn is out of the store but keeps its team.
-      const killerTeam = (
-        state.entities.get(killerId) ?? state.respawns.legendOf(killerId)
-      )?.findComponent(TeamMembership)?.team;
-      if (victimTeam === undefined || killerTeam === victimTeam) {
-        // O5: no reward for an ally kill or a self-kill (a killer is on its own team); teams are
-        // compared, so neutral camp mobs still pay.
-        return;
-      }
-      const teamKill = this.content.xpSources.teamKills[victim.definitionId];
-      if (teamKill !== undefined) {
-        // shortcut: the team is the killer's, read from the store or the respawn queue, so a boss
-        // killed by a hit from a mob already removed (e.g. its projectile) pays nobody; upgrade
-        // when `DamageSource` carries the attacker's team (INBOX.md capture point mini-boss
-        // interim (d)).
-        if (isPlayableTeam(killerTeam)) {
-          this.pending.push({
-            kind: 'team-kill',
-            team: killerTeam,
-            victimId: entityId,
-            victimTeam,
-            xp: teamKill.xp,
-            maxLevels: teamKill.maxLevels,
-          });
-        }
-        return;
-      }
-      const xp = this.xpFor(victim);
-      if (xp > 0) {
-        this.pending.push({ kind: 'kill', killerId, victimId: entityId, victimTeam, xp });
-      }
+      this.priceKill(state, entityId, killer);
     });
     // DEC-186: a destroyed structure pays every Legend of the opposing playable team, whoever or
     // whatever landed the last hit. Buildings are map objects, not structures: no event, no XP.
@@ -129,6 +96,51 @@ export class ProgressionSystem implements System {
         });
       }
     });
+  }
+
+  /**
+   * Buffers the award for the kill of `entityId` by `killer`, priced while the victim is still in
+   * the store: a team-wide award for a boss in `xpSources.teamKills`, else the victim's XP for the
+   * killer. An ally kill, a self-kill or a kill with no attacker pays nothing (O5).
+   */
+  private priceKill(state: GameState, entityId: EntityId, killer: DamageSource): void {
+    const victim = state.entities.get(entityId);
+    const killerId = killer.attackerId;
+    if (killerId === null || victim === undefined) {
+      return;
+    }
+    const victimTeam = victim.findComponent(TeamMembership)?.team;
+    // A killer waiting to respawn is out of the store but keeps its team.
+    const killerTeam = (
+      state.entities.get(killerId) ?? state.respawns.legendOf(killerId)
+    )?.findComponent(TeamMembership)?.team;
+    if (victimTeam === undefined || killerTeam === victimTeam) {
+      // O5: no reward for an ally kill or a self-kill (a killer is on its own team); teams are
+      // compared, so neutral camp mobs still pay.
+      return;
+    }
+    const teamKill = this.content.xpSources.teamKills[victim.definitionId];
+    if (teamKill !== undefined) {
+      // shortcut: the team is the killer's, read from the store or the respawn queue, so a boss
+      // killed by a hit from a mob already removed (e.g. its projectile) pays nobody; upgrade
+      // when `DamageSource` carries the attacker's team (INBOX.md capture point mini-boss
+      // interim (d)).
+      if (isPlayableTeam(killerTeam)) {
+        this.pending.push({
+          kind: 'team-kill',
+          team: killerTeam,
+          victimId: entityId,
+          victimTeam,
+          xp: teamKill.xp,
+          maxLevels: teamKill.maxLevels,
+        });
+      }
+      return;
+    }
+    const xp = this.xpFor(victim);
+    if (xp > 0) {
+      this.pending.push({ kind: 'kill', killerId, victimId: entityId, victimTeam, xp });
+    }
   }
 
   /** Gives this tick's XP, in the order it was earned, and applies each level gained. */

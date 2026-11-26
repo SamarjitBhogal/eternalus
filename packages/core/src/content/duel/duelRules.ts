@@ -49,8 +49,8 @@ export const DUEL_RULES = {
    */
   legendsStartAtMaxLevel: true,
   /**
-   * A Duel earns no match XP: kills pay none, as every Legend is already at the cap (DEC-380 (1)).
-   * Profile XP, once built, is apart from this.
+   * A Duel earns no match XP: no kill, structure or respawn award (DEC-380 (1)). Profile XP, once
+   * built, is apart from this.
    */
   hasMatchXp: false,
 } as const;

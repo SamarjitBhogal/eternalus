@@ -84,7 +84,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     const { tickRate, map } = state.config;
     // A death by the gem counts for the victim's last enemy damager in the assist window (DEC-346).
     const damage = new DamagePipeline(
-      createDefaultDamageSteps(),
+      createDefaultDamageSteps(progression.units),
       new KillCredit(assistWindowTicks, CATHEDRAL_GEM.statusIds),
     );
     const veterancy = loadMinionVeterancy(tickRate);

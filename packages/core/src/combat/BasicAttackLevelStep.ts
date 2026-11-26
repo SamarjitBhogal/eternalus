@@ -1,6 +1,6 @@
 import { Progression } from '../components/Progression';
-import type { ContentCatalogue } from '../content/ContentCatalogue';
-import type { LegendDefinition } from '../content/legends/legends.types';
+import { LEGEND_KINDS } from '../content/legends/legendKinds';
+import type { DefinitionSource } from '../entities/EntityFactory.types';
 import type { GameState } from '../state/GameState';
 import type { DamageHit, DamageStep } from './DamageStep.types';
 
@@ -18,10 +18,11 @@ import type { DamageHit, DamageStep } from './DamageStep.types';
 export class BasicAttackLevelStep implements DamageStep {
   public readonly name = 'basic-attack-level';
 
-  /** @param legends - The Legend classes, for each class's `levelScaling.basicAttackPerLevel`. */
-  public constructor(
-    private readonly legends: Pick<ContentCatalogue<LegendDefinition>, 'has' | 'get'>,
-  ) {}
+  /**
+   * @param units - The match's unit definitions (the same source as `ProgressionSystem`); a Legend
+   * class's `levelScaling.basicAttackPerLevel` is read from it.
+   */
+  public constructor(private readonly units: DefinitionSource) {}
 
   /** Returns a Legend's weapon hit × its basic-attack potency, any other hit unchanged. */
   public adjust({ amount, source }: DamageHit, state: GameState): number {
@@ -33,11 +34,14 @@ export class BasicAttackLevelStep implements DamageStep {
     if (
       attacker === undefined ||
       progression === undefined ||
-      !this.legends.has(attacker.definitionId)
+      !this.units.has(attacker.definitionId)
     ) {
       return amount;
     }
-    const { basicAttackPerLevel } = this.legends.get(attacker.definitionId).levelScaling;
-    return amount * progression.potency({ perLevel: basicAttackPerLevel });
+    const definition = this.units.get(attacker.definitionId);
+    if (!LEGEND_KINDS.has(definition)) {
+      return amount;
+    }
+    return amount * progression.potency({ perLevel: definition.levelScaling.basicAttackPerLevel });
   }
 }

@@ -2,6 +2,7 @@ import type { DamageStep } from './DamageStep.types';
 import { BasicAttackLevelStep } from './BasicAttackLevelStep';
 import { BreakabilityStep } from './BreakabilityStep';
 import { LEGEND_CLASSES } from '../content/legends/legendCatalogue';
+import type { DefinitionSource } from '../entities/EntityFactory.types';
 import { BOSS_MINION_DAMAGE_TAKEN, MINION_STRENGTH } from '../content/mobs/minionModifiers';
 import { MOB_DEFINITIONS } from '../content/mobs/mobCatalogue';
 import { BossMinionDamageStep } from './BossMinionDamageStep';
@@ -12,11 +13,16 @@ import { StatusModifierStep } from './StatusModifierStep';
 /**
  * The damage steps in the order every hit runs them (architecture 05 §9). This is the one place a
  * step is added: structure multipliers and breakability each add a line here.
+ *
+ * @param units - The match's unit definitions, for each Legend class's basic-attack scaling
+ * (`ProgressionContent.units`); the Legend classes alone when not given.
  */
-export const createDefaultDamageSteps = (): readonly DamageStep[] => [
+export const createDefaultDamageSteps = (
+  units: DefinitionSource = LEGEND_CLASSES,
+): readonly DamageStep[] => [
   new BreakabilityStep(),
   new FriendlyFireStep(),
-  new BasicAttackLevelStep(LEGEND_CLASSES),
+  new BasicAttackLevelStep(units),
   new StatusModifierStep(),
   new MinionStrengthStep(MINION_STRENGTH),
   new BossMinionDamageStep(BOSS_MINION_DAMAGE_TAKEN, MOB_DEFINITIONS.ids),
