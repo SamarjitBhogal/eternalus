@@ -356,6 +356,7 @@ describe('MiniMapView unit markers (DEC-187)', () => {
       aether: null,
       area: null,
       capture: null,
+      gem: null,
     };
     const counters = { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} };
     const snapshot: Snapshot = {

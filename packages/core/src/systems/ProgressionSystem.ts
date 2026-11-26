@@ -8,6 +8,7 @@ import type { LevelScalingDefinition } from '../content/progression/progression.
 import { MOB_KINDS } from '../content/mobs/mobKinds';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
+import type { OwedXp } from '../state/RespawnQueue.types';
 import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
 import type { System, SystemContext } from './System.types';
 import type { Award, ProgressionContent } from './ProgressionSystem.types';
@@ -21,6 +22,13 @@ import type { Award, ProgressionContent } from './ProgressionSystem.types';
  * the cap leaves nothing to pay gets no award. Self-kills and ally kills pay nothing (O5). Each
  * level gained raises max health by the class's share of its base health (O3) and max aether,
  * heals and refills by the raise only while the Legend is alive (O4), and emits `level-up`.
+ * With `content.legendsStartAtMaxLevel` (a Duel, SCRUM-444) each Legend that spawns is raised to its
+ * curve's cap at once, with the same per-level raises; that start is no award, so it emits no
+ * `xp-gained` and no `level-up`.
+ * A Legend waiting to respawn (`state.respawns`) is owed what it earns meanwhile: its team's
+ * structure and boss awards, and a kill its projectile or damage over time lands after it died.
+ * It gets that XP once it is back (`legend-respawned`, DEC-186 "pay on respawn"): the listener
+ * buffers it and the next tick's pass pays it by the same path, with the cause `respawn`.
  */
 export class ProgressionSystem implements System {
   public readonly name = 'progression';
@@ -42,7 +50,10 @@ export class ProgressionSystem implements System {
         return;
       }
       const victimTeam = victim.findComponent(TeamMembership)?.team;
-      const killerTeam = state.entities.get(killerId)?.findComponent(TeamMembership)?.team;
+      // A killer waiting to respawn is out of the store but keeps its team.
+      const killerTeam = (
+        state.entities.get(killerId) ?? state.respawns.legendOf(killerId)
+      )?.findComponent(TeamMembership)?.team;
       if (victimTeam === undefined || killerTeam === victimTeam) {
         // O5: no reward for an ally kill or a self-kill (a killer is on its own team); teams are
         // compared, so neutral camp mobs still pay.
@@ -50,9 +61,10 @@ export class ProgressionSystem implements System {
       }
       const teamKill = content.xpSources.teamKills[victim.definitionId];
       if (teamKill !== undefined) {
-        // shortcut: the team is the killer's, read from the store, so a boss killed by a hit from
-        // a Legend already removed (e.g. its projectile) pays nobody; upgrade when `DamageSource`
-        // carries the attacker's team (INBOX.md capture point mini-boss interim (d)).
+        // shortcut: the team is the killer's, read from the store or the respawn queue, so a boss
+        // killed by a hit from a mob already removed (e.g. its projectile) pays nobody; upgrade
+        // when `DamageSource` carries the attacker's team (INBOX.md capture point mini-boss
+        // interim (d)).
         if (isPlayableTeam(killerTeam)) {
           this.pending.push({
             kind: 'team-kill',
@@ -82,24 +94,53 @@ export class ProgressionSystem implements System {
         });
       }
     });
+    if (content.legendsStartAtMaxLevel === true) {
+      state.events.on('entity-spawned', ({ entityId }) => {
+        const entity = state.entities.get(entityId);
+        if (entity !== undefined) {
+          this.startAtMaxLevel(entity);
+        }
+      });
+    }
+    // The listener only buffers: the XP is paid in this system's own pass on the next tick, as
+    // architecture 03 §4 requires of a listener that changes state.
+    state.events.on('legend-respawned', ({ entityId, owedXp }) => {
+      for (const { victimId, victimTeam, xp, maxLevels, flatLevels } of owedXp) {
+        this.pending.push({
+          kind: 'respawn',
+          recipientId: entityId,
+          victimId,
+          victimTeam,
+          xp,
+          ...(maxLevels !== undefined && { maxLevels }),
+          ...(flatLevels !== undefined && { flatLevels }),
+        });
+      }
+    });
   }
 
   /** Gives this tick's XP, in the order it was earned, and applies each level gained. */
   public update({ state }: SystemContext): void {
     for (const award of this.pending.splice(0)) {
-      if (award.kind === 'kill') {
-        // TODO(claudiodh): O4 pays a Legend killed earlier, but `DeathSystem` still removes dead
-        // Legends, so its XP is dropped here; respawn (FR-051, SCRUM-178) must keep them in the
-        // store.
-        const killer = state.entities.get(award.killerId);
-        if (killer !== undefined) {
-          this.grant(killer, award, state);
+      if (award.kind === 'respawn') {
+        const recipient = state.entities.get(award.recipientId);
+        if (recipient !== undefined) {
+          this.grant(recipient, award, state);
         }
         continue;
       }
-      // Every Legend still in the store on the rewarded team; a dead one is already removed.
-      // ponytail: stand-in removed by GL-12 (DEC-186, owner 2026-11-05: "pay on respawn"): a Legend
-      // dead when the structure falls must get its share when it respawns; respawn does not exist.
+      if (award.kind === 'kill') {
+        // O4 pays a Legend killed earlier: still in the store this tick, or waiting to respawn.
+        const killer = state.entities.get(award.killerId);
+        if (killer !== undefined) {
+          this.grant(killer, award, state);
+        } else if (state.respawns.has(award.killerId)) {
+          state.respawns.owe(award.killerId, ProgressionSystem.owed(award));
+        }
+        continue;
+      }
+      // Every Legend on the rewarded team: the ones in the store now, and the ones waiting to
+      // respawn when they return (DEC-186).
       state.entities.forEach((entity) => {
         if (
           entity.findComponent(TeamMembership)?.team === award.team &&
@@ -108,7 +149,25 @@ export class ProgressionSystem implements System {
           this.grant(entity, award, state);
         }
       });
+      state.respawns.forEach(({ legend, team }) => {
+        if (team === award.team) {
+          state.respawns.owe(legend.id, ProgressionSystem.owed(award));
+        }
+      });
     }
+  }
+
+  /** What a waiting Legend is owed for `award`. */
+  private static owed(award: Exclude<Award, { readonly kind: 'respawn' }>): OwedXp {
+    return {
+      cause: award.kind,
+      victimId: award.victimId,
+      victimTeam: award.victimTeam,
+      xp: award.xp,
+      ...(award.kind !== 'kill' && award.maxLevels !== undefined && { maxLevels: award.maxLevels }),
+      ...(award.kind !== 'kill' &&
+        award.flatLevels !== undefined && { flatLevels: award.flatLevels }),
+    };
   }
 
   /** Awards `recipient` its XP and applies each level it gains; a non-leveller keeps the XP only. */
@@ -119,7 +178,7 @@ export class ProgressionSystem implements System {
     }
     const curve = this.content.curves.get(progression.curveId);
     const capped = { ...award, xp: this.xpForAward(progression, award, curve) };
-    if (capped.kind === 'team-kill' && capped.xp <= 0) {
+    if (capped.kind !== 'kill' && capped.kind !== 'structure-destroyed' && capped.xp <= 0) {
       return;
     }
     const gained = this.award(recipient, progression, capped, state);
@@ -145,7 +204,24 @@ export class ProgressionSystem implements System {
     return Math.min(award.xp, progression.xpToReach(progression.level + award.maxLevels, curve));
   }
 
-  /** The one caller of `addXp`; it always announces the award, so none can bypass the invariant. */
+  /**
+   * Raises a freshly spawned Legend to its curve's cap with each level's raises (SCRUM-444); a mob
+   * or a structure is left as it is. The start is no award, so nothing is announced.
+   */
+  private startAtMaxLevel(entity: Entity): void {
+    const progression = entity.findComponent(Progression);
+    const definition = this.legendOf(entity);
+    if (progression === undefined || definition === undefined) {
+      return;
+    }
+    const curve = this.content.curves.get(progression.curveId);
+    const gained = progression.addXp(progression.xpToReach(curve.cap, curve), curve);
+    for (let step = 0; step < gained; step += 1) {
+      ProgressionSystem.levelUp(entity, definition.levelScaling, definition.baseHealth);
+    }
+  }
+
+  /** The one caller of `addXp` for awards; it always announces one, so none bypasses the invariant. */
   private award(
     recipient: Entity,
     progression: Progression,

@@ -4,6 +4,7 @@ import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { EntityId, RemovalCause } from './EntityStore.types';
 import type { MatchResult } from './MatchResult.types';
+import type { OwedXp } from './RespawnQueue.types';
 
 /**
  * Who or what dealt damage (architecture 05 §9). Every hit names one, so every death has a killer.
@@ -54,6 +55,11 @@ export type GameEventMap = {
     readonly absorbed: number;
     readonly source: DamageSource;
   };
+  /**
+   * A hit that a damage step took to 0 (an unbreakable structure, friendly fire): nothing reached
+   * `Health`. The Cathedral gem answers it (DEC-292).
+   */
+  readonly 'damage-blocked': { readonly targetId: EntityId; readonly source: DamageSource };
   readonly 'entity-died': { readonly entityId: EntityId; readonly killer: DamageSource };
   readonly 'structure-destroyed': {
     readonly entityId: EntityId;
@@ -106,6 +112,18 @@ export type GameEventMap = {
     readonly from: Team;
     readonly to: Team;
   };
+  /** A minion's kills earned it one level (`VeterancySystem`); `MinionLevelSystem` applies it. */
+  readonly 'minion-level-earned': { readonly entityId: EntityId };
+  /**
+   * A level source other than kills (`sourceId`, a held capture zone, 07 §7, DEC-258) grants a
+   * minion `levels` minion levels, or takes them back when negative; `MinionLevelSystem` applies
+   * them on its pass.
+   */
+  readonly 'minion-levels-granted': {
+    readonly entityId: EntityId;
+    readonly levels: number;
+    readonly sourceId: EntityId;
+  };
   readonly 'phase-changed': { readonly from: MatchPhase; readonly to: MatchPhase };
   /** Once per match, when a verdict ends it; `result` is the one stored in `state.match.result`. */
   readonly 'match-ended': { readonly result: MatchResult };
@@ -117,8 +135,20 @@ export type GameEventMap = {
   };
   readonly 'status-applied': StatusPayload;
   readonly 'status-expired': StatusPayload;
+  /** Some stacks of a status taken off while some stay on (a lost minion level); `stacks` are left. */
+  readonly 'status-stacks-lost': StatusPayload & { readonly stacks: number };
   readonly 'horde-spawned': HordePayload;
   readonly 'horde-dissolved': HordePayload;
+  /**
+   * A dead Legend came back at its Stronghold (FR-051, DEC-295): the same entity, with `owedXp`,
+   * the XP it earned while it waited, which `ProgressionSystem` pays now (DEC-186).
+   */
+  readonly 'legend-respawned': {
+    readonly entityId: EntityId;
+    readonly team: Team;
+    readonly position: Vec2;
+    readonly owedXp: readonly OwedXp[];
+  };
   readonly 'level-up': { readonly entityId: EntityId; readonly level: number };
   /**
    * XP reaching a Legend; one per award, so the invariant can audit every award. A kill pays its
@@ -130,7 +160,8 @@ export type GameEventMap = {
     readonly amount: number;
     readonly victimId: EntityId;
     readonly victimTeam: Team;
-    readonly cause: 'kill' | 'structure-destroyed' | 'team-kill';
+    /** `respawn`: XP owed while the Legend waited, paid as it returns (DEC-186). */
+    readonly cause: 'kill' | 'structure-destroyed' | 'team-kill' | 'respawn';
   };
   readonly 'team-changed': {
     readonly entityId: EntityId;

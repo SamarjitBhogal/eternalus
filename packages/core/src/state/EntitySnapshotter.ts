@@ -4,6 +4,7 @@ import { Combat } from '../components/Combat';
 import { CombatHitbox } from '../components/CombatHitbox';
 import { CATHEDRAL_BOSS } from '../content/mobs/cathedralBoss';
 import { Capturable } from '../components/Capturable';
+import { CathedralGemState } from '../components/CathedralGemState';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Progression } from '../components/Progression';
@@ -45,6 +46,7 @@ export class EntitySnapshotter {
       entity.definitionId === CATHEDRAL_BOSS.id
         ? entity.findComponent(Combat)?.lastAttackTick
         : null;
+    const gem = entity.findComponent(CathedralGemState);
     return {
       ...(hitbox === undefined || transform === undefined
         ? {}
@@ -90,6 +92,15 @@ export class EntitySnapshotter {
               checkpoints: this.checkpoints,
               lockedBy: capture.lockedBy,
               presence: capture.presence,
+            },
+      gem:
+        gem === undefined
+          ? null
+          : {
+              holder: gem.holder,
+              glowTicksLeft: gem.glowTicksLeft,
+              glowHits: gem.glowHits,
+              ticksSinceHit: gem.ticksSinceHit,
             },
     };
   }

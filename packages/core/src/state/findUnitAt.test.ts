@@ -23,6 +23,7 @@ const entity = (
   aether: null,
   area: null,
   capture: null,
+  gem: null,
 });
 
 const PLAYER = entity('player', 'legend', 'light', 100);
@@ -55,6 +56,21 @@ describe('findUnitAt', () => {
     ];
     expect(findUnitAt(units, 'player', { x: 0, y: 0 })).toBe('boss');
     expect(findUnitAt(units, 'player', { x: 10, y: 0 })).toBe('unit');
+  });
+
+  it('selects the Cathedral boss outside its footprint when the click is inside its outline', () => {
+    const boss = {
+      ...entity('eternal', 'mob', 'neutral', 0, 1.25),
+      definitionId: 'cathedral-boss',
+      combatHitbox: [
+        { x: -20, y: -10 },
+        { x: 20, y: -10 },
+        { x: 20, y: 10 },
+        { x: -20, y: 10 },
+      ],
+    };
+    expect(findUnitAt([PLAYER, boss], PLAYER.id, { x: 18, y: 0 })).toBe(boss.id);
+    expect(findUnitAt([PLAYER, boss], PLAYER.id, { x: 21, y: 0 })).toBeNull();
   });
 
   it('skips structures, allies, the attacker, dead units, and units without health', () => {

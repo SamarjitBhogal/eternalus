@@ -52,6 +52,36 @@ const siege = () => {
   simulation.on('horde-spawned', ({ team, lane, memberIds }) => {
     spawned.push({ tick: simulation.tick, team, lane, memberIds });
   });
+  // Hordes fight to the death (MS-36), so whether any of a team's minions are still on the lane
+  // when its tower falls depends on how the fights went, and so on entity id order. A defending
+  // horde therefore joins each lane structure once it drops below a quarter of its health: the
+  // loss always has members on the lane, whatever entities the match holds.
+  const structures = new Map(
+    simulation
+      .snapshot()
+      .entities.flatMap(({ id, family, team, transform }) =>
+        family === 'structure' && (team === 'light' || team === 'dark') && transform !== null
+          ? [[id, { team, at: { x: transform.x, y: transform.y } }] as const]
+          : [],
+      ),
+  );
+  simulation.on('damage-applied', ({ targetId }) => {
+    const structure = structures.get(targetId);
+    const health = structure
+      ? simulation.snapshot().entities.find(({ id }) => id === targetId)?.health
+      : undefined;
+    if (structure === undefined || health == null || health.current > health.max / 4) {
+      return;
+    }
+    structures.delete(targetId);
+    simulation.enqueueCommand({
+      type: 'dev-spawn-mobs',
+      team: structure.team,
+      definitionId: LIGHT_MINION.id,
+      count: 8,
+      origin: { kind: 'point', at: structure.at },
+    });
+  });
   const stepUntil = (isDone: () => boolean, seconds: number) => {
     while (!isDone() && simulation.tick < seconds * config.tickRate) {
       simulation.step();

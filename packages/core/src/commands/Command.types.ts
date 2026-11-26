@@ -69,8 +69,22 @@ type CommandPayloads = {
   };
   /** Developer menu: bring forward the match's scheduled Cathedral boss. */
   readonly 'dev-spawn-boss': { readonly definitionId: 'cathedral-boss' };
-  /** Developer menu: remove an entity (cause `dev-removed`). */
+  /**
+   * Developer menu: add one bot Legend of class `definitionId` at `team`'s Stronghold, played by
+   * the Rover controller (it takes no lane). Refused at `maxLegendsPerTeam`.
+   */
+  readonly 'dev-spawn-legend': { readonly team: PlayableTeam; readonly definitionId: string };
+  /**
+   * Developer menu: remove an entity (cause `dev-removed`). A Legend a human plays is refused
+   * (`human-legend`): the human is removed only in sim mode (13 §4).
+   */
   readonly 'dev-remove-entity': { readonly entityId: EntityId };
+  /**
+   * Developer menu: remove a Legend (cause `dev-removed`; FR-097, DEC-293). Refused for an entity
+   * that is not a Legend (`not-a-legend`) and refused (`human-legend`) while a human seat holds
+   * the Legend, that is, outside sim mode.
+   */
+  readonly 'dev-remove-legend': { readonly entityId: EntityId };
   /** Developer menu: hand an entity to another controller (sim mode). */
   readonly 'dev-set-controller': { readonly entityId: EntityId; readonly controllerId: string };
 };
@@ -95,6 +109,8 @@ export type CommandRejectReason =
   | 'invalid-position'
   | 'invalid-origin'
   | 'cap-exceeded'
+  | 'not-a-legend'
+  | 'no-stronghold'
   | 'horde-only'
   | 'map-only'
   | 'invalid-direction'
@@ -102,4 +118,5 @@ export type CommandRejectReason =
   | 'cannot-attack'
   | 'invalid-target'
   | 'not-supported'
+  | 'human-legend'
   | 'match-ended';

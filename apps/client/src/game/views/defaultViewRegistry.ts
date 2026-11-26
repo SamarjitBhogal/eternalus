@@ -1,5 +1,6 @@
 import { CapturePointView } from './CapturePointView';
 import { ColossusView } from './ColossusView';
+import { CathedralGemView } from './CathedralGemView';
 import { DefaultEntityView } from './DefaultEntityView';
 import { LegendView } from './LegendView';
 import { MobView } from './MobView';
@@ -22,5 +23,6 @@ export const createDefaultViewRegistry = (
   registry.registerFamily('structure', new StructureView());
   registry.registerKind('capture-point', new CapturePointView());
   if (image !== undefined) registry.registerDefinition('cathedral-boss', new ColossusView(image));
+  registry.registerKind('cathedral-gem', new CathedralGemView());
   return registry;
 };

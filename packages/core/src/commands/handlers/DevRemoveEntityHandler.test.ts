@@ -49,4 +49,21 @@ describe('DevRemoveEntityHandler', () => {
     expect(result).toBe('unknown-entity');
     expect(context.state.entities.size).toBe(1);
   });
+
+  it.each(['light', 'dark'] as const)(
+    'refuses the Legend in the %s human seat and keeps it (13 §4: the human only in sim mode)',
+    (team) => {
+      const context = contextWithEntity();
+      context.state.match.seatHuman('entity-1', team);
+      const removed: unknown[] = [];
+      context.state.events.on('entity-removed', (payload) => removed.push(payload));
+      const result = new DevRemoveEntityHandler().handle(
+        { type: 'dev-remove-entity', entityId: 'entity-1' },
+        context,
+      );
+      expect(result).toBe('human-legend');
+      expect(context.state.entities.has('entity-1')).toBe(true);
+      expect(removed).toEqual([]);
+    },
+  );
 });

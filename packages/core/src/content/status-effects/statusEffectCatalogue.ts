@@ -6,6 +6,8 @@ import { CONCUSSION } from './concussion';
 import { CONTROL_IMMUNE } from './controlImmune';
 import { CRUSHED } from './crushed';
 import { ENRAGED } from './enraged';
+import { GEM_BURN } from './gemBurn';
+import { GEM_SHOCK } from './gemShock';
 import type { AuthoredStatusEffect } from './statusEffects.types';
 import { RALLIED } from './rallied';
 import { STUN } from './stun';
@@ -23,4 +25,6 @@ export const STATUS_EFFECTS = new ContentCatalogue<AuthoredStatusEffect>([
   VETERAN,
   RALLIED,
   BOSS_CAST_LOCK,
+  GEM_SHOCK,
+  GEM_BURN,
 ]);

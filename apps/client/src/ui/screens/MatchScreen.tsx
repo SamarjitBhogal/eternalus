@@ -2,9 +2,13 @@ import { type ReactElement, useRef } from 'react';
 
 import { emitIntent } from '../../bridge/eventBus';
 import { useAppSelector } from '../../bridge/hooks';
+import { selectIsDuel } from '../../bridge/selectors/selectIsDuel';
 import { AbilityBar } from '../hud/AbilityBar';
 import { AetherBar } from '../hud/AetherBar';
+import { DeveloperMenu } from '../hud/DeveloperMenu';
 import { DuelHud } from '../hud/DuelHud';
+import { DuelLeaveDialog } from '../hud/DuelLeaveDialog';
+import { useDuelUnloadGuard } from '../hud/useDuelUnloadGuard';
 import { CrystalStatus } from '../hud/CrystalStatus';
 import { GadgetBar } from '../hud/GadgetBar';
 import { HealthBar } from '../hud/HealthBar';
@@ -15,6 +19,7 @@ import { MatchCountdown } from '../hud/MatchCountdown';
 import { MinimapPanel } from '../hud/MinimapPanel';
 import { ObjectiveTracker } from '../hud/ObjectiveTracker';
 import { PauseOverlay } from '../hud/PauseOverlay';
+import { ReconnectingNotice } from '../hud/ReconnectingNotice';
 import { StructureStrip } from '../hud/StructureStrip';
 import { type PauseOpenerRef, usePauseMenuKey } from '../hud/usePauseMenuKey';
 import { WeaponPanel } from '../hud/WeaponPanel';
@@ -28,13 +33,16 @@ import type { ScreenProps } from './screen.types';
  * nine regions in the Figma's paint order, the pre-match countdown over all of them (DEC-278), and
  * the pause overlay beside both. It reads only the open overlay (each HUD leaf reads its own data,
  * so a publish never re-renders it). While an overlay is open the viewport and the HUD are `inert`
- * (13 §7; CD-11) and the session pauses the match.
+ * (13 §7; CD-11) and the session pauses the match. The connection status (DEC-349) is painted
+ * last, over the countdown and the pause dialog, and is never `inert`, so it stays seen and read.
  */
 export function MatchScreen({ viewport }: ScreenProps): ReactElement {
   const overlay = useAppSelector((state) => state.session.overlay);
   const isLocal = useAppSelector((state) => state.matchSetup.mode === 'local');
   const openerRef: PauseOpenerRef = useRef<Element | null>(null);
-  usePauseMenuKey(overlay, openerRef);
+  const isDuel = useAppSelector(selectIsDuel);
+  usePauseMenuKey(overlay, openerRef, isDuel);
+  useDuelUnloadGuard(isDuel);
   const isInert = overlay !== null;
   return (
     <main className={styles.screen}>
@@ -80,14 +88,22 @@ export function MatchScreen({ viewport }: ScreenProps): ReactElement {
             className={styles.spawnBoss}
             type="button"
             onClick={() => {
-              emitIntent({ kind: 'dev-command', command: 'spawn-boss' });
+              emitIntent({
+                kind: 'dev-command',
+                command: { type: 'dev-spawn-boss', definitionId: 'cathedral-boss' },
+              });
             }}
           >
             Spawn Boss
           </button>
         )}
       </section>
+      <DeveloperMenu />
       <PauseOverlay openerRef={openerRef} />
+      <DuelLeaveDialog />
+      <div className={styles.status}>
+        <ReconnectingNotice />
+      </div>
     </main>
   );
 }

@@ -19,6 +19,7 @@ const BOSS: EntitySnapshot = {
   aether: null,
   area: null,
   capture: null,
+  gem: null,
 };
 const STATE: EntityDrawState = {
   entity: BOSS,
