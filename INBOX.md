@@ -16,6 +16,30 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Better than design: five Legend sprite items (#170 pre-PR critic, 2026-11-25).** Not
+      built in #170; each would be a small follow-up PR if you agree. Owner Calls cards
+      PR170 (8) to (12) ask the same. (BTD1) Feet in the atlas data: each sheet's ground line
+      goes into the atlas data, and the renderer stands the sprite on it. The views then pass
+      only the unit's position, and `LegendSpriteView` loses its `groundOffset`. (BTD2) One
+      atlas group family: today a new Legend sheet needs a new group name in four files
+      (`AssetManifest.types.ts`, `bridge/events.ts`, `assetsSlice.ts`, `legendSpriteSheets.ts`)
+      and its own manifest group. One group family (load a sheet by its manifest id) needs one
+      manifest line and one table row. The manifest test then checks the real group files;
+      today it gives each sheet a pretend file of its own. (BTD3) A uniform grid: the manifest
+      entry carries `columns` and `rows`, and `SpriteAtlasLoader` checks them, in place of
+      architecture 14 §11's `'image'` type plus a JSON frame table. (BTD4) Scaling at draw time:
+      one `drawImage` with smoothing off scales the cell to the current zoom. Architecture 08 §4
+      pre-scales the frames when the atlas loads, which cannot give 1:1 copies at every zoom.
+      (BTD5) The frame time in `EntityDrawState`: the sprite view reads `Match.frameTick`
+      through a closure today, a hidden order dependency on `render()`. Decision: …
+
+- [ ] **Licence class of the Magus sprite sheets (#170 pre-PR critic S11, 2026-11-25).** A
+      contributor made the six Magus sheets (Catalyst, Oracle, Heretic; 1x and 2x) with AI from
+      your card art. The manifest gives them the licence `owner` ("Owner-made for Eternalus").
+      ADR 0028 gives contributor-made art its own class. Keep `owner`, or move them to a
+      contributor class (`user-authorised-art` or a new one)? Owner Calls card PR170 (7) asks
+      the same. Decision: …
+
 - [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only
       its group's home (`CAMP_BODY`: "a camp is only its group's home"): the camp's mobs are what

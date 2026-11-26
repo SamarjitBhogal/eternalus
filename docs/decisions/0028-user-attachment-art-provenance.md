@@ -4,7 +4,7 @@ description: Explicit provenance route for contributor-supplied local references
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-20
 tags: [adr, assets, provenance, guardrails]
 related:
   - docs/architecture/14-persistence-and-resources.md

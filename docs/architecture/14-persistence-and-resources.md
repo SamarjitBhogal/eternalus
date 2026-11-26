@@ -509,7 +509,7 @@ export class ResourceController {
 
 ## 14. Implementation status
 
-ADR 0028 (DEC-298) registers contributor-confirmed art using attachmentReferenceId and the user-authorised-art licence. hasAssetProvenance checks each reference against its documented record. Sprite atlases use the sprite-atlas asset type in separate per-Legend groups.
+ADR 0028 (DEC-298) registers contributor-confirmed art using attachmentReferenceId and the user-authorised-art licence. hasAssetProvenance checks each reference against its documented record. Sprite atlases use the `sprite-atlas` asset type, one group per Legend sheet (`atlas-<sub-class>`).
 
 Built in Sprint 1 (session F), settings only: `PersistenceController` with `open`,
 `loadSettings`, `saveSettings` and `close` (the Sprint 1 brief's facade, in place of §2's
@@ -555,7 +555,14 @@ detail:
   `load(group, onProgress)` with byte progress from the manifest, `isLoaded`, `progress`,
   `urls(group)` (the URLs the DOM shows), `boxes(group)` (the draw boxes the manifest declares)
   and `release(group)`. The device pixel ratio is read once, so each image's
-  1x or 2x file is fixed for the session. SpriteAtlasLoader decodes ImageBitmap atlases and ResourceController.atlases exposes the loaded grids. The local match requests and releases one group for its selected Legend. Not built yet: get, AssetCache, and audio and JSON loaders.
+  1x or 2x file is fixed for the session. `SpriteAtlasLoader` decodes `ImageBitmap` atlases, and
+  `atlases(group)` hands the loaded atlases of a group to the match factory, which injects them
+  into the renderer. `match-loading` loads the player's sheet group, and `MenuState` and
+  `ResultsState` release it (`matchAssetGroups`). `atlases(group)` picks the handles with
+  `instanceof SpriteAtlasAsset`; it stands in for §11's `get<T>(id)` over an `AssetCache`, which
+  needs a typed handle per asset type to avoid an unchecked cast. `AssetCache` stays planned for
+  Phase 6, sprint 6.3, with the second decoded asset type (audio or JSON). Not built yet: `get`,
+  `AssetCache`, and the audio and JSON loaders.
   An asset that fails to load never rejects its group: it is warned about through an injected
   callback and listed in the load's outcome, and a failed rendition falls back to the entry's own
   file; §12's typed error is not built. Progress counts an entry's loaded files once the entry is

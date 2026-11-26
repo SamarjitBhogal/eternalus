@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-24
+last-reviewed: 2026-11-25
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -13,6 +13,9 @@ paths:
     'apps/client/src/game/Match.ts',
     'apps/client/src/game/HealthBarVisibility.ts',
     'apps/client/src/game/LegendBodies.ts',
+    'apps/client/src/game/LegendAnimation*',
+    'apps/client/src/game/createLegendView.ts',
+    'apps/client/src/game/legendSpriteSheets*',
   ]
 related:
   [
@@ -306,7 +309,26 @@ The design keeps the move cheap:
 
 ## 11. Implementation status
 
-Legend sprite rendering uses the current port drawSprite(sprite, feet, size), which returns whether it drew a frame. Canvas2dRenderer prepares destination-size frames lazily in a bounded cache and copies them without resampling. LegendSpriteView uses its ordinary Legend fallback while an atlas loads or the frame cannot be drawn. `EntityView.draw` returns the height a view drew above the entity's position, or `undefined`; `EntityLayer` passes it to `HealthBarView`, so the bar sits above a sprite and not above the footprint.
+Legend sprites (PR #170, `feat/character-sprites-phase3`, 2026-11-25):
+
+- The port has `drawSprite(sprite, anchor, width): void` (the frame's bottom centre at `anchor`,
+  `width` world units wide, the height from the atlas cell) and the query `hasSprite(sprite)`.
+  `RecordingRenderer` answers `hasSprite` by the same rule (`atlasWithFrame`). §4's sketch takes
+  `x, y` and `options`; the built port takes a `WorldPoint`, as its other methods do. A later PR
+  adds `options?: { angle?, alpha? }` for projectiles.
+- `match-loading` loads the player's sheet group after `match`
+  ([13](13-game-interface.md) §2, `matchAssetGroups`), and `createBrowserMatch` gives its atlas to
+  `Canvas2dRenderer.fromCanvas` (§6: constructor injection). `createLegendView` registers
+  `LegendSpriteView` only when the renderer holds the atlas. Else the player's Legend stays a disc
+  and a WARN is logged; the match still starts.
+- Not as §4 says: one `drawImage` scales the source cell at draw time, with smoothing off
+  (nearest neighbour). §4 pre-scales the frames when the atlas loads, but zoom changes the screen
+  size too. `INBOX.md` asks the owner to sign this off (#170 better-than-design items).
+- The health bar sits above the artwork through `EntityView.visualRadiusOf?`, the contract of
+  PR #90. The second of #90 and #170 to merge drops its duplicate of it and of
+  `LEGEND_VISUAL_DIAMETER`.
+- `Match.ts` has 315 lines (`wc -l`), over the ~300-line guideline. The next split moves the
+  player's sprite (`LegendAnimation`, the frame tick and `createLegendView`) into one collaborator.
 
 HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
 
