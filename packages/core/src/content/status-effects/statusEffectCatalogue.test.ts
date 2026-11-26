@@ -34,7 +34,7 @@ describe('STATUS_EFFECTS', () => {
     }
   });
 
-  it('makes Berserk a 12 s buff: 1.3× size, 1.5× damage dealt, 0.7× taken, 1.2× top speed (balancing.md:189)', () => {
+  it('makes Berserk a 12 s buff: 1.3× size, 1.5× damage dealt, 0.7× taken, 1.2× top speed and speed-up (balancing.md:189, DEC-382 (R5 B))', () => {
     expect(STATUS_EFFECTS.get('berserk')).toMatchObject({
       polarity: 'buff',
       controlClass: 'none',
@@ -45,6 +45,7 @@ describe('STATUS_EFFECTS', () => {
         { stat: 'damageDealt', op: 'mul', value: 1.5 },
         { stat: 'damageTaken', op: 'mul', value: 0.7 },
         { stat: 'moveSpeed', op: 'mul', value: 1.2 },
+        { stat: 'acceleration', op: 'mul', value: 1.2 },
         { stat: 'size', op: 'mul', value: 1.3 },
       ],
       flags: [],

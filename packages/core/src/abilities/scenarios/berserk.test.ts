@@ -19,8 +19,8 @@ import { unitsWithWarriorKit } from '../__fixtures__/casterState';
 
 /**
  * Berserk (balancing.md:189, DEC-199): for 12 s (360 ticks) the Sentinel's body is 1.3× as wide,
- * it deals 1.5× and takes 0.7× damage, and its top speed is 20% higher with the same speed-up
- * rate (reading R5). The Sentinel (radius 1.25, DEC-06; reach 4 + Wuuthrad's 2 = 6 m from its
+ * it deals 1.5× and takes 0.7× damage, and its top speed is 20% higher and it speeds up 20%
+ * faster (DEC-382 (R5 B)). The Sentinel (radius 1.25, DEC-06; reach 4 + Wuuthrad's 2 = 6 m from its
  * edge, DEC-305) stands at (50, 50) and fills its meter by killing four one-health enemy Magi
  * 3 m west (a Legend kill gives 25, DEC-272). A dark Vanguard (radius 0.5) stands 8 m east: 6.25 m
  * from edge to edge, out of reach, and 5.875 m once the Sentinel is 1.625 wide, in reach. Every
@@ -221,7 +221,7 @@ describe('Berserk (scenario)', () => {
     );
   });
 
-  it('raises the top speed by 20% and keeps the speed-up rate (reading R5), back after 12 s', () => {
+  it('raises the top speed by 20% and speeds up 20% faster (DEC-382 (R5 B)), back after 12 s', () => {
     /** Metres walked north in `ticks` ticks from where the Sentinel stands; it then stops. */
     const walked = (scenario: ReturnType<typeof match>, ticks: number): number => {
       const from = scenario.at(scenario.sentinel).y;
@@ -249,10 +249,10 @@ describe('Berserk (scenario)', () => {
     expect(normalTop).toBeCloseTo(TOP_SPEED, 9);
     expect(berserkTop).toBeCloseTo(TOP_SPEED * 1.2, 9);
     expect(afterTop).toBeCloseTo(TOP_SPEED, 9);
-    // From a standstill the shipped Sentinel speeds up 0.18 m/s² either way (sentinel.ts).
+    // From a standstill the shipped Sentinel speeds up 0.18 m/s² (sentinel.ts), Berserk 1.2× that.
     const fromRest = walked(normalSlow, 10);
     expect(fromRest).toBeCloseTo((0.18 / 900) * 55, 12);
-    expect(walked(slow, 10)).toBeCloseTo(fromRest, 12);
+    expect(walked(slow, 10)).toBeCloseTo(fromRest * 1.2, 12);
   });
 
   it('gives the same hash for the same seed', () => {
