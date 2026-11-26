@@ -101,7 +101,8 @@ static helper, `matchMapObjects`.
   every layer (AI, systems, entities, content, diagnostics). Core's folder rules
   (`packages/core/AGENTS.md`) allow that only for the composition root, so the parts sit beside
   it with the same import rights and are imported only by `Simulation.ts`. Putting
-  `RosterSpawner` in `match/` would have broken `match/`'s import list.
+  `RosterSpawner` in `match/` would have broken `match/`'s import list. The owner signed the folder off
+  as built (DEC-356).
 - **Classes where there is state, functions where there is none** (NFR-001, CONTRIBUTING §3.1).
   `RosterSpawner` and `ReplayRecorder` hold collaborators or data, so they are classes; the
   builders are pure functions of their inputs.
