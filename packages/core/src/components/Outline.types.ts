@@ -4,7 +4,8 @@ import type { Polygon, Rect } from '../utils/geometry.types';
  * An entity's exact outline, used instead of its collider circle: attack reach and a chase
  * measure to it (`ReachQuery.aimPointOf`), and a shot hits it (`ProjectileSystem`). A structure's
  * `Footprint` and a map object's `MapObjectBody` implement it; `EntityStore.outlineOf` is the one
- * place that picks which one an entity uses. Each polygon is either walked on or solid. A
+ * place that picks which one an entity uses. Each polygon is either walked on or solid: `walkOn`
+ * and `solid` split `polygons`, and each polygon object is in exactly one of them. A
  * structure's `Footprint` can hold both: the walk-on polygons of its own map object, and the solid
  * polygons of the objects that are part of its body (`Footprint.ofBody`, DEC-373 (1)). A shot not
  * aimed at the entity flies over its walk-on polygons and its `shotsCross` polygons, and stops on

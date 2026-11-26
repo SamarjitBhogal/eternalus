@@ -674,8 +674,8 @@ Hamstring blade does (DEC-269). A walk-on polygon of an outline (a palace floor,
 is ground units stand on, so a shot flies over it unless the shot aims at that entity: its locked
 target, or an aim point on its walk-on polygons from outside them (DEC-314, DEC-322 (1)). A solid
 polygon (a fort, the Stronghold's outer walls and throne) stops every shot (DEC-373 (1)), except a
-solid polygon that shots cross (a camp fire's body, HC-Q105, `Outline.shotsCross`): only a shot
-aimed at its entity stops on it. A body
+solid polygon that shots cross (a camp fire's body, DEC-373 (2), HC-Q105, `Outline.shotsCross`):
+only a shot aimed at its entity stops on it. A body
 that takes no damage now (its collider is unbreakable, for example a forest camp) stops every shot
 and takes no damage (DEC-317 addendum). `CombatSystem` fires an attack without a line-of-fire check,
 for every unit, so a shot

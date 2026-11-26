@@ -29,7 +29,9 @@ const object = (id: string, isBlocking: boolean, partOf?: string): MapObject => 
   ...(partOf === undefined ? {} : { partOf }),
 });
 
-/** Structure definitions by id: a lane tower and a gate have a map footprint, the Stronghold not. */
+/**
+ * Structure definitions by id: a lane tower and a gate have a map footprint, the Stronghold not.
+ */
 const DEFINITIONS = new Map<string, Pick<StructureDefinition, 'hasMapFootprint'>>([
   ['lane-tower', { hasMapFootprint: true }],
   ['gate', { hasMapFootprint: true }],
