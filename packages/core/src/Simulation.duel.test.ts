@@ -184,7 +184,7 @@ describe('Simulation: a Duel', () => {
     );
   });
 
-  it('starts every other ability ready when the round starts: no cooldown before a cast (DEC-380 (1))', () => {
+  it('starts every other ability ready when the Duel starts: no cooldown before a cast (DEC-380 (1))', () => {
     const sim = build();
     stepPastCountdown(sim);
 
@@ -417,7 +417,8 @@ describe('Simulation: a Duel', () => {
 
   it('ends Fury at the round reset, so its dash leaves the granted slot (every invariant checked)', () => {
     // A Vanguard against a one-health Magus: each hit is a kill. The meter starts half full
-    // (DEC-380 (1)) and a Legend kill gives 25 (DEC-272), so the four kills below fill it.
+    // (DEC-380 (1)) and a Legend kill gives 25 (DEC-272), so the first two of the four kills
+    // below fill it.
     const shipped = unitsWithWarriorKit();
     const content: DefinitionSource = {
       has: (id) => shipped.has(id),
