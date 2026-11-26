@@ -31,7 +31,7 @@ Reply inline (`Decision: …`).
       one `drawImage` with smoothing off scales the cell to the current zoom. Architecture 08 §4
       pre-scales the frames when the atlas loads, which cannot give 1:1 copies at every zoom.
       (BTD5) The frame time in `EntityDrawState`: the sprite view reads the frame tick that
-      `Match.render` sets through `PlayerLegendSprite.setFrameTick`, a hidden order dependency
+      `Match.render` sets through `LegendSprites.setFrameTick`, a hidden order dependency
       on `render()`. Decision: …
 
 - [ ] **Better than design: two more Legend sprite items (#170 critic round 2, 2026-11-26).** Not
@@ -3176,7 +3176,7 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
-- [ ] DEC-298 (5), (7) — Selected-subclass portrait follow-up. Carry the credited Juggernaut portrait with its notice intact for the class-project MVP and replace it after delivery. Build the selected, forward-facing character cutouts using the Oracle reference and propose their actual encoded bytes for review.
+- [ ] DEC-298 (5), (7) — Selected-subclass portrait follow-up. Carry the credited Juggernaut portrait with its notice intact for the class-project MVP and replace it after delivery. Build the selected, forward-facing character cutouts using the Oracle reference and propose their actual encoded bytes for review. DEC-378 (4) (2026-11-26) adds the five non-Magus sprite sheets of PR #170 (Zealot, Templar, Paladin, Colossus, Bulwark; 1x and 2x): they ship for the class project, and they are replaced after the MVP too.
 - [ ] **Make the tower horde test faster (DEC-289, 2026-11-20).** Owner: to be assigned.
       `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its
       lane within 10 seconds (DEC-133, seed %i)", builds a whole map and match for each of its

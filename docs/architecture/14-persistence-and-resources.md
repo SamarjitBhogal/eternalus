@@ -557,8 +557,9 @@ detail:
   and `release(group)`. The device pixel ratio is read once, so each image's
   1x or 2x file is fixed for the session. `SpriteAtlasLoader` decodes `ImageBitmap` atlases, and
   `atlases(group)` hands the loaded atlases of a group to the match factory, which injects them
-  into the renderer. `match-loading` loads the player's sheet group, and `MenuState` and
-  `ResultsState` release it (`matchAssetGroups`). `atlases(group)` picks the handles with
+  into the renderer. `match-loading` loads the sheet group of every Legend in the match, the
+  player's first (DEC-378 (2)), and `MenuState` and `ResultsState` release them
+  (`matchAssetGroups`). `atlases(group)` picks the handles with
   `instanceof SpriteAtlasAsset`; it stands in for §11's `get<T>(id)` over an `AssetCache`, which
   needs a typed handle per asset type to avoid an unchecked cast. `AssetCache` stays planned:
   plan Phase 5, sprint 5.2 names it in the task "`ResourceController` facade + `AssetCache` +

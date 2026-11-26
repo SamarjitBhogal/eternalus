@@ -14,9 +14,9 @@ paths:
     'apps/client/src/game/HealthBarVisibility.ts',
     'apps/client/src/game/LegendBodies.ts',
     'apps/client/src/game/LegendAnimation*',
-    'apps/client/src/game/createLegendView.ts',
-    'apps/client/src/game/PlayerLegendSprite*',
+    'apps/client/src/game/LegendSprites*',
     'apps/client/src/game/legendSpriteSheets*',
+    'apps/client/src/game/matchLegendSheets*',
   ]
 related:
   [
@@ -317,11 +317,14 @@ Legend sprites (PR #170, `feat/character-sprites-phase3`, 2026-11-25):
   `RecordingRenderer` answers `hasSprite` by the same rule (`atlasWithFrame`). §4's sketch takes
   `x, y` and `options`; the built port takes a `WorldPoint`, as its other methods do. The first
   PR that needs `SpriteOptions` (§4) adds it.
-- `match-loading` loads the player's sheet group after `match`
-  ([13](13-game-interface.md) §2, `matchAssetGroups`), and `createBrowserMatch` gives its atlas to
-  `Canvas2dRenderer.fromCanvas` (§6: constructor injection). `createLegendView` registers
-  `LegendSpriteView` only when the renderer holds the atlas. Else the player's Legend stays a disc
-  and a WARN is logged; the match still starts.
+- Every Legend in the match gets its sprite (DEC-378 (2), 2026-11-26). `match-loading` loads the
+  sheet group of every Legend in the filled rosters, the player's first, after `match`
+  ([13](13-game-interface.md) §2, `matchAssetGroups` over `matchLegendSheets`), and
+  `createBrowserMatch` gives their atlases to `Canvas2dRenderer.fromCanvas` (§6: constructor
+  injection). Each Legend's snapshot names its sub-class (`EntitySnapshot.specId`), which picks
+  its sheet. A Legend without a sheet, or whose atlas did not load, stays a disc on its own; the
+  other Legends keep their sprites. Each sheet whose atlas did not load logs one WARN; the match
+  still starts.
 - Not as §4 says: one `drawImage` scales the source cell at draw time, with smoothing off
   (nearest neighbour). §4 pre-scales the frames when the atlas loads, but zoom changes the screen
   size too. `INBOX.md` asks the owner to sign this off (#170 better-than-design items).
@@ -331,9 +334,16 @@ Legend sprites (PR #170, `feat/character-sprites-phase3`, 2026-11-25):
   is provisional (Owner Calls card PR170 (6)). On merge with PR #90, the fallback of
   `LegendSpriteView.visualRadiusOf` changes from the footprint radius to `super.visualRadiusOf()`
   (#90's `LegendView`), and the health bar still uses the sprite top.
-- `game/PlayerLegendSprite.ts` holds the player's sprite wiring: `LegendAnimation`, the frame
-  tick and `createLegendView`. `Match` builds it from `MatchDeps.playerSheet`, which the match
-  factory looks up.
+- `game/LegendSprites.ts` holds the sprite wiring of every Legend: one `LegendAnimation` per
+  Legend (by entity id), one `damage-applied` listener for all of them, the frame tick and the
+  `LegendSpriteView`. `Match` builds it from `MatchDeps.legendSheets`, which the match factory
+  gets from `matchLegendSheets`. An online Duel passes none, so its Legends are discs: the Duel
+  server's roster names no sub-class.
+- Every Legend draws a full sprite: one sprite draw a frame per Legend (two teams of
+  `GameConfig.match.legendsPerTeam`, about 20) and up to one sheet in memory per sub-class in
+  `LEGEND_SPRITE_SHEETS` (8) (§9). If in-game performance drops, the bots draw at 1x or at a
+  lower frame rate, and the player keeps full fidelity (DEC-378 (2)). The `ponytail:` note in
+  `LegendSprites.ts` marks the place.
 
 HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
 
