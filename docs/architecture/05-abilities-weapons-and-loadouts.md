@@ -824,26 +824,28 @@ abilities, statuses, weapons and turret ammo.
 **Implementation status, 2026-11-26 (branch `feat/start-weapons`, lane A PR 3; DEC-374).** A Legend
 spawns with the weapon of its spec. `LegendSpecDefinition.primaryWeaponId` (`string | null`) is the
 start weapon; `null` falls back to the class's `defaultLoadout.primaryWeaponId`, as `kit: null`
-falls back to `defaultKit`. `content/legends/specs/primaryWeaponIdOf.ts` holds the rule (the
-sibling of `kitOf`) and `Legend.basicAttack` calls it. `KnownSpecWeaponRule` rejects a spec weapon
-id that names no weapon, and a weapon that the spec's class may not use (`allowedClasses`,
-`uniqueTo`): the spec part of §12's `WeaponAllowedRule`. This is the build of §12's
-`LoadoutTemplate.primaryWeaponId` at the spec, the one place that varies per Legend today; the class
-default stays as the fallback and the `defaultLoadout` of a class is unchanged. New weapons, each
-of class `sword` with a melee sweep: `long-sword` and `great-sword` (open to every class) and
-`dual-blades` (Warrior only). Raptor Talons and the Obsidian Bow have an
-attack `onHit` step: one stack of `bleed` and of the new `sundered` status (`damageTaken`, +5 %
-per stack, added) on each hit. The Colossus' Bastions are not built: reference 07 names no weapon
-class for them (DEC-374 (7), `INBOX.md` HC-Q118). Differences from the design text, each
-acceptable: (D1) the start weapon is on the spec, with the class's `defaultLoadout` as the fallback
-(§12 builds a loadout from the class, `autoBuildLoadout(classId, content)`; ADR 0026 decision 1
-reads the spec only to choose the kit): DEC-57 sets the start weapon per Legend, recipe R2 applies
-the spec over the class definition, DEC-374 (6). (D2) Reference 07's Short blades have the id
-`dual-blades`; the table had `short-blades` (card W2, DEC-374 (2); DEC-64 reads DEC-57's dual
-blades as the Short blades). (D3) Their class is `sword`; the table had `glove` (DEC-57: "dual
-blades (two swords)"). (D6) `long-sword` and `great-sword` were not in the table (cards W1 and W4,
-DEC-374 (1) and (3)). The table rows of the dual blades, the long sword and the great sword now
-match the code.
+falls back to `defaultKit`. `content/legends/specs/primaryWeaponIdOf.ts` holds the rule (the sibling
+of `kitOf`) and `Legend.basicAttack` calls it. `KnownSpecWeaponRule` rejects a spec weapon id that
+names no weapon. `content/weapons/isWeaponAllowedFor.ts` is the one class-access rule
+(`allowedClasses`, `uniqueTo`): `SpecWeaponAllowedRule` applies it to a spec's start weapon and
+`DefaultWeaponAllowedRule` to a class's default weapon, and each skips an id that does not resolve.
+They check at content load what §12's `WeaponAllowedRule` checks in a loadout. This is the build of
+§12's `LoadoutTemplate.primaryWeaponId` at the spec, the one place that varies per Legend today; the
+class default stays as the fallback and the `defaultLoadout` of a class is unchanged. New weapons,
+each of class `sword` with a melee sweep: `long-sword` and `great-sword` (open to every class) and
+`dual-blades` (Warrior only). Raptor Talons and the Obsidian Bow have an attack `onHit` step: one
+stack of `bleed` and of the new `sundered` status (`damageTaken`, added per stack; its numbers live
+in `content/status-effects/sundered.ts`) on each hit. The Colossus' Bastions are not built:
+reference 07 names no weapon class for them (DEC-374 (7), `INBOX.md` HC-Q118). The table above
+records the dual blades (the id `dual-blades` and the class `sword`: DEC-57 "two swords", DEC-64,
+card W2), the long sword and the great sword (cards W1 and W4); the dual blades' throw is not built
+and stays MVP-if-time. One difference from the design text remains, and it is acceptable: the start
+weapon is on the spec, with the class's `defaultLoadout` as the fallback (§12 builds a loadout from
+the class, `autoBuildLoadout(classId, content)`; ADR 0026 decision 1 reads the spec only to choose
+the kit): DEC-57 sets the start weapon per Legend, recipe R2 applies the spec over the class
+definition, DEC-374 (6). Two design-text updates wait for the owner and are listed in the PR body:
+§12's `autoBuildLoadout` takes the spec (`primaryWeaponIdOf`), and ADR 0026's Status line gets an
+"extended by DEC-374" note.
 
 ## 11. Artifacts (gadgets Z and C)
 
@@ -1097,7 +1099,7 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
 | The framework (§2–§9), 3 abilities + ultimate per class, aether, charge rules, XP scaling, `Loadout` + validator + auto-build, `AbilityBar` glyphs                         | **MVP**                                                                             |
 | Veil, Blade Runner (both varieties), Rip & Tear, Slam, Imbue (both varieties), Shockwave; one ultimate per class (Fury; Berserk or Meteor Fall; Death Ray or Nova); Revive | **MVP** (third abilities and ultimate picks: INBOX; proposals in more-abilities.md) |
 | Raptor Talons, obsidian bow, A Fine Line, Magus staff; gadget slots Z/C                                                                                                    | **MVP**                                                                             |
-| Wuuthrad, Lightbringer, Short blades, Mortar, Soul Orb, secondary weapon, passive slot, in-match loadout changes, Ultimate Plus, combos, `summon`                          | **MVP-if-time**                                                                     |
+| Wuuthrad, Lightbringer, Dual blades (throw), Mortar, Soul Orb, secondary weapon, passive slot, in-match loadout changes, Ultimate Plus, combos, `summon`                   | **MVP-if-time**                                                                     |
 | Ability tree, class-switch penalty, Barricades, Eagle Eye, Firestorm, `reveal`, armour set, skins, weapon abilities (`WeaponDefinition.abilityIds` reuses `Ability`)       | **post-MVP**                                                                        |
 
 ## 18. Implementation status

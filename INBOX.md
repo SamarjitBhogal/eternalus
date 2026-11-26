@@ -881,15 +881,23 @@ Reply inline (`Decision: …`).
       are one weapon file and one line in the Colossus spec. Code names: `WeaponClass` in
       `content/weapons/weapons.types.ts`; DEC-374 (7).
 
-- [ ] **HC-B48 — Better than the design, sign-off asked: read a Legend's sub-class once when it
-      spawns (`feat/start-weapons`, PR 3, critic round 1, 2026-11-26;
-      COMBAT-WEAPONS-ABILITIES-68).** Not built yet. Nothing changes in play. Today a Legend
+- [ ] **HC-B48 — Better than the design, sign-off asked: 2 code ideas from the critic
+      (`feat/start-weapons`, PR 3, critic rounds 1 and 2, 2026-11-26;
+      COMBAT-WEAPONS-ABILITIES-68).** Nothing changes in play.
+      (1) Read a Legend's sub-class once when it spawns. Not built yet. Today a Legend
       that spawns reads its sub-class twice: once for its start weapon and once for its
       abilities. Better: one step reads the sub-class once and gives the abilities, the start
       weapon and, after PR #156, the second weapon. When: in PR #156's loadout code, after #156
       merges. Say "no" and the two reads stay. Code names: `loadoutOf(spec, legend)` replaces
       `kitOf`, `primaryWeaponIdOf` and #156's inline `spec?.secondaryWeaponId ?? null`, in the
       `Loadout` construction of `Legend`; DEC-374.
+      (2) Built (critic round 2): a weapon's class access is one rule, used for a sub-class's
+      start weapon and a class's default weapon (and #156's second weapon after it merges).
+      Before, only the start weapon was checked, and that check had its own copy of the rule.
+      Every sub-class and class in the game today passes it. Say "no" and the check goes back
+      to the start weapon only. Code names: `content/weapons/isWeaponAllowedFor.ts`,
+      `SpecWeaponAllowedRule`, `DefaultWeaponAllowedRule`, #156's `SecondaryWeaponRule`;
+      DEC-374 (10).
 
 - [ ] **HC-B38 — Better than the design, sign-off asked: 5 code ideas from the critic
       (`feat/wall-turrets`, PR 4, critic rounds 4 and 5, 2026-11-23; PR-REVIEW-ASSIST-38/39).**
