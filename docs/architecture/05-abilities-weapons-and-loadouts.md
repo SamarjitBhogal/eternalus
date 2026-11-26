@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-24
+last-reviewed: 2026-11-26
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -565,7 +565,7 @@ MS-16, `balancing.md`), applied by `VeterancySystem`.
 `periodic.effects` are `StatusTickSpec`s shaped like `AbilityEffectSpec`, run by `StatusTickEffect`
 strategies (`combat/defaultStatusTickEffects.ts`, `DamageStatusTick`) until the `AbilityRegistry`
 lands; their damage goes through the match's one `DamagePipeline` with `kind: 'status'`, crediting
-the applier. Readers: `MovementSystem` (`moveSpeed`, `cannot-move`), `CombatSystem`
+the applier. Readers: `MovementSystem` (`moveSpeed`, `acceleration`, `cannot-move`), `CombatSystem`
 (`cannot-attack`; `attackSpeed`, fixed when a hit lands), `StatusModifierStep` (`damageDealt`, `damageTaken`); `CastValidator` (`cannot-cast` and the `aetherCost` stat, §18); `BodySizeSystem` (`size`, the body's radius, §18 "Berserk"). Whether the applier's `remove` / `expire` (and so `status-expired`) are covered by
 DEC-41 is still open. `blind` has no hard miss (DEC-42): its aim wobble and the client vignette are
 follow-ups. `StatusStacksWithinMaxInvariant` runs every tick. `polarity`, `controlClass` and
@@ -1434,8 +1434,11 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   ultimate (`content/abilities/berserk.ts`): targeting `self` and one `buff` step, as Fury. The
   status `content/status-effects/berserk.ts` lasts 12 s (`refresh`) and has four modifiers:
   `damageDealt` × 1.5, `damageTaken` × 0.7, `moveSpeed` × 1.2 and `size` × 1.3 (`TUNE`,
-  `balancing.md`). "Speed +20%" raises the top speed only; the speed-up rate stays (reading R5,
-  owner card "PR6 R5 berserk speed"). Where the code adds to §8:
+  `balancing.md`). A fifth modifier, `acceleration` × 1.2, makes the Sentinel speed up 20% faster
+  too, so Berserk helps from a stop (DEC-382 (R5 B)). Where the code adds to §8:
+  - **`acceleration` stat.** `StatusStat` has a seventh member, `acceleration`. `MovementSystem`
+    passes `multiplier('acceleration')` to `Movement.advance`, which scales the speed-up toward a
+    heading by it. The slow-down without a heading keeps the unit's own `acceleration`.
   - **`size` stat.** `StatusStat` has a sixth member, `size`, which scales the body's radius.
     `Transform.radius` is the built radius times a scale, and `Transform.resize` is the one way to
     change the scale. `systems/BodySizeSystem` runs after `StatusEffectSystem` and before
@@ -1493,12 +1496,13 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     `obstacle` family (`defaultViewRegistry.ts`), so a wall logs no "No view for kind" warning:
     the outline filled in the team colour (neutral) with a dark edge, in place of the disc.
 - **Rip & Tear and Fear (`feat/sentinel-rip`, 2026-11-23; DEC-203, DEC-204, DEC-206, DEC-207;
-  readings R1 to R3 and R6).** Rip & Tear is the Sentinel's `ability-2`
+  DEC-382 (R1 A, R2 A, R3 D, R6 A)).** Rip & Tear is the Sentinel's `ability-2`
   (`content/abilities/ripAndTear.ts`), `directional` (the fan needs a direction, so an aim on the
   caster is refused, as for a dash). Its steps, in order: 180 damage to the enemies in the fan
   under 30% health, 90 to those at or above it, an execute at or below 10%, a 1.5 m knock-back of
   those under 30%, one bleed stack, then `feared` on the enemies in the circle of the fan's range.
-  The values marked "reading" wait for the owner's cards "PR6 R1" to "PR6 R3" and "PR6 R6".
+  DEC-382 holds the owner's answers to the cards "PR6 R1" to "PR6 R3" and "PR6 R6" (2026-11-26).
+  Its ability potency grows 8% per level (`scaling.amount.perLevel` 0.08, DEC-380 (2)).
   Where the code differs from §3 and §8:
   - **`cone` (§3).** `{ kind: 'cone', reach, arcDegrees }` (`abilities/shapes/ConeShape.ts`): a fan
     from the caster along the cast's aim, `reach` metres past the caster's body edge (as a melee
@@ -1517,18 +1521,27 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     It kills units only: its step sets `families: 'units'` (`ExecuteSpec`, `ripAndTear.ts`), which
     the effect turns into `TargetFilter.families` (§3) = `UNIT_FAMILIES`
     (`entities/unitFamilies.ts`), so an enemy structure or map object at or below the threshold
-    is spared (reading R6, owner card "PR6 R6"; DEC-206 (1) says "every enemy in the fan"). An
+    is spared (DEC-382 (R6 A); DEC-206 (1) says "every enemy in the fan"). An
     `execute` step with no `families` kills an enemy of any family.
   - **Fear (§8).** `feared` (`content/status-effects/feared.ts`): half speed, `cannot-attack`,
-    `cannot-cast`, soft control, 2 s, and `steering: 'flee-source'`. A status's `steering` kind
-    names a `StatusSteering` strategy (`entities/strategies/`, the `steering` key of the strategy
-    registry). `StatusSteeringSystem` runs after the statuses and before `MovementSystem`; each tick
-    it sets the newest steering status's `heading` straight away from the status's source, and
-    keeps the last one once the source is gone. `MovementSystem` walks the holder along that
-    heading in place of its own (`Movement.advance(speedScale, heading)`), so a command, a
+    `cannot-cast`, soft control, 2 to 4 s (`durationSeconds` 2, `maxDurationSeconds` 4), and
+    `steering: ['flee-source', 'cower']`: each Fear runs away or cowers (DEC-382 (R3 D)). A
+    status's `steering` lists the forms it may take; each form names a `StatusSteering` strategy
+    (`entities/strategies/`, the `steering` key of the strategy registry).
+    `StatusEffectApplier.apply` draws what a status leaves open, from the match's seeded RNG
+    (`state.rng`), when the application lands: a form when the status has two or more, then a
+    whole tick count from `durationTicks` to `maxDurationTicks` when the source gives no time of its
+    own. A status with one form and a fixed time draws nothing, so a match without Fear keeps its
+    hash. `StatusEffectRuntime.steering` keeps the form. A reapplication is a new Fear: it draws
+    again, and the later expiry wins. `StatusSteeringSystem` runs after the statuses and before
+    `MovementSystem`; each tick it sets the newest steering status's `heading` through the
+    strategy of that runtime's form. `flee-source` points straight away from the status's source,
+    and keeps the last heading once the source is gone. `cower` writes a zero heading.
+    `MovementSystem` walks the holder along that heading in place of its own
+    (`Movement.advance(speedScale, heading)`); a zero heading slows it to a stop. So a command, a
     controller or `PathingSystem` steers underneath and takes over when the fear ends. A player's
-    Legend runs too; its cast is refused (`cannot-cast`). `StateHasher` hashes the heading of a
-    steering status. DEC-203's cower is a status with `cannot-move` and no steering (not built).
+    Legend runs or cowers too; its cast is refused (`cannot-cast`). `StateHasher` hashes the form
+    and the heading of a steering status.
   - **Status immunity (DEC-207).** `UnitDefinition.statusImmunities` lists the statuses a unit
     never gets; the Sentinel's is `['feared']` (`content/legends/sentinel.ts`). `StatusEffects`
     keeps the list and `StatusEffectApplier.apply` refuses such a status from any source, with no

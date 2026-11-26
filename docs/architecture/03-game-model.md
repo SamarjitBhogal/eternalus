@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-26
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -557,7 +557,7 @@ kit).** `GameState` has two more parts. `walls` is the `PlacedWalls` port beside
 walls placed during the match (a Shield Wall; [10](10-physics.md) §12). `summons` is the
 `SummonLedger`: the bodies each caster placed that still stand. `EntitySnapshot` may carry
 `outline`, a placed body's outline (a Shield Wall), left out for every other entity. `StateHasher`
-also hashes the ledger and the heading of a steering status (Fear), each only when present, so a
+also hashes the ledger and the form and heading of a steering status (Fear), each only when present, so a
 match without them keeps its hash; the radius it hashes is the scaled one (Berserk). Details:
 [05 §18](05-abilities-weapons-and-loadouts.md#18-implementation-status), "Berserk", "Shield
 Wall" and "Rip & Tear and Fear".

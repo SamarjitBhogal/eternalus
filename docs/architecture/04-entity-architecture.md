@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-26
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -418,7 +418,8 @@ kit).** `Transform.radius` is the built radius times a scale, and `Transform.res
 the scale (Berserk's `size` stat, `systems/BodySizeSystem`). A unit definition may list
 `statusImmunities`, the statuses the unit never gets (DEC-207); `StatusEffects` keeps the list.
 The strategy registry has a `steering` key: one `StatusSteering` strategy per status `steering`
-kind (`FleeSourceSteeringStrategy` for Fear's `flee-source`). `entities/EntitySummoner` puts a
+form (`FleeSourceSteeringStrategy` for Fear's `flee-source`, `CowerSteeringStrategy` for its
+`cower`, DEC-382 (R3 D)). `entities/EntitySummoner` puts a
 summoned body (a Shield Wall) into the match through the one `EntityFactory`, behind the
 `Summoner` port in `state/`, as `ProjectileLauncher` does for shots. `entities/isCollisionMover`
 is the one test of which units walls stop (DEC-363). Details:
