@@ -71,12 +71,16 @@ Reply inline (`Decision: …`).
       `MatchResult`" cannot be observed in `Simulation`, because no content marks a `WinObjective`,
       so no `MatchResult` exists in sim mode. The vitest test runs 900 ticks bot-versus-bot with
       no invariant violation and the same hash twice instead. Unblocked when a win objective
-      exists in content or a test fixture supplies one. (f) The client has no spectate UI: with no human
-      the camera stays where it is and the HUD hides the player block. `Take control` takes a typed
-      Legend id (base doc: spectate is its own 13 section 4 row, `spectatedLegendId`, not the sim-mode row). Decision: DEC-294 (2026-11-20, Owner Calls page) answers (b): "Keep the swap;
+      exists in content or a test fixture supplies one. (f) Spectate: with no human, a Follow select makes
+      the camera follow a Legend (your answer (4), Owner Calls page, 2026-11-23: "the developer can
+      choose to tether the camera (follow) any bot legend"); the HUD hides the player block.
+      `Take control` still takes a typed Legend id. Better than design, not built: (g) the menu
+      builds Legend labels from raw ids in `game/`; `ui/` could format them with team and class
+      names; (h) `Take control` could use the same select as Follow. Decision: DEC-294 (2026-11-20, Owner Calls page) answers (b): "Keep the swap;
       update mechanics-ideas §6 in this PR" (note: "make sure this is architecturally-sound"). The
       human's controller id is now `player` (PR #112 review S1), and a Legend off `playerTeam` is
-      refused (`not-player-team`, review B1). (a), (c), (d) and (f) follow the base docs named above; (e) is a status. Only the owner's confirmation remains open for them.
+      refused (`not-player-team`, review B1). (a), (c) and (d) follow the base docs named above; (f) follows answer (4); (e) is a status; (g) and (h)
+      are open proposals. Only the owner's confirmation remains open.
 
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-legends`) — developer menu, slice 2
       (add/remove Legends, FR-097) built; decisions for the owner.** (a) `dev-spawn-legend` takes

@@ -100,6 +100,7 @@ describe('Match developer menu', () => {
     match.tick();
     match.render(0);
 
+    expect(states.at(-1)?.legends.map(({ id }) => id)).toContain(human);
     expect(match.playerEntityId).toBeNull();
     expect(states.at(-1)?.humanLegendId).toBeNull();
     match.destroy();

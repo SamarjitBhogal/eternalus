@@ -229,6 +229,7 @@ export const STRINGS = {
     takeControl: 'Take control',
     follow: 'Follow',
     followNone: 'None',
+    followAway: 'not in the match now',
   },
   pause: { title: 'Paused', resume: 'Resume', settings: 'Settings', leave: 'Leave match' },
   /** The match viewport; the explorer labels show only with the developer flag (13 §4, DEC-32). */
