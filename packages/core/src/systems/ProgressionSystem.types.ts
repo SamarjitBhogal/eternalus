@@ -22,6 +22,11 @@ export type ProgressionContent = {
    * each level (a Duel, `DUEL_RULES.legendsStartAtMaxLevel`, SCRUM-444). Mobs are untouched.
    */
   readonly legendsStartAtMaxLevel?: boolean;
+  /**
+   * When set, every Legend that spawns starts with its ultimate meter at this share of a full
+   * meter, 0 to 1 (a Duel, `DUEL_RULES.ultimateStartCharge`, DEC-380 (1)); otherwise at 0.
+   */
+  readonly ultimateStartCharge?: number;
 };
 
 /** One kill waiting for this system's pass. */

@@ -48,4 +48,9 @@ export const DUEL_RULES = {
    * mob added from the developer menu keeps its normal level.
    */
   legendsStartAtMaxLevel: true,
+  /**
+   * The share of a full ultimate meter each Legend starts a Duel with (DEC-380 (1): "starts
+   * half-charged"); its other abilities start ready, as everywhere (no cooldown before a cast).
+   */
+  ultimateStartCharge: 0.5, // TUNE: DEC-380 (1)
 } as const;

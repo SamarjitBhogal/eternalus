@@ -49,7 +49,7 @@ export class ProgressionSystem implements System {
     state: GameState,
     private readonly content: ProgressionContent,
   ) {
-    this.charges = new UltimateCharge(state, content.ultimateCharge);
+    this.charges = new UltimateCharge(state, content.ultimateCharge, content.ultimateStartCharge);
     state.events.on('entity-died', ({ entityId, killer }) => {
       const victim = state.entities.get(entityId);
       const killerId = killer.attackerId;

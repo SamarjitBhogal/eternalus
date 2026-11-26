@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { unitsWithWarriorKit } from './abilities/__fixtures__/casterState';
+import { stepPastCountdown } from './abilities/__fixtures__/stepPastCountdown';
 import { DamagePipeline } from './combat/DamagePipeline';
 import { Health } from './components/Health';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
@@ -153,6 +154,45 @@ describe('Simulation: a Duel', () => {
       expect(legend.health?.current).toBe(legend.health?.max);
       expect(legend.aether?.max).toBeGreaterThan(usual.aether?.max ?? Infinity);
     }
+  });
+
+  it('starts each Legend with its ultimate meter half full, an ordinary match with it empty (DEC-380 (1))', () => {
+    const duel = build();
+    const ordinary = new Simulation({
+      config,
+      seed: 7,
+      logger: new NullLogger(),
+      debug: TEST_DEBUG_CONFIG,
+      map,
+      mapObjects,
+      roster: ROSTER,
+    });
+    const charged: string[] = [];
+    for (const sim of [duel, ordinary]) {
+      sim.on('ultimate-charged', ({ entityId, charge, cause }) => {
+        charged.push(`${entityId} ${cause} ${String(charge)}`);
+      });
+      stepPastCountdown(sim);
+    }
+    const ultimateOf = (sim: Simulation) =>
+      sim.snapshot().player?.slots.find(({ slot }) => slot === 'ability-4')?.charge;
+
+    expect(ultimateOf(duel)).toBe(0.5); // the owner's "starts half-charged"
+    expect(ultimateOf(ordinary)).toBe(0);
+    expect(charged).toEqual(
+      (['light', 'dark'] as const).map((team) => `${duel.humanLegendIdOf(team) ?? ''} start 0.5`),
+    );
+  });
+
+  it('starts every other ability ready when the round starts: no cooldown before a cast (DEC-380 (1))', () => {
+    const sim = build();
+    stepPastCountdown(sim);
+
+    const others = sim
+      .snapshot()
+      .player?.slots.filter(({ slot }) => ['ability-1', 'ability-2', 'ability-3'].includes(slot));
+    expect(others?.map(({ cooldownRemainingTicks }) => cooldownRemainingTicks)).toEqual([0, 0, 0]);
+    expect(others?.some(({ blockedBy }) => blockedBy === 'on-cooldown')).toBe(false);
   });
 
   it('has no duel in the snapshot of an ordinary match', () => {
@@ -376,8 +416,8 @@ describe('Simulation: a Duel', () => {
   });
 
   it('ends Fury at the round reset, so its dash leaves the granted slot (every invariant checked)', () => {
-    // A Vanguard against a one-health Magus: each hit is a kill, and four kills fill the meter
-    // (a Legend kill gives 25, DEC-272).
+    // A Vanguard against a one-health Magus: each hit is a kill. The meter starts half full
+    // (DEC-380 (1)) and a Legend kill gives 25 (DEC-272), so the four kills below fill it.
     const shipped = unitsWithWarriorKit();
     const content: DefinitionSource = {
       has: (id) => shipped.has(id),

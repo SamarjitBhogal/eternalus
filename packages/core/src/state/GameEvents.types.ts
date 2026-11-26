@@ -41,7 +41,9 @@ export type UltimateChargeCause =
   | 'boss-damage'
   | 'boss-kill'
   | 'checkpoint'
-  | 'death';
+  | 'death'
+  /** The share a Legend starts with when it spawns (a Duel's half meter, DEC-380 (1)). */
+  | 'start';
 
 /**
  * Every event the simulation can emit, by name (architecture 03 §4). The single place of change

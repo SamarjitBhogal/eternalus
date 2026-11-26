@@ -283,7 +283,10 @@ export class Simulation {
           ultimateCharge: ULTIMATE_CHARGE,
           ...(duel === undefined
             ? {}
-            : { legendsStartAtMaxLevel: DUEL_RULES.legendsStartAtMaxLevel }),
+            : {
+                legendsStartAtMaxLevel: DUEL_RULES.legendsStartAtMaxLevel,
+                ultimateStartCharge: DUEL_RULES.ultimateStartCharge,
+              }),
         },
         director,
         abilities: registry,
