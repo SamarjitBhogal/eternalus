@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-26
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -63,7 +63,10 @@ Owner: _ (sim lane A). Week 7. Follows [04-entity-architecture.md](../architectu
       speed, a head-on hit stops it, it builds along a wall; 10 §12). The box stays unticked: the
       rest of Wrecking Run (stun and self damage at full speed, barging through objects and
       walls), Studious and Necromancy wait for the owner's answers on the PR 8 cards (DEC-307:
-      numbers on a page first).
+      numbers on a page first). **Status (2026-11-26):** all PR 8 cards are answered (DEC-330,
+      DEC-367). Studious and Necromancy are built on `feat/magus-passives` (DEC-330 (5)); a
+      Wrecking Run hits PR builds W3, W4 and DEC-367 and updates the docs that DEC-367 names.
+      Owner of the hits PR: _.
 - [ ] **`LegendSpecDefinition` extension point** (D11: sub-classes as data-driven
       specializations; MVP since ADR 0018: the specs ship as display and setup data, and the phase
       that builds their gameplay is open, `INBOX.md` HC-Q17). Owner: _. Test: an empty spec is
