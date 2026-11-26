@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-24
+last-reviewed: 2026-11-26
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -1445,9 +1445,18 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     sweep), areas, shots, clicks (`findUnitAt`), collision, the hash and the snapshot, so the
     client draws the larger body. A moving body that grows is pushed out of the walls it then
     overlaps. Where the push leaves it in a wall (a gap narrower than the grown body), it keeps
-    its size until it has room; the other three modifiers apply from the cast
-    ([10](10-physics.md) §12, DEC-365, `INBOX.md` HC-Q113). `ascended` (× 1.25) and `eternal`
-    (× 1.5) can use the same stat.
+    its size until it has room ([10](10-physics.md) §12, DEC-365). `ascended` (× 1.25) and
+    `eternal` (× 1.5) can use the same stat.
+  - **No room, no cast (DEC-382, `INBOX.md` HC-Q113).** Berserk cannot be cast where the grown
+    body has no room. `BuffEffect.casterBlockedBy` refuses the cast with a new reason, `no-room`
+    (a reason the §6 sketch does not list). It reads the growth from the `size` modifiers of the
+    status the step applies, so the 1.3 is not copied. Its room test is `BodySizeSystem`'s
+    (`state/placeWithRoom`: the push-out, then `hasRoom`), so a Sentinel beside one wall can still
+    cast. A refused cast spends nothing, so the meter stays full; the cast works once the
+    Sentinel stands where it has room. The player snapshot shows the reason, and the HUD shows
+    "Not enough space" above the ultimate slot ([13](13-game-interface.md) §10).
+    `BodySizeSystem`'s rule stays as the safety net for a body that grows in another way (a wall
+    placed later in the tick of the cast, a later size status).
 - **Shield Wall (`feat/sentinel-wall`, 2026-11-23; DEC-330 (7), DEC-307, reading R4).** Shield
   Wall is the Sentinel's `ability-3` (`content/abilities/shieldWall.ts`): `directional`, with one
   `summon` step that places the `shield-wall-barrier` obstacle (`content/obstacles/`). Where the
@@ -1476,7 +1485,9 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     partly inside the new wall; it can walk out (10 §12, `INBOX.md` HC-S14).
   - **A step's aim check.** An effect may have `aimBlockedBy` (optional on `AbilityEffect`);
     `CastValidator` asks every step of the ability after the targeting, so a refused cast spends
-    nothing. The summon refuses (`no-target`) a wall whose outline would overlap a wall (terrain,
+    nothing. An effect may also have `casterBlockedBy`, a check without the aim (Berserk's
+    `no-room`, the Berserk bullet above). `CastValidator` asks it first, also in `slotBlockedBy`,
+    so the player snapshot shows its reason. The summon refuses (`no-target`) a wall whose outline would overlap a wall (terrain,
     a blocking map object, another placed wall, the caster's oldest wall included) or reach past
     the map's edge. A delayed step is checked at the cast.
   - **Aim overlay.** `describe` gives one display step with the display-only shape `outline`

@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-24
+last-reviewed: 2026-11-26
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -378,7 +378,9 @@ swept; it moves only a body that grew at the map's edge and overlaps no wall, an
 that body into one. Where the push leaves the grown body
 in a wall (`CollisionQuery.hasRoom`), the body does not grow and does not move: it keeps its
 size, and `BodySizeSystem` tries again each tick, so the body grows in the first tick it has room
-(DEC-365, `INBOX.md` HC-Q113). So a body that grows keeps `reach`'s precondition (no unit starts
+(DEC-365). Since DEC-382 (`INBOX.md` HC-Q113) the same room test (`state/placeWithRoom`) also
+refuses a Berserk cast without room (`no-room`, 05 §18), so this rule is the safety net for a
+body that grows in another way. So a body that grows keeps `reach`'s precondition (no unit starts
 inside a wall). A deploying mob grows in place and is not pushed, as `CollisionSystem` lets it
 pass its walls.
 `Collider.shape.radius` stays the built radius; no code reads it at runtime.

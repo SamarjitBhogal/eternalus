@@ -269,8 +269,12 @@ describe('Berserk (scenario)', () => {
   });
 });
 
-describe('Berserk in a gap narrower than the grown body', () => {
-  /** Two rocks 2.6 m apart: the Sentinel (2.5 m wide) fits between them, 3.25 m does not. */
+describe('Berserk without room for the grown body (DEC-382, HC-Q113)', () => {
+  /**
+   * Two rocks 3 m apart: the Sentinel (2.5 m wide) fits between them, 3.25 m does not. The body
+   * that keeps its size until it has room (`BodySizeSystem`'s rule, for a body that grows in another
+   * way) is tested in `systems/BodySizeSystem.test.ts`.
+   */
   const rock = (id: string, y: number, height: number): MapObject => ({
     id,
     kind: 'rock',
@@ -284,33 +288,46 @@ describe('Berserk in a gap narrower than the grown body', () => {
       ],
     ],
   });
-  const ROCKS = [rock('rock-north', 55.3, 1.7), rock('rock-south', 50, 2.7)];
+  const ROCKS = [rock('rock-north', 55.5, 1.5), rock('rock-south', 50, 2.5)];
   const overlapsRock = (point: Vec2, radius: number): boolean =>
     ROCKS.some(({ footprints }) =>
       footprints.some((footprint) => doesCircleOverlapPolygon(point, radius, footprint)),
     );
 
-  it('keeps the body small in the gap and grows it once it walked out, every invariant holding', () => {
+  it('refuses the cast in the gap and keeps the meter full; once the Sentinel walked out, the cast works', () => {
+    const GAP = { x: 110, y: 54 };
     const scenario = match({
       world: { map: TWO_LANE_MAP, mapObjects: ROCKS },
-      at: { x: 110, y: 54 },
+      at: GAP,
       isQuick: true,
     });
+    const { sentinel } = scenario;
 
-    scenario.startBerserk();
+    scenario.fillMeter();
+    scenario.cast(sentinel, 'ability-4', GAP);
     scenario.run(30);
-    const inGap = { radius: scenario.radius(), at: scenario.at(scenario.sentinel) };
+    const inGap = { radius: scenario.radius(), at: scenario.at(sentinel) };
     scenario.walk({ x: -1, y: 0 });
-    scenario.run(20); // 0.36 m each tick: 7.2 m west
-    const outside = scenario.at(scenario.sentinel);
+    scenario.run(20); // 0.3 m each tick: 6 m west
+    scenario.stop(sentinel);
+    scenario.run(1);
+    const outside = scenario.at(sentinel);
+    scenario.cast(sentinel, 'ability-4', outside); // the meter the refused cast left full
+    scenario.run(1);
 
-    expect(scenario.log.some((line) => line.endsWith(`berserk on ${scenario.sentinel}`))).toBe(
-      true,
-    );
-    expect(inGap).toEqual({ radius: 1.25, at: { x: 110, y: 54 } });
+    expect(
+      scenario.log
+        .filter((line) => line.includes('berserk') || line.includes('rejected'))
+        .map((line) => line.split(' ').slice(1).join(' ')),
+    ).toEqual([
+      `rejected ${sentinel} no-room`,
+      `cast ${sentinel} berserk`,
+      `berserk on ${sentinel}`,
+    ]);
+    expect(inGap).toEqual({ radius: 1.25, at: GAP });
     expect(outside.x).toBeLessThan(108);
     expect(scenario.radius()).toBeCloseTo(1.625, 12);
-    expect(overlapsRock(outside, 1.625)).toBe(false);
+    expect(overlapsRock(scenario.at(sentinel), 1.625)).toBe(false);
   });
 });
 

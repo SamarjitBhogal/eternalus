@@ -97,6 +97,18 @@ describe('AbilitySlot', () => {
     expect(names(html)).toEqual(['Ability 1, Not enough aether']);
   });
 
+  it('shows "Not enough space" above the ultimate while its grown body has no room (HC-Q113), and no prompt for a reason the HUD shows otherwise', () => {
+    const blocked = { isReady: false, cooldownRemainingTicks: 0 };
+    const noRoom = render('ability-4', { ...blocked, blockedBy: 'no-room' });
+    const noAether = render('ability-1', { ...blocked, blockedBy: 'not-enough-aether' });
+
+    expect(noRoom).toContain(
+      `<span class="${String(styles.prompt)}" aria-hidden="true">Not enough space</span>`,
+    );
+    expect(names(noRoom)).toEqual(['Ultimate, Not enough space']);
+    expect(noAether).not.toContain(String(styles.prompt));
+  });
+
   it('draws no icon for a kit slot without art and says it is empty', () => {
     const html = renderWithStore(<AbilitySlot slot="gadget-1" appearance="gadget" />, {
       ...withHudSetup(figmaHudState()),

@@ -7,6 +7,7 @@ import { SLAM } from '../content/abilities/slam';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { ContentValidationError } from '../content/ContentValidationError';
 import { PROJECTILES } from '../content/projectiles/projectileCatalogue';
+import { STATUS_EFFECTS } from '../content/status-effects/statusEffectCatalogue';
 import { fakeAbility, SHIPPED_EFFECT_KINDS } from './__fixtures__/fakeAbilities';
 import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 
@@ -127,7 +128,9 @@ describe('createDefaultAbilityRegistry', () => {
   });
 
   it('checks a debuff against the statuses it is given', () => {
-    expect(() => createDefaultAbilityRegistry(loadAbilities(30), 30, { has: () => false })).toThrow(
+    const none = { has: () => false, get: STATUS_EFFECTS.get.bind(STATUS_EFFECTS) };
+
+    expect(() => createDefaultAbilityRegistry(loadAbilities(30), 30, none)).toThrow(
       'Ability "shockwave": debuff status "concussion" is unknown.',
     );
   });

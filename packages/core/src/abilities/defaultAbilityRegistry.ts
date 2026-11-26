@@ -31,7 +31,8 @@ import { SelfTargeting } from './targeting/SelfTargeting';
  * @param abilities - The loaded abilities (`loadAbilities`).
  * @param tickRate - Ticks per second (`GameConfig.tickRate`), for the knock-back's travel time
  *   (`loadKnockback`).
- * @param statuses - The statuses a debuff or a buff may name; the shipped ones by default.
+ * @param statuses - The statuses a debuff or a buff may name, and a buff's `size` modifiers; the
+ *   shipped ones by default.
  * @param projectiles - The projectiles a shot step may name; the shipped ones by default.
  * @param bodies - The bodies a summon step may place; the shipped obstacles by default.
  * @throws ContentValidationError when the knock-back tuning is invalid (`loadKnockback`), or
@@ -41,7 +42,7 @@ import { SelfTargeting } from './targeting/SelfTargeting';
 export const createDefaultAbilityRegistry = (
   abilities: AbilitySource,
   tickRate: number,
-  statuses: { has(id: string): boolean } = STATUS_EFFECTS,
+  statuses: ConstructorParameters<typeof BuffEffect>[0] = STATUS_EFFECTS,
   projectiles: ConstructorParameters<typeof ProjectileEffect>[0] = PROJECTILES,
   bodies: ConstructorParameters<typeof SummonEffect>[0] = OBSTACLE_DEFINITIONS,
 ): AbilityRegistry => {
