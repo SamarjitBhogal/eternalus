@@ -1,4 +1,5 @@
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
+import { Abilities } from '../components/Abilities';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
 import { opponentOf, PLAYABLE_TEAMS } from '../teams/playableTeams';
@@ -15,7 +16,10 @@ import type { System, SystemContext } from './System.types';
  * damage over time cannot kill a Legend the tick after and a push cannot slide it off its start
  * point. Each status ends first through the match's `StatusEffectApplier`, oldest first, so each
  * one emits `status-expired` and an ability it granted leaves the `granted` slot with it (Fury's
- * dash). It runs before `DeathSystem`, so the dead Legend is healed before it would be removed.
+ * dash). A fallen Legend's abilities but its ultimate are then ready (FR-117: "reset to fully
+ * cooled down upon death"); the survivor keeps its cooldowns, and both keep their ultimate meters
+ * (DEC-295 (1)). It runs before `DeathSystem`, so the dead Legend is healed before it would be
+ * removed.
  */
 export class DuelRoundSystem implements System {
   public readonly name = 'duel-round';
@@ -54,6 +58,9 @@ export class DuelRoundSystem implements System {
         this.statuses.remove(state, legend.id, statusId);
       }
       this.reset.apply(legend, this.starts[team]);
+    }
+    for (const { legend } of fallen) {
+      legend.findComponent(Abilities)?.endCooldownsButUltimate();
     }
   }
 }
