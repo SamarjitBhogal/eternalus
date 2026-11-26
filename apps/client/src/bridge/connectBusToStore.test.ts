@@ -268,6 +268,7 @@ describe('connectBusToStore', () => {
         versus: null,
         duel: null,
         duelHud: null,
+        isReconnecting: false,
       });
     }
   });
@@ -281,6 +282,14 @@ describe('connectBusToStore', () => {
     expect(store.getState().match.duelHud).toEqual(duel);
     bus.emit('match-setup', null);
     expect(store.getState().match.duelHud).toBeNull();
+  });
+
+  it('copies whether the Duel connection is reconnecting', () => {
+    const { bus, store } = connected();
+    bus.emit('duel-connection', { isReconnecting: true });
+    expect(store.getState().match.isReconnecting).toBe(true);
+    bus.emit('duel-connection', { isReconnecting: false });
+    expect(store.getState().match.isReconnecting).toBe(false);
   });
 
   it('copies the settings state', () => {

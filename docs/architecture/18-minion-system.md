@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-25
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -24,6 +24,7 @@ paths:
     'packages/core/src/systems/SpawnSystem*',
     'packages/core/src/systems/PathingSystem*',
     'packages/core/src/systems/EnragedSystem*',
+    'packages/core/src/systems/{MinionLevelSystem,veterancyOf}*',
     'packages/core/src/combat/MinionStrengthStep*',
     'packages/core/src/entities/strategies/LaneFollowMovementStrategy*',
     'packages/core/src/content/mobs/**',
@@ -132,7 +133,11 @@ checks every post. Pull request M6b adds the checkpoint defenders: `CHECKPOINT_D
 MVP-if-time), on the light, medium and heavy assist mobs (DEC-260), laid out by
 `GuardRoster.defend` on `checkpoint-reached`; a lost point's living defenders stay (DEC-261).
 The owner's 2026-11-20 rule that neutral defenders and forest-camp mobs level (DEC-260) is not
-built yet. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
+built yet. Pull request M10 adds the zone level-up (07 §7, DEC-258): `ZoneLevelUpSystem` and
+`minion-levels-granted`, applied with kill levels (`minion-level-earned`) by `MinionLevelSystem`
+(DEC-353), after `DeathSystem`, so the aura (`VeterancySystem`) reads a new level from its next
+cadence on, at most `aura.everyTicks` later; `Veterancy` keeps the levels kills earned
+apart from the levels a zone granted. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
 `ai/decideLeashed.ts` (DEC-168 B1), the guard respawn rules `systems/EachGuardRespawn.ts` and
 `GroupGuardRespawn.ts` (B4), the ally-damage listener `state/AllyDamageTally.ts` (B6), and
 `StuckSystem` with its `ChaseWatch` component (§5.2, DEC-193). A unit that chases a lane tower,
@@ -265,7 +270,7 @@ mob ever exists without its horde (MS-25).
 `EnragedSystem` (MS-16) → `OutOfCombatHealingSystem` (DEC-188) → `RespawnSystem` (FR-051,
 DEC-295: in every match, after the Duel round, so a fallen Duel Legend is never queued) →
 `DeathSystem` →
-`CaptureSystem` (07 §7) → `MatchDirectorSystem` (12 §1) → `InvariantSystem` → `SnapshotSystem`.
+`CaptureSystem` (07 §7) → `ZoneLevelUpSystem` (07 §7, DEC-258) → `MinionLevelSystem` (every minion level change, DEC-353) → `MatchDirectorSystem` (12 §1) → `InvariantSystem` → `SnapshotSystem`.
 A horde spawned on tick N has its members and record when the invariants and the snapshot of tick
 N run, and its first decisions in tick N+1.
 

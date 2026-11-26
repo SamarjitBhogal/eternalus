@@ -1,0 +1,14 @@
+.notice {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin: 0;
+  padding: var(--space-3) var(--space-5);
+  transform: translate(-50%, -50%);
+  border-radius: var(--radius-lg);
+  background: var(--surface-scrim);
+  color: var(--hud-text);
+  font-family: var(--font-game);
+  font-size: max(calc(36 * var(--hud-u)), var(--text-min));
+  white-space: nowrap;
+}
