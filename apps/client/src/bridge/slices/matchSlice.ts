@@ -21,6 +21,10 @@ type MatchSliceState = {
   readonly duel: MatchEnding | null;
   /** The Duel's scoreboard; `null` outside a Duel. */
   readonly duelHud: DuelHudState | null;
+  /** The reconnect window of a disconnected Duel opponent, in ms; `null` while they are connected. */
+  readonly opponentGraceMs: number | null;
+  /** Whether this player's Duel connection dropped and is reconnecting (DEC-349). */
+  readonly isReconnecting: boolean;
 };
 
 const initialState: MatchSliceState = {
@@ -32,11 +36,14 @@ const initialState: MatchSliceState = {
   versus: null,
   duel: null,
   duelHud: null,
+  opponentGraceMs: null,
+  isReconnecting: false,
 };
 
 /**
  * Match state the UI shows, fed by `match-clock`, `structure-state`, `capture-state` and
- * `match-ended`, by `duel-ended` for an online Duel, and by `duel-versus` and `duel-state` in a Duel.
+ * `match-ended`, by `duel-ended` for an online Duel, and by `duel-versus`, `duel-state` and
+ * `duel-connection` in a Duel.
  */
 export const matchSlice = createSlice({
   name: 'match',
@@ -72,6 +79,14 @@ export const matchSlice = createSlice({
       ...state,
       duelHud: action.payload,
     }),
+    opponentPresenceChanged: (state, action: PayloadAction<number | null>) => ({
+      ...state,
+      opponentGraceMs: action.payload,
+    }),
+    connectionChanged: (state, action: PayloadAction<boolean>) => ({
+      ...state,
+      isReconnecting: action.payload,
+    }),
     reset: () => initialState,
   },
   selectors: {
@@ -80,10 +95,12 @@ export const matchSlice = createSlice({
     selectDuelOutcome: (state) => state.duel,
     selectVersus: (state) => state.versus,
     selectDuelHud: (state) => state.duelHud,
+    selectIsReconnecting: (state) => state.isReconnecting,
     selectMatchClock: (state) => state.clock,
     /** The pre-match countdown's number (0 is "START"); `null` before the first clock and after it. */
     selectMatchCountdown: (state) => state.clock?.countdown ?? null,
     selectStructures: (state) => state.structures,
     selectCapturePoints: (state) => state.capturePoints,
+    selectOpponentGraceMs: (state) => state.opponentGraceMs,
   },
 });

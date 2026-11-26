@@ -3,7 +3,7 @@ import type { MapObject } from '../content/maps/mapObjects.types';
 import type { MatchGrid } from '../map/MatchGrid';
 import type { WorldMap } from '../map/WorldMap';
 import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
-import type { Team } from '../teams/teams.types';
+import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { LaneRoutes } from './LaneRoutes';
 
@@ -59,5 +59,11 @@ export class MatchWorld {
    */
   public reopen(object: MapObject): readonly number[] {
     return this.matchGrid.reopen(object);
+  }
+
+  /** Where `team`'s Stronghold stands (a copy), or `undefined` when the map has none for it. */
+  public strongholdOf(team: PlayableTeam): Vec2 | undefined {
+    const stronghold = this.strongholds.get(team);
+    return stronghold === undefined ? undefined : { x: stronghold.x, y: stronghold.y };
   }
 }

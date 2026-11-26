@@ -100,6 +100,14 @@ const persistence = new PersistenceController({
     logger.log(makeLogRecord('WARN', 'client.persistence', body, { attributes }));
   },
 });
+// Settings and the guest id load once storage is open.
+const storageOpen = persistence.open().catch((error: unknown) => {
+  logger.log(
+    makeLogRecord('ERROR', 'client.persistence', 'storage did not open', {
+      attributes: { error: String(error) },
+    }),
+  );
+});
 const settings = new SettingsController({
   bus: eventBus,
   persistence,
@@ -150,7 +158,11 @@ const session = new SessionController({
   createRosterRng,
   themeRoot: document.documentElement,
   prepareWorld: (seed) => prepareMatchWorld(gameConfig, seed),
-  createMatch: createBrowserMatch(browserMatchDeps),
+  // The developer menu is a solo-match tool: only `createMatch` enables it, an online Duel never does.
+  createMatch: createBrowserMatch({
+    ...browserMatchDeps,
+    isDeveloperMenuEnabled: developer.isDeveloper,
+  }),
   createDuelMatch: createBrowserDuelMatch(browserMatchDeps),
   createDuelTransport: () =>
     new WebSocketTransport(
@@ -158,6 +170,10 @@ const session = new SessionController({
         ? duelServerUrl
         : DEFAULT_DUEL_SERVER_URL,
     ),
+  guestIds: {
+    load: () => storageOpen.then(() => persistence.loadGuestId()),
+    save: (guestId) => persistence.saveGuestId(guestId),
+  },
   logger,
   resources,
   credits: describeCredits(ASSET_MANIFEST.assets, ASSET_LICENCES),
@@ -166,16 +182,7 @@ const session = new SessionController({
 session.start();
 
 // Settings load in the background: the store has no bindings until the settings event arrives.
-void persistence
-  .open()
-  .catch((error: unknown) => {
-    logger.log(
-      makeLogRecord('ERROR', 'client.persistence', 'storage did not open', {
-        attributes: { error: String(error) },
-      }),
-    );
-  })
-  .then(() => settings.start());
+void storageOpen.then(() => settings.start());
 
 const attachViewport = (viewport: MatchViewport): (() => void) => session.attachViewport(viewport);
 createRoot(rootElement).render(

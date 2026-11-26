@@ -62,6 +62,31 @@ export class StatusEffectApplier {
   }
 
   /**
+   * Takes `count` stacks off status `statusId` on `targetId` (a lost minion level) with one event:
+   * `status-expired` when no stack is left, else `status-stacks-lost` with the stacks left.
+   * Returns whether it was active.
+   */
+  public removeStacks(
+    state: GameState,
+    targetId: EntityId,
+    statusId: string,
+    count: number,
+  ): boolean {
+    const statuses = state.entities.get(targetId)?.findComponent(StatusEffects);
+    const sourceId = statuses?.active.find((status) => status.definition.id === statusId)?.sourceId;
+    const stacks = sourceId === undefined ? undefined : statuses?.removeStacks(statusId, count);
+    if (sourceId === undefined || stacks === undefined) {
+      return false;
+    }
+    if (stacks === 0) {
+      state.events.emit('status-expired', { entityId: targetId, statusId, sourceId });
+    } else {
+      state.events.emit('status-stacks-lost', { entityId: targetId, statusId, sourceId, stacks });
+    }
+    return true;
+  }
+
+  /**
    * Removes every status on `targetId` that is over at `state.tick`, emitting `status-expired` for
    * each, oldest first, then runs their `onExpire` (stun → `control-immune`), credited to the same
    * source.
