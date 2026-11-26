@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { DamagePipeline } from '../combat/DamagePipeline';
+import { KillCredit } from '../combat/KillCredit';
 import { Aether } from '../components/Aether';
 import { Health } from '../components/Health';
 import { Progression } from '../components/Progression';
@@ -7,6 +9,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { WARRIOR } from '../content/legends/warrior';
 import { LIGHT_MINION } from '../content/mobs/lightMinion';
+import { CATHEDRAL_GEM } from '../content/structures/cathedralGem';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import { NullLogger } from '../diagnostics/NullLogger';
@@ -148,6 +151,27 @@ describe('ProgressionSystem', () => {
     expect(payloads('level-up').map((payload) => (payload as { level: number }).level)).toEqual([
       2, 3, 4,
     ]);
+  });
+
+  it.each([
+    ['10 s after its hit, earns the kill XP', 10 * 30, 175],
+    ['after the window, earns none', 30 * 30 + 1, 0],
+  ])('the enemy whose hit a gem death is credited to, %s (DEC-346)', (_, wait, xp) => {
+    const { state, spawn, run } = setUp();
+    const damage = new DamagePipeline(undefined, new KillCredit(30 * 30, CATHEDRAL_GEM.statusIds));
+    const enemy = spawn('warrior', 'warrior', 'light');
+    const victim = spawn('magus', 'magus', 'dark');
+    damage.apply(state, victim.id, 1, { attackerId: enemy.id, kind: 'weapon', definitionId: 'x' });
+    for (let at = 0; at < wait; at += 1) state.advanceTick();
+
+    damage.apply(state, victim.id, 1_000_000, {
+      attackerId: null,
+      kind: 'status',
+      definitionId: 'gem-burn',
+    });
+    run();
+
+    expect(enemy.getComponent(Progression).xp).toBe(xp);
   });
 
   it('ignores kills with no attacker and attackers that do not level', () => {

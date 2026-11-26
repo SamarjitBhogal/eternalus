@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Aether } from '../components/Aether';
 import { Combat } from '../components/Combat';
+import { LastEnemyHit } from '../components/LastEnemyHit';
 import { Movement } from '../components/Movement';
 import { StatusEffects } from '../components/StatusEffects';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
@@ -289,6 +290,18 @@ describe('RespawnSystem', () => {
     expect(legend.getComponent(Movement).velocity).toEqual({ x: 0, y: 0 });
     expect(legend.getComponent(Combat).targetId).toBeNull();
     expect(legend.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
+  });
+
+  it("forgets the last enemy hit of the Legend's earlier life, so that hit earns no gem kill (DEC-346)", () => {
+    const match = setUp();
+    const legend = addLegend(match);
+    legend.addComponent(new LastEnemyHit('entity-99', match.state.tick));
+    kill(match, legend.id);
+
+    for (let tick = 0; tick <= DELAY; tick += 1) match.step();
+
+    expect(match.state.entities.has(legend.id)).toBe(true);
+    expect(legend.findComponent(LastEnemyHit)).toBeUndefined();
   });
 
   it('brings a Legend back even when its team filled the unit cap meanwhile', () => {

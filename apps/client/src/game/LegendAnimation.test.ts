@@ -17,6 +17,7 @@ const hero: EntitySnapshot = {
   progression: null,
   capture: null,
   area: null,
+  gem: null,
 };
 const base = () =>
   new Simulation({
