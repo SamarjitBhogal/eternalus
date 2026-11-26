@@ -16,6 +16,14 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Better than design: two follow-ups of the `simulation/` split (refactor/simulation-split
+      pre-PR critic, 2026-11-25; BTD1, the folder itself, is DEC-356).** (BTD2) A generic
+      `ReplayRecorderOf<Setup>` in `diagnostics/`, next to `ReplayOf` and `REPLAY_CHECKPOINT_EVERY`,
+      taking a ready `ReplaySetup`, would drop its dependency on `SimulationOptions` and serve any
+      replay target. (BTD3) A file-length guardrail: ESLint `max-lines` (about 300) and
+      `max-lines-per-function` (about 60) for `packages/core/src`, which NFR-003's verification
+      already names; a guardrail change, so it needs an ADR. Decision: …
+
 - [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only
       its group's home (`CAMP_BODY`: "a camp is only its group's home"): the camp's mobs are what
@@ -3432,6 +3440,10 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-25 — **Your answer on the `simulation/` folder (DEC-356)** (`refactor/simulation-split`,
+  PR #176): "Keep the folder name". Recorded as DEC-356; closes BTD1 of "Better than design: the
+  `simulation/` folder and two follow-ups". BTD2 and BTD3 stay open.
 
 - 2026-11-23 — **Your answers on the five Cathedral gem cards (DEC-346)** (`feat/cathedral-gem-hittable`,
   PR #132): recorded as DEC-346. The gem blocks movement (an unbreakable plinth under it) and a

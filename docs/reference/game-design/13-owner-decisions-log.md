@@ -21,6 +21,15 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-11-25 (chat: the `simulation/` folder, refactor/simulation-split)
+
+The owner's answer of 2026-11-25 in chat to the refactor/simulation-split pre-PR critic's BTD1
+(`INBOX.md`, PR #176). DEC-356 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                            |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-356 | **The `simulation/` folder is signed off as built** (closes `INBOX.md` "Better than design: the `simulation/` folder" BTD1; PR #176). "Keep the folder name". `packages/core/src/simulation/` holds the parts `Simulation.ts` composes a match from, is imported only by `Simulation.ts` and has its import rights (architecture 02 §2, `packages/core/AGENTS.md`). | `INBOX.md` BTD1, PR #176 |
+
 ## Batch 2026-11-23 (Owner Calls page: the Cathedral gem's open rules)
 
 The owner's answers of 2026-11-23 on the Owner Calls page to the five Cathedral gem cards of PR #132

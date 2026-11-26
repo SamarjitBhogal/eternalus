@@ -12,6 +12,7 @@ paths:
     'packages/core/src/commands/**',
     'packages/core/src/config/**',
     'packages/core/src/Simulation.ts',
+    'packages/core/src/simulation/**',
   ]
 related:
   [
@@ -325,7 +326,11 @@ export class Simulation {
 
 The facade is what the client, tests and replays drive; its constructor is the composition root of
 core (registries, `SystemPipeline`, `MatchDirector`, `InvariantRunner`). It takes every dependency
-through `SimulationOptions`: no globals, no module-level singletons.
+through `SimulationOptions`: no globals, no module-level singletons. The constructor only
+sequences the build; each part lives in `packages/core/src/simulation/` (the match world, the
+map's structures and zones, the match content and its one `EntityFactory`, the default pipeline
+with its director, the `RosterSpawner` and the `ReplayRecorder`), so the facade stays small as
+features are added ([refactor review](../reviews/2026-11-25-simulation-refactor.md)).
 
 ## 7. The fixed-timestep contract
 

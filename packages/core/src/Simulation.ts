@@ -1,97 +1,50 @@
-import { AiSystem } from './ai/AiSystem';
-import type { AiMemory } from './content/ai/ai.types';
-import {
-  createDefaultControllerRegistry,
-  type ControllerRegistry,
-} from './ai/defaultControllerRegistry';
+import { ROVER_BOT } from './content/ai/difficulties/rover';
 import { applyCommand } from './commands/applyCommand';
 import type { Command } from './commands/Command.types';
 import type { CommandContext, CommandHandlers } from './commands/CommandHandler.types';
 import { CommandQueue } from './commands/CommandQueue';
-import { LegendSpawner } from './entities/LegendSpawner';
-import { ROVER_BOT } from './content/ai/difficulties/rover';
 import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers';
-import { Footprint } from './components/Footprint';
-import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from './config/matchPhases';
 import { validateGameConfig } from './config/validateGameConfig';
-import { loadScoring } from './content/match/loadScoring';
-import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
+import { timelineFrameOf } from './config/timelineFrameOf';
+import { DUEL_RULES } from './content/duel/duelRules';
+import type { DuelArenaRules } from './content/duel/duelRules.types';
+import type { ContentCatalogue } from './content/ContentCatalogue';
+import { MAP_OBJECT_DEFINITIONS } from './content/maps/mapObjectDefinitions';
+import type { MapObject } from './content/maps/mapObjects.types';
+import type { LevelCurveDefinition } from './content/progression/progression.types';
+import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import type { LogContext, Logger } from './diagnostics/Logger.types';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
 import { recentContext } from './diagnostics/recentContext';
-import { REPLAY_CHECKPOINT_EVERY } from './diagnostics/Replay.constants';
-import { loadAggroRules } from './content/ai/aggro/loadAggroRules';
-import { AI_CADENCE } from './content/ai/cadence';
-import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
-import { ROVER_TACTICS } from './content/ai/rover';
-import { LEGEND_KIND_IDS } from './content/legends/legendKinds';
-import type { MapDefinition } from './content/maps/maps.types';
-import type { MapObject } from './content/maps/mapObjects.types';
-import type { GameConfig } from './config/GameConfig.types';
-import { AStarPathfinder } from './map/AStarPathfinder';
-import { RETREAT_STRUCTURES } from './content/ai/botLaner';
-import { BOT_DIFFICULTIES } from './content/ai/difficulties/botDifficulties';
-import { RANKS_FORMATION } from './content/mobs/formations/ranks';
-import type { EntityId } from './state/EntityStore.types';
-import { assignLanes } from './state/assignLanes';
-import { formationSlot } from './state/formationSlot';
-import { unitClassOf } from './content/ai/unitClasses';
-import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
-import type { ContentCatalogue } from './content/ContentCatalogue';
-import { loadDefaultContent } from './content/loadDefaultContent';
-import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
-import { compareById } from './utils/compareById';
-import type { LevelCurveDefinition } from './content/progression/progression.types';
-import { loadLevelCurves } from './content/progression/loadLevelCurves';
-import { XP_SOURCES } from './content/progression/xpSources';
-import { loadWeapons } from './content/weapons/loadWeapons';
-import { ZONE_DEFINITIONS, ZONE_PLACEMENTS } from './content/zones/zoneCatalogue';
-import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
-import { EntityFactory } from './entities/EntityFactory';
-import { DUEL_RULES } from './content/duel/duelRules';
+import type { EntityFactory } from './entities/EntityFactory';
 import { duelMapObjects } from './match/duelArena';
 import { duelStartPoints } from './match/duelStartPoints';
-import { createDefaultMatchDirector } from './match/defaultMatchDirector';
 import { MatchTimeline } from './match/MatchTimeline';
-import { timelineFrameOf } from './config/timelineFrameOf';
-import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
-import { Unit } from './entities/Unit';
-import type {
-  GameEventHandler,
-  GameEventMap,
-  GameEventType,
-  Unsubscribe,
-} from './state/GameEvents.types';
+import { buildDefaultPipeline } from './simulation/buildDefaultPipeline';
+import { buildMatchWorld } from './simulation/buildMatchWorld';
+import { loadMatchContent } from './simulation/matchContent';
+import { ReplayRecorder } from './simulation/ReplayRecorder';
+import { RosterSpawner } from './simulation/RosterSpawner';
+import { spawnStructures, spawnZones } from './simulation/spawnMapEntities';
+import type { Replay, SimulationOptions } from './Simulation.types';
+import type { EntityId } from './state/EntityStore.types';
+import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
 import { GameState } from './state/GameState';
-import { MatchWorld } from './state/MatchWorld';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
-import type {
-  Replay,
-  ReplaySetup,
-  RosterSlot,
-  SimulationOptions,
-  StructureSource,
-} from './Simulation.types';
-import { SpaceIndex } from './physics/SpaceIndex';
-import { MatchPathfinderFactory } from './map/MatchPathfinderFactory';
-import { zoneAreaOf } from './map/zoneArea';
-import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
+import { WorldObjectStore } from './state/WorldObjectStore';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
-import { WorldObjectStore } from './state/WorldObjectStore';
-import { MAP_OBJECT_DEFINITIONS } from './content/maps/mapObjectDefinitions';
-import { CollisionSystem } from './systems/CollisionSystem';
 import type { PlayableTeam } from './teams/teams.types';
-import type { Vec2 } from './utils/geometry.types';
-import { PLAYABLE_TEAMS } from './teams/playableTeams';
 
 /**
  * The deterministic simulation of one match, and the only thing the client drives
  * (architecture 03 §6). Same config, seed and commands give the same match, tick for tick.
- * Composition root of core: it builds the state, the command registry and the system pipeline,
- * and, with the default pipeline, the match director (started here, so the countdown covers tick 0).
+ * Composition root of core: its constructor builds the state, the command registry and the
+ * system pipeline from the parts in `simulation/` (the world, the map's entities, the content,
+ * the default pipeline with its match director, the roster and the replay recorder); after that
+ * it is a facade over one tick loop.
  */
 export class Simulation {
   private readonly state: GameState;
@@ -106,19 +59,7 @@ export class Simulation {
   private readonly systemContext: SystemContext;
   private readonly pipeline: SystemPipeline;
   private readonly hasher = new StateHasher();
-  /**
-   * Every command from `enqueueCommand`, with the tick it applied in (ADR 0025 §4, DEC-156). Not
-   * hashed.
-   */
-  private readonly commandLog: Replay['commands'][number][] = [];
-  /** `hash()` at tick 0 and every `REPLAY_CHECKPOINT_EVERY` ticks, ascending. Not hashed. */
-  private readonly checkpoints: Replay['checkpoints'][number][] = [];
-  /**
-   * What the match was built with, copied into every exported replay. A crash report's replay
-   * keeps the generated map and map objects inline (DEC-152); revisit at the Phase 5 replay store.
-   */
-  private readonly setup: ReplaySetup;
-
+  private readonly replay: ReplayRecorder;
   /** The level curves `ProgressionSystem` levels Legends along; the snapshot reports XP on them. */
   private readonly curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has' | 'get'>;
 
@@ -127,170 +68,70 @@ export class Simulation {
    *
    * @throws ConfigValidationError when `options.config` is invalid, before anything runs.
    */
-  public constructor({
-    config,
-    seed,
-    logger,
-    systems,
-    debug = RELEASE_DEBUG_CONFIG,
-    content,
-    map,
-    mapObjects: authoredObjects,
-    levelCurves,
-    roster = [],
-    weapons,
-    guardPlans,
-    duel,
-    structures = STRUCTURE_DEFINITIONS,
-  }: SimulationOptions) {
-    const validConfig = validateGameConfig(config);
-    const timeline = MatchTimeline.resolve(validConfig);
-    this.setup = {
-      seed,
-      config: validConfig,
-      ...(map === undefined ? {} : { map }),
-      ...(authoredObjects === undefined ? {} : { mapObjects: authoredObjects }),
-      ...(roster.length === 0 ? {} : { roster }),
-      ...(duel === undefined ? {} : { duel }),
-    };
+  public constructor(options: SimulationOptions) {
+    const { seed, logger, systems, map, roster = [], duel } = options;
+    const { structures = STRUCTURE_DEFINITIONS, debug = RELEASE_DEBUG_CONFIG } = options;
+    const config = validateGameConfig(options.config);
+    const timeline = MatchTimeline.resolve(config);
+    this.replay = new ReplayRecorder({ ...options, config });
     // A Duel keeps only the arena (DEC-36, DEC-348; SCRUM-445, SCRUM-446, SCRUM-450).
     const arena = duel === undefined ? undefined : DUEL_RULES.arena;
-    const mapObjects =
-      authoredObjects === undefined || arena === undefined
-        ? authoredObjects
-        : duelMapObjects(
-            authoredObjects,
-            arena,
-            map?.features.find(({ kind }) => kind === 'cathedral')?.id,
-          );
-    const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
+    const mapObjects = Simulation.matchMapObjects(options, arena);
+    const { space, world, paths } = buildMatchWorld(map, config, mapObjects);
     // Without the default pipeline no director runs, so no mark would ever fire: list none.
     const schedule = systems === undefined ? timeline.schedule() : [];
+    const { countdownEndTick } = timelineFrameOf(config);
     this.state = new GameState(
-      validConfig,
+      config,
       seed,
       world,
       { space, paths },
-      { schedule, countdownEndTick: timelineFrameOf(validConfig).countdownEndTick },
+      { schedule, countdownEndTick },
     );
     const duelStarts =
       duel === undefined ? undefined : duelStartPoints(map, DUEL_RULES.startOffset);
     if (duel !== undefined) this.state.match.startDuel(duel.killTarget);
-    const { tickRate } = this.state.config;
-    const curves = levelCurves ?? loadLevelCurves();
-    this.curves = curves;
-    const weaponSource = weapons ?? loadWeapons(tickRate);
-    const controllers = Simulation.createControllers(tickRate);
-    const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
-    const objectsById = new Map(
-      Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
-    );
-    const definitions = {
-      has: (id: string): boolean =>
-        objectsById.has(id) || ZONE_DEFINITIONS.has(id) || units.has(id),
-      get: (id: string) =>
-        objectsById.get(id) ??
-        (ZONE_DEFINITIONS.has(id) ? ZONE_DEFINITIONS.get(id) : units.get(id)),
-    };
-    // One factory for commands and spawning, so entity ids come from one counter.
-    const factory = new EntityFactory(
-      createDefaultEntityRegistry(),
-      Simulation.withStructures(definitions, structures),
-      undefined,
-      weaponSource,
-    );
-    const owners = Simulation.spawnStructures(this.state, factory, {
-      structures,
-      mapObjects,
-      omittedIds: arena?.omittedStructureIds ?? [],
-    });
+    const content = loadMatchContent(this.state.config.tickRate, { ...options, structures });
+    const { controllers, factory } = content;
+    this.curves = content.curves;
+    const omittedIds = arena?.omittedStructureIds ?? [];
+    const owners = spawnStructures(this.state, factory, { structures, mapObjects, omittedIds });
     this.state.indexStructures();
     // Before the pipeline: zones can be guard homes, which SpawnSystem finds when it is built.
-    const zones =
-      arena?.hasCaptureObjectives === false ? [] : Simulation.spawnZones(this.state, factory);
+    const zones = arena?.hasCaptureObjectives === false ? [] : spawnZones(this.state, factory);
     this.commandContext = { state: this.state, factory };
     if (mapObjects !== undefined && map === undefined)
       throw new Error('Map objects require a generated map');
-    if (mapObjects !== undefined) {
-      this.state.worldObjects = new WorldObjectStore({
-        objects: mapObjects,
-        factory: this.commandContext.factory,
-        entities: this.state.entities,
-        definitions: MAP_OBJECT_DEFINITIONS,
-        owners,
-      });
-      this.state.events.on('entity-removed', ({ entityId }) =>
-        this.state.worldObjects?.removed(entityId),
-      );
-    }
+    if (mapObjects !== undefined) this.attachWorldObjects(mapObjects, factory, owners);
     this.systemContext = { state: this.state, logger };
-    if (systems === undefined) {
-      // Before any Legend spawns (`spawnRoster`), so `Scoring` hears each one's `entity-spawned`
-      // and gives it a row.
-      const scoring = loadScoring(tickRate);
-      const director = createDefaultMatchDirector({
-        state: this.state,
-        timeline,
-        debug,
-        logger,
-        scoring,
-      });
-      this.pipeline = new DefaultSystemPipeline({
-        invariants: new DefaultInvariantRunner({
-          debug,
-          logger,
-          curves,
-          phaseOrder: MATCH_PHASES,
-          terminalPhases: TERMINAL_MATCH_PHASES,
-        }),
-        state: this.state,
-        progression: {
-          units,
-          curves,
-          xpSources: XP_SOURCES,
-          ...(duel === undefined
-            ? {}
-            : { legendsStartAtMaxLevel: DUEL_RULES.legendsStartAtMaxLevel }),
-        },
-        director,
-        // One scoring load: a gem kill's window is the assists' window (DEC-346).
-        assistWindowTicks: scoring.assistWindowTicks,
-        ...(duelStarts === undefined ? {} : { duelStarts }),
-        ...(arena === undefined ? {} : { spawnsMobs: arena.spawnsMobs }),
-        hordes: {
-          factory,
-          space,
-          ...(guardPlans === undefined ? {} : { guards: guardPlans }),
-          collisions:
-            map === undefined || mapObjects === undefined
-              ? []
-              : [new CollisionSystem(map, mapObjects)],
-          decide: [
-            new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
+    this.pipeline =
+      systems === undefined
+        ? buildDefaultPipeline({
+            state: this.state,
+            timeline,
+            debug,
+            logger,
+            content,
+            space,
+            structures,
+            map,
+            mapObjects,
+            arena,
+            duelStarts,
+            guardPlans: options.guardPlans,
+            onBotCommand: (command) => {
               this.botQueue.enqueue(command);
-            }),
-          ],
-        },
-        structures,
-      });
-      director.start(this.state);
-    } else {
-      this.pipeline = new SystemPipeline(systems);
-    }
-    Simulation.spawnRoster(this.state, factory, roster, controllers, logger, duelStarts);
+            },
+          })
+        : new SystemPipeline(systems);
+    new RosterSpawner(this.state, factory, controllers, logger).spawn(roster, duelStarts);
     // Announced only now, so the director and the systems hear every spawn (plan §4.4).
     for (const zone of zones) {
       this.state.events.emit('entity-spawned', zone);
     }
-    this.state.events.on('command-rejected', ({ command, reason }) => {
-      logger.log(
-        makeLogRecord('INFO', 'core.commands', `Rejected ${command.type}: ${reason}`, {
-          tick: this.state.tick,
-          event: { name: 'command-rejected', attributes: { commandType: command.type, reason } },
-        }),
-      );
-    });
-    this.recordCheckpoint();
+    this.logRejectedCommands(logger);
+    // The constructor runs at tick 0, which is always a checkpoint tick.
+    this.replay.recordCheckpointIfDue(this.state.tick, () => this.hash());
   }
 
   /** Number of ticks completed. */
@@ -322,14 +163,12 @@ export class Simulation {
       this.apply(command);
     }
     for (const command of external) {
-      this.commandLog.push({ tick: this.state.tick, command });
+      this.replay.recordCommand(this.state.tick, command);
       this.apply(command);
     }
     this.pipeline.run(this.systemContext);
     this.state.advanceTick();
-    if (this.state.tick % REPLAY_CHECKPOINT_EVERY === 0) {
-      this.recordCheckpoint();
-    }
+    this.replay.recordCheckpointIfDue(this.state.tick, () => this.hash());
     this.state.events.emit('tick-completed', { tick: this.state.tick });
   }
 
@@ -357,68 +196,6 @@ export class Simulation {
     return this.hasher.hash(this.state);
   }
 
-  /** `units` plus the structure definitions, so one factory builds both (architecture 04 §6). */
-  private static withStructures(
-    units: DefinitionSource,
-    structures: StructureSource,
-  ): DefinitionSource {
-    return {
-      has: (id) => units.has(id) || structures.has(id),
-      get: (id) => (units.has(id) ? units.get(id) : structures.get(id)),
-    };
-  }
-
-  /**
-   * Builds the map's structures, in feature id order, before anything else spawns (architecture
-   * 07 §1): every feature whose definition is a structure becomes that structure, with its team
-   * and lane. Features without a structure definition (walls, turrets, corner camps) stay map data.
-   * A structure whose definition `hasMapFootprint` takes the footprints of its feature's map object
-   * of the same id as its `Footprint` (a lane tower's fort, DEC-185; the Stronghold's palace,
-   * DEC-185 D; a gate's own outline, DEC-217 (17)). A blocking such object (a fort) is the
-   * structure's body: it has no health of its own (one pool, DEC-185 B). Only towers share one
-   * pool (DEC-217 (13)): the palace's and the gates' objects do not block, so they keep their own
-   * health. A Duel does not build the structures its `omittedStructureIds` list (DEC-348: towers,
-   * gates, camps and Strongholds; the Cathedral's gem stays).
-   *
-   * @returns Map object id → the id of the structure it is the body of.
-   */
-  private static spawnStructures(
-    state: GameState,
-    factory: EntityFactory,
-    {
-      structures,
-      mapObjects = [],
-      omittedIds,
-    }: {
-      readonly structures: StructureSource;
-      readonly mapObjects?: readonly MapObject[] | undefined;
-      readonly omittedIds: readonly string[];
-    },
-  ): ReadonlyMap<string, string> {
-    const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
-      compareById(a.id, b.id),
-    );
-    const bodies = new Map(mapObjects.map((object) => [object.id, object]));
-    const owners = new Map<string, string>();
-    for (const { id, definitionId, position, team, laneId } of features) {
-      if (structures.has(definitionId) && !omittedIds.includes(definitionId)) {
-        const { kind, hasMapFootprint } = structures.get(definitionId);
-        const placement = {
-          position,
-          team,
-          mapFeatureId: id,
-          ...(laneId !== undefined && { laneId }),
-        };
-        const structure = factory.create(kind, definitionId, placement);
-        const body = hasMapFootprint === true ? bodies.get(id) : undefined;
-        if (body !== undefined) structure.addComponent(new Footprint(body.footprints));
-        if (body?.isBlocking === true) owners.set(body.id, structure.id);
-        state.entities.add(structure);
-      }
-    }
-    return owners;
-  }
-
   /**
    * The match so far as a `Replay` (architecture 03 §6, ADR 0025 §4): what it was built with (seed,
    * config, and the map, map objects and roster when it had them), a copy of the command log and
@@ -426,11 +203,7 @@ export class Simulation {
    * `step()` the state holds half a tick, and that hash cannot be reproduced.
    */
   public exportReplay(): Replay {
-    return {
-      ...this.setup,
-      commands: [...this.commandLog],
-      checkpoints: [...this.checkpoints],
-    };
+    return this.replay.export();
   }
 
   /** The last applied commands (players' and bots') and the last events, oldest first (15 §5). */
@@ -443,319 +216,49 @@ export class Simulation {
     applyCommand(command, this.handlers, this.commandContext);
   }
 
-  private recordCheckpoint(): void {
-    this.checkpoints.push({ tick: this.state.tick, hash: this.hash() });
-  }
-
   /**
-   * Spawns the roster's Legends (architecture 18 §8, MS-20): each team's laners, in roster order,
-   * go to the lane with the fewest Legends, lowest index first, and stand in ranks behind their own
-   * end of it; Rovers start at their Stronghold. A bot gets its controller (a laner's with the lane
-   * in its brain's memory); the human slot gets none (a human plays it), and its Legend's id goes
-   * to its team's seat in `state.match` (`humanLegendId` for `playerTeam`). Runs once the match director exists, so its listeners hear
-   * every `entity-spawned` (plan §4.4). The roster is setup, so nothing is queued or recorded: a
-   * replay rebuilds it. A human slot whose definition does not exist or is not a Legend logs ERROR
-   * `core.match` and does not spawn, and the match runs on without a human: the class comes from
-   * saved data and can be stale (ADR 0023).
-   *
-   * @throws Error when there is a roster but no map, more than one human slot on a team, a lone
-   *   human slot off `playerTeam`, a team's slots do not fit under `legendsPerTeam` or the Unit cap, its laners do
-   *   not fit under `legendsPerLane`, or a bot's controller or difficulty does not exist or its
-   *   definition is not a Legend (checked before anything spawns).
+   * Gives the state its `WorldObjectStore` over `mapObjects` (each blocking body owned by the
+   * structure in `owners`) and drops an object from it when its entity is removed.
    */
-  private static spawnRoster(
-    state: GameState,
+  private attachWorldObjects(
+    mapObjects: readonly MapObject[],
     factory: EntityFactory,
-    roster: readonly RosterSlot[],
-    controllers: ControllerRegistry,
-    logger: Logger,
-    duelStarts?: Readonly<Record<PlayableTeam, Vec2>>,
+    owners: ReadonlyMap<string, string>,
   ): void {
-    if (roster.length === 0) {
-      return;
-    }
-    const routes = state.world?.routes ?? null;
-    if (routes === null) {
-      throw new Error(
-        'A roster needs a map: its Legends spawn on its lanes and at its Strongholds.',
+    this.state.worldObjects = new WorldObjectStore({
+      objects: mapObjects,
+      factory,
+      entities: this.state.entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+      owners,
+    });
+    this.state.events.on('entity-removed', ({ entityId }) =>
+      this.state.worldObjects?.removed(entityId),
+    );
+  }
+
+  /** Logs every rejected command at INFO `core.commands`, with the tick and the reason. */
+  private logRejectedCommands(logger: Logger): void {
+    this.state.events.on('command-rejected', ({ command, reason }) => {
+      logger.log(
+        makeLogRecord('INFO', 'core.commands', `Rejected ${command.type}: ${reason}`, {
+          tick: this.state.tick,
+          event: { name: 'command-rejected', attributes: { commandType: command.type, reason } },
+        }),
       );
-    }
-    const legends = new LegendSpawner(factory);
-    const humans = Simulation.humanSlotsOf(roster, state.config.match.playerTeam);
-    AiSystem.assertRegistered(
-      roster.flatMap((slot, index) =>
-        slot.pilot === 'bot'
-          ? [
-              {
-                id: `roster slot ${String(index)}`,
-                controller: Simulation.controllerOf(slot),
-                aiProfile: slot.difficulty,
-              },
-            ]
-          : [],
-      ),
-      controllers,
-    );
-    roster.forEach((slot, index) => {
-      const reason = slot.pilot === 'bot' ? legends.refusal(slot.definitionId) : null;
-      if (reason !== null) {
-        throw new Error(
-          `Roster slot ${String(index)} (a ${slot.team} bot) cannot spawn "${slot.definitionId}": ${reason}.`,
-        );
-      }
-    });
-    const refusals = new Map(humans.map((human) => [human, legends.refusal(human.definitionId)]));
-    // A refused human slot still counts against the caps below, but takes no lane and no spawn.
-    const spawning = roster.filter((slot) => (refusals.get(slot) ?? null) === null);
-    const plans = Simulation.planLanes(
-      state,
-      roster,
-      spawning,
-      routes.lanes.map(({ id }) => id),
-    );
-    for (const [human, refusal] of refusals) {
-      if (refusal !== null) {
-        logger.log(
-          makeLogRecord(
-            'ERROR',
-            'core.match',
-            `The human's Legend "${human.definitionId}" did not spawn: ${refusal}.`,
-            { attributes: { definitionId: human.definitionId, reason: refusal } },
-          ),
-        );
-      }
-    }
-    const anchor = { x: 0, y: 0 };
-    const forward = { x: 0, y: 0 };
-    const at = { x: 0, y: 0 };
-    for (const { team, laners, lanes } of plans) {
-      const placed = new Map<string, number>();
-      laners.forEach((slot, index) => {
-        const lane = lanes[index] ?? '';
-        const follower = placed.get(lane) ?? 0;
-        placed.set(lane, follower + 1);
-        routes.pose(lane, team, 0, anchor, forward);
-        formationSlot(anchor, forward, follower, RANKS_FORMATION, at);
-        Simulation.spawnSlot(state, legends, slot, { x: at.x, y: at.y }, { lane });
-      });
-    }
-    for (const slot of spawning.filter(({ role }) => role === 'rover')) {
-      const forWhom = slot.pilot === 'human' ? "the human's Legend" : `the ${slot.team} Rover`;
-      const position =
-        duelStarts?.[slot.team] ?? Simulation.strongholdOf(state, slot.team, forWhom);
-      Simulation.spawnSlot(state, legends, slot, position, {});
-    }
-  }
-
-  /**
-   * Each team's laners (of `spawning`) and the lane of each, in `PLAYABLE_TEAMS` order. Every lane
-   * is assigned before anything spawns, so a roster that does not fit spawns nothing.
-   *
-   * @throws Error when a team's slots (all of `roster`) do not fit under `legendsPerTeam` or the
-   *   Unit cap, or its laners do not fit under `legendsPerLane`.
-   */
-  private static planLanes(
-    state: GameState,
-    roster: readonly RosterSlot[],
-    spawning: readonly RosterSlot[],
-    laneIds: readonly string[],
-  ): readonly {
-    readonly team: PlayableTeam;
-    readonly laners: readonly RosterSlot[];
-    readonly lanes: readonly string[];
-  }[] {
-    const { legendsPerTeam, legendsPerLane } = state.config.match;
-    const { maxUnitsPerTeam } = state.config.limits;
-    return PLAYABLE_TEAMS.map((team) => {
-      const size = roster.filter((slot) => slot.team === team).length;
-      if (size > legendsPerTeam) {
-        throw new Error(
-          `The ${team} roster has ${String(size)} Legends; match.legendsPerTeam allows ${String(legendsPerTeam)}.`,
-        );
-      }
-      // Legends are Units, so the roster also fits under the Unit cap (as dev spawns do).
-      const units = state.entities.countOnTeam(team, Unit) + size;
-      if (units > maxUnitsPerTeam) {
-        throw new Error(
-          `The ${team} roster would make ${String(units)} Units; limits.maxUnitsPerTeam allows ${String(maxUnitsPerTeam)}.`,
-        );
-      }
-      const laners = spawning.filter((slot) => slot.team === team && slot.role === 'laner');
-      return { team, laners, lanes: assignLanes(laners.length, laneIds, legendsPerLane) };
     });
   }
 
   /**
-   * The roster's human slots, at most one per team (ADR 0016); empty in sim mode. A lone human
-   * must be on `playerTeam`; with two, `playerTeam` is the team `humanLegendId` follows.
-   *
-   * @throws Error when a team has more than one human slot, or a lone human slot is not on
-   *   `playerTeam`.
+   * The match's map objects: the authored ones, or in a Duel only those of the closed Cathedral
+   * arena (DEC-348).
    */
-  private static humanSlotsOf(
-    roster: readonly RosterSlot[],
-    playerTeam: PlayableTeam,
-  ): readonly RosterSlot[] {
-    const humans = roster.filter(({ pilot }) => pilot === 'human');
-    for (const team of PLAYABLE_TEAMS) {
-      const count = humans.filter((human) => human.team === team).length;
-      if (count > 1) {
-        throw new Error(
-          `The ${team} team has ${String(count)} human slots; a team has at most one human.`,
-        );
-      }
-    }
-    const [lone] = humans;
-    if (humans.length === 1 && lone !== undefined && lone.team !== playerTeam) {
-      throw new Error(
-        `The roster's human slot is on the ${lone.team} team; match.playerTeam is ${playerTeam}.`,
-      );
-    }
-    return humans;
-  }
-
-  /**
-   * Spawns one zone per map feature that places one (`ZONE_PLACEMENTS`): a capture point where
-   * each lane crosses the centre line, the middle one in the Cathedral (architecture 07 §7), each
-   * covering its building's floor (DEC-145 (a)). They come from the map alone, so a replay (seed,
-   * config and commands) rebuilds them. They spawn right after the structures, before the system
-   * pipeline is built, since a zone can be a guard home (18 §7); the caller announces them once the
-   * pipeline listens.
-   *
-   * @returns Each zone's `entity-spawned` payload, in spawn order.
-   */
-  private static spawnZones(
-    state: GameState,
-    factory: EntityFactory,
-  ): GameEventMap['entity-spawned'][] {
-    const spawned: GameEventMap['entity-spawned'][] = [];
-    const map = state.world?.definition;
-    if (map === undefined) {
-      return spawned;
-    }
-    for (const feature of map.features) {
-      const definitionId = ZONE_PLACEMENTS[feature.kind];
-      if (definitionId === undefined) {
-        continue;
-      }
-      const { kind } = factory.definitions.get(definitionId);
-      const entity = factory.create(kind, definitionId, {
-        position: feature.position,
-        team: feature.team,
-        area: zoneAreaOf(map, feature),
-        ...(feature.laneId !== undefined && { laneId: feature.laneId }),
-      });
-      state.entities.add(entity);
-      spawned.push({ entityId: entity.id, kind, team: feature.team });
-    }
-    return spawned;
-  }
-
-  /** The controller a bot of `slot`'s role plays with: a Rover's or a lane bot's. */
-  private static controllerOf(slot: RosterSlot): 'rover' | 'bot-legend' {
-    return slot.role === 'rover' ? 'rover' : 'bot-legend';
-  }
-
-  /**
-   * Spawns one roster slot's Legend at `position` on its team, facing the enemy Stronghold
-   * (DEC-216 (6)), and announces it: a bot with its controller (whose brain starts with `memory`),
-   * the human with none, recorded as the human's Legend (DEC-172).
-   */
-  private static spawnSlot(
-    state: GameState,
-    legends: LegendSpawner,
-    slot: RosterSlot,
-    position: Vec2,
-    memory: AiMemory,
-  ): void {
-    const entity = legends.spawn(
-      state,
-      slot.definitionId,
-      slot.team,
-      position,
-      slot.pilot === 'bot'
-        ? {
-            controllerId: Simulation.controllerOf(slot),
-            profileId: slot.difficulty,
-            memory,
-          }
-        : undefined,
-    );
-    if (slot.pilot === 'human') {
-      state.match.seatHuman(entity.id, slot.team);
-    }
-  }
-
-  /**
-   * Where `team`'s Stronghold stands on the map: where its Rovers (the human's Legend among them)
-   * start.
-   *
-   * @throws Error naming `forWhom` when the map has no Stronghold for `team`.
-   */
-  private static strongholdOf(state: GameState, team: PlayableTeam, forWhom: string): Vec2 {
-    const stronghold = state.world?.strongholdOf(team);
-    if (stronghold === undefined) {
-      throw new Error(`The map has no ${team} Stronghold for ${forWhom}.`);
-    }
-    return stronghold;
-  }
-
-  /**
-   * The map's spatial pieces: the match world (its one walkability grid shared by the lane flow
-   * fields and A\* for Legends), the neighbour index and A\*. All `null` without a map. With
-   * `mapObjects`, the grid also blocks what the collision system blocks (06 §6): every blocking
-   * object's footprints, minus its passages. A feature whose object is walkable (a Stronghold's
-   * floor, whose walls and furniture are objects of their own) is not stamped; other blocking
-   * features keep their stamp, which also fills a tower's hollow core so no path ends in a pocket
-   * the walls close off.
-   */
-  private static buildWorld(
-    map: MapDefinition | undefined,
-    config: GameConfig,
-    mapObjects: readonly MapObject[] = [],
-  ): {
-    readonly space: SpaceIndex | null;
-    readonly world: MatchWorld | null;
-    readonly paths: AStarPathfinder | null;
-  } {
-    if (map === undefined) {
-      return { space: null, world: null, paths: null };
-    }
-    const { grid, paths } = new MatchPathfinderFactory().create(map, config, mapObjects);
-    return {
-      space: new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE),
-      world: new MatchWorld(map, grid),
-      paths,
-    };
-  }
-
-  /**
-   * Every controller, with the shipped content it reads (architecture 11 §2); the aggro profiles
-   * are loaded at `tickRate`.
-   */
-  private static createControllers(tickRate: number): ControllerRegistry {
-    const bots = { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES };
-    return createDefaultControllerRegistry({
-      leash: { aggro: loadAggroRules(tickRate), classOf: unitClassOf },
-      botLegend: bots,
-      rover: {
-        ...bots,
-        tactics: ROVER_TACTICS,
-        legendKinds: LEGEND_KIND_IDS,
-        laneWeights: LANE_ASSESSMENT_WEIGHTS,
-      },
-    });
-  }
-
-  /** The shipped content, checked against the controllers before the match starts. */
-  private static defaultContent(
-    tickRate: number,
-    curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has'>,
-    controllers: ControllerRegistry,
-    weapons: WeaponSource,
-  ): DefinitionSource {
-    const catalogue = loadDefaultContent(tickRate, curves, weapons);
-    AiSystem.assertRegistered(catalogue.all(), controllers);
-    return catalogue;
+  private static matchMapObjects(
+    { mapObjects, map }: Pick<SimulationOptions, 'mapObjects' | 'map'>,
+    arena: DuelArenaRules | undefined,
+  ): readonly MapObject[] | undefined {
+    if (mapObjects === undefined || arena === undefined) return mapObjects;
+    const cathedralId = map?.features.find(({ kind }) => kind === 'cathedral')?.id;
+    return duelMapObjects(mapObjects, arena, cathedralId);
   }
 }
