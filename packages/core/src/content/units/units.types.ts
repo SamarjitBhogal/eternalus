@@ -51,6 +51,12 @@ export type UnitDefinition = EntityDefinitionBase & {
    * it instead of the collider circle. Leave it out for a unit that is only its circle (DEC-183).
    */
   readonly combatHitbox?: Polygon;
+  /**
+   * The head inside `combatHitbox` (DEC-381), in the same local units and pose: a projectile whose
+   * impact point is on it gets the head-shot bonus (`BodyPartBonusStep`). Read only with
+   * `combatHitbox`.
+   */
+  readonly headHitbox?: Polygon;
   /** Sight radius in world units. */
   readonly visionRadius: number;
   /** Top speed, acceleration and mass; `movementStrategy` says how the unit steers. */

@@ -11,6 +11,17 @@ export type MobDefinition = UnitDefinition & {
   readonly xpValue: number;
 };
 
+/**
+ * The damage multipliers on a big boss's body parts (DEC-381), each a finite number of at least 1.
+ * Only a unit with a body outline (`combatHitbox`) gets them.
+ */
+export type BodyPartBonus = {
+  /** A hit from an attacker in the boss's rear half. */
+  readonly backHit: number;
+  /** A projectile whose impact point is on the boss's head outline (`headHitbox`). */
+  readonly headShot: number;
+};
+
 /** The veterancy fields that are the same as authored and as loaded. */
 type MinionVeterancyBase = {
   readonly killsPerLevel: number;

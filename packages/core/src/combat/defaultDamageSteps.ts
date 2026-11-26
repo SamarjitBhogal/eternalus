@@ -1,7 +1,9 @@
 import type { DamageStep } from './DamageStep.types';
 import { BreakabilityStep } from './BreakabilityStep';
+import { BODY_PART_BONUS } from '../content/mobs/bodyPartBonus';
 import { BOSS_MINION_DAMAGE_TAKEN, MINION_STRENGTH } from '../content/mobs/minionModifiers';
 import { MOB_DEFINITIONS } from '../content/mobs/mobCatalogue';
+import { BodyPartBonusStep } from './BodyPartBonusStep';
 import { BossMinionDamageStep } from './BossMinionDamageStep';
 import { FriendlyFireStep } from './FriendlyFireStep';
 import { MinionStrengthStep } from './MinionStrengthStep';
@@ -17,4 +19,5 @@ export const createDefaultDamageSteps = (): readonly DamageStep[] => [
   new StatusModifierStep(),
   new MinionStrengthStep(MINION_STRENGTH),
   new BossMinionDamageStep(BOSS_MINION_DAMAGE_TAKEN, MOB_DEFINITIONS.ids),
+  new BodyPartBonusStep(BODY_PART_BONUS),
 ];

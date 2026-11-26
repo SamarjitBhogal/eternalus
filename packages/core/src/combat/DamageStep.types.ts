@@ -1,6 +1,7 @@
 import type { EntityId } from '../state/EntityStore.types';
 import type { DamageSource } from '../state/GameEvents.types';
 import type { GameState } from '../state/GameState';
+import type { Vec2 } from '../utils/geometry.types';
 
 /** One hit on its way through the pipeline. */
 export type DamageHit = {
@@ -8,6 +9,11 @@ export type DamageHit = {
   /** The amount after the steps before this one. */
   readonly amount: number;
   readonly source: DamageSource;
+  /**
+   * Where a projectile struck, in world units; a hit with no impact point (melee, a status tick)
+   * leaves it out. The head-shot bonus reads it (`BodyPartBonusStep`, DEC-381).
+   */
+  readonly impactPoint?: Vec2;
 };
 
 /**
