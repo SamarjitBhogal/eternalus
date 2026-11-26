@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-26
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -333,6 +333,13 @@ Game-loop plan GL-5 (`feat/results-flow`): `Match.tick` calls the match observer
 after the tick on which `MatchBridge` publishes `match-ended`; the world keeps running (DEC-92)
 until `MatchState` leaves the phase ([13](13-game-interface.md) §2). A pause overlay still pauses
 the loop, but not the timer that leaves the phase (DEC-134).
+
+Gem eruption cut-scene (`feat/cathedral-eruption-boss`, 2026-11-26; DEC-371 E1):
+`CathedralCutscene` overrides the camera around the mid-game eruption, through
+`MatchCamera.focusOn`, which also closes the free (exploring) view; the camera follows the player
+again when it ends or a fresh move press skips it. It plays only for a player whose living Legend
+is within `CUTSCENE.nearRadius` of the gem. `EruptionView` is a world layer that draws the burst
+in the main view and, as a ring, on the minimap, for every player.
 
 ## Related
 

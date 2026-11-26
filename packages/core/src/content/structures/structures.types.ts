@@ -177,4 +177,9 @@ export type CathedralGemDefinition = {
   readonly statusIds: readonly string[];
   /** The gem glows for this status's duration plus `extraTicks` after each hit. */
   readonly glow: { readonly statusId: string; readonly extraTicks: number };
+  /**
+   * The eruption's blast (DEC-371 "BOSS guards" C): every unit in the capture zone the gem stands
+   * in dies to it. It is no team's, so no one is credited; `sourceId` names it as the killer.
+   */
+  readonly eruption: { readonly sourceId: string };
 };

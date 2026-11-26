@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -218,7 +218,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `level-up`                          | `{ entityId, level }`                                  | `ProgressionSystem`                                                                                     | `AbilitySystem` (scaling), HUD                                                                                                                                |
 | `legend-respawned`                  | `{ entityId, team, position, owedXp }`                 | `RespawnSystem` (after `entity-spawned`, FR-051, DEC-295)                                               | `ProgressionSystem` (buffers the owed XP and pays it on the next tick, DEC-186), the `level-matches-xp` invariant (checks the recipient is back in the store) |
 | `team-changed`                      | `{ entityId, from, to, cause }`                        | `Team` component                                                                                        | `HordeSystem`, views                                                                                                                                          |
-| `greater-boss-summoned`             | `{ bossId }`                                           | `MatchRecord.eruptGem` (the `summon-greater-boss` timeline action)                                      | `SpawnSystem` (spawns the boss), `CathedralGemSystem` (removes the gem), client `CathedralCutscene`                                                           |
+| `greater-boss-summoned`             | `{ bossId }`                                           | `MatchRecord.eruptGem` (the `summon-greater-boss` timeline action)                                      | `GemEruptionSystem` (the blast, DEC-371), `SpawnSystem` (spawns the boss), `CathedralGemSystem` (removes the gem), client `CathedralCutscene`                 |
 | `boss-summoned`                     | `{ entityId, kind }`                                   | `SpawnSystem` (on `greater-boss-summoned`)                                                              | `Announcer`, `AiSystem` (camps turn aggressive)                                                                                                               |
 | `command-rejected`                  | `{ command, reason }`                                  | `applyCommand`                                                                                          | `DeveloperMenu`, tests                                                                                                                                        |
 | `collision-anomaly`                 | `{ entityId, from, to, colliderId }`                   | `CollisionSystem`                                                                                       | `InvariantSystem`, `Logger`                                                                                                                                   |

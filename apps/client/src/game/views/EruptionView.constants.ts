@@ -11,4 +11,6 @@ export const ERUPTION_LOOK = {
     { size: 60, delay: 0, color: '#c084fc' },
     { size: 45, delay: 0.2, color: '#f5d0fe' },
   ],
+  /** The minimap's ring: CSS pixels at the eruption, doubling by the burst's end (DEC-371 E1). */
+  minimap: { size: 10, color: '#c084fc' },
 } as const;

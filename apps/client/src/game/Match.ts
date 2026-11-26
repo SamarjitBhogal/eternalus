@@ -236,7 +236,7 @@ export class Match implements LoopTarget {
     this.current = this.deps.simulation.snapshot();
     this.healthBars.observe(this.current, this.playerId);
     this.bodies.observe(this.current);
-    this.cutscene.observe(this.current, isMoving);
+    this.cutscene.observe(this.current, isMoving, this.livingPlayerAt());
     this.roofs.playerAt(this.livingPlayerAt());
     if (this.bridge.afterTick(this.current, this.playerId)) {
       this.deps.observer.ended();
