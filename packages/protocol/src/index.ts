@@ -2,10 +2,12 @@
 export { ClientMessageParser } from './ClientMessageParser';
 export type { ParseResult } from './ClientMessageParser.types';
 export {
+  GUEST_ID_PATTERN,
   MAX_CLIENT_MESSAGE_LENGTH,
   MAX_PLAYER_NAME_LENGTH,
   PLAYER_NAME_PATTERN,
 } from './ClientMessageParser.constants';
+export { RECONNECT_WINDOW_MS } from './presence.constants';
 export type {
   ClientMessage,
   MatchEndReason,

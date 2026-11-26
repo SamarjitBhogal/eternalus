@@ -10,8 +10,9 @@ const selectCrystal = (state: RootState) =>
   contentSlice.selectors.selectHudCatalogue(state).chrome?.crystalAssetId ?? null;
 
 /**
- * The centre objective's crystal (Figma 65:623), always drawn: the Figma render (DEC-54) with its
- * three glows baked (render bounds 256 × 256), decorative and static (reference 04).
+ * The centre objective's crystal (Figma 65:623), always drawn, a Duel included (its Cathedral keeps
+ * the gem, DEC-348): the Figma render (DEC-54) with its three glows baked (render bounds 256 × 256),
+ * decorative and static (reference 04).
  */
 export function CrystalStatus(): ReactElement {
   const crystal = useAppSelector(selectCrystal);

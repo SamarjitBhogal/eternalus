@@ -19,14 +19,22 @@ export type MatchEnding = {
  * server stamps the actor from the connection, so no message names an entity.
  */
 export type ClientMessage =
-  /** Joins the Duel queue as `name` (1 to `MAX_PLAYER_NAME_LENGTH` letters, digits, spaces, `_`, `-`). */
-  | { readonly type: 'queue-join'; readonly name: string }
+  /**
+   * Joins the Duel queue as `name` (1 to `MAX_PLAYER_NAME_LENGTH` letters, digits, spaces, `_`, `-`).
+   * `guestId` is the id from an earlier `welcome`: if the server still holds that guest's queue
+   * slot or seat (reconnect window), this connection takes it over.
+   */
+  | { readonly type: 'queue-join'; readonly name: string; readonly guestId?: string }
   | { readonly type: 'queue-leave' }
+  /** Gives up the sender's own Duel in progress (DEC-297 (2)); the opponent is told `opponent-left` at once and wins (DEC-251). */
+  | { readonly type: 'forfeit' }
   /** The player's per-tick input; `seq` rises by one per message and is echoed in `state`. */
   | { readonly type: 'intent'; readonly seq: number; readonly intent: InputIntent };
 
 /** Every message the server sends: plain JSON, discriminated by `type`. */
 export type ServerMessage =
+  /** The guest id of this connection, sent on connect and again when a held guest is resumed; the client keeps it. */
+  | { readonly type: 'welcome'; readonly guestId: string }
   | { readonly type: 'queue-waiting' }
   /**
    * Two players were paired; `legendId` is the receiver's own Legend. `seed` is the match's map
@@ -44,4 +52,14 @@ export type ServerMessage =
   /** The match after a tick; `ackSeq` is the last `intent.seq` applied for the receiver. */
   | { readonly type: 'state'; readonly snapshot: Snapshot; readonly ackSeq: number }
   | ({ readonly type: 'match-ended' } & MatchEnding)
+  /**
+   * The opponent's connection dropped (`disconnected`, `graceMs` is how long the server holds their
+   * seat) or came back (`reconnected`). If the window runs out, `match-ended` `opponent-left` follows.
+   */
+  | {
+      readonly type: 'opponent-presence';
+      readonly status: 'disconnected';
+      readonly graceMs: number;
+    }
+  | { readonly type: 'opponent-presence'; readonly status: 'reconnected' }
   | { readonly type: 'rejected'; readonly reason: RejectReason };

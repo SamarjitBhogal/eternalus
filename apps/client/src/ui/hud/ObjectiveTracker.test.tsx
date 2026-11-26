@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { CapturePointStatus } from '../../bridge/hud.types';
 import { figmaHudState } from '../../bridge/__fixtures__/hudFixtures';
+import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import { STRINGS } from '../strings';
 import { accessibleNames, renderWithStore } from '../testStore';
 import { cssRule, FIGMA_MATCH_SETUP, withHudSetup } from './hudTestSupport';
@@ -28,6 +29,14 @@ const darkPlayer = {
 };
 
 describe('ObjectiveTracker', () => {
+  it('draws nothing in a Duel, which has no capture objectives (SCRUM-446)', () => {
+    const html = renderWithStore(<ObjectiveTracker />, {
+      ...withHudSetup(figmaHudState()),
+      matchSetup: { ...matchSetupSlice.getInitialState(), mode: 'duel' },
+    });
+    expect(html).toBe('');
+  });
+
   it('shows A, B, C on the shields of their absolute owners', () => {
     const html = renderWithStore(<ObjectiveTracker />, withHudSetup(figmaHudState()));
     expect(letters(html)).toEqual(['A', 'B', 'C']);

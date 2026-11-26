@@ -522,6 +522,15 @@ the replay checkpoints; `531cd90`), the client's writer (`ErrorReporter`, `Repor
 adapters, the dev-server plugin; `6db5713`), and the crash popup and the `ErrorBoundary`
 (`226e2c6`).
 
+The headless bench is built as `npm run bench` (`scripts/bench/hordes.mjs`, 2026-11-07): it loads
+core through Vite's module runner, fills a generated match with lane hordes and every bot Legend,
+and prints p50, p95 and max tick time, timed from the first death after the countdown so the
+hordes fight; CI runs it without a time assertion, and it fails when it stops measuring its
+scenario (a case it cannot fill, a bot Legend that never moves, hordes that never meet or never
+lose a mob while timed). It times whole ticks only; per-system times wait for the `Profiler` port (§6),
+which is still not built. It measures lane hordes with bot Legends, not the Phase 1 plan's
+300-dummy case, whose p95 ≤ 4 ms target is still unmeasured.
+
 ## Related
 
 - [03-game-model.md](03-game-model.md): `GameState` ring buffers, `GameEvents`, `StateHasher`, `Replay`, `SimulationOptions.debug`.
