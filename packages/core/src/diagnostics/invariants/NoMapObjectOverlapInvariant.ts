@@ -11,8 +11,8 @@ import type { Invariant, Violation } from '../Invariant.types';
  * a shape that does not stop it is not a violation (`WorldObjectStore.blockingAt` with the shot's
  * launch point, by the rule the sweep uses, `doesShapeStopShot`): a shape that holds its own
  * launch point, which the shot can only leave (the launch-shape rule, DEC-334), as a wall turret's
- * bolt leaves its pylon and wall; and a shape flagged `canShotsCross` (a lake, a lava river, a camp fire; DEC-345, DEC-373).
- * A unit in such a shape is still a violation.
+ * bolt leaves its pylon and wall; and a shape flagged `canShotsCross` (a lake, a lava river, a
+ * camp fire; DEC-345, DEC-373). A unit in such a shape is still a violation.
  */
 export class NoMapObjectOverlapInvariant implements Invariant {
   public readonly id = 'no-map-object-overlap';

@@ -85,8 +85,9 @@ export type ProjectileSnapshot = {
   /** How far through its ending it is, 0 to 1 (`ProjectileFlight.endingShare`); `null` while it flies. */
   readonly ending: number | null;
   /**
-   * Whether the shot is lit: it flew over a shape flagged `canLightShots` (a lava river, a camp fire) and burns what it lands on
-   * (`ProjectileFlight.isLit`, HC-Q89, DEC-345). The client draws it in a fire colour.
+   * Whether the shot is lit: it flew over a shape flagged `canLightShots` (a lava river, a camp
+   * fire) and burns what it lands on (`ProjectileFlight.isLit`, HC-Q89, DEC-345). The client draws
+   * it in a fire colour.
    */
   readonly isLit: boolean;
 };

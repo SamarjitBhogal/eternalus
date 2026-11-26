@@ -120,10 +120,11 @@ describe('Simulation: arrows over the camp fires (HC-Q105, DEC-373, HC-Q115)', (
       const shot = shootAcross(centre);
       return {
         featureId,
-        isCampAtCentre:
-          camp === undefined ||
-          (camp.getComponent(Transform).position.x === centre.x &&
-            camp.getComponent(Transform).position.y === centre.y),
+        // A forest camp has its home at the fire's centre; a corner camp has none (`MapBuilder`).
+        isHomeAsExpected: featureId.includes('corner-camp')
+          ? camp === undefined
+          : camp?.getComponent(Transform).position.x === centre.x &&
+            camp.getComponent(Transform).position.y === centre.y,
         isShotFlying: state.entities.has(shot.id),
         isShotLit: shot.findComponent(ProjectileFlight)?.isLit === true,
         isFireUnharmed: healthOf(fire) === fire.getComponent(Health).max,
@@ -132,7 +133,7 @@ describe('Simulation: arrows over the camp fires (HC-Q105, DEC-373, HC-Q115)', (
 
     expect(
       results.filter(
-        (r) => !(r.isCampAtCentre && r.isShotFlying && r.isShotLit && r.isFireUnharmed),
+        (r) => !(r.isHomeAsExpected && r.isShotFlying && r.isShotLit && r.isFireUnharmed),
       ),
     ).toEqual([]);
   });
