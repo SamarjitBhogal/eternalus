@@ -3,7 +3,7 @@ import type { StorageSchema } from '../StorageAdapter.types';
 /** Per-profile settings and keybindings, one record per profile and group (architecture 14 §7). */
 export const SETTINGS_STORE = 'settings';
 
-/** Saved loadouts, one record per profile and class (architecture 14 §7). */
+/** Saved loadouts, one record per profile and Legend (architecture 14 §7, DEC-354 (1)). */
 export const LOADOUT_STORE = 'loadouts';
 
 /** The guest id the Duel server issued, one record per profile (ADR 0016 point 5). */

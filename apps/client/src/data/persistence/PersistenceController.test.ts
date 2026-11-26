@@ -49,21 +49,25 @@ describe('PersistenceController', () => {
     const persistence = controller();
     await persistence.open();
 
-    expect(await persistence.loadLoadouts(['warrior'])).toEqual(new Map());
+    expect(await persistence.loadLoadouts(['knight'])).toEqual(new Map());
   });
 
-  it('keeps a saved loadout per class across a close and reopen', async () => {
+  it('keeps a saved loadout per Legend across a close and reopen', async () => {
     const adapter = new MemoryStorageAdapter();
     const first = controller(adapter);
     await first.open();
-    await first.saveLoadout('warrior', { primaryWeaponId: 'raptor-talons' });
+    await first.saveLoadout('knight', { primaryWeaponId: 'raptor-talons' });
+    await first.saveLoadout('paladin', { primaryWeaponId: 'wuuthrad' });
     first.close();
 
     const second = controller(adapter);
     await second.open();
 
-    expect(await second.loadLoadouts(['warrior', 'magus'])).toEqual(
-      new Map([['warrior', { primaryWeaponId: 'raptor-talons' }]]),
+    expect(await second.loadLoadouts(['knight', 'paladin', 'oracle'])).toEqual(
+      new Map([
+        ['knight', { primaryWeaponId: 'raptor-talons' }],
+        ['paladin', { primaryWeaponId: 'wuuthrad' }],
+      ]),
     );
   });
 
@@ -123,12 +127,12 @@ describe('PersistenceController', () => {
 
     await persistence.open();
     await persistence.saveSettings(SETTINGS);
-    await persistence.saveLoadout('warrior', { primaryWeaponId: 'raptor-talons' });
+    await persistence.saveLoadout('knight', { primaryWeaponId: 'raptor-talons' });
     await persistence.saveGuestId('123e4567-e89b-42d3-a456-426614174000');
 
     expect(await persistence.loadSettings()).toEqual(SETTINGS);
-    expect(await persistence.loadLoadouts(['warrior'])).toEqual(
-      new Map([['warrior', { primaryWeaponId: 'raptor-talons' }]]),
+    expect(await persistence.loadLoadouts(['knight'])).toEqual(
+      new Map([['knight', { primaryWeaponId: 'raptor-talons' }]]),
     );
     expect(await persistence.loadGuestId()).toBe('123e4567-e89b-42d3-a456-426614174000');
     expect(errors).toEqual([

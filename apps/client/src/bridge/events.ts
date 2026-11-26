@@ -85,10 +85,10 @@ export type UiIntent =
   /** `action: null` resets every binding. */
   | { readonly kind: 'reset-bindings'; readonly action: InputAction | null }
   | { readonly kind: 'update-settings'; readonly patch: SettingsPatch }
-  /** Saves the primary weapon the player picked for a class on the Loadout screen (08). */
+  /** Saves the primary weapon the player picked for a Legend on the Loadout screen (08, DEC-354 (1)). */
   | {
       readonly kind: 'save-loadout';
-      readonly classId: LegendClassId;
+      readonly specId: string;
       readonly primaryWeaponId: string;
     }
   /** A screen threw while rendering (`ErrorBoundary`, ADR 0025 §5); all plain strings. */

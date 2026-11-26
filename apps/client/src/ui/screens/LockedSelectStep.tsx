@@ -22,8 +22,8 @@ const { characterSelect: text } = STRINGS;
  * right; the shell keeps the banner and the countdown above. No cards, breadcrumb, LOCK IN or Back
  * (Esc): their actions are gone with them. The figure is the Legend's card art, else the class
  * model, else the class card art (no full-figure Legend art exists yet). Under the figure, the
- * weapon the player spawns with (the Loadout screen's choice, SCRUM-31). `null` before a class
- * is picked. The layout is not in the owner's Figma (DEC-60's recorder's note).
+ * weapon the player spawns with (the Loadout screen's choice for the Legend, SCRUM-31,
+ * DEC-354 (1)); none before a Legend is picked. The layout is not in the owner's Figma (DEC-60's recorder's note).
  */
 export function LockedSelectStep(): ReactElement | null {
   const view = useAppSelector(selectLegendStepView);

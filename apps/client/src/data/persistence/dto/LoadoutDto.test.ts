@@ -4,9 +4,9 @@ import { loadoutKey, validateLoadoutDto } from './LoadoutDto';
 
 const VALID = {
   schemaVersion: 1,
-  id: loadoutKey('local', 'warrior'),
+  id: loadoutKey('local', 'knight'),
   profileId: 'local',
-  classId: 'warrior',
+  specId: 'knight',
   primaryWeaponId: 'raptor-talons',
 };
 
@@ -24,11 +24,16 @@ describe('validateLoadoutDto', () => {
     ['a non-object', 'text', 'not an object'],
     ['an unknown version', { ...VALID, schemaVersion: 2 }, 'schemaVersion: unsupported version 2'],
     ['a missing profile', { ...VALID, profileId: 3 }, 'profileId: not a string'],
-    ['a missing class', { ...VALID, classId: undefined }, 'classId: not a string'],
+    ['a missing Legend', { ...VALID, specId: undefined }, 'specId: not a string'],
     [
-      'a key that is not the profile and class',
+      'a key that is not the profile and Legend',
       { ...VALID, id: 'x' },
-      'id: does not match profileId and classId',
+      'id: does not match profileId and specId',
+    ],
+    [
+      'a record keyed by class, as before DEC-354 (1)',
+      { schemaVersion: 1, id: 'local/warrior', profileId: 'local', classId: 'warrior' },
+      'specId: not a string',
     ],
     ['a missing weapon', { ...VALID, primaryWeaponId: 4 }, 'primaryWeaponId: not a string'],
     ['an empty weapon', { ...VALID, primaryWeaponId: '' }, 'primaryWeaponId: empty'],
@@ -36,7 +41,7 @@ describe('validateLoadoutDto', () => {
     expect(validateLoadoutDto(value)).toEqual({ ok: false, reason });
   });
 
-  it('builds one key per profile and class', () => {
+  it('builds one key per profile and Legend', () => {
     expect(loadoutKey('a', 'b')).not.toBe(loadoutKey('b', 'a'));
   });
 });

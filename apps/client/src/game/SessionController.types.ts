@@ -214,10 +214,11 @@ export type SessionControllerDeps = {
   readonly matchConfig: SessionMatchConfig;
   readonly playerName: string;
   /**
-   * The player's saved loadout for a class, or `null` when none is saved (`LoadoutController`);
-   * read when a match is built, so the player spawns with it (reference 08).
+   * The player's saved loadout for the locked-in Legend (`specId`, DEC-354 (1)), or `null` when no
+   * Legend is picked or none is saved (`LoadoutController`); read when a match is built, so the
+   * player spawns with it (reference 08).
    */
-  readonly playerLoadout: (classId: string) => Loadout | null;
+  readonly playerLoadout: (specId: string | null) => Loadout | null;
   /** A fresh match seed. */
   readonly seedSource: () => number;
   /** The match's random stream from its seed. */

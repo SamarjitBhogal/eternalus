@@ -12,21 +12,22 @@ export type PersistedLoadout = {
   readonly primaryWeaponId: string;
 };
 
-/** The `loadouts` store record: one per profile and class (architecture 14 §7). */
+/** The `loadouts` store record: one per profile and Legend (architecture 14 §7, DEC-354 (1)). */
 export type LoadoutDtoV1 = PersistedLoadout & {
   readonly schemaVersion: 1;
-  /** `loadoutKey(profileId, classId)`: the store's key, so a profile keeps one loadout per class. */
+  /** `loadoutKey(profileId, specId)`: the store's key, so a profile keeps one loadout per Legend. */
   readonly id: string;
   readonly profileId: string;
-  readonly classId: string;
+  /** The Legend (a `LegendSpecDefinition` id) this loadout is for. */
+  readonly specId: string;
 };
 
-/** Separates the profile and class in `loadoutKey`; neither id may contain it. */
+/** Separates the profile and Legend in `loadoutKey`; neither id may contain it. */
 const KEY_SEPARATOR = '/';
 
-/** The store key of the loadout `profileId` keeps for `classId`. */
-export function loadoutKey(profileId: string, classId: string): string {
-  return `${profileId}${KEY_SEPARATOR}${classId}`;
+/** The store key of the loadout `profileId` keeps for the Legend `specId`. */
+export function loadoutKey(profileId: string, specId: string): string {
+  return `${profileId}${KEY_SEPARATOR}${specId}`;
 }
 
 function loadoutProblem(value: unknown): string | null {
@@ -39,11 +40,11 @@ function loadoutProblem(value: unknown): string | null {
   if (typeof value.profileId !== 'string') {
     return 'profileId: not a string';
   }
-  if (typeof value.classId !== 'string') {
-    return 'classId: not a string';
+  if (typeof value.specId !== 'string') {
+    return 'specId: not a string';
   }
-  if (value.id !== loadoutKey(value.profileId, value.classId)) {
-    return 'id: does not match profileId and classId';
+  if (value.id !== loadoutKey(value.profileId, value.specId)) {
+    return 'id: does not match profileId and specId';
   }
   if (typeof value.primaryWeaponId !== 'string') {
     return 'primaryWeaponId: not a string';

@@ -41,40 +41,55 @@ function readRaw(
 describe('LoadoutRepository', () => {
   it('loads what it saved', async () => {
     const { repository } = await setup();
-    await repository.save(PROFILE, 'warrior', { primaryWeaponId: 'raptor-talons' });
-    expect(await repository.load(PROFILE, 'warrior')).toEqual({
+    await repository.save(PROFILE, 'knight', { primaryWeaponId: 'raptor-talons' });
+    expect(await repository.load(PROFILE, 'knight')).toEqual({
       primaryWeaponId: 'raptor-talons',
     });
   });
 
-  it('answers null when nothing is saved for the class', async () => {
+  it('answers null when nothing is saved for the Legend', async () => {
     const { repository } = await setup();
-    expect(await repository.load(PROFILE, 'warrior')).toBeNull();
+    expect(await repository.load(PROFILE, 'knight')).toBeNull();
   });
 
-  it('keeps one loadout per profile and class, and a second save replaces the first', async () => {
+  it('keeps one loadout per profile and Legend, and a second save replaces the first', async () => {
     const { repository } = await setup();
-    await repository.save(PROFILE, 'warrior', { primaryWeaponId: 'raptor-talons' });
-    await repository.save(PROFILE, 'magus', { primaryWeaponId: 'magus-staff' });
-    await repository.save(PROFILE, 'warrior', { primaryWeaponId: 'magus-staff' });
-    expect(await repository.load(PROFILE, 'warrior')).toEqual({ primaryWeaponId: 'magus-staff' });
-    expect(await repository.load(PROFILE, 'magus')).toEqual({ primaryWeaponId: 'magus-staff' });
-    expect(await repository.load('other', 'warrior')).toBeNull();
+    await repository.save(PROFILE, 'knight', { primaryWeaponId: 'raptor-talons' });
+    await repository.save(PROFILE, 'oracle', { primaryWeaponId: 'magus-staff' });
+    await repository.save(PROFILE, 'knight', { primaryWeaponId: 'magus-staff' });
+    expect(await repository.load(PROFILE, 'knight')).toEqual({ primaryWeaponId: 'magus-staff' });
+    expect(await repository.load(PROFILE, 'oracle')).toEqual({ primaryWeaponId: 'magus-staff' });
+    expect(await repository.load('other', 'knight')).toBeNull();
   });
 
-  it('loads every named class that has a saved loadout and leaves the others out', async () => {
+  it('saving for the Paladin leaves the Knight of the same class unchanged (DEC-354 (1))', async () => {
+    const { adapter, repository } = await setup();
+    await repository.save(PROFILE, 'knight', { primaryWeaponId: 'raptor-talons' });
+    await repository.save(PROFILE, 'paladin', { primaryWeaponId: 'wuuthrad' });
+    expect(await repository.load(PROFILE, 'knight')).toEqual({ primaryWeaponId: 'raptor-talons' });
+    expect(await repository.load(PROFILE, 'paladin')).toEqual({ primaryWeaponId: 'wuuthrad' });
+    expect(await readRaw(adapter, LOADOUT_STORE, loadoutKey(PROFILE, 'paladin'))).toEqual({
+      schemaVersion: 1,
+      id: 'local/paladin',
+      profileId: PROFILE,
+      specId: 'paladin',
+      primaryWeaponId: 'wuuthrad',
+    });
+  });
+
+  it('loads every named Legend that has a saved loadout and leaves the others out', async () => {
     const { repository } = await setup();
-    await repository.save(PROFILE, 'warrior', { primaryWeaponId: 'raptor-talons' });
-    const all = await repository.loadAll(PROFILE, ['warrior', 'magus', 'sentinel']);
-    expect([...all.keys()]).toEqual(['warrior']);
-    expect(all.get('warrior')).toEqual({ primaryWeaponId: 'raptor-talons' });
+    await repository.save(PROFILE, 'knight', { primaryWeaponId: 'raptor-talons' });
+    const all = await repository.loadAll(PROFILE, ['knight', 'paladin', 'oracle']);
+    expect([...all.keys()]).toEqual(['knight']);
+    expect(all.get('knight')).toEqual({ primaryWeaponId: 'raptor-talons' });
   });
 
   it('quarantines a corrupt record, reports it and answers null', async () => {
     const { adapter, repository, warnings } = await setup();
-    const id = loadoutKey(PROFILE, 'warrior');
-    await storeRaw(adapter, { id, profileId: PROFILE, classId: 'warrior', schemaVersion: 1 });
-    expect(await repository.load(PROFILE, 'warrior')).toBeNull();
+    const id = loadoutKey(PROFILE, 'knight');
+    await storeRaw(adapter, { id, profileId: PROFILE, specId: 'knight', schemaVersion: 1 });
+    expect(await repository.load(PROFILE, 'knight')).toBeNull();
     expect(warnings).toEqual(['record quarantined: primaryWeaponId: not a string']);
     expect(await readRaw(adapter, LOADOUT_STORE, id)).toBeUndefined();
     expect(await readRaw(adapter, QUARANTINE_STORE, 1)).toMatchObject({
@@ -86,15 +101,15 @@ describe('LoadoutRepository', () => {
 
   it('returns a loadout naming a weapon content no longer has, for the caller to repair', async () => {
     const { adapter, repository, warnings } = await setup();
-    const id = loadoutKey(PROFILE, 'warrior');
+    const id = loadoutKey(PROFILE, 'knight');
     await storeRaw(adapter, {
       schemaVersion: 1,
       id,
       profileId: PROFILE,
-      classId: 'warrior',
+      specId: 'knight',
       primaryWeaponId: 'removed-sword',
     });
-    expect(await repository.load(PROFILE, 'warrior')).toEqual({ primaryWeaponId: 'removed-sword' });
+    expect(await repository.load(PROFILE, 'knight')).toEqual({ primaryWeaponId: 'removed-sword' });
     expect(warnings).toEqual([]);
   });
 });

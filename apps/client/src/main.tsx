@@ -36,7 +36,7 @@ import { createBrowserMatch, type BrowserMatchDeps } from './game/createBrowserM
 import { createMatchSeed } from './game/createMatchSeed';
 import { readDeveloperFlags } from './game/developerFlags';
 import { isAppleUserAgent } from './game/isAppleUserAgent';
-import { classLoadoutOptions } from './game/loadout/classLoadoutOptions';
+import { legendLoadoutOptions } from './game/loadout/legendLoadoutOptions';
 import { LoadoutController } from './game/loadout/LoadoutController';
 import { DEFAULT_DUEL_SERVER_URL } from './game/engine/net/DuelServer.constants';
 import { WebSocketTransport } from './game/engine/net/WebSocketTransport';
@@ -101,7 +101,7 @@ logWindowErrors(window, logger);
 const developer = readDeveloperFlags(window.location.search);
 
 connectBusToStore(eventBus, store.dispatch);
-// What the Loadout screen offers per class, and the rules loadouts are checked and repaired by (08).
+// What the Loadout screen offers per Legend, and the rules loadouts are checked and repaired by (08).
 const displayContent = loadDisplayContent();
 const persistence = new PersistenceController({
   // Memory only until the settings layout (per group) and per-Legend loadout keys land: writing
@@ -133,7 +133,7 @@ const loadouts = new LoadoutController({
   bus: eventBus,
   persistence,
   logger,
-  options: classLoadoutOptions(displayContent),
+  options: legendLoadoutOptions(displayContent),
   content: loadoutContentOf(displayContent),
 });
 const resources = new ResourceController({
@@ -175,7 +175,7 @@ const session = new SessionController({
   catalogue: { load: () => catalogue },
   matchConfig: gameConfig.match,
   playerName: PLACEHOLDER_PLAYER_NAME,
-  playerLoadout: (classId) => loadouts.loadoutOf(classId),
+  playerLoadout: (specId) => loadouts.loadoutOf(specId),
   seedSource: createMatchSeed,
   createRng: (seed) => new LcgRng(seed),
   createRosterRng,

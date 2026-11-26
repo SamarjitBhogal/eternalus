@@ -89,6 +89,8 @@ export const STRINGS = {
   loadouts: {
     title: 'Loadouts',
     classGroup: 'Class',
+    /** The Legend (sub-class, DEC-49) a loadout is saved for (DEC-354 (1)). */
+    legendGroup: 'Legend',
     weaponGroup: 'Primary weapon',
     /** Shown when content has not published the weapons a class may take. */
     weaponsUnavailable: 'The weapons of this class are not available yet.',

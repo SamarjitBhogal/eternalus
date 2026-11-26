@@ -6,9 +6,9 @@ import { readOrQuarantine } from './readOrQuarantine';
 import type { QuarantineReport, WarnReporter } from './readOrQuarantine.types';
 
 /**
- * Reads and writes the loadout a profile keeps for each class. Every read goes through
- * `readOrQuarantine`: a corrupt record is quarantined and reported as missing, so the caller falls
- * back to the class default (architecture 14 §8). A well-formed record naming a weapon content no
+ * Reads and writes the loadout a profile keeps for each Legend (`specId`, DEC-354 (1)). Every read
+ * goes through `readOrQuarantine`: a corrupt record is quarantined and reported as missing, so the
+ * caller falls back to the auto-build (architecture 14 §8). A well-formed record naming a weapon content no
  * longer has is returned as it is: `LoadoutController` repairs it with core's `repairLoadout`.
  */
 export class LoadoutRepository {
@@ -21,40 +21,40 @@ export class LoadoutRepository {
     this.report = { now, warn };
   }
 
-  /** The loadout `profileId` saved for `classId`, or `null` when none is saved or it was corrupt. */
-  public load(profileId: string, classId: string): Promise<PersistedLoadout | null> {
+  /** The loadout `profileId` saved for `specId`, or `null` when none is saved or it was corrupt. */
+  public load(profileId: string, specId: string): Promise<PersistedLoadout | null> {
     return this.adapter.transaction([LOADOUT_STORE, QUARANTINE_STORE], 'readwrite', (tx) =>
-      this.read(tx, profileId, classId),
+      this.read(tx, profileId, specId),
     );
   }
 
   /**
-   * The saved loadout of each class in `classIds`, keyed by class id. A class with no saved (or a
-   * corrupt) loadout is absent. The storage port has no scan, so the caller names the classes.
+   * The saved loadout of each Legend in `specIds`, keyed by spec id. A Legend with no saved (or a
+   * corrupt) loadout is absent. The storage port has no scan, so the caller names the Legends.
    */
   public loadAll(
     profileId: string,
-    classIds: readonly string[],
+    specIds: readonly string[],
   ): Promise<ReadonlyMap<string, PersistedLoadout>> {
     return this.adapter.transaction([LOADOUT_STORE, QUARANTINE_STORE], 'readwrite', async (tx) => {
       const saved = new Map<string, PersistedLoadout>();
-      for (const classId of classIds) {
-        const loadout = await this.read(tx, profileId, classId);
+      for (const specId of specIds) {
+        const loadout = await this.read(tx, profileId, specId);
         if (loadout !== null) {
-          saved.set(classId, loadout);
+          saved.set(specId, loadout);
         }
       }
       return saved;
     });
   }
 
-  /** Replaces the loadout `profileId` keeps for `classId`. */
-  public save(profileId: string, classId: string, loadout: PersistedLoadout): Promise<void> {
+  /** Replaces the loadout `profileId` keeps for `specId`. */
+  public save(profileId: string, specId: string, loadout: PersistedLoadout): Promise<void> {
     const dto: LoadoutDtoV1 = {
       schemaVersion: 1,
-      id: loadoutKey(profileId, classId),
+      id: loadoutKey(profileId, specId),
       profileId,
-      classId,
+      specId,
       primaryWeaponId: loadout.primaryWeaponId,
     };
     return this.adapter.transaction([LOADOUT_STORE], 'readwrite', (tx) =>
@@ -65,13 +65,13 @@ export class LoadoutRepository {
   private async read(
     tx: StorageTx,
     profileId: string,
-    classId: string,
+    specId: string,
   ): Promise<PersistedLoadout | null> {
     const dto = await readOrQuarantine(
       tx,
       {
         store: LOADOUT_STORE,
-        key: loadoutKey(profileId, classId),
+        key: loadoutKey(profileId, specId),
         validate: (raw) => validateLoadoutDto(raw),
       },
       this.report,

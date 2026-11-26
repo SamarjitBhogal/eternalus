@@ -50,16 +50,16 @@ export class PersistenceController {
   }
 
   /**
-   * The saved loadout of each named class. A class with nothing saved, or a corrupt record, is
-   * absent from the map: use the class default.
+   * The saved loadout of each named Legend (`specId`, DEC-354 (1)). A Legend with nothing saved,
+   * or a corrupt record, is absent from the map: use the auto-build.
    */
-  public loadLoadouts(classIds: readonly string[]): Promise<ReadonlyMap<string, PersistedLoadout>> {
-    return this.loadouts.loadAll(LOCAL_PROFILE_ID, classIds);
+  public loadLoadouts(specIds: readonly string[]): Promise<ReadonlyMap<string, PersistedLoadout>> {
+    return this.loadouts.loadAll(LOCAL_PROFILE_ID, specIds);
   }
 
-  /** Saves the loadout of one class, replacing the previous one. */
-  public saveLoadout(classId: string, loadout: PersistedLoadout): Promise<void> {
-    return this.loadouts.save(LOCAL_PROFILE_ID, classId, loadout);
+  /** Saves the loadout of one Legend, replacing the previous one. */
+  public saveLoadout(specId: string, loadout: PersistedLoadout): Promise<void> {
+    return this.loadouts.save(LOCAL_PROFILE_ID, specId, loadout);
   }
 
   /** The guest id the Duel server issued, or `null` when none is saved (or it was corrupt). */

@@ -740,7 +740,7 @@ export function validateLoadout(
   loadout: Loadout,
   content: ContentCatalogue,
 ): readonly LoadoutProblem[]; // public API, default rules
-export function autoBuildLoadout(classId: LegendId, content: ContentCatalogue): Loadout; // from LegendDefinition.defaultLoadout
+export function autoBuildLoadout(specId: LegendSpecId, content: ContentCatalogue): Loadout; // starts from the Legend, not the class (DEC-354 (1))
 export function repairLoadout(
   saved: Loadout,
   content: ContentCatalogue,
@@ -754,7 +754,9 @@ Default rules (`loadout/rules/*Rule.ts`, listed in `defaultLoadoutRules.ts`): `C
 same validator runs in core tests, in `EntityFactory` when a Legend spawns (a failure is a
 diagnostic event and the factory substitutes `autoBuildLoadout`, reference 08) and in the
 `LoadoutScreen` through the public API, so there is one definition of "valid"; bots use
-`autoBuildLoadout`, so there is one definition of "sensible". `repairLoadout` is what
+`autoBuildLoadout`, so there is one definition of "sensible". A saved loadout belongs to a Legend:
+the profile keeps one per Legend (`specId`), not per class, and the auto-build starts from that
+Legend (DEC-354 (1); [14](14-persistence-and-resources.md) §7). `repairLoadout` is what
 `LoadoutRepository` calls when a saved loadout names content that no longer exists. Changing an
 ability or the ultimate in-match (**MVP-if-time**) goes through the `Loadout` component's
 `apply(loadout)`, which calls `AbilityRuntime.reset` on every changed slot: full cooldown, meter
@@ -954,8 +956,11 @@ catalogue's weapon art, keyed by weapon id. A weapon without art shows an empty 
   `ReplaySetup`; `StateHasher` hashes a Legend's weapon (`Combat.weaponId`), so a replay of that
   slot without its loadout diverges at the first checkpoint. The content rule
   `DefaultWeaponAllowedRule` checks at load that a class may carry its own `defaultLoadout` weapon
-  (it shares `isWeaponAllowedFor` with `WeaponAllowedRule`). Loadouts are saved per class; per
-  Legend follows in `feat/loadout-per-legend` (DEC-354 (1)). No `Loadout` component yet: the
+  (it shares `isWeaponAllowedFor` with `WeaponAllowedRule`). Since `feat/loadout-per-legend` the
+  client saves loadouts per Legend (`specId`, DEC-354 (1)), but core is still keyed by class:
+  `Loadout` has no `specId`, `autoBuildLoadout` takes the class id and returns the class's
+  `defaultLoadout`, and the client finds a Legend's class from content (`legendLoadoutOptions`).
+  The per-Legend start weapons (DEC-57) come with the weapon PR. No `Loadout` component yet: the
   Legend reads its weapon from the spawn context, and in-match changes (MVP-if-time) are not
   built.
 

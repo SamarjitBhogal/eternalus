@@ -112,7 +112,7 @@ adapter, not the repository). Repositories return domain types mapped from DTOs 
 | Repository               | Store(s)   | Domain type it returns                                                       | Methods (sketch)                                                                                                                |
 | ------------------------ | ---------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | `ProfileRepository`      | `profiles` | `Profile` (name, aggregate stats, achievements, timestamps)                  | `get(id)`, `list()`, `create(name)`, `save(profile)`, `applyMatch(tx, profileId, result, achievements)` (inside a unit of work) |
-| `LoadoutRepository`      | `loadouts` | core `Loadout` (repaired by `repairLoadout` when content moved)              | `listByProfile(profileId)`, `getByProfileAndClass(profileId, classId)`, `save(profileId, loadout)`, `delete(id)`                |
+| `LoadoutRepository`      | `loadouts` | core `Loadout` (repaired by `repairLoadout` when content moved)              | `listByProfile(profileId)`, `getByProfileAndLegend(profileId, specId)`, `save(profileId, loadout)`, `delete(id)`                |
 | `SettingsRepository`     | `settings` | `Settings` = `{ bindings, audio, video, accessibility, developer, storage }` | `load(profileId)` (defaults for missing groups), `saveGroup(profileId, group, value)`                                           |
 | `MatchHistoryRepository` | `matches`  | `MatchHistoryRecord` (core `MatchResult` + identity and time)                | `listByProfile(profileId, { limit, before })` newest first via `by_profile_and_date`, `get(id)`, `append(tx, record)`           |
 | `ReplayRepository`       | `replays`  | core `Replay` ([03](03-game-model.md) §9)                                    | `get(matchId)`, `put(tx, matchId, profileId, replay)`, `listOldest(count)` (for eviction), `delete(matchId)`                    |
@@ -238,7 +238,7 @@ export const MIGRATIONS: readonly Migration[] = [
     ],
     createIndexes: [
       { store: 'loadouts', name: 'by_profile', keyPath: 'profileId' },
-      { store: 'loadouts', name: 'by_profile_and_class', keyPath: ['profileId', 'classId'] },
+      { store: 'loadouts', name: 'by_profile_and_legend', keyPath: ['profileId', 'specId'] },
       { store: 'matches', name: 'by_profile', keyPath: 'profileId' },
       { store: 'matches', name: 'by_profile_and_date', keyPath: ['profileId', 'playedAt'] },
       { store: 'replays', name: 'by_played_at', keyPath: 'playedAt' },
@@ -294,7 +294,7 @@ Wall-clock fields exist only here, never in core.
 | Store        | Key                  | DTO                       | Fields (sketch)                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Status                                |
 | ------------ | -------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------- |
 | `profiles`   | `id`                 | `ProfileDtoV1`            | `schemaVersion: 1`, `id`, `name`, `createdAt`, `lastPlayedAt`, `stats { matches, wins, losses, kills, deaths, assists, structuresDestroyed, playTimeTicks }`, `achievements: { id, matchId, unlockedAt }[]`                                                                                                                                                                                                                                                                    | **MVP**; achievements **MVP-if-time** |
-| `loadouts`   | `id`                 | `SavedLoadoutDtoV1`       | `schemaVersion`, `id`, `profileId`, `classId`, `name`, `updatedAt`, `loadout: LoadoutDtoV1` (mirrors core `Loadout`, [05](05-abilities-weapons-and-loadouts.md) §12: `primaryWeaponId`, `abilities[3]`, `ultimate`, `artifacts[2]`, …)                                                                                                                                                                                                                                         | **MVP**                               |
+| `loadouts`   | `id`                 | `SavedLoadoutDtoV1`       | `schemaVersion`, `id`, `profileId`, `specId` (the Legend, DEC-354 (1)), `name`, `updatedAt`, `loadout: LoadoutDtoV1` (mirrors core `Loadout`, [05](05-abilities-weapons-and-loadouts.md) §12: `primaryWeaponId`, `abilities[3]`, `ultimate`, `artifacts[2]`, …)                                                                                                                                                                                                                | **MVP**                               |
 | `settings`   | `[profileId, group]` | `SettingsGroupDtoV1`      | `schemaVersion`, `profileId`, `group: 'bindings' \| 'audio' \| 'video' \| 'accessibility' \| 'developer' \| 'storage'`, `value`: bindings `{ preset, bindings: BindingDtoV1[] }` (`{ action, chords: ChordDtoV1[] }`, [13](13-game-interface.md) §6); audio `{ master, music, effects }`; video `{ fullscreen, renderScale }`; accessibility `{ reduceMotion, colourBlindMode }`; developer `{ menuEnabled, assertLevel }`; storage `{ recordSimulatedMatches, storeReplays }` | **MVP**                               |
 | `matches`    | `id`                 | `MatchHistoryRecordDtoV1` | as in [mechanics-ideas §8](../reference/suggestions/mechanics-ideas.md#8-match-history-record-contents): `id`, `profileId`, `playedAt`, `durationTicks`, `tickRate`, `seed`, `mapPresetId`, `configHash`, `coreVersion`, `contentVersion`, `isSimulation`, `result`, `player`, `legends: LegendScoreDtoV1[]`, `teams`, `timeline`, `achievements`, `replayId`                                                                                                                  | **MVP**                               |
 | `replays`    | `matchId`            | `ReplayDtoV1`             | `schemaVersion`, `matchId`, `profileId`, `playedAt`, `replay: Replay` (core: `versions { core, content, schema }`, the setup (`seed`, `config`, `map`, `mapObjects`, `roster`), `commands[{ tick, command }]`, `checkpoints[{ tick, hash }]`)                                                                                                                                                                                                                                  | **MVP** (cut line 9 in the plan)      |
@@ -508,15 +508,22 @@ export class ResourceController {
 
 ## 14. Implementation status
 
-**Loadouts (`feat/loadout-screen`, 2026-11-20).** `PersistenceController` also has
-`loadLoadouts(classIds)` and `saveLoadout(classId, loadout)` over `LoadoutRepository`, one
-`LoadoutDtoV1` (`primaryWeaponId`) per profile and class in the v1 `loadouts` store (no `name`,
-`updatedAt` or nested `loadout` of §7's `SavedLoadoutDtoV1` yet). The DTO check is shape only.
-A weapon id content no longer has is not quarantined: the client's `LoadoutController` repairs
-it with core's `repairLoadout` and logs it, in place of §8's repository-side repair, so `data/`
-needs no content and the screen learns which classes were repaired. The owner signed off this
-place for the repair (DEC-354 (3)). Loadouts stay keyed per class until `feat/loadout-per-legend`
-keys them per Legend (DEC-354 (1)).
+**Loadouts (`feat/loadout-screen`, 2026-11-20; `feat/loadout-per-legend`, 2026-11-26).**
+`PersistenceController` also has `loadLoadouts(specIds)` and `saveLoadout(specId, loadout)` over
+`LoadoutRepository`, one `LoadoutDtoV1` (`primaryWeaponId`) per profile and Legend (`specId`,
+DEC-354 (1)) in the v1 `loadouts` store. Its key `id` is `loadoutKey(profileId, specId)`. No
+`name`, `updatedAt` or nested `loadout` of §7's `SavedLoadoutDtoV1` yet. `LoadoutRepository.load`
+is §3's `getByProfileAndLegend`; `listByProfile`, `delete` and §5's indexes are not built,
+because the storage port has no index reads: the caller names the Legends. The DTO check is shape
+only. A weapon id content no longer has is not quarantined: the client's `LoadoutController`
+repairs it with core's `repairLoadout` and logs it, in place of §8's repository-side repair, so
+`data/` needs no content and the screen learns which Legends were repaired. The owner signed off
+this place for the repair (DEC-354 (3)). Records saved per class before DEC-354 (1)
+(`local/warrior`) are not migrated and never read: no released build stored them, and class ids
+and Legend ids do not overlap. Core is still keyed by class: the client finds a Legend's class
+from content (`legendLoadoutOptions`), validates and repairs the loadout as that class, and the
+auto-build is the class's `defaultLoadout` (`autoBuildLoadout(classId)`). The per-Legend start
+weapons (DEC-57) come with the weapon PR (DEC-354 (1)).
 
 **IndexedDB (`feat/loadout-indexeddb`, 2026-11-20; `feat/loadout-screen`, 2026-11-25).**
 `IndexedDbStorageAdapter` (over `idbPromises.ts`, no dependency) is built by `inBrowser()` from
@@ -527,7 +534,7 @@ the page's `indexedDB`; it types against narrow `Idb*Api` interfaces
 `version`, `blocked`; the other §10 kinds wait for a caller). `main.tsx` does not inject it yet:
 it injects `MemoryStorageAdapter`, so nothing is saved past the session, because the owner wants
 the layout changed before disk saves turn on (DEC-354 (5)). `feat/loadout-per-legend` moves the
-settings store to §7's `[profileId, group]` key (done), keys loadouts per Legend and then
+settings store to §7's `[profileId, group]` key (done), keys loadouts per Legend (done) and then
 injects this adapter. An optional `fallback` (`StorageFallback`) makes `PersistenceController` wrap its adapter
 in `FallbackStorageAdapter`: when `open` fails, it reports the failure through the fallback's
 `reportError` and continues on `MemoryStorageAdapter`; `blocked` falls back at once. `main.tsx`
