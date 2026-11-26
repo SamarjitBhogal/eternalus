@@ -483,8 +483,7 @@ export class ResourceController {
   [09](09-hardware-abstraction.md) §9): CRUD round trips of structured-cloneable DTOs, index and
   range queries, `readonly` isolation, abort rollback (an error mid-work leaves 0 writes),
   `close` then `open`. Runs against `MemoryStorageAdapter` in Node and `IndexedDbStorageAdapter`
-  against an IndexedDB fake (`Recommendation:` `fake-indexeddb`, a dev dependency needing
-  approval per `AGENTS.md`; fallback: a hand-written fake of the used subset).
+  against `fake-indexeddb` (a test-only dev dependency of `apps/client`, approved by DEC-354 (4)).
 - **Migrations**: open at v1, seed fixtures, reopen with a test `Migration` at v2 adding an
   index and a `transform`; 100 % of records survive; v2 data under v1 code fails with
   `StorageError('version')`, never a hang.
@@ -535,9 +534,8 @@ in `FallbackStorageAdapter`: when `open` fails, it reports the failure through t
 does not pass a `fallback` yet; when it does (`feat/loadout-per-legend`), `reportError` writes an
 ERROR record, as §10 says. No `degraded` status yet.
 §12's contract suite and the adapter's own cases (reads and writes, upgrade, newer version,
-blocked, abort, `versionchange`) run against a hand-written fake of the used subset
-(`__fixtures__/FakeIdb*.ts`); `fake-indexeddb` replaces it in `feat/loadout-per-legend`
-(DEC-354 (4)).
+blocked, abort, `versionchange`) run against `fake-indexeddb` (DEC-354 (4)), one fresh
+`IDBFactory` per test. This is built. The hand-written fake is deleted.
 
 Built in Sprint 1 (session F), settings only: `PersistenceController` with `open`,
 `loadSettings`, `saveSettings` and `close` (the Sprint 1 brief's facade, in place of §2's

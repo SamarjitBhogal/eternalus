@@ -53,6 +53,9 @@ Reply inline (`Decision: …`).
       _Agent note (2026-11-25, PR #141):_ a newer owner answer (2026-11-23) replaces "keep the
       fake" above: "Approve fake-indexeddb, a test-only package" (DEC-354 (4)). The follow-up PR
       `feat/loadout-per-legend` adds it and removes the hand-written fake.
+      _Agent note (2026-11-26, `feat/loadout-per-legend`, S1):_ built. `fake-indexeddb` 6.2.8 is
+      a test-only devDependency of `apps/client`. `IndexedDbStorageAdapter.test.ts` runs the
+      contract suite and the adapter cases on it, and the hand-written fake is deleted.
 
 - [ ] **`feat/loadout-screen` (PR #141, SCRUM-31, SCRUM-311) — product and layout rulings the
       review left to you.** (1) Is a saved weapon kept per class (FR-089, reference 08, as built)
