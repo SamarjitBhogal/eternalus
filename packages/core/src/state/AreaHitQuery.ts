@@ -30,9 +30,10 @@ import type { EntityId } from './EntityStore.types';
  * 1. A walk-on polygon (a palace floor, a gate's passage) is hit only when the hit aims at its
  *    body (DEC-322 (1)): the body is the locked target, or the aim point is on its walk-on
  *    polygons, on no enemy unit (the rule of `findUnitAt`) and the attacker stands outside them. A
- *    solid polygon is hit by every hit that touches it. A swing inside the enemy palace does not
- *    hit the Stronghold's floor; from outside, aiming at the palace floor does. A swing that
- *    touches the Stronghold's outer walls or its throne hits it (solid, DEC-373 (1)).
+ *    solid polygon is hit by every hit that touches it. The palace floor is the palace map
+ *    object's, not the Stronghold's (DEC-344 (4)): from outside, aiming at it hits the palace
+ *    object; from inside, it is not hit. A swing that touches the Stronghold's outer walls or its
+ *    throne hits the Stronghold (solid, DEC-373 (1)).
  * 2. A body that takes no damage now (`EntityStore.takesNoDamage`) is never hit: it takes no
  *    damage and runs no on-hit step (DEC-317 addendum). A shot stops on it (`ProjectileSystem`).
  *
@@ -137,10 +138,10 @@ export class AreaHitQuery {
   /**
    * The body whose walk-on polygons `attackerId` aims at with `point` under rule 1, which its shot
    * then names as its target (`ProjectilePayload.targetId`), so the shot can hit it. Only enemy
-   * bodies (no team counts as enemy). When several walk-on outlines hold the point (a palace floor
-   * is both the Stronghold's outline and the palace map object's), a structure comes first, then
-   * the first by id, so a shot at the palace names the Stronghold. A sweep still hits both
-   * (DEC-284 (2)).
+   * bodies (no team counts as enemy). When several walk-on outlines hold the point (a gate's
+   * passage is both the gate's outline and the gate map object's), a structure comes first, then
+   * the first by id, so a shot at the gate names the gate. A sweep still hits both (DEC-284 (2)).
+   * The palace floor is only the palace map object's (DEC-344 (4)).
    *
    * @returns The body's id, or `null` when the point is on no such outline, on an enemy unit, or
    *   the attacker stands inside the outline or is unknown.

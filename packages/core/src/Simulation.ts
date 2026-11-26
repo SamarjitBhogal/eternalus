@@ -406,16 +406,17 @@ export class Simulation {
    * Builds the map's structures, in feature id order, before anything else spawns (architecture
    * 07 §1): every feature whose definition is a structure becomes that structure, with its team
    * and lane. Features without a structure definition (walls, corner camps) stay map data.
-   * A structure whose definition `hasMapFootprint` takes the footprints of its feature's map object
-   * of the same id as its `Footprint` (a lane tower's fort, DEC-185; the Stronghold's palace,
-   * DEC-185 D; a gate's own outline, DEC-217 (17); a wall turret's pylon), and the footprints of
-   * the blocking objects that are `partOf` it as solid polygons (the Stronghold's outer walls and
-   * throne, DEC-373 (1)). Each blocking such object (a fort, a pylon, an outer wall, the throne) is
-   * the structure's body: it has no health of its own (one pool, DEC-185 B). Towers, wall turrets
-   * and the Stronghold share one pool with their body. The palace's and the gates' objects of the
-   * same id do not block, so they keep their own health, and their outline is walked on
-   * (`Footprint.walkOn`): a shot flies over it unless it was fired at the structure. A body
-   * outlives its structure as a ruin that blocks (`WorldObjectStore.removed`, DEC-341).
+   * A structure's `Footprint` (`Footprint.ofBody`) holds the footprints of its feature's map object
+   * of the same id when its definition `hasMapFootprint` (a lane tower's fort, DEC-185; a gate's own
+   * outline, DEC-217 (17); a wall turret's pylon), and the footprints of the blocking objects that
+   * are `partOf` it as solid polygons (the Stronghold's outer walls and throne, DEC-373 (1), so
+   * melee at an outer wall reaches it, DEC-185 D; `structureBodyParts`). The palace floor is not
+   * part of the Stronghold (DEC-344 (4)). Each blocking such object (a fort, a pylon, an outer wall,
+   * the throne) is the structure's body: it has no health of its own (one pool, DEC-185 B). Towers,
+   * wall turrets and the Stronghold share one pool with their body. The gates' objects of the same
+   * id do not block, so they keep their own health, and their outline is walked on
+   * (`Footprint.walkOn`): a shot flies over it unless it was fired at the gate. A body outlives its
+   * structure as a ruin that blocks (`WorldObjectStore.removed`, DEC-341).
    *
    * @returns Map object id → the id of the structure it is the body of.
    */

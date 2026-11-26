@@ -4,18 +4,19 @@ import type { Outline } from './Outline.types';
 
 /**
  * The exact ground a structure stands on, as world-space polygons: a lane tower's fort walls,
- * corner towers and keep, the Stronghold's palace outline, or a gate's outline (DEC-217 (17)),
- * from the map object of the same id (07 §1, the definition's `hasMapFootprint`), plus the solid
- * polygons of the other map objects that are part of its body (the Stronghold's outer walls and
- * throne, `MapObject.partOf`, DEC-373 (1)). Attack reach to the structure is measured to these
- * outlines instead of its collider circle, so a melee hit on the fort is a hit on the tower
- * (DEC-185) and melee at the palace wall reaches the Stronghold (DEC-185 D); a chase closes on
- * their nearest point, or holds inside them (`ReachQuery.aimPointOf`). For a definition with
- * `hasFortBox`, its `bounds` is the fort box that tells a chase which units stand inside a fort
- * (`PathingWorld.forts`; the palace box counts, DEC-217 (16); a gate's does not). A walk-on
- * polygon (`walkOn`: the palace floor, a gate's passage) is ground units stand on, so a shot flies
- * over it unless it was aimed at the structure (`ProjectileSystem`); a solid one (a fort, the
- * Stronghold's outer walls) is a body every shot can hit.
+ * corner towers and keep, or a gate's outline (DEC-217 (17)), from the map object of the same id
+ * (07 §1, the definition's `hasMapFootprint`), plus the solid polygons of the map objects that are
+ * part of its body (the Stronghold's outer walls and throne, `MapObject.partOf`, DEC-373 (1); the
+ * palace floor is not part of the Stronghold, DEC-344 (4)). `ofBody` builds it. Attack reach to
+ * the structure is measured to these outlines instead of its collider circle, so a melee hit on
+ * the fort is a hit on the tower (DEC-185) and melee at an outer wall reaches the Stronghold
+ * (DEC-185 D); a chase closes on their nearest point, or holds inside them
+ * (`ReachQuery.aimPointOf`). For a definition with `hasFortBox`, its `bounds` is the fort box that
+ * tells a chase which units stand inside a fort (`PathingWorld.forts`; the Stronghold's box round
+ * its outer walls and throne counts, DEC-217 (16); a gate's does not). A walk-on polygon
+ * (`walkOn`: a gate's passage) is ground units stand on, so a shot flies over it unless it was
+ * aimed at the structure (`ProjectileSystem`); a solid one (a fort, the Stronghold's outer walls)
+ * is a body every shot can hit.
  */
 export class Footprint implements Outline {
   /** Every polygon: the ones of the map object of the same id, then the `solid` extras. */

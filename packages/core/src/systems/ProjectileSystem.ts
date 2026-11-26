@@ -39,14 +39,16 @@ import type { System, SystemContext } from './System.types';
  *
  * Which bodies stop a shot is `AreaHitQuery.stopsShot`, the rule `LineOfFire` predicts by: live
  * things with `Health` other than the owner and its team (neutral bodies count as enemies). A body
- * with an outline (`Footprint`, `MapObjectBody`) is hit on that outline, at once when the shot
- * starts inside it. A walk-on outline (a palace floor, a gate's passage) is hit only by a shot
- * aimed at that entity (`payload.targetId`: the locked target, or the walk-on outline the aim
- * point was on, DEC-322 (1)), so a shot flies over the ground units stand on. A body is gathered
- * once a tick, and each move tests only those whose box it reaches.
+ * with an outline (`Footprint`, `MapObjectBody`) is hit on the polygons that stop the shot
+ * (`AreaHitQuery.shotPolygonsOf`), at once when the shot starts inside one. A walk-on polygon (a
+ * palace floor, a gate's passage) is hit only by a shot aimed at its entity (`payload.targetId`:
+ * the locked target, or the body whose walk-on polygons the aim point was on, DEC-322 (1)), so a
+ * shot flies over the ground units stand on; a solid polygon (a fort, the Stronghold's outer walls
+ * and throne, DEC-373 (1)) stops every shot. A body is gathered once a tick, and each move tests
+ * only those whose box it reaches.
  * Ties go to the first body in store order, except that the shot's target takes a near tie
- * (`isTouchedBeforeWall` on the first body's contact): a palace wall whose face is the
- * Stronghold's edge does not take a shot fired at the Stronghold (DEC-317 (8)).
+ * (`isTouchedBeforeWall` on the first body's contact): a palace wall whose face is the palace
+ * floor's edge does not take a shot fired at the floor (DEC-317 (8)).
  *
  * A shot flies over a shape flagged `canShotsCross` (a lake, a lava river: the collision rule
  * skips it for a shot, so it is no wall here). A shot whose definition has `litOnHit` steps

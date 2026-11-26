@@ -27,15 +27,19 @@ export type StructureDefinition = EntityDefinitionBase & {
   /** When it may take damage (07 §3). */
   readonly breakability: BreakabilityRule;
   /**
-   * Whether its map object of the same id (a lane tower's fort, the Stronghold's palace) is its
-   * outline: attack reach and chases measure to that object's footprints, not the collider circle
-   * (`Footprint`, DEC-185). A blocking such object is also its body, with no health of its own.
+   * Whether its map object of the same id (a lane tower's fort, a gate's passage, a wall turret's
+   * pylon) is its outline: attack reach and chases measure to that object's footprints, not the
+   * collider circle (`Footprint`, DEC-185). A blocking such object is also its body, with no health
+   * of its own. The map objects that are `partOf` a structure (the Stronghold's outer walls and
+   * throne, DEC-373 (1)) add to its outline with or without it. The Stronghold has none: the palace
+   * floor is not part of it (DEC-344 (4)).
    */
   readonly hasMapFootprint?: true;
   /**
    * Whether the box round its `Footprint` is a fort box (`PathingWorld.forts`): a chase of a unit
-   * standing inside it closes in over the blocked ground there (DEC-185; the Stronghold's palace,
-   * DEC-217 (16)). A gate's outline is for reach only (DEC-217 (17)).
+   * standing inside it closes in over the blocked ground there (DEC-185; the Stronghold's, the box
+   * round its outer walls and throne, DEC-217 (16), DEC-373 (1)). A gate's outline is for reach
+   * only (DEC-217 (17)).
    */
   readonly hasFortBox?: true;
   /**
