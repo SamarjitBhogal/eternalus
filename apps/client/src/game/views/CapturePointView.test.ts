@@ -34,6 +34,7 @@ const zone = (
   health: null,
   progression: null,
   aether: null,
+  combat: null,
   area,
   capture,
   gem: null,

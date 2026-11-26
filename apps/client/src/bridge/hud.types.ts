@@ -43,7 +43,7 @@ export type AbilitySlotStatus = {
 
 /**
  * The human Legend as the HUD shows it: `MatchBridge` joins the Legend's `EntitySnapshot` groups
- * (definition, health, aether, progression) with core's `Snapshot.player` (the slots) by
+ * (definition, health, aether, progression, combat) with core's `Snapshot.player` (the slots) by
  * `entityId` (05 §15, DEC-232). A value is `null` while core has no group for it; the slots stay
  * `[]` until core has `Snapshot.player`. `statusIds`, shield bars and the slots' `varietyId` are
  * added here with their first reader; `weaponProgress`/`ultimatePips` exist only here.
@@ -62,6 +62,11 @@ export type PlayerHudSnapshot = {
    */
   readonly xp: number | null;
   readonly xpToNext: number | null;
+  /**
+   * The weapon the Legend holds (its `combat` group); the weapon panel shows its art, or an empty
+   * slot when it has none (DEC-354 (2)). `null` when the Legend holds no weapon.
+   */
+  readonly weaponId: string | null;
   /** Weapon level bar 0..1 (Figma 62:258): no rule defines it (OQ-63); always `null` live. */
   readonly weaponProgress: number | null;
   /** Ultimate charge indicators (Figma 62:250): no rule defines them (OQ-64); always `null` live. */

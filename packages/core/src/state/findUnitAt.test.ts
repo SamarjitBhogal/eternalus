@@ -21,6 +21,7 @@ const entity = (
   health: { current: 5, max: 5 },
   progression: null,
   aether: null,
+  combat: null,
   area: null,
   capture: null,
   gem: null,

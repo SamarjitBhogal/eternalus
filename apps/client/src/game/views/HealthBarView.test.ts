@@ -23,6 +23,7 @@ const unit: EntitySnapshot = {
   health: { current: 5, max: 10 },
   progression: null,
   aether: null,
+  combat: null,
   area: null,
   capture: null,
   gem: null,

@@ -25,6 +25,7 @@ const WARRIOR: EntitySnapshot = {
   health: { current: 600, max: 600 },
   progression: null,
   aether: null,
+  combat: null,
   area: null,
   capture: null,
   gem: null,

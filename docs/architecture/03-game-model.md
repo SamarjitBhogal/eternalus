@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -277,6 +277,9 @@ export type EntitySnapshot = {
     readonly current: number;
     readonly max: number;
   } | null; // any entity with an aether pool (every Legend), not only the player (DEC-230)
+  readonly combat: {
+    readonly weaponId: WeaponId | null; // the held weapon (05 §10); null for a mob's own attack
+  } | null; // any entity with Combat; the HUD shows the held weapon's art (DEC-354 (2))
   readonly gem: {
     readonly holder: Team; // who holds the Cathedral: the gem shows that team's colour (DEC-291)
     readonly glowTicksLeft: number;
@@ -505,6 +508,7 @@ each closed by the session or phase named:
   (`x`, `y`, `radius`, `facing`), `health` (`current`, `max`), `progression` (a Legend's `level`,
   the `xp` inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the
   level curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
+  `combat` (the `weaponId` a unit holds, `null` for a mob's own attack; DEC-354 (2)),
   `area` (a zone's polygons), `capture` (a capture point's state and presence) and `gem` (the
   Cathedral gem's holder and glow) groups only.
   `MatchPhase` lives in `config/matchPhases.ts`; the match director is built (12 §13).

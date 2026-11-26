@@ -157,6 +157,7 @@ describe('buildDisplayCatalogue', () => {
       { kind: 'cathedral', displayName: 'Cathedral' },
     ]);
     expect(hud.chrome).toBe(HUD_PRESENTATION.chrome);
+    expect(hud.weaponArt).toBe(HUD_PRESENTATION.weaponArt);
   });
 
   it('throws naming the id of a class or spec without presentation', () => {
@@ -184,6 +185,16 @@ describe('buildDisplayCatalogue', () => {
     expect(() => build({ content: { lockedClasses: [] } })).toThrow(
       `locked class presentation "${locked.id}" has no content entry`,
     );
+  });
+
+  it('throws naming a weapon-art key that names no core weapon (DEC-354 (2))', () => {
+    const weaponArt = { ...HUD_PRESENTATION.weaponArt, 'old-axe': 'warrior-weapon-battle-axe' };
+    expect(() => build({ presentation: { hud: { ...HUD_PRESENTATION, weaponArt } } })).toThrow(
+      'weapon art presentation "old-axe" has no content entry',
+    );
+    expect(() =>
+      build({ content: { weapons: CONTENT.weapons.filter(({ id }) => id !== 'wuuthrad') } }),
+    ).toThrow('weapon art presentation "wuuthrad" has no content entry');
   });
 
   it('throws naming a HUD kind or group without a core name', () => {

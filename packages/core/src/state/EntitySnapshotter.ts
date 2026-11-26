@@ -1,6 +1,7 @@
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
+import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Progression } from '../components/Progression';
@@ -35,6 +36,7 @@ export class EntitySnapshotter {
     const health = entity.findComponent(Health);
     const progression = entity.findComponent(Progression);
     const aether = entity.findComponent(Aether);
+    const combat = entity.findComponent(Combat);
     const capture = entity.findComponent(Capturable);
     const gem = entity.findComponent(CathedralGemState);
     return {
@@ -66,6 +68,7 @@ export class EntitySnapshotter {
               ...progression.levelProgress(this.curves.get(progression.curveId)),
             },
       aether: aether === undefined ? null : { current: aether.current, max: aether.max },
+      combat: combat === undefined ? null : { weaponId: combat.weaponId },
       area: entity.findComponent(ZoneArea)?.polygons ?? null,
       capture:
         capture === undefined

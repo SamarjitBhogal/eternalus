@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -877,6 +877,10 @@ glyph needs no mapping table and a rebinding updates every prompt with no code c
 Display names and icons come from the display catalogue the client builds at boot (core's
 `loadDisplayContent()` and the client's own presentation data), joined with the player's selection
 by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event.
+The weapon panel shows the weapon the Legend holds, not a class's weapon (DEC-354 (2)). The
+Legend's `EntitySnapshot` carries it in its `combat` group (`weaponId`), and `MatchBridge` copies
+it into the joined record. A selector (`selectHeldWeaponArt`) finds the weapon's art in the display
+catalogue's weapon art, keyed by weapon id. A weapon without art shows an empty slot.
 `AetherBar` and `HealthBar` read the same record; `LoadoutScreen` edits a `Loadout` value and calls
 `validateLoadout` through the public API.
 
@@ -1014,9 +1018,14 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   published as `content-catalogue`), joined with the player's selection by `selectHudKit`; there
   is no `hud-kit` event. The slot display names are `null` and the icons are client-side asset ids
   until ability content exists (INBOX HC-Q3); a live match shows only the art that fits the picked
-  Legend (its class's emblem and gadget, its start weapon) and leaves every other frame empty
-  (DEC-101, DEC-114). The `xp` and `xpToNext` comments of the `progression` group in
-  [03 §5](03-game-model.md#5-snapshot) (in §15's `PlayerSnapshot` until DEC-232) record the
+  Legend (its class's emblem and gadget) and leaves every other frame empty (DEC-101, DEC-114).
+  Since `feat/loadout-per-legend` (DEC-354 (2)), `EntitySnapshot` carries `combat` (`weaponId`)
+  for every entity with `Combat`, and the weapon panel shows the art of the weapon the Legend
+  holds. The art is client presentation keyed by weapon id (`HUD_PRESENTATION.weaponArt` in
+  `hudPresentation.ts`); `buildDisplayCatalogue` checks at boot that each key is a core weapon and
+  each art is in the asset manifest. A weapon without art shows an empty slot. The per-class and
+  per-Legend weapon art of DEC-114 is removed. The `xp` and `xpToNext` comments of the
+  `progression` group in [03 §5](03-game-model.md#5-snapshot) (in §15's `PlayerSnapshot` until DEC-232) record the
   owner's reading of the XP ring (2026-10-18).
 
 ## Related

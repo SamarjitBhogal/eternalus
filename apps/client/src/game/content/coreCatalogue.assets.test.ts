@@ -36,7 +36,6 @@ function assetUses(catalogue: DisplayCatalogue): ReadonlyMap<AssetId, ReadonlySe
     const alternateRows = card.layoutOverrides.alternate?.details ?? card.details;
     for (const row of alternateRows) add(row.iconAssetId, ['class-alternate']);
     add(card.hud?.emblemAssetId ?? null, ['hud']);
-    add(card.hud?.weapon?.iconAssetId ?? null, ['hud']);
     for (const slot of card.hud?.slots ?? []) add(slot.iconAssetId, ['hud']);
     for (const spec of card.specs) {
       add(spec.art.card, ['legend-step']);
@@ -56,6 +55,7 @@ function assetUses(catalogue: DisplayCatalogue): ReadonlyMap<AssetId, ReadonlySe
   add(catalogue.selectClassChromeAssetId, ['class-plate']);
   add(catalogue.lockInChromeAssetId, ['legend-plate']);
   for (const entry of catalogue.hud.structureKinds) add(entry.iconAssetId, ['hud']);
+  for (const art of Object.values(catalogue.hud.weaponArt)) add(art, ['hud']);
   const { chrome } = catalogue.hud;
   if (chrome !== null) {
     const shields = Object.values(chrome.objectiveShieldAssetIds);

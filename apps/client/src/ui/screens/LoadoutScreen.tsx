@@ -20,7 +20,6 @@ export function LoadoutScreen(): ReactElement {
   const classes = useAppSelector(selectSelectableClasses);
   const draft = useLoadoutDraft(classes);
   const pickedClass = classes.find((card) => card.classId === draft.classId);
-  const startWeapon = pickedClass?.hud?.weapon?.displayName ?? null;
   return (
     <ScreenFrame>
       <Panel title={STRINGS.loadouts.title}>
@@ -34,10 +33,7 @@ export function LoadoutScreen(): ReactElement {
         {pickedClass !== undefined && <p className={styles.note}>{pickedClass.blurb}</p>}
         <h3>{STRINGS.loadouts.weaponGroup}</h3>
         {draft.options === null ? (
-          <p className={styles.note}>
-            {STRINGS.loadouts.weaponsUnavailable}
-            {startWeapon !== null && ` ${STRINGS.loadouts.startsWith} ${startWeapon}.`}
-          </p>
+          <p className={styles.note}>{STRINGS.loadouts.weaponsUnavailable}</p>
         ) : (
           <LoadoutRadioGroup
             label={STRINGS.loadouts.weaponGroup}

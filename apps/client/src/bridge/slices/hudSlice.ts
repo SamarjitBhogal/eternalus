@@ -55,6 +55,7 @@ export const hudSlice = createSlice({
       if (xpToNext <= 0) return null;
       return Math.min(1, Math.max(0, xp / xpToNext));
     },
+    selectWeaponId: (state) => state.player?.weaponId ?? null,
     selectWeaponProgress: (state) => state.player?.weaponProgress ?? null,
     selectUltimatePips: (state) => state.player?.ultimatePips ?? null,
     /** The runtime entry of `slot`, or `null` while it has none. */
