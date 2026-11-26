@@ -8,7 +8,10 @@ import type { LoadableFace } from './loaders/FontLoader.types';
 import { UiImageLoader } from './loaders/UiImageLoader';
 import { ResourceController } from './ResourceController';
 
-/** Byte totals per group at a pixel ratio of 1 and 2: the HC-Q15 budgets accepted by OD-7. */
+/**
+ * Byte totals per group at a pixel ratio of 1 and 2: the accepted (HC-Q15, OD-7) and proposed
+ * (draft ADR 0027) budgets.
+ */
 const BUDGETS: readonly (readonly [AssetGroup, number, number])[] = [
   ['boot', 25_888, 25_888],
   // OD-44: the three Legend minis (49,506 / 118,376 B) move from selection-primary to selection (DEC-109).
@@ -60,7 +63,7 @@ function shippedResources(pixelRatio: number) {
 }
 
 describe('ResourceController with the shipped manifest', () => {
-  it('totals each group at the budgets accepted for HC-Q15 (OD-7), at both densities', () => {
+  it('totals each group at the accepted (HC-Q15, OD-7) and proposed (draft ADR 0027) budgets, at both densities', () => {
     const atDpr1 = shippedResources(1).resources;
     const atDpr2 = shippedResources(2).resources;
 

@@ -318,6 +318,23 @@ describe('ASSET_MANIFEST', () => {
     expect(unboxed).toEqual([]);
   });
 
+  it('cuts every sprite atlas file into square cells, as the sprite view and ground offset assume', () => {
+    const atlases = assets.flatMap((entry) => (entry.type === 'sprite-atlas' ? [entry] : []));
+    const notSquare = atlases.flatMap((entry) =>
+      [entry.file, ...(entry.file2x === undefined ? [] : [entry.file2x])].flatMap(({ url }) => {
+        const { width, height } = webpSize(url);
+        return width / entry.columns === height / entry.rows
+          ? []
+          : [
+              `${entry.id}: ${String(width)}×${String(height)} in ${String(entry.columns)}×${String(entry.rows)}`,
+            ];
+      }),
+    );
+
+    expect(atlases.length).toBeGreaterThan(0);
+    expect(notSquare).toEqual([]);
+  });
+
   it("gives every draw box integer px at or past the artboard origin and its 1x file's pixel size", () => {
     const boxed = boxedFiles();
     const wrong = boxed.flatMap(({ key, box, file }) => {
