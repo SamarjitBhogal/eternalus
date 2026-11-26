@@ -4,6 +4,7 @@ import * as damageSteps from '../combat/defaultDamageSteps';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadScoring } from '../content/match/loadScoring';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../content/progression/xpSources';
 import { TEST_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
@@ -50,6 +51,7 @@ describe('DefaultSystemPipeline minion strength wiring', () => {
         space: null,
         decide: [],
       },
+      assistWindowTicks: loadScoring(config.tickRate).assistWindowTicks,
     });
 
     const [progressOf] = vi.mocked(damageSteps.createDefaultDamageSteps).mock.calls[0] ?? [];
