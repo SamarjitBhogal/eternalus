@@ -862,6 +862,17 @@ Reply inline (`Decision: …`).
       palace kitchen has a hearth. Not built either way; today's behaviour stays until you answer.
       Code names: `<team>-palace-interior-kitchen-hearth` (`MapPalaceRoomsBuilder`).
 
+- [ ] **HC-B53 — Better than the design, not built: one place describes a body to the shot rule
+      (`feat/shots-over-lava`, #169, critic finding R3-2, 2026-11-26; COMBAT-WEAPONS-ABILITIES-70).**
+      No change for the player. To decide if a shot stops at a body, the game first writes down
+      what the body is (its shape, its collider, its team). Five places write that the same way:
+      two in the game and three in tests. Better: one function writes it, and the five places
+      call it; it can also hand over only "can shots fly over this body", not the whole collider.
+      Not built in #169: it changes the code's structure, and #169 has had its three critic
+      rounds. Build it in a small follow-up PR after #169 (A, recommended), or leave it (B)?
+      Code names: `ShotStopBody`, `ProjectileSystem.gather`, `LineOfFire.isBlocked`, a factory
+      such as `AreaHitQuery.bodyOf`.
+
 - [x] **HC-B41 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: two code tidy-ups in the shots-over-lava work (`feat/shots-over-lava`, HC-Q89,
       pre-PR gate round 1, 2026-11-23; COMBAT-WEAPONS-ABILITIES-62).** Built and tested;
