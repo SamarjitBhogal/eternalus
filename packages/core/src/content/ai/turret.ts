@@ -28,9 +28,9 @@ export const WALL_TURRET = {
 
 /**
  * How far from a lane tower's centre it takes a target, in metres.
- * TUNE: HC-Q96 (Owner Calls v70, pending), option A (26 m from the tower centre).
+ * Owner ruling DEC-366 (card "ORB range"): 30 m from the tower centre.
  */
-export const LANE_TOWER_REACH_FROM_CENTRE = 26;
+export const LANE_TOWER_REACH_FROM_CENTRE = 30;
 
 /**
  * The footprint radius both lane towers share, from the map's feature definitions. The profile is
@@ -50,14 +50,14 @@ const LANE_TOWER_FOOTPRINT = ((): number => {
 /**
  * The lane towers' targeting (DEC-302, DEC-342): the defend-ally override and window of the wall
  * turret, then the nearest enemy. The controller measures from the tower's edge, so the range is
- * the 26 m the owner card gives from the tower's centre, less the footprint radius.
+ * the reach the owner gives from the tower's centre, less the footprint radius.
  */
 export const LANE_TOWER = {
   id: 'lane-tower',
   range: LANE_TOWER_REACH_FROM_CENTRE - LANE_TOWER_FOOTPRINT,
   defendAllySeconds: WALL_TURRET.defendAllySeconds,
   overrides: WALL_TURRET.overrides,
-  priority: ['nearest-enemy'], // TUNE: HC-Q100 (Owner Calls v70, pending), option A
+  priority: ['nearest-enemy'], // DEC-366 (card "ORB targets")
   heavyKinds: HEAVY_TARGET_KINDS,
 } as const satisfies AuthoredTurretProfile;
 

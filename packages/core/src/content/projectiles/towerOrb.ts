@@ -14,16 +14,16 @@ export const TOWER_ORB = {
   displayName: 'Tower Orb',
   footprintRadius: 0.5, // TUNE: no reference value
   movementProfile: {
-    maxSpeed: 20, // TUNE: HC-Q99 (Owner Calls v70, pending), option A; m/s
+    maxSpeed: 20, // DEC-366 (card "ORB flight"); m/s
     acceleration: 20, // Required by `MovementProfile`; `loadProjectiles` overwrites it with the top speed (full speed in tick 1)
     mass: 0.05, // Required by `MovementProfile`; flight does not read it, any positive value
   },
   // TUNE: no reference value. The cap is the tower's reach from its centre (an orb starts there)
   // plus a lead margin: the aim point leads a moving target, so it can lie past the reach. About
-  // 14 m covers the lead on a fast Legend over the longest flight (26 m at 20 m/s) and the launch
+  // 14 m covers the lead on a fast Legend over the longest flight (30 m at 20 m/s, 1.5 s) and the launch
   // delay. The shot flies only as far as its aim point (`isArc`).
   range: LANE_TOWER_REACH_FROM_CENTRE + 14,
   slowFrom: LANE_TOWER_REACH_FROM_CENTRE + 14, // equal to range: an orb flies at full speed until it lands
-  isArc: true, // HC-Q99 (Owner Calls v70, pending), option A: it flies over walls and units
+  isArc: true, // DEC-366 (cards "ORB flight" and "ORB flight over cliffs"): it flies over walls and units
   endDuration: 0.5, // TUNE: no reference value; seconds, the burst's look
 } as const satisfies ProjectileDefinition;

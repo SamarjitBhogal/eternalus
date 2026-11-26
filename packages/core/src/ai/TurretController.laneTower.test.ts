@@ -4,14 +4,14 @@ import { LANE_TOWER } from '../content/ai/turret';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { AT, setUp } from './__fixtures__/turretControllerSetup';
 
-/** The owner's number (HC-Q96, Owner Calls v70, option A): 26 m from the tower's centre. */
-const OWNER_REACH = 26;
+/** The owner's number (DEC-366): 30 m from the tower's centre. */
+const OWNER_REACH = 30;
 
 /** A light spawner tower: `setUp` places the lane tower at `AT`, units by their distance east of it. */
 const towerSetUp = () => setUp(undefined, undefined, 'spawner-tower');
 
 describe('TurretController on a lane tower (DEC-302, DEC-342)', () => {
-  it('takes an enemy unit inside 26 m of its centre and none outside (HC-Q96)', () => {
+  it('takes an enemy unit inside 30 m of its centre and none outside (DEC-366)', () => {
     const inside = towerSetUp();
     const near = inside.add('dark', OWNER_REACH - 0.1);
     const outside = towerSetUp();

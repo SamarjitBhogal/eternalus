@@ -8,8 +8,8 @@ import type { Vec2 } from './utils/geometry.types';
 import { MARCHING_ONLY } from './__fixtures__/hordeMatches';
 import { config, COUNTDOWN, MAP, setUp, spawnDark } from './__fixtures__/turretMatch';
 
-/** The owner's number (HC-Q96, Owner Calls v70, option A): 26 m from the tower's centre. */
-const OWNER_REACH = 26;
+/** The owner's number (DEC-366): 30 m from the tower's centre. */
+const OWNER_REACH = 30;
 const ORB = loadTurrets(config.tickRate).ammo.get('tower-orb').attack;
 const TOWER = MAP.features.find(({ kind, team }) => kind === 'spawner-tower' && team === 'light');
 if (TOWER === undefined) throw new Error('The generated map has no light spawner tower.');
@@ -48,13 +48,15 @@ describe('Simulation lane towers (DEC-302, DEC-342)', () => {
     expect(context.state.entities.get(minionId)).toBeUndefined();
   });
 
-  it('shoots an enemy inside 26 m of its centre and not one outside', () => {
+  it('shoots an enemy inside 30 m of its centre (also one at 28 m) and not one outside (DEC-366)', () => {
     const context = withTower();
     const inside = spawnDark(context, 'light-mob', 'training-dummy', awayFrom(OWNER_REACH - 1));
+    const farInside = spawnDark(context, 'light-mob', 'training-dummy', awayFrom(OWNER_REACH - 2));
     const outside = spawnDark(context, 'light-mob', 'training-dummy', awayFrom(OWNER_REACH + 4));
     context.run(COUNTDOWN + config.tickRate * 6);
 
     expect(context.dealt.has(inside)).toBe(true);
+    expect(context.dealt.has(farInside)).toBe(true);
     expect(context.dealt.has(outside)).toBe(false);
   });
 

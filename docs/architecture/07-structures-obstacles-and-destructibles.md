@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-25
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -513,9 +513,8 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   copy in `Turret`). The profile is `lane-tower` (`content/ai/turret.ts`, 11 §4.5) and the ammo is
   `tower-orb` (`content/structures/turretAmmo.ts`): an arc shot with a splash (05 §10), so a fort
   wall or a body in the way does not stop it. A tower's health, aura, waves and ruins do not
-  change. The orb numbers (range, damage, interval, blast, flight, target order) are `TUNE`: option
-  A of the owner cards HC-Q96 to HC-Q100, which are open (`INBOX.md`). The orb PR does not merge
-  before the owner answers.
+  change. The orb numbers (range, damage, interval, blast, flight, target order) are the owner's
+  answers (DEC-366). The footprint, the lead margin and the burst time stay `TUNE`.
 
 **2026-10-27 (PR #30, map objects).** Generated map objects currently reuse the `Obstacle`
 entity with a `MapObjectBody` component while the full structure family remains planned.

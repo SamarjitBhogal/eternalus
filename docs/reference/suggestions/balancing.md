@@ -4,7 +4,7 @@ description: Proposed tuning values, formulas and balance knobs for the MVP (hor
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-25
 tags: [reference, suggestions, balancing, content, testing]
 paths: ['packages/core/src/content/**', 'packages/core/src/config/**']
 related:
@@ -135,7 +135,7 @@ Guards (`TUNE` "respawn every 2 minutes", "don't leave the tower's perimeter"; c
 
 Range 14 m. Targeting (`Recommendation:`, after the published turret rules cited in `../../research/game-architecture-and-performance-research.md#7-game-ai-for-bots`): keep the current target until it dies or leaves range; otherwise prefer a Legend that damaged an allied Legend in the last 3 s, then heavy units, then the nearest enemy. DEC-341 (5) (HC-Q94 A) now rules the defend switch: the turret switches at once to an enemy Legend that hits an allied Legend, also over a held target. A level-1 Warrior survives about 21 s under one turret and a Sentinel about 22 s under heavy fire, so walking through a gate without minions is a losing trade at level 1. Turret positions are placed by the `MapGenerator` (two per gate, one per wall corner) rather than traced.
 
-**Tower orbs (DEC-302, DEC-342; pending).** The two lane towers (spawner and buff) shoot orbs: an arc shot with a splash, one ammo entry for both. All numbers are `TUNE` and are option A of the open owner cards HC-Q96 (range), HC-Q97 (damage and interval), HC-Q98 (blast), HC-Q99 (flight) and HC-Q100 (targets); the orb PR waits for the answers. They live in `content/structures/turretAmmo.ts` (`tower-orb`: damage, interval, splash), `content/ai/turret.ts` (`LANE_TOWER`, `LANE_TOWER_REACH_FROM_CENTRE`: reach and target order) and `content/projectiles/towerOrb.ts` (speed, range cap, burst time).
+**Tower orbs (DEC-302, DEC-342, DEC-366).** The two lane towers (spawner and buff) shoot orbs: an arc shot with a splash, one ammo entry for both. The owner answered the range, damage and interval, blast, flight and target order in DEC-366; the footprint, the lead margin and the burst time stay `TUNE`. They live in `content/structures/turretAmmo.ts` (`tower-orb`: damage, interval, splash), `content/ai/turret.ts` (`LANE_TOWER`, `LANE_TOWER_REACH_FROM_CENTRE`: reach and target order) and `content/projectiles/towerOrb.ts` (speed, range cap, burst time).
 
 ## Sentinel wall sprint — MVP
 

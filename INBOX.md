@@ -871,15 +871,17 @@ Reply inline (`Decision: …`).
     the target would be and lodges in the ground. Built in the tower-orb PR (DEC-342),
     stacked on #163, for the turret bolts and the tower orbs.
 
-- [ ] **HC-Q96 — How far does a lane tower shoot? (`feat/tower-orbs`, Owner Calls v70, card "ORB
+- [x] **HC-Q96 — How far does a lane tower shoot? (`feat/tower-orbs`, Owner Calls v70, card "ORB
       range").** Both lane towers (production and buff) use the same range. All distances count
       from the tower centre. Options: (A, built) 26 m, about 10 m outside the fort wall: the
       tower covers its fort and the ground in front of it; (B) 22 m, a narrow strip; (C) 30 m,
       a wide area that is hard to enter without minions. Built as option A, marked `TUNE`; the
       orb PR waits for the answer. Code names: `LANE_TOWER_REACH_FROM_CENTRE` in
       `content/ai/turret.ts`.
+  - Answered 2026-11-26 (DEC-366): "30 m: about 14 m outside the fort wall" (option C, not the
+    built option A). The code changed from 26 m to 30 m.
 
-- [ ] **HC-Q97 — How hard and how fast does a lane tower hit? (`feat/tower-orbs`, card "ORB
+- [x] **HC-Q97 — How hard and how fast does a lane tower hit? (`feat/tower-orbs`, card "ORB
       damage").** This is the damage of one orb on the unit it aims at, and the time between two
       orbs. Options: (A, built) 120 damage every 2 s: a light minion dies to 2 orbs, a level-1
       Warrior alone under the tower dies in about 9 s; (B) 200 damage every 3 s: a light minion
@@ -887,15 +889,18 @@ Reply inline (`Decision: …`).
       weaker on clumps. Built as option A, marked `TUNE`; the orb PR waits for the answer. Code
       names: `damage` and `interval` of the `tower-orb` entry in
       `content/structures/turretAmmo.ts`.
+  - Answered 2026-11-26 (DEC-366): "120 damage every 2 s" (A, built).
 
-- [ ] **HC-Q98 — How big is the orb blast? (`feat/tower-orbs`, card "ORB splash").** Each enemy
+- [x] **HC-Q98 — How big is the orb blast? (`feat/tower-orbs`, card "ORB splash").** Each enemy
       unit in the blast takes damage. Your own team and buildings take none. Options: (A, built)
       3 m blast, full damage at the centre and half at the edge; (B) 3 m blast, full damage
       everywhere in it; (C) 2 m blast, full damage everywhere in it. Built as option A, marked
       `TUNE`; the orb PR waits for the answer. Code names: `splash` (`radius`,
       `edgeMultiplier`) of the `tower-orb` entry in `content/structures/turretAmmo.ts`.
+  - Answered 2026-11-26 (DEC-366): "3 m blast: full damage at the centre, half damage at the edge"
+    (A, built).
 
-- [ ] **HC-Q99 — How does the orb fly? (`feat/tower-orbs`, card "ORB flight").** Options: (A,
+- [x] **HC-Q99 — How does the orb fly? (`feat/tower-orbs`, card "ORB flight").** Options: (A,
       built) like the wall turret bolt: from above in an arc, with a shadow on the ground; it
       bursts where it lands; walls and units on the way do not stop it; speed 20 m/s. At 26 m it
       flies about 1.3 s, so a Legend that turns can dodge it, and the tower can hit an enemy
@@ -908,8 +913,12 @@ Reply inline (`Decision: …`).
     fly over cliffs, mountains and the map edge? (A, built) yes: nothing on the way stops an arc
     shot; (B) a cliff or a mountain on the way stops the shot (a code change: the arc shot
     checks the ground on its way). DEC-342 (2) marks the built behaviour as a reading.
+  - Answered 2026-11-26 (DEC-366): "Like the bolt: from above in an arc, with a shadow; it explodes
+    where it lands; walls and units on the way do not stop it. Speed 20 m/s" (A, built). Card
+    "ORB flight over cliffs": "Yes: nothing on the way stops an arc shot, also cliffs, mountains
+    and the map edge (built)" (A, built).
 
-- [ ] **HC-Q100 — Which enemy does a lane tower shoot first? (`feat/tower-orbs`, card "ORB
+- [x] **HC-Q100 — Which enemy does a lane tower shoot first? (`feat/tower-orbs`, card "ORB
       targets").** The tower shoots enemy units only. Options: (A, built) as the wall turrets: if
       an enemy Legend hit one of your Legends near the tower in the last 3 s, shoot it at once;
       else the nearest enemy; (B) minions first: Legends only when no enemy minion is in range,
@@ -918,6 +927,8 @@ Reply inline (`Decision: …`).
       names: `priority` of `LANE_TOWER` in `content/ai/turret.ts`. Options B and C each need
       one new priority entry (a `TurretTargetPriority` member and its line in
       `ai/turretTarget.ts`), not only a content change.
+  - Answered 2026-11-26 (DEC-366): "As the wall turrets: if an enemy Legend hit one of your Legends
+    near the tower in the last 3 s, shoot it at once; else the nearest enemy" (A, built).
 
 - [ ] **HC-B36 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: one health pool for a wall turret, and the wall turret code layout

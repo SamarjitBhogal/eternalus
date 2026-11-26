@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-25
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -833,7 +833,7 @@ How the design text above is built:
   ids it landed on, and `ProjectileHit.bodyId` can be `null`. A straight shot with a splash bursts
   at its contact point. The client draws the blast from `EntitySnapshot.projectile.blastRadius`.
 - The tower-orb values (`content/projectiles/towerOrb.ts`, `content/structures/turretAmmo.ts`)
-  are `TUNE` and wait for the owner (`INBOX.md` HC-Q96 to HC-Q100).
+  are the owner's answers (DEC-366); the footprint, the lead margin and the burst time stay `TUNE`.
 
 ## 11. Artifacts (gadgets Z and C)
 

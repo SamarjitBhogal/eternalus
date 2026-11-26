@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-25
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -411,7 +411,7 @@ DEC-334 note no longer hold for the bolts: a mountain at a turret does not stop 
 launch, the invariant does not flag them, and the release client logs no ERROR for them. No shot
 in play uses the launch-shape rule now: a unit's centre is never in a blocking area, and every
 shot that starts inside one is an arc shot. The rule stays: `LineOfFire` and straight shots keep
-it, and a straight orb (owner card HC-Q99, option B) would need it. The corner mountains on the
+it, and a straight orb (the owner chose the arc, DEC-366) would need it. The corner mountains on the
 wall ring (HC-Q95) still need the map fix; they no longer show as bolt errors.
 
 ## Related

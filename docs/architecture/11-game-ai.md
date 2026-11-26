@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-25
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -441,9 +441,8 @@ work named:
   `lane-tower` (`content/ai/turret.ts`, `LANE_TOWER`): the defend-ally override and window of the
   wall turret, then the nearest enemy, and one ammo, `tower-orb`. The controller measures range
   from the footprint's edge, so the profile's `range` is `LANE_TOWER_REACH_FROM_CENTRE` (the reach
-  from the tower's centre, `TUNE`, HC-Q96) less the footprint radius, which comes from the map
-  feature definitions. The profile and the ammo numbers are option A of the open owner cards
-  HC-Q96 to HC-Q100.
+  from the tower's centre, DEC-366) less the footprint radius, which comes from the map
+  feature definitions. The profile and the ammo numbers are the owner's answers (DEC-366).
 - `BotLegendController` (M3) plays the `laner` tree of §4.2 with the nodes it needs
   (`ai/bt/`: `Sequence`, `ActiveSelector`, `Condition`, `Action`; `Selector` and `Cooldown` join
   with their first use) and a `UtilityScorer` (`ai/utility/`) over two considerations, closeness

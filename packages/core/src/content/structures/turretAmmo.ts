@@ -43,18 +43,18 @@ export const TURRET_AMMO = new ContentCatalogue<AuthoredTurretAmmo>([
     displayName: 'Tower Orb',
     attack: {
       strategy: 'ranged-projectile',
-      damage: 120, // TUNE: HC-Q97 (Owner Calls v70, pending), option A
+      damage: 120, // DEC-366 (card "ORB damage")
       reach: LANE_TOWER.range, // a lane tower's reach is its range, as the wall turret's
-      interval: 2, // TUNE: HC-Q97 (Owner Calls v70, pending), option A; seconds
+      interval: 2, // DEC-366 (card "ORB damage"); seconds
       projectile: {
         projectileId: 'tower-orb',
         falloff: null,
-        // TUNE: HC-Q98 (Owner Calls v70, pending), option A
+        // DEC-366 (card "ORB splash")
         splash: { radius: 3, edgeMultiplier: 0.5 },
       },
     },
     // The tower's one ammo fits every target (`loadTurrets`). It does not order targets: the
-    // lane-tower profile's `priority` does (HC-Q100).
+    // lane-tower profile's `priority` does (DEC-366, card "ORB targets").
     preferredAgainst: 'any',
   },
 ]);
