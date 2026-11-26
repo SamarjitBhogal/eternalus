@@ -27,10 +27,30 @@ export type PersistedSettings = {
   readonly accessibility: { readonly reduceMotion: boolean; readonly colourBlindMode: boolean };
 };
 
-/** The `settings` store record, one per profile (architecture 14 §7). */
-export type SettingsDtoV1 = PersistedSettings & {
+/** A settings group: one `settings` store record per profile and group (architecture 14 §7). */
+export type SettingsGroup = keyof PersistedSettings;
+
+/** What each group's record keeps in `value` (the bindings are wrapped so a preset can join). */
+type SettingsGroupValues = {
+  readonly bindings: { readonly bindings: PersistedSettings['bindings'] };
+  readonly audio: PersistedSettings['audio'];
+  readonly video: PersistedSettings['video'];
+  readonly accessibility: PersistedSettings['accessibility'];
+};
+
+/** The `settings` store record, one per profile and group, keyed `[profileId, group]`. */
+export type SettingsGroupDtoV1<G extends SettingsGroup = SettingsGroup> = {
   readonly schemaVersion: 1;
   readonly profileId: string;
+  readonly group: G;
+  readonly value: SettingsGroupValues[G];
+};
+
+/** How one group is checked, written and read back. The registry below has one entry per group. */
+type GroupSpec<G extends SettingsGroup> = {
+  readonly problem: (value: unknown, knownActions: ReadonlySet<string>) => string | null;
+  readonly pack: (settings: PersistedSettings) => SettingsGroupValues[G];
+  readonly unpack: (value: SettingsGroupValues[G]) => Partial<PersistedSettings>;
 };
 
 type FieldCheck = (value: unknown) => boolean;
@@ -87,7 +107,43 @@ function bindingsProblem(value: unknown, knownActions: ReadonlySet<string>): str
   return null;
 }
 
-function settingsProblem(value: unknown, knownActions: ReadonlySet<string>): string | null {
+const GROUP_SPECS: { readonly [G in SettingsGroup]: GroupSpec<G> } = {
+  bindings: {
+    problem: (value, knownActions) =>
+      isRecord(value) ? bindingsProblem(value.bindings, knownActions) : 'bindings: not an object',
+    pack: ({ bindings }) => ({ bindings }),
+    unpack: ({ bindings }) => ({ bindings }),
+  },
+  audio: {
+    problem: (value) =>
+      groupProblem('audio', value, { master: isVolume, music: isVolume, effects: isVolume }),
+    pack: ({ audio }) => audio,
+    unpack: (audio) => ({ audio }),
+  },
+  video: {
+    problem: (value) =>
+      groupProblem('video', value, { fullscreen: isBoolean, renderScale: isScale }),
+    pack: ({ video }) => video,
+    unpack: (video) => ({ video }),
+  },
+  accessibility: {
+    problem: (value) =>
+      groupProblem('accessibility', value, { reduceMotion: isBoolean, colourBlindMode: isBoolean }),
+    pack: ({ accessibility }) => accessibility,
+    unpack: (accessibility) => ({ accessibility }),
+  },
+};
+
+/** Every group that is stored, in write order. */
+export const SETTINGS_GROUPS: readonly SettingsGroup[] = Object.keys(
+  GROUP_SPECS,
+) as SettingsGroup[];
+
+function groupDtoProblem(
+  group: SettingsGroup,
+  value: unknown,
+  knownActions: ReadonlySet<string>,
+): string | null {
   if (!isRecord(value)) {
     return 'not an object';
   }
@@ -97,27 +153,39 @@ function settingsProblem(value: unknown, knownActions: ReadonlySet<string>): str
   if (typeof value.profileId !== 'string') {
     return 'profileId: not a string';
   }
-  return (
-    bindingsProblem(value.bindings, knownActions) ??
-    groupProblem('audio', value.audio, { master: isVolume, music: isVolume, effects: isVolume }) ??
-    groupProblem('video', value.video, { fullscreen: isBoolean, renderScale: isScale }) ??
-    groupProblem('accessibility', value.accessibility, {
-      reduceMotion: isBoolean,
-      colourBlindMode: isBoolean,
-    })
-  );
+  if (value.group !== group) {
+    return `group: expected "${group}"`;
+  }
+  return GROUP_SPECS[group].problem(value.value, knownActions);
 }
 
 /**
- * Checks a stored settings record before anything trusts it (architecture 14 §8). Actions are
- * checked against `knownActions`, which `main.tsx` injects from `game/input/keybindings.ts`.
- * The reason names the first bad field.
+ * Checks the stored record of one settings group before anything trusts it (architecture 14 §8).
+ * Actions are checked against `knownActions`, which `main.tsx` injects from
+ * `game/input/keybindings.ts`. The reason names the first bad field.
  */
-export function validateSettingsDto(
+export function validateSettingsGroupDto(
+  group: SettingsGroup,
   value: unknown,
   knownActions: ReadonlySet<string>,
-): DtoCheck<SettingsDtoV1> {
-  const reason = settingsProblem(value, knownActions);
-  // Every field of SettingsDtoV1 was checked above.
-  return reason === null ? { ok: true, dto: value as SettingsDtoV1 } : { ok: false, reason };
+): DtoCheck<SettingsGroupDtoV1> {
+  const reason = groupDtoProblem(group, value, knownActions);
+  // Every field of the record was checked above.
+  return reason === null ? { ok: true, dto: value as SettingsGroupDtoV1 } : { ok: false, reason };
+}
+
+/** The record that saves `group` of `settings` for `profileId`. */
+export function toSettingsGroupDto<G extends SettingsGroup>(
+  profileId: string,
+  group: G,
+  settings: PersistedSettings,
+): SettingsGroupDtoV1<G> {
+  return { schemaVersion: 1, profileId, group, value: GROUP_SPECS[group].pack(settings) };
+}
+
+/** The settings a group record holds, as a partial of `PersistedSettings`. */
+export function settingsFromGroupDto<G extends SettingsGroup>(
+  dto: SettingsGroupDtoV1<G>,
+): Partial<PersistedSettings> {
+  return GROUP_SPECS[dto.group].unpack(dto.value);
 }

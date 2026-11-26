@@ -76,7 +76,7 @@ describe('rebinding move-up from W to ArrowUp', () => {
     expect(render()).toContain('>↑<');
     expect(mapper.toIntent(mapper.resolve(held(['ArrowUp'])), noAim).move).toEqual({ x: 0, y: -1 });
     expect(mapper.resolve(held(['KeyW'])).held.size).toBe(0);
-    expect(reloaded?.bindings.find((binding) => binding.action === 'move-up')?.chords).toEqual([
+    expect(reloaded.bindings?.find((binding) => binding.action === 'move-up')?.chords).toEqual([
       { device: 'keyboard', code: 'ArrowUp', label: '↑' },
     ]);
   });

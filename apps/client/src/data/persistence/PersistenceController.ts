@@ -39,8 +39,8 @@ export class PersistenceController {
     return this.adapter.open(STORAGE_SCHEMA);
   }
 
-  /** The saved settings, or `null` when there are none (or they were corrupt): use defaults. */
-  public loadSettings(): Promise<PersistedSettings | null> {
+  /** The saved settings groups. A group not saved (or corrupt) is absent: use its default. */
+  public loadSettings(): Promise<Partial<PersistedSettings>> {
     return this.settings.load(LOCAL_PROFILE_ID);
   }
 

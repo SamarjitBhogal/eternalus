@@ -1,3 +1,4 @@
+import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
 import type { PersistedSettings } from './dto/SettingsDto';
@@ -28,7 +29,7 @@ describe('PersistenceController', () => {
     const persistence = controller();
     await persistence.open();
 
-    expect(await persistence.loadSettings()).toBeNull();
+    expect(await persistence.loadSettings()).toEqual({});
   });
 
   it('keeps saved settings across a close and reopen', async () => {
@@ -90,6 +91,20 @@ describe('PersistenceController', () => {
     await persistence.open();
 
     expect(await persistence.loadGuestId()).toBeNull();
+  });
+
+  it('round-trips settings on IndexedDB with the real schema', async () => {
+    const factory = new IDBFactory();
+    const first = controller(new IndexedDbStorageAdapter(factory));
+    await first.open();
+    await first.saveSettings(SETTINGS);
+    first.close();
+
+    const second = controller(new IndexedDbStorageAdapter(factory));
+    await second.open();
+
+    expect(await second.loadSettings()).toEqual(SETTINGS);
+    second.close();
   });
 
   it('falls back to memory storage and reports it once through reportError, not warn (14 §10)', async () => {

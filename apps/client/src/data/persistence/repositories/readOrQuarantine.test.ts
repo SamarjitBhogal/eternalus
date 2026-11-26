@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { isReportedSilently } from '../../logging/__fixtures__/errorReports';
 import type { DtoCheck } from '../dto/DtoCheck.types';
 import { MemoryStorageAdapter } from '../MemoryStorageAdapter';
-import { QUARANTINE_STORE, SETTINGS_STORE, STORAGE_SCHEMA } from '../schema/migrations';
+import { QUARANTINE_STORE, GUEST_STORE, STORAGE_SCHEMA } from '../schema/migrations';
 import { readOrQuarantine } from './readOrQuarantine';
 
 const NOW = 1_760_000_000_000;
@@ -19,19 +19,19 @@ async function readThrough(stored: unknown) {
   const adapter = new MemoryStorageAdapter();
   await adapter.open(STORAGE_SCHEMA);
   const warnings: { body: string; attributes: unknown }[] = [];
-  const stores = [SETTINGS_STORE, QUARANTINE_STORE];
+  const stores = [GUEST_STORE, QUARANTINE_STORE];
   if (stored !== undefined) {
-    await adapter.transaction(stores, 'readwrite', (tx) => tx.put(SETTINGS_STORE, stored));
+    await adapter.transaction(stores, 'readwrite', (tx) => tx.put(GUEST_STORE, stored));
   }
   const result = await adapter.transaction(stores, 'readwrite', (tx) =>
     readOrQuarantine(
       tx,
-      { store: SETTINGS_STORE, key: 'p1', validate: validateCount },
+      { store: GUEST_STORE, key: 'p1', validate: validateCount },
       { now: () => NOW, warn: (body, attributes) => warnings.push({ body, attributes }) },
     ),
   );
   const [live, quarantined] = await adapter.transaction(stores, 'readonly', (tx) =>
-    Promise.all([tx.get(SETTINGS_STORE, 'p1'), tx.get(QUARANTINE_STORE, 1)]),
+    Promise.all([tx.get(GUEST_STORE, 'p1'), tx.get(QUARANTINE_STORE, 1)]),
   );
   return { result, live, quarantined, warnings };
 }
@@ -56,7 +56,7 @@ describe('readOrQuarantine', () => {
     expect(live).toBeUndefined();
     expect(quarantined).toEqual({
       id: 1,
-      store: SETTINGS_STORE,
+      store: GUEST_STORE,
       key: 'p1',
       reason: 'count: invalid value',
       quarantinedAt: NOW,
@@ -66,7 +66,7 @@ describe('readOrQuarantine', () => {
     expect(warnings).toEqual([
       {
         body: 'record quarantined',
-        attributes: { store: SETTINGS_STORE, reason: 'count: invalid value' },
+        attributes: { store: GUEST_STORE, reason: 'count: invalid value' },
       },
     ]);
   });

@@ -127,7 +127,7 @@ describe('SettingsController', () => {
       expect(developerCameraLabels(published[0]?.bindings)).toEqual(labels);
       expect(developerCameraLabels(published.at(-1)?.bindings)).toEqual(labels);
       expect(developerCameraLabels(controller.bindings)).toEqual(labels);
-      expect(developerCameraLabels((await persistence.loadSettings())?.bindings)).toEqual(labels);
+      expect(developerCameraLabels((await persistence.loadSettings()).bindings)).toEqual(labels);
     },
   );
 
