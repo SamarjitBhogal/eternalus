@@ -27,6 +27,7 @@ describe('StructureView', () => {
         health: { current: 3000, max: 3000 },
         progression: null,
         aether: null,
+        combat: null,
         area: null,
         capture: null,
         gem: null,

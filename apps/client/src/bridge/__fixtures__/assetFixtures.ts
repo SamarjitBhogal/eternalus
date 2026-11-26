@@ -34,11 +34,12 @@ function selectionAssetIds(catalogue: DisplayCatalogue): AssetId[] {
   ].filter(isAssetId);
 }
 
-/** Every asset id the HUD of `catalogue` names (structure icons, chrome, class kits). */
+/** Every asset id the HUD of `catalogue` names (structure icons, chrome, weapon art, class kits). */
 function hudAssetIds(catalogue: DisplayCatalogue): AssetId[] {
-  const { structureKinds, chrome } = catalogue.hud;
+  const { structureKinds, chrome, weaponArt } = catalogue.hud;
   return [
     ...structureKinds.map((kind) => kind.iconAssetId),
+    ...Object.values(weaponArt),
     ...(chrome === null
       ? []
       : [
@@ -48,13 +49,7 @@ function hudAssetIds(catalogue: DisplayCatalogue): AssetId[] {
           ...Object.values(chrome.objectiveShieldAssetIds),
         ]),
     ...catalogue.legendClasses.flatMap(({ hud }) =>
-      hud === null
-        ? []
-        : [
-            hud.emblemAssetId,
-            hud.weapon?.iconAssetId ?? null,
-            ...hud.slots.map((s) => s.iconAssetId),
-          ],
+      hud === null ? [] : [hud.emblemAssetId, ...hud.slots.map((s) => s.iconAssetId)],
     ),
   ].filter(isAssetId);
 }

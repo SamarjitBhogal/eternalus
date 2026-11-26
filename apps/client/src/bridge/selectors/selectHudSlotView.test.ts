@@ -12,7 +12,6 @@ import { selectHudSlotView } from './selectHudSlotView';
 
 const KIT = {
   emblemAssetId: null,
-  weapon: null,
   slots: [
     { slot: 'ability-1', displayName: 'Cleave', iconAssetId: 'icon-placeholder-atom' },
     { slot: 'gadget-1', displayName: null, iconAssetId: null },

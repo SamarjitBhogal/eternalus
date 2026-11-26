@@ -89,7 +89,6 @@ export function specCardFixture(
     ratings: null,
     details: [],
     art: NO_SPEC_ART,
-    hudWeapon: null,
     ...overrides,
   };
 }

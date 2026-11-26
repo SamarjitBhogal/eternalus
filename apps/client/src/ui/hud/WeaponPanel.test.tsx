@@ -4,14 +4,15 @@ import { loadedAssetsFor, TEST_HUD_ASSET_BOXES } from '../../bridge/__fixtures__
 import type { RasterBox } from '../../bridge/catalogue.types';
 import { FIGMA_HUD_PLAYER, figmaHudState } from '../../bridge/__fixtures__/hudFixtures';
 import { accessibleNames, renderWithStore, TEST_CONTENT } from '../testStore';
-import { cssRule, FIGMA_MATCH_SETUP, withHudSetup } from './hudTestSupport';
+import { cssRule, withHudSetup } from './hudTestSupport';
 import { WeaponPanel } from './WeaponPanel';
 import css from './WeaponPanel.module.css?raw';
 import styles from './WeaponPanel.module.css';
 
-const withClass = (classId: string) => ({
+/** The Figma HUD with the player's Legend holding `weaponId` (DEC-354 (2)). */
+const holding = (weaponId: string | null) => ({
   ...withHudSetup(figmaHudState()),
-  matchSetup: { ...FIGMA_MATCH_SETUP, selection: { classId, specId: null } },
+  hud: { player: { ...FIGMA_HUD_PLAYER, weaponId }, announcements: [] },
 });
 
 /** The manifest's draw box of `assetId`, as the UI tests' HUD fixture restates it. */
@@ -38,7 +39,7 @@ const placedAt = (box: RasterBox) => ({
 });
 
 describe('WeaponPanel', () => {
-  it('draws the kit weapon art at its manifest draw box, above the weapon level bar', () => {
+  it("draws the held weapon's art (Wuuthrad's battle axe) at its manifest draw box, above the weapon level bar", () => {
     const html = renderWithStore(<WeaponPanel />, withHudSetup(figmaHudState()));
     expect(html).toContain(
       `<div class="${String(styles.panel)}" style="--weapon-art-left:387;--weapon-art-top:946;--weapon-art-width:274;--weapon-art-height:82">`,
@@ -51,7 +52,7 @@ describe('WeaponPanel', () => {
   });
 
   it('places the Magus staff by its own manifest box (OD-8)', () => {
-    const html = renderWithStore(<WeaponPanel />, withClass('magus'));
+    const html = renderWithStore(<WeaponPanel />, holding('magus-staff'));
     expect(html).toContain(
       'style="--weapon-art-left:457;--weapon-art-top:977;--weapon-art-width:133;--weapon-art-height:19"',
     );
@@ -90,10 +91,14 @@ describe('WeaponPanel', () => {
     );
   });
 
-  it('draws no art for a kit without a weapon', () => {
-    const html = renderWithStore(<WeaponPanel />, withClass('sentinel'));
-    expect(html).not.toContain('<img');
-    expect(html).not.toContain('--weapon-art');
+  it('draws an empty slot for a held weapon without art, and for no weapon (DEC-354 (2))', () => {
+    for (const weaponId of ['raptor-talons', null]) {
+      const html = renderWithStore(<WeaponPanel />, holding(weaponId));
+      expect(html).toContain('aria-label="Weapon level"');
+      expect(html).not.toContain('<img');
+      expect(html).not.toContain('src=');
+      expect(html).not.toContain('--weapon-art');
+    }
   });
 
   it('hatches the weapon level bar while its value is unknown', () => {

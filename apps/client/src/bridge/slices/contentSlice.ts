@@ -14,7 +14,7 @@ const initialState: DisplayCatalogue = {
   effectsRenderer: 'figma-raster',
   contrastMode: 'figma',
   uiEnhancements: [],
-  hud: { structureKinds: [], objectiveKinds: [], chrome: null },
+  hud: { structureKinds: [], objectiveKinds: [], chrome: null, weaponArt: {} },
   laneMinions: [],
   teamNames: { light: '', dark: '' },
   botRoster: {

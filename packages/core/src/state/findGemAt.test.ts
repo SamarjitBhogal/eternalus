@@ -13,6 +13,7 @@ const entity = (id: string, x: number, isGem: boolean): EntitySnapshot => ({
   health: { current: 1, max: 1 },
   progression: null,
   aether: null,
+  combat: null,
   area: null,
   capture: null,
   gem: isGem ? { holder: 'neutral', glowTicksLeft: 0, glowHits: 0, ticksSinceHit: null } : null,

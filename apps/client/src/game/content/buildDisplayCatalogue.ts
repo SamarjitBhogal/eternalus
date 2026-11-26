@@ -124,7 +124,6 @@ function toSpecCard(
     ratings: spec.roleRatings,
     details: detailRows(spec.detailNames, shown.detailIcons),
     art: shown.art,
-    hudWeapon: shown.hudWeapon ?? null,
   };
 }
 
@@ -188,6 +187,7 @@ function checkNoLeftoverPresentation(
     ['class', presentation.classes, content.legends],
     ['spec', presentation.specs, content.specs],
     ['locked class', presentation.lockedClasses, content.lockedClasses],
+    ['weapon art', presentation.hud.weaponArt, content.weapons],
   ];
   for (const [what, byId, entries] of keyed) {
     const leftover = Object.keys(byId).find((key) => !entries.some((entry) => entry.id === key));
@@ -220,6 +220,7 @@ function hudCatalogue(
       displayName: nameOf(kind) ?? fail(`HUD objective kind "${kind}" has no core display name`),
     })),
     chrome: hud.chrome,
+    weaponArt: hud.weaponArt,
   };
 }
 
@@ -237,13 +238,9 @@ function classAssetIds(card: LegendClassCard): (AssetId | null)[] {
     art.model,
     ...Object.values(art.cardPlates),
     art.rowPlate,
-    ...card.specs.flatMap((spec) => [
-      ...Object.values(spec.art),
-      spec.hudWeapon?.iconAssetId ?? null,
-    ]),
+    ...card.specs.flatMap((spec) => Object.values(spec.art)),
     ...rows.map((row) => row.iconAssetId),
     card.hud?.emblemAssetId ?? null,
-    card.hud?.weapon?.iconAssetId ?? null,
     ...(card.hud?.slots.map((slot) => slot.iconAssetId) ?? []),
   ];
 }
@@ -260,6 +257,7 @@ function catalogueAssetIds(catalogue: DisplayCatalogue): AssetId[] {
     catalogue.selectClassChromeAssetId,
     catalogue.lockInChromeAssetId,
     ...catalogue.hud.structureKinds.map((entry) => entry.iconAssetId),
+    ...Object.values(catalogue.hud.weaponArt),
     ...(chrome === null
       ? []
       : [
@@ -276,8 +274,8 @@ function catalogueAssetIds(catalogue: DisplayCatalogue): AssetId[] {
  * icons, in slot order. HUD kinds: core names by kind (an aggregated group takes its first named
  * kind's name).
  * @throws Error naming the id: a core class, spec or locked class without presentation, a
- *   presentation key without a core entry, a HUD kind or group without a core name, or an asset id
- *   that is not in `knownAssetIds` (checked at boot).
+ *   presentation key (a weapon-art key included) without a core entry, a HUD kind or group without
+ *   a core name, or an asset id that is not in `knownAssetIds` (checked at boot).
  */
 export function buildDisplayCatalogue(inputs: {
   readonly content: DisplayContent;

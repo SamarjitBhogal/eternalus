@@ -18,13 +18,8 @@ import { createAppStore, type RootState } from '../bridge/store';
 export { accessibleNames } from './accessibleNames';
 
 /** A HUD kit with the Figma placeholder ability icons (names `null` until abilities exist). */
-const testKit = (
-  gadget1: AssetId | null,
-  weapon: AssetId | null,
-  emblem: AssetId | null,
-): ClassHudDisplay => ({
+const testKit = (gadget1: AssetId | null, emblem: AssetId | null): ClassHudDisplay => ({
   emblemAssetId: emblem,
-  weapon: weapon === null ? null : { displayName: null, iconAssetId: weapon },
   slots: [
     { slot: 'ability-1', displayName: null, iconAssetId: 'icon-placeholder-atom' },
     { slot: 'ability-2', displayName: null, iconAssetId: 'icon-placeholder-link-break' },
@@ -69,7 +64,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
           },
         }),
       ],
-      hud: testKit('warrior-gadget-courage', 'warrior-weapon-battle-axe', 'warrior-hud-emblem'),
+      hud: testKit('warrior-gadget-courage', 'warrior-hud-emblem'),
     }),
     classCardFixture({
       classId: 'sentinel',
@@ -78,7 +73,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
       roleLabel: 'Tank',
       accentToken: '--class-sentinel-accent',
       specs: [specCardFixture({ specId: 'colossus', displayName: 'Colossus' })],
-      hud: testKit(null, null, null),
+      hud: testKit(null, null),
     }),
     classCardFixture({
       classId: 'magus',
@@ -170,7 +165,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
           },
         }),
       ],
-      hud: testKit(null, 'magus-weapon-staff', null),
+      hud: testKit(null, null),
     }),
     classCardFixture({
       classId: 'harbinger',

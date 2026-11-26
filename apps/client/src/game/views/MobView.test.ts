@@ -24,6 +24,7 @@ const MINION: EntitySnapshot = {
   health: { current: 150, max: 150 },
   progression: null,
   aether: null,
+  combat: null,
   area: null,
   capture: null,
   gem: null,

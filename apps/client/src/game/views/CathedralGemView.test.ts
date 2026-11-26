@@ -19,6 +19,7 @@ const gemEntity = (gem: GemSnapshot | null): EntitySnapshot => ({
   health: { current: 1, max: 1 },
   progression: null,
   aether: null,
+  combat: null,
   area: null,
   capture: null,
   gem,

@@ -9,6 +9,7 @@ import type {
   ContrastMode,
   DetailSlot,
   EffectsRenderer,
+  HudCatalogue,
   HudChrome,
   HudStructureKind,
   LegendClassArt,
@@ -46,8 +47,6 @@ export type SpecPresentation = {
   readonly accentToken: ColourToken;
   readonly art: LegendSpecArt;
   readonly detailIcons: DetailIcons;
-  /** The Legend's own start-weapon art on the HUD, over its class kit's (DEC-114). */
-  readonly hudWeapon?: ClassHudDisplay['weapon'];
 };
 
 /**
@@ -58,6 +57,8 @@ export type HudPresentation = {
   readonly structureKinds: readonly Omit<HudStructureKind, 'displayName'>[];
   readonly objectiveKinds: readonly { readonly kind: MapFeatureKind }[];
   readonly chrome: HudChrome;
+  /** Keyed by core weapon id; a key without a core weapon fails at boot (DEC-354 (2)). */
+  readonly weaponArt: HudCatalogue['weaponArt'];
 };
 
 /** Everything the display catalogue adds to core content; `buildDisplayCatalogue` joins the two. */

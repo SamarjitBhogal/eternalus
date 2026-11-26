@@ -255,8 +255,8 @@ export class MatchBridge {
 
   /**
    * The player's HUD values, joined from the Legend's entity groups by id (05 §15, DEC-232): health,
-   * aether, level and XP. The slots stay `[]` until core fills `Snapshot.player`, and the rest is
-   * `null` until core publishes it (13 §10).
+   * aether, level, XP and the held weapon. The slots stay `[]` until core fills `Snapshot.player`,
+   * and the rest is `null` until core publishes it (13 §10).
    */
   private static playerOf(snapshot: Snapshot, playerId: EntityId | null): PlayerHudSnapshot | null {
     const entity = snapshot.entities.find((candidate) => candidate.id === playerId);
@@ -273,6 +273,7 @@ export class MatchBridge {
       level: entity.progression?.level ?? null,
       xp: entity.progression?.xp ?? null,
       xpToNext: entity.progression?.xpToNext ?? null,
+      weaponId: entity.combat?.weaponId ?? null,
       weaponProgress: null,
       ultimatePips: null,
       slots: [],

@@ -25,6 +25,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   health: null,
   progression: null,
   aether: null,
+  combat: null,
   area: null,
   capture: null,
   gem: null,
