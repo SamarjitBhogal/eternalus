@@ -1,5 +1,6 @@
 import { CastValidator } from './abilities/CastValidator';
 import { dashReach } from './abilities/dashReach';
+import { isSummonBlocked } from './abilities/summonPlacement';
 import { createDefaultAbilityRegistry } from './abilities/defaultAbilityRegistry';
 import { AiSystem } from './ai/AiSystem';
 import type { AiMemory } from './content/ai/ai.types';
@@ -313,6 +314,22 @@ export class Simulation {
    */
   public dashReach(from: Vec2, direction: Vec2, distance: number, radius: number): number {
     return dashReach(this.state.collisions, from, direction, distance, radius);
+  }
+
+  /**
+   * Whether a body with the outline `corners` (metres, +x along its facing) cannot stand
+   * `distance` metres from `from` along `direction` (a unit vector), facing that way: the rule a
+   * `summon` step refuses a cast with (`isSummonBlocked`), on the match's own walls. A read-only
+   * query for aim previews (a Shield Wall's outline turns red, DEC-382, HC-B43 (7)); it changes
+   * nothing.
+   */
+  public isSummonBlocked(
+    corners: readonly Vec2[],
+    from: Vec2,
+    direction: Vec2,
+    distance: number,
+  ): boolean {
+    return isSummonBlocked(this.state.walls, corners, from, direction, distance);
   }
 
   /** Number of ticks completed. */

@@ -11,11 +11,10 @@ import type { AbilityDisplayStep } from '../../content/loadDisplayContent';
 import type { ObstacleDefinition } from '../../content/obstacles/obstacles.types';
 import type { EntityId } from '../../state/EntityStore.types';
 import type { GameState } from '../../state/GameState';
-import { placePolygon } from '../../utils/geometry';
-import type { Polygon, Vec2 } from '../../utils/geometry.types';
 import { normalize } from '../../utils/vec2';
 import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
 import { mustBePositive, mustNotBeNegative } from '../specChecks';
+import { isSummonBlocked, summonPosition } from '../summonPlacement';
 
 /**
  * Places one body from a definition, owned by the caster (architecture 05 §3 `SummonEffect`; a
@@ -70,8 +69,9 @@ export class SummonEffect implements AbilityEffect<SummonSpec> {
 
   /**
    * `no-target` when the body's outline, placed for a cast of `casterId` aimed at `aim.point`,
-   * would overlap a wall or reach past the map's edge (`PlacedWalls.isBlocked`); `null` otherwise,
-   * and always without walls (no map objects) or an outline.
+   * would overlap a wall or reach past the map's edge (`isSummonBlocked`, the rule the aim
+   * preview also uses); `null` otherwise, and always without walls (no map objects), an outline or
+   * a direction.
    */
   public aimBlockedBy(
     spec: SummonSpec,
@@ -80,11 +80,12 @@ export class SummonEffect implements AbilityEffect<SummonSpec> {
     state: GameState,
   ): AbilityRejectReason | null {
     const centre = state.entities.get(casterId)?.findComponent(Transform)?.position;
-    if (centre === undefined || state.walls === null) return null;
-    const toAim = { x: point.x - centre.x, y: point.y - centre.y };
-    if (toAim.x === 0 && toAim.y === 0) return null;
-    const outline = this.outlineAt(spec, centre, normalize(toAim));
-    return outline !== null && state.walls.isBlocked(outline) ? 'no-target' : null;
+    const { footprint } = this.definitions.get(spec.definitionId);
+    if (centre === undefined || footprint === undefined) return null;
+    const direction = normalize({ x: point.x - centre.x, y: point.y - centre.y });
+    return isSummonBlocked(state.walls, footprint, centre, direction, spec.distance)
+      ? 'no-target'
+      : null;
   }
 
   /**
@@ -103,7 +104,7 @@ export class SummonEffect implements AbilityEffect<SummonSpec> {
     cast.summoner.summon(
       state,
       definitionId,
-      { position: SummonEffect.ahead(spec, centre, direction), facing: direction },
+      { position: summonPosition(centre, direction, spec.distance), facing: direction },
       casterId,
     );
   }
@@ -130,18 +131,5 @@ export class SummonEffect implements AbilityEffect<SummonSpec> {
         standing.push(entity.id);
     });
     return standing;
-  }
-
-  /** Where the body stands: `distance` from `centre` along `direction`. */
-  private static ahead({ distance }: SummonSpec, centre: Vec2, direction: Vec2): Vec2 {
-    return { x: centre.x + direction.x * distance, y: centre.y + direction.y * distance };
-  }
-
-  /** The body's outline in the world, or `null` for a body with none. */
-  private outlineAt(spec: SummonSpec, centre: Vec2, direction: Vec2): Polygon | null {
-    const { footprint } = this.definitions.get(spec.definitionId);
-    return footprint === undefined
-      ? null
-      : placePolygon(footprint, SummonEffect.ahead(spec, centre, direction), direction);
   }
 }

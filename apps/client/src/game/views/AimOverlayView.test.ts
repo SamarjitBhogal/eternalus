@@ -6,8 +6,10 @@ import {
   AIM_CIRCLE_SEGMENTS,
   AIM_CONE_CIRCLE_COLORS,
   AIM_CONE_FAN_COLORS,
+  AIM_OVERLAY_COLORS,
   AIM_OVERLAY_FILL_COLOR,
   AIM_OVERLAY_OUTLINE_COLOR,
+  AIM_REFUSED_COLORS,
 } from './AimOverlayView.constants';
 import { AimOverlayView } from './AimOverlayView';
 import type { AimStep, AimTarget, ShapePainters } from './AimOverlayView.types';
@@ -20,9 +22,15 @@ const CASTER_RADIUS = 1.25;
 
 /**
  * The target of the shipped ability `abilityId` cast from (10, 20) toward `aim`, each dash going
- * `reach` metres (its whole distance by default, as on open ground).
+ * `reach` metres (its whole distance by default, as on open ground), every step refused when
+ * `isRefused` (none by default).
  */
-const targetOf = (abilityId: string, aim: { x: number; y: number }, reach?: number): AimTarget => {
+const targetOf = (
+  abilityId: string,
+  aim: { x: number; y: number },
+  reach?: number,
+  isRefused = false,
+): AimTarget => {
   const length = Math.hypot(aim.x - ORIGIN.x, aim.y - ORIGIN.y);
   const direction =
     length === 0
@@ -32,6 +40,7 @@ const targetOf = (abilityId: string, aim: { x: number; y: number }, reach?: numb
     ({ shape, distance }) => ({
       shape: shape ?? null,
       reach: distance === undefined ? null : (reach ?? distance),
+      isRefused,
     }),
   );
   return { origin: ORIGIN, casterRadius: CASTER_RADIUS, direction, steps };
@@ -144,8 +153,8 @@ describe('AimOverlayView', () => {
       casterRadius: CASTER_RADIUS,
       direction: { x: 1, y: 0 },
       steps: [
-        { shape: null, reach: 3 },
-        { shape: { kind: 'circle', radius: 1.5 }, reach: null },
+        { shape: null, reach: 3, isRefused: false },
+        { shape: { kind: 'circle', radius: 1.5 }, reach: null, isRefused: false },
       ],
     };
 
@@ -217,6 +226,16 @@ describe('AimOverlayView', () => {
     expect(fills(drawn(targetOf('shield-wall', ORIGIN)))).toEqual([]);
   });
 
+  it('draws the Shield Wall outline in red where the cast is refused, and as usual where it fits (DEC-382, HC-B43 (7))', () => {
+    const colours = (isRefused: boolean) =>
+      drawn(targetOf('shield-wall', { x: 30, y: 20 }, undefined, isRefused)).calls.map(
+        ({ args }) => args[1],
+      );
+
+    expect(colours(true)).toEqual([AIM_REFUSED_COLORS.fill, AIM_REFUSED_COLORS.outline]);
+    expect(colours(false)).toEqual([AIM_OVERLAY_COLORS.fill, AIM_OVERLAY_COLORS.outline]);
+  });
+
   it('draws nothing without a target, as in quick cast or with no ability selected', () => {
     expect(drawn(null).calls).toEqual([]);
   });
@@ -242,7 +261,7 @@ describe('AimOverlayView', () => {
       origin: ORIGIN,
       casterRadius: CASTER_RADIUS,
       direction: { x: 1, y: 0 },
-      steps: [{ shape: { kind: 'circle', radius: 2 }, reach: null }],
+      steps: [{ shape: { kind: 'circle', radius: 2 }, reach: null, isRefused: false }],
     });
     view.draw(new RecordingRenderer());
 

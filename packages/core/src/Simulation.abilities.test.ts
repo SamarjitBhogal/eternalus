@@ -218,6 +218,60 @@ describe('Simulation.dashReach', () => {
   });
 });
 
+describe('Simulation.isSummonBlocked (DEC-382, HC-B43 (7))', () => {
+  /** The Shield Wall barrier's outline: 1 m along its facing, 4 m across. */
+  const WALL = [
+    { x: -0.5, y: -2 },
+    { x: 0.5, y: -2 },
+    { x: 0.5, y: 2 },
+    { x: -0.5, y: 2 },
+  ];
+  const EAST = { x: 1, y: 0 };
+  /** The two-lane map with a rift across it at x 100.2 to 100.8, and its walls (no objects). */
+  const sim = (withMap = true) =>
+    new Simulation({
+      config: createDefaultGameConfig(),
+      seed: 1,
+      logger: new NullLogger(),
+      ...(withMap
+        ? {
+            map: {
+              ...TWO_LANE_MAP,
+              terrain: [
+                {
+                  id: 'rift',
+                  kind: 'rift' as const,
+                  shape: [
+                    { x: 100.2, y: 0 },
+                    { x: 100.8, y: 0 },
+                    { x: 100.8, y: 60 },
+                    { x: 100.2, y: 60 },
+                  ],
+                },
+              ],
+            },
+            mapObjects: [],
+          }
+        : {}),
+    });
+
+  it('says no on open ground and yes over a wall or past the map edge, as the cast does', () => {
+    const match = sim();
+
+    expect(match.isSummonBlocked(WALL, { x: 96, y: 30 }, EAST, 3)).toBe(false);
+    expect(match.isSummonBlocked(WALL, { x: 98, y: 30 }, EAST, 3)).toBe(true);
+    expect(match.isSummonBlocked(WALL, { x: 2, y: 30 }, { x: -1, y: 0 }, 3)).toBe(true);
+  });
+
+  it('says no in a match with no map, and changes nothing', () => {
+    const match = sim(false);
+    const before = match.snapshot();
+
+    expect(match.isSummonBlocked(WALL, { x: 0, y: 0 }, EAST, 3)).toBe(false);
+    expect(match.snapshot()).toEqual(before);
+  });
+});
+
 describe('Simulation: a dash in the tick after a map object breaks (critic r2 F1)', () => {
   /** A 100-HP rock 0.6 m thick, 0.5 m east of the Warrior's circle. */
   const ROCK: MapObject = {

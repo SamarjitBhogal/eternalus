@@ -25,7 +25,7 @@ import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
 import type { IntentSource } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
-import { AIM_OVERLAY_FILL_COLOR } from './views/AimOverlayView.constants';
+import { AIM_OVERLAY_FILL_COLOR, AIM_REFUSED_COLORS } from './views/AimOverlayView.constants';
 import { FOCUS_RING_COLOR } from './views/entityViews.constants';
 import { WINDUP_RING_COLOR, WINDUP_RING_COUNT } from './views/WindupRingsView.constants';
 
@@ -127,6 +127,7 @@ const setUp = (
   content?: Content,
   withMapObjects = false,
   SimulationType: typeof Simulation = Simulation,
+  player: PlayerChoice = PLAYER,
 ) => {
   // No countdown: core's countdown holds all movement, and these tests walk from the start.
   const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
@@ -136,7 +137,7 @@ const setUp = (
     seed: SEED,
     logger: new NullLogger(),
     ...(content === undefined
-      ? { ...withPlayer(config, PLAYER), map: generated }
+      ? { ...withPlayer(config, player), map: generated }
       : { config, content }),
     ...(withMapObjects ? { mapObjects: world.mapObjects } : {}),
   });
@@ -159,6 +160,8 @@ const setUp = (
     // The port as `createBrowserMatch` binds it.
     dashReach: (origin, direction, distance, radius) =>
       simulation.dashReach(origin, direction, distance, radius),
+    isSummonBlocked: (corners, origin, direction, distance) =>
+      simulation.isSummonBlocked(corners, origin, direction, distance),
     observer: { crashed: () => undefined, ended: () => undefined },
     // A bus only the tests listen to, at the shipped cadence.
     bridge: {
@@ -385,6 +388,31 @@ describe('Match range overlay', () => {
     const corners = path?.op === 'fillPolygon' ? path.args[0] : [];
     const [a, b] = corners;
     expect(Math.hypot((b?.x ?? 0) - (a?.x ?? 0), (b?.y ?? 0) - (a?.y ?? 0))).toBeCloseTo(3);
+    match.destroy();
+  });
+
+  it('asks the simulation whether the Shield Wall fits, and draws a refused one in red (DEC-382, HC-B43 (7))', () => {
+    const { match, input, renderer, simulation } = setUp(undefined, false, Simulation, {
+      legend: 'sentinel',
+      team: 'light',
+    });
+    const blocked = vi.spyOn(simulation, 'isSummonBlocked').mockReturnValue(true);
+    match.setCastMode('aim-then-click');
+    input.aim = { x: 40, y: 50 };
+    input.triggered = ['ability-3'];
+    match.tick();
+    input.triggered = [];
+    const fillsIn = (colour: string) =>
+      renderer.calls.filter((call) => call.op === 'fillPolygon' && call.args[1] === colour).length;
+
+    match.render(0);
+    expect(blocked).toHaveBeenCalled();
+    expect([fillsIn(AIM_REFUSED_COLORS.fill), fillsIn(AIM_OVERLAY_FILL_COLOR)]).toEqual([1, 0]);
+
+    blocked.mockReturnValue(false);
+    renderer.calls.length = 0;
+    match.render(0);
+    expect([fillsIn(AIM_REFUSED_COLORS.fill), fillsIn(AIM_OVERLAY_FILL_COLOR)]).toEqual([0, 1]);
     match.destroy();
   });
 

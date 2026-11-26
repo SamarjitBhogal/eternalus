@@ -1485,9 +1485,13 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **Aim overlay.** `describe` gives one display step with the display-only shape `outline`
     (`PlacedOutline` in `content/loadDisplayContent.ts`: the outline's corners and its
     distance). The client paints it where the wall will stand: its middle `distance` ahead of
-    the caster toward the pointer, turned to face that way (`aimShapePainters.ts`). Known limit:
-    the overlay does not show where the cast is refused. A placement preview from core comes
-    with lane B PR 7 (`INBOX.md` HC-S15).
+    the caster toward the pointer, turned to face that way (`aimShapePainters.ts`). The outline
+    turns red where the cast would be refused (DEC-382, HC-B43 (7) B): the client asks
+    `Simulation.isSummonBlocked` (the `MatchDeps.isSummonBlocked` port), which runs
+    `abilities/summonPlacement.ts`, the same rule `aimBlockedBy` refuses the cast with. The
+    preview asks from where the Legend is drawn, as a dash's reach does. A Duel draws no range
+    overlay, so it has no port. The client still turns the outline itself, a copy of
+    `placePolygon` (`INBOX.md` HC-S15).
   - **Not built.** DEC-307's stop of a charging Sentinel comes with PR 8; the wall blocks walking
     and dashes like a map wall. `NoMapObjectOverlapInvariant` does not check placed walls
     (`INBOX.md` HC-S14, scheduled with PR 8).
