@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-26
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -670,11 +670,13 @@ by any class (reference 07: the class table's bias is a bias); `uniqueTo` locks 
 
 A shot flies straight from the attacker's centre until it hits an enemy body or a wall, or reaches
 its `ProjectileDefinition.range` (metres from the origin). It passes through allies, as the
-Hamstring blade does (DEC-269). A walk-on outline (a palace floor, a gate's passage) is ground units
-stand on, so a shot flies over it unless the shot aims at that entity: its locked target, or an aim
-point on the outline from outside it (DEC-314, DEC-322 (1)). A body that takes no damage now (its
-collider is unbreakable, for example a forest camp) stops every shot and takes no damage (DEC-317
-addendum). `CombatSystem` fires an attack without a line-of-fire check, for every unit, so a shot
+Hamstring blade does (DEC-269). A walk-on polygon of an outline (a palace floor, a gate's passage)
+is ground units stand on, so a shot flies over it unless the shot aims at that entity: its locked
+target, or an aim point on its walk-on polygons from outside them (DEC-314, DEC-322 (1)). A solid
+polygon (a fort, the Stronghold's outer walls and throne) stops every shot (DEC-373 (1)). A body
+that takes no damage now (its collider is unbreakable, for example a forest camp) stops every shot
+and takes no damage (DEC-317 addendum). `CombatSystem` fires an attack without a line-of-fire check,
+for every unit, so a shot
 into a wall ends there (DEC-317 addendum). A bot holds its ranged attack only with a clear line
 (`LineOfFire`: the shot touches the target within its `range` and before a wall or a body that
 stops a shot); else it drops its lock and moves for a clear shot (11, DEC-193). A shot that touches its target and another body at the same point hits its target:

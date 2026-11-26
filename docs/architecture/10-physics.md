@@ -442,6 +442,14 @@ layer both can call (as for `isPointInBlockingArea`, DEC-334).
 2026-11-23 note's "Camp fires do not light arrows yet" no longer holds. The palace kitchen hearths
 still stop shots.
 
+**2026-11-26 (branch `feat/palace-stronghold-pool`, DEC-373 (1)).** The 2026-11-20 note above
+names `Footprint.isWalkOn` and `MapObjectBody.isWalkOn`; they no longer exist. An `Outline` now has
+two polygon lists, `walkOn` and `solid`. `AreaHitQuery.shotPolygonsOf` gives the polygons that stop
+a shot: every polygon when the shot aims at the entity, else only the solid ones. `ProjectileSystem`
+(`contactTime`) and `LineOfFire` test only those polygons. The Stronghold's outer walls and throne
+are solid polygons of its `Footprint`, so they stop every enemy shot. The palace floor is the
+palace map object's walk-on outline only (DEC-344 (4)).
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

@@ -754,7 +754,7 @@ Reply inline (`Decision: …`).
     suggestions in a follow-up". (1) and (2) stay. Lane A builds R2-A8 and R2-A10 in its next PR
     after PR 2.
 
-- [ ] **HC-Q87 — Inside the enemy palace, your weapon never hits the Stronghold
+- [x] **HC-Q87 — Inside the enemy palace, your weapon never hits the Stronghold
       (`feat/melee-sweeps`, PR 2, critic R2-A2).** Confirm. Your answer to HC-Q76 was "A: aim at
       it to hit it". Your HC-Q78 note says a swing inside a room should not bring the roof down
       on the swinger. So the game does this: when you stand inside the enemy palace, your sword
@@ -769,6 +769,11 @@ Reply inline (`Decision: …`).
     end-game target; the Emperor is. ... He is not built. Gurshaan or Aryan are supposed to
     handle this." Not built yet: which walls count is asked as HC-Q104 (Owner Calls v71). Lane A
     builds the answer in its own PR on PR 2. Tick this item when that PR is built.
+  - Built 2026-11-26 in `feat/palace-stronghold-pool` (DEC-373 (1) addendum and its correction of
+    2026-11-26): a hit on an outer wall or on the throne takes the Stronghold's health, also from
+    inside the palace. A hit on the palace floor never does, from inside or from outside: the
+    floor is the palace map object's, with its own health. The inner ring, the room walls and the
+    other furniture keep their own health.
 
 - [x] **HC-Q88 — An ability hit counts as attacking for the AI (`feat/melee-sweeps`, PR 2,
       critic R2-A3).** Confirm. When a Legend hits an enemy with an ability, the AI treats it
@@ -800,6 +805,39 @@ Reply inline (`Decision: …`).
   - Built 2026-11-26 in `feat/palace-stronghold-pool` (DEC-373 (1) addendum): the outer walls
     and the throne are part of the Stronghold's body (`MapObject.partOf`) and have no health of
     their own; the inner ring and the room walls keep their own health and break on their own.
+
+- [ ] **HC-Q122 — After the Stronghold falls, what happens to its outer walls and its throne?
+      (`feat/palace-stronghold-pool`, follow-up to HC-Q104, DEC-373 (1); critic r1 Q104-1).**
+      Card for Owner Calls v101, 2026-11-26, by COMBAT-WEAPONS-ABILITIES-70 (number from
+      PR-REVIEW-COORDINATION-49). The enemy Stronghold falls, and the match goes on: the
+      Stronghold is a container, not a win condition (ADR 0021, DEC-71), and the Emperor is the
+      target (your HC-Q87 note). Each Stronghold has 58 outer wall pieces and a throne. Built now:
+      they all stay standing as ruins for the rest of the match. They block units and shots, and
+      nothing can break them. Options: (A) keep that (built); (B) the rule for a lane tower's fort
+      (DEC-217 (12), built in PR #98): the piece that took the killing hit falls with the
+      Stronghold, and each other piece stands with health of its own and breaks on its own; (C)
+      they all fall with the Stronghold. Records: A follows the wall turret answer (DEC-341: the
+      pylon "stays as a ruin and blocks"). B follows your fort answer, and DEC-71 says the
+      Stronghold's walls "can be destroyed, one segment at a time". No record supports C. No
+      recommendation: the records support A and B. If you choose B, say in a note if each piece
+      gets half health, as fort walls do. The game keeps A until you answer. Code names:
+      `MapObject.partOf`, `WorldObjectStore.removed` (`isRuined`). PR #98's
+      `StructureRuins.fallen` reads `partOf` and gives each piece fort tuning, so the #98 merge
+      needs a rule per structure definition whatever the answer (DEC-341 merge note).
+
+- [ ] **FYI, and one better-than-design item: the Stronghold's fort box
+      (`feat/palace-stronghold-pool`, critic r1 Q104-3 and Q104-11, 2026-11-26;
+      COMBAT-WEAPONS-ABILITIES-70).** (1) FYI, nothing to decide: the chase rule's fort box of the
+      Stronghold (DEC-217 (16), "the Stronghold palace box") is now the box round its outer walls
+      and throne, as a lane tower's fort box is the box round its fort. Before HC-Q104 it was the
+      box round the palace floor. The box grew by 11 to 14 m on each side, so a unit in the court
+      between the palace and the outer walls now counts as inside the fort. A test pins the box
+      (`Simulation.strongholdBody.test.ts`). (2) Better than the design, not built: one box does
+      two jobs, the quick first test of the Stronghold's outline and its fort box. So the fort box
+      moved when the outline grew, and nobody chose it. A separate fort box, built from the
+      polygons that the structure's definition names, would keep the two jobs apart. Say "build
+      it" and lane A builds it; else nothing changes. Code names: `Footprint.bounds`,
+      `DefaultSystemPipeline.fortBoxesOf`, `HealingZones` `fort-box`.
 
 - [ ] **FYI for Samarjit (minion AI owner): three changes to minion AI in PR 2
       (`feat/melee-sweeps`).** Nothing to decide. (1) DEC-326 (2): a minion that is already

@@ -582,6 +582,19 @@ the body. `AreaHitQuery.shotPolygonsOf` gives the polygons that stop a shot, for
 so the collapse of the palace map object does not kill the Stronghold. The Stronghold's fort box
 (DEC-217 (16)) is now the box round its outer ring.
 
+**Implementation status, 2026-11-26, critic round 1 (branch `feat/palace-stronghold-pool`,
+DEC-373 (1) correction).** Three changes to the note above. (1) After the Stronghold falls, the
+match goes on (ADR 0021, DEC-71), so its outer walls and throne stay as ruins that block and never
+break for the rest of the match. No owner answer covers this: `INBOX.md` HC-Q122 asks it, and this
+is the interim until he answers. (2) The palace floor is not part of the Stronghold (DEC-344 (4)):
+the Stronghold's definition has no `hasMapFootprint`, and its `Footprint` is its outer walls and
+throne only, all solid (`Footprint.ofBody`, `map/structureBodyParts`). So a hit on the floor never
+takes the Stronghold's health, and a locked attack on the Stronghold lands on an outer wall or the
+throne. From outside, an aim at the floor hits the palace map object. Its fort box is still the box
+round the outer ring. (3) The client draws a body object by its own state, not by its building's:
+a standing outer wall keeps its art and its health bar after the palace map object falls, and a
+ruined one keeps its ruins (`SceneryView`, `WorldObjectsView`).
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)
