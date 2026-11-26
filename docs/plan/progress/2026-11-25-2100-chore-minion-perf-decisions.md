@@ -40,7 +40,21 @@ SamarjitBhogal + Claude Code
     leash tolerance covers (DEC-181 (H2)). So DEC-181 holds as measured; no miss to take to the
     owner. A max of 11 ms for AI + pathing + steering in one tick of one run is a single spike,
     not the p95; the whole-tick budget at the cap has no target yet (`INBOX.md` DEC-137 (1)).
+  - Pathing plus steering against the Phase 3 target (≤ 2.5 ms p95, without `AiSystem`;
+    PR #172 review, 2026-11-26): the same throwaway timers, on `77c17a78`, summing
+    `PathingSystem`, `HordeSystem`, `StuckSystem`, `SpaceSystem` and `MovementSystem` per tick,
+    two runs, Node 24.21.0, the same laptop:
+
+    | Case (mobs per team + 10 Legends) | Pathing + steering p50 / p95 / max (ms) | Of which `PathingSystem` p95 | `AiSystem` p95 | Meets ≤ 2.5 ms p95 |
+    | --------------------------------- | --------------------------------------- | ---------------------------- | -------------- | ------------------ |
+    | 144 (Phase 3 target)              | 0.24 / 0.30 / 0.73–0.81                 | 0.16                         | 2.47–2.51      | yes                |
+    | 290 (the cap)                     | 0.48 / 0.53–0.54 / 1.17–1.78            | 0.32                         | 2.28–2.35      | yes                |
+
+    Both cases meet the target with about 2 ms to spare, so there is no miss to take to the
+    owner. Most of the earlier AI + pathing + steering figure is `AiSystem`.
+
   - The minion plan's "Unit-cap performance" row is closed: the whole-tick p95 runs in CI on
-    every push (DEC-351), and this entry records the decision-budget check.
+    every push (DEC-351), and this entry records the decision-budget check and the pathing plus
+    steering comparison above.
 - Checks run: `npm run docs:check` (docs only; no code changed).
 - Next step: Phase 6 adds the `Profiler` port, which makes the per-system split a CI number.
