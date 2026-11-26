@@ -1,5 +1,6 @@
 import type { ControllerId } from '../ai/ai.types';
 import type { EntityDefinitionBase } from '../EntityDefinition.types';
+import type { Polygon } from '../../utils/geometry.types';
 
 /**
  * How a unit moves. All values must be positive. Content files author speeds per second (the game
@@ -44,6 +45,8 @@ export type UnitDefinition = EntityDefinitionBase & {
   readonly baseHealth: number;
   /** Collider circle radius in world units. */
   readonly footprintRadius: number;
+  /** An optional local-space targeting and combat outline for oversized unit art. */
+  readonly combatHitbox?: Polygon;
   /** Sight radius in world units. */
   readonly visionRadius: number;
   /** Top speed, acceleration and mass; `movementStrategy` says how the unit steers. */

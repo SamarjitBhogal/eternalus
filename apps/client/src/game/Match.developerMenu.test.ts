@@ -61,7 +61,14 @@ describe('Match developer menu', () => {
       kind: 'dev-command',
       command: { type: 'dev-remove-entity', entityId: 'e1' },
     });
-    expect(enqueue.mock.calls).toEqual([[{ type: 'dev-remove-entity', entityId: 'e1' }]]);
+    bus.emit('ui-intent', {
+      kind: 'dev-command',
+      command: { type: 'dev-spawn-boss', definitionId: 'cathedral-boss' },
+    });
+    expect(enqueue.mock.calls).toEqual([
+      [{ type: 'dev-remove-entity', entityId: 'e1' }],
+      [{ type: 'dev-spawn-boss', definitionId: 'cathedral-boss' }],
+    ]);
     match.destroy();
   });
 

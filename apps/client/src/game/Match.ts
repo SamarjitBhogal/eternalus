@@ -105,7 +105,7 @@ export class Match implements LoopTarget {
             `No view for kind "${kind}"; drawing the default view.`,
           ),
         );
-      }),
+      }, deps.image),
       isDead,
       this.healthBars.healthBarOf,
     );
@@ -136,6 +136,7 @@ export class Match implements LoopTarget {
     });
     this.developerMenu = new DeveloperMenuController({
       isEnabled: deps.isDeveloperMenuEnabled === true,
+      isBossShortcutEnabled: import.meta.env.DEV && deps.remote === undefined,
       simulation,
       bus: bridge.bus,
       map,

@@ -929,6 +929,13 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
 
 ## 18. Implementation status
 
+- **Cathedral boss.** The interim cast cycle uses the shared damage and status pipeline.
+  Its special attacks can select and hit targets inside the Cathedral arena. The client draws
+  sprites and the sweep from the cast snapshot. The boss's kill raises the rewarded team's
+  Legends by five levels, up to the level cap (DEC-237). Cast recovery releases the movement
+  and basic-attack lock. The Cathedral guard post is local-only, with a default delay pinned
+  to the mid-game timeline mark.
+
 - **Progression (PR #31, SCRUM-426).** Legends install `Aether` (own component, O1) and
   `Progression` (`xp`, `level`, `curveId`). Level curves are a catalogue
   (`content/progression/levelCurveCatalogue.ts`), shape-checked at load (`loadLevelCurves`) and

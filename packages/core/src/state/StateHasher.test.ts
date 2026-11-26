@@ -18,6 +18,7 @@ import { Vision } from '../components/Vision';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { CAPTURE_POINT } from '../content/zones/capturePoint';
 import { Entity } from '../entities/Entity';
+import type { Legend } from '../entities/Legend';
 import { CapturePoint } from '../entities/zones/CapturePoint';
 import { SeededRandom } from '../utils/SeededRandom';
 import { fnv1a } from '../utils/fnv1a';
@@ -486,6 +487,25 @@ describe('StateHasher', () => {
     ]);
 
     expect(new Set([without, one, two, dark]).size).toBe(4);
+  });
+
+  it('hashes the levels a waiting Legend is owed (DEC-237 flat levels)', () => {
+    const hashOwing = (flatLevels: number): number => {
+      const { state } = stateWithSoldier();
+      const waiting = new Soldier('entity-2', 'soldier-definition');
+      waiting.spawn({});
+      state.respawns.add(waiting as unknown as Legend, 'light', 300);
+      state.respawns.owe('entity-2', {
+        cause: 'team-kill',
+        victimId: 'entity-9',
+        victimTeam: 'neutral',
+        xp: 0,
+        flatLevels,
+      });
+      return hasher.hash(state);
+    };
+
+    expect(hashOwing(5)).not.toBe(hashOwing(2));
   });
 
   describe('hordes', () => {

@@ -138,6 +138,7 @@ const catalogue = createCoreCatalogue({
 // The Duel server's address (ADR 0016): read here only, like every other build-time setting.
 const duelServerUrl: unknown = import.meta.env.VITE_DUEL_SERVER_URL;
 const browserMatchDeps: BrowserMatchDeps = {
+  resources,
   window,
   document,
   gameConfig,

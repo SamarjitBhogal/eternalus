@@ -16,6 +16,15 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Cathedral Greater Boss (PR #161).** Which PR owns the encounter logic (#160, #161,
+      or #164), and which activation trigger should it use? May the Codex-generated Colossus
+      sprites ship, and under what provenance and licence notice? Approve or decline the
+      proposed 40 × 27 m combat outline as an exception to DEC-183, and confirm the asset budget.
+      Confirm the six reference attack behaviours or approve the current provisional move set
+      in `cathedralBossAbilities.ts`. The open tuning values are cast phase timings, range,
+      width, sweep angle, damage class, stun and pull, shield, time between specials, and the
+      boss's movement speed, acceleration, mass, basic attack reach and navigation footprint.
+
 - [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only
       its group's home (`CAMP_BODY`: "a camp is only its group's home"): the camp's mobs are what

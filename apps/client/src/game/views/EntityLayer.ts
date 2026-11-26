@@ -52,6 +52,18 @@ export class EntityLayer implements WorldLayer {
       const then = before.get(entity.id)?.transform ?? now;
       const position = EntityLayer.lerp(then, now, alpha);
       const facing = EntityLayer.turn(then.facing, now.facing, alpha);
+      if (entity.definitionId === 'cathedral-boss') {
+        return [
+          {
+            entity,
+            position,
+            facing,
+            isFocused: entity.id === focusId,
+            tick: current.tick - 1 + alpha,
+            isMoving: then.x !== now.x || then.y !== now.y,
+          },
+        ];
+      }
       return [{ entity, position, facing, isFocused: entity.id === focusId }];
     });
   }

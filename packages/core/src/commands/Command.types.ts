@@ -67,6 +67,8 @@ type CommandPayloads = {
     readonly count: number;
     readonly origin: SpawnOrigin;
   };
+  /** Developer menu: bring forward the match's scheduled Cathedral boss. */
+  readonly 'dev-spawn-boss': { readonly definitionId: 'cathedral-boss' };
   /**
    * Developer menu: add one bot Legend of class `definitionId` at `team`'s Stronghold, played by
    * the Rover controller (it takes no lane). Refused at `maxLegendsPerTeam`.

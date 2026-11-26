@@ -7,7 +7,7 @@ import type { XpSourcesDefinition } from './progression.types';
  * may be fractional. Mobs carry their own `xpValue`, except the bosses in `teamKills`, whose kill
  * pays the killer's whole team; sharing, assists, checkpoints and camps join with their systems.
  */
-export const XP_SOURCES: XpSourcesDefinition = {
+export const XP_SOURCES = {
   legendKill: { base: 80, perVictimLevel: 1.5 },
   // TUNE: DEC-190 (owner 2026-11-05) replaces DEC-186's 300: 120 is at most one level at any level
   // of the curve. One value for every structure kind.
@@ -19,5 +19,6 @@ export const XP_SOURCES: XpSourcesDefinition = {
     // TUNE: as the capture point boss: the corner boss uses the same MiniBoss row; DEC-237 (owner
     // 2026-11-10): "team-wide is fine for now" for the corner boss.
     'corner-boss': { xp: 500, maxLevels: 2 },
+    'cathedral-boss': { flatLevels: 5 }, // DEC-237: five levels from the recipient's current level.
   },
-};
+} satisfies XpSourcesDefinition;

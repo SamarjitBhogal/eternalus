@@ -4,6 +4,7 @@ import { CathedralGemState } from '../components/CathedralGemState';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
+import { BossCombat } from '../components/BossCombat';
 import { CombatClock } from '../components/CombatClock';
 import { LastEnemyHit } from '../components/LastEnemyHit';
 import { Health } from '../components/Health';
@@ -98,12 +99,13 @@ export class StateHasher {
         waiting.push([
           team,
           returnsAtTick,
-          owedXp.map(({ cause, victimId, victimTeam, xp, maxLevels }) => [
+          owedXp.map(({ cause, victimId, victimTeam, xp, maxLevels, flatLevels }) => [
             cause,
             victimId,
             victimTeam,
             xp,
             maxLevels ?? null,
+            ...(flatLevels === undefined ? [] : [flatLevels]),
           ]),
           StateHasher.fieldsOf(legend),
         ]);
@@ -183,6 +185,10 @@ export class StateHasher {
       );
     }
     const combat = entity.findComponent(Combat);
+    const boss = entity.findComponent(BossCombat);
+    if (boss !== undefined) {
+      fields.push(['boss', boss.nextMove, boss.readyAt, JSON.stringify(boss.cast), ...boss.hit]);
+    }
     if (combat !== undefined && (combat.targetId !== null || combat.readyAtTick > 0)) {
       fields.push(['combat', combat.targetId, combat.readyAtTick]);
     }

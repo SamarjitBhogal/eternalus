@@ -9,6 +9,7 @@ export type DrawContext = Pick<
   | 'beginPath'
   | 'clip'
   | 'closePath'
+  | 'drawImage'
   | 'ellipse'
   | 'fill'
   | 'fillRect'
@@ -20,9 +21,11 @@ export type DrawContext = Pick<
   | 'rect'
   | 'restore'
   | 'save'
+  | 'scale'
   | 'stroke'
   | 'strokeRect'
   | 'strokeStyle'
+  | 'translate'
 >;
 
 /**

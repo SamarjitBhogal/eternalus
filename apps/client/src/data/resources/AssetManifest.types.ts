@@ -25,7 +25,8 @@ export type AssetGroup =
   | 'selection-alternate'
   | 'selection-raster'
   | 'selection-primary-raster'
-  | 'match';
+  | 'match'
+  | 'boss';
 
 /**
  * One use of an image whose device-pixel box differs from the entry's other uses in size,

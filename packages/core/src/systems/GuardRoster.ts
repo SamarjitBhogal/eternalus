@@ -76,7 +76,12 @@ export class GuardRoster {
       const plan = this.plans[home.definitionId];
       const team = state.entities.teamOf(home.id);
       const transform = home.findComponent(Transform);
-      if (plan === undefined || team === undefined || transform === undefined) {
+      if (
+        plan === undefined ||
+        team === undefined ||
+        transform === undefined ||
+        (plan.isLocalOnly === true && state.match.duel !== null)
+      ) {
         continue;
       }
       const homeRadius = home instanceof Zone ? 0 : transform.radius;

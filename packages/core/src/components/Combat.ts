@@ -9,6 +9,7 @@ export class Combat {
   private targetIdValue: string | null = null;
 
   private readyAtTickValue = 0;
+  private lastAttackTickValue: number | null = null;
 
   /**
    * @param attack - The basic attack, with `interval` already in ticks.
@@ -30,6 +31,11 @@ export class Combat {
     return this.readyAtTickValue;
   }
 
+  /** The last tick the attack landed, for rendering. */
+  public get lastAttackTick(): number | null {
+    return this.lastAttackTickValue;
+  }
+
   /** Starts attacking `targetId`, or stops with `null`. */
   public setTarget(targetId: string | null): void {
     this.targetIdValue = targetId;
@@ -45,6 +51,7 @@ export class Combat {
    * `attackSpeed` (statuses: 0.7 concussed), at least one tick.
    */
   public beginAttack(tick: number, attackSpeed = 1): void {
+    this.lastAttackTickValue = tick;
     this.readyAtTickValue = tick + Math.max(1, Math.round(this.attack.interval / attackSpeed));
   }
 }

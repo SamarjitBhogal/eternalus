@@ -44,6 +44,9 @@ const createFakeContext = (): FakeContext => {
     save: vi.fn(),
     stroke: vi.fn(),
     strokeRect: vi.fn(),
+    drawImage: vi.fn(),
+    scale: vi.fn(),
+    translate: vi.fn(),
   };
   const context: DrawContext = {
     ...spies,

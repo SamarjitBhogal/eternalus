@@ -41,20 +41,23 @@ describe('GUARD_PLANS', () => {
     );
   });
 
-  it('activates the capture point boss on the default timeline quarter mark (reference 04)', () => {
+  it.each([
+    ['capture-point', 'quarter-mark'],
+    ['cathedral-capture-point', 'mid-game'],
+  ])('activates %s at the default timeline %s', (zone, mark) => {
     const config = createDefaultGameConfig();
     const frame = timelineFrameOf(config);
-    const quarter = config.match.timeline.find(({ id }) => id === 'quarter-mark');
-    const activation = GUARD_PLANS['capture-point']?.activation;
+    const entry = config.match.timeline.find(({ id }) => id === mark);
+    const activation = GUARD_PLANS[zone]?.activation;
     // Timeline fractions and the guard plan both count from the countdown's end (DEC-282).
-    const quarterTick = quarter === undefined ? -1 : timelineMarkTick(quarter.at, frame);
+    const activationTick = entry === undefined ? -1 : timelineMarkTick(entry.at, frame);
     const delayTicks =
       activation?.at === 'countdown-end'
         ? Math.round(activation.delaySeconds * config.tickRate)
         : 0;
 
     expect(activation?.at).toBe('countdown-end');
-    expect(frame.countdownEndTick + delayTicks).toBe(quarterTick);
+    expect(frame.countdownEndTick + delayTicks).toBe(activationTick);
   });
 
   it('covers a guard whose decision waits its turn at the unit cap, 16 ticks apart not 10 (DEC-181)', () => {

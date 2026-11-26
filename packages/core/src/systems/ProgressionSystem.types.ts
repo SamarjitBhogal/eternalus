@@ -41,6 +41,7 @@ type TeamAward = {
   readonly victimTeam: Team;
   readonly xp: number;
   readonly maxLevels?: number;
+  readonly flatLevels?: number;
 };
 
 /**
@@ -54,6 +55,7 @@ type RespawnAward = {
   readonly victimTeam: Team;
   readonly xp: number;
   readonly maxLevels?: number;
+  readonly flatLevels?: number;
 };
 
 /** One award this system gives, waiting for its pass. */

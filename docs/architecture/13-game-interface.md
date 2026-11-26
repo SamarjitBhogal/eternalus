@@ -582,6 +582,9 @@ difference is registered in
 
 ## 10. Implementation status
 
+The local development HUD provides **Spawn Boss**. It queues a replayable command that
+advances the Eternal's pending Cathedral guard post to the current simulation tick.
+
 Built (Sprint 1, sessions D and F): the bridge (`bridge/`), the session shell and menu screens,
 and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver`, `InputMapper`,
 `KeyboardDevice` and `MouseDevice`, `SettingsController`, `settingsSlice`, `KeyGlyph`, `Prompt`,

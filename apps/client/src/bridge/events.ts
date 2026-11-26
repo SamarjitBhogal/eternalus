@@ -138,7 +138,8 @@ export type AssetGroup =
   | 'selection-alternate'
   | 'selection-raster'
   | 'selection-primary-raster'
-  | 'match';
+  | 'match'
+  | 'boss';
 
 /**
  * URLs of a group's loaded images and the draw boxes its entries declare (both `{}` after

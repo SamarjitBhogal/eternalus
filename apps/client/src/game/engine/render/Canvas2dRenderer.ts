@@ -82,6 +82,36 @@ export class Canvas2dRenderer implements Renderer {
     this.context.fillRect(0, 0, this.screenWidth, this.screenHeight);
   }
 
+  /** Draws a sprite subframe aligned to the world camera. */
+  public drawSprite(
+    image: CanvasImageSource,
+    source: ScreenRect,
+    area: WorldRect,
+    flipX: boolean,
+  ): void {
+    const at = this.toScreen(area);
+    const width = area.width * this.scaleX;
+    const height = area.height * this.scaleY;
+    this.context.save();
+    try {
+      this.context.translate(at.x + (flipX ? width : 0), at.y);
+      if (flipX) this.context.scale(-1, 1);
+      this.context.drawImage(
+        image,
+        source.x,
+        source.y,
+        source.width,
+        source.height,
+        0,
+        0,
+        width,
+        height,
+      );
+    } finally {
+      this.context.restore();
+    }
+  }
+
   /** Fills a rectangle given in screen pixels. */
   public fillScreenRect(area: ScreenRect, color: string): void {
     this.context.fillStyle = color;

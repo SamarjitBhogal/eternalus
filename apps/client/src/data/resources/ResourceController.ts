@@ -127,6 +127,14 @@ export class ResourceController {
     return urls;
   }
 
+  /** The decoded browser image for an asset that draws through the canvas renderer. */
+  public image(id: AssetId): HTMLImageElement | undefined {
+    const handle = this.cache.get(id)?.handle;
+    return typeof HTMLImageElement !== 'undefined' && handle instanceof HTMLImageElement
+      ? handle
+      : undefined;
+  }
+
   /**
    * The draw boxes `group`'s entries declare, keyed like `urls` (`assetBoxes`). Manifest data,
    * so the same before a load and after it; the session publishes them with the URLs.
@@ -199,6 +207,7 @@ export class ResourceController {
       }
     }
     this.cache.set(entry.id, {
+      handle: main.handle,
       bytes,
       urls: entry.type === 'ui-image' ? urls : {},
       release: freeAll,

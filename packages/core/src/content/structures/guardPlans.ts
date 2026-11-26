@@ -1,3 +1,4 @@
+import { CATHEDRAL_BOSS, CATHEDRAL_BOSS_ARENA } from '../mobs/cathedralBoss';
 import { CAPTURE_POINT_COURT } from '../zones/capturePointCourt';
 import { CORNER_CAMP_RING } from './cornerCampRing';
 import { GUARD_LEASH } from './guardLeash';
@@ -100,7 +101,7 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
   },
   ...CAMP_PLANS,
   // The outer capture points' mini-boss and its support mobs (18 §7.1, reference 04 "along with
-  // high-power enemy and support mobs"); the Cathedral's zone has no plan. Posts share the court's
+  // high-power enemy and support mobs"). Posts share the court's
   // ring, spread evenly around it with the boss.
   'capture-point': {
     table: [
@@ -120,6 +121,15 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     activation: { at: 'countdown-end', delaySeconds: 450 },
     // reference 04: one mini-boss per match; its support mobs do not come back either until
     // respawning guards is signed off (INBOX.md)
+    respawn: { kind: 'never' },
+  },
+  'cathedral-capture-point': {
+    isLocalOnly: true,
+    table: [{ mobId: CATHEDRAL_BOSS.id, count: 1 }],
+    leashRadius: CATHEDRAL_BOSS_ARENA.leash,
+    postGap: CATHEDRAL_BOSS_ARENA.postGap,
+    leashTolerance: CATHEDRAL_BOSS_ARENA.tolerance,
+    activation: { at: 'countdown-end', delaySeconds: 900 }, // TUNE: default match midpoint.
     respawn: { kind: 'never' },
   },
 };

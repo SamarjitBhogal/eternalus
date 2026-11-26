@@ -1,4 +1,8 @@
 import { Aether } from '../components/Aether';
+import { BossCombat } from '../components/BossCombat';
+import { Combat } from '../components/Combat';
+import { CombatHitbox } from '../components/CombatHitbox';
+import { CATHEDRAL_BOSS } from '../content/mobs/cathedralBoss';
 import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
 import { Health } from '../components/Health';
@@ -32,12 +36,23 @@ export class EntitySnapshotter {
   /** The entity as plain, structured-clone-safe data. */
   public snapshotOf(entity: Entity): EntitySnapshot {
     const transform = entity.findComponent(Transform);
+    const hitbox = entity.findComponent(CombatHitbox);
     const health = entity.findComponent(Health);
     const progression = entity.findComponent(Progression);
     const aether = entity.findComponent(Aether);
     const capture = entity.findComponent(Capturable);
+    const cast = entity.findComponent(BossCombat)?.cast;
+    const attackTick =
+      entity.definitionId === CATHEDRAL_BOSS.id
+        ? entity.findComponent(Combat)?.lastAttackTick
+        : null;
     const gem = entity.findComponent(CathedralGemState);
     return {
+      ...(hitbox === undefined || transform === undefined
+        ? {}
+        : { combatHitbox: hitbox.polygonAt(transform.position, transform.facing) }),
+      ...(cast == null ? {} : { bossCast: cast }),
+      ...(attackTick == null ? {} : { bossAttackTick: attackTick }),
       id: entity.id,
       kind: entity.kind,
       family: entity.family,

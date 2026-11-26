@@ -312,6 +312,8 @@ export const STRINGS = {
     duelReconnecting: 'Reconnecting...',
     matchCountdown: 'Match start',
     countdownStart: 'START',
+    /** The local development build's boss shortcut (13 §10). */
+    spawnBoss: 'Spawn Boss',
     health: 'Health',
     aether: 'Aether',
     level: 'Level',

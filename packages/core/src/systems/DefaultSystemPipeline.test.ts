@@ -136,6 +136,7 @@ describe('DefaultSystemPipeline', () => {
       'space',
       'stuck',
       'pathing',
+      'cathedral-boss',
       'combat',
       'map-destruction',
       'progression',

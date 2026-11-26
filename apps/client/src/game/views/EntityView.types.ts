@@ -5,6 +5,8 @@ import type { WorldPoint } from '../engine/render/Renderer.types';
 
 /** One entity to draw this frame: its snapshot, where to draw it, and whether it is the player's. */
 export type EntityDrawState = {
+  readonly tick?: number;
+  readonly isMoving?: boolean;
   readonly entity: EntitySnapshot;
   /** Interpolated between the last two ticks, in world units. */
   readonly position: WorldPoint;

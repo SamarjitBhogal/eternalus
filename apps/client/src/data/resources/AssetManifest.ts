@@ -1,6 +1,7 @@
 import type { AssetManifest } from './AssetManifest.types';
 import { BOOT_ASSETS } from './bootAssets';
 import { MATCH_ASSETS } from './matchAssets';
+import { MATCH_BOSS_ASSETS } from './matchBossAssets';
 import { SELECTION_ALTERNATE_ASSETS } from './selectionAlternateAssets';
 import { SELECTION_ASSETS } from './selectionAssets';
 import { SELECTION_PRIMARY_ASSETS } from './selectionPrimaryAssets';
@@ -22,5 +23,6 @@ export const ASSET_MANIFEST: AssetManifest = {
     ...SELECTION_RASTER_ASSETS,
     ...SELECTION_PRIMARY_RASTER_ASSETS,
     ...MATCH_ASSETS,
+    ...MATCH_BOSS_ASSETS,
   ],
 };

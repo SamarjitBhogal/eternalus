@@ -1,5 +1,6 @@
 import { type ReactElement, useRef } from 'react';
 
+import { emitIntent } from '../../bridge/eventBus';
 import { useAppSelector } from '../../bridge/hooks';
 import { selectIsDuel } from '../../bridge/selectors/selectIsDuel';
 import { AbilityBar } from '../hud/AbilityBar';
@@ -37,6 +38,7 @@ import type { ScreenProps } from './screen.types';
  */
 export function MatchScreen({ viewport }: ScreenProps): ReactElement {
   const overlay = useAppSelector((state) => state.session.overlay);
+  const isLocal = useAppSelector((state) => state.matchSetup.mode === 'local');
   const openerRef: PauseOpenerRef = useRef<Element | null>(null);
   const isDuel = useAppSelector(selectIsDuel);
   usePauseMenuKey(overlay, openerRef, isDuel);
@@ -81,6 +83,20 @@ export function MatchScreen({ viewport }: ScreenProps): ReactElement {
           <MinimapPanel />
         </div>
         <MatchCountdown />
+        {import.meta.env.DEV && isLocal && (
+          <button
+            className={styles.spawnBoss}
+            type="button"
+            onClick={() => {
+              emitIntent({
+                kind: 'dev-command',
+                command: { type: 'dev-spawn-boss', definitionId: 'cathedral-boss' },
+              });
+            }}
+          >
+            {STRINGS.hud.spawnBoss}
+          </button>
+        )}
       </section>
       <DeveloperMenu />
       <PauseOverlay openerRef={openerRef} />

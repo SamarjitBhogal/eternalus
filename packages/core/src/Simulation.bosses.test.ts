@@ -9,6 +9,7 @@ import { MapGenerator } from './map/MapGenerator';
 import { MapObjectBuilder } from './map/MapObjectBuilder';
 import { MapPresentationBuilder } from './map/MapPresentationBuilder';
 import { Simulation } from './Simulation';
+import { findUnitAt } from './state/findUnitAt';
 import { isPointInAnyPolygon } from './utils/geometry';
 import { run } from './__fixtures__/hordeMatches';
 
@@ -35,6 +36,96 @@ const ZONE_TABLE = Object.fromEntries(
 );
 
 describe('Simulation capture point bosses', () => {
+  it('does not spawn a Cathedral boss in a Duel, even after its activation or a dev command', () => {
+    const seed = 1;
+    const cathedral = GUARD_PLANS['cathedral-capture-point'];
+    if (cathedral === undefined) throw new Error('missing Cathedral boss plan');
+    const simulation = new Simulation({
+      config: CONFIG,
+      seed,
+      logger: new MemoryLogger(),
+      map: new MapGenerator().generate(CONFIG, seed),
+      duel: { killTarget: 3 },
+      guardPlans: {
+        ...PLANS,
+        'cathedral-capture-point': {
+          ...cathedral,
+          activation: { at: 'countdown-end', delaySeconds: DELAY_SECONDS },
+        },
+      },
+    });
+    simulation.enqueueCommand({ type: 'dev-spawn-boss', definitionId: 'cathedral-boss' });
+    run(simulation, CONFIG.tickRate * 4);
+    expect(
+      simulation.snapshot().entities.some(({ definitionId }) => definitionId === 'cathedral-boss'),
+    ).toBe(false);
+  });
+
+  it('brings forward the Cathedral boss once and replays the same state', () => {
+    const seed = 1;
+    const map = new MapGenerator().generate(CONFIG, seed);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const cathedral = GUARD_PLANS['cathedral-capture-point'];
+    if (cathedral === undefined) throw new Error('missing Cathedral boss plan');
+    const guardPlans = {
+      ...PLANS,
+      'cathedral-capture-point': {
+        ...cathedral,
+        activation: { at: 'countdown-end', delaySeconds: DELAY_SECONDS },
+      },
+    } as const satisfies typeof GUARD_PLANS;
+    const create = () =>
+      new Simulation({
+        config: CONFIG,
+        seed,
+        logger: new MemoryLogger(),
+        map,
+        mapObjects,
+        guardPlans,
+      });
+    const first = create();
+    const replay = create();
+    for (const simulation of [first, replay]) {
+      const bosses = () =>
+        simulation
+          .snapshot()
+          .entities.filter(({ definitionId }) => definitionId === 'cathedral-boss');
+      expect(bosses()).toHaveLength(0);
+      simulation.enqueueCommand({ type: 'dev-spawn-boss', definitionId: 'cathedral-boss' });
+      simulation.step();
+      expect(bosses()).toHaveLength(1);
+      const zone = simulation
+        .snapshot()
+        .entities.find(({ definitionId }) => definitionId === 'cathedral-capture-point');
+      const body = bosses()[0]?.transform;
+      expect(zone?.area).toBeDefined();
+      expect(body).toBeDefined();
+      if (body == null || zone?.area == null) throw new Error('missing Cathedral or boss position');
+      expect(isPointInAnyPolygon(body, zone.area)).toBe(true);
+      expect(bosses()[0]?.team).toBe('neutral');
+      const snapshot = simulation.snapshot();
+      const actor = snapshot.entities.find(({ team }) => team === 'light');
+      if (actor === undefined) throw new Error('missing Light entity for targeting');
+      expect(findUnitAt(snapshot.entities, actor.id, { x: body.x + 18, y: body.y - 5 })).toBe(
+        bosses()[0]?.id,
+      );
+      expect(findUnitAt(snapshot.entities, actor.id, { x: body.x + 23, y: body.y + 15 })).not.toBe(
+        bosses()[0]?.id,
+      );
+      simulation.enqueueCommand({ type: 'dev-spawn-boss', definitionId: 'cathedral-boss' });
+      simulation.step();
+      expect(bosses()).toHaveLength(1);
+      run(simulation, CONFIG.tickRate * 4);
+      expect(bosses()).toHaveLength(1);
+    }
+    expect(first.snapshot()).toEqual(replay.snapshot());
+    const scheduled = create();
+    run(scheduled, CONFIG.tickRate * 4);
+    expect(
+      scheduled.snapshot().entities.filter(({ definitionId }) => definitionId === 'cathedral-boss'),
+    ).toHaveLength(1);
+  });
+
   it.each([1, 2])(
     'puts one boss and its support mobs in each outer capture point once its delay has passed, off the keep and scenery, none in the Cathedral (seed %i)',
     (seed) => {

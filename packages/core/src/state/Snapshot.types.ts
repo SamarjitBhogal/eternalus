@@ -1,4 +1,5 @@
 import type { LevelProgress } from '../components/Progression.types';
+import type { BossCast } from '../components/BossCombat.types';
 import type { MatchPhase } from '../config/matchPhases';
 import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { EntityId } from './EntityStore.types';
@@ -14,6 +15,12 @@ import type { Polygon } from '../utils/geometry.types';
  * or `CathedralGemState`), never a made-up default.
  */
 export type EntitySnapshot = {
+  /** World-space combat outline for units with a separate visual hitbox. */
+  readonly combatHitbox?: Polygon;
+  /** The currently telegraphed, active, or recovering special attack. */
+  readonly bossCast?: BossCast;
+  /** Tick of the boss's last basic attack, when available. */
+  readonly bossAttackTick?: number;
   readonly mapObjectId?: string;
   /**
    * A structure built from a map feature: the feature's id (`MapFeature.id`), so a HUD tile binds

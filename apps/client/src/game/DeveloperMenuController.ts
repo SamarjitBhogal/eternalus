@@ -6,8 +6,10 @@ import type { TypedEventBus } from '../bridge/TypedEventBus';
 
 /** What the controller is built from (`Match` passes its own parts). */
 type DeveloperMenuControllerDeps = {
-  /** `?dev=1`: without it the key and every `dev-command` are ignored. */
+  /** Enables the developer menu and its commands (`?dev=1`). */
   readonly isEnabled: boolean;
+  /** The local development HUD can request the boss without opening the menu. */
+  readonly isBossShortcutEnabled?: boolean;
   readonly simulation: Pick<Simulation, 'enqueueCommand'>;
   readonly bus: TypedEventBus<BridgeEventMap>;
   readonly map: Pick<MapDefinition, 'features'>;
@@ -17,7 +19,8 @@ type DeveloperMenuControllerDeps = {
  * The game side of the developer menu (13 §4): whether it is open, the `developer-menu` state the
  * UI shows, and the one path from the menu's `dev-command` intent to `Simulation.enqueueCommand`
  * (core validates it and logs it for the replay). While the menu is not enabled it forwards no
- * command, does not open and publishes nothing.
+ * menu command, does not open and publishes nothing. The local development boss shortcut
+ * can be enabled independently.
  */
 export class DeveloperMenuController {
   private isOpen = false;
@@ -27,7 +30,12 @@ export class DeveloperMenuController {
   /** Starts listening for `dev-command` intents; `destroy()` stops. */
   public constructor(private readonly deps: DeveloperMenuControllerDeps) {
     this.stopListening = deps.bus.on('ui-intent', (intent) => {
-      if (deps.isEnabled && intent.kind === 'dev-command') {
+      if (
+        intent.kind === 'dev-command' &&
+        (intent.command.type === 'dev-spawn-boss'
+          ? deps.isBossShortcutEnabled === true
+          : deps.isEnabled)
+      ) {
         deps.simulation.enqueueCommand(intent.command);
       }
     });
