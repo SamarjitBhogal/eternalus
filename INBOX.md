@@ -239,7 +239,12 @@ Reply inline (`Decision: …`).
       ends a dash or knock-back under way (built, with a test). Better-than-design idea from the
       critic: a list of reset steps (like the scoring rules) instead of one hand-written reset, so
       a new component joins the reset without editing `DuelRoundSystem`. Say whether to build it
-      with Duel casting.
+      with Duel casting. **Added 2026-11-26 (`feat/vanguard-kit`, #136, critic finding D380-2):**
+      Duels cast now, so the reset applies FR-117 as written ("reset to fully cooled down upon
+      death"): after a round, the Legend that died has every ability but its ultimate ready. The
+      Legend that survived keeps its cooldowns, and both keep their ultimate meters (DEC-295 (1)).
+      HC-B52 (1) asks if the survivor's abilities must also be ready. Aether, shields and the
+      ability bar stay open.
 - [ ] **HC-Q56 — Four ideas from critic round 2 and one from round 3, not built: your call
       (`feat/ability-framework`, 2026-11-14).** (1) **Name and home of the display loader.**
       `abilities/loadShippedDisplayContent` is exported as `loadDisplayContent` and wraps
@@ -404,6 +409,9 @@ Reply inline (`Decision: …`).
     all four lists read, in a follow-up PR.
   - Note 2026-11-20 (PR 2a critic round 4): the meter's `bossKill` (DEC-283 (1)) is a fifth list
     by mob id; the follow-up reads it too. Scheduled with the `Boss` item of Phase 3 sprint 3.6.
+  - Note 2026-11-26 (#136 merge critic M136-2): the corner boss from #123 is in
+    `XP_SOURCES.teamKills` but in no meter list; HC-Q121 asks whether its kill fills the meter.
+    The boss record of this follow-up then holds its meter rates too.
 - [ ] **HC-Q66 — Fury's dash wind-up: five readings your answer did not settle
       (`feat/vanguard-kit`, 2026-11-20; DEC-283 (5)).** Built one way and tested; nothing waits on
       the answer. You picked "The Legend stands still 0.3 s while the rings close in, then dashes
@@ -446,6 +454,35 @@ Reply inline (`Decision: …`).
       Also noted, acceptable: only an ability's top-level steps may wait (05 §3 says every spec
       may); no content needs nested delays, and the `Delayed<Step>` type refuses them.
       Keep all six, or name the ones to change?
+- [ ] **HC-B52 — Three findings from the PR #136 critics after DEC-380: two built, one planned
+      (`feat/vanguard-kit`, 2026-11-26; DEC-380 critic D380-2 and D380-9, merge critic M136-5).**
+      (1) **After a Duel round, only the Legend that died gets its abilities back (built).**
+      FR-117: abilities other than the ultimate "reset to fully cooled down upon death".
+      `DuelRoundSystem` now does this for each fallen seat. The survivor keeps its cooldowns, and
+      both keep their ultimate meters (DEC-295 (1)). Keep it, or give both Legends their
+      abilities back at each round (HC-Q55 has the same note)?
+      (2) **One record for the Duel's level and meter rules (built, better than the design).**
+      `DUEL_RULES.progression` (`DuelProgressionRules`) holds the max-level start and the
+      ultimate's start share, and `ProgressionSystem` reads it as `ProgressionContent.duel`. A
+      new Duel progression rule is one more field there: `feat/legend-level-damage` adds
+      `hasMatchXp` to it when it merges. 05 §13 and the doc 12 Duel note now name it. Keep it,
+      or undo it?
+      (3) **A Legend's statuses end when it dies (planned, better than the design).** Today
+      `LegendReset` removes them without events when the Legend returns, so Fury does not end
+      "at death" as its text says, and two places empty the `granted` slot. Better:
+      `RespawnSystem` ends the dying Legend's statuses through `StatusEffectApplier` (one
+      `endAll`), so each end emits `status-expired`, and `LegendReset` loses its loop and
+      `hold(null)`. It touches every death, so it goes in a small follow-up PR after #136, not
+      in #136 (DEC-380 (2) must be in the MVP tonight). Build it in that follow-up, or leave it?
+- [ ] **HC-Q121 — Does killing the corner boss fill your ultimate meter? (`feat/vanguard-kit`,
+      2026-11-26; merge critic M136-2).** You kill the corner boss and your ultimate meter gains
+      1 point of 100; the capture point boss fills it. The corner boss came with #123 (DEC-236,
+      DEC-296). The meter's boss lists (`content/progression/ultimateCharge.ts`: `bossKill`,
+      `bossDamagePerPercent`) name only the capture point boss, so the corner boss counts as a
+      heavy camp mob (DEC-273). DEC-283 (1) says "killing a boss fills your ultimate meter".
+      Options: (A) like the capture point boss: a kill fills the meter, and each 1% of its
+      health gives 1 point; (B) keep it as a heavy camp mob; (C) a kill fills the meter, and
+      damage gives nothing. Recommendation: A. No number is added until you answer.
 
 - [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only

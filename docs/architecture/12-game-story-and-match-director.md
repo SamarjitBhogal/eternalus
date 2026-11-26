@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -474,6 +474,13 @@ this note left as generated (mobs, objectives, the crystal, the Cathedral's entr
 2026-11-25 note below; FR-115's inert world beyond that is not built. Every Legend enters a Duel at
 its level curve's cap (`DUEL_RULES.legendsStartAtMaxLevel`, SCRUM-444; `ProgressionSystem` raises
 it when it spawns); only Legends are raised.
+
+Update, 2026-11-26 (`feat/vanguard-kit`, #136, DEC-380 (1)): a Duel's progression rules are one
+slice, `DUEL_RULES.progression` (`DuelProgressionRules`): the max-level start above
+(`legendsStartAtMaxLevel`) and the ultimate meter's start share (`ultimateStartCharge`, half a
+meter, paid when each Legend spawns; FR-059's list of sources is under revision for it). The round
+reset keeps both meters (DEC-295 (1)) and readies the fallen Legend's other abilities (FR-117);
+the survivor keeps its cooldowns.
 
 Implementation status, 2026-11-25 (branch `feat/duel-arena-only-legends`; the owner's feedback on
 the Duel demo of 2026-11-20, Jira SCRUM-445, SCRUM-446 and SCRUM-450, and the owner's answers

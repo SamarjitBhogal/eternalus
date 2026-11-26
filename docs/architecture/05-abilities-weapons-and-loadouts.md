@@ -412,7 +412,8 @@ Stronghold's bonus shrinks with the share of its team's BuffTowers that have fal
 the bonus and the aura radius live in `content/abilities/aetherRegen.ts`. The ultimate uses
 `charge` instead: it fills from kills, assists and objective damage, never passively, and loses
 a small `N%` on death
-(`TUNE`, game doc). The numbers are one typed record in `content/progression/ultimateCharge.ts`
+(`TUNE`, game doc). A match mode can also give each Legend a start share of the meter as it spawns
+(a Duel's half meter, DEC-380 (1); FR-059's list of sources is under revision for it). The numbers are one typed record in `content/progression/ultimateCharge.ts`
 (its type in `content/progression/progression.types.ts`), priced by the `UltimateCharge` helper
 that `ProgressionSystem` owns, the only writer of `charge` (DEC-283 (3), HC-B7):
 
@@ -803,14 +804,16 @@ export type LevelScalingDefinition = {
 `ProgressionSystem` listens to `entity-died` and `structure-destroyed`, and its `UltimateCharge`
 helper to `entity-died`, `damage-applied` (objective damage), `checkpoint-reached` and
 `assist-earned` (scoring's assist window, so the meter keeps no window of its own; DEC-283 (3),
-HC-B7). It defers the awards to its own pass, applies XP from
+HC-B7), and, in a mode with a start share, `entity-spawned`. It defers the awards to its own pass, applies XP from
 `content/progression/xpSources.ts` (per-source amounts, share radius, damage bias;
 `Recommendation:` balancing.md), emits `level-up { entityId, level }`, raises the `Health` base
 max and `Abilities.maxAether` by the class's `LevelScalingDefinition`, and pays the ultimate
 meter from the `UltimateChargeDefinition` record (§6). Ability potency is read at cast time (`CastContext.potency`), so
 `AbilitySystem` needs no listener. A match mode can start every Legend at its curve's cap
-(`ProgressionContent.legendsStartAtMaxLevel`, a Duel's rule): `ProgressionSystem` raises each Legend
-as it spawns, with the same per-level raises, and announces no award. The **ability tree** (post-MVP, D12) is an extension point,
+and with a share of its ultimate meter (`ProgressionContent.duel`, the Duel's one
+`DUEL_RULES.progression` slice, so a new Duel progression rule is one more field there):
+`ProgressionSystem` raises each Legend as it spawns, with the same per-level raises, and announces
+no award; `UltimateCharge` pays the share with the cause `start` (DEC-380 (1)). The **ability tree** (post-MVP, D12) is an extension point,
 not a design: an `AbilityUpgradeDefinition` (`{ id, abilityId, tier, unlockLevel, patches }`) is
 applied by `AbilityRegistry.resolve` exactly like a variety, `Progression.upgradeIds` records the
 choice, and an `upgrade-ability` command carries the `near-structure` restriction from §5; "only
@@ -1162,9 +1165,10 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   first one built. `content/abilities/fury.ts` (targeting `self`, one `buff` step) puts the status
   `content/status-effects/fury.ts` on the caster: 8 s, `refresh`, `attackSpeed` × 3 and
   `damageDealt` × 1.5, a 1 m knock-back on each basic hit, and the dash
-  `content/abilities/furyDash.ts` on Space while it lasts (numbers `TUNE`, `balancing.md`). It
-  ends at death (the fallen Legend is removed) or at a Duel round reset, where `DuelRoundSystem`
-  ends each status through the match's `StatusEffectApplier`. Where the code differs from §3, §6, §8 and §15
+  `content/abilities/furyDash.ts` on Space while it lasts (numbers `TUNE`, `balancing.md`). After
+  a death it stays on the withdrawn Legend until `LegendReset` removes it before the return
+  (FR-051; INBOX HC-B52 (3) plans to end it at death, with its event); at a Duel round reset
+  `DuelRoundSystem` ends each status through the match's `StatusEffectApplier`. Where the code differs from §3, §6, §8 and §15
   (better-than-design items the owner signed off, DEC-283 (4)):
   - **`buff` effect.** `BuffEffect` applies its status to the caster only, credited to the
     caster. It has no `shape` yet (§3 lists one): every buff built so far is on self. Imbue's
