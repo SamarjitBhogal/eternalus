@@ -68,10 +68,11 @@ import { SystemPipeline } from './SystemPipeline';
  * steering, combat, map destruction, progression (kill XP), minion veterancy, structure losses and
  * breakability, spawning (none in a Duel, SCRUM-445), enraging, the Duel round (a Duel only: it
  * heals and moves a fallen Duel Legend before death), out-of-combat healing (DEC-188), respawn
- * (queues the dead Legends, FR-051), death, capture points, the Cathedral gem (none in a Duel), zone
- * level-ups, minion levels (after every level source), the match director, then invariants last. Combat runs after movement, so a unit with a target in reach
- * faces it, not its own way (DEC-192). This is the one place a system is added, at its position in
- * the tick (architecture 02 §9).
+ * (queues the dead Legends, FR-051), death, capture points, the Cathedral gem (none in a Duel),
+ * zone level-ups, minion levels (after every level source), the match director, then invariants
+ * last. Combat runs after movement, so a unit with a target in reach faces it, not its own way
+ * (DEC-192). This is the one place a system is added, at its position in the tick (architecture
+ * 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status effects
  * loaded for this match's config) and hands them to the systems that need them, so a damage step
  * applies to every hit and every status event comes from one place.

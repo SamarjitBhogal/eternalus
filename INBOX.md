@@ -293,9 +293,10 @@ Reply inline (`Decision: …`).
       `selectIsDuel`), and `pressPauseMenuKey` takes them as one named object
       (`{ isAiming, isDuel }`). New tests: an aimed ability in a Duel only cancels the aim; and,
       through the hook in a browser test, Esc first cancels the aim, then opens the leave
-      confirmation. A swap of the two values now fails a test. No design text changes: doc 13
-      does not name the hook's inputs. Approve, or say to revert to the smaller fix (one test,
-      no signature change).
+      confirmation. A swap of the two values now fails a test. No design rule changes. Doc 13's
+      `MatchScreen` row now names what the screen and its pause key read (`selectAimingSlot`,
+      `selectIsDuel`) and the `cancel-aim` intent; the row named neither before. Approve, or say
+      to revert to the smaller fix (one test, no signature change).
 
 - [ ] **`feat/duel-arena-only-legends` (PR #145, SCRUM-445, SCRUM-446, SCRUM-447, SCRUM-450):
       one owner item left.** Q1 and Q2 are answered and built: DEC-348 (2026-11-23: no
