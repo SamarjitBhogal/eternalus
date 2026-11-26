@@ -19,11 +19,13 @@ export const TOWER_ORB = {
     mass: 0.05, // Required by `MovementProfile`; flight does not read it, any positive value
   },
   // TUNE: no reference value. The cap is the tower's reach from its centre (an orb starts there)
-  // plus a lead margin: the aim point leads a moving target, so it can lie past the reach. About
-  // 14 m covers the lead on a fast Legend over the longest flight (30 m at 20 m/s, 1.5 s) and the launch
-  // delay. The shot flies only as far as its aim point (`isArc`).
-  range: LANE_TOWER_REACH_FROM_CENTRE + 14,
-  slowFrom: LANE_TOWER_REACH_FROM_CENTRE + 14, // equal to range: an orb flies at full speed until it lands
+  // plus a lead margin: the aim point leads a moving target, so it can lie past the reach. The
+  // worst case is the fastest Legend (the Sentinel, 9 m/s) running straight away from the edge of
+  // the reach: `predictiveAim` with the launch delay puts that aim point about 20.9 m past the
+  // reach, so the margin is 21 m (pinned in `TurretController.laneTower.test.ts`). The shot flies
+  // only as far as its aim point (`isArc`).
+  range: LANE_TOWER_REACH_FROM_CENTRE + 21,
+  slowFrom: LANE_TOWER_REACH_FROM_CENTRE + 21, // equal to range: an orb flies at full speed until it lands
   isArc: true, // DEC-366 (cards "ORB flight" and "ORB flight over cliffs"): it flies over walls and units
   endDuration: 0.5, // TUNE: no reference value; seconds, the burst's look
 } as const satisfies ProjectileDefinition;
