@@ -16,7 +16,7 @@ import type { Team } from '../teams/teams.types';
 import { isPointInAnyPolygon } from '../utils/geometry';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { AreaHitQuery } from './AreaHitQuery';
-import type { AreaAim, HitArea } from './AreaHitQuery.types';
+import type { AreaAim, HitArea, ShotStopBody } from './AreaHitQuery.types';
 import { EntityStore } from './EntityStore';
 
 /** How a test body is built: its place, team, family, outline and whether it takes damage. */
@@ -109,6 +109,19 @@ const setUp = (attackerAt: Vec2 = { x: -2, y: 0 }) => {
     query.find(entities, attacker.id, area, aim, { team: 'enemies' });
   return { entities, add, attacker, query, find };
 };
+
+/** A light shot from the attacker, aimed at `targetId` or at no body. */
+const shotAt = (targetId: string | null = null) =>
+  ({ ownerId: 'attacker', team: 'light', targetId }) as const;
+
+/** What `ProjectileSystem` and `LineOfFire` hand the shot rule for a body. */
+const shotBodyOf = (entities: EntityStore, entity: Entity): ShotStopBody => ({
+  entity,
+  health: entity.getComponent(Health),
+  membership: entity.findComponent(TeamMembership),
+  outline: entities.outlineOf(entity.id) ?? null,
+  collider: entity.findComponent(Collider),
+});
 
 describe('AreaHitQuery.find', () => {
   it('asks a circle body by its circle and an outline body by each polygon, with the body id', () => {
@@ -360,8 +373,6 @@ describe('AreaHitQuery.aimedBodyOf', () => {
 });
 
 describe('AreaHitQuery.stopsShot', () => {
-  const shotAt = (targetId: string | null = null) =>
-    ({ ownerId: 'attacker', team: 'light', targetId }) as const;
   const stops = (
     { entities, add }: ReturnType<typeof setUp>,
     id: string,
@@ -369,13 +380,7 @@ describe('AreaHitQuery.stopsShot', () => {
     targetId: string | null = null,
   ): boolean => {
     const entity = add(id, spec);
-    return AreaHitQuery.stopsShot(entities, shotAt(targetId), {
-      entity,
-      health: entity.getComponent(Health),
-      membership: entity.findComponent(TeamMembership),
-      outline: entities.outlineOf(id) ?? null,
-      collider: entity.findComponent(Collider),
-    });
+    return AreaHitQuery.stopsShot(entities, shotAt(targetId), shotBodyOf(entities, entity));
   };
 
   it('stops a shot on a live enemy or teamless body, one that takes no damage too, and not on its owner or an ally (DEC-317 addendum)', () => {
@@ -391,13 +396,7 @@ describe('AreaHitQuery.stopsShot', () => {
       AreaHitQuery.stopsShot(
         scene.entities,
         { ...shotAt(), team: 'dark' },
-        {
-          entity: owner,
-          health: owner.getComponent(Health),
-          membership: undefined,
-          outline: null,
-          collider: owner.findComponent(Collider),
-        },
+        shotBodyOf(scene.entities, owner),
       ),
     ).toBe(false);
   });
@@ -433,22 +432,10 @@ describe('AreaHitQuery.stopsShot', () => {
     expect(stops(scene, 'aimed-floor', floor, 'aimed-floor')).toBe(true);
     const dead = scene.add('dead', { at: { x: 3, y: 0 }, team: 'dark' });
     dead.getComponent(Health).applyDamage(1000);
-    const body = {
-      entity: dead,
-      health: dead.getComponent(Health),
-      membership: undefined,
-      outline: null,
-      collider: dead.findComponent(Collider),
-    };
+    const body = shotBodyOf(scene.entities, dead);
     expect(AreaHitQuery.stopsShot(scene.entities, shotAt(), body)).toBe(false);
     const removed = scene.add('removed', { at: { x: 3, y: 0 }, team: 'dark' });
-    const removedBody = {
-      entity: removed,
-      health: removed.getComponent(Health),
-      membership: undefined,
-      outline: null,
-      collider: removed.findComponent(Collider),
-    };
+    const removedBody = shotBodyOf(scene.entities, removed);
     scene.entities.remove(removed.id, 'dev-removed');
     expect(AreaHitQuery.stopsShot(scene.entities, shotAt(), removedBody)).toBe(false);
   });
@@ -465,13 +452,7 @@ describe('AreaHitQuery.stopsShot', () => {
     const polygonsFor = (id: string, targetId: string | null) => {
       const entity = scene.entities.get(id);
       if (entity === undefined) throw new Error(`no ${id}`);
-      return AreaHitQuery.shotPolygonsOf(shotAt(targetId), {
-        entity,
-        health: entity.getComponent(Health),
-        membership: entity.findComponent(TeamMembership),
-        outline: scene.entities.outlineOf(id) ?? null,
-        collider: entity.findComponent(Collider),
-      });
+      return AreaHitQuery.shotPolygonsOf(shotAt(targetId), shotBodyOf(scene.entities, entity));
     };
 
     expect(stops(scene, 'stronghold', spec)).toBe(true);
@@ -518,17 +499,6 @@ describe('AreaHitQuery: the shot rule on the seed 1 map (Q104-9, merge of #169)'
     if (footprint === undefined) throw new Error('No footprint');
     return footprint;
   };
-  /** A light shot from the attacker, aimed at `targetId` or at no body. */
-  const shotAt = (targetId: string | null) =>
-    ({ ownerId: 'attacker', team: 'light', targetId }) as const;
-  /** What `ProjectileSystem` and `LineOfFire` hand the shot rule for a body. */
-  const shotBodyOf = (entities: EntityStore, entity: Entity) => ({
-    entity,
-    health: entity.getComponent(Health),
-    membership: entity.findComponent(TeamMembership),
-    outline: entities.outlineOf(entity.id) ?? null,
-    collider: entity.findComponent(Collider),
-  });
 
   it('stops a shot not aimed at the Stronghold on its outer walls and throne, also when its outline holds a walk-on floor', () => {
     const { entities, add } = setUp(eastOf(OUTER_WALL, 5));
