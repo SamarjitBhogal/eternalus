@@ -281,12 +281,7 @@ export class Simulation {
           curves,
           xpSources: XP_SOURCES,
           ultimateCharge: ULTIMATE_CHARGE,
-          ...(duel === undefined
-            ? {}
-            : {
-                legendsStartAtMaxLevel: DUEL_RULES.legendsStartAtMaxLevel,
-                ultimateStartCharge: DUEL_RULES.ultimateStartCharge,
-              }),
+          ...(duel === undefined ? {} : { duel: DUEL_RULES.progression }),
         },
         director,
         abilities: registry,

@@ -1,4 +1,4 @@
-import type { DuelArenaRules } from './duelRules.types';
+import type { DuelArenaRules, DuelProgressionRules } from './duelRules.types';
 
 /**
  * The Duel arena: only the two Legends in a closed Cathedral whose walls cannot break, its gem
@@ -33,6 +33,12 @@ const DUEL_ARENA: DuelArenaRules = {
   unbreakableCathedralKinds: ['wall'], // DEC-348 (2)
 };
 
+/** How a Duel changes levels and the ultimate meter. */
+const DUEL_PROGRESSION: DuelProgressionRules = {
+  legendsStartAtMaxLevel: true, // SCRUM-444
+  ultimateStartCharge: 0.5, // TUNE: DEC-380 (1): "starts half-charged"
+};
+
 /** The online Duel's rules (ADR 0016, DEC-36, FR-115). */
 export const DUEL_RULES = {
   /** Kills that win a Duel. TUNE: the owner's "always the minimum" of 10 or 20. */
@@ -43,14 +49,6 @@ export const DUEL_RULES = {
   startOffset: 50, // TUNE: inside the transept, outside the capture floor (radius 31)
   /** What of the normal match's world a Duel keeps. */
   arena: DUEL_ARENA,
-  /**
-   * Every Legend enters a Duel at its level curve's cap (SCRUM-444). Only Legends are raised; a
-   * mob added from the developer menu keeps its normal level.
-   */
-  legendsStartAtMaxLevel: true,
-  /**
-   * The share of a full ultimate meter each Legend starts a Duel with (DEC-380 (1): "starts
-   * half-charged"); its other abilities start ready, as everywhere (no cooldown before a cast).
-   */
-  ultimateStartCharge: 0.5, // TUNE: DEC-380 (1)
+  /** How a Duel changes levels and the ultimate meter (`ProgressionSystem`). */
+  progression: DUEL_PROGRESSION,
 } as const;

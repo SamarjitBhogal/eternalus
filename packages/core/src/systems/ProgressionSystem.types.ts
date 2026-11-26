@@ -1,4 +1,5 @@
 import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { DuelProgressionRules } from '../content/duel/duelRules.types';
 import type {
   LevelCurveDefinition,
   UltimateChargeDefinition,
@@ -18,15 +19,12 @@ export type ProgressionContent = {
   /** The ultimate meter's fill table (`content/progression/ultimateCharge.ts`). */
   readonly ultimateCharge: UltimateChargeDefinition;
   /**
-   * When set, every Legend that spawns starts at its curve's cap, its health and aether raised by
-   * each level (a Duel, `DUEL_RULES.legendsStartAtMaxLevel`, SCRUM-444). Mobs are untouched.
+   * A Duel's progression rules (`DUEL_RULES.progression`): each Legend that spawns starts at its
+   * curve's cap, its health and aether raised by each level (SCRUM-444; mobs are untouched), and
+   * with its ultimate meter at the start share (DEC-380 (1)). Absent in an ordinary match: a
+   * Legend starts at level 1 with an empty meter.
    */
-  readonly legendsStartAtMaxLevel?: boolean;
-  /**
-   * When set, every Legend that spawns starts with its ultimate meter at this share of a full
-   * meter, 0 to 1 (a Duel, `DUEL_RULES.ultimateStartCharge`, DEC-380 (1)); otherwise at 0.
-   */
-  readonly ultimateStartCharge?: number;
+  readonly duel?: DuelProgressionRules;
 };
 
 /** One kill waiting for this system's pass. */

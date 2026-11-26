@@ -44,7 +44,7 @@ export class UltimateCharge {
    * @param state - The match whose kills, hits, checkpoints and assists fill the meters.
    * @param table - The points of each source (`content/progression/ultimateCharge.ts`).
    * @param startCharge - The share of a full meter each spawned Legend starts with
-   *   (`ProgressionContent.ultimateStartCharge`); none when omitted.
+   *   (`DuelProgressionRules.ultimateStartCharge`); none when omitted.
    */
   public constructor(
     state: GameState,
@@ -52,9 +52,9 @@ export class UltimateCharge {
     startCharge?: number,
   ) {
     if (startCharge !== undefined) {
-      // ponytail: every spawn pays it. A Duel has no respawn (its round reset keeps the Legend in
-      // the store), so that is each Legend's one spawn. A mode with respawns and a start share
-      // needs a first-spawn guard here, as a respawn keeps its charge (DEC-295 (1)).
+      // ponytail: every spawn pays it. The two seated Legends of a Duel never respawn (its round
+      // reset keeps them in the store), so that is each one's one spawn. A mode with respawns and a
+      // start share needs a first-spawn guard here, as a respawn keeps its charge (DEC-295 (1)).
       state.events.on('entity-spawned', ({ entityId }) => {
         this.queue(state, entityId, startCharge * table.fullMeter, 'start');
       });

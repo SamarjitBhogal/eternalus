@@ -34,3 +34,20 @@ export type DuelArenaRules = {
    */
   readonly unbreakableCathedralKinds: readonly MapObjectKind[];
 };
+
+/**
+ * How a Duel changes levels and the ultimate meter, read by `ProgressionSystem` as one slice
+ * (`ProgressionContent.duel`), so a new Duel progression rule is one more field here.
+ */
+export type DuelProgressionRules = {
+  /**
+   * Every Legend enters a Duel at its level curve's cap (SCRUM-444). Only Legends are raised; a
+   * mob added from the developer menu keeps its normal level.
+   */
+  readonly legendsStartAtMaxLevel: boolean;
+  /**
+   * The share of a full ultimate meter each Legend starts a Duel with, 0 to 1 (DEC-380 (1)); its
+   * other abilities start ready, as everywhere (no cooldown before a cast).
+   */
+  readonly ultimateStartCharge: number;
+};

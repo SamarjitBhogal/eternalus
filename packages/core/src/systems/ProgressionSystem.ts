@@ -23,7 +23,7 @@ import { UltimateCharge } from './UltimateCharge';
  * the cap leaves nothing to pay gets no award. Self-kills and ally kills pay nothing (O5). Each
  * level gained raises max health by the class's share of its base health (O3) and max aether,
  * heals and refills by the raise only while the Legend is alive (O4), and emits `level-up`.
- * With `content.legendsStartAtMaxLevel` (a Duel, SCRUM-444) each Legend that spawns is raised to its
+ * With `content.duel.legendsStartAtMaxLevel` (SCRUM-444) each Legend that spawns is raised to its
  * curve's cap at once, with the same per-level raises; that start is no award, so it emits no
  * `xp-gained` and no `level-up`.
  * A Legend waiting to respawn (`state.respawns`) is owed what it earns meanwhile: its team's
@@ -49,7 +49,11 @@ export class ProgressionSystem implements System {
     state: GameState,
     private readonly content: ProgressionContent,
   ) {
-    this.charges = new UltimateCharge(state, content.ultimateCharge, content.ultimateStartCharge);
+    this.charges = new UltimateCharge(
+      state,
+      content.ultimateCharge,
+      content.duel?.ultimateStartCharge,
+    );
     state.events.on('entity-died', ({ entityId, killer }) => {
       const victim = state.entities.get(entityId);
       const killerId = killer.attackerId;
@@ -102,7 +106,7 @@ export class ProgressionSystem implements System {
         });
       }
     });
-    if (content.legendsStartAtMaxLevel === true) {
+    if (content.duel?.legendsStartAtMaxLevel === true) {
       state.events.on('entity-spawned', ({ entityId }) => {
         const entity = state.entities.get(entityId);
         if (entity !== undefined) {
