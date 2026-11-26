@@ -4,15 +4,17 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { LEGEND_CLASSES } from './legends/legendCatalogue';
 import { loadDefaultContent } from './loadDefaultContent';
 import { MOB_DEFINITIONS } from './mobs/mobCatalogue';
+import { MONARCH } from './sovereigns/monarch';
 import { UnknownDefinitionError } from './UnknownDefinitionError';
 
 const TICK_RATE = createDefaultGameConfig().tickRate;
 
 describe('loadDefaultContent', () => {
-  it('holds every Legend class and then every mob (the training dummy), once each', () => {
+  it('holds every Legend class, mob and Monarch once each', () => {
     expect(loadDefaultContent(TICK_RATE).ids).toEqual([
       ...LEGEND_CLASSES.ids,
       ...MOB_DEFINITIONS.ids,
+      MONARCH.id,
     ]);
   });
 

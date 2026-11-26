@@ -22,7 +22,7 @@ export type MovementProfile = {
 export type MovementStrategyId = 'lane-follow' | 'leashed-chase';
 
 /** How an attack is carried out; one `AttackStrategy` per id in `entities/strategies/defaultStrategyRegistry.ts`. */
-export type AttackStrategyId = 'melee';
+export type AttackStrategyId = 'melee' | 'cleave';
 
 /**
  * A unit's basic attack (architecture 05 §10, `WeaponAttack`). All values must be positive.

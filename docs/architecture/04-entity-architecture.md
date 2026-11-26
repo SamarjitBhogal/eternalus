@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-26
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -44,6 +44,7 @@ classDiagram
   class Legend { <<abstract>> }
   class Mob { <<abstract>> }
   class Boss { <<abstract>> }
+  class Sovereign { <<abstract>> }
   class Structure { <<abstract>> }
   class Zone { <<abstract>> }
   Entity <|-- Unit
@@ -54,6 +55,7 @@ classDiagram
   Unit <|-- Legend
   Unit <|-- Mob
   Unit <|-- Boss
+  Unit <|-- Sovereign
   Legend <|-- Warrior
   Legend <|-- Sentinel
   Legend <|-- Magus
@@ -62,6 +64,7 @@ classDiagram
   Mob <|-- HeavyMob
   Boss <|-- MiniBoss
   Boss <|-- GreaterBoss
+  Sovereign <|-- Monarch
   Structure <|-- Stronghold
   Structure <|-- SpawnerTower
   Structure <|-- BuffTower

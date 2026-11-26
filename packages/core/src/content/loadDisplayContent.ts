@@ -18,7 +18,7 @@ import type { MapFeatureKind } from './maps/maps.types';
 import { VERDICT_LINES } from './narrative/verdictLines';
 import type { VerdictLines } from './narrative/verdictLines.types';
 import { PROFILE_DISPLAY_NAME } from './profile/profileDisplayName';
-import { SOVEREIGN_DISPLAY_NAMES } from './sovereigns/sovereignDisplayNames';
+import { MONARCH } from './sovereigns/monarch';
 import { BOT_ROSTER } from './teams/botRoster';
 import type { BotRosterDefinition } from './teams/botRoster.types';
 import { TEAM_DISPLAY_NAMES } from './teams/teamDisplayNames';
@@ -98,6 +98,6 @@ export const loadDisplayContent = ({
     profileDisplayName: PROFILE_DISPLAY_NAME,
     botRoster,
     verdictLines: VERDICT_LINES,
-    sovereignNames: SOVEREIGN_DISPLAY_NAMES,
+    sovereignNames: MONARCH.displayNames,
   };
 };

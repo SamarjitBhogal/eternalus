@@ -5,6 +5,7 @@ import { MOB_DEFINITIONS } from '../content/mobs/mobCatalogue';
 import { BossMinionDamageStep } from './BossMinionDamageStep';
 import { FriendlyFireStep } from './FriendlyFireStep';
 import { MinionStrengthStep } from './MinionStrengthStep';
+import { SovereignProtectionStep } from './SovereignProtectionStep';
 import { StatusModifierStep } from './StatusModifierStep';
 
 /**
@@ -13,6 +14,7 @@ import { StatusModifierStep } from './StatusModifierStep';
  */
 export const createDefaultDamageSteps = (): readonly DamageStep[] => [
   new BreakabilityStep(),
+  new SovereignProtectionStep(),
   new FriendlyFireStep(),
   new StatusModifierStep(),
   new MinionStrengthStep(MINION_STRENGTH),

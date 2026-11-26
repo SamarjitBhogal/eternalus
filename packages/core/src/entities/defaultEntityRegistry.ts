@@ -7,6 +7,7 @@ import { LightMob } from './mobs/LightMob';
 import { MediumMob } from './mobs/MediumMob';
 import { Obstacle } from './Obstacle';
 import { Projectile } from './Projectile';
+import { Monarch } from './sovereigns/Monarch';
 import { BuffTower } from './structures/BuffTower';
 import { Camp } from './structures/Camp';
 import { CathedralGem } from './structures/CathedralGem';
@@ -27,6 +28,7 @@ export const createDefaultEntityRegistry = (): EntityRegistry => {
   registry.register('light-mob', LightMob);
   registry.register('medium-mob', MediumMob);
   registry.register('heavy-mob', HeavyMob);
+  registry.register('monarch', Monarch);
   registry.register('obstacle', Obstacle);
   registry.register('projectile', Projectile);
   registry.register('stronghold', Stronghold);

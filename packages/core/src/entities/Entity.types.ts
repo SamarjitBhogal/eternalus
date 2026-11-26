@@ -6,4 +6,4 @@ export type ComponentType<T extends object = object> = abstract new (...args: ne
 
 /** The families an entity can belong to. Each family has one abstract class under `Entity`. */
 export type EntityFamily =
-  'legend' | 'mob' | 'boss' | 'structure' | 'zone' | 'obstacle' | 'projectile';
+  'legend' | 'mob' | 'boss' | 'sovereign' | 'structure' | 'zone' | 'obstacle' | 'projectile';
