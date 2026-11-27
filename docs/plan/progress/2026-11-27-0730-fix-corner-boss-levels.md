@@ -11,7 +11,7 @@ tags: [plan, progress, log]
 # Progress 2026-11-27: fix/corner-boss-levels (DEC-402, DEC-403)
 
 Phase 3 / owner answers v103 · fix/corner-boss-levels (from `phase/3-sprint-3-work` at
-`e8250d6b`) · Sam Holtzman + Claude Code (GAME-LOOP-AND-POST-GAME-71, -72)
+`e8250d6b`) · Sam Holtzman + Claude Code (GAME-LOOP-AND-POST-GAME-71, -72, -73)
 
 - What was done: the owner's answer on HC-B58 ("A: the corner boss levels, like the other
   neutral mobs") is DEC-402. The `corner-camp` guard plan in `content/structures/guardPlans.ts`
@@ -30,3 +30,6 @@ Phase 3 / owner answers v103 · fix/corner-boss-levels (from `phase/3-sprint-3-w
 - Next step: after #129 merges, merge phase/3 into this branch, move INBOX HC-B47 (it is on
   #129 only) to _Done_ with "Decision: DEC-403", and add one DEC-403 sentence to the Cathedral
   gem note in architecture 07, so the next gem PR finds it.
+- Done after #129 merged (phase/3 `f801af9a`, merged into this branch with no conflicts): INBOX
+  HC-B47 is answered (DEC-403), and the architecture 07 Cathedral gem note has the DEC-403
+  sentence. Next: the next gem PR builds DEC-403.

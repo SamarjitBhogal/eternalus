@@ -2835,7 +2835,7 @@ Reply inline (`Decision: …`).
     should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has
     no rosters" is a type fact. For doc-gardening: the folder table of architecture 02 has no row
     for `game/duel/` and `game/engine/net/`, which import `@eternalus/protocol` (#97).
-- [ ] **HC-B47 — #129 merge critic: the Cathedral gem could find its zone by the map feature, not
+- [x] **HC-B47 — #129 merge critic: the Cathedral gem could find its zone by the map feature, not
       by position (`refactor/map-feature-link`; DEC-139).** The player sees no change today. The
       gem glows in the colour of the team that holds the Cathedral. To find that team, the gem
       looks for the capture zone whose area covers the gem's position. After #129, the gem and
@@ -2846,6 +2846,9 @@ Reply inline (`Decision: …`).
       `MapFeatureLink`. Not built on #129, because the gem code is #132's. Build it in the next
       PR that changes the gem (the Duel gem follow-up, DEC-346), or keep the position test?
       Recommendation: build it then; it is the identity rule of DEC-231.
+  - Answered 2026-11-27 (Owner Calls page v103, DEC-403): "A: build it in the next gem PR
+    (recommended)". Not built yet: the next PR that changes the gem (the Duel gem follow-up,
+    DEC-346) matches the zone by its `MapFeatureLink`.
 - [x] **HC-Q60 — GL-16 critic round 5: one better-than-design item (`refactor/map-feature-link`;
       DEC-139).** The critic approved the DEC-255 build. `FeatureKeyedGroup` lived in the
       invariant's companion file, so the client depended on a diagnostic, not on the snapshot
