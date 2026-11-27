@@ -3,9 +3,10 @@ import { MapObjectBody } from '../components/MapObjectBody';
 import { TeamMembership } from '../components/TeamMembership';
 import type { MapObject, MapObjectSnapshot } from '../content/maps/mapObjects.types';
 import type { WorldObjectRecord, WorldObjectStoreOptions } from './WorldObjectStore.types';
-import type { Vec2 } from '../utils/geometry.types';
+import type { Rect, Vec2 } from '../utils/geometry.types';
 import { doesCircleOverlapPolygon, isCircleInsidePolygon } from '../utils/circlePolygon';
 import { boundsOf, isPointInBlockingArea } from '../utils/geometry';
+import { BLOCKING_CELL_SIZE } from './WorldObjectStore.constants';
 
 /** Owns placed-object identity and persistent destroyed state after DeathSystem retires entities. */
 export class WorldObjectStore {
@@ -17,6 +18,15 @@ export class WorldObjectStore {
 
   /** A standing structure's id → the index of the record of the map object that is its body. */
   private readonly owned = new Map<string, number>();
+
+  /**
+   * The search grid of `blockingAt`: a cell's key → the indexes of the records whose box touches
+   * the cell, in placement order. A search reads only the cells that its circle touches.
+   */
+  private readonly cells = new Map<string, number[]>();
+
+  /** How many records `cells` indexes. `blockingAt` rebuilds the grid when the count changes. */
+  private indexedCount = 0;
 
   /**
    * Spawns physical objects through the existing registry/factory; terrain has no health entity.
@@ -112,30 +122,87 @@ export class WorldObjectStore {
    *   shot (DEC-334).
    */
   public blockingAt(point: Vec2, radius: number, launch?: Vec2): string | null {
-    for (const { object, entityId, health, bounds } of this.records) {
-      if (
-        point.x + radius < bounds.x ||
-        point.x - radius > bounds.x + bounds.width ||
-        point.y + radius < bounds.y ||
-        point.y - radius > bounds.y + bounds.height ||
-        !object.isBlocking ||
-        this.destroyed.has(object.id) ||
-        // A structure's body (a fort, a pylon) outlives the structure (`removed`), so only an
-        // object's own death counts.
-        (health?.isDead === true && !this.owned.has(entityId ?? '')) ||
-        object.passages?.some((shape) => isCircleInsidePolygon(point, radius, shape)) === true
-      )
-        continue;
-      if (
-        object.footprints.some(
-          (shape) =>
-            doesCircleOverlapPolygon(point, radius, shape) &&
-            (launch === undefined || !isPointInBlockingArea(launch, shape, object.passages)),
-        )
-      )
-        return object.id;
+    const cells = this.grid();
+    const box = { x: point.x - radius, y: point.y - radius, width: 2 * radius, height: 2 * radius };
+    const keys = WorldObjectStore.cellKeysOf(box, cells.size);
+    if (keys === null)
+      return (
+        this.records.find((_, index) => this.blocks(index, point, radius, launch))?.object.id ??
+        null
+      );
+    let first = Infinity;
+    for (const key of keys) {
+      // A cell lists its records in placement order, so its first hit is its earliest one.
+      for (const index of cells.get(key) ?? []) {
+        if (index >= first) break;
+        if (this.blocks(index, point, radius, launch)) {
+          first = index;
+          break;
+        }
+      }
     }
-    return null;
+    return this.records[first]?.object.id ?? null;
+  }
+
+  /**
+   * The search grid, built on first use and again whenever the record count changes, so any path
+   * that adds records is covered. A record replaced in place keeps its object, so its box holds.
+   */
+  private grid(): ReadonlyMap<string, readonly number[]> {
+    if (this.indexedCount === this.records.length) return this.cells;
+    this.cells.clear();
+    this.records.forEach(({ bounds }, index) => {
+      for (const key of WorldObjectStore.cellKeysOf(bounds) ?? []) {
+        const cell = this.cells.get(key);
+        if (cell === undefined) this.cells.set(key, [index]);
+        else cell.push(index);
+      }
+    });
+    this.indexedCount = this.records.length;
+    return this.cells;
+  }
+
+  /**
+   * The keys of the grid cells that `box` touches, or `null` when it touches more than `limit`
+   * cells or a number in it is not finite. A broken position (NaN, ±Infinity; the finite-transforms
+   * invariant reports it) or a huge circle must not loop over cells without end.
+   */
+  private static cellKeysOf(box: Rect, limit = Number.MAX_SAFE_INTEGER): string[] | null {
+    const firstColumn = Math.floor(box.x / BLOCKING_CELL_SIZE);
+    const firstRow = Math.floor(box.y / BLOCKING_CELL_SIZE);
+    const lastColumn = Math.floor((box.x + box.width) / BLOCKING_CELL_SIZE);
+    const lastRow = Math.floor((box.y + box.height) / BLOCKING_CELL_SIZE);
+    if (!((lastColumn - firstColumn + 1) * (lastRow - firstRow + 1) <= limit)) return null;
+    const keys: string[] = [];
+    for (let column = firstColumn; column <= lastColumn; column += 1)
+      for (let row = firstRow; row <= lastRow; row += 1)
+        keys.push(`${String(column)}:${String(row)}`);
+    return keys;
+  }
+
+  /** Whether record `index` blocks a circle of `radius` at `point`, by the rules of `blockingAt`. */
+  private blocks(index: number, point: Vec2, radius: number, launch?: Vec2): boolean {
+    const record = this.records[index];
+    if (record === undefined) return false;
+    const { object, entityId, health, bounds } = record;
+    if (
+      point.x + radius < bounds.x ||
+      point.x - radius > bounds.x + bounds.width ||
+      point.y + radius < bounds.y ||
+      point.y - radius > bounds.y + bounds.height ||
+      !object.isBlocking ||
+      this.destroyed.has(object.id) ||
+      // A structure's body (a fort, a pylon) outlives the structure (`removed`), so only an
+      // object's own death counts.
+      (health?.isDead === true && !this.owned.has(entityId ?? '')) ||
+      object.passages?.some((shape) => isCircleInsidePolygon(point, radius, shape)) === true
+    )
+      return false;
+    return object.footprints.some(
+      (shape) =>
+        doesCircleOverlapPolygon(point, radius, shape) &&
+        (launch === undefined || !isPointInBlockingArea(launch, shape, object.passages)),
+    );
   }
 
   /** Snapshot state contains no simulation components or mutable references. */

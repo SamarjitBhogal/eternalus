@@ -7,6 +7,7 @@ import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import type { MapObject } from '../content/maps/mapObjects.types';
 import { Health } from '../components/Health';
 import type { Vec2 } from '../utils/geometry.types';
+import { BLOCKING_CELL_SIZE } from './WorldObjectStore.constants';
 
 /** A factory over every map-object definition, as the match builds it. */
 const fixtureFactory = (): EntityFactory => {
@@ -175,5 +176,67 @@ describe('WorldObjectStore', () => {
     reads = 0;
     expect(world.blockingAt({ x: 50, y: 50 }, 1)).toBeNull();
     expect(reads).toBe(0);
+  });
+
+  describe('its search grid', () => {
+    const square = (id: string, x: number, y: number, side: number): MapObject => ({
+      id,
+      kind: 'terrain',
+      isBlocking: true,
+      footprints: [
+        [
+          { x, y },
+          { x: x + side, y },
+          { x: x + side, y: y + side },
+          { x, y: y + side },
+        ],
+      ],
+    });
+    const worldOf = (...objects: MapObject[]) =>
+      new WorldObjectStore({
+        objects,
+        factory: fixtureFactory(),
+        entities: new EntityStore(),
+        definitions: MAP_OBJECT_DEFINITIONS,
+      });
+    const edge = BLOCKING_CELL_SIZE;
+
+    it('returns the earliest-placed blocker, though a later one is in a cell it reads first', () => {
+      // The circle crosses the line between two cells. The later object is in the first cell.
+      const world = worldOf(square('earlier', edge, 0, 8), square('later', edge - 8, 0, 7.5));
+
+      expect(world.blockingAt({ x: edge - 0.2, y: 4 }, 1)).toBe('earlier');
+    });
+
+    it('finds an object from every cell its box touches, at negative coordinates too', () => {
+      const world = worldOf(square('wide', -3 * edge, -3 * edge, 6 * edge));
+
+      expect(world.blockingAt({ x: -2.5 * edge, y: -2.5 * edge }, 0.5)).toBe('wide');
+      expect(world.blockingAt({ x: 2.5 * edge, y: 2.5 * edge }, 0.5)).toBe('wide');
+      expect(world.blockingAt({ x: 4 * edge, y: 0 }, 0.5)).toBeNull();
+    });
+
+    it('checks every record for a circle wider than the grid or at a broken position', () => {
+      const world = worldOf(square('rock', 0, 0, 4));
+
+      expect(world.blockingAt({ x: 2, y: 2 }, 1e9)).toBe('rock');
+      expect(world.blockingAt({ x: Number.NaN, y: 2 }, 1)).toBeNull();
+      expect(world.blockingAt({ x: Number.POSITIVE_INFINITY, y: 2 }, 1)).toBeNull();
+      expect(world.blockingAt({ x: 2, y: 2 }, Number.POSITIVE_INFINITY)).toBe('rock');
+    });
+
+    it('indexes records again when the record count changes', () => {
+      const world = worldOf(square('rock', 0, 0, 4));
+      expect(world.blockingAt({ x: 2, y: 2 }, 1)).toBe('rock');
+      // A path that adds a record after the first search (the map stack's spawns) is covered.
+      (world as unknown as { records: unknown[] }).records.push({
+        object: square('late', 3 * edge, 0, 4),
+        entityId: null,
+        health: null,
+        bounds: { x: 3 * edge, y: 0, width: 4, height: 4 },
+      });
+
+      expect(world.blockingAt({ x: 3 * edge + 2, y: 2 }, 1)).toBe('late');
+    });
   });
 });
