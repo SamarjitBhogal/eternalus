@@ -1,5 +1,7 @@
 import { Abilities } from '../components/Abilities';
 import { Aether } from '../components/Aether';
+import { Loadout } from '../components/Loadout';
+import type { HeldWeapon } from '../components/Loadout.types';
 import { Progression } from '../components/Progression';
 import type { LegendDefinition } from '../content/legends/legends.types';
 import { attacksByMode } from '../content/units/attacksByMode';
@@ -31,25 +33,39 @@ export abstract class Legend extends Unit {
   }
 
   /**
-   * Installs the unit components, then the legend-only `Aether` (MP) pool, `Progression` (XP
-   * and level) and `Abilities` (the ability bar, from the kit, and the passive, `passiveOf`).
-   * Mobs and structures have none.
+   * Installs `Loadout` (the weapons it holds: the start weapon, its spec's (DEC-387) else its
+   * class's default, and the spec's second weapon) first, so the unit components arm `Combat` with
+   * the weapon in hand; then the unit components, then the legend-only `Aether` (MP) pool,
+   * `Progression` (XP and level) and `Abilities` (the ability bar, from the kit and the spec's
+   * artifacts, and the passive, `passiveOf`). Mobs and structures have none.
    *
    * @throws Error when the context names a Legend spec but has no spec source, or a spec that
-   *   does not exist or is of another class.
+   *   does not exist or is of another class; or when it has no weapon source, or a weapon has no
+   *   attacks.
    */
   protected override installComponents(context: unknown): void {
-    super.installComponents(context);
-
     const reader = new SpawnContextReader(this);
     const { definition } = reader.placed<LegendDefinition>(context);
+    const spec = this.specOf(definition, reader, context);
+    const secondaryWeaponId = spec?.secondaryWeaponId ?? null;
+    this.addComponent(
+      new Loadout(
+        this.heldWeapon(primaryWeaponIdOf(spec, definition), definition, reader, context),
+        secondaryWeaponId === null
+          ? null
+          : this.heldWeapon(secondaryWeaponId, definition, reader, context),
+      ),
+    );
+    super.installComponents(context);
+
     this.addComponent(new Aether(definition.baseAether));
     // The id is checked at content load (`KnownLevelCurveRule`); `ProgressionSystem` resolves it.
     this.addComponent(new Progression(definition.levelCurveId));
-    // The kit's and the passive's ids are checked at content load (`KitInPoolRule`,
-    // `PassiveInOptionsRule`, `KnownAbilityRefsRule`).
-    const spec = this.specOf(definition, reader, context);
-    this.addComponent(new Abilities(kitOf(spec, definition), passiveOf(spec, definition)));
+    // The kit's, the passive's and the artifacts' ids are checked at content load
+    // (`KitInPoolRule`, `PassiveInOptionsRule`, `KnownAbilityRefsRule`).
+    this.addComponent(
+      new Abilities(kitOf(spec, definition), passiveOf(spec, definition), spec?.artifacts),
+    );
   }
 
   /**
@@ -82,16 +98,27 @@ export abstract class Legend extends Unit {
   }
 
   /**
-   * The start weapon's attack (05 §10, §12): a Legend's damage comes from its weapon. The weapon
-   * is its spec's (DEC-387), else its class's default.
-   *
-   * @throws Error when the spawn context has no weapon source, or the weapon has no attacks, or the
-   *   context names a spec that is not of this class (`specOf`).
+   * The attacks of the weapon in hand (05 §10, §12): a Legend's damage comes from its weapon. At
+   * spawn that is the start weapon, its spec's (DEC-387) else its class's default, which `Loadout`
+   * resolved once.
    */
-  protected override basicAttack(context: unknown): BasicAttack {
-    const reader = new SpawnContextReader(this);
-    const { definition } = reader.placed<LegendDefinition>(context);
-    const weaponId = primaryWeaponIdOf(this.specOf(definition, reader, context), definition);
+  protected override basicAttack(): BasicAttack {
+    return this.getComponent(Loadout).inHand;
+  }
+
+  /**
+   * The weapon `weaponId` from the spawn context's weapon source, its attacks by mode. Each melee
+   * attack's reach is the weapon's part plus the class's `meleeReach` (DEC-305); a ranged attack's
+   * is the weapon's.
+   *
+   * @throws Error when the spawn context has no weapon source, or the weapon has no attacks.
+   */
+  private heldWeapon(
+    weaponId: string,
+    definition: LegendDefinition,
+    reader: SpawnContextReader,
+    context: unknown,
+  ): HeldWeapon {
     const weapons = reader.weapons(context);
     if (weapons === null) {
       throw new Error(`Legend "${this.id}" needs a weapon source to equip "${weaponId}".`);

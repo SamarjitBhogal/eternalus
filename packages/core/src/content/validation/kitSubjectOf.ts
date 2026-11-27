@@ -17,6 +17,8 @@ export type KitSubject = {
   readonly passiveOptions: readonly string[];
   /** A spec's own `passiveId` or the class's `defaultPassiveId`; `null` for none. */
   readonly passiveId: string | null;
+  /** The artifacts a spec puts on its gadget slots (05 §11), empty slots left out; none for a class. */
+  readonly artifacts: readonly string[];
   /** Whether the definition is the class itself (it owns the pool) and not a spec. */
   readonly isClass: boolean;
   /** What the messages call the kit. */
@@ -27,9 +29,9 @@ export type KitSubject = {
 
 /**
  * Reads the ability fields of a Legend class (`defaultKit`, `passiveOptions`, `defaultPassiveId`)
- * or a Legend spec (`kit`, `passiveId`), the one place that knows both shapes, so the ability
- * rules treat them alike. Returns `null` for any other definition (a mob) and for a spec whose
- * class is not loaded (`SpecClassExistsRule` flags that).
+ * or a Legend spec (`kit`, `passiveId`, `artifacts`), the one place that knows both shapes, so the
+ * ability rules treat them alike. Returns `null` for any other definition (a mob) and for a spec
+ * whose class is not loaded (`SpecClassExistsRule` flags that).
  *
  * @param definition - A unit definition or a Legend spec.
  * @param legends - The loaded Legend classes, for a spec's class pool.
@@ -49,6 +51,7 @@ export const kitSubjectOf = (
       kit: definition.kit,
       passiveOptions: legend.passiveOptions,
       passiveId: definition.passiveId,
+      artifacts: definition.artifacts.filter((id) => id !== null),
       isClass: false,
       kitName: 'kit',
       passiveName: 'passiveId',
@@ -61,6 +64,7 @@ export const kitSubjectOf = (
         kit: definition.defaultKit,
         passiveOptions: definition.passiveOptions,
         passiveId: definition.defaultPassiveId,
+        artifacts: [],
         isClass: true,
         kitName: 'defaultKit',
         passiveName: 'defaultPassiveId',

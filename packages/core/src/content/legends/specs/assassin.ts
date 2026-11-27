@@ -18,4 +18,6 @@ export const ASSASSIN = {
   detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
   kit: null, // the class default kit; no Legend has its own yet
   passiveId: null, // the class default: none (DISC-38)
+  secondaryWeaponId: 'obsidian-bow', // DEC-303; beside its start weapon, the talons (DEC-387)
+  artifacts: ['weapon-swap', null], // DEC-303; gadget-1 (Z): INBOX.md HC-Q80 (A)
 } as const satisfies LegendSpecDefinition;

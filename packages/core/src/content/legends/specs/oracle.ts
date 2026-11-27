@@ -34,4 +34,6 @@ export const ORACLE = {
   },
   kit: null, // the class default kit; no Legend has its own yet
   passiveId: 'erudition', // DEC-330 (P1)
+  secondaryWeaponId: null,
+  artifacts: [null, null],
 } as const satisfies LegendSpecDefinition;

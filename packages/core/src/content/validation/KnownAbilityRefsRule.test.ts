@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ABILITIES } from '../abilities/abilityCatalogue';
 import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import { MAGUS } from '../legends/magus';
+import { ASSASSIN } from '../legends/specs/assassin';
 import { ORACLE } from '../legends/specs/oracle';
 import { WARRIOR } from '../legends/warrior';
 import { KnownAbilityRefsRule } from './KnownAbilityRefsRule';
@@ -15,6 +16,18 @@ describe('KnownAbilityRefsRule', () => {
       expect(rule.check(legend)).toEqual([]);
     }
     expect(rule.check(ORACLE)).toEqual([]);
+    expect(rule.check(ASSASSIN)).toEqual([]);
+  });
+
+  it("flags a spec's artifact that names no ability, is another class's or is not a gadget", () => {
+    const spec = { ...ASSASSIN, artifacts: ['weapon-swp', 'veil'] } as const;
+    const magus = { ...ORACLE, artifacts: [null, 'weapon-swap'] } as const;
+
+    expect(rule.check(spec)).toEqual([
+      'artifacts "weapon-swp" names no ability',
+      'artifacts "veil" has slot kind "ability", not "gadget"',
+    ]);
+    expect(rule.check(magus)).toEqual(['artifacts "weapon-swap" belongs to class "warrior"']);
   });
 
   it('flags a pool entry and a kit entry that name no ability', () => {
@@ -48,8 +61,8 @@ describe('KnownAbilityRefsRule', () => {
     } as const;
 
     expect(rule.check(warrior)).toEqual([
-      'defaultKit "fury" is not an ability',
-      'defaultKit "veil" is not an ultimate',
+      'defaultKit "fury" has slot kind "ultimate", not "ability"',
+      'defaultKit "veil" has slot kind "ability", not "ultimate"',
     ]);
   });
 
@@ -76,7 +89,9 @@ describe('KnownAbilityRefsRule', () => {
       const messages = rule.check({ ...ORACLE, passiveId: 'shockwave' });
 
       expect(messages).toHaveLength(1);
-      expect(lastOf(messages)).toMatch(/^passiveId "shockwave" is not a passive$/);
+      expect(lastOf(messages)).toMatch(
+        /^passiveId "shockwave" has slot kind "ability", not "passive"$/,
+      );
     });
 
     it('flags a class passiveOptions entry that is not a passive', () => {
@@ -84,7 +99,9 @@ describe('KnownAbilityRefsRule', () => {
       const messages = rule.check(magus);
 
       expect(messages).toHaveLength(1);
-      expect(lastOf(messages)).toMatch(/^passiveOptions "shockwave" is not a passive$/);
+      expect(lastOf(messages)).toMatch(
+        /^passiveOptions "shockwave" has slot kind "ability", not "passive"$/,
+      );
     });
 
     it('flags a class defaultPassiveId that is not a passive (DEC-361)', () => {
@@ -92,7 +109,9 @@ describe('KnownAbilityRefsRule', () => {
       const messages = rule.check(magus);
 
       expect(messages).toHaveLength(1);
-      expect(lastOf(messages)).toMatch(/^defaultPassiveId "shockwave" is not a passive$/);
+      expect(lastOf(messages)).toMatch(
+        /^defaultPassiveId "shockwave" has slot kind "ability", not "passive"$/,
+      );
     });
 
     it('accepts a spec with no passive', () => {

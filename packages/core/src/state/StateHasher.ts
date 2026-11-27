@@ -8,6 +8,7 @@ import { Combat } from '../components/Combat';
 import { CombatClock } from '../components/CombatClock';
 import { LastEnemyHit } from '../components/LastEnemyHit';
 import { Health } from '../components/Health';
+import { Loadout } from '../components/Loadout';
 import { Movement } from '../components/Movement';
 import { ProjectileFlight } from '../components/ProjectileFlight';
 import { ProjectilePayload } from '../components/ProjectilePayload';
@@ -243,6 +244,10 @@ export class StateHasher {
         ...(combat.aimPoint === null ? [] : ['aim', combat.aimPoint.x, combat.aimPoint.y]),
         ...(combat.hitIds.length === 0 ? [] : ['hits', combat.hitsUntilTick, ...combat.hitIds]),
       ]);
+    }
+    if (entity.findComponent(Loadout)?.isSecondaryInHand === true) {
+      // Only the second weapon in hand adds a field, so runs that never swap hash as before (DEC-303).
+      fields.push(['loadout', 'secondary']);
     }
     const vision = entity.findComponent(Vision);
     if (vision !== undefined) {

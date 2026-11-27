@@ -21,6 +21,13 @@ describe('Abilities', () => {
     ]);
   });
 
+  it('puts the artifacts on the gadget slots, an empty one left empty (05 §11, DEC-303)', () => {
+    const bar = new Abilities(KIT, null, [null, 'weapon-swap']);
+
+    expect(bar.slot('gadget-1')?.abilityId).toBeNull();
+    expect(bar.slot('gadget-2')?.abilityId).toBe('weapon-swap');
+  });
+
   it('finds a slot by name, and nothing for a name that is no slot', () => {
     const bar = new Abilities(KIT);
 

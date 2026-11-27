@@ -17,6 +17,7 @@ import { DamageEffect } from '../effects/DamageEffect';
 import { DashEffect } from '../effects/DashEffect';
 import { DebuffEffect } from '../effects/DebuffEffect';
 import { KnockbackEffect } from '../effects/KnockbackEffect';
+import { SwapWeaponEffect } from '../effects/SwapWeaponEffect';
 import { TargetQuery } from '../TargetQuery';
 import { fakeAbility, testAbilityRegistry } from './fakeAbilities';
 import { AreaHitQuery } from '../../state/AreaHitQuery';
@@ -35,7 +36,7 @@ type CastOptions = {
 /**
  * Casts a one-off ability made of `effects` for `casterId` at `state.tick`, as `AbilitySystem`
  * would after the checks, with the caster's ability stats (DEC-337): a real `CastInstance` with the
- * five shipped effect strategies, the shipped shapes, one `DamagePipeline` (`options.damage`) and
+ * six shipped effect strategies, the shipped shapes, one `DamagePipeline` (`options.damage`) and
  * one `StatusEffectApplier`.
  */
 export const castSteps = (
@@ -51,6 +52,7 @@ export const castSteps = (
       new KnockbackEffect(loadKnockback(state.config.tickRate)),
       new DashEffect(),
       new BuffEffect(STATUS_EFFECTS),
+      new SwapWeaponEffect(),
     ],
     new ContentCatalogue([fakeAbility({ id: 'test-cast', effects, scaling })]),
   );

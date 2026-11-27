@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { ARTIFACTS } from '../artifacts/artifactCatalogue';
 import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import { STATUS_EFFECTS } from '../status-effects/statusEffectCatalogue';
 import { ABILITIES } from './abilityCatalogue';
@@ -19,11 +20,11 @@ const UNBUILT = {
   'death-ray': { cooldownSeconds: 0, aetherCost: 0, slot: 'ultimate' },
 } as const;
 
-/** Every effect kind the framework builds (05 §3): PR 1's, then Fury's `buff`; a new kind is added here with its effect class. */
-const BUILT_EFFECT_KINDS = ['damage', 'debuff', 'dash', 'knockback', 'buff'];
+/** Every effect kind the framework builds (05 §3): PR 1's, then Fury's `buff`, then the Zealot's `swap-weapon`; a new kind is added here with its effect class. */
+const BUILT_EFFECT_KINDS = ['damage', 'debuff', 'dash', 'knockback', 'buff', 'swap-weapon'];
 
 describe('ABILITIES', () => {
-  it('lists the twelve kit abilities in class order, abilities before the ultimate, then the passives, then what the ultimate grants', () => {
+  it('lists the twelve kit abilities in class order, abilities before the ultimate, then the passives, then what the ultimate grants, then the artifacts', () => {
     expect(ABILITIES.ids).toEqual([
       'blade-runner',
       'veil',
@@ -41,6 +42,7 @@ describe('ABILITIES', () => {
       'death-ray',
       'erudition',
       'necromancy',
+      'weapon-swap',
     ]);
   });
 
@@ -155,13 +157,14 @@ describe('ABILITIES', () => {
     }
   });
 
-  it("puts every kit ability in its class's pool, every passive in its passive options, and every entry of both in the catalogue", () => {
+  it("puts every kit ability in its class's pool, every passive in its passive options, and every entry of both in the catalogue; artifacts are in no pool (05 §11)", () => {
     const idsOf = (classId: string, isPassive: boolean): string[] =>
       ABILITIES.all()
         .filter(
           (ability) =>
             ability.classId === classId &&
             ability.slot !== 'granted' &&
+            ability.slot !== 'gadget' &&
             (ability.slot === 'passive') === isPassive,
         )
         .map((ability) => ability.id);
@@ -193,6 +196,12 @@ describe('ABILITIES', () => {
       { stat: 'damageDealt', op: 'mul', value: 1.3, byLostHealth: { fullAt: 0.15 } },
       { stat: 'damageTaken', op: 'mul', value: 0.85, byLostHealth: { fullAt: 0.15 } },
     ]);
+  });
+
+  it('takes every gadget from the artifact catalogue, so each artifact is authored in content/artifacts/ (17 R10)', () => {
+    const gadgets = ABILITIES.all().filter((ability) => ability.slot === 'gadget');
+
+    expect(gadgets.map(({ id }) => id)).toEqual(ARTIFACTS.map(({ id }) => id));
   });
 
   it('leaves a granted ability out of every pool: only a status grants it (DEC-270)', () => {

@@ -1,5 +1,9 @@
 import { ABILITIES } from './abilities/abilityCatalogue';
-import type { AbilityBase } from './abilities/AbilityDefinition.types';
+import type {
+  AbilityBase,
+  AuthoredAbilityWith,
+  AuthoredStep,
+} from './abilities/AbilityDefinition.types';
 import { BOT_DIFFICULTIES } from './ai/difficulties/botDifficulties';
 import type { ContentCatalogue } from './ContentCatalogue';
 import type { LegendDefinition } from './legends/legends.types';
@@ -35,6 +39,7 @@ import { PassiveInOptionsRule } from './validation/PassiveInOptionsRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
+import { SecondaryWeaponRule } from './validation/SecondaryWeaponRule';
 import { SpecClassExistsRule } from './validation/SpecClassExistsRule';
 import { SpecWeaponAllowedRule } from './validation/SpecWeaponAllowedRule';
 import { TurretNeedsAmmoRule } from './validation/TurretNeedsAmmoRule';
@@ -76,13 +81,14 @@ export const createDefaultContentRules = (
  * Every shipped Legend-spec rule. A new spec rule is one line here.
  *
  * @param legends - The loaded Legend classes a spec's `classId` must name.
- * @param abilities - The abilities a spec's own kit may name; the shipped set by default.
- * @param weapons - The weapons a spec's own start weapon may name, each with the classes that may
- *   use it; the shipped set by default.
+ * @param abilities - The abilities as authored that a spec's own kit and artifacts may name; the
+ *   shipped set by default.
+ * @param weapons - The weapons a spec's own start weapon and second weapon may name, each with the
+ *   classes that may use it; the shipped set by default.
  */
 export const createLegendSpecRules = (
   legends: ContentCatalogue<LegendDefinition>,
-  abilities: Pick<ContentCatalogue<AbilityBase>, 'has' | 'get'> = ABILITIES,
+  abilities: Pick<ContentCatalogue<AuthoredAbilityWith<AuthoredStep>>, 'has' | 'get'> = ABILITIES,
   weapons: WeaponAccessCatalogue = WEAPONS,
 ): readonly ContentRule<LegendSpecDefinition>[] => [
   new KebabCaseIdRule(),
@@ -93,6 +99,7 @@ export const createLegendSpecRules = (
   new PassiveInOptionsRule(legends),
   new KnownSpecWeaponRule(weapons),
   new SpecWeaponAllowedRule(legends, weapons),
+  new SecondaryWeaponRule(weapons, abilities),
 ];
 
 /** Every shipped locked-class rule. A new locked-class rule is one line here. */

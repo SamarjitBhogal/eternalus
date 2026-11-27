@@ -475,7 +475,9 @@ work named:
   (`state/SlotReadiness.types.ts`, implemented by the match's one `abilities/CastValidator` and
   injected by `Simulation`; ADR 0026 decision 2), with the turn's seeded RNG, and casts nothing
   when no slot is ready. §4.2's utility pick of a defensive ability is not built: situational
-  casting is a follow-up PR (DEC-205; `INBOX.md` HC-S12).
+  casting is a follow-up PR (DEC-205; `INBOX.md` HC-S12). A bot never casts an ability authored
+  `canBotCast: false` (`SlotReadiness.canBotCast`): the Zealot's Weapon Swap, so bot Zealots keep
+  the talons (`feat/zealot-weapon-swap`, PR 9; `INBOX.md` HC-Q83).
 - A\* for Legends (M8, §6) is `map/AStarPathfinder` behind the `PathQuery` port (`state.paths`).
   One `WorldMap` serves it and the lane flow fields. The path cache (§6) is `BotMemory`'s
   `pathGoal*` and `pathStep*` fields, kept by `BotMovement.moveTo`; `PathQuery.isLineClear` is a

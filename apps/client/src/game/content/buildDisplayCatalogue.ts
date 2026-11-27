@@ -122,7 +122,24 @@ function toSpecCard(
     details: kitDetailRows(kitRows(kitOf(spec, legend), abilities), shown.detailIcons),
     art: shown.art,
     hudWeapon: shown.hudWeapon ?? null,
+    gadgets: gadgetsOf(spec, abilities),
   };
+}
+
+/** The gadget slots a Legend's artifacts fill, named from the ability catalogue (DEC-303). */
+function gadgetsOf(
+  spec: LegendSpecDefinition,
+  abilities: DisplayContent['abilities'],
+): LegendSpecCard['gadgets'] {
+  const slots = ['gadget-1', 'gadget-2'] as const;
+  return slots.flatMap((slot, index) => {
+    const abilityId = spec.artifacts[index];
+    if (abilityId === null || abilityId === undefined) return [];
+    const ability =
+      abilities.find(({ id }) => id === abilityId) ??
+      fail(`spec "${spec.id}" artifact "${abilityId}" is not in the core abilities`);
+    return [{ slot, displayName: ability.displayName }];
+  });
 }
 
 /** A core class with its presentation and its Legends in core order (always available). */

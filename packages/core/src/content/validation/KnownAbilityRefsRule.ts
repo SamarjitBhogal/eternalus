@@ -9,8 +9,9 @@ import { kitSubjectOf } from './kitSubjectOf';
 /**
  * Every ability id a Legend class or spec names is a loaded ability of that class (a
  * dangling-reference rule, 04 §5): a class's `abilityPool`, `defaultKit`, `passiveOptions` and
- * `defaultPassiveId`, a spec's own `kit` and `passiveId`. The kit's first three ids are `ability`
- * slots and its last is an `ultimate`; a passive id is a `passive` (05 §2, §12).
+ * `defaultPassiveId`, a spec's own `kit`, `passiveId` and `artifacts`. The kit's first three ids
+ * are `ability` slots and its last is an `ultimate`; a passive id is a `passive`; each artifact is
+ * a `gadget` (05 §2, §11, §12).
  */
 export class KnownAbilityRefsRule implements UnitDefinitionRule, ContentRule<LegendSpecDefinition> {
   /**
@@ -28,8 +29,17 @@ export class KnownAbilityRefsRule implements UnitDefinitionRule, ContentRule<Leg
     if (subject === null) {
       return [];
     }
-    const { classId, pool, kit, passiveOptions, passiveId, isClass, kitName, passiveName } =
-      subject;
+    const {
+      classId,
+      pool,
+      kit,
+      passiveOptions,
+      passiveId,
+      artifacts,
+      isClass,
+      kitName,
+      passiveName,
+    } = subject;
     const named = [
       ...(isClass ? pool.map((id) => ['abilityPool', id, null] as const) : []),
       ...(isClass ? passiveOptions.map((id) => ['passiveOptions', id, 'passive'] as const) : []),
@@ -40,6 +50,7 @@ export class KnownAbilityRefsRule implements UnitDefinitionRule, ContentRule<Leg
             [kitName, kit.ultimate, 'ultimate'] as const,
           ]),
       ...(passiveId === null ? [] : [[passiveName, passiveId, 'passive'] as const]),
+      ...artifacts.map((id) => ['artifacts', id, 'gadget'] as const),
     ];
     return named.flatMap(([where, id, slot]) => {
       if (!this.abilities.has(id)) {
@@ -52,7 +63,7 @@ export class KnownAbilityRefsRule implements UnitDefinitionRule, ContentRule<Leg
           : [`${where} "${id}" belongs to class "${ability.classId}"`]),
         ...(slot === null || ability.slot === slot
           ? []
-          : [`${where} "${id}" is not ${slot === 'passive' ? 'a' : 'an'} ${slot}`]),
+          : [`${where} "${id}" has slot kind "${ability.slot}", not "${slot}"`]),
       ];
     });
   }

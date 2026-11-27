@@ -34,9 +34,10 @@ export type LegendName = {
 
 /**
  * A Legend: a named specialisation of a class (DEC-49; 17 R2). Mostly display and setup data (ADR
- * 0018); its gameplay fields are its `kit` (DEC-198), its `primaryWeaponId` (DEC-387) and its
- * `passiveId` (DEC-330 P1). All are data, so a later configurable loadout (DEC-330 P1, post-MVP)
- * can supply them; `Legend` then reads them from the loadout instead of the spec.
+ * 0018); its gameplay fields are its `kit` (DEC-198), its `primaryWeaponId` (DEC-387), its
+ * `passiveId` (DEC-330 P1), its `secondaryWeaponId` and its `artifacts` (DEC-303). All are data, so
+ * a later configurable loadout (DEC-330 P1, post-MVP) can supply them; `Legend` then reads them from
+ * the loadout instead of the spec.
  *
  * @remarks The sub-class title (`displayName`) and the Legend's name (`legendName`) are two
  * different things: the title is the same on both teams, the name is per team.
@@ -85,4 +86,15 @@ export type LegendSpecDefinition = {
    * `passive` from the class's `passiveOptions` (`KnownAbilityRefsRule`, `PassiveInOptionsRule`).
    */
   readonly passiveId: string | null;
+  /**
+   * The second weapon this Legend carries beside the weapon it spawns with (`primaryWeaponId`; 05
+   * §12 `secondaryWeaponId`), or `null` for none. Only the Zealot has one (DEC-303); a gadget with a
+   * `swap-weapon` step puts it in hand. `SecondaryWeaponRule` checks the id.
+   */
+  readonly secondaryWeaponId: string | null;
+  /**
+   * The artifacts on `gadget-1` and `gadget-2` (05 §11, §12 `artifacts`), in that order; `null` =
+   * an empty slot. Each is a `gadget` ability of the spec's class (`KnownAbilityRefsRule`).
+   */
+  readonly artifacts: readonly [string | null, string | null];
 };

@@ -24,6 +24,7 @@ import { PassiveInOptionsRule } from './validation/PassiveInOptionsRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
+import { SecondaryWeaponRule } from './validation/SecondaryWeaponRule';
 import { SpecClassExistsRule } from './validation/SpecClassExistsRule';
 import { SpecWeaponAllowedRule } from './validation/SpecWeaponAllowedRule';
 import type { WeaponDefinition } from './weapons/weapons.types';
@@ -92,6 +93,7 @@ describe('createLegendSpecRules', () => {
       PassiveInOptionsRule,
       KnownSpecWeaponRule,
       SpecWeaponAllowedRule,
+      SecondaryWeaponRule,
     ]);
   });
 

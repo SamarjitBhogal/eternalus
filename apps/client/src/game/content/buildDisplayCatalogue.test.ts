@@ -114,6 +114,28 @@ describe('buildDisplayCatalogue kits', () => {
   });
 });
 
+describe('buildDisplayCatalogue gadgets (DEC-303)', () => {
+  const specOf = (specId: string) =>
+    build()
+      .legendClasses.flatMap((card) => card.specs)
+      .find((spec) => spec.specId === specId);
+
+  it("names the Zealot's gadget-1 after its artifact", () => {
+    expect(specOf('assassin')?.gadgets).toEqual([{ slot: 'gadget-1', displayName: 'Weapon Swap' }]);
+  });
+
+  it('gives a spec with no artifacts no gadgets', () => {
+    expect(specOf('oracle')?.gadgets).toEqual([]);
+  });
+
+  it('throws naming an artifact that is not an ability', () => {
+    const specs = CONTENT.specs.map((spec) =>
+      spec.id === 'assassin' ? { ...spec, artifacts: ['no-such', null] as const } : spec,
+    );
+    expect(() => build({ content: { specs } })).toThrow(/assassin.*no-such/);
+  });
+});
+
 describe('buildDisplayCatalogue', () => {
   it('joins core detail names with presentation icons in slot order', () => {
     const magusPresentation = CLASS_PRESENTATION.magus;
