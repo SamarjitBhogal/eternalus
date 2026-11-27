@@ -9,6 +9,7 @@ import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import type { Vec2 } from '../utils/geometry.types';
 import { BLOCKING_CELL_SIZE } from './WorldObjectStore.constants';
+import type { WorldObjectRecord } from './WorldObjectStore.types';
 
 /** A factory over every map-object definition, as the match builds it. */
 const fixtureFactory = (): EntityFactory => {
@@ -297,8 +298,9 @@ describe('WorldObjectStore', () => {
     it('indexes records again when the record count changes', () => {
       const world = worldOf(square('rock', 0, 0, 4));
       expect(world.blockingAt({ x: 2, y: 2 }, 1)).toBe('rock');
-      // A path that adds a record after the first search (the map stack's spawns) is covered.
-      (world as unknown as { records: unknown[] }).records.push({
+      // A path that adds a record after the first search (such as `WorldObjectStore.add` for
+      // ability walls, PR #134) is covered.
+      (world as unknown as { records: WorldObjectRecord[] }).records.push({
         object: square('late', 3 * edge, 0, 4),
         entityId: null,
         health: null,
