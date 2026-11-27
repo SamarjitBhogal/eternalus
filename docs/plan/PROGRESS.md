@@ -9085,6 +9085,323 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Documentation check passed."
 - Next step: push `feat/capture-point-boss` and update the PR #99 body.
 
+### 2026-11-07 — Phase 3 / visuals — feat/visuals-and-design — camp artwork
+
+- What was done: replaced corner tents with reference-style ruined stone shrines: worn steps,
+  carved pillars, pointed arches, bronze trim and suspended cyan crystals. Lane structures now
+  share that architecture, with heavy shields/hammers nearest the home Stronghold and medium
+  spear racks/bucklers second; a light bow/quiver variant serves additional distant structures.
+  The author confirmed the current two-structure layout should show heavy then medium. Forest
+  camps use a distinct woodland circle of standing stones, a broken dolmen, roots, offerings and
+  lanterns. Materials and theme order live in content; independent builders preserve mirrored
+  geometry and explicit health/destruction ownership. Main-view placeholder glyphs are hidden
+  through presentation metadata while minimap markers remain. Counts, anchors, teams, minion
+  definitions and spawn rules are unchanged. Updated map presentation documentation and
+  inspected rendered design and map sheets from the actual builders/views.
+- Checks run: focused geometry, role, ownership and presentation tests passed (21 tests).
+  The first full run caught blocked tower deployment; moved lane shrine masonry behind the
+  anchor to preserve a clear forecourt. All 8 existing map-object simulation tests then passed,
+  including deployment for seeds 1, 2 and 10, without changing assertions. The first client run
+  also hit the unchanged roof-toolbar startup timeout. Final npm run check:quick and npm run
+  check passed (exit 0), with VITEST_MAX_WORKERS=2 for the final full check: 898 core and 434
+  client tests passed, coverage thresholds met, build and docs passed. No timeouts, assertions,
+  guardrails or dependencies changed. Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: author playtest and visual review. Changes remain uncommitted; no push or PR.
+
+### 2026-11-07 — Phase 3 / visuals — feat/visuals-and-design — fantasy minions
+
+- What was done: added registered weight-specific MinionView figures, preserving the existing
+  mob-family fallback. Light scouts carry paired blades, medium foot soldiers a sword and kite
+  shield, and broad armored heavies a maul. Light units use silver armor, crests and cyan trim;
+  Dark units use dark armor, violet trim, horns and goblin faces. Neutral units use a woodland
+  palette. Local polygons are cached per weight and faction, positioned from interpolated draw
+  state, and scaled from snapshot radius without changing stats, physical sizes, AI or spawning.
+  Existing faction footprints and focus rings remain. Updated the engine presentation docs and
+  inspected all six faction/weight combinations rendered through the actual registered views.
+  The author clarified to retain the current camp placement and change artwork only; no camp
+  coordinates, collision or spawn locations changed in this task.
+- Checks run: focused view and fallback tests passed (9 tests), including all existing MobView
+  and default registry assertions unchanged. npm run check:quick and npm run check passed
+  (exit 0); the full check used VITEST_MAX_WORKERS=2 with original timeouts and coverage limits.
+  Core 898/898 and client 440/440 tests passed; formatting, no-JS, lint, typecheck, Knip,
+  coverage, build and documentation all passed. Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: author playtest and visual review. All current visual work remains uncommitted;
+  nothing was pushed and no PR was opened.
+
+### 2026-11-07 — Phase 3 / visuals — feat/visuals-and-design — unit display sizes
+
+- What was done: enlarged minion figure scale from 1.4 to 2 (about 43 percent), preserving
+  the light/medium/heavy size hierarchy, and enlarged fallback troop markers. All hero classes
+  on both teams, including the player's hero, now share a presentation diameter slightly above
+  the largest shipped heavy-minion silhouette. Thinner hero outlines and a close focus ring
+  retain readable selection feedback. A view-only radius helper keeps marker painting separate
+  from the original snapshots. Hitboxes, stats, camera and minimap scale are unchanged. Updated
+  the engine presentation docs and inspected a rendered faction/weight/hero scale comparison.
+- Checks run: 14 focused view tests passed. New regressions compare all three troop weights
+  against Warrior, Magus and Sentinel for both teams, require a modest hero size margin and
+  verify the source snapshots remain unchanged. Existing outline/body expectations were
+  updated to the new presentation sizes while retaining their full draw-call assertions.
+  npm run check:quick and npm run check passed (exit 0); the full run used
+  VITEST_MAX_WORKERS=2 with unchanged timeouts and coverage thresholds. Core 898/898 and
+  client 443/443 tests passed; formatting, no-JS, lint, typecheck, Knip, coverage, build and
+  documentation all passed. Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: author playtest of unit readability at the existing camera scale. Current visual
+  work remains uncommitted; nothing was pushed and no PR was opened.
+
+### 2026-11-08 — Phase 3 / visuals — feat/visuals-and-design — biome atmosphere and camp colors
+
+- What was done: made left lane-camp crystals blue, right lane-camp crystals purple and
+  corner crystals orange. Widened the follow camera to a 96 by 54 world view. Extended snow
+  and volcanic scenery toward the border mountains with layered ground, snow drifts, frozen
+  firs, charred trees, shrubs, basalt and volcanic fissures. Added animated molten surfaces
+  and local snow, ash, embers and haze while the player follows within the matching biome.
+  Weather remains cosmetic and absent from the minimap and overview. Existing placements,
+  tree collision footprints, terrain blockers and spawn rules remain intact. Updated map
+  and engine design documentation and inspected renders from the actual map views.
+- Checks run: npm run check:quick and npm run check passed (exit 0), using
+  VITEST_MAX_WORKERS=2 with unchanged timeouts and coverage thresholds. Core 902/902 and
+  client 448/448 tests passed. Regressions cover crystal colors, biome decoration and
+  preserved footprints, wider camera framing, deterministic weather, edge fading, minimap
+  suppression and molten animation culling. Formatting, no-JS, lint, typecheck, Knip,
+  coverage, build and documentation passed. Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: author playtest of camera framing and biome atmosphere. Changes remain
+  uncommitted; nothing was pushed and no PR was opened.
+
+### 2026-11-08 — Phase 3 / visuals — feat/visuals-and-design — controlled knight sprite atlas
+
+- What was done: generated a silver-and-gold pixel knight sheet from the user's character
+  reference using the built-in image tool, revised clipped edge frames, and saved the selected
+  atlas plus both prompts under client assets. Added measured row crops and foot anchors,
+  four-direction walking from actual tick displacement, idle, weapon swings, three ability
+  previews and an ultimate preview. Existing configurable slots 1–4 trigger cosmetic playback;
+  confirmed player weapon damage triggers attacks, including destructible-tree hits. Pointer
+  targeting also accepts living opposing entities. Gameplay damage, physics, radii and ability
+  effects remain unchanged. Other heroes retain their views and the player keeps a team ring.
+  Added the ResourceController image facade with cached loads, retry after failure, fallback
+  rendering and unmount-safe completion. The renderer crops atlas frames with nearest-neighbour
+  sampling and preserves their proportions in narrow viewports. Updated engine/resource docs
+  and inspected the loaded knight in a running local match.
+- Checks run: focused sprite/resource/render/combat tests passed, including a real simulation
+  weapon hit against a destructible tree. npm run check:quick and npm run check passed (exit 0),
+  using VITEST_MAX_WORKERS=2 without changing timeouts, lint rules or coverage thresholds.
+  Formatting, no-JS, lint, typecheck, Knip, coverage, production build and documentation passed.
+  Core 902/902 and client 460/460 tests passed. Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: author playtest of WASD movement, left-click combat and ability previews on 1–4.
+  Ability previews are presentation only. Changes remain uncommitted; no push or PR was made.
+
+### 2026-11-11 — Phase 3 / PR #90 review fixes — feat/visuals-and-design
+
+- What was done: merged phase/3 at 1b25f586 without committing; resolved the 18 conflicting files. Restored all twelve lane-tower fort footprints (DEC-238) and kept shrine dressing cosmetic. Retained minion figures, display sizes, camera and biome weather; moved tuning to content/constants, shared placement, split painters and cached render geometry. Removed the knight atlas, its loader and animation code because the reference licence remains unestablished; kept Phase 3 resources and targeting. Recorded DEC-238 and added footprint/visual regressions.
+- Checks run: npm run check passed (exit 0), with 1,328 core and 1,837 client tests; coverage, build and docs passed. Final npm run check:quick passed (exit 0). Verbatim final tail:
+
+  ```text
+  Checked 127 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: review the uncommitted merge; scoped commit and PR #90 description/pre-PR gate remain with the author.
+
+### 2026-11-11 — Phase 3 / Magus sprites and shared starter kit — feat/visuals-and-design
+
+- What was done: generated Catalyst, Oracle and Heretic atlases from the existing owner-licensed selection art, recorded provenance, and registered them through ResourceController under the human-approved allowance in draft ADR 0026. Selected Magus skins use four-way walking, idle and successful-action animation, with team rings and the existing Legend fallback. Added travelling staff bolts and the approved shared Imbue, Shockwave and Sanctuary effects through deterministic commands, components and strategies. Nova is explicitly a visual preview on slot 4, with no damage, aether cost, cooldown or ultimate expenditure. Added player-only ability snapshots, display names, cooldown readiness and CSS cast feedback. The original knight reference remains unused.
+- Checks run: the first full gate passed core coverage (1,332 tests) and exposed client manifest, lifecycle, view-registry and motion-token regressions; repaired these and reran the affected tests. The approved-kit scenarios pass (5 tests), and the final animation/lifecycle regressions pass (27 tests). Manually checked Oracle in the running browser, Imbue aether/cooldown feedback and the Nova preview. Final full-gate result is recorded below when available.
+- Next step: finish the full quality gate, then author playtest all three Magus skins. The pending Phase 3 merge and this task's changes remain uncommitted; no push or PR was made.
+
+- Final Magus gate: `npm run check` passed (exit 0): 1,333 core tests and 1,858 client tests, coverage, formatting, no-JS, lint, typecheck, Knip, production build and documentation. Verbatim final tail:
+
+  ```text
+  Checked 129 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+### 2026-11-12 — Phase 3 / Additional character references and tower dressing — feat/visuals-and-design
+
+- Work in progress: inventoried the five standalone character references and four ZIP archives;
+  Gurshaan confirmed permission to use and adapt the supplied art. Generated three knight sheet
+  candidates, retained in ignored agent scratch until their character mapping and additional
+  asset budget are confirmed. Added cosmetic faction tower sanctums while preserving all fort
+  footprints, corner shrines and neutral camp art. No new dependencies or gameplay values.
+- Checks: `npm run check:quick` passed. Focused tower, camp and footprint tests passed (12 tests);
+  the first two attempts hit sandbox temporary-file errors, resolved by giving the test process
+  a workspace-local temporary directory. `npm run docs:check` passed. Full `npm run check` has
+  not run for this incomplete task.
+- Next: obtain image-to-character mapping, asset-budget approval and whether the Magus ZIPs
+  replace character art or only inspire effects; then finish sprite/selection integration,
+  presentation effects and the full quality gate. All changes remain uncommitted.
+
+### 2026-11-12 — Phase 3 / Confirmed Legend sprites and reference effects — feat/visuals-and-design
+
+- What was done: confirmed all five reference mappings and the additional asset allowance;
+  retained the existing Magus sheets. Added Zealot, Templar, Paladin, Colossus and Bulwark
+  atlases through ResourceController, with selected-spec routing, four-way movement, idle,
+  real attack feedback and documented class-pool animation previews on the existing bindings.
+  Added native-size selection, refraction, mini and roster renditions with the existing arch
+  mask. Added Magus fire/radiant/violet ornaments and CSS cast feedback. Recorded exact budgets
+  in draft ADR 0027 and attachment hashes in the provenance record. Corrected the blue giant's
+  printed credit to Arackhan Wars / Nothing But Dreams with the jsraphael artist link, and
+  separated contributor-authorised references from Sam's owner-made art credit.
+- Checks: `npm run check:quick` passed. Full `npm run check` passed formatting, no-JS, lint,
+  typecheck, Knip and all 1,336 core tests with coverage, then failed five client assertions
+  (1,870 client tests passed). Repaired native boxes, replaced obsolete placeholder expectations,
+  and corrected attribution; the final focused client run passes 90 tests and fails only the
+  unchanged source-provenance assertion. Production build and formatting pass independently.
+  Documentation check passes. Browser checked Warrior and Sentinel portraits, Colossus match
+  startup, and ability/ultimate preview input; fixed duplicate Legend view registration and
+  added its regression test. The task is not done while provenance validation fails.
+- Verbatim remaining failure:
+
+  ```text
+  FAIL |client| src/data/resources/AssetManifest.test.ts > ASSET_MANIFEST > licenses every entry and names its Figma node or download in its source
+  Test Files  1 failed | 13 passed (14)
+  Tests  1 failed | 90 passed (91)
+  ```
+
+- Next: human supplies original source URLs or approves the proposed structured attachment
+  route in draft ADR 0028; that proposal is not implemented and the assertion is not weakened.
+  Then finish provenance validation and rerun the full gate. Changes and the pre-existing merge
+  remain uncommitted; no push or PR was made.
+
+### 2026-11-13 — Phase 3 / Approved attachment provenance and final sprite gate — feat/visuals-and-design
+
+- What was done: implemented Gurshaan's explicit approval of ADR 0028. All ten portrait/atlas
+  entries reference the five original attachments through a shared registry of filenames,
+  SHA-256 hashes, permission scope, confirmer, confirmation date and provenance document.
+  The manifest gate retains the URL/Figma route and checks attachment metadata against the
+  checked-in record; rejection tests cover missing, malformed, unknown and mismatched records.
+  Licence, binary integrity, exact byte budgets and per-Legend ownership assertions remain.
+  Updated architecture 14 and the guardrails table. This resolves the remaining sprite-task
+  blocker without inventing source URLs or changing the artwork or gameplay.
+- Checks: `npm run check:quick` passed; the focused provenance/manifest run passed 35 tests.
+  Final `npm run check` passed (exit 0): 1,336 core tests and 1,892 client tests, coverage,
+  formatting, no-JS, lint, typecheck, Knip, production build and documentation. Verbatim tail:
+
+  ```text
+  Checked 132 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next: author review/playtest of all five selected skins and Magus effects. The sprite task's
+  Definition of done is met. Changes and the pre-existing merge remain uncommitted; no push or
+  PR was made. The local preview is restored after the coverage run.
+
+### 2026-11-13 — Phase 3 / Combat sprite isolation and ability presentation — feat/visuals-and-design
+
+- What was done: repaired all 300 Zealot, Templar, Paladin, Colossus and Bulwark poses from
+  the existing authorised sources. Source poses are individually isolated before repacking;
+  aspect ratios, a shared ground baseline and transparent gutters replace the faulty uniform
+  source-grid assumption. Checked all 600 runtime frames across both densities and visually
+  inspected labelled contact sheets. Updated manifest hashes and exact byte totals, reducing
+  both match downloads within the existing approved allowance. Magus art and selection
+  portraits remain unchanged.
+- Presentation: longer combat casts take priority over melee-hit feedback. Tick-driven renderer
+  strategies add directional blade trails and throws, radiant Fury, rising stone shields,
+  fissures, roar waves and a Meteor Fall jump/impact. Cosmetic ground scars retain their cast
+  origin and expire with bounded history. Added five character-specific HUD CSS motifs with
+  reduced-motion suppression. No gameplay damage, collision, cooldown or balance changes.
+  Initial animation observation anchors casts correctly when views attach to a prepared match.
+- Checks: `npm run check:quick` passed. Focused animation/asset/HUD checks passed 68 tests;
+  match integration passed 30 tests, including the immediate-cast origin regression. Final
+  `npm run check` passed (exit 0): 1,336 core and 1,916 client tests, coverage, formatting,
+  no-JS, lint, typecheck, Knip, production build and documentation. In-browser Colossus/Meteor
+  Fall inspection showed the repaired sprite and ground cracks with no runtime errors.
+  Verbatim full-gate tail:
+
+  ```text
+  Checked 132 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next: author playtest of the five repaired skins and visual-only class-pool previews. Changes
+  and the pre-existing merge remain uncommitted; no commit, push or PR was made.
+
+### 2026-11-13 — Phase 3 / PR #90 remaining review fixes — feat/visuals-and-design
+
+- Moved remaining biome ground/tree dimensions into content and selected their painters by
+  profile; split mountain painting methods. Registered sprite adapters by playable kind while
+  keeping the Legend family fallback. Kept renderer fields before methods and updated docs.
+- Pinned complete scenery, collision, tower and camp output against pushed head `2a53e882`
+  for seeds 1, 2 and 42. All fingerprints remain unchanged. Sprite binaries, ability kits,
+  combat effects and camera constants are untouched. Retained exact reflection arithmetic,
+  with a regression demonstrating why direct offset subtraction changes coordinates.
+- Checks: `npm run check:quick` passed; focused core/client runs passed 23/43 tests. Full
+  `npm run check` passed (exit 0), with 1,340 core and 1,916 client tests, coverage and build.
+  Verbatim tail:
+
+  ```text
+  Checked 132 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next: review the uncommitted follow-up and PR description draft. The required independent
+  critic/Ponytail gate remains pending under AGENTS.md; this environment has no Ponytail
+  plugin. Existing published history is preserved. No commit, push or PR comment was made.
+
+### 2026-11-17 — Phase 3 / sprint 3.1 — codex/visuals-design-phase3-clean — Gurshaan + Codex
+
+- What was done: audited PR #90 reviews; preserved original source, assets and local fixes in
+  recovery copies; prepared code-drawn visuals directly on Phase 3 `af54fe96`. Excluded disputed
+  raster assets, asset-policy changes and the parallel ability stack. Retained map fingerprints,
+  collision footprints and incoming Phase 3 gameplay. No commit, push or PR message made.
+- Checks run: `npm run check` passed (exit 0): 1,665 core, 2,039 client, 29 protocol and 84 server
+  tests, coverage, static checks and builds. Verbatim tail: `Checked 128 Markdown files under docs/.`
+  `Documentation check passed.` Earlier restricted WebSocket run failed to connect; unchanged
+  tests passed with loopback access. Latest-base preservation tests: 6 passed; no snapshots updated.
+- Next step: Sam reconfirms DEC-238 as requested in INBOX; complete the independent critic and
+  Ponytail gate under AGENTS.md before opening the next PR. Prepared changes remain uncommitted.
+
+### 2026-11-17 — Phase 3 / sprint 3.1 — feat/visuals-and-design — Gurshaan + Codex
+
+- What was done: returned to the original PR #90 branch at the user's request and integrated
+  Phase 3 `af54fe96` without committing. Resolved every merge conflict; applied the reviewed
+  map/minion fixes on this branch. Disputed assets and the parallel ability implementation stay
+  recoverable in the original history and local backups; no replacement branch is required.
+- Checks run: resolved source tree matches the tree already verified by `npm run check` (exit 0):
+  1,665 core, 2,039 client, 29 protocol and 84 server tests. Verbatim tail:
+  `Checked 128 Markdown files under docs/.` / `Documentation check passed.` No source changed
+  after that full run; this correction changes only the task record and branch location.
+- Next step: review and commit the pending merge/fixes on this original branch when requested;
+  owner confirmation and the critic/Ponytail gate remain pending. No commit or push made.
+
+### 2026-11-19 — Phase 3 / sprint 3.1 — feat/visuals-and-design — Codex
+
+- Local attack input now picks Legends and mobs by their drawn body radius. The map snapshots
+  round decorative geometry and retain the exact tower, camp and overall collision hashes for
+  seeds 1, 2 and 42. Documented the existing camp collision change.
+- Checks: 22 focused tests passed. Two core determinism tests timed out on the initial full run,
+  then passed in isolation. The full `npm run check` retry with two Vitest workers passed.
+  `Checked 128 Markdown files under docs/.` `Documentation check passed.` `EXIT=0`
+- Next: confirm the rounded scenery snapshots on Apple Silicon during PR review.
+
 ### 2026-11-14 — Phase 3 / the player who stays in a Duel wins (DEC-251) — feat/duel-leave-victory — sholtzman + Claude Code
 
 - What changed: the owner's answer to the open part of INBOX HC-Q57 (DEC-251, "A) yes"). When a
@@ -9673,6 +9990,23 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   passed."; `eternalus-agent-work/pr-review-2026-10-29/pr85/check-durations-15.log`); then
   `prettier --check` and `npm run docs:check` on this file.
 - Next step: the owner pushes the branch (`push-125-r3.sh`), then merges PR #125.
+
+### 2026-11-20 — Phase 3 / visuals branch sync — feat/visuals-and-design — Codex
+
+- What was done: merged all 74 missing Phase 3 commits through `5a7cc8dc` into the
+  existing visuals branch at `50f9a082`. Preserved both sides of the progress history and
+  owner-decision log conflicts, including DEC-238. Source changes merged automatically;
+  MapSceneryBuilder adopts the shared geometry helpers. Existing visual content and rendering
+  files are unchanged, including the map, camps, biomes, weather, unit artwork and camera.
+  The character-sprites branch is untouched by this task.
+- Checks run: `npm run check:quick` exit 0; 65 focused map/scenery tests passed;
+  full `npm run check` exit 0 (core 1,702, client 2,038, protocol 29, server 84;
+  3,853 total). Verbatim final output: "Checked 128 Markdown files under docs/.",
+  "Documentation check passed." Logs are in the main workspace:
+  `.phase3-visuals-quick.log`, `.phase3-visuals-focused.log`, `.phase3-visuals-full.log`.
+- Next step: commit and push the verified merge as requested, then confirm PR #90's
+  published head and mergeability against Phase 3. Existing review sign-offs remain separate
+  from successful merge verification.
 
 ### 2026-11-20 — Phase 3 / Duel: Legends start at max level (SCRUM-444) — feat/duel-legend-max-level — claudiodh + Claude Code
 
@@ -10623,3 +10957,146 @@ tick)`), and a minion records the point that granted its levels (`Veterancy.gran
   4.58 ms, mobs 143/144 → 92/98; 290/team p95 4.85 ms, 290/289 → 201/212.
 - Next step: merge the phase branch (PROGRESS conflict, keep both); owner answers S1 and the
   sampling question; refresh the PR body (N3); then re-request review.
+
+### 2026-11-07 — Phase 3 / minion strength by flow-field distance (M5a stand-in) — feat/minion-strength-flow-field — SamarjitBhogal + Claude Code
+
+- What was done: `MinionStrengthStep` measures a horde member's lane progress `t` by path cost on
+  its lane's flow field, as `balancing.md` recommends, instead of along the lane polyline. The step
+  reads it through a `LaneProgressOf` port (`combat/` may not import `map/`, 02 §2);
+  `LaneFlowFields.progress` implements it through the new `FlowField.progressAt` and `costAt`, and
+  `DefaultSystemPipeline` wires it into the damage steps. `t` keeps the polyline's reference
+  points, gate to gate (0 at the team's own lane end, 1 at the enemy end), not Stronghold to
+  Stronghold as `balancing.md` words it, so the curve's base-stat points keep their meaning. Each
+  field stores its own start cell, nudged off cell edges like the goal, so Light and Dark read the
+  same progress at mirrored points (tested cell by cell). Off the corridor the step falls back to
+  the polyline. The field and the polyline agree within 2% along the generated lanes (largest
+  measured 1.4% with 3 lanes, 1.6% with 5; a test holds the bound for both), so the curve's
+  balance barely moves. Minion plan: the polyline stand-in row is removed; doc 18
+  Implementation status names the port.
+- Checks run: `npm run check` passed: core `Tests  1087 passed (1087)`, client
+  `Tests  1754 passed (1754)`, `Documentation check passed.`
+- Next step: the unit-cap performance check and the bot path cache, on their own branches.
+
+### 2026-11-12 — Phase 3 / sync — feat/minion-strength-flow-field — SamarjitBhogal + Claude Code
+
+- What was done: merged `docs/minion-plan-mvp-gaps` (PR #81, which now carries
+  `phase/3-sprint-3-work` at `3dc9e908`) into PR #82; it was 166 commits behind and conflicting.
+  Append-only logs: both sides kept, this branch's entries last. Code: `MinionStrengthStep.ts`
+  keeps both imports (`LaneProgressOf`, phase/3's `opponentOf`);
+  `DefaultSystemPipeline.strength.test.ts` moves to the options-object constructors phase/3
+  introduced (same assertions).
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1329 passed (1329)"; client "Tests 1818 passed (1818)"; "✓ built in
+  307ms"; "Documentation check passed."
+- Next step: review once PR #81 merges.
+
+### 2026-11-20 — Phase 3 / minion plan M5a follow-up — feat/minion-strength-flow-field (PR #82 review round) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`); conflicts resolved as the review's
+  B1 trial merge: `defaultDamageSteps.ts` keeps `MinionStrengthStep(MINION_STRENGTH, progressOf)`
+  and phase/3's `BossMinionDamageStep`; `DefaultSystemPipeline.ts` keeps both imports; doc 18
+  `last-reviewed`; this file kept both sides. Owner ruling DEC-280 (gate to gate, as built)
+  recorded in the decisions log (batch 2026-11-20), `balancing.md`'s `t` definition and table
+  changed to home gate → enemy gate, and DEC-280 cited in `MinionStrengthStep.ts`, `FlowField.ts`
+  and doc 18 (S1). Review nits: `FlowField.start` is required and `costAt` private (N1, N2); the
+  2% polyline agreement test also runs on the match grid with the map objects stamped, through a
+  `stampedWorld` helper the DEC-121 (d) test now shares (N3); docs 05 and 06 point to the
+  progress injection (N4).
+- Checks run: `npm run check` (Node 24.21.0) on the merge, every step through `docs:check`
+  passed: "All matched files use Prettier code style!"; core "Tests 1684 passed (1684)"; protocol
+  "Tests 29 passed (29)"; client "Tests 2011 passed (2011)"; server "Tests 84 passed (84)"; "✓
+  built in 483ms"; "Documentation check passed."
+- Next step: re-request review on PR #82.
+
+### 2026-11-21 — Phase 3 / minion plan M5a follow-up — feat/minion-strength-flow-field (PR #82 review round 2) — SamarjitBhogal + Claude Code
+
+- What was done: re-checked every open comment on PR #82. The 2026-11-20 round already covered
+  S1 (DEC-280), N1–N4 and claudiodh's review; the one item left open, the optional nit to name the
+  `-1` cell sentinel, is applied: `FlowField.constants.ts` gains `NO_CELL`, which
+  `LaneFlowFields` passes for an off-world `goal` or `start` and `FlowField.progressAt` tests
+  against. No behaviour change. CodeRabbit posted no review (rate limited). The branch still
+  conflicts with the current `phase/3-sprint-3-work`; left for the owner to merge.
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1684 passed (1684)"; protocol "Tests 29 passed (29)"; client "Tests 2011
+  passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 376ms"; "Documentation check passed."
+- Next step: merge `phase/3-sprint-3-work` into the branch, then re-request review.
+
+### 2026-11-07 — Phase 3 / bot path cache (minion plan §3, M8 stand-in) — feat/minion-bot-path-cache — SamarjitBhogal + Claude Code
+
+- What was done: a bot Legend's brain caches its last A\* search (11 §6): `BotMemory` gains
+  `pathGoalX`, `pathGoalY`, `pathStepX`, `pathStepY` (plain numbers, so the cache is hashed and
+  replayed like the rest of the memory), and `BotLeaves.moveTo` reuses the cached waypoint without
+  a search while the destination stays within the bot's `arrivalDistance` of the cached one, the
+  waypoint is not yet reached but still nearer than the destination, and the straight line to it
+  is clear. Only a real search is cached: a clear line to the destination caches nothing, so a
+  chased enemy is followed where it is now; arriving clears the cache. `PathQuery` gains
+  `isLineClear`, which `AStarPathfinder` implements on the `WorldMap`. A search that finds no way
+  clears it too. Doc 11 §6 and its Implementation status describe it; the minion plan's
+  "A\* again on each blocked decision" stand-in is removed.
+- Why: the `npm run bench` of `chore/minion-perf-check` measured tick p95 8 to 12 ms against the
+  8 ms target, and a one-off probe (not committed) put almost all of it in the bot laners' A\*
+  searches (3,010 searches, 1.9 s of 900 ticks, about one per bot decision).
+- Measured with that bench (its exact-fill version) on this branch, three runs, same machine as
+  that entry: 144 mobs per team + 10 Legends each: p50 0.7 to 0.9 ms, p95 2.9 to 3.1 ms, max 15.7
+  to 17.2 ms; 290 mobs per team + 10 Legends each: p50 1.1 to 1.7 ms, p95 2.9 to 4.1 ms, max 9.7
+  to 14.7 ms. The p95 target (≤ 8 ms) now holds at both counts; single ticks still reach 10 to
+  17 ms.
+- Checks run: `npm run check` passed: core `Tests  1088 passed (1088)`, client
+  `Tests  1754 passed (1754)`, `Documentation check passed.`
+- Next step: the remaining items of the minion plan §1.2 (M6b and M10 wait for PR #64).
+
+### 2026-11-12 — Phase 3 / sync — feat/minion-bot-path-cache — SamarjitBhogal + Claude Code
+
+- What was done: merged `docs/minion-plan-mvp-gaps` (PR #81, which now carries
+  `phase/3-sprint-3-work` at `3dc9e908`) into PR #84; it was 166 commits behind and conflicting.
+  Append-only logs: both sides kept, this branch's entries last. Docs 11 and the minion plan:
+  the later `last-reviewed` each. No code conflict.
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1330 passed (1330)"; client "Tests 1818 passed (1818)"; "✓ built in
+  337ms"; "Documentation check passed."
+- Next step: review once PR #81 merges.
+
+### 2026-11-20 — Phase 3 / minion plan M8 follow-up — feat/minion-bot-path-cache (PR #84 review round) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`) and ported the cache instead of
+  merging text (B1): phase/3 moved `moveTo` into `ai/BotMovement.ts`, so the conflicted files take
+  phase/3's side and the cache is re-applied there, after `edgeOf` (the edge point is the cached
+  goal). No-way adds `NO_PATH` beside `BotMovement.stop`; arrival clears the cache only when one is
+  set, so a halted bot stays allocation-free; `BotMemory`/`BotLeaves.read` keep `isHalted` and the
+  four `path*` fields; `NO_PATH` moved to `BotMovement.constants.ts`. Nits: the reuse check tests
+  plain numbers and copies into `step` only on success (N1); a cached waypoint is dropped once the
+  straight line to the destination opens (N2, one extra line test, new test); INBOX M8 item (2)
+  has an update line (N3); the PR body names why `PathQuery.isLineClear` stays a port (N4, doc 11
+  status). S1: the `AStarPathfinder` `ponytail:` remark now names the ceiling left (a destination
+  moving more than `arrivalDistance` per decision still searches each decision). S3: doc 11 §6 is
+  rebuilt from phase/3's text (`pathMaxSearchArea`, the `StuckSystem` sentence) without the "next
+  step" note. Deliberate breaks: dropping the line-opened check fails 1 test; returning `true`
+  without copying the waypoint fails the reuse test (it now uses a fresh brain, so a leftover
+  scratch vector cannot pass it).
+- Measured (S2): `npm run bench` from PR #83's fixed script (`chore/minion-perf-check` after its
+  2026-11-20 review round) run against this merge, Node 24.21.0, AMD Ryzen AI 9 HX 370, load
+  average 13.5 (another check was running, so treat as an upper bound): 144/team p50 1.68 / p95
+  2.27 / max 5.55 ms; 290/team p50 3.15 / p95 3.90 / max 6.66 ms. #83 on phase/3 without the
+  cache, at load 2.7: 144/team p95 3.47 / max 4.85 ms; 290/team p95 3.44 / max 11.65 ms.
+- Checks run: `npm run check` (Node 24.21.0) on the merge → `EXIT=0`: "All matched files use
+  Prettier code style!"; core "Tests 1684 passed (1684)"; protocol "Tests 29 passed (29)"; client
+  "Tests 2011 passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 528ms"; "Documentation
+  check passed." (A first run failed lint on an unbound static method reference; fixed by calling
+  it directly.)
+- Next step: re-request review on PR #84; #121 is merged, so S3's `pathMaxSearchArea` is in.
+
+### 2026-11-21 — Phase 3 / minion plan M8 follow-up — feat/minion-bot-path-cache (PR #84 review round 2) — SamarjitBhogal + Claude Code
+
+- What was done: re-checked both CHANGES_REQUESTED reviews (claudiodh, swholtzman, both on
+  `9cabf9ae`) against the head `3760bcee`; B1, S1, S3 and N1 to N4 were already fixed there. Two
+  leftovers fixed in `BotMovement`: `reuseStep` no longer builds a `{ x, y }` object for its line
+  test on each moving decision (a `cachedStep` scratch vector, 11 §6 "no allocation in hot paths",
+  N1), and the `moveTo` TSDoc names `reuseStep` instead of a method that does not exist. No
+  behaviour change; the existing cache tests cover it. CodeRabbit posted no findings (rate
+  limited).
+- Open: the PR conflicts with `phase/3-sprint-3-work` (`54615afa`) in this file only; not merged
+  here. The PR body's "Measured" table, "Merge after #81" and the `fix/minion-stack-followups`
+  heads-up are stale (S2, N5): the 2026-11-20 entry holds the current numbers.
+- Checks run: `npm run check` (Node 24.21.0), see the PR #84 round-2 report.
+- Next step: merge phase/3 (PROGRESS conflict, keep both sides), refresh the PR body, re-request
+  review.

@@ -1,3 +1,4 @@
+import type { ResourceController } from '../data/resources/ResourceController';
 import { type GameConfig, makeLogRecord, SEVERITY, Simulation } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
@@ -15,6 +16,7 @@ import { Canvas2dRenderer } from './engine/render/Canvas2dRenderer';
 import type { SessionClock } from './engine/time/SessionClock.types';
 import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
+import { LEGEND_ATLASES } from './LegendAnimation.constants';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, LOG_RING_CAPACITY } from './Match.constants';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
@@ -26,6 +28,7 @@ import type { MatchFactory } from './SessionController.types';
 
 /** What the browser match factory is built from; `main.tsx` passes window, document and the page singletons. */
 export type BrowserMatchDeps = {
+  readonly resources?: Pick<ResourceController, 'load' | 'release' | 'atlases'>;
   /** The frame scheduler (`RafFrameScheduler`) is built on it, so the type names rAF. */
   readonly window: HostWindow & Pick<Window, 'requestAnimationFrame' | 'cancelAnimationFrame'>;
   readonly document: HostDocument;
@@ -78,7 +81,10 @@ function readEvidence(simulation: Simulation, ring: RingBufferSink): MatchEviden
  */
 export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
   return (request, viewport) => {
-    const { window, gameConfig, settings } = deps;
+    const { window, gameConfig, settings, resources } = deps;
+    const playerSpecId = request.setup.allies.find((entry) => entry.isPlayer)?.specId ?? null;
+    const atlasGroup = LEGEND_ATLASES[playerSpecId ?? '']?.group;
+    let isAtlasOwner = true;
     // Core spawns the roster's human slot, the player's Rover, at the team's Stronghold: a map
     // without one throws in `Simulation`, below.
     const config = withPlayerTeam(gameConfig, request.setup.playerTeam);
@@ -108,6 +114,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         roster: request.roster,
       });
       match = new Match({
+        playerSpecId,
         simulation,
         world: request.world,
         tickRate: gameConfig.tickRate,
@@ -140,12 +147,35 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
       input,
       bus: deps.bus,
       mapper,
-      adapters: [renderer, camera],
+      adapters: [
+        renderer,
+        camera,
+        {
+          destroy: () => {
+            isAtlasOwner = false;
+            if (atlasGroup !== undefined) resources?.release(atlasGroup);
+          },
+        },
+      ],
       evidence: () => readEvidence(simulation, ring),
       currentTick: () => simulation.tick,
     });
     // A throw here has already been undone by the host (every listener, the match, the adapters).
     host.start();
+    if (atlasGroup !== undefined && resources !== undefined) {
+      void resources
+        .load(atlasGroup, () => undefined)
+        .then(() => {
+          if (isAtlasOwner) renderer.setAtlases(resources.atlases(atlasGroup));
+        })
+        .catch((error: unknown) => {
+          logger.log(
+            makeLogRecord('WARN', 'client.resources', 'Legend atlas load failed', {
+              attributes: { error: String(error) },
+            }),
+          );
+        });
+    }
     return host;
   };
 }

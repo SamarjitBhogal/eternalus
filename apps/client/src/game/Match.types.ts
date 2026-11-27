@@ -87,6 +87,7 @@ type RemotePlayer = {
 
 /** Everything a `Match` is wired from (architecture 08 §7). */
 export type MatchDeps = {
+  readonly playerSpecId?: string | null;
   readonly simulation: MatchSimulation;
   /** Set for an online Duel: replaces the local `PlayerCommands` and the snapshot's human Legend. */
   readonly remote?: RemotePlayer;

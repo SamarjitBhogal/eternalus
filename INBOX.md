@@ -13,6 +13,25 @@ review comments under "Feedback". Answered decisions are recorded in
 
 ## Decisions needed from Sam
 
+- [ ] **Minion strength port (PR #82, 2026-11-25): sign off `LaneProgressOf`.** Built: `combat/`
+      reads lane progress through a new port, `LaneProgressOf = (laneId, team, position) => number
+| null` (`MinionStrengthStep.types.ts`), which `LaneFlowFields.progress` implements and
+      `DefaultSystemPipeline` injects. It keeps `combat/` from importing `map/` (core folder
+      rules); DEC-280 fixes what it returns (`t` from the home gate, 0, to the enemy gate, 1). No DEC
+      names the port itself (CodeRabbit, PR #82). Approve as built, or say what to change. HC-B45
+      below asks whether the polyline fallback should become a second implementation of it.
+
+- [ ] **HC-B45 — Better than the design, not built, sign-off asked: minion strength depends only
+      on its lane-progress port** (PR #82 critic, 2026-11-22). Today `MinionStrengthStep` knows two
+      ways to measure `t`: the injected `LaneProgressOf` (the lane flow field, DEC-280) and a
+      built-in fallback to the `LaneRoutes` polyline; `createDefaultDamageSteps`, `DamagePipeline`
+      and the step default the port to `null`, so a composition root that forgets to inject falls
+      back to the polyline without a sign. Proposal: make the polyline a `LaneProgressOf` too, let
+      `DefaultSystemPipeline` compose "field, else polyline", make the parameter required, and test
+      the wiring by injection instead of the `vi.mock` in `DefaultSystemPipeline.strength.test.ts`
+      (the only `vi.mock` in core). No gameplay number or behaviour changes. Approve (built in its
+      own PR) or drop.
+
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
@@ -339,6 +358,15 @@ Reply inline (`Decision: …`).
       **Done in PR #130 (2026-11-22):** defender posts carry `GuardSlot.checkpoint` and sit beside
       the zone's plan; mates need the same home and team (`GuardController`), and a `group` plan's
       group is the home's own posts only (`GroupGuardRespawn`).
+
+- [x] **PR #90 stand-in confirmation (2026-11-16).** The owner confirmed DEC-238 on
+      2026-11-20 (Owner Calls page), reaffirming their
+      [PR #90 review](https://github.com/SamarjitBhogal/eternalus/pull/90#pullrequestreview-5852980286).
+      The confirmation covers retained code-drawn map, camp and minion art, unit display sizes,
+      the follow camera and weather.
+      The confirmation excludes disputed image assets, asset provenance ADRs, and the
+      parallel ability stack.
+
 - [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
       but unhandled actions: `toggle-developer-menu` (handled since #107), `sprint`, `interact`,
       `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
@@ -878,7 +906,8 @@ Reply inline (`Decision: …`).
     snapshot); a snapshot every tick, no interpolation or prediction. (3) Core's `intent` command
     is still a stub (sprint 1.5 PlayerController), so the server translates intents into
     `move`/`stop`/`attack-target` (`SeatCommands`, ported from the client's `PlayerCommands`);
-    once `intent` is applied in core, `SeatCommands` goes. (4) Map desync risk: the client
+    once `intent` is applied in core, `SeatCommands` goes. Apply the shared drawn-size hit test
+    at that point so local and Duel input select the same targets. (4) Map desync risk: the client
     regenerates the map from `match-found.seed` with its own default `GameConfig`; a config drift
     between the two builds, or an engine-level Math difference (03 §8), would draw a world that is
     not the server's. Send the map (or a config hash) on the wire, or accept the risk while both
@@ -1098,6 +1127,8 @@ Reply inline (`Decision: …`).
   - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
     line say A\* is a `PathQuery` (PR #47). (1) Numbers from the design docs, else the agent's
     judgement, which the owner may correct later, so they stay as built.
+  - Update 2026-11-20 (PR #84): a blocked decision no longer always searches again; the brain
+    caches one waypoint and reuses it while it serves the destination (doc 11 §6).
 - [ ] **Minion M8 — exact line checks wait for wall avoidance (FYI, CodeRabbit on PR #47).**
       `WorldMap.isLineClear` samples a quarter cell apart, so a line can clip a blocked cell's
       corner unseen. An exact cell walk (DDA) catches it, but then minions hold at rift corners
@@ -3466,6 +3497,16 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Done
 
+- 2026-11-26 — **Camp rewards: the clearing Legend is the last killer; the three critic refactors
+  are dropped (DEC-375)** (`feat/camp-rewards`, PR #153): you chose "as built" for who gets the
+  camp clear bonus (the Legend that killed the camp's last mob; nobody when a minion or turret
+  does) and dropped B1 to B3. Closes "Camp rewards" and "`feat/camp-rewards` critic (2026-11-22),
+  better than the design". Decision: DEC-375.
+
+- 2026-11-26 — **Bot path cache: "one leg late" accepted (DEC-373)** (`feat/minion-bot-path-cache`,
+  PR #84): you chose (a), accept as built. The cache holds no grid version; a way that opens while
+  a bot walks a cached leg is found at most one leg late. Doc 11 §6 states it. Decision: DEC-373.
+
 - 2026-11-23 — **Your answers on the five Cathedral gem cards (DEC-346)** (`feat/cathedral-gem-hittable`,
   PR #132): recorded as DEC-346. The gem blocks movement (an unbreakable plinth under it) and a
   touch no longer strikes; a death by the gem counts for the victim's last enemy damager within the
@@ -3820,3 +3861,5 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   `docs/inbox-decisions-2026-10-03`.
 - 2026-09-30 — Phase 0 documentation + harness written on `docs/phase-0-foundation`
   (merged as PR #3; see `docs/changelog/2026-09-30-phase-0-foundation.md`).
+
+- [ ] DEC-298 (5), (7) — Selected-subclass portrait follow-up. Carry the credited Juggernaut portrait with its notice intact for the class-project MVP and replace it after delivery. Build the selected, forward-facing character cutouts using the Oracle reference and propose their actual encoded bytes for review.
