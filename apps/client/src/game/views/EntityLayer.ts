@@ -11,10 +11,10 @@ import type { ViewRegistry } from './ViewRegistry';
 
 /**
  * The scene layer that draws every entity of the latest snapshot through the `ViewRegistry`
- * (architecture 08 §8), in the main view and on the mini map (06 §8). In the main view positions
- * and facings are interpolated between the previous and current snapshot by `alpha`; an entity
- * that appeared this tick draws where it is (no ghost from the origin). It draws back to front by
- * `y`. A mini map dot sits at the snapshot position (DEC-187 (C)).
+ * (architecture 08 §8), in the main view and on the mini map (06 §8). In the main view positions,
+ * facings and jump heights (DEC-390) are interpolated between the previous and current snapshot by
+ * `alpha`; an entity that appeared this tick draws where it is (no ghost from the origin). It draws
+ * back to front by `y`. A mini map dot sits at the snapshot position (DEC-187 (C)).
  */
 export class EntityLayer implements WorldLayer {
   private states: readonly EntityDrawState[] = [];
@@ -50,10 +50,16 @@ export class EntityLayer implements WorldLayer {
     this.states = current.entities.flatMap((entity) => {
       const now = entity.transform;
       if (entity.mapObjectId !== undefined || now === null) return [];
-      const then = before.get(entity.id)?.transform ?? now;
+      const earlier = before.get(entity.id);
+      const then = earlier?.transform ?? now;
       const position = lerpPoint(then, now, alpha);
       const facing = EntityLayer.turn(then.facing, now.facing, alpha);
-      return [{ entity, position, facing, isFocused: entity.id === focusId }];
+      const height = EntityLayer.mix(
+        EntityLayer.heightOf(earlier ?? entity),
+        EntityLayer.heightOf(entity),
+        alpha,
+      );
+      return [{ entity, position, facing, height, isFocused: entity.id === focusId }];
     });
   }
 
@@ -91,6 +97,15 @@ export class EntityLayer implements WorldLayer {
         view.drawMinimap({ ...state, position: { x: at.x, y: at.y } }, renderer);
       }
     }
+  }
+
+  /** Height above the ground (a jump, DEC-390); 0 for an entity that cannot leave it. */
+  private static heightOf(entity: EntitySnapshot): number {
+    return entity.elevation?.height ?? 0;
+  }
+
+  private static mix(from: number, to: number, alpha: number): number {
+    return from + (to - from) * alpha;
   }
 
   /**

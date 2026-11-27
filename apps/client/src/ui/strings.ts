@@ -365,6 +365,7 @@ export const ACTION_LABELS: Readonly<Record<InputAction, string>> = {
   'move-down': 'Move down',
   'move-left': 'Move left',
   'move-right': 'Move right',
+  jump: 'Jump',
   attack: 'Attack',
   'ability-1': 'Ability 1',
   'ability-2': 'Ability 2',

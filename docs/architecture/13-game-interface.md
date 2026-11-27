@@ -849,6 +849,12 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   The factories also pass `isReducedMotion`: the Reduce motion setting or the system's
   `prefers-reduced-motion` (§7), so the badges stop moving under either.
 
+- **Jump (2026-11-27, DEC-390).** `InputAction` (`bridge/Binding.types.ts`) also has `jump`
+  (Space, held), which the §6.1 table predates. `InputMapper` reports it as `InputIntent.isJumping`, and `PlayerCommands` sends
+  the `jump` command only when the held state changes. `KeyboardDevice` ignores a key pressed
+  inside an open modal dialog ([09](09-hardware-abstraction.md) §11). The label is `Jump` in
+  `ui/strings.ts`.
+
 ## Related
 
 - [08-game-engine.md](08-game-engine.md) and [09-hardware-abstraction.md](09-hardware-abstraction.md): `Match`, `GameCanvas`, devices, `InputSnapshot`, the mapping pipeline.

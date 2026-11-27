@@ -18,6 +18,7 @@ export const mobAt = (id: string, x: number, y = 0, hasHealth = true): EntitySna
   area: null,
   capture: null,
   gem: null,
+  elevation: null,
 });
 
 /** A snapshot of `entities` at `tick`, whose human Legend is `me`. */

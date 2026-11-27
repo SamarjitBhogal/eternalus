@@ -3253,6 +3253,23 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
+- [ ] **Build DEC-420 (4), (7) and (9): no ability casts in the air, the Fury dash on Q, one
+      movement path (2026-11-27).** Owners: (4) the session that merges the second of PR #183
+      (the jump) and PR #123 (the ability framework) into phase/3; (7) and (9) the session that
+      merges the second of PR #183 and PR #136 (the Vanguard kit). (4) A Legend in the air (`Jump`
+      is airborne) casts no ability; attacks stay allowed. Put the check in #123's
+      `CastValidator`, the one place that refuses casts. (7) Space always jumps; the Fury dash
+      (`granted`, PR #136) moves from Space to Q. (9) Jump momentum, the dash and knockback move
+      a Legend through one shared path; build the "held in place" check (the countdown hold or
+      `cannot-move`) once there, as `JumpSystem` and `MovementSystem` now each have their own.
+      Traps: #136 binds `granted: Space` on its own line of `keybindings.ts`, so the merge shows
+      no text conflict and leaves two actions on Space; `InputMapper.test.ts` uses `KeyQ` as its
+      unbound sample key (move the sample to another unbound key; keep the test). **Owner answer
+      needed first:** `knockup` (#123) and `furyWindup` (#136) carry `cannot-move`, so after the
+      merge a knock-up or the Fury windup ends a jump in the air as a stun does (DEC-420 (5)); the
+      owner has not ruled on that. Done when the three are built with tests and the PRs are in
+      phase/3.
+
 - [ ] **Make the tower horde test faster (DEC-289, 2026-11-20).** Owner: to be assigned.
       `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its
       lane within 10 seconds (DEC-133, seed %i)", builds a whole map and match for each of its
@@ -3530,6 +3547,14 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-27 — **HC-B64: the snapshot names the jump height `elevation` (DEC-420)** (`feat/legend-jump`,
+  PR #183): you chose B, rename now. The snapshot group is `elevation: { height }`; the `jump`
+  command, the `Jump` component and the `jump` input action keep their names. Decision: DEC-420.
+
+- 2026-11-27 — **HC-B65: one movement path for jump, dash and knockback (DEC-420)**
+  (`feat/legend-jump`, PR #183): you chose A. The second of PR #183 and PR #136 to merge builds
+  the one shared path. Decision: DEC-420.
 
 - 2026-11-26 — **Minion M6c interpretations approved as built (DEC-376)**
   (`feat/minion-m6c-defender-followups`, PR #173): you approved (a) to (g) as built (the 10 m from
