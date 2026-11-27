@@ -843,7 +843,7 @@ Reply inline (`Decision: …`).
       (5) Built (critic round 5): the map view picks one ruin look per fallen object (one ruin over
       the whole box, or one ruin per wall piece) and uses it both to cull and to draw.
 
-- [ ] **HC-B42 — Better than the design, sign-off asked: 4 code ideas from the tower-orb
+- [x] **HC-B42 — Better than the design, sign-off asked: 4 code ideas from the tower-orb
       critic, built (`feat/tower-orbs`, critic rounds 1 to 3, 2026-11-23; DEC-362;
       PR-REVIEW-ASSIST-41 to -43).** Nothing changes in play. Say "no" to a built item and it goes
       back. (1) The orb blast uses the one shared rule for "which bodies does an area hit"
@@ -859,6 +859,7 @@ Reply inline (`Decision: …`).
       are too far away; when two units stand where a shot lands, the first in the game's list
       takes the hit, because the shot lands on a point, not on a unit); two small code
       clean-ups that save little (DEC-362 (7)).
+  - Answered 2026-11-26 (DEC-362): "A: sign off all four (built)" (Owner Calls version 98).
 
 - [x] **HC-Q93 — Where does a wall turret's bolt stop? (`feat/wall-turrets`, PR 4, Owner Calls
       card "WT bolt stop").** A turret aims where its target will be. Options: (A, recommended,
@@ -930,7 +931,7 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-26 (DEC-366): "As the wall turrets: if an enemy Legend hit one of your Legends
     near the tower in the last 3 s, shoot it at once; else the nearest enemy" (A, built).
 
-- [ ] **HC-Q114 — May a tower orb hit a Legend who runs out past 30 m? (`feat/tower-orbs`, card
+- [x] **HC-Q114 — May a tower orb hit a Legend who runs out past 30 m? (`feat/tower-orbs`, card
       "HC-Q114 orb lands past 30 m", tower-orb critic round 4 S3, 2026-11-26;
       PR-REVIEW-ASSIST-46).** A lane tower picks targets only inside 30 m of its centre
       (DEC-366). It aims an orb at the place where the target will be when the orb lands. When a
@@ -940,6 +941,8 @@ Reply inline (`Decision: …`).
       Legend at the edge who runs straight away escapes the shot. The orb PR does not wait on the
       answer: A needs no change, B changes one number. Code names: `range` of `TOWER_ORB` in
       `content/projectiles/towerOrb.ts` (B sets it to the reach); `ai/predictiveAim.ts`.
+  - Answered 2026-11-27 (DEC-400): "A: the orb follows a runner past 30 m (built)" (Owner Calls
+    version 103). The code does not change.
 
 - [ ] **HC-B36 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: one health pool for a wall turret, and the wall turret code layout
