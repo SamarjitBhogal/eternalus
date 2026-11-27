@@ -195,7 +195,7 @@ The game doc gives each MVP class only two abilities (Warrior: Veil, Blade Runne
 | Magus    | Nova (ultimate)                    | meter    | 0      | expand 2 s (stun 0.5 s, knockback 1 m) → pull 1.5 s → burst 300 magical + concussion 3 s, blind 1.5 s for enemies facing you within 6 m; burst damage × 1.5 at point-blank |
 | Magus    | Revive (class default action)      | 45 s     | 30     | channel 2 s within 3 m of an intact ally corpse (≤ 15 s old); revived at 40% health; that ally cannot be revived again for 60 s                                            |
 
-Ultimate meter (`TUNE` "kills, assists and objective damage fill your ultimate; it does not fill passively; you lose a small N% on death"): Legend kill +25, assist +12, minion kill +1, structure damage +1 per 2% of the structure's base health, boss damage +1 per 1%, death −15; a 10 s post-cast lockout stops back-to-back ultimates after a lock extension. Erudition (the "Studious" passive) applies as +20% duration, +10% potency, +25% meter gain.
+Ultimate meter (`TUNE` "kills, assists and objective damage fill your ultimate; it does not fill passively; you lose a small N% on death"): Legend kill +25, assist +12, minion kill +1, structure damage +1 per 2% of the structure's base health, boss damage +1 per 1%, death −15; a 10 s post-cast lockout stops back-to-back ultimates after a lock extension. Erudition (the "Studious" passive) applies as +20% duration, +10% potency, +25% meter gain (DEC-330; basic attacks do not change). Necromancy (DEC-330): up to +30% damage dealt and up to 15% less damage taken, with basic attacks and abilities alike; nothing at full health, the full bonus at 15% health or less, in a straight line between.
 
 ## XP curve and level cap — MVP
 

@@ -133,7 +133,7 @@ describe('LEGEND_CLASSES', () => {
   it('gives the passives and default action from 01-classes (Warrior has no passive)', () => {
     expect(LEGEND_CLASSES.get('warrior').passiveOptions).toEqual([]);
     expect(LEGEND_CLASSES.get('sentinel').passiveOptions).toEqual(['wrecking-run']);
-    expect(LEGEND_CLASSES.get('magus').passiveOptions).toEqual(['studious', 'necromancy']);
+    expect(LEGEND_CLASSES.get('magus').passiveOptions).toEqual(['erudition', 'necromancy']);
     expect(LEGEND_CLASSES.all().map((legend) => legend.defaultAction)).toEqual([
       null,
       null,

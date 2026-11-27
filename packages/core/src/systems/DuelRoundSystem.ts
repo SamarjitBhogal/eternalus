@@ -17,8 +17,9 @@ import type { System, SystemContext } from './System.types';
  * dash after its wind-up), so a damage over time cannot kill a Legend the tick after and a push
  * cannot slide it off its start point. Each status ends through
  * the match's `StatusEffectApplier`, oldest first, so each one emits `status-expired` and an ability
- * it granted leaves the `granted` slot with it (Fury's dash). It runs before `DeathSystem`, so the
- * dead Legend is healed before it would be removed.
+ * it granted leaves the `granted` slot with it (Fury's dash). A passive's status goes too, and the
+ * passive is due again, so `AbilitySystem` puts it back on the next tick, before any combat (05
+ * §7). It runs before `DeathSystem`, so the dead Legend is healed before it would be removed.
  */
 export class DuelRoundSystem implements System {
   public readonly name = 'duel-round';
@@ -61,6 +62,8 @@ export class DuelRoundSystem implements System {
       for (const statusId of ids) {
         this.statuses.remove(state, legend.id, statusId);
       }
+      // The passive's status went with the rest; `AbilitySystem` puts it on again next tick.
+      legend.findComponent(Abilities)?.rearmPassive();
       legend.getComponent(Transform).moveTo(this.starts[team]);
     }
   }

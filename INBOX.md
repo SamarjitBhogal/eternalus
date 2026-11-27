@@ -562,6 +562,8 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-20 (DEC-307): "MVP-if-time: after the abilities (PR 8), Wrecking Run first",
     with a note: momentum exists but needs a physics feel (turns that slide, a Shield Wall-type
     ability that stops a Sentinel, barging through objects and buildings).
+  - Built 2026-11-23 (DEC-330, `feat/magus-passives`): Erudition (was Studious) and Necromancy,
+    with the owner's numbers; the sub-class sets the passive.
 - [x] **HC-Q74 — Magus staff: keep a melee attack when it turns ranged? (combat audit,
       COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).** Your weapon
       ruling (DEC-64): "Mages all have staves, which have ranged attacks (default) and melee
@@ -707,6 +709,50 @@ Reply inline (`Decision: …`).
     the resolver and `Momentum` share one slide rule, `utils/slideOff.ts` (10 §7). A Sentinel
     pressed into a 120° or 135° corner now settles and faces one way, and a push into the corner no
     longer moves it (numbers: `docs/plan/progress/2026-11-23-0900-fix-wide-corner-slide.md`).
+
+- [ ] **HC-B40 — Better than the design, your sign-off: eight small changes that the Magus
+      passives critic proposes (`feat/magus-passives`, architecture critic rounds 1 and 2,
+      2026-11-23; eternalus-149, eternalus-150, eternalus-151).** Nothing that the player sees
+      changes. Seven are built under your standing rule (DEC-223), recorded as DEC-361. One (3) is
+      a follow-up, because two open PRs change the same code. Sign off, or name the ones to undo.
+  - (1) Built. Who puts a passive on. 05 §7 said that the Legend does it when it spawns. The
+    Legend cannot reach the status code, so `AbilitySystem` does it first in its pass, and a Duel
+    round reset makes it due again (DEC-338 (4)). 05 §7 now says so.
+  - (2) Built. A default passive per class (`defaultPassiveId`: Sentinel Wrecking Run; Vanguard
+    and Magus none). A spec's `passiveId: null` now means "the class default", as `kit: null`
+    does (`passiveOf`). A Legend with no spec (a developer spawn) now gets the class default.
+  - (3) Not built: a follow-up after PRs #162 and #163 merge. A passive's cast and a hit's cast
+    both use the `default-action` slot (the basic attack, later Revive). Proposal: a cast says
+    where it comes from (a bar slot, a passive or a hit). #162 and #163 rewrite `HitEffects`.
+  - (4) Built. One check per rule: `PassiveInOptionsRule` checks the passive, and
+    `KitInPoolRule` checks only the kit.
+  - (5) Built. At boot, `checkStatusLinks` rejects a passive step that is not a `buff` of a status
+    that lasts until removed, and a buff that waits or has a time of its own.
+  - (6) Built. A status can say that it is never stretched (`hasFixedDuration`). Fury's wind-up
+    has it, because its time matches the dash step. The knock-back statuses need no flag: a
+    knock-back step does not stretch them (DEC-337 (4), on its own card).
+  - (7) Built (round 2). Code only: `castStatsOf` is the one read of a caster's ability stats;
+    `AbilitySystem` and the test fixture both use it, so a test cannot drift from the code.
+  - (8) Built (round 2). Code only: `StatusEffectApplier.durationFor` holds the stretch rule
+    beside the status data. It replaces the methods `durationOf` and `hasFixedDuration`; the
+    status field `hasFixedDuration` stays.
+  - **Answered 2026-11-26 in DEC-361** (Owner Calls page v98): "A: sign off all seven (built)".
+    (3) stays a follow-up, so this item stays open for (3) only; (3) is built after PRs #162 and
+    #163 merge.
+    The DEC-337 (4) card was answered on the same page: "B: stretch them by 20% too", so a
+    knock-back step now stretches its statuses; they still need no flag.
+
+- [ ] **HC-B51 — Better than the design, your sign-off: one way for an ability step to put on a
+      status (`feat/magus-passives`, PR #166 critic, 2026-11-26; eternalus-157).** Nothing that
+      the player sees changes. Built under your standing rule (DEC-223). Keep it, or undo it.
+  - Before: a step got the status code itself and a separate "how long" helper. A step that
+    forgot the helper put on a status without the Erudition stretch, and nothing caught it.
+  - Now: a step can only call `CastContext.applyStatus(target, step)`. It credits the caster
+    and always stretches the time (a status with `hasFixedDuration` keeps its time). The buff,
+    debuff and knock-back steps use it.
+  - Why now: `feat/sentinel-kit-room` and PR #175 change the same knock-back and debuff code,
+    and PR #162 changes the debuff code. Their old calls no longer compile after this PR, so a
+    merge cannot drop the stretch without notice.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
@@ -2717,6 +2763,8 @@ Reply inline (`Decision: …`).
     too. I see this could be a whole WI. For now we start building out the selection screen. Next
     sprint we do the rest." Recorded in DEC-70. **Waits for:** the next sprint's plan tasks for
     sub-class gameplay, which agents propose, and the backlog row's move.
+  - Part built 2026-11-23 (DEC-330, `feat/magus-passives`): the spec's `passiveId` is the second
+    gameplay field a match reads, after `kit` (architecture 17 R2).
 - [ ] **HC-Q18 — Making roster changes cheap: four decisions (not urgent; they save time later;
       OD-38).** An audit renamed a sub-class title, a Legend name, a class display name and a
       Legend id on scratch copies to see what each change touches. The cheap fixes are now built in
@@ -3650,6 +3698,8 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       the code).
   - (1) `passiveOptions`: a class chooses between passives (Magus: Studious or Necromancy),
     while 04 §5 has a single `passiveId`.
+    Update 2026-11-23 (DEC-330): a spec now has one `passiveId`, taken from its class's
+    `passiveOptions` (Studious is now Erudition).
   - (2) `obstacleType`: `ObstacleDefinition.kind` stays `'obstacle'` (the entity class) and
     tree/rock/bridge go to `obstacleType`. It fixes the conflict between 04 §1/§5 and 07 §9.
   - (3) `Collider` fields: 04 §3 → 10 §4's `isStatic`/`isEnabled`/`isUnbreakable`.

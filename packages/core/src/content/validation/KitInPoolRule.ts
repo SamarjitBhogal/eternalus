@@ -7,8 +7,8 @@ import { kitSubjectOf } from './kitSubjectOf';
 
 /**
  * Every ability a kit equips is in the class's `abilityPool` (DEC-198: a loadout picks from the
- * pool). Checks a class's `defaultKit` and a spec's own `kit`; a spec with no kit has nothing to
- * check.
+ * pool). Checks a class's `defaultKit` and a spec's own `kit`; a spec with none has nothing to
+ * check. `PassiveInOptionsRule` checks the passive.
  */
 export class KitInPoolRule implements UnitDefinitionRule, ContentRule<LegendSpecDefinition> {
   /** @param legends - The loaded Legend classes, for a spec's class pool. */
@@ -16,14 +16,13 @@ export class KitInPoolRule implements UnitDefinitionRule, ContentRule<LegendSpec
     private readonly legends: Pick<ContentCatalogue<LegendDefinition>, 'has' | 'get'>,
   ) {}
 
-  /** Flags each kit id outside the pool: `kit "<id>" is not in the abilityPool of class "<class>"`. */
+  /** Flags each kit id outside the pool (`kit "<id>" is not in the abilityPool of class "<class>"`). */
   public check(definition: UnitDefinition | LegendSpecDefinition): readonly string[] {
     const subject = kitSubjectOf(definition, this.legends);
-    const kit = subject?.kit;
-    if (subject === null || !kit) {
+    if (subject?.kit == null) {
       return [];
     }
-    const { classId, pool, kitName } = subject;
+    const { classId, pool, kit, kitName } = subject;
     return [...kit.abilities, kit.ultimate]
       .filter((id) => !pool.includes(id))
       .map((id) => `${kitName} "${id}" is not in the abilityPool of class "${classId}"`);

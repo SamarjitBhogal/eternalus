@@ -16,7 +16,9 @@ import { mustBePositive } from '../specChecks';
  * the owner); knock-backs that reach one target in the same tick add up as vectors, because each
  * is its own push. A target exactly on the centre is pushed along the cast's direction, and not at
  * all when the cast has none (aimed at the caster). Every target the step reaches, moved or not,
- * is staggered; `knockup` also knocks it up.
+ * is staggered; `knockup` also knocks it up. Both statuses go through `CastContext.applyStatus`, so
+ * the cast's `stretch` (the caster's `abilityDuration`, Erudition) lengthens them, as it does
+ * every debuff's (DEC-337 (4)); the push keeps its travel time.
  */
 export class KnockbackEffect implements AbilityEffect<KnockbackSpec> {
   public readonly kind = 'knockback';
@@ -49,9 +51,9 @@ export class KnockbackEffect implements AbilityEffect<KnockbackSpec> {
           movement.push({ x: away.x * metres, y: away.y * metres }, travelTicks);
         }
       }
-      cast.statuses.apply(state, targetId, staggerStatusId, cast.casterId);
+      cast.applyStatus(targetId, { statusId: staggerStatusId });
       if (spec.knockup === true) {
-        cast.statuses.apply(state, targetId, knockupStatusId, cast.casterId);
+        cast.applyStatus(targetId, { statusId: knockupStatusId });
       }
     }
   }

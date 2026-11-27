@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../../combat/DamagePipeline';
 import { Health } from '../../components/Health';
+import { StatusEffects } from '../../components/StatusEffects';
 import { Transform } from '../../components/Transform';
+import { loadStatusEffects } from '../../content/status-effects/loadStatusEffects';
 import { Entity } from '../../entities/Entity';
 import type { GameEventMap } from '../../state/GameEvents.types';
 import { casterState } from '../__fixtures__/casterState';
@@ -127,5 +129,27 @@ describe('DamageEffect', () => {
 
   it('shows its area on the aim overlay', () => {
     expect(new DamageEffect().describe(HIT)).toEqual([{ kind: 'damage', shape: AREA }]);
+  });
+
+  it('multiplies the amount by the caster’s abilityPotency (Erudition, +10%), after level scaling', () => {
+    const { state, caster, at, hits } = setUp();
+    at(2, 'dark');
+    caster.getComponent(StatusEffects).apply(loadStatusEffects(30, 2).get('erudition'), null, 0);
+
+    castSteps(state, caster.id, [{ ...HIT, amount: 50 }], {
+      level: 6,
+      scaling: { amount: { perLevel: 0.04 } },
+    });
+
+    expect(hits[0]?.amount).toBeCloseTo(60 * 1.1);
+  });
+
+  it('leaves the amount alone for a caster with no potency status', () => {
+    const { state, caster, at, hits } = setUp();
+    at(2, 'dark');
+
+    castSteps(state, caster.id, [HIT]);
+
+    expect(hits[0]?.amount).toBe(100);
   });
 });

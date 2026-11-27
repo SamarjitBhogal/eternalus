@@ -18,6 +18,7 @@ import { KnownProjectileRule } from './validation/KnownProjectileRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
 import { MomentumWalkSpeedRule } from './validation/MomentumWalkSpeedRule';
+import { PassiveInOptionsRule } from './validation/PassiveInOptionsRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
@@ -38,6 +39,7 @@ describe('createDefaultContentRules', () => {
       KnownProjectileRule,
       KnownAbilityRefsRule,
       KitInPoolRule,
+      PassiveInOptionsRule,
     ]);
   });
 
@@ -82,6 +84,7 @@ describe('createLegendSpecRules', () => {
       RoleRatingRangeRule,
       KnownAbilityRefsRule,
       KitInPoolRule,
+      PassiveInOptionsRule,
     ]);
   });
 

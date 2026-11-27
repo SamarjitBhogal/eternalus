@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-26
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -467,8 +467,15 @@ binds it to each ability and `loadDisplayContent` publishes it as `AbilityDispla
 (§15), so the client decides "cast at once, no pointer needed" from the ability in the slot,
 never from the slot or the targeting kind (DEC-283 (8), `INBOX.md` HC-Q62 (1)).
 
-Passives (`slot: 'passive'`: Wrecking Run, Studious (name pending), Necromancy) are applied once
-by `Legend.onSpawn` as permanent `buff` effects, so they are ordinary statuses with modifiers.
+Passives (`slot: 'passive'`: Wrecking Run, Erudition, Necromancy) are permanent `buff` effects,
+so they are ordinary statuses with modifiers. A Legend's passive is its spec's, else its class's
+default (`passiveOf`). `Abilities` holds it and marks it due at spawn. `AbilitySystem` puts on each
+due passive first in its pass, casters in id order, before the queued casts: no price, no cooldown
+and no `ability-cast`. `Legend.onSpawn` cannot do it, because an entity cannot reach the match's
+`StatusEffectApplier`. So a Legend that spawns later in a tick gets its passive on the next tick. A
+Duel round reset removes every status, so `DuelRoundSystem` makes the passive due again, and it is
+back on the next tick, before combat. At boot, `checkStatusLinks` rejects a passive step that is not
+a `buff` of a status that lasts until removed (DEC-338, DEC-361).
 A passive can also be a block of movement numbers that the movement code reads every tick: Wrecking
 Run's build-up and slide are the Sentinel's `movementProfile.momentum` (10 §2; DEC-330, `INBOX.md`
 HC-B29 (2)).
@@ -787,7 +794,7 @@ export type Loadout = {
   readonly specId: LegendSpecId | null; // gameplay spec (ADR 0018); null until built (HC-Q17)
   readonly primaryWeaponId: WeaponId; // MVP
   readonly secondaryWeaponId: WeaponId | null; // MVP-if-time
-  readonly passiveId: AbilityId | null; // MVP-if-time (Magus: Studious or Necromancy)
+  readonly passiveId: AbilityId | null; // MVP-if-time (Magus: Erudition or Necromancy)
   readonly artifacts: readonly [AbilityChoice | null, AbilityChoice | null]; // slots MVP, items MVP-if-time; varietyId = mode
   readonly abilities: readonly [AbilityChoice, AbilityChoice, AbilityChoice]; // MVP
   readonly ultimate: AbilityChoice; // MVP; a choice where a class has two
@@ -1095,7 +1102,8 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     its circle. A structure is to be reached by its outline too, and one cast may then damage the
     map object and the structure (DEC-284 (2), a follow-up PR after the freeze). `TargetFilter` has `team` and `includeSelf` only. `CastContext` has `placement`, `direction`, `scaled(field, value)`
     (the level growth that §13 calls `potency`), `targets`, `centreFor` and `run` (a dash's
-    nested steps) in place of `origin`, `facing`, `potency`, `rng` and `factory`. The pipeline
+    nested steps) in place of `origin`, `facing`, `rng` and `factory`; its `potency` holds the
+    status part only ("Magus passives" below). The pipeline
     still takes no `DamageType` (§9).
   - **Registry and cast.** `AbilityRegistry.resolve(abilityId)` takes no variety or upgrade yet;
     `createDefaultAbilityRegistry` also registers the shapes and checks and resolves every ability
@@ -1278,6 +1286,50 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     client checks neither the slot nor the targeting kind. The HUD shows a prompt (key and name)
     while the slot holds an ability (DEC-283 (7)). A bot may cast a filled `granted` slot
     (`pickReadySlot`).
+
+- **Magus passives (`feat/magus-passives`, 2026-11-23; DEC-330, DEC-337, DEC-338, DEC-361).** A
+  Legend's passive comes from its spec, else its class (`passiveOf`):
+  `LegendSpecDefinition.passiveId` (the specs in `content/legends/specs/`), and when that is
+  `null`, `LegendDefinition.defaultPassiveId` (`null` = no passive). The owner chose the passive by
+  sub-class for now (DEC-330 P1); the loadout's `passiveId` (§12) is not built.
+  `KnownAbilityRefsRule` checks that each id in a class's `passiveOptions`, its `defaultPassiveId`
+  and each spec `passiveId` is a `passive` ability of that class, and `PassiveInOptionsRule` checks
+  that the class default and a spec's `passiveId` are among the class's `passiveOptions`. A
+  passive ability costs no aether and has no cooldown (`loadAbilities`). Each of its steps is a
+  `buff` that puts a permanent status on the Legend at once (`checkStatusLinks`); Wrecking Run has
+  none (DEC-338 (5)). Where the code differs from §3, §6, §7 and §8:
+  - **The passive's cast (§7).** Its steps run as a cast at the caster in the `default-action`
+    slot, as a status's `onHit` steps do (`HitEffects`). A cast that says where it comes from (a
+    bar slot, a passive or a hit) is a follow-up after PRs #162 and #163 (`INBOX.md` HC-B40 (3)).
+    `StateHasher` adds the field `passive-due` only while a passive is due, so the golden replays
+    stay valid. On a Duel reset tick, a meter gain after the reset (a capture that ends on that
+    tick) is not multiplied (DEC-338).
+  - **Wrecking Run (§7).** Its passive ability has no steps (`effects: []`): its effect is the
+    Sentinel's movement numbers (DEC-307), not a status. It exists so that every id in
+    `passiveOptions` is an ability.
+  - **New stats (§8; DEC-337).** `abilityPotency` multiplies the damage of an ability's `damage`
+    steps. `abilityDuration` stretches the time of every status that an ability's step applies:
+    `buff`, `debuff`, and the `staggered` and `knockup` of a `knockback` (DEC-337 (4)); at least
+    one tick, and a status with no end stays without one. A knock-back's push keeps its travel
+    time. A status with `hasFixedDuration` is never stretched, because its time matches a step of
+    its ability (Fury's wind-up; DEC-361). `ultimateGain` multiplies each gain of the ultimate
+    meter, not a loss (§6; `UltimateCharge`), so the meter still moves only on an event
+    (DISC-44). Erudition holds all three (`content/status-effects/erudition.ts`). Basic attacks do
+    not change: a status's `onHit` steps (`HitEffects`) read 1 for both ability stats.
+  - **How a step applies a status (§3; HC-B51, built, waiting for the owner's sign-off).**
+    `CastContext` does not carry the `StatusEffectApplier`. A step calls
+    `CastContext.applyStatus(targetId, step)`, which credits the caster and stretches the time
+    (`StatusEffectApplier.durationFor`), so no step can miss the stretch.
+  - **Modifier scaled by lost health (§8).** A `StatModifier` can have `byLostHealth: { fullAt }`:
+    no effect at full health, its full value at `fullAt` of max health or less, in a straight
+    line between. Only `damageDealt` and `damageTaken` take it, and `0 <= fullAt < 1`
+    (`loadStatusEffects`). `StatusEffects.multiplier(stat, healthFraction)` reads it;
+    `StatusModifierStep` passes each side's health. Necromancy holds both stats and its `fullAt`
+    (`content/status-effects/necromancy.ts`); a shield does not count as health (DEC-338).
+  - **`CastContext.potency` (§3).** It is the status part only. The level growth stays in
+    `scaled(field, value)` (§13). `CastFacts` carries `potency` and `stretch`: `AbilitySystem`
+    reads the caster's `abilityPotency` and `abilityDuration` on each tick that steps of the cast
+    fire, not once per cast, so the steps that fire on one tick share them.
 
 ## Related
 

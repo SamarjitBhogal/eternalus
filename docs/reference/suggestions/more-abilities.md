@@ -4,7 +4,7 @@ description: Proposed additional abilities and alternative ultimates for the thr
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-23
 tags: [reference, suggestions, abilities, ultimates, status-effects, content]
 paths:
   [
@@ -122,7 +122,7 @@ Why Avalanche: it turns the Sentinel's movement profile (low acceleration, huge 
 
 ## 4. Magus — MVP class
 
-The game doc gives Magus **Imbue** (Damage/Support), **Shockwave** (knockback + concussion), ultimates **Death Ray** and **Nova**, the passives **Studious** and **Necromancy**, the **Revive** default action and **Levitate**. It "applies buffs or debuffs" and is the only healer-ish class, so its third ability should be the support tool that makes the Support variety of Imbue a real choice.
+The game doc gives Magus **Imbue** (Damage/Support), **Shockwave** (knockback + concussion), ultimates **Death Ray** and **Nova**, the passives **Studious** (now Erudition, DEC-330) and **Necromancy**, the **Revive** default action and **Levitate**. It "applies buffs or debuffs" and is the only healer-ish class, so its third ability should be the support tool that makes the Support variety of Imbue a real choice.
 
 | Ability                     | Effect (one line)                                                                                                                    | Damage type | Varieties (loadout)                                                                                                   | Counterplay                                                                                                                | Composes                                      | Status                                                       |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------- | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------ |

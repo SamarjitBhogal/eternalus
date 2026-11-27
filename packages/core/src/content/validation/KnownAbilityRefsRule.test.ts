@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ABILITIES } from '../abilities/abilityCatalogue';
 import { LEGEND_CLASSES } from '../legends/legendCatalogue';
+import { MAGUS } from '../legends/magus';
 import { ORACLE } from '../legends/specs/oracle';
 import { WARRIOR } from '../legends/warrior';
 import { KnownAbilityRefsRule } from './KnownAbilityRefsRule';
@@ -54,5 +55,48 @@ describe('KnownAbilityRefsRule', () => {
 
   it('has nothing to check on a spec with no kit', () => {
     expect(rule.check({ ...ORACLE, kit: null })).toEqual([]);
+  });
+
+  describe('passives', () => {
+    const lastOf = (messages: readonly string[]) => messages.at(-1) ?? '';
+
+    it('flags a spec passiveId that names no ability', () => {
+      expect(rule.check({ ...ORACLE, passiveId: 'erudtion' })).toEqual([
+        'passiveId "erudtion" names no ability',
+      ]);
+    });
+
+    it("flags a spec passiveId that is another class's passive", () => {
+      expect(rule.check({ ...ORACLE, passiveId: 'wrecking-run' })).toEqual([
+        'passiveId "wrecking-run" belongs to class "sentinel"',
+      ]);
+    });
+
+    it('flags a spec passiveId that is not a passive', () => {
+      const messages = rule.check({ ...ORACLE, passiveId: 'shockwave' });
+
+      expect(messages).toHaveLength(1);
+      expect(lastOf(messages)).toMatch(/^passiveId "shockwave" is not a passive$/);
+    });
+
+    it('flags a class passiveOptions entry that is not a passive', () => {
+      const magus = { ...MAGUS, passiveOptions: [...MAGUS.passiveOptions, 'shockwave'] };
+      const messages = rule.check(magus);
+
+      expect(messages).toHaveLength(1);
+      expect(lastOf(messages)).toMatch(/^passiveOptions "shockwave" is not a passive$/);
+    });
+
+    it('flags a class defaultPassiveId that is not a passive (DEC-361)', () => {
+      const magus = { ...MAGUS, defaultPassiveId: 'shockwave' };
+      const messages = rule.check(magus);
+
+      expect(messages).toHaveLength(1);
+      expect(lastOf(messages)).toMatch(/^defaultPassiveId "shockwave" is not a passive$/);
+    });
+
+    it('accepts a spec with no passive', () => {
+      expect(rule.check({ ...ORACLE, passiveId: null })).toEqual([]);
+    });
   });
 });
