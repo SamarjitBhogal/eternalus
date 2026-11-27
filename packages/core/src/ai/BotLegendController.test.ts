@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
@@ -334,6 +334,34 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
 
     expect(stronghold).toBe('entity-1001');
     expect(state.entities.isInReach(bot, stronghold)).toBe(true);
+  });
+
+  it('keeps its A* waypoint in brain memory and reuses it, searching again once the map changes (11 §6, DEC-379)', () => {
+    // Beside the wall, south of the lane: the way round the wall's end is nearer than the
+    // Stronghold, so the cached waypoint is still on the way (at x 158, y 100 it is not).
+    const { state, decide } = setUp({ x: 160, y: 125 }, WALLED_STRONGHOLD_MAP, true);
+    spawnMapStructures(state);
+    const { paths } = state;
+    if (paths === null) throw new Error('setUp gave no pathfinder');
+    const search = vi.spyOn(paths, 'waypoint');
+
+    const first = decide();
+    const searched = search.mock.calls.length;
+    expect(searched).toBeGreaterThan(0);
+    expect(first.memory).toMatchObject({ pathVersion: paths.version });
+
+    decide(first.memory);
+    expect(search).toHaveBeenCalledTimes(searched);
+
+    // Any stamp changes the map's version, even one far from the way.
+    state.world?.grid.stampFootprint([
+      { x: 0, y: 0 },
+      { x: 2, y: 0 },
+      { x: 2, y: 2 },
+      { x: 0, y: 2 },
+    ]);
+    decide(first.memory);
+    expect(search).toHaveBeenCalledTimes(searched + 1);
   });
 
   it('Fight before Push: an enemy unit near the structure is fought first', () => {
