@@ -114,6 +114,11 @@ export interface SessionContext {
    */
   canRepeatMatchSetup(): boolean;
   /**
+   * Whether the win/lose screen counts down to the menu: after a local match, not after an online
+   * Duel, whose screen stays until the player leaves it (`hasResultsCountdown`, SCRUM-449).
+   */
+  hasResultsCountdown(): boolean;
+  /**
    * Publishes the current setup again, unchanged (a rematch, architecture 13 §2).
    * @throws Without a setup a rematch can repeat; ask `canRepeatMatchSetup` first.
    */

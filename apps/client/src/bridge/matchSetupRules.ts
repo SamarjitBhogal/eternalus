@@ -11,3 +11,11 @@ import type { MatchMode } from './events';
 export function canRepeatSetup(mode: MatchMode | null): boolean {
   return mode === 'local';
 }
+
+/**
+ * The win/lose screen counts down to the menu after every match but a Duel (DEC-78); a Duel's
+ * stays until the player leaves it (DEC-347, which changes DEC-78 for a Duel; SCRUM-449).
+ */
+export function hasResultsCountdown(mode: MatchMode | null): boolean {
+  return mode !== 'duel';
+}

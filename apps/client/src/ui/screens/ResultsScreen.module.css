@@ -37,3 +37,13 @@
   display: flex;
   gap: 24px;
 }
+
+/* An ended Duel's final score: Cinzel Regular 36, white (SCRUM-449). */
+.score {
+  margin: 0;
+  color: var(--selection-text);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(36px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-36) * 1px);
+}

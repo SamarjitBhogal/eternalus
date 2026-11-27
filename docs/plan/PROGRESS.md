@@ -10402,6 +10402,25 @@ Duel` > "starts both Legends at max level and spawns minions at their normal lev
   entry. Critic (architecture-reviewer): PASS WITH NOTES, no violations, four nits not applied.
 - Next step: `/ponytail-review`, then push and open the PR into phase/3.
 
+### 2026-11-20 — Phase 3 / Duel results: final score, no countdown (SCRUM-449) — feat/duel-results-score — claudiodh + Claude Code
+
+- What was done: the owner's demo feedback (SCRUM-449). VICTORY / DEFEAT and the opponent-left
+  victory (DEC-250, DEC-251) were already built; this adds the rest. The Duel's win/lose screen
+  shows both players' names with the final kill score ("Ana 10 – Rival 5", own side first) and
+  has no countdown: it stays until the player leaves it. `hasResultsCountdown`
+  (`bridge/matchSetupRules.ts`) is the one rule, read by `ResultsState` (through
+  `SessionContext.hasResultsCountdown`) and `selectResultsView` (new `hasCountdown`, `duelScore`).
+  The names and kills were not reliable at the end: the Duel's setup clears `versus`, and
+  `duel-state` is throttled, so the winning kill could be missing. `SessionController.endDuel` now
+  publishes the names again and the score from the server's last snapshot
+  (`game/duel/finalDuelScore.ts`) before `duel-ended`. No protocol or server change (works with a
+  server already deployed). Local match results unchanged. Architecture 13 §2 and §3 updated.
+- Checks run: full `npm run check` exit 0 (core 275 files / 1674 tests, protocol 1 / 29, client
+  298 / 2015, server 21 / 84, "Documentation check passed.").
+- Next step: the pre-PR gate (critic, ponytail), then push and open the PR into phase/3; expect
+  small conflicts with #118 (`SessionController`, `FakeSessionContext`, `events.ts`) and #138
+  (`SessionController`).
+
 ### 2026-11-20 — Phase 3 / Duel arena: only the two Legends in a closed Cathedral (SCRUM-445, SCRUM-446, SCRUM-447, SCRUM-450) — feat/duel-arena-only-legends — claudiodh + Claude Code
 
 - What was done: the owner's feedback on the Duel demo of 2026-11-20 (run by claudiodh), recorded
