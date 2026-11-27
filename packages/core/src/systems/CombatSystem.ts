@@ -6,8 +6,6 @@ import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
-import { AreaHitQuery } from '../state/AreaHitQuery';
-import { ReachQuery } from '../state/ReachQuery';
 import type { HitRunner } from '../state/HitRunner.types';
 import { normalizeInto } from '../utils/vec2';
 import type { MutableVec2 } from '../utils/vec2.types';
@@ -50,20 +48,24 @@ export class CombatSystem implements System {
   private readonly hits: HitRunner | null;
   private readonly strategies: StrategyRegistry;
   private readonly factory: EntityFactory;
-  /** The one hit rule for areas, which the sweep and the shot apply (stateless). */
-  private readonly areas = new AreaHitQuery();
-  /** The one aim rule: reach and the point a unit faces. */
-  private readonly reach = new ReachQuery();
+  /** The match's one hit rule for areas, which the sweep and the shot apply. */
+  private readonly areas: CombatSystemOptions['areas'];
+  /** The match's one aim rule: reach and the point a unit faces. */
+  private readonly reach: CombatSystemOptions['reach'];
 
   /** Creates the system from its injected parts (`CombatSystemOptions`). */
   public constructor({
     damage,
     factory,
+    areas,
+    reach,
     hits = null,
     strategies = createDefaultStrategyRegistry(),
   }: CombatSystemOptions) {
     this.damage = damage;
     this.factory = factory;
+    this.areas = areas;
+    this.reach = reach;
     this.hits = hits;
     this.strategies = strategies;
   }

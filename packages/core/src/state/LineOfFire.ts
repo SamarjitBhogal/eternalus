@@ -9,13 +9,13 @@ import { distance, distanceToSegment, isPointInAnyPolygon } from '../utils/geome
 import type { Vec2 } from '../utils/geometry.types';
 import { normalizeInto, subInto } from '../utils/vec2';
 import type { MutableVec2 } from '../utils/vec2.types';
-import { AreaHitQuery } from './AreaHitQuery';
+import type { AreaHitQuery } from './AreaHitQuery';
 import { BODY_BEFORE_WALL_MARGIN } from './CollisionQuery.constants';
 import type { EntityId } from './EntityStore.types';
 import type { GameState } from './GameState';
 import { isTouchedBeforeWall } from './isTouchedBeforeWall';
 import type { LineOfFireQuery } from './LineOfFire.types';
-import { ReachQuery } from './ReachQuery';
+import type { ReachQuery } from './ReachQuery';
 
 /**
  * The match's line-of-fire query (architecture 05 §10, DEC-317), built once by `Simulation` with
@@ -38,14 +38,17 @@ import { ReachQuery } from './ReachQuery';
 export class LineOfFire implements LineOfFireQuery {
   /** Scratch for the aim point, then the aim direction. */
   private readonly aim: MutableVec2 = { x: 0, y: 0 };
-  private readonly reach = new ReachQuery();
 
   /**
    * @param projectiles - The projectile definitions: a shot sweeps its `footprintRadius` and flies
    *   its `range`.
+   * @param reach - The match's one aim rule (`Simulation`'s): the point a shot is aimed at.
+   * @param areas - The match's one hit rule for areas (`Simulation`'s): `stopsShot`.
    */
   public constructor(
     private readonly projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'get'>,
+    private readonly reach: Pick<ReachQuery, 'aimPointOf'>,
+    private readonly areas: Pick<AreaHitQuery, 'stopsShot'>,
   ) {}
 
   /** {@inheritDoc LineOfFireQuery.isClear} */
@@ -112,7 +115,7 @@ export class LineOfFire implements LineOfFireQuery {
       if (health === undefined || transform === undefined) return;
       const outline = state.entities.outlineOf(entity.id) ?? null;
       const body = { entity, health, membership: entity.findComponent(TeamMembership), outline };
-      if (!AreaHitQuery.stopsShot(state.entities, shot, body)) return;
+      if (!this.areas.stopsShot(state.entities, shot, body)) return;
       isBlocked =
         outline === null
           ? distanceToSegment(transform.position, from, to) <= radius + transform.radius

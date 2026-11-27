@@ -6,6 +6,7 @@ import type { BtNode } from './bt/BtNode.types';
 import { Condition } from './bt/Condition';
 import { Sequence } from './bt/Sequence';
 import type { BotTurn } from './BotLegendController.types';
+import { BotLaneLeaves } from './BotLaneLeaves';
 import { BotLeaves } from './BotLeaves';
 import { BotMovement } from './BotMovement';
 import type { Controller, Decision, DecisionInput } from './Controller.types';
@@ -33,6 +34,7 @@ import { UtilityScorer } from './utility/UtilityScorer';
 export class RoverController implements Controller {
   public readonly id = 'rover';
   private readonly leaves: BotLeaves;
+  private readonly lanes: BotLaneLeaves;
   private readonly root: BtNode<BotTurn>;
   private readonly laneScorer: UtilityScorer<'pressure' | 'human'>;
 
@@ -40,6 +42,7 @@ export class RoverController implements Controller {
   public constructor(private readonly content: RoverControllerContent) {
     const leaves = new BotLeaves(content);
     this.leaves = leaves;
+    this.lanes = new BotLaneLeaves();
     this.laneScorer = new UtilityScorer(content.tactics.laneWeights);
     this.root = new ActiveSelector<BotTurn>([
       new Sequence([
@@ -122,11 +125,9 @@ export class RoverController implements Controller {
       return false;
     }
     if (lane === humanLane && humanAt !== undefined) {
-      return this.leaves.findLanePoint(turn, lane, humanAt);
+      return this.lanes.findLanePoint(turn, lane, humanAt);
     }
-    return (
-      this.leaves.findHorde(turn, lane) || this.leaves.findLanePoint(turn, lane, turn.position)
-    );
+    return this.lanes.findHorde(turn, lane) || this.lanes.findLanePoint(turn, lane, turn.position);
   }
 
   /** The nearest enemy Legend within `radius` that no controller drives, or `null`. */

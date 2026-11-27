@@ -14,7 +14,7 @@ import type { Entity } from '../entities/Entity';
 import { flightSpeed } from '../physics/flightSpeed';
 import { sweepCircle } from '../physics/sweepCircle';
 import { sweepDisc } from '../physics/sweepDisc';
-import { AreaHitQuery } from '../state/AreaHitQuery';
+import type { AreaHitQuery } from '../state/AreaHitQuery';
 import type { GameState } from '../state/GameState';
 import { isTouchedBeforeWall } from '../state/isTouchedBeforeWall';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
@@ -68,8 +68,14 @@ export class ProjectileSystem implements System {
   private readonly bodies: ShotBody[] = [];
   private isGathered = false;
 
-  /** @param impacts - What a landed shot does, by its payload's impact kind. */
-  public constructor(private readonly impacts: ProjectileImpacts) {}
+  /**
+   * @param impacts - What a landed shot does, by its payload's impact kind.
+   * @param areas - The match's one hit rule for areas (`Simulation`'s): `stopsShot`.
+   */
+  public constructor(
+    private readonly impacts: ProjectileImpacts,
+    private readonly areas: Pick<AreaHitQuery, 'stopsShot'>,
+  ) {}
 
   /** Flies every shot in the air, in store order. */
   public update({ state }: SystemContext): void {
@@ -198,7 +204,7 @@ export class ProjectileSystem implements System {
     for (const body of this.bodies) {
       if (
         !ProjectileSystem.isNear(body, box) ||
-        !AreaHitQuery.stopsShot(state.entities, payload, body)
+        !this.areas.stopsShot(state.entities, payload, body)
       ) {
         continue;
       }

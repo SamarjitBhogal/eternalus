@@ -21,6 +21,8 @@ import { createDefaultProjectileImpacts } from './defaultProjectileImpacts';
 import { MovementSystem } from './MovementSystem';
 import { ProjectileSystem } from './ProjectileSystem';
 import type { SystemContext } from './System.types';
+import { AreaHitQuery } from '../state/AreaHitQuery';
+import { ReachQuery } from '../state/ReachQuery';
 
 const CONFIG = createDefaultGameConfig();
 /** The enemy palace floor: a walk-on square from (5, -10) to (25, 10). */
@@ -62,10 +64,11 @@ const setUp = () => {
   const stronghold = spawn('stronghold', 'stronghold', { x: 15, y: 0 }, 'dark');
   stronghold.addComponent(new Footprint([PALACE_FLOOR], { isWalkOn: true }));
   const damage = new DamagePipeline();
+  const areas = new AreaHitQuery();
   const systems = [
     new MovementSystem(),
-    new ProjectileSystem(createDefaultProjectileImpacts(damage, null)),
-    new CombatSystem({ damage, factory }),
+    new ProjectileSystem(createDefaultProjectileImpacts(damage, null), areas),
+    new CombatSystem({ damage, factory, areas, reach: new ReachQuery() }),
   ];
   const context: SystemContext = { state, logger: new NullLogger() };
   const run = (ticks: number): void => {

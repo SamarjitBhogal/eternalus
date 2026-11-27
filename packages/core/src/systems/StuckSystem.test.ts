@@ -69,7 +69,7 @@ const riftChase = (systems: (state: GameState) => readonly System[]) => {
     new MovementSystem(),
     new SpaceSystem(space),
     ...systems(state),
-    new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, {
+    new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, new ReachQuery(), {
       flowFields: new LaneFlowFields(
         world.grid,
         BLOCKED_LANE_MAP,
@@ -98,7 +98,7 @@ const riftChase = (systems: (state: GameState) => readonly System[]) => {
 
 describe('StuckSystem', () => {
   it('sends a chase held in front of terrain round it along A* to its target (DEC-193)', () => {
-    const chase = riftChase(() => [new StuckSystem(RULE)]);
+    const chase = riftChase(() => [new StuckSystem(RULE, new ReachQuery())]);
 
     chase.run(TICKS);
 
@@ -140,7 +140,7 @@ describe('StuckSystem', () => {
         respawnTicks: 1,
       });
       chase.state.guards.fill(0, chase.chaser.id);
-      const system = new StuckSystem(RULE);
+      const system = new StuckSystem(RULE, new ReachQuery());
       let seen = 0;
       // It stands still in front of the rift: stuck once the window has passed.
       for (let tick = 0; tick <= 3 * config.tickRate; tick += 1) {
@@ -154,7 +154,7 @@ describe('StuckSystem', () => {
   );
 
   it('drops its watch once the unit has no target, and watches no unit without a brain', () => {
-    const chase = riftChase(() => [new StuckSystem(RULE)]);
+    const chase = riftChase(() => [new StuckSystem(RULE, new ReachQuery())]);
     chase.run(1);
     expect(chase.chaser.hasComponent(ChaseWatch)).toBe(true);
     expect(chase.target.hasComponent(ChaseWatch)).toBe(false);
@@ -167,7 +167,7 @@ describe('StuckSystem', () => {
 
   it('judges the chase of a new target by the gap to it, not to the old detour waypoint', () => {
     const chase = riftChase(() => []);
-    const system = new StuckSystem(RULE);
+    const system = new StuckSystem(RULE, new ReachQuery());
     const window = STUCK_DETECTION.windowSeconds * config.tickRate;
     const tick = () => {
       system.update({ state: chase.state, logger });
@@ -199,7 +199,7 @@ describe('StuckSystem', () => {
 
   it('is deterministic: the same chase hashes the same at every second, detours included', () => {
     const hashes = () => {
-      const chase = riftChase(() => [new StuckSystem(RULE)]);
+      const chase = riftChase(() => [new StuckSystem(RULE, new ReachQuery())]);
       const hasher = new StateHasher();
       const seen: number[] = [];
       for (let second = 0; second < 30; second += 1) {
@@ -226,7 +226,7 @@ describe('StuckSystem', () => {
       return unit;
     });
     const chasers = [chase.chaser, ...others];
-    const system = new StuckSystem({ ...RULE, maxPlansPerTick: 1 });
+    const system = new StuckSystem({ ...RULE, maxPlansPerTick: 1 }, new ReachQuery());
     const window = STUCK_DETECTION.windowSeconds * config.tickRate;
     const detouring: number[] = [];
     const due: number[] = [];

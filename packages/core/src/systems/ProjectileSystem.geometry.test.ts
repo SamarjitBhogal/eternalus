@@ -29,6 +29,8 @@ import { CombatSystem } from './CombatSystem';
 import { MovementSystem } from './MovementSystem';
 import { createDefaultProjectileImpacts } from './defaultProjectileImpacts';
 import { ProjectileSystem } from './ProjectileSystem';
+import { AreaHitQuery } from '../state/AreaHitQuery';
+import { ReachQuery } from '../state/ReachQuery';
 
 /*
  * Shots against the match's real collision rule: `CollisionResolver.reach` on a
@@ -95,8 +97,10 @@ const world = (walls: readonly Polygon[]) => {
   );
   const state = new GameState(CONFIG, 1, null, { collisions });
   const context = { state, logger: new NullLogger() };
+  const areas = new AreaHitQuery();
   const projectiles = new ProjectileSystem(
     createDefaultProjectileImpacts(new DamagePipeline(), null),
+    areas,
   );
   const movement = new MovementSystem();
   let counter = 0;
@@ -214,7 +218,12 @@ describe('ProjectileSystem on real geometry', () => {
     scene.state.events.on('entity-spawned', ({ kind }) => {
       if (kind === 'projectile') shots += 1;
     });
-    const combat = new CombatSystem({ damage: new DamagePipeline(), factory });
+    const combat = new CombatSystem({
+      damage: new DamagePipeline(),
+      factory,
+      areas: new AreaHitQuery(),
+      reach: new ReachQuery(),
+    });
     expect(scene.state.entities.setAttackTarget(magus.id, dummy.id)).toBe(true);
 
     for (let tick = 0; tick < 40; tick += 1) {

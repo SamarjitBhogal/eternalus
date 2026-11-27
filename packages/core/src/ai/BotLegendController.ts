@@ -4,6 +4,7 @@ import type { BtNode } from './bt/BtNode.types';
 import { Condition } from './bt/Condition';
 import { Sequence } from './bt/Sequence';
 import type { BotLegendControllerContent, BotTurn } from './BotLegendController.types';
+import { BotLaneLeaves } from './BotLaneLeaves';
 import { BotLeaves } from './BotLeaves';
 import type { Controller, Decision, DecisionInput } from './Controller.types';
 
@@ -35,6 +36,7 @@ export class BotLegendController implements Controller {
   /** @param content - Difficulties and retreat points; the controller holds no numbers. */
   public constructor(content: BotLegendControllerContent) {
     const leaves = new BotLeaves(content);
+    const lanes = new BotLaneLeaves();
     this.leaves = leaves;
     this.laner = new ActiveSelector<BotTurn>([
       new Sequence([
@@ -50,11 +52,11 @@ export class BotLegendController implements Controller {
         new Action((turn) => leaves.siege(turn)),
       ]),
       new Sequence([
-        new Condition((turn) => leaves.findHorde(turn, turn.memory.lane)),
+        new Condition((turn) => lanes.findHorde(turn, turn.memory.lane)),
         new Action((turn) => leaves.moveTo(turn, turn.destination)),
       ]),
       new Sequence([
-        new Condition((turn) => leaves.findLanePoint(turn, turn.memory.lane, turn.position)),
+        new Condition((turn) => lanes.findLanePoint(turn, turn.memory.lane, turn.position)),
         new Action((turn) => leaves.moveTo(turn, turn.destination)),
       ]),
     ]);

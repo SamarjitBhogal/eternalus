@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-23
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -778,6 +778,12 @@ stand-in above: the player now fires along the aim, not only at a target under t
 (`views/swingWedge.ts`). Still not built: the PR 3 weapons and their arcs (dual blades, great sword,
 Bastions), two arcs for a dual-wield weapon (DEC-304, an idea), `heavyAttack`, `parry`, `grants`,
 the flex attack and `a-fine-line`.
+
+**Implementation status, 2026-11-23 (branch `refactor/query-injection`, DEC-344 (3), DEC-359).**
+The match builds one `AreaHitQuery`, one `ReachQuery` and one `TargetQuery` (`Simulation` and
+`DefaultSystemPipeline`) and injects them. No class builds its own. The pipeline builds new ones
+only when a caller (a test) leaves them out. Each user takes a narrow `Pick` of the methods it
+calls.
 
 ## 11. Artifacts (gadgets Z and C)
 
