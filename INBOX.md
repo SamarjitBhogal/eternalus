@@ -699,6 +699,10 @@ Reply inline (`Decision: …`).
       while its team still owns the point, and is cancelled when the point changes owner; at most
       10 defenders per capture point. They are built in M6c. (3)(b), (5) and (9) still wait for
       sign-off.
+      **Update 2026-11-25 (M6c, `feat/minion-m6c-defender-followups`):** (1), (4), (6) and (7)
+      are built: `checkpoint-cleared` and its XP, DEC-260 levelling (with DEC-350's boss group)
+      and DEC-350's limit and cancelling. The calls M6c made where the sources are silent are
+      approved as built in DEC-376 (2026-11-26). (2), (3)(b), (5) and (9) still wait.
 
 - [x] **Minion M10 better-than-design items (`feat/minion-m10-zone-level-up`, 2026-11-15,
       critic; DEC-139) — sign-off per item.** (a) A `MinionLevelSystem` after
@@ -949,6 +953,27 @@ Reply inline (`Decision: …`).
     so a max-level Legend has about 4.9 times its level-1 health against the same damage, and a
     Duel kill takes about 2.5 to 3 times as long as before (the core Duel tests' fights went from
     4–8 s to 12–18 s). Is that the Duel pace you want, or should `killTarget` or damage change?
+  - 2026-11-25 (pre-PR critic on PR #142, better than the design): `DuelOptions` can carry the
+    flag, as the server already passes `DUEL_RULES.killTarget` there
+    (`apps/server/src/match/CoreDuelSimulationFactory.ts`). The replay setup then keeps it, so (3)
+    goes away, and `Simulation` no longer reads `DUEL_RULES` for it. To build in a follow-up to
+    PR #142 if the owner answers A or B on the Owner Calls card "PR142 (1) Duel max level".
+- [ ] **HC-B46 — Duel max-level start: two better-than-design items (critic on
+      `chore/duel-max-level-gate-followups`, 2026-11-26; owner sign-off asked).** Owner: sholtzman.
+      (1) Architecture 03 §4 says a listener that must change state defers the change to its own
+      system's pass. `ProgressionSystem` raises a Duel Legend in its `entity-spawned` listener, at
+      once (05 §18): the roster spawns in the `Simulation` constructor, before any pass, so a
+      deferred raise shows level-1 Legends on the first tick. Proposal: 03 §4 allows one
+      exception, a listener may finish the setup of the entity that `entity-spawned` names, and
+      its event table lists this listener. (2) Three Duel rules are read from live content, not
+      from the replay setup: `legendsStartAtMaxLevel`, `arena` and `startOffset`
+      (`Simulation.ts`). A retune then changes old Duel replays. Proposal: `DuelOptions` carries
+      the whole Duel rule set, which the server fills from `DUEL_RULES`, so every rule that
+      changes the simulation is in the replay setup, without one new field per rule. This covers
+      the `DuelOptions` note under DEC-36 above and claudiodh's item (9). Decision: …
+  - 2026-11-27: answered (DEC-406, Owner Calls v103). (1) A: 03 §4 now names the exception, and
+    its event table lists the listener (built in `chore/duel-max-level-gate-followups`). (2) A: a
+    follow-up PR builds the `DuelOptions` rule set. It is not built yet, so this item stays open.
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
       of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only
@@ -2864,6 +2889,45 @@ Reply inline (`Decision: …`).
     should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has
     no rosters" is a type fact. For doc-gardening: the folder table of architecture 02 has no row
     for `game/duel/` and `game/engine/net/`, which import `@eternalus/protocol` (#97).
+- [ ] **HC-B47 — #129 merge critic: the Cathedral gem could find its zone by the map feature, not
+      by position (`refactor/map-feature-link`; DEC-139).** The player sees no change today. The
+      gem glows in the colour of the team that holds the Cathedral. To find that team, the gem
+      looks for the capture zone whose area covers the gem's position. After #129, the gem and
+      the Cathedral zone name the same map feature, so the gem can find its zone by that name,
+      as the HUD does since DEC-231. Gain: the gem stays right if the zone's shape ever stops
+      covering it. Cost: a gem made with no map feature (a developer spawn, a unit test) gets no
+      holder. Code: `CathedralGemSystem` (#132) uses `ZoneArea.contains`; it could match
+      `MapFeatureLink`. Not built on #129, because the gem code is #132's. Build it in the next
+      PR that changes the gem (the Duel gem follow-up, DEC-346), or keep the position test?
+      Recommendation: build it then; it is the identity rule of DEC-231.
+- [x] **HC-Q60 — GL-16 critic round 5: one better-than-design item (`refactor/map-feature-link`;
+      DEC-139).** The critic approved the DEC-255 build. `FeatureKeyedGroup` lived in the
+      invariant's companion file, so the client depended on a diagnostic, not on the snapshot
+      contract. Move only the type to `state/Snapshot.types.ts` beside `mapFeatureId` (the list
+      stays in the invariant and is checked against it), move the list into `state/` too (the
+      critic's version), or keep it as it is.
+  - Answered 2026-11-15 in the question dialog (DEC-256): "Type in snapshot (Recommended)", noting
+    "do whichever YOU assess is better"; the session kept that option. Built on GL-16: the type in
+    `state/Snapshot.types.ts`, `FEATURE_GROUPS` `satisfies Record<FeatureKeyedGroup, unknown>`.
+- [x] **HC-Q59 — GL-16 critic round 4: one better-than-design item (`refactor/map-feature-link`;
+      DEC-139).** The groups `map-feature-groups-unique` checks (`FEATURE_GROUPS`) and the
+      closures `MatchBridge.byFeature` takes are two copies, so the bridge could read by feature a
+      group the invariant does not check. Export
+      `type FeatureKeyedGroup = keyof typeof FEATURE_GROUPS` from `@eternalus/core` and type
+      `byFeature(snapshot, group)` with it. Cost: one core API export, 3 bridge call sites, a fifth
+      critic pass. Build now on GL-16, or keep as it is.
+  - Answered 2026-11-15 in chat (DEC-255): "build it". Built on GL-16: `FeatureKeyedGroup`
+    (exported as a type; where it lives: HC-Q60) and the typed `MatchBridge.byFeature`.
+- [x] **HC-Q58 — GL-16 critic round 3: two better-than-design items (`refactor/map-feature-link`;
+      DEC-139).** The critic approved GL-16 after the merge of GL-4 (#93). (1) Nothing in core
+      checks DEC-233's rule that at most one entity of a map feature carries each group a consumer
+      reads by feature id: add an invariant. (2) `Structure` and `Zone` each install
+      `MapFeatureLink` from the placement with the same lines: install it once, in
+      `EntityFactory`. Answer per item: build now on GL-16, or keep as it is.
+  - Answered 2026-11-14 in the question dialog (DEC-252): "Add the core check (Recommended)" and
+    "Build the shared install". Built on GL-16: `MapFeatureGroupsUniqueInvariant`
+    (`map-feature-groups-unique`) and the install in `EntityFactory.create`. The core check takes
+    a fourth critic pass, past the three-loop limit; the owner chose it.
 - [ ] **HC-Q42 — Where do Legends spawn at tick 0: all at their Citadel (DEC-80), or as built (match-director critic).** DEC-80 says "All Legends spawn at their Citadel at tick 0." As built (architecture 18 §8, MS-20), each bot laner spawns at its team's end of its assigned lane, and only the Rovers (the bot Rover and the human's Legend, DEC-173) spawn at their team's Stronghold. Keep the as-built lane start for laners and narrow DEC-80 to respawns, or spawn every Legend at its Citadel and let laners walk to their lanes?
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
@@ -3119,6 +3183,8 @@ Reply inline (`Decision: …`).
       the feature id; they meet when architecture 12 §8 turns `capture-point-owner-changed` into
       `point-taken`. It is a core API change (`EntitySnapshot`). Build it on #64, or later with the
       `point-taken` wiring?
+  - Answered 2026-11-09 (DEC-231): "build now", by the game-loop session. It is plan task GL-16
+    (`refactor/map-feature-link`, stacked on GL-5). Close this item when that PR merges.
 - [ ] **FR-071 still names the `returning` state (PR #56, DEC-155)** (owner: sholtzman,
       `docs/requirements/06-mvp-requirements.md`). FR-071 gives the minion FSM as
       `marching → engaging → returning`. Since DEC-155 it is `marching ⇄ engaging`: a leash break
@@ -3206,6 +3272,23 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
+- [ ] **Build DEC-420 (4), (7) and (9): no ability casts in the air, the Fury dash on Q, one
+      movement path (2026-11-27).** Owners: (4) the session that merges the second of PR #183
+      (the jump) and PR #123 (the ability framework) into phase/3; (7) and (9) the session that
+      merges the second of PR #183 and PR #136 (the Vanguard kit). (4) A Legend in the air (`Jump`
+      is airborne) casts no ability; attacks stay allowed. Put the check in #123's
+      `CastValidator`, the one place that refuses casts. (7) Space always jumps; the Fury dash
+      (`granted`, PR #136) moves from Space to Q. (9) Jump momentum, the dash and knockback move
+      a Legend through one shared path; build the "held in place" check (the countdown hold or
+      `cannot-move`) once there, as `JumpSystem` and `MovementSystem` now each have their own.
+      Traps: #136 binds `granted: Space` on its own line of `keybindings.ts`, so the merge shows
+      no text conflict and leaves two actions on Space; `InputMapper.test.ts` uses `KeyQ` as its
+      unbound sample key (move the sample to another unbound key; keep the test). **Owner answer
+      needed first:** `knockup` (#123) and `furyWindup` (#136) carry `cannot-move`, so after the
+      merge a knock-up or the Fury windup ends a jump in the air as a stun does (DEC-420 (5)); the
+      owner has not ruled on that. Done when the three are built with tests and the PRs are in
+      phase/3.
+
 - [ ] **Make the tower horde test faster (DEC-289, 2026-11-20).** Owner: to be assigned.
       `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its
       lane within 10 seconds (DEC-133, seed %i)", builds a whole map and match for each of its
@@ -3243,10 +3326,13 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       PR only if it is assured to happen: its PR opens after GL-4's and merges right after it.
       Close this item when that PR merges.
 - [ ] **GL-16 map-feature link (DEC-221 (3); GL-5 critic round 3, B1)** — Owner: sholtzman,
-      `refactor/map-feature-link` (base: the phase branch after GL-5 merges). A `MapFeatureLink`
+      `refactor/map-feature-link` (base `feat/results-flow`; built now, DEC-231). A `MapFeatureLink`
       component, set from a placement's map feature id, on structures and capture zones. The
       snapshots read it instead of `instanceof Structure`, and `MatchBridge` binds a capture site
       to its zone by that id, not by position. Close this item when its PR merges.
+      Its critic round 1 better-than-design items (one feature may back several entities; one
+      `MatchBridge.byFeature` helper) were answered 2026-11-09 (DEC-233): "A: build both
+      (Recommended)", built in GL-16.
 - [ ] **GL-17 entity component query (DEC-229; GL-15 critic round 2, better than the design)** —
       Owner: sholtzman, `refactor/entity-component-query` (base: the phase branch after #79 and
       #85 merge; they change `EntityStore`). A read-only query port on `EntityStore` for the
@@ -3254,22 +3340,6 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       `CaptureHoldRule` takes it instead of the whole `GameState`, and the capture-point lookups
       of `CaptureHoldRule`, `CaptureProgressBoundsInvariant` and `CaptureSystem` move to it. Close
       this item when its PR merges.
-- [ ] **Rule 7 frame latency (DEC-299 (3))** — Owner: sholtzman, after PR #138 is pushed; it does
-      not block that merge. The match-start overlay's performance runs (ui-enhancements-plan §2
-      rule 7) read a frame-interval p95 of 16.7 to 16.8 ms and a maximum of 16.8 ms in every
-      condition, the controls with every enhancement off included, with no frame over 33 ms; the
-      12 rule-7 re-runs on the DEC-299 (2) tree read the same. One diagnostic re-run on that tree
-      (the ui-off control at CPU ×4, `perf-lt.mjs`) read one 33.3 ms interval, one dropped frame
-      (`over33` counts only intervals over 33.4 ms). The owner passed rule 7 and asked: "we
-      should find out why theres latency whenever we have time". Find why the intervals read
-      16.8 ms and not 16.7 (the browser's frame clock, the headless display, the measuring script
-      or the game) and record the answer in `docs/plan/PROGRESS.md` and here. With it: at CPU ×4
-      the re-runs count three long tasks of about 58 ms per run, all during page load before the
-      measured frames, on the commit before DEC-299 too and with every enhancement off, where the
-      first runs counted none with the same script; find what differs. The runs:
-      `eternalus-agent-work/game-loop-plan/ue-shots-2026-11-20/` (`run.sh` perf_run, `perf.mjs`,
-      `report.py`; the re-run: `perf-dec299.sh`, `perf-lt.mjs`, `perf-dec299/NOTE.md`; the
-      diagnostic runs: `perf-dec299-lt/`, `perf-33bcdcf6-lt/`).
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
@@ -3497,6 +3567,26 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Done
 
+- 2026-11-27 — **Your answers HC-B54 and HC-B50: a unit plans again when the map changes
+  (DEC-379, DEC-392)** (`fix/bot-replan-on-map-change`, a follow-up to PR #84): your v98 answer
+  on the bot path cache stands over DEC-373 (HC-B54 A), and stuck detours follow the same rule
+  (HC-B50 B). A bot's cached waypoint and a stuck unit's detour waypoint both keep the map's
+  version, and a new version plans the way again. Replaces DEC-373. Decision: DEC-379, DEC-392.
+
+- 2026-11-27 — **HC-B64: the snapshot names the jump height `elevation` (DEC-420)** (`feat/legend-jump`,
+  PR #183): you chose B, rename now. The snapshot group is `elevation: { height }`; the `jump`
+  command, the `Jump` component and the `jump` input action keep their names. Decision: DEC-420.
+
+- 2026-11-27 — **HC-B65: one movement path for jump, dash and knockback (DEC-420)**
+  (`feat/legend-jump`, PR #183): you chose A. The second of PR #183 and PR #136 to merge builds
+  the one shared path. Decision: DEC-420.
+
+- 2026-11-26 — **Minion M6c interpretations approved as built (DEC-376)**
+  (`feat/minion-m6c-defender-followups`, PR #173): you approved (a) to (g) as built (the 10 m from
+  where the last defender fell, the damage-biased share with an even split when Legends dealt
+  none, the clearing team by the last killer, no corner-boss levelling, `rallied` for levelling
+  guards, no XP for a set emptied by cancels, and the owner-change pass rule). Decision: DEC-376.
+
 - 2026-11-26 — **Camp rewards: the clearing Legend is the last killer; the three critic refactors
   are dropped (DEC-375)** (`feat/camp-rewards`, PR #153): you chose "as built" for who gets the
   camp clear bonus (the Legend that killed the camp's last mob; nobody when a minion or turret
@@ -3507,6 +3597,37 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   PR #84): you chose (a), accept as built. The cache holds no grid version; a way that opens while
   a bot walks a cached leg is found at most one leg late. Doc 11 §6 states it. Decision: DEC-373.
 
+- 2026-11-26 — **Your answers on HC-B44, the three follow-ups to the frame checks**
+  (`docs/rule7-frame-latency`, PR #149): recorded as DEC-368. (1) "None, but do not count the
+  first frame after a start or a pause, and allow one frame of up to 50 ms when the terrain
+  changes". (2) "Yes, round first and pick the limit from the page". (3) "Write "two 60 Hz
+  frames"". `PerfMonitor` is not built, so the change is docs only. These are your design docs:
+  architecture 08 §9 (new "Two 60 Hz frames" and "Missed-frame count" terms; `PerfMonitor` does
+  not record the skipped interval, rounds each interval and takes the first edge from
+  `crossOriginIsolated`); phase 6 sprint 6.1 (the oldest-laptop gate, the bridge test); phase 3
+  sprint 3.2 (terrain gates: at most one missed frame); and pointers to the count in the plan
+  README, phase 1 and phase 6. Five points are not your words, so DEC-368 records them as
+  readings: the zero limit is now yours, not a `Recommendation:` number; a pause also covers a
+  hidden tab; a terrain change is a destruction (a structure, an obstacle or a felled tree), not
+  a gate that opens or closes, because gates open many times a minute; the 50 ms allowance is one
+  frame for each terrain change; "two 60 Hz frames" is 33.6 ms in the game.
+
+- 2026-11-25 — **Your pick on HC-B28, frame checks** (`docs/rule7-frame-latency`, PR #149):
+  recorded as DEC-336. "Fix all three: bucket edges at one frame, 25 ms (missed) and 50 ms; one
+  definition in 08 §9; the gates count missed frames". `PerfMonitor` is not built, so the change
+  is docs only. These are your design docs: architecture 08 §9 (the two definitions, the new
+  histogram edges, the frame-time budget row), architecture 15 §6 (points to the new edges), the
+  plan README §5 "Render frame rate" row, phase 1 (sprint 1.4: the success metric and the
+  `PerfOverlay` task; the phase table), phase 6 (sprint 6.1 success metric and the phase table)
+  and rule 7 of the UI enhancements plan (a pointer to 08 §9). Seven points are not your words,
+  so DEC-336 records them as defaults: the gates keep the median and add "no missed frame"; the
+  limit is zero missed frames in the 60 s segment (a `Recommendation:` number); in the game "one
+  60 Hz frame" means at most 16.8 ms as Chrome reads it, because the game page is not
+  cross-origin isolated; the tick and render histograms of architecture 15 keep their buckets;
+  rule 7 points to 08 §9; a bucket holds the frames up to and including its edge; the overlay
+  reads the median from the first bucket. The critic's three follow-ups are card HC-B44 (open,
+  above) (answered 2026-11-26: DEC-368).
+
 - 2026-11-23 — **Your answers on the five Cathedral gem cards (DEC-346)** (`feat/cathedral-gem-hittable`,
   PR #132): recorded as DEC-346. The gem blocks movement (an unbreakable plinth under it) and a
   touch no longer strikes; a death by the gem counts for the victim's last enemy damager within the
@@ -3515,6 +3636,32 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   gem: four rules DEC-292 leaves open", "split the Cathedral interior builder" and "one shared
   'never damaged' structure entry". Decision: DEC-346. The Duel design (circle strike, laser) is a
   follow-up PR once the six "GEM duel" cards are answered; your camp question is a new item.
+
+- 2026-11-22 — **Your pick on HC-B22, how rule 7 measures performance** (`docs/rule7-frame-latency`):
+  recorded as DEC-328. Option A: rule 7 is now "p95 within one 60 Hz frame, and no more missed
+  frames (intervals over 25 ms) with the enhancements on than in the control with them off". The
+  test page is served cross-origin isolated, so the 16.8 ms pass of DEC-299 (3) ends. The other
+  frame-time targets now read "one 60 Hz frame": architecture 08 §9, the plan README §5, phase 1
+  and phase 6. These are your design docs. Three points are not your words, so DEC-328 records
+  them as defaults: missed frames are compared at the same CPU speed, over the same number of runs
+  for each condition, with on and off runs alternating; "one 60 Hz frame" means ≤ 16.67 ms; the
+  page is isolated with the COOP and COEP headers.
+
+- 2026-11-21 — **Rule 7 frame latency, your question on DEC-299 (3)** (`docs/rule7-frame-latency`):
+  the 16.8 ms readings are not latency. Chrome rounds the timestamps of a page that is not
+  cross-origin isolated to 0.1 ms, with jitter, so a 60 Hz frame (16.67 ms) reads 16.5 to 16.8 ms.
+  A blank page with no game code reads the same spread as the HUD test page, and the mean interval
+  is 16.666 ms on both (one HUD run 16.71: one missed frame); a cross-origin-isolated blank page
+  (0.005 ms steps) reads 16.66 to 16.67 ms. Two of 40 runs at CPU ×4 missed one frame (33 ms), one
+  of them on the quiet machine in the control with every enhancement off: not explained. The three
+  long tasks at CPU ×4 are the test page loading, before any measured frame, so they do not touch
+  rule 7. Each is 11 to 14 ms at full speed and about 50 ms at ×4, the long-task limit, so a run
+  counts 2 or 3 of them (49.2 and 49.9 ms were not counted). Why the first runs counted none is not
+  found: replayed today in their order (warm-up on the HUD soak scene first), runs count 0, 1 or 2
+  (9 runs, one 0), against 2 or 3 when warmed up on the countdown scene, so the order changes the
+  count; how is not known. In the UI enhancements plan, rule 7 (your text) now gives the reason in place
+  of the pointer to this request. HC-B22 asks whether rule 7 should count missed frames. Details:
+  `docs/plan/PROGRESS.md`, 2026-11-21.
 
 - 2026-11-21 — **Your picks on the Cathedral gem (DEC-291, DEC-292)** (`feat/cathedral-gem-hittable`,
   PR #132, which now also carries PR #124): recorded as DEC-291 and DEC-292. The gem keeps its

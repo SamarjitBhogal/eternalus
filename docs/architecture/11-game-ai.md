@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -320,12 +320,14 @@ bot heads to the same place (within its `arrivalDistance`), the straight line to
 still blocked, the waypoint is not yet reached and is still on the way (nearer than the
 destination), and the bot still sees it in a straight line (`PathQuery.isLineClear`). A clear line
 to the destination caches nothing, so a moving destination is followed live; arriving, or a search
-that finds no way, clears the cache. The cache holds no grid version: at runtime the grid only
-opens cells, so a way that opens while a cached waypoint is in use is found once the bot reaches
-that waypoint, at most one leg late; the owner accepts that cost (DEC-373). If a runtime change
-ever closes cells,
-store the grid's version with the cache and search again when it differs. `StuckSystem` is a second A\* consumer, outside the decision budget:
+that finds no way, clears the cache. The cache also holds the version of the map it was searched
+on (`PathQuery.version`, which changes whenever the grid is stamped or cleared: `WorldMap.version`,
+06 §6), and a cache from an older version is searched again: a way that opens, or closes, while
+the bot walks a cached leg is found at its next decision (owner, DEC-379 and DEC-392, which
+replace DEC-373). `StuckSystem` is a second A\* consumer, outside the decision budget:
 `STUCK_DETECTION.maxPlansPerTick` caps its plans a tick, and `pathMaxSearchArea` caps each plan.
+Its detour waypoints follow the same map-version rule as the bot's cache: one planned on an older
+version is planned again at once (`ChaseWatch.isWayStale`, owner, DEC-392).
 Requests over the cap wait (`ChaseWatch.isPlanDue`), served in store order; the upgrade path is a
 round-robin cursor. Other heavy work (flow
 fields) belongs to `PathingSystem`, which time-slices its rebuilds
@@ -433,8 +435,9 @@ work named:
   (Phase 4), with no controller change needed then.
 - A\* for Legends (M8, §6) is `map/AStarPathfinder` behind the `PathQuery` port (`state.paths`).
   One `WorldMap` serves it and the lane flow fields. The path cache (§6) is `BotMemory`'s
-  `pathGoal*` and `pathStep*` fields, kept by `BotMovement.moveTo`; `PathQuery.isLineClear` is a
-  port method rather than a read of `state.world.grid` so the leaves' tests stub one object.
+  `pathGoal*`, `pathStep*` and `pathVersion` fields, kept by `BotMovement.moveTo`;
+  `PathQuery.isLineClear` and `PathQuery.version` are port members rather than reads of
+  `state.world.grid` so the leaves' tests stub one object.
 - The bot leaves also read the nav grid directly (`state.world.grid`). A bot sent to a point on
   blocked ground (a tower's centre) stops at the edge of that ground on its side
   (`BotMovement.moveTo`, the leaves' navigation in `ai/BotMovement.ts`). To fight an enemy on

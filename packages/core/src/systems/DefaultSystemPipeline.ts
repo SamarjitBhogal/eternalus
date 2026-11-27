@@ -8,6 +8,7 @@ import { LEGEND_RESPAWN_SECONDS } from '../content/progression/legendRespawn';
 import { loadStuckDetection } from '../content/ai/loadStuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import { loadOutOfCombatHealing } from '../content/healing/loadOutOfCombatHealing';
+import { loadLegendJump } from '../content/legends/loadLegendJump';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
@@ -32,6 +33,7 @@ import { DuelRoundSystem } from './DuelRoundSystem';
 import { EnragedSystem } from './EnragedSystem';
 import { HordeSystem } from './HordeSystem';
 import { InvariantSystem } from './InvariantSystem';
+import { JumpSystem } from './JumpSystem';
 import { MatchDirectorSystem } from './MatchDirectorSystem';
 import { MinionLevelSystem } from './MinionLevelSystem';
 import { MovementSystem } from './MovementSystem';
@@ -47,7 +49,7 @@ import { VeterancySystem } from './VeterancySystem';
 import { ZoneLevelUpSystem } from './ZoneLevelUpSystem';
 import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
-import { CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
+import { CHECKPOINT_DEFENDER_LIMIT, CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
 import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
 import { TickRate } from '../utils/TickRate';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
@@ -57,7 +59,8 @@ import { SystemPipeline } from './SystemPipeline';
 
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
- * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
+ * progress, statuses, jumps (DEC-390: an airborne entity moves by its takeoff velocity), movement,
+ * collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
  * progression (kill XP), minion veterancy, structure losses and breakability, spawning (none in a
  * Duel, SCRUM-445), enraging, out-of-combat healing (DEC-188), respawn (queues the dead Legends,
@@ -125,6 +128,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
       new StatusEffectSystem(damage, statuses),
+      new JumpSystem(loadLegendJump(tickRate)),
       new MovementSystem(),
       ...(hordes?.collisions ?? []),
       ...(hordes === undefined
@@ -159,6 +163,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
                     formationId: RANKS_FORMATION.id,
                     guards: loadGuardPlans(tickRate, hordes.guards),
                     defenders: CHECKPOINT_DEFENDERS,
+                    defenderLimit: CHECKPOINT_DEFENDER_LIMIT,
                   }),
                 ]
               : []),
