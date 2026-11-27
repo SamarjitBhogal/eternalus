@@ -14,7 +14,8 @@ Package-specific rules. The root `AGENTS.md` still applies.
 
 **Today** core contains the simulation kernel (`config/`, `utils/`, `state/`, `commands/`,
 `diagnostics/`, `systems/` with the pipeline only, `match/` (director kernel, scoring), `Simulation.ts`), the first `components/` and
-`entities/`, `teams/`, and the generated map (`map/`, `content/maps/`). The other folders below
+`entities/`, `teams/`, the generated map (`map/`, `content/maps/`) and the loadout domain
+(`loadout/`). The other folders below
 are the **planned** layout; create them as code is added.
 
 | Folder          | Holds                                                                                                           | May import                                                                                 |
@@ -25,7 +26,8 @@ are the **planned** layout; create them as code is added.
 | `map/`          | `MapGenerator`, `MapBuilder`, `WorldMap`, lane and symmetry helpers                                             | `content/`, `teams/`, `utils/`                                                             |
 | `utils/`        | Generic helpers: vector math, `SeededRandom`, constants                                                         | `utils/` only                                                                              |
 | `components/`   | Data owned by entities (`Transform`, `Movement`)                                                                | `utils/`, `content/`, `teams/` (types)                                                     |
-| `entities/`     | `Entity` root class and factories                                                                               | `components/`, `content/`, ...                                                             |
+| `entities/`     | `Entity` root class and factories                                                                               | `components/`, `content/`, `loadout/` (types), ...                                         |
+| `loadout/`      | `Loadout`, `LoadoutValidator` and its rules, `validateLoadout`, `autoBuildLoadout`, `SpawnLoadoutPolicy`        | `content/`, `utils/`                                                                       |
 | `commands/`     | `Command` union, `CommandQueue`, `applyCommand` + handler registry                                              | `state/`, `entities/`, `utils/`                                                            |
 | `state/`        | `GameState`, `EntityStore`, `GameEvents`, snapshots, `StateHasher`, `MatchRecord` and its `ScoreBook` (DEC-211) | lower layers                                                                               |
 | `diagnostics/`  | `Logger` port and doubles, replay harness, random command streams                                               | `state/`, `components/`, `utils/`, types of `commands/` and `config/`                      |

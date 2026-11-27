@@ -5,6 +5,7 @@ import { contentSlice } from './slices/contentSlice';
 import { developerMenuSlice } from './slices/developerMenuSlice';
 import { hudSlice } from './slices/hudSlice';
 import { loadingSlice } from './slices/loadingSlice';
+import { loadoutsSlice } from './slices/loadoutsSlice';
 import { matchSetupSlice } from './slices/matchSetupSlice';
 import { matchSlice } from './slices/matchSlice';
 import { sessionSlice } from './slices/sessionSlice';
@@ -19,6 +20,7 @@ const rootReducer = combineSlices(
   matchSetupSlice,
   loadingSlice,
   settingsSlice,
+  loadoutsSlice,
   hudSlice,
   matchSlice,
   contentSlice,

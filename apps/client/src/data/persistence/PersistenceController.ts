@@ -1,29 +1,40 @@
-import { GuestRepository } from './repositories/GuestRepository';
+import type { PersistedLoadout } from './dto/LoadoutDto';
 import type { PersistedSettings } from './dto/SettingsDto';
+import { FallbackStorageAdapter } from './FallbackStorageAdapter';
 import { LOCAL_PROFILE_ID } from './PersistenceController.constants';
 import type { PersistenceControllerDeps } from './PersistenceController.types';
+import { GuestRepository } from './repositories/GuestRepository';
+import { LoadoutRepository } from './repositories/LoadoutRepository';
 import { SettingsRepository } from './repositories/SettingsRepository';
 import { STORAGE_SCHEMA } from './schema/migrations';
 import type { StorageAdapter } from './StorageAdapter.types';
 
 /**
  * The single entry point to everything the game saves (architecture 14 §2, rule 13). Callers
- * never see a transaction, a store name or a DTO. Settings and the guest id for now; loadouts, profiles,
- * match history and replays join as one repository each.
+ * never see a transaction, a store name or a DTO. Settings, loadouts and the guest id for now;
+ * profiles, match history and replays join as one repository each.
  */
 export class PersistenceController {
   private readonly adapter: StorageAdapter;
   private readonly settings: SettingsRepository;
+  private readonly loadouts: LoadoutRepository;
   private readonly guest: GuestRepository;
 
   /** Builds the facade over the injected adapter. Call `open()` before anything else. */
   public constructor(deps: PersistenceControllerDeps) {
-    this.adapter = deps.adapter;
-    this.settings = new SettingsRepository(deps.adapter, deps.knownActions, deps.now, deps.warn);
-    this.guest = new GuestRepository(deps.adapter, { now: deps.now, warn: deps.warn });
+    const { fallback, knownActions, now, warn } = deps;
+    this.adapter =
+      fallback === undefined ? deps.adapter : new FallbackStorageAdapter(deps.adapter, fallback);
+    this.settings = new SettingsRepository(this.adapter, knownActions, now, warn);
+    this.loadouts = new LoadoutRepository(this.adapter, now, warn);
+    this.guest = new GuestRepository(this.adapter, { now, warn });
   }
 
-  /** Opens storage, migrating it to the current schema. */
+  /**
+   * Opens storage, migrating it to the current schema. With an injected `fallback`, a failure is
+   * reported at ERROR and storage continues on the fallback (architecture 14 §10): nothing is
+   * saved past the session.
+   */
   public open(): Promise<void> {
     return this.adapter.open(STORAGE_SCHEMA);
   }
@@ -36,6 +47,19 @@ export class PersistenceController {
   /** Saves the settings, replacing the previous ones. */
   public saveSettings(settings: PersistedSettings): Promise<void> {
     return this.settings.save(LOCAL_PROFILE_ID, settings);
+  }
+
+  /**
+   * The saved loadout of each named class. A class with nothing saved, or a corrupt record, is
+   * absent from the map: use the class default.
+   */
+  public loadLoadouts(classIds: readonly string[]): Promise<ReadonlyMap<string, PersistedLoadout>> {
+    return this.loadouts.loadAll(LOCAL_PROFILE_ID, classIds);
+  }
+
+  /** Saves the loadout of one class, replacing the previous one. */
+  public saveLoadout(classId: string, loadout: PersistedLoadout): Promise<void> {
+    return this.loadouts.save(LOCAL_PROFILE_ID, classId, loadout);
   }
 
   /** The guest id the Duel server issued, or `null` when none is saved (or it was corrupt). */

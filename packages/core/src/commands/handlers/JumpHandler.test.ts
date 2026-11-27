@@ -17,7 +17,7 @@ const context = (): CommandContext => {
     createDefaultEntityRegistry(),
     loadDefaultContent(tickRate),
     undefined,
-    loadWeapons(tickRate),
+    { weapons: loadWeapons(tickRate) },
   );
   state.entities.add(
     factory.create('warrior', 'warrior', { position: { x: 0, y: 0 }, team: 'light' }),

@@ -44,12 +44,9 @@ const XP_SOURCES = {
 const setUp = (legendsStartAtMaxLevel = false) => {
   const state = new GameState(CONFIG, 1);
   const ids = new IdGenerator();
-  const factory = new EntityFactory(
-    createDefaultEntityRegistry(),
-    UNITS,
-    ids,
-    loadWeapons(CONFIG.tickRate),
-  );
+  const factory = new EntityFactory(createDefaultEntityRegistry(), UNITS, ids, {
+    weapons: loadWeapons(CONFIG.tickRate),
+  });
   const structures = new EntityFactory(createDefaultEntityRegistry(), STRUCTURE_DEFINITIONS, ids);
   const spawn = (kind: string, definitionId: string, team: Team): Entity => {
     const entity = factory.create(kind, definitionId, { position: { x: 0, y: 0 }, team });

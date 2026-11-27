@@ -4,6 +4,7 @@ import { contentSlice } from './slices/contentSlice';
 import { developerMenuSlice } from './slices/developerMenuSlice';
 import { hudSlice } from './slices/hudSlice';
 import { loadingSlice } from './slices/loadingSlice';
+import { loadoutsSlice } from './slices/loadoutsSlice';
 import { matchSetupSlice } from './slices/matchSetupSlice';
 import { matchSlice } from './slices/matchSlice';
 import { sessionSlice } from './slices/sessionSlice';
@@ -70,6 +71,7 @@ export function connectBusToStore(
     ),
     bus.on('developer-menu', (state) => dispatch(developerMenuSlice.actions.changed(state))),
     bus.on('settings', (settings) => dispatch(settingsSlice.actions.settingsChanged(settings))),
+    bus.on('loadouts', (loadouts) => dispatch(loadoutsSlice.actions.loadoutsChanged(loadouts))),
   ];
   return () => {
     for (const unsubscribe of unsubscribers) unsubscribe();

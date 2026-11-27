@@ -1,4 +1,4 @@
-import type { Logger, MapFeatureKind, RosterSlot, SeededRandom } from '@eternalus/core';
+import type { Loadout, Logger, MapFeatureKind, RosterSlot, SeededRandom } from '@eternalus/core';
 
 import type { DisplayCatalogue } from '../bridge/catalogue.types';
 import type {
@@ -218,6 +218,11 @@ export type SessionControllerDeps = {
   readonly catalogue: CatalogueSource;
   readonly matchConfig: SessionMatchConfig;
   readonly playerName: string;
+  /**
+   * The player's saved loadout for a class, or `null` when none is saved (`LoadoutController`);
+   * read when a match is built, so the player spawns with it (reference 08).
+   */
+  readonly playerLoadout: (classId: string) => Loadout | null;
   /** A fresh match seed. */
   readonly seedSource: () => number;
   /** The match's random stream from its seed. */

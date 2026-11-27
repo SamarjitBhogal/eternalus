@@ -60,12 +60,9 @@ const campMatch = (
   );
   spawnMapStructures(state);
   const units = loadDefaultContent(TICK_RATE);
-  const factory = new EntityFactory(
-    createDefaultEntityRegistry(),
-    units,
-    undefined,
-    loadWeapons(TICK_RATE),
-  );
+  const factory = new EntityFactory(createDefaultEntityRegistry(), units, undefined, {
+    weapons: loadWeapons(TICK_RATE),
+  });
   const roster = new GuardRoster(
     factory,
     units,

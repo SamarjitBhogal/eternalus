@@ -2,7 +2,7 @@ import { MapFeatureLink } from '../components/MapFeatureLink';
 import { IdGenerator } from '../utils/IdGenerator';
 import { Entity } from './Entity';
 import { ENTITY_ID_PREFIX } from './EntityFactory.constants';
-import type { DefinitionSource, Placement, WeaponSource } from './EntityFactory.types';
+import type { DefinitionSource, LegendEquipment, Placement } from './EntityFactory.types';
 import type { EntityRegistry } from './EntityRegistry';
 
 /**
@@ -10,20 +10,23 @@ import type { EntityRegistry } from './EntityRegistry';
  * that the kind builds it, takes a fresh id from an `IdGenerator` (the same creation order yields
  * the same ids) and spawns the entity with its definition and placement. An entity placed from a
  * map feature gets its `MapFeatureLink` here, whatever its family (DEC-252). Callers (commands,
- * systems) only say what to build and where.
+ * systems) only say what to build and where. The spawn's loadout is the one its injected
+ * `LoadoutResolver` decides (core's `SpawnLoadoutPolicy`: the placement's when `validateLoadout`
+ * accepts it, else the auto-build; 05 §12), so one validator decides what a Legend may carry.
  */
 export class EntityFactory {
   /**
    * @param registry - Where entity kinds are looked up.
    * @param definitions - Where definitions are looked up by id.
    * @param ids - Where entity ids come from; a new counter per factory by default.
-   * @param weapons - Where Legends find their weapons; passed in every spawn context when given.
+   * @param equipment - What Legends are equipped from: the weapons (passed in every spawn context)
+   *   and the loadout resolver. Without a resolver the placement's loadout is passed on as it is.
    */
   public constructor(
     public readonly registry: EntityRegistry,
     public readonly definitions: DefinitionSource,
     private readonly ids: IdGenerator = new IdGenerator(),
-    private readonly weapons: WeaponSource | null = null,
+    private readonly equipment: LegendEquipment | null = null,
   ) {}
 
   /** Whether `kind` is registered and `definitionId` names a definition that `kind` builds. */
@@ -71,7 +74,14 @@ export class EntityFactory {
       );
     }
 
-    entity.spawn({ ...placement, definition, ...(this.weapons && { weapons: this.weapons }) });
+    const loadout =
+      this.equipment?.loadouts?.loadoutFor(definitionId, placement.loadout) ?? placement.loadout;
+    entity.spawn({
+      ...placement,
+      definition,
+      ...(this.equipment && { weapons: this.equipment.weapons }),
+      ...(loadout && { loadout }),
+    });
     if (placement.mapFeatureId !== undefined) {
       entity.addComponent(new MapFeatureLink(placement.mapFeatureId));
     }

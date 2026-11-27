@@ -38,7 +38,7 @@ const perTick = (definition: UnitDefinition, tickRate: number, rate: TickRate): 
 export const loadDefaultContent = (
   tickRate: number,
   curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has'> = LEVEL_CURVE_CATALOGUE,
-  weapons: Pick<ContentCatalogue<WeaponDefinition>, 'has'> = loadWeapons(tickRate),
+  weapons: Pick<ContentCatalogue<WeaponDefinition>, 'has' | 'get'> = loadWeapons(tickRate),
 ): ContentCatalogue<UnitDefinition> => {
   const authored = new ContentCatalogue<UnitDefinition>([
     ...LEGEND_CLASSES.all(),

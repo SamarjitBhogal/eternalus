@@ -1,0 +1,27 @@
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.choice,
+.picked {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--text-muted);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.picked {
+  border-color: currentcolor;
+  font-weight: bold;
+}
+
+.choice:focus-visible,
+.picked:focus-visible {
+  outline: 2px solid currentcolor;
+  outline-offset: 2px;
+}

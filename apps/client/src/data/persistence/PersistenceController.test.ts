@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import type { PersistedSettings } from './dto/SettingsDto';
+import { IndexedDbStorageAdapter } from './IndexedDbStorageAdapter';
 import { MemoryStorageAdapter } from './MemoryStorageAdapter';
 import { PersistenceController } from './PersistenceController';
+import type { StorageAdapter } from './StorageAdapter.types';
 import { STORAGE_SCHEMA } from './schema/migrations';
 
 const SETTINGS: PersistedSettings = {
@@ -12,7 +14,7 @@ const SETTINGS: PersistedSettings = {
   accessibility: { reduceMotion: false, colourBlindMode: false },
 };
 
-function controller(adapter = new MemoryStorageAdapter()): PersistenceController {
+function controller(adapter: StorageAdapter = new MemoryStorageAdapter()): PersistenceController {
   return new PersistenceController({
     adapter,
     knownActions: new Set(['attack']),
@@ -42,6 +44,28 @@ describe('PersistenceController', () => {
     expect(await second.loadSettings()).toEqual(SETTINGS);
   });
 
+  it('has no loadout before the first save', async () => {
+    const persistence = controller();
+    await persistence.open();
+
+    expect(await persistence.loadLoadouts(['warrior'])).toEqual(new Map());
+  });
+
+  it('keeps a saved loadout per class across a close and reopen', async () => {
+    const adapter = new MemoryStorageAdapter();
+    const first = controller(adapter);
+    await first.open();
+    await first.saveLoadout('warrior', { primaryWeaponId: 'raptor-talons' });
+    first.close();
+
+    const second = controller(adapter);
+    await second.open();
+
+    expect(await second.loadLoadouts(['warrior', 'magus'])).toEqual(
+      new Map([['warrior', { primaryWeaponId: 'raptor-talons' }]]),
+    );
+  });
+
   it('keeps the guest id across a close and reopen, and has none before the first save', async () => {
     const adapter = new MemoryStorageAdapter();
     const first = controller(adapter);
@@ -66,5 +90,41 @@ describe('PersistenceController', () => {
     await persistence.open();
 
     expect(await persistence.loadGuestId()).toBeNull();
+  });
+
+  it('falls back to memory storage and reports it once through reportError, not warn (14 §10)', async () => {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const persistence = new PersistenceController({
+      adapter: new IndexedDbStorageAdapter(null),
+      fallback: {
+        build: () => new MemoryStorageAdapter(),
+        reportError: (body) => errors.push(body),
+      },
+      knownActions: new Set(['attack']),
+      now: () => 0,
+      warn: (body) => warnings.push(body),
+    });
+
+    await persistence.open();
+    await persistence.saveSettings(SETTINGS);
+    await persistence.saveLoadout('warrior', { primaryWeaponId: 'raptor-talons' });
+    await persistence.saveGuestId('123e4567-e89b-42d3-a456-426614174000');
+
+    expect(await persistence.loadSettings()).toEqual(SETTINGS);
+    expect(await persistence.loadLoadouts(['warrior'])).toEqual(
+      new Map([['warrior', { primaryWeaponId: 'raptor-talons' }]]),
+    );
+    expect(await persistence.loadGuestId()).toBe('123e4567-e89b-42d3-a456-426614174000');
+    expect(errors).toEqual([
+      'storage unavailable, falling back to memory: progress will not be saved',
+    ]);
+    expect(warnings).toEqual([]);
+  });
+
+  it('rejects a failed open when no fallback is injected', async () => {
+    const persistence = controller(new IndexedDbStorageAdapter(null));
+
+    await expect(persistence.open()).rejects.toThrow('IndexedDB is not available');
   });
 });

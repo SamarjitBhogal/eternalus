@@ -25,7 +25,8 @@ import { loadAggroRules } from './content/ai/aggro/loadAggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
 import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from './content/ai/rover';
-import { LEGEND_KIND_IDS } from './content/legends/legendKinds';
+import { LEGEND_KIND_IDS, LEGEND_KINDS } from './content/legends/legendKinds';
+import type { LegendDefinition } from './content/legends/legends.types';
 import type { MapDefinition } from './content/maps/maps.types';
 import type { MapObject } from './content/maps/mapObjects.types';
 import type { GameConfig } from './config/GameConfig.types';
@@ -49,6 +50,7 @@ import { loadWeapons } from './content/weapons/loadWeapons';
 import { ZONE_DEFINITIONS, ZONE_PLACEMENTS } from './content/zones/zoneCatalogue';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
+import { SpawnLoadoutPolicy } from './loadout/SpawnLoadoutPolicy';
 import { DUEL_RULES } from './content/duel/duelRules';
 import { duelMapObjects } from './match/duelArena';
 import { duelStartPoints } from './match/duelStartPoints';
@@ -197,7 +199,7 @@ export class Simulation {
       createDefaultEntityRegistry(),
       Simulation.withStructures(definitions, structures),
       undefined,
-      weaponSource,
+      { weapons: weaponSource, loadouts: Simulation.loadoutPolicy(units, weaponSource, logger) },
     );
     const { owners, carriers } = Simulation.spawnStructures(this.state, factory, {
       structures,
@@ -691,6 +693,7 @@ export class Simulation {
             memory,
           }
         : undefined,
+      slot.pilot === 'human' ? slot.loadout : undefined,
     );
     if (slot.pilot === 'human') {
       state.match.seatHuman(entity.id, slot.team);
@@ -756,6 +759,49 @@ export class Simulation {
         laneWeights: LANE_ASSESSMENT_WEIGHTS,
       },
     });
+  }
+
+  /**
+   * The match's `SpawnLoadoutPolicy` (05 §12): loadouts checked against its Legend classes (the
+   * `units` whose kind is a Legend class) and `weapons`, a rejection logged at WARN as the
+   * `loadout-rejected` diagnostic event (DEC-354 (3)).
+   */
+  private static loadoutPolicy(
+    units: DefinitionSource,
+    weapons: WeaponSource,
+    logger: Logger,
+  ): SpawnLoadoutPolicy {
+    const legends = {
+      has: (id: string): boolean => units.has(id) && LEGEND_KINDS.has(units.get(id)),
+      get: (id: string): LegendDefinition => {
+        const definition = units.get(id);
+        if (!LEGEND_KINDS.has(definition)) throw new Error(`"${id}" is not a Legend class.`);
+        return definition;
+      },
+    };
+    return new SpawnLoadoutPolicy(
+      { legends, weapons },
+      ({ definitionId, given, problems, used }) => {
+        logger.log(
+          makeLogRecord(
+            'WARN',
+            'core.loadout',
+            'a spawn loadout was invalid; using the auto-build',
+            {
+              event: {
+                name: 'loadout-rejected',
+                attributes: {
+                  definitionId,
+                  givenWeaponId: given.primaryWeaponId,
+                  usedWeaponId: used.primaryWeaponId,
+                  problems: problems.map(({ message }) => message).join('; '),
+                },
+              },
+            },
+          ),
+        );
+      },
+    );
   }
 
   /** The shipped content, checked against the controllers before the match starts. */

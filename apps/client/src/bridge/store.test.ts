@@ -12,6 +12,7 @@ describe('store', () => {
         'developerMenu',
         'hud',
         'loading',
+        'loadouts',
         'match',
         'matchSetup',
         'session',

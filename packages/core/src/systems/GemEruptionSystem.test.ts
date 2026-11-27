@@ -55,7 +55,7 @@ const setUp = (world: MatchWorld | null = null, gemAt = GEM_AT) => {
             : STRUCTURE_DEFINITIONS.get(id),
     },
     undefined,
-    loadWeapons(TICK_RATE),
+    { weapons: loadWeapons(TICK_RATE) },
   );
   const zone = new CapturePoint('zone-1', CAPTURE_POINT.id);
   zone.spawn({

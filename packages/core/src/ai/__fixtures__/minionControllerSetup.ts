@@ -45,7 +45,7 @@ export const setUp = (config: GameConfig = createDefaultGameConfig()) => {
     createDefaultEntityRegistry(),
     loadDefaultContent(30),
     undefined,
-    loadWeapons(30),
+    { weapons: loadWeapons(30) },
   );
   const perception = new Perception(state);
   const add = (team: Team, x: number, y = 20, kind = 'light-mob', id = 'light-minion') => {

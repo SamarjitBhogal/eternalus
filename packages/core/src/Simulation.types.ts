@@ -9,6 +9,7 @@ import type { ContentCatalogue } from './content/ContentCatalogue';
 import type { AuthoredGuardPlan } from './content/structures/structures.types';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
+import type { Loadout } from './loadout/Loadout.types';
 import type { StructureDefinition } from './content/structures/structures.types';
 import type { System } from './systems/System.types';
 import type { PlayableTeam } from './teams/teams.types';
@@ -86,7 +87,11 @@ export type RosterSlot =
       /** The bot's difficulty (`content/ai/difficulties/`). */
       readonly difficulty: string;
     })
-  | (RosterSlotBase & { readonly pilot: 'human' });
+  | (RosterSlotBase & {
+      readonly pilot: 'human';
+      /** The player's saved loadout (reference 08); the class default when absent. */
+      readonly loadout?: Loadout;
+    });
 
 /**
  * What a match was built with: the seed, the config and, when the match had them, the generated

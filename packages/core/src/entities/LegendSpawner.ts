@@ -1,4 +1,5 @@
 import type { GameState } from '../state/GameState';
+import type { Loadout } from '../loadout/Loadout.types';
 import type { PlayableTeam } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { Entity } from './Entity';
@@ -27,7 +28,8 @@ export class LegendSpawner {
 
   /**
    * Spawns the Legend of `definitionId` at `position` on `team`, with `controller` when it is a
-   * bot's (none for the human's), and announces it with `entity-spawned`. Call `refusal` first.
+   * bot's (none for the human's), and the human's saved `loadout` when present. Announces it with
+   * `entity-spawned`. Call `refusal` first.
    */
   public spawn(
     state: GameState,
@@ -35,6 +37,7 @@ export class LegendSpawner {
     team: PlayableTeam,
     position: Vec2,
     controller?: ControllerSpawn,
+    loadout?: Loadout,
   ): Entity {
     const { kind } = this.factory.definitions.get(definitionId);
     const entity = this.factory.create(kind, definitionId, {
@@ -42,6 +45,7 @@ export class LegendSpawner {
       team,
       ...state.world?.startFacing(team, position),
       ...(controller !== undefined && { controller }),
+      ...(loadout !== undefined && { loadout }),
     });
     state.entities.add(entity);
     state.events.emit('entity-spawned', { entityId: entity.id, kind: entity.kind, team });

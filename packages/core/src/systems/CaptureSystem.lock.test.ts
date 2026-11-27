@@ -34,7 +34,7 @@ const setUp = (...mobIds: string[]) => {
     createDefaultEntityRegistry(),
     loadDefaultContent(TICK_RATE),
     undefined,
-    loadWeapons(TICK_RATE),
+    { weapons: loadWeapons(TICK_RATE) },
   );
   const point = new CapturePoint('zone-1', CAPTURE_POINT.id);
   point.spawn({ definition: CAPTURE_POINT, position: CENTER, team: 'neutral', area: AREA });

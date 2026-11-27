@@ -22,7 +22,7 @@ const setUp = () => {
     createDefaultEntityRegistry(),
     loadDefaultContent(30),
     undefined,
-    loadWeapons(30),
+    { weapons: loadWeapons(30) },
   );
   const minion = factory.create('light-mob', 'light-minion', {
     team: 'light',

@@ -53,7 +53,7 @@ const setUp = (isWithMap = true) => {
     createDefaultEntityRegistry(),
     loadDefaultContent(CONFIG.tickRate, undefined, weapons),
     undefined,
-    weapons,
+    { weapons },
   );
   const respawn = new RespawnSystem(DELAY, LANE_ASSESSMENT_WEIGHTS);
   const death = new DeathSystem();

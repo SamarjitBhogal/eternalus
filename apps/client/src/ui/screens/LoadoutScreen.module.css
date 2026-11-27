@@ -1,3 +1,16 @@
 .note {
   color: var(--text-muted);
 }
+
+.pending {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

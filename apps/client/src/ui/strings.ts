@@ -86,7 +86,33 @@ export const STRINGS = {
     licencesTitle: 'Software licences',
     licences: ['React (MIT)', 'Redux Toolkit (MIT)', 'React Redux (MIT)', 'Vite (MIT)'],
   },
-  loadouts: { title: 'Loadouts', classesTitle: 'Classes' },
+  loadouts: {
+    title: 'Loadouts',
+    classGroup: 'Class',
+    weaponGroup: 'Primary weapon',
+    /** Shown when content has not published the weapons a class may take. */
+    weaponsUnavailable: 'The weapons of this class are not available yet.',
+    /** Prefix of the start weapon shown while the choices are unavailable, e.g. "Starts with X". */
+    startsWith: 'Starts with',
+    /** Auto-build replaced a saved weapon that broke the loadout rules (08 "Saved to the profile"). */
+    repaired: 'The saved weapon is no longer available, so auto-build replaced it.',
+    /** Fills every slot with the class's defaults (08 "Pre-game configuration and auto-build"). */
+    autoBuild: 'Auto-build',
+    save: 'Save loadout',
+    pendingTitle: 'Coming with their content',
+    pendingNote: 'Not available yet',
+    /** The slots of 08 "Loadout slots" that wait for their content (abilities, artifacts), in slot order. */
+    pendingSlots: [
+      'Secondary weapon',
+      'Passive',
+      'Artifact 1',
+      'Artifact 2',
+      'Ability 1',
+      'Ability 2',
+      'Ability 3',
+      'Ultimate',
+    ],
+  },
   profile: { history: 'Match history and achievements appear here.' },
   duelName: {
     title: 'Duel online',
@@ -246,6 +272,8 @@ export const STRINGS = {
   /** Both selection steps (62:125, 62:70, 58:271). Class, Legend and ability names are content. */
   characterSelect: {
     bannerTitle: 'Legend Selection',
+    /** The locked view's line naming the weapon the player spawns with (SCRUM-31, 08). */
+    weaponLine: (weaponName: string): string => `Weapon: ${weaponName}`,
     chooseClass: 'Choose Your Class',
     selectClass: 'Select Class',
     selectClassHint: 'Choose a class first.',

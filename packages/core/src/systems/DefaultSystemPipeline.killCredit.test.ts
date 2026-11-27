@@ -42,7 +42,7 @@ const setUp = (assistWindowTicks = loadScoring(config.tickRate).assistWindowTick
   });
   const registry = createDefaultEntityRegistry();
   const ids = new IdGenerator();
-  const units = new EntityFactory(registry, UNITS, ids, loadWeapons(config.tickRate));
+  const units = new EntityFactory(registry, UNITS, ids, { weapons: loadWeapons(config.tickRate) });
   const gem = new EntityFactory(registry, STRUCTURE_DEFINITIONS, ids).create(
     'cathedral-gem',
     'cathedral',

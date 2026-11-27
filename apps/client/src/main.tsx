@@ -1,5 +1,11 @@
-import { SpriteAtlasLoader } from './data/resources/loaders/SpriteAtlasLoader';
-import { createDefaultGameConfig, type Logger, makeLogRecord, SEVERITY } from '@eternalus/core';
+import {
+  createDefaultGameConfig,
+  loadDisplayContent,
+  loadoutContentOf,
+  type Logger,
+  makeLogRecord,
+  SEVERITY,
+} from '@eternalus/core';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
@@ -21,6 +27,7 @@ import { ASSET_LICENCES } from './data/resources/assetLicences';
 import { ASSET_MANIFEST } from './data/resources/AssetManifest';
 import { describeCredits } from './data/resources/describeCredits';
 import { FontLoader } from './data/resources/loaders/FontLoader';
+import { SpriteAtlasLoader } from './data/resources/loaders/SpriteAtlasLoader';
 import { UiImageLoader } from './data/resources/loaders/UiImageLoader';
 import { ResourceController } from './data/resources/ResourceController';
 import { createCoreCatalogue } from './game/content/coreCatalogue';
@@ -30,6 +37,8 @@ import { createBrowserMatch, type BrowserMatchDeps } from './game/createBrowserM
 import { createMatchSeed } from './game/createMatchSeed';
 import { readDeveloperFlags } from './game/developerFlags';
 import { isAppleUserAgent } from './game/isAppleUserAgent';
+import { classLoadoutOptions } from './game/loadout/classLoadoutOptions';
+import { LoadoutController } from './game/loadout/LoadoutController';
 import { DEFAULT_DUEL_SERVER_URL } from './game/engine/net/DuelServer.constants';
 import { WebSocketTransport } from './game/engine/net/WebSocketTransport';
 import { PerformanceSessionClock } from './game/engine/time/PerformanceSessionClock';
@@ -93,7 +102,12 @@ logWindowErrors(window, logger);
 const developer = readDeveloperFlags(window.location.search);
 
 connectBusToStore(eventBus, store.dispatch);
+// What the Loadout screen offers per class, and the rules loadouts are checked and repaired by (08).
+const displayContent = loadDisplayContent();
 const persistence = new PersistenceController({
+  // Memory only until the settings layout (per group) and per-Legend loadout keys land: writing
+  // today's shape to players' browsers would need a migration for a schema that never shipped
+  // (owner answer 5, DEC-354). The follow-up PR turns IndexedDbStorageAdapter.inBrowser() on.
   adapter: new MemoryStorageAdapter(),
   knownActions: new Set(INPUT_ACTIONS),
   now: () => Date.now(),
@@ -101,7 +115,7 @@ const persistence = new PersistenceController({
     logger.log(makeLogRecord('WARN', 'client.persistence', body, { attributes }));
   },
 });
-// Settings and the guest id load once storage is open.
+// Settings, loadouts and the guest id load once storage is open.
 const storageOpen = persistence.open().catch((error: unknown) => {
   logger.log(
     makeLogRecord('ERROR', 'client.persistence', 'storage did not open', {
@@ -115,6 +129,13 @@ const settings = new SettingsController({
   logger,
   isApplePlatform: isAppleUserAgent(window.navigator.userAgent),
   themeRoot: document.documentElement,
+});
+const loadouts = new LoadoutController({
+  bus: eventBus,
+  persistence,
+  logger,
+  options: classLoadoutOptions(displayContent),
+  content: loadoutContentOf(displayContent),
 });
 const resources = new ResourceController({
   manifest: ASSET_MANIFEST,
@@ -138,6 +159,7 @@ const resources = new ResourceController({
 // Loaded once at boot (a content error stops it here): the session runs on it and the viewport
 // names the teams from it.
 const catalogue = createCoreCatalogue({
+  content: displayContent,
   knownAssetIds: new Set(ASSET_MANIFEST.assets.map((entry) => entry.id)),
   overrides: developer.displayOverrides,
 }).load();
@@ -160,6 +182,7 @@ const session = new SessionController({
   catalogue: { load: () => catalogue },
   matchConfig: gameConfig.match,
   playerName: PLACEHOLDER_PLAYER_NAME,
+  playerLoadout: (classId) => loadouts.loadoutOf(classId),
   seedSource: createMatchSeed,
   createRng: (seed) => new LcgRng(seed),
   createRosterRng,
@@ -188,8 +211,9 @@ const session = new SessionController({
 });
 session.start();
 
-// Settings load in the background: the store has no bindings until the settings event arrives.
-void storageOpen.then(() => settings.start());
+// Settings and loadouts load in the background: the store has no bindings until the settings
+// event arrives, and the Loadout screen no choices until the loadouts event does.
+void storageOpen.then(() => Promise.all([settings.start(), loadouts.start()]));
 
 const attachViewport = (viewport: MatchViewport): (() => void) => session.attachViewport(viewport);
 createRoot(rootElement).render(

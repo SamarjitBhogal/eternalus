@@ -71,12 +71,9 @@ describe('createDefaultEntityRegistry', () => {
   });
 
   it('spawns every unit definition with the unit components', () => {
-    const factory = new EntityFactory(
-      createDefaultEntityRegistry(),
-      UNIT_DEFINITIONS,
-      undefined,
-      loadWeapons(createDefaultGameConfig().tickRate),
-    );
+    const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS, undefined, {
+      weapons: loadWeapons(createDefaultGameConfig().tickRate),
+    });
 
     for (const definition of UNIT_DEFINITIONS.all()) {
       const entity = factory.create(definition.kind, definition.id, PLACEMENT);

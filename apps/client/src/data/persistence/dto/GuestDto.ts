@@ -1,5 +1,5 @@
 import type { DtoCheck } from './DtoCheck.types';
-import { isRecord } from './isRecord';
+import { isRecord } from './dtoCheck';
 
 /** The longest guest id a record may hold (the server's ids are 36 characters). */
 const MAX_GUEST_ID_LENGTH = 64;

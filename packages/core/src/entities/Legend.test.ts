@@ -31,6 +31,19 @@ describe('Legend', () => {
     expect(combat.attack).toMatchObject({ damage: 50, reach: 1.5, interval: 15 });
   });
 
+  it('builds its Combat from the weapon its spawn loadout names, over the default', () => {
+    const legend = new Warrior('entity-1', 'warrior');
+
+    legend.spawn({
+      ...PLACEMENT,
+      definition: WARRIOR,
+      weapons: loadWeapons(30),
+      loadout: { classId: 'warrior', primaryWeaponId: 'wuuthrad' },
+    });
+
+    expect(legend.getComponent(Combat).weaponId).toBe('wuuthrad');
+  });
+
   it('builds its Combat from its shipped default weapon', () => {
     const legend = new Warrior('entity-1', 'warrior');
 

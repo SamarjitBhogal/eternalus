@@ -44,7 +44,7 @@ const setUp = () => {
     createDefaultEntityRegistry(),
     loadDefaultContent(CONFIG.tickRate),
     undefined,
-    loadWeapons(CONFIG.tickRate),
+    { weapons: loadWeapons(CONFIG.tickRate) },
   );
   const spawn = (kind: string, definitionId: string, x: number, team: Team): Entity => {
     const entity = factory.create(kind, definitionId, { position: { x, y: 0 }, team });

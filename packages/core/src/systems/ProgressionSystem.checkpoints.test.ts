@@ -48,12 +48,9 @@ const setUp = () => {
   point.getComponent(Capturable).setOwner('neutral', state.tick);
   state.entities.add(point);
   const units = loadDefaultContent(TICK_RATE);
-  const factory = new EntityFactory(
-    createDefaultEntityRegistry(),
-    units,
-    undefined,
-    loadWeapons(TICK_RATE),
-  );
+  const factory = new EntityFactory(createDefaultEntityRegistry(), units, undefined, {
+    weapons: loadWeapons(TICK_RATE),
+  });
   const roster = new GuardRoster(
     factory,
     units,

@@ -1,5 +1,5 @@
 import type { DtoCheck } from './DtoCheck.types';
-import { isRecord } from './isRecord';
+import { isRecord } from './dtoCheck';
 
 /** The modifier keys a stored keyboard chord may name (`bridge/Binding.types.ts` `ChordModifier`). */
 const CHORD_MODIFIERS = ['Alt', 'Control', 'Meta', 'Shift'] as const;

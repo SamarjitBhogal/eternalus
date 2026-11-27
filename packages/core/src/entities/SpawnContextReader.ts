@@ -1,5 +1,6 @@
 import type { ControllerSpawn } from './EntityFactory.types';
 import { CONTROLLER_IDS } from '../content/ai/controllerIds';
+import type { Loadout } from '../loadout/Loadout.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 import type { Entity } from './Entity';
 import type { WeaponSource } from './EntityFactory.types';
@@ -123,6 +124,16 @@ export class SpawnContextReader {
   public laneId(context: unknown): string | null {
     const { laneId } = SpawnContextReader.fields(context);
     return typeof laneId === 'string' ? laneId : null;
+  }
+
+  /** The context's `Placement.loadout`, or `null` when it gives none or not a loadout. */
+  public loadout(context: unknown): Loadout | null {
+    const { loadout } = SpawnContextReader.fields(context);
+    if (!SpawnContextReader.isObject(loadout)) return null;
+    const { classId, primaryWeaponId } = loadout;
+    return typeof classId === 'string' && typeof primaryWeaponId === 'string'
+      ? { classId, primaryWeaponId }
+      : null;
   }
 
   /** The weapon source the factory put in the context, or `null` when it has none. */

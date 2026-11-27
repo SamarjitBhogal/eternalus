@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Binding } from '../../bridge/Binding.types';
 import type { DisplayCatalogue } from '../../bridge/catalogue.types';
 import type { RosterEntry } from '../../bridge/events';
+import { loadoutsSlice, type LoadoutsSliceState } from '../../bridge/slices/loadoutsSlice';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import { settingsSlice } from '../../bridge/slices/settingsSlice';
 import { STRINGS } from '../strings';
@@ -43,9 +44,11 @@ const ALLIES: readonly RosterEntry[] = [
 function render(
   selection: { readonly classId: string | null; readonly specId: string | null },
   content: DisplayCatalogue = TEST_CONTENT,
+  loadouts: LoadoutsSliceState = loadoutsSlice.getInitialState(),
 ): string {
   return renderWithStore(<LockedSelectStep />, {
     content,
+    loadouts,
     settings: { ...settingsSlice.getInitialState(), bindings: ESC },
     matchSetup: {
       ...matchSetupSlice.getInitialState(),
@@ -62,6 +65,27 @@ const figureSrc = (html: string): string | undefined =>
   new RegExp(`<img src="([^"]+)"[^>]*class="${styles.figure ?? '-'}"`).exec(html)?.[1];
 
 describe('LockedSelectStep', () => {
+  it('names the weapon the player spawns with, the one saved on the Loadout screen (SCRUM-31)', () => {
+    const loadouts: LoadoutsSliceState = {
+      options: {
+        magus: {
+          defaultWeaponId: 'magus-staff',
+          weapons: [
+            { id: 'wuuthrad', displayName: 'Wuuthrad' },
+            { id: 'magus-staff', displayName: 'Staff' },
+          ],
+        },
+      },
+      saved: { magus: 'wuuthrad' },
+      repaired: [],
+    };
+
+    const html = render({ classId: 'magus', specId: 'oracle' }, TEST_CONTENT, loadouts);
+
+    expect(html).toContain(`class="${styles.weapon ?? '-'}"`);
+    expect(html).toContain('Weapon: Wuuthrad');
+  });
+
   it('renders nothing before a class is picked', () => {
     expect(render({ classId: null, specId: null })).toBe('');
   });

@@ -35,6 +35,83 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **`feat/loadout-screen` (PR #141, SCRUM-311), where loadout repair runs — sign-off.**
+      Architecture 14 §8 has `LoadoutRepository` call core's `repairLoadout` for a content id that
+      no longer exists. The branch keeps the repository to shape checks (it no longer quarantines
+      an unknown weapon, and `knownWeapons` left `PersistenceController`), and
+      `LoadoutController` (game) repairs and logs instead, so `data/` holds no content rules and
+      the Loadout screen learns which classes were repaired. Two smaller departures from the
+      05 §12 sketch: a `LoadoutProblem` names a `field` (`'class'` or a slot) instead of a
+      `slot`, and `EntityFactory` reports a rejected spawn loadout through an
+      `SpawnLoadoutPolicy` that `Simulation` logs at WARN, not as a `GameEvents` event. Also, to
+      let `EntityFactory` run the validator (05 §12) without `entities/` importing `loadout/` at
+      runtime, the policy is injected through a `LoadoutResolver` port and `entities/` imports
+      only loadout types; the branch added `loadout/` (types) to the `entities/` may-import row
+      of 02 §2 and `packages/core/AGENTS.md`. Keep these (then 14 §8 and 05 §12 are updated to
+      match) or move the repair into the repository?
+      _Agent note (2026-11-25, PR #141):_ Owner's answer (2026-11-23): "Keep all four — If this
+      is the best design." (DEC-354 (3)). The review found the repair place and the
+      `LoadoutResolver` port best as built. It fixed the other two on the branch: `LoadoutField`
+      is `'class' | LoadoutSlot`, and a refused spawn loadout is the `loadout-rejected`
+      diagnostic event.
+
+- [ ] **`IndexedDbStorageAdapter` test fake — approve `fake-indexeddb`?** Saved settings and
+      loadouts still live in `MemoryStorageAdapter` and are lost on reload. Phase 5's adapter
+      item tests it with the contract suite against an IndexedDB fake: `fake-indexeddb` (a dev
+      dependency, which `AGENTS.md` says needs your approval) or a hand-written fake of the
+      subset the adapter uses. Which one?
+      _Agent note (2026-11-20, `feat/loadout-indexeddb`):_ the user chose neither for now: no new
+      dependency and no hand-written fake or contract run against IndexedDB; the adapter landed
+      with plain unit tests only (see the next item). The question stays open for when the
+      adapter gets real tests.
+      _Agent note (2026-11-22, `feat/loadout-screen`, PR #141 review):_ the review asked for the
+      adapter's tests (reads, writes, aborts, upgrades), so the branch runs the contract suite
+      against a small hand-written fake of the subset the adapter uses
+      (`data/persistence/__fixtures__/FakeIdb*.ts`, test-only, no dependency). Owner's answer:
+      keep the fake, simplified.
+      _Agent note (2026-11-25, PR #141):_ a newer owner answer (2026-11-23) replaces "keep the
+      fake" above: "Approve fake-indexeddb, a test-only package" (DEC-354 (4)). The follow-up PR
+      `feat/loadout-per-legend` adds it and removes the hand-written fake.
+
+- [ ] **`feat/loadout-screen` (PR #141, SCRUM-31, SCRUM-311) — product and layout rulings the
+      review left to you.** (1) Is a saved weapon kept per class (FR-089, reference 08, as built)
+      or per Legend (DEC-57, DEC-301, `Loadout.specId`)? Storage v1 is not on players' disks
+      yet, so changing it is cheap now. (2) Does the HUD weapon slot show the picked weapon's art
+      or the class art (DEC-57, DEC-114)? (3) Copy of the repaired-loadout status line on the
+      Loadout screen. (4) The rule that gates Save (a pick must differ from the saved weapon).
+      (5) Disabled placeholder rows (secondary weapon, passive, artifacts, abilities, ultimate)
+      and their copy: keep or remove. (6) The new `apps/client/src/game/loadout/` folder: it is
+      not in the `apps/client/AGENTS.md` folder table. (7) The public core API additions
+      (`DisplayContent.weapons`, `LegendEquipment`) and the `entities/` import of `loadout/`
+      types with the `LoadoutResolver` port. (8) The locked view's line now reads
+      "Recommendation: <weapon>" (the review's wording); confirm it with (1) and (2).
+      _Agent note (2026-11-22):_ nothing was removed; these stay as built until you rule.
+      _Agent note (2026-11-25, PR #141):_ Owner's answers (2026-11-23): (1) "Per Legend" and
+      (2) "Show the held weapon's picture, or an empty slot when it has no picture" (DEC-354 (1)
+      and (2)); the follow-up PR `feat/loadout-per-legend` builds both. (8) The locked view reads
+      "Weapon: <name>" again: the review meant `Recommendation:` as a code label, not as player
+      text.
+
+- [ ] **`feat/loadout-indexeddb` (SCRUM-31, SCRUM-311), `IndexedDbStorageAdapter` — four points
+      the docs leave open.** (1) Wiring the adapter puts schema v1 on players' disks once it
+      reaches `main`. Architecture 14 §14 lists gaps "to settle before `IndexedDbStorageAdapter`
+      fixes v1 on disk" (settings keyed by `profileId`, not §7's `[profileId, group]`; no
+      `profiles`, `matches`, `replays`, `meta` stores; no indexes). Ship v1 as it is (later
+      changes become v2+ migrations), or settle the settings key path first? (2) The fallback to
+      `MemoryStorageAdapter` logs at WARN (the brief's wording, through the existing `warn`
+      callback); 14 §10's table says ERROR. Which? (3) 14 §10 says `blocked` "waits, then
+      fallback" but gives no wait; the branch falls back at once (the §4 `openDatabase` sketch)
+      and closes the connection if it opens later. Keep, or name a wait? (4) No `degraded`
+      status, `persistenceSlice` or "progress will not be saved" banner is built; the fallback
+      is only logged.
+      _Agent note (2026-11-25, PR #141):_ (1) Owner's answer (2026-11-23): "Change the layout
+      first, then turn on disk saves" (DEC-354 (5)). `main.tsx` uses `MemoryStorageAdapter`
+      again; the follow-up PR `feat/loadout-per-legend` changes the layout, then turns on
+      IndexedDB. (2) The fallback now reports through its own `reportError` callback, not the
+      WARN reporter. When `main.tsx` passes the fallback (in `feat/loadout-per-legend`), that
+      callback writes an ERROR record, as 14 §10's table says, so the failure becomes an error
+      report; say so if you want WARN. (3) and (4) stay open.
+
 - [x] **The gem eruption and the Greater Boss: choices to confirm (Aryan Walanj, 2026-11-22,
       `feat/cathedral-eruption-boss`).** Sam (2026-11-15, chat): the boss is in, sprint 3.6 is
       Aryan's, `GuardController` is the interim. Built: at mid-game (DEC-81, 15:00 of the 30-minute

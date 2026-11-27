@@ -18,6 +18,7 @@ import type {
   PlayerHudSnapshot,
   StructureStatus,
 } from './hud.types';
+import type { LoadoutsSliceState } from './slices/loadoutsSlice';
 import type { SettingsPatch, SettingsSliceState } from './slices/settingsSlice';
 
 /** Every session phase, in flow order (architecture 13 §2). */
@@ -84,6 +85,12 @@ export type UiIntent =
   /** `action: null` resets every binding. */
   | { readonly kind: 'reset-bindings'; readonly action: InputAction | null }
   | { readonly kind: 'update-settings'; readonly patch: SettingsPatch }
+  /** Saves the primary weapon the player picked for a class on the Loadout screen (08). */
+  | {
+      readonly kind: 'save-loadout';
+      readonly classId: LegendClassId;
+      readonly primaryWeaponId: string;
+    }
   /** A screen threw while rendering (`ErrorBoundary`, ADR 0025 §5); all plain strings. */
   | {
       readonly kind: 'report-screen-crash';
@@ -280,4 +287,6 @@ export type BridgeEventMap = {
   'developer-menu': DeveloperMenuState;
   /** The whole settings state, published whenever it changes. */
   settings: SettingsSliceState;
+  /** The saved loadouts and what each class may take, published at boot and on every save. */
+  loadouts: LoadoutsSliceState;
 };

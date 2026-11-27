@@ -44,6 +44,7 @@ export type {
 export { DUEL_RULES } from './content/duel/duelRules';
 export { loadDisplayContent } from './content/loadDisplayContent';
 export type { DisplayContent } from './content/loadDisplayContent';
+export type { WeaponDisplay } from './content/weapons/weapons.types';
 export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';
 export { CORNER_CAMP_RING } from './content/structures/cornerCampRing';
 export type {
@@ -85,6 +86,14 @@ export { MapGenerator } from './map/MapGenerator';
 export type { MapGeneratorConfig } from './map/MapGenerator.types';
 export { Simulation } from './Simulation';
 export type { Replay, ReplaySetup, ReplayTargetFactory, RosterSlot } from './Simulation.types';
+export type { Loadout, LoadoutSlot } from './loadout/Loadout.types';
+export { autoBuildLoadout, repairLoadout, validateLoadout } from './loadout/loadoutApi';
+export { loadoutContentOf } from './loadout/loadoutContentOf';
+export type {
+  LoadoutContent,
+  LoadoutField,
+  LoadoutProblem,
+} from './loadout/LoadoutValidator.types';
 export { isUnitFamily } from './entities/unitFamilies';
 export type { EntityId, RemovalCause } from './state/EntityStore.types';
 export type {

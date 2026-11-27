@@ -8,9 +8,11 @@ import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { NullLogger } from './diagnostics/NullLogger';
 import { recordReplay, runReplay } from './diagnostics/replay';
 import type { MapDefinition } from './content/maps/maps.types';
+import { Combat } from './components/Combat';
 import { Simulation } from './Simulation';
 import type { ReplaySetup, RosterSlot } from './Simulation.types';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
+import type { GameState } from './state/GameState';
 import type { PlayableTeam } from './teams/teams.types';
 
 /** The dark Stronghold of the two-lane map. */
@@ -71,6 +73,63 @@ describe('Simulation: the human slot of the roster', () => {
       });
     },
   );
+
+  it("arms the human's Legend with the weapon of the slot's loadout, and a bot with its default", () => {
+    const sim = build([
+      {
+        pilot: 'human',
+        team: 'dark',
+        definitionId: 'warrior',
+        role: 'rover',
+        loadout: { classId: 'warrior', primaryWeaponId: 'wuuthrad' },
+      },
+      laner('dark'),
+    ]);
+    // ponytail: reads the private state, as Simulation.healing.test.ts does; snapshots carry no weapon.
+    const { state } = sim as unknown as { readonly state: GameState };
+    const weapons = new Map<string, string | null>();
+    state.entities.forEach((entity) => {
+      if (entity.family === 'legend') weapons.set(entity.id, entity.getComponent(Combat).weaponId);
+    });
+
+    const humanId = sim.snapshot().match.humanLegendId ?? '';
+    expect(weapons.get(humanId)).toBe('wuuthrad');
+    expect([...weapons].filter(([id]) => id !== humanId).map(([, weapon]) => weapon)).toEqual([
+      'raptor-talons',
+    ]);
+  });
+
+  it("logs an invalid loadout on the human slot as a diagnostic event and spawns the class's auto-build", () => {
+    const logger = new MemoryLogger();
+    const sim = build(
+      [
+        {
+          pilot: 'human',
+          team: 'dark',
+          definitionId: 'warrior',
+          role: 'rover',
+          loadout: { classId: 'warrior', primaryWeaponId: 'magus-staff' },
+        },
+      ],
+      logger,
+    );
+    const { state } = sim as unknown as { readonly state: GameState };
+    const humanId = sim.snapshot().match.humanLegendId ?? '';
+
+    expect(state.entities.get(humanId)?.getComponent(Combat).weaponId).toBe('raptor-talons');
+    expect(logger.records.filter(({ scope }) => scope === 'core.loadout')).toMatchObject([
+      {
+        severityText: 'WARN',
+        eventName: 'loadout-rejected',
+        attributes: {
+          definitionId: 'warrior',
+          givenWeaponId: 'magus-staff',
+          usedWeaponId: 'raptor-talons',
+          problems: 'class "warrior" may not carry weapon "magus-staff"',
+        },
+      },
+    ]);
+  });
 
   it("snapshots the human Legend's level and XP from the Simulation's own level curves; structures have none", () => {
     const sim = new Simulation({
@@ -324,6 +383,36 @@ describe('Simulation: the human slot of the roster', () => {
     expect(replay.commands).toEqual([]);
     expect(runReplay(replay, createTarget).firstDivergence).toBeNull();
     expect(build([human()]).exportReplay().roster).toEqual([human()]);
+  });
+
+  it('reproduces its hashes in a replay of a human slot with a saved loadout, which the replay keeps and needs', () => {
+    const armed: RosterSlot = {
+      pilot: 'human',
+      team: 'dark',
+      definitionId: 'warrior',
+      role: 'rover',
+      loadout: { classId: 'warrior', primaryWeaponId: 'wuuthrad' },
+    };
+    const createTarget = ({ config, seed, roster }: ReplaySetup) =>
+      new Simulation({
+        config,
+        seed,
+        logger: new NullLogger(),
+        map: TWO_LANE_MAP,
+        ...(roster === undefined ? {} : { roster }),
+      });
+    const replay = recordReplay(
+      { config: configFor(), seed: 5, roster: [armed] },
+      { ticks: 40, checkpointEvery: 10, commandsFor: () => [] },
+      createTarget,
+    );
+
+    expect(runReplay(replay, createTarget).firstDivergence).toBeNull();
+    expect(build([armed]).exportReplay().roster).toEqual([armed]);
+    // `StateHasher` hashes the weapon, so the same replay without the loadout diverges at once.
+    expect(runReplay({ ...replay, roster: [human()] }, createTarget).firstDivergence).toMatchObject(
+      { tick: 0 },
+    );
   });
 
   it('hashes a match with a human differently from one in sim mode (the Legend is in the entities)', () => {

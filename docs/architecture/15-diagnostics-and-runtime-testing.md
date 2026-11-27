@@ -4,7 +4,7 @@ description: Testing while the game is running - the Invariant interface and the
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, diagnostics, invariants, logging, performance, replays, soak-tests, testing]
 paths: ['packages/core/src/diagnostics/**']
 related:
@@ -166,6 +166,13 @@ export interface Logger {
 // The structured diagnostics core reports (FR-102); the single place of change for them.
 export type DiagnosticEventMap = {
   readonly 'command-rejected': { readonly commandType: string; readonly reason: string };
+  // A spawn loadout that failed validation, and the auto-build used instead (05 §12, DEC-354 (3)).
+  readonly 'loadout-rejected': {
+    readonly definitionId: string;
+    readonly givenWeaponId: string;
+    readonly usedWeaponId: string;
+    readonly problems: string; // every problem's message, joined with '; '
+  };
   readonly 'invariant-violated': {
     readonly invariantId: InvariantId;
     readonly entityId: EntityId | null;

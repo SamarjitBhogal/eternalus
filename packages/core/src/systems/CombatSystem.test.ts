@@ -36,7 +36,7 @@ const setUp = () => {
     createDefaultEntityRegistry(),
     loadDefaultContent(CONFIG.tickRate),
     undefined,
-    loadWeapons(CONFIG.tickRate),
+    { weapons: loadWeapons(CONFIG.tickRate) },
   );
   const spawn = (kind: string, definitionId: string, x: number, team: Team): Entity => {
     const entity = factory.create(kind, definitionId, { position: { x, y: 0 }, team });
@@ -277,7 +277,9 @@ const firstHit = (kind: string, definitionId: string): { amount: number; source:
     },
   ]);
   const state = new GameState(CONFIG, 1);
-  const factory = new EntityFactory(createDefaultEntityRegistry(), content, undefined, weapons);
+  const factory = new EntityFactory(createDefaultEntityRegistry(), content, undefined, {
+    weapons,
+  });
   const attacker = factory.create(kind, definitionId, { position: { x: 0, y: 0 }, team: 'light' });
   const dummy = factory.create('light-mob', 'training-dummy', {
     position: { x: 1, y: 0 },

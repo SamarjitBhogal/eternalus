@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-26
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -508,6 +508,36 @@ export class ResourceController {
 | An asset or a storage backend | one line in its asset group's manifest file (concatenated into `ASSET_MANIFEST`) with `licence` and `source`; or `<Tech>StorageAdapter.ts` passing `describeStorageAdapter`                                                                                                         | nothing else (views ask by id); one line in `main.tsx`                                                                                                          |
 
 ## 14. Implementation status
+
+**Loadouts (`feat/loadout-screen`, 2026-11-20).** `PersistenceController` also has
+`loadLoadouts(classIds)` and `saveLoadout(classId, loadout)` over `LoadoutRepository`, one
+`LoadoutDtoV1` (`primaryWeaponId`) per profile and class in the v1 `loadouts` store (no `name`,
+`updatedAt` or nested `loadout` of §7's `SavedLoadoutDtoV1` yet). The DTO check is shape only.
+A weapon id content no longer has is not quarantined: the client's `LoadoutController` repairs
+it with core's `repairLoadout` and logs it, in place of §8's repository-side repair, so `data/`
+needs no content and the screen learns which classes were repaired. The owner signed off this
+place for the repair (DEC-354 (3)). Loadouts stay keyed per class until `feat/loadout-per-legend`
+keys them per Legend (DEC-354 (1)).
+
+**IndexedDB (`feat/loadout-indexeddb`, 2026-11-20; `feat/loadout-screen`, 2026-11-25).**
+`IndexedDbStorageAdapter` (over `idbPromises.ts`, no dependency) is built by `inBrowser()` from
+the page's `indexedDB`; it types against narrow `Idb*Api` interfaces
+(`IndexedDbStorageAdapter.types.ts`) that the browser's objects satisfy. `open` runs the
+`createStores` ladder inside `onupgradeneeded`; a `work` that throws aborts its transaction; on
+`versionchange` the connection closes. Open failures are a `StorageError` (`unavailable`,
+`version`, `blocked`; the other §10 kinds wait for a caller). `main.tsx` does not inject it yet:
+it injects `MemoryStorageAdapter`, so nothing is saved past the session, because the owner wants
+the layout changed before disk saves turn on (DEC-354 (5)). `feat/loadout-per-legend` moves the
+settings store to §7's `[profileId, group]` key, keys loadouts per Legend and then injects this
+adapter. An optional `fallback` (`StorageFallback`) makes `PersistenceController` wrap its adapter
+in `FallbackStorageAdapter`: when `open` fails, it reports the failure through the fallback's
+`reportError` and continues on `MemoryStorageAdapter`; `blocked` falls back at once. `main.tsx`
+does not pass a `fallback` yet; when it does (`feat/loadout-per-legend`), `reportError` writes an
+ERROR record, as §10 says. No `degraded` status yet.
+§12's contract suite and the adapter's own cases (reads and writes, upgrade, newer version,
+blocked, abort, `versionchange`) run against a hand-written fake of the used subset
+(`__fixtures__/FakeIdb*.ts`); `fake-indexeddb` replaces it in `feat/loadout-per-legend`
+(DEC-354 (4)).
 
 ADR 0028 (DEC-298) registers contributor-confirmed art using attachmentReferenceId and the user-authorised-art licence. hasAssetProvenance checks each reference against its documented record. Sprite atlases use the sprite-atlas asset type in separate per-Legend groups.
 

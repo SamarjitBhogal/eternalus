@@ -39,12 +39,9 @@ const setUp = () => {
           ? ZONE_DEFINITIONS.get(id)
           : STRUCTURE_DEFINITIONS.get(id),
   };
-  const factory = new EntityFactory(
-    createDefaultEntityRegistry(),
-    definitions,
-    undefined,
-    loadWeapons(TICK_RATE),
-  );
+  const factory = new EntityFactory(createDefaultEntityRegistry(), definitions, undefined, {
+    weapons: loadWeapons(TICK_RATE),
+  });
   const loaded = loadStatusEffects(TICK_RATE, 2);
   const applier = new StatusEffectApplier(loaded);
   const system = new CathedralGemSystem(state, applier, loaded, CATHEDRAL_GEM);

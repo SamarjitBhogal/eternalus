@@ -187,6 +187,7 @@ describe('coreCatalogue', () => {
 
   it('checks its asset ids against the ids the composition root gives it', () => {
     const catalogue = createCoreCatalogue({
+      content: loadDisplayContent(),
       knownAssetIds: new Set(),
       overrides: NO_DISPLAY_OVERRIDES,
     });

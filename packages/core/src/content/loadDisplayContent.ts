@@ -23,6 +23,9 @@ import { BOT_ROSTER } from './teams/botRoster';
 import type { BotRosterDefinition } from './teams/botRoster.types';
 import { TEAM_DISPLAY_NAMES } from './teams/teamDisplayNames';
 import { ContentValidator } from './validation/ContentValidator';
+import { validateWeapons } from './weapons/loadWeapons';
+import { WEAPONS } from './weapons/weaponCatalogue';
+import type { WeaponDefinition, WeaponDisplay } from './weapons/weapons.types';
 
 /**
  * Display data the client's selection screens, HUD and results screen show (read-only
@@ -31,6 +34,11 @@ import { ContentValidator } from './validation/ContentValidator';
 export type DisplayContent = {
   readonly legends: readonly LegendDefinition[];
   readonly specs: readonly LegendSpecDefinition[];
+  /**
+   * Every weapon, with the classes that may carry it, in catalogue order: what the client checks
+   * loadouts against (`loadoutContentOf`) and the Loadout screen's primary-weapon choices (08).
+   */
+  readonly weapons: readonly WeaponDisplay[];
   /** Shown after the playable classes as locked cards, never selectable (DEC-48). */
   readonly lockedClasses: readonly LockedClassDefinition[];
   readonly mapFeatures: readonly {
@@ -58,13 +66,14 @@ type DisplayCatalogues = {
   readonly specs?: ContentCatalogue<LegendSpecDefinition>;
   readonly lockedClasses?: ContentCatalogue<LockedClassDefinition>;
   readonly botRoster?: BotRosterDefinition;
+  readonly weapons?: ContentCatalogue<WeaponDefinition>;
 };
 
 /**
  * Loads the display content and validates it once: the legends with `createDefaultContentRules()`,
  * then the specs with `createLegendSpecRules(legends)`, then the locked classes with
  * `createLockedClassRules()`, then the bot roster with `createBotRosterRules(legends)`, each
- * through a `ContentValidator` (04 §5, DEC-22). The display sibling of `loadDefaultContent`
+ * through a `ContentValidator` (04 §5, DEC-22), then the weapons with `validateWeapons`. The display sibling of `loadDefaultContent`
  * (02 §6).
  *
  * @param catalogues - The catalogues (and the bot roster) to load; each one left out is the
@@ -78,15 +87,23 @@ export const loadDisplayContent = ({
   specs = LEGEND_SPECS,
   lockedClasses = LOCKED_CLASSES,
   botRoster = BOT_ROSTER,
+  weapons = WEAPONS,
 }: DisplayCatalogues = {}): DisplayContent => {
   new ContentValidator(createDefaultContentRules()).validate(legends);
   new ContentValidator(createLegendSpecRules(legends)).validate(specs);
   new ContentValidator(createLockedClassRules()).validate(lockedClasses);
   new ContentValidator(createBotRosterRules(legends)).validate(new ContentCatalogue([botRoster]));
+  validateWeapons(weapons.all());
 
   return {
     legends: legends.all(),
     specs: specs.all(),
+    weapons: weapons.all().map(({ id, displayName, allowedClasses, uniqueTo }) => ({
+      id,
+      displayName,
+      allowedClasses,
+      uniqueTo,
+    })),
     lockedClasses: lockedClasses.all(),
     mapFeatures: Object.values(MAP_FEATURE_DEFINITIONS).map(({ id, kind, displayName }) => ({
       id,

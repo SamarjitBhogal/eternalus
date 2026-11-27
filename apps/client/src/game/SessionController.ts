@@ -327,7 +327,11 @@ export class SessionController {
         setup: { ...setup, ...rosters },
         world,
         captureKinds: this.context.catalogue.hud.objectiveKinds.map(({ kind }) => kind),
-        roster: rosterSlots(rosters, this.context.catalogue.botRoster.difficulties),
+        roster: rosterSlots(
+          rosters,
+          this.context.catalogue.botRoster.difficulties,
+          this.deps.playerLoadout(selection.classId),
+        ),
         observer,
       },
       viewport,
