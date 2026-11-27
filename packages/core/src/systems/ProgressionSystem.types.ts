@@ -30,6 +30,9 @@ type KillAward = {
   readonly xp: number;
 };
 
+/** One cleared camp waiting for this system's pass: the bonus to its last mob's killer. */
+type CampAward = Omit<KillAward, 'kind'> & { readonly kind: 'camp-cleared' };
+
 /**
  * One team-wide award: `xp` for every Legend of `team`, for a structure it destroyed (DEC-186) or a
  * boss its unit killed (`team-kill`, DEC-237). `maxLevels` caps how far it lifts each Legend.
@@ -57,4 +60,4 @@ type RespawnAward = {
 };
 
 /** One award this system gives, waiting for its pass. */
-export type Award = KillAward | TeamAward | RespawnAward;
+export type Award = KillAward | CampAward | TeamAward | RespawnAward;

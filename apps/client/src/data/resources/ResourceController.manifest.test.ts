@@ -1,3 +1,4 @@
+import { SpriteAtlasLoader } from './loaders/SpriteAtlasLoader';
 import { describe, expect, it } from 'vitest';
 
 import { ASSET_MANIFEST } from './AssetManifest';
@@ -26,6 +27,9 @@ function shippedResources(pixelRatio: number) {
   const resources = new ResourceController({
     manifest: ASSET_MANIFEST,
     loaders: [
+      new SpriteAtlasLoader(() =>
+        Promise.resolve({ width: 384, height: 640, close: () => undefined }),
+      ),
       new UiImageLoader({
         createImage: () => ({
           src: '',

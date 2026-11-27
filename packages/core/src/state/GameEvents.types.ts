@@ -81,7 +81,8 @@ export type GameEventMap = {
   /**
    * A camp's whole group is dead (18 §7.1); the group comes back after its respawn time.
    * `killerId` dealt the last mob's lethal hit and `team` is its team; both `null` when no killer
-   * is known (a death outside the damage pipeline, or a killer that left the store).
+   * is known (a death outside the damage pipeline, or a killer that left the store and is not a
+   * Legend waiting to respawn).
    */
   readonly 'camp-cleared': {
     readonly entityId: EntityId;
@@ -158,7 +159,8 @@ export type GameEventMap = {
   /**
    * XP reaching a Legend; one per award, so the invariant can audit every award. A kill pays its
    * killer; `cause: 'structure-destroyed'` pays a Legend of the team that destroyed `victimId`, and
-   * `cause: 'team-kill'` a Legend of the team whose unit killed boss `victimId` (DEC-237).
+   * `cause: 'team-kill'` a Legend of the team whose unit killed boss `victimId` (DEC-237), and
+   * `cause: 'camp-cleared'` the Legend that killed the last mob of camp `victimId`.
    */
   readonly 'xp-gained': {
     readonly entityId: EntityId;
@@ -166,7 +168,7 @@ export type GameEventMap = {
     readonly victimId: EntityId;
     readonly victimTeam: Team;
     /** `respawn`: XP owed while the Legend waited, paid as it returns (DEC-186). */
-    readonly cause: 'kill' | 'structure-destroyed' | 'team-kill' | 'respawn';
+    readonly cause: 'kill' | 'structure-destroyed' | 'team-kill' | 'camp-cleared' | 'respawn';
   };
   readonly 'team-changed': {
     readonly entityId: EntityId;

@@ -1,10 +1,12 @@
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { PathQuery } from '../state/PathQuery.types';
 import { sqrt } from '../utils/deterministicMath';
 import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { BtStatus } from './bt/BtNode.types';
 import type { BotTurn } from './BotLegendController.types';
+import { NO_PATH } from './BotMovement.constants';
 
 /**
  * How a bot Legend gets where its leaves send it (architecture 11 §4.2, 10 §9): `move`, halt and
@@ -15,13 +17,17 @@ import type { BotTurn } from './BotLegendController.types';
  */
 export class BotMovement {
   private readonly step: MutableVec2 = { x: 0, y: 0 };
+  /** Scratch for the cached waypoint while `reuseStep` tests it, so the check allocates nothing. */
+  private readonly cachedStep: MutableVec2 = { x: 0, y: 0 };
 
   /**
    * One `move` toward `to`, through the A\* waypoint when the straight line is blocked, or a halt
    * once within `arrivalDistance` of it. A `to` on blocked ground (a tower's centre) counts as its
    * footprint's edge on the bot's side (`edgeOf`). When the pathfinder
    * finds no way, a `stop`, a forgotten target and `failure`, so the bot does not lean on the
-   * obstruction and lower branches may run.
+   * obstruction and lower branches may run. A searched waypoint is cached in memory (11 §6) and
+   * reused instead of a new search while it still serves the destination (`reuseStep`);
+   * arriving, or a search that finds no way, clears it.
    */
   public moveTo(turn: BotTurn, to: Vec2 | null): BtStatus {
     if (to === null) {
@@ -32,15 +38,73 @@ export class BotMovement {
     const isThere =
       BotMovement.gapSquared(turn.position, destination) <= arrivalDistance * arrivalDistance;
     if (isThere) {
+      BotMovement.forgetPath(turn);
       return BotMovement.halt(turn);
     }
     const paths = turn.state.paths;
-    if (paths !== null && !paths.waypoint(turn.position, destination, this.step)) {
-      BotMovement.stop(turn);
-      return 'failure';
+    if (paths !== null && !this.reuseStep(turn, destination, paths)) {
+      if (!paths.waypoint(turn.position, destination, this.step)) {
+        BotMovement.stop(turn);
+        BotMovement.forgetPath(turn);
+        return 'failure';
+      }
+      // A clear line gives the destination itself: nothing was searched, so nothing is cached and
+      // a moving destination (a chased enemy) is followed where it is now.
+      // `PathQuery.waypoint` promises that exact copy, so an exact comparison is safe here.
+      const isSearched = this.step.x !== destination.x || this.step.y !== destination.y;
+      if (isSearched) {
+        turn.next = {
+          ...turn.next,
+          pathGoalX: destination.x,
+          pathGoalY: destination.y,
+          pathStepX: this.step.x,
+          pathStepY: this.step.y,
+        };
+      } else {
+        BotMovement.forgetPath(turn);
+      }
     }
     const next = paths !== null ? this.step : destination;
     return BotMovement.steer(turn, { x: next.x - turn.position.x, y: next.y - turn.position.y });
+  }
+
+  /** Clears the cached waypoint, writing a new memory only when one is set (no hot-path allocation). */
+  private static forgetPath(turn: BotTurn): void {
+    if (turn.next.pathGoalX !== null) {
+      turn.next = { ...turn.next, ...NO_PATH };
+    }
+  }
+
+  /**
+   * Copies the cached waypoint into `step` and returns `true` when it still serves `destination`:
+   * the destination is within `arrivalDistance` of the cached one, the straight line to the
+   * destination is still blocked, the waypoint is farther than `arrivalDistance` from the bot but
+   * nearer than the destination (still on the way, even after a shove), and the straight line to
+   * it is clear. Leaves `step` alone otherwise.
+   */
+  private reuseStep(turn: BotTurn, destination: Vec2, paths: PathQuery): boolean {
+    const { pathGoalX, pathGoalY, pathStepX, pathStepY } = turn.memory;
+    if (pathGoalX === null || pathGoalY === null || pathStepX === null || pathStepY === null) {
+      return false;
+    }
+    const { x, y } = turn.position;
+    const reach = turn.difficulty.arrivalDistance * turn.difficulty.arrivalDistance;
+    const goalShift = BotMovement.gapSquaredOf(pathGoalX, pathGoalY, destination.x, destination.y);
+    const toStep = BotMovement.gapSquaredOf(pathStepX, pathStepY, x, y);
+    const toDestination = BotMovement.gapSquaredOf(destination.x, destination.y, x, y);
+    this.cachedStep.x = pathStepX;
+    this.cachedStep.y = pathStepY;
+    const isUseful =
+      goalShift <= reach &&
+      toStep > reach &&
+      toStep < toDestination &&
+      !paths.isLineClear(turn.position, destination) &&
+      paths.isLineClear(turn.position, this.cachedStep);
+    if (isUseful) {
+      this.step.x = pathStepX;
+      this.step.y = pathStepY;
+    }
+    return isUseful;
   }
 
   /**
@@ -114,7 +178,12 @@ export class BotMovement {
 
   /** The squared distance between two points. */
   public static gapSquared(a: Vec2, b: Vec2): number {
-    return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
+    return BotMovement.gapSquaredOf(a.x, a.y, b.x, b.y);
+  }
+
+  /** The squared distance between `(ax, ay)` and `(bx, by)`, for callers holding plain numbers. */
+  private static gapSquaredOf(ax: number, ay: number, bx: number, by: number): number {
+    return (ax - bx) * (ax - bx) + (ay - by) * (ay - by);
   }
 
   /**
