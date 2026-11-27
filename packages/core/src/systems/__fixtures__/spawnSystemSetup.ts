@@ -5,6 +5,7 @@ import { LANE_ASSESSMENT_WEIGHTS } from '../../content/ai/laneAssessmentWeights'
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { loadGuardPlans } from '../../content/structures/loadGuardPlans';
 import { loadSpawnWaves } from '../../content/structures/loadSpawnWaves';
+import { CHECKPOINT_DEFENDER_LIMIT } from '../../content/structures/guardPlans';
 import { OPENING_WAVE } from '../../content/structures/spawnWaves';
 import type {
   AuthoredGuardPlan,
@@ -33,6 +34,7 @@ export type SpawnPlanOverrides = {
   readonly waves?: Readonly<Record<string, readonly AuthoredSpawnWave[]>>;
   readonly guards?: Readonly<Record<string, AuthoredGuardPlan>>;
   readonly defenders?: SpawnPlan['defenders'];
+  readonly defenderLimit?: number;
 };
 
 /**
@@ -53,6 +55,7 @@ export const newSystem = (
     formationId: 'ranks',
     guards: loadGuardPlans(TICK_RATE, plan.guards ?? {}),
     defenders: plan.defenders ?? {},
+    defenderLimit: plan.defenderLimit ?? CHECKPOINT_DEFENDER_LIMIT,
   });
 
 /** The opening wave sent by a structure kind the test map does not have, so no opening hordes. */

@@ -50,6 +50,7 @@ describe('PathingSystem', () => {
         leashRadius: 8,
         leashTolerance: 2,
         respawnTicks: 3600,
+        canLevel: false,
       });
       state.guards.fill(0, guard.id);
       const step = () => {
@@ -173,6 +174,7 @@ describe('PathingSystem', () => {
         leashRadius: 20,
         leashTolerance: 2,
         respawnTicks: 3600,
+        canLevel: false,
       });
       state.guards.fill(0, guard.id);
       const step = () => {

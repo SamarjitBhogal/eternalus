@@ -666,6 +666,10 @@ Reply inline (`Decision: …`).
       while its team still owns the point, and is cancelled when the point changes owner; at most
       10 defenders per capture point. They are built in M6c. (3)(b), (5) and (9) still wait for
       sign-off.
+      **Update 2026-11-25 (M6c, `feat/minion-m6c-defender-followups`):** (1), (4), (6) and (7)
+      are built: `checkpoint-cleared` and its XP, DEC-260 levelling (with DEC-350's boss group)
+      and DEC-350's limit and cancelling. The calls M6c made where the sources are silent are
+      approved as built in DEC-376 (2026-11-26). (2), (3)(b), (5) and (9) still wait.
 
 - [x] **Minion M10 better-than-design items (`feat/minion-m10-zone-level-up`, 2026-11-15,
       critic; DEC-139) — sign-off per item.** (a) A `MinionLevelSystem` after
@@ -3545,6 +3549,18 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-26 — **Minion M6c interpretations approved as built (DEC-376)**
+  (`feat/minion-m6c-defender-followups`, PR #173): you approved (a) to (g) as built (the 10 m from
+  where the last defender fell, the damage-biased share with an even split when Legends dealt
+  none, the clearing team by the last killer, no corner-boss levelling, `rallied` for levelling
+  guards, no XP for a set emptied by cancels, and the owner-change pass rule). Decision: DEC-376.
+
+- 2026-11-26 — **Camp rewards: the clearing Legend is the last killer; the three critic refactors
+  are dropped (DEC-375)** (`feat/camp-rewards`, PR #153): you chose "as built" for who gets the
+  camp clear bonus (the Legend that killed the camp's last mob; nobody when a minion or turret
+  does) and dropped B1 to B3. Closes "Camp rewards" and "`feat/camp-rewards` critic (2026-11-22),
+  better than the design". Decision: DEC-375.
 
 - 2026-11-26 — **Bot path cache: "one leg late" accepted (DEC-373)** (`feat/minion-bot-path-cache`,
   PR #84): you chose (a), accept as built. The cache holds no grid version; a way that opens while
