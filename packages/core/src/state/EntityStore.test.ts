@@ -276,6 +276,27 @@ describe('EntityStore', () => {
     expect(store.isInReach(minion.id, boss.id)).toBe(false);
   });
 
+  it('lets the Greater Boss reach a unit from the edge of its drawn body, not its feet (DEC-421)', () => {
+    const store = new EntityStore();
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const boss = factory.create('heavy-mob', 'greater-boss', {
+      team: 'neutral',
+      position: { x: 100, y: 100 },
+    });
+    // 1 m past the body's right edge (x 20 at y -6, either facing), about 22 m from its feet.
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 121, y: 94 },
+    });
+    store.add(boss);
+    store.add(minion);
+    expect(store.isInReach(boss.id, minion.id)).toBe(true);
+    minion.getComponent(Transform).moveTo({ x: 110, y: 100 });
+    expect(store.isInReach(boss.id, minion.id)).toBe(true);
+    minion.getComponent(Transform).moveTo({ x: 125, y: 94 });
+    expect(store.isInReach(boss.id, minion.id)).toBe(false);
+  });
+
   it('gives no outline for a body shape that has no Transform, and does not throw', () => {
     const store = new EntityStore();
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));

@@ -20,16 +20,16 @@ review comments under "Feedback". Answered decisions are recorded in
       hold, only the larger applies. "Behind" is the side the art shows the boss's back. A bleed
       or burn tick gets no bonus. A melee hit gets no head bonus. Each number is `TUNE` in
       `content/mobs/bodyPartBonus.ts`. Sam answered cards (1) to (7) on 2026-11-27 (DEC-381 row).
-      Two new cards wait on the next Owner Calls page: HC-B60 (when does an arrow or a spell count
-      as a head shot; built: A, its line of flight crosses the head) and HC-B61 (does the boss hit
-      from its feet or from its whole body; as built: A, from its feet).
+      Sam answered cards HC-B60 and HC-B61 on 2026-11-27 (DEC-421): a shot is a head shot when
+      its line of flight crosses the head (A, as built), and the boss hits from its whole drawn
+      body (B, built).
       Open, for the agents (no answer needed): (a) no projectile deals damage yet. When ranged
       attacks (#148, `feat/ranged-attacks`) and this branch are both on phase/3, the later PR
       passes `{ origin: hit.origin, impactPoint: hit.point }` to `DamagePipeline.apply` in
       `WeaponImpact`, and feeds `CombatHitbox` into #148's `Outline` (B2 below). Until then only
       the tests reach the head bonus. (b) Play test: players now hit the boss from up to about
-      20 m (the outline's edge). The boss's own reach stays 1.5 m past its 2.5 m circle (DEC-371
-      E2 keeps these numbers); card HC-B61 asks about it. (c) The outlines fit the idle art. When
+      20 m (the outline's edge), and the boss hits players up to 1.5 m past the same outline
+      (DEC-421; DEC-371 E2 keeps the 1.5 m). (c) The outlines fit the idle art. When
       #161's art lands (Unit 2), check that its other frames draw on the same anchor. (d) Interim
       gap: until #161's view lands (Unit 2), `MobView` draws the boss as a disc of about 3.5 m,
       but clicks and hits count on the outline of about 40 m.

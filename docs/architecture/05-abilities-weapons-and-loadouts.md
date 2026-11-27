@@ -616,7 +616,8 @@ the step keys its own table by boss id and finds a lane minion by horde membersh
 `no-death-without-killer` (15) flags a death without one.
 `DefaultSystemPipeline` builds the match's one `DamagePipeline` and injects it into every system
 that deals damage. `CombatSystem` (after movement, before death) runs each unit's `Combat` target
-through its `AttackStrategy` (melee only) when in reach (edge to edge) and off cooldown;
+through its `AttackStrategy` (melee only) when in reach (edge to edge; a big boss's edge is its
+drawn body outline, and its chase holds once a target is in that reach, DEC-421) and off cooldown;
 `attack-target` sets the target and rejects allies, itself and dead targets (`invalid-target`) and
 units with no attack (`cannot-attack`).
 

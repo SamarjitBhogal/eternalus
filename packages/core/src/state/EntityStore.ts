@@ -157,6 +157,7 @@ export class EntityStore {
    * two footprints (architecture 05 §10) to the point `aimPointOf` gives: on the target's outline
    * when it has one (`outlineOf`: a map object, a lane tower's fort, DEC-185, or a big boss's
    * body, DEC-381), standing inside an outline counting as in reach; else to its collider circle.
+   * A big boss reaches a unit from its whole drawn body (`gapPastEdgeOf`, DEC-421).
    * `false` when either is unknown, either has no `Transform`, or the attacker cannot attack.
    */
   public isInReach(attackerId: EntityId, targetId: EntityId): boolean {
@@ -164,7 +165,7 @@ export class EntityStore {
     const combat = attacker?.findComponent(Combat);
     const from = attacker?.findComponent(Transform);
     const to = this.entities.get(targetId)?.findComponent(Transform);
-    if (combat === undefined || from === undefined || to === undefined) {
+    if (attacker === undefined || combat === undefined || from === undefined || to === undefined) {
       return false;
     }
     const aimed = this.aimPointOf(targetId, from.position, this.aim);
@@ -172,10 +173,26 @@ export class EntityStore {
       return false;
     }
     if (aimed === 'centre') {
-      const gap = distance(from.position, this.aim);
-      return gap - from.radius - to.radius <= combat.attack.reach;
+      return this.gapPastEdgeOf(attacker, from, to.position) - to.radius <= combat.attack.reach;
     }
+    // ponytail: a big boss still reaches an outlined target (a building) from its circle; guards
+    // only take units (`LeashBehaviour` acquires through `unitsWithin`). Upgrade: an outline-to-
+    // outline gap when a unit with a body shape can attack a building.
     return distance(from.position, this.aim) <= from.radius + combat.attack.reach;
+  }
+
+  /**
+   * How far `point` lies past the attacker's edge, where its attack reach starts: its drawn body
+   * outline when it has one (`CombatHitbox`: a big boss hits from its whole body, DEC-421), 0
+   * inside it; else its collider circle.
+   */
+  private gapPastEdgeOf(attacker: Entity, from: Transform, point: Vec2): number {
+    const hitbox = attacker.findComponent(CombatHitbox);
+    if (hitbox === undefined) {
+      return distance(from.position, point) - from.radius;
+    }
+    const body = [hitbox.polygonAt(from.position, from.facing)];
+    return isPointInAnyPolygon(point, body) ? 0 : nearestPointOnPolygons(point, body, this.aim);
   }
 
   /**

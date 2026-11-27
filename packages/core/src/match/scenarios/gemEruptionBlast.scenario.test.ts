@@ -7,6 +7,7 @@ import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { timelineFrameOf } from '../../config/timelineFrameOf';
 import { timelineMarkTick } from '../../config/timelineMarkTick';
 import { CATHEDRAL_GEM } from '../../content/structures/cathedralGem';
+import { GUARD_LEASH } from '../../content/structures/guardLeash';
 import { TEST_DEBUG_CONFIG } from '../../diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from '../../diagnostics/MemoryLogger';
 import type { Entity } from '../../entities/Entity';
@@ -141,9 +142,10 @@ describe('the gem eruption\'s blast (scenario, DEC-371 "BOSS guards" C)', () => 
     });
     const progress = capturable.progress;
 
-    // A Legend on the zone's edge, away from the boss: alone, it would move the capture.
+    // A Legend in the Cathedral but outside the boss's 25 m centre zone, so the boss does not
+    // reach it from its drawn body (DEC-421): alone, it would move the capture.
     const legend = spawn(simulation, 'warrior', 'warrior', 'light', {
-      x: gemAt.x - 20,
+      x: gemAt.x - (GUARD_LEASH.greaterBossZone + 5),
       y: gemAt.y,
     });
     stepTo(simulation, simulation.tick + 3 * config.tickRate);

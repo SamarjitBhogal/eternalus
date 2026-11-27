@@ -57,7 +57,8 @@ export const GREATER_BOSS = {
   controller: 'guard',
   aiProfile: 'greater-boss',
   // TUNE: balancing.md 0.45 × refHealth per heavy move, 2.5 s interval, as its one basic attack
-  // until the moves land; reach unspecified (the heavy minion's)
+  // until the moves land; reach unspecified (the heavy minion's), measured from its body outline
+  // (`bodyShape.outline`, DEC-421)
   attack: {
     strategy: 'melee',
     damage: Math.round(0.45 * REF_HEALTH),
