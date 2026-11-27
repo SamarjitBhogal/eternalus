@@ -230,8 +230,7 @@ describe('Simulation capture points', () => {
     // The default countdown, so the world unfreezes while the capture stands.
     const config = createDefaultGameConfig();
     const map = new MapGenerator().generate(config, 1);
-    // An outer point: the Cathedral's gem strikes any defender that brushes it in the fight (07 §1).
-    const point = map.features.find(({ kind }) => kind === 'capture-point');
+    const cathedral = map.features.find(({ kind }) => kind === 'cathedral');
     const play = () => {
       const simulation = new Simulation({
         config,
@@ -251,7 +250,7 @@ describe('Simulation capture points', () => {
         kind: 'warrior',
         definitionId: 'warrior',
         team: 'dark',
-        at: point?.position ?? { x: 0, y: 0 },
+        at: cathedral?.position ?? { x: 0, y: 0 },
         count: 4,
       });
       const defendersOf = () =>
@@ -267,10 +266,7 @@ describe('Simulation capture points', () => {
         .entities.filter(({ family, team }) => family === 'legend' && team === 'dark')
         .map(({ id }) => id);
       const zoneAt = () =>
-        zonesOf(simulation).find(
-          ({ transform }) =>
-            transform?.x === point?.position.x && transform?.y === point?.position.y,
-        )?.capture;
+        zonesOf(simulation).find(({ definitionId }) => definitionId.includes('cathedral'))?.capture;
       const presenceAtCapture = zoneAt()?.presence;
       // 30 s more: the defenders fight the Legends that took the point and pull it back.
       for (let tick = 0; tick < 30 * config.tickRate; tick += 1) {

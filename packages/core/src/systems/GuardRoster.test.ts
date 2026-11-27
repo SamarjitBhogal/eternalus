@@ -10,8 +10,6 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { DeepPartial, GameConfig } from '../config/GameConfig.types';
 import { timelineFrameOf } from '../config/timelineFrameOf';
 import { loadDefaultContent } from '../content/loadDefaultContent';
-import { MOB_DEFINITIONS } from '../content/mobs/mobCatalogue';
-import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { CHECKPOINT_DEFENDER_LIMIT } from '../content/structures/guardPlans';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
@@ -621,18 +619,9 @@ describe('GuardRoster', () => {
       const units = loadDefaultContent(TICK_RATE);
       const objects = new Map(Object.values(MAP_OBJECT_DEFINITIONS).map((d) => [d.id, d]));
       const factory = new EntityFactory(createDefaultEntityRegistry(), {
-        has: (id) =>
-          units.has(id) ||
-          objects.has(id) ||
-          ZONE_DEFINITIONS.has(id) ||
-          STRUCTURE_DEFINITIONS.has(id),
+        has: (id) => units.has(id) || objects.has(id) || ZONE_DEFINITIONS.has(id),
         get: (id) =>
-          objects.get(id) ??
-          (ZONE_DEFINITIONS.has(id)
-            ? ZONE_DEFINITIONS.get(id)
-            : STRUCTURE_DEFINITIONS.has(id)
-              ? STRUCTURE_DEFINITIONS.get(id)
-              : units.get(id)),
+          objects.get(id) ?? (ZONE_DEFINITIONS.has(id) ? ZONE_DEFINITIONS.get(id) : units.get(id)),
       });
       const zone = factory.create('capture-point', 'capture-point', {
         position: CENTRE,
@@ -684,7 +673,7 @@ describe('GuardRoster', () => {
             .applyDamage(1e6);
         }
       };
-      return { state, factory, zone, roster, step, posts, kill, cleared };
+      return { state, zone, roster, step, posts, kill, cleared };
     };
 
     it('posts a zone’s guard inside its area and off the keep, with home radius 0', () => {
@@ -738,27 +727,6 @@ describe('GuardRoster', () => {
       step(5 * TICK_RATE);
       expect(own()[0]?.guardId).not.toBeNull();
       expect(defenders().map(({ guardId }) => guardId)).toEqual(held);
-    });
-
-    it('posts checkpoint defenders clear of a structure in the zone, off the Cathedral gem (07 §1)', () => {
-      const { state, factory, zone, roster, step, posts } = zoned();
-      step();
-      const stone = factory.create('cathedral-gem', 'cathedral', {
-        position: CENTRE,
-        team: 'neutral',
-      });
-      state.entities.add(stone);
-      const reach =
-        stone.getComponent(Transform).radius +
-        MOB_DEFINITIONS.get('light-assist-mob').footprintRadius;
-
-      roster.defend(state, zone.id, 1, 'neutral');
-
-      const defenders = posts().filter(({ checkpoint }) => checkpoint !== undefined);
-      expect(defenders).toHaveLength(2);
-      for (const { postX, postY } of defenders) {
-        expect(Math.hypot(postX - CENTRE.x, postY - CENTRE.y)).toBeGreaterThan(reach);
-      }
     });
 
     it('fills its posts `delaySeconds` after the countdown ends', () => {

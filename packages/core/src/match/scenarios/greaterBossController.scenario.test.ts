@@ -238,6 +238,20 @@ describe('the Greater Boss on BossController: roam and slam (scenario, 11 §4.6)
     });
   });
 
+  it('warns half a second before each sweep lands (DEC-371 E9)', () => {
+    const sweeps = fought.landings
+      .map((landing, at) => ({
+        id: fought.landed[at],
+        warning: landing - (fought.telegraphs[at] ?? NaN),
+      }))
+      .filter(({ id }) => id === 'greater-boss-sweep' || id === 'greater-boss-wide-sweep');
+
+    expect(new Set(sweeps.map(({ id }) => id))).toEqual(
+      new Set(['greater-boss-sweep', 'greater-boss-wide-sweep']),
+    );
+    for (const { warning } of sweeps) expect(warning).toBe(ticks(0.5));
+  });
+
   it("hits for the landed move's damage, only on landing ticks", () => {
     const struck = new Set<string>();
     expect(fought.hits.length).toBeGreaterThan(0);
