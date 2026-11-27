@@ -9,6 +9,7 @@ import type {
   Vec2,
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
+import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 
 import type { IntentSource } from './Match.types';
 import { PlayerCommands } from './PlayerCommands';
@@ -22,10 +23,18 @@ class ScriptedIntent implements IntentSource {
 
   public isAttacking = false;
 
+  public isJumping = false;
+
   public aim: Vec2 | null = null;
 
   public read(): InputIntent {
-    return { move: this.move, isAttacking: this.isAttacking, aim: this.aim, triggered: [] };
+    return {
+      move: this.move,
+      isAttacking: this.isAttacking,
+      isJumping: this.isJumping,
+      aim: this.aim,
+      triggered: [],
+    };
   }
 }
 
@@ -55,6 +64,7 @@ const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => (
   team,
   transform: { x, y, radius: 1, facing: { x: 1, y: 0 } },
   health: { current: 10, max: 10 },
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
@@ -80,6 +90,7 @@ const setUp = () => {
     { enqueueCommand },
     { screenToWorld: (point) => point },
     [HOUSE],
+    createDefaultViewRegistry(),
   );
   const queued = (type: Command['type']): number =>
     enqueueCommand.mock.calls.filter(([command]) => command.type === type).length;
@@ -90,6 +101,35 @@ const setUp = () => {
 };
 
 describe('PlayerCommands', () => {
+  it.each([
+    ['legend', { x: 0.1, y: 2 }],
+    ['mob', { x: 0.7, y: 2 }],
+  ] as const)('targets the visible edge of an enemy %s over a building', (family, aim) => {
+    const { input, commands, enqueueCommand, tick } = setUp();
+    const enemy = { ...ENEMY, family };
+    expect(commands.attackUnitAt(ACTOR, aim, snapshotOf([PLAYER, enemy]))).toBe(true);
+
+    input.isAttacking = true;
+    input.aim = aim;
+    tick([PLAYER, enemy]);
+
+    const expected = { type: 'attack-target', actorId: ACTOR, targetId: enemy.id };
+    expect(enqueueCommand.mock.calls).toEqual([[expected], [expected]]);
+  });
+
+  it('selects a minion by its drawn figure beyond the ordinary mob disc', () => {
+    const { commands, enqueueCommand } = setUp();
+    const minion = { ...ENEMY, kind: 'heavy-mob', definitionId: 'heavy-minion' };
+    const snapshot = snapshotOf([PLAYER, minion]);
+    expect(commands.attackUnitAt(ACTOR, { x: 2, y: -0.7 }, snapshot)).toBe(true);
+    expect(enqueueCommand).toHaveBeenCalledWith({
+      type: 'attack-target',
+      actorId: ACTOR,
+      targetId: minion.id,
+    });
+    expect(commands.attackUnitAt(ACTOR, { x: 2, y: -20 }, snapshot)).toBe(false);
+  });
+
   it('queues one attack per target while held, and again after a release or a stop', () => {
     const { input, queued, tick, enqueueCommand } = setUp();
     input.isAttacking = true;
@@ -233,5 +273,47 @@ describe('PlayerCommands', () => {
       { type: 'move', actorId: ACTOR, direction: { x: 1, y: 0 } },
       { type: 'stop', actorId: ACTOR },
     ]);
+  });
+
+  it('sends held movement and the held attack again when the Legend returns from a respawn', () => {
+    const { input, queued, tick } = setUp();
+    input.move = { x: 1, y: 0 };
+    input.isAttacking = true;
+    input.aim = { x: 2, y: 2 };
+    tick();
+    tick([]);
+    tick([]);
+    expect([queued('move'), queued('attack-target')]).toEqual([1, 1]);
+
+    tick([PLAYER]);
+
+    expect([queued('move'), queued('attack-target')]).toEqual([2, 2]);
+  });
+
+  it('queues jump only when the held state of the jump key changes (DEC-390)', () => {
+    const { input, enqueueCommand, tick } = setUp();
+    tick();
+    input.isJumping = true;
+    tick();
+    tick();
+    input.isJumping = false;
+    tick();
+
+    expect(enqueueCommand.mock.calls.map(([command]) => command)).toEqual([
+      { type: 'jump', actorId: ACTOR, isHeld: true },
+      { type: 'jump', actorId: ACTOR, isHeld: false },
+    ]);
+  });
+
+  it('sends a held jump key again when the Legend returns from a respawn', () => {
+    const { input, queued, tick } = setUp();
+    input.isJumping = true;
+    tick();
+    tick([]);
+    expect(queued('jump')).toBe(1);
+
+    tick([PLAYER]);
+
+    expect(queued('jump')).toBe(2);
   });
 });

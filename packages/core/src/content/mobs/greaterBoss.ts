@@ -1,11 +1,10 @@
 import { GUARD_LEASH } from '../structures/guardLeash';
-import { HEAVY_MINION } from './heavyMinion';
+import { HEAVY_MOB_BASE, refHealth } from './bossReference';
 import type { MobDefinition } from './mobs.types';
 
-// balancing.md "Mini-boss and Greater Boss relative to Legends": refHealth(L) = 650 × 1.08^(L − 1),
-// the level-L Warrior of the anchor table, at the GreaterBoss row's expected level 7 (≈ 1,031).
+// balancing.md's GreaterBoss row: the reference Legend at its expected level 7 (≈ 1,031).
 // TUNE: the level was set for a 20-minute match (DEC-13: 30 minutes; INBOX).
-const REF_HEALTH = 650 * 1.08 ** (7 - 1);
+const REF_HEALTH = refHealth(7);
 
 /** TUNE: balancing.md's heavy move, 0.45 × refHealth (≈ 465); the slam's damage. */
 export const GREATER_BOSS_HEAVY_HIT = Math.round(0.45 * REF_HEALTH);
@@ -22,17 +21,17 @@ export const GREATER_BOSS_LIGHT_HIT = Math.round(0.15 * REF_HEALTH);
  * its moves in `content/ai/bosses/greaterBoss.ts`. Interim (doc 04's `GreaterBoss` class comes
  * later): a neutral heavy mob on the Cathedral capture zone's guard post, whose circle is its zone
  * and whose plan (`content/structures/guardPlans.ts`) gives its (no) respawn. Its movement profile
- * is the heavy minion's, since no reference gives the boss's (INBOX). It has no movement strategy:
+ * and reach are the heavy minion's (`HEAVY_MOB_BASE`, DEC-371 E2). It has no movement strategy:
  * its controller steers it with `move` commands, so `PathingSystem` leaves it alone. It takes a
- * quarter of a minion's hit (`BOSS_MINION_DAMAGE_TAKEN`), and its kill lifts the killer's team 5
- * levels (`XP_SOURCES.teamKills`, DEC-237). Its `attack` is never used: the controller gives it no
- * attack target, only moves.
+ * quarter of a minion's hit (`BOSS_MINION_DAMAGE_TAKEN`), and its kill lifts the killer's team 2.5
+ * levels and the last hitter 5 (`XP_SOURCES.teamKills`, DEC-237, DEC-371 E8, DEC-416). Its
+ * `attack` is never used: the controller gives it no attack target, only moves.
  */
 export const GREATER_BOSS = {
   id: 'greater-boss',
-  kind: HEAVY_MINION.kind,
+  kind: 'heavy-mob',
   displayName: 'Greater Boss',
-  baseHealth: Math.round(40 * REF_HEALTH), // TUNE: balancing.md 40 × refHealth ≈ 41,000
+  baseHealth: Math.round(40 * REF_HEALTH), // DEC-371 E3: balancing.md 40 × refHealth, 41,259
   // TUNE: Aryan 2026-11-15 and 2026-11-22 (reference 04 "obscenely massive"), twice the Sentinel;
   // Sam to confirm (INBOX)
   footprintRadius: 2.5,
@@ -45,8 +44,8 @@ export const GREATER_BOSS = {
   attack: {
     strategy: 'melee',
     damage: GREATER_BOSS_HEAVY_HIT,
-    reach: 1.5,
+    reach: HEAVY_MOB_BASE.reach,
     interval: GREATER_BOSS_HEAVY_INTERVAL,
   },
-  movementProfile: HEAVY_MINION.movementProfile,
+  movementProfile: HEAVY_MOB_BASE.movementProfile, // TUNE: DEC-371 E2, as the heavy minion
 } as const satisfies MobDefinition;

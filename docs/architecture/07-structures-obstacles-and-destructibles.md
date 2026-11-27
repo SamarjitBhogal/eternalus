@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-27
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -13,6 +13,8 @@ paths:
     'packages/core/src/components/{Health,Spawner,Capturable,Carry,CathedralGemState}*',
     'packages/core/src/systems/{Structure,Spawn,Capture,CathedralGem}System*',
     'packages/core/src/content/{structures,obstacles}/**',
+    'packages/core/src/systems/ZoneLevelUpSystem*',
+    'packages/core/src/content/zones/loadZoneLevelUp*',
   ]
 related:
   [
@@ -66,7 +68,7 @@ export abstract class Structure extends Entity {
 | `Turret`       | `TurretState`, `Combat`              | Auto-fires bolts; Warrior Legends may take manual control                                  | MVP (manual: MVP-if-time)           |
 | `Camp`         | `Spawner`                            | Neutral spawner for forest/corner camps; activates when the match countdown ends (DEC-167) | MVP (corner: MVP-if-time)           |
 | `Cathedral`    | `Spawner` (gem), `Aura`              | Middle capture point's building; summons the `GreaterBoss` mid-match                       | MVP (boss summon: per plan phase 3) |
-| `CathedralGem` | `CathedralGemState`                  | The gem: its own unbreakable body (DEC-292); stuns and burns whoever hits or touches it    | MVP                                 |
+| `CathedralGem` | `CathedralGemState`                  | Its own unbreakable body (DEC-292); stuns and burns hitters; blocks movement (DEC-346)     | MVP                                 |
 
 Not a structure: `CapturePoint` is a `Zone` (no collider, §7). Anti-air buildings and form-change
 stations (Ascendance/Enchantment) are **post-MVP** (§14).
@@ -297,10 +299,22 @@ heavy plus light assist mobs; 3: one massive "Balrog-type" mob; DEC-260), held b
 that owns the point, or neutral while no team does ([18](18-minion-system.md) MS-28, §7.1;
 DEC-257). They never respawn. A change of owner keeps the ones still alive: they fight the new
 owner's units inside the zone and count as presence for their own side, so the new owner must
-kill them to keep the point (DEC-261). A cleared checkpoint awards XP shared among nearby allies biased toward the top
-damage dealer (`ProgressionSystem` listens to `checkpoint-cleared`). Holding a zone applies
-`StatusEffects` from content: ability/ultimate cooldown reduction and, after `levelUpAfterTicks`,
-a level-up for that side's lane minions; both are removed on loss. Mini-bosses at the quarter mark
+kill them to keep the point (DEC-261). Defenders level from their kills like tower guards
+(DEC-260). A capture point holds at most `CHECKPOINT_DEFENDER_LIMIT` defenders, living (of any
+side) or waiting for room under the unit cap: a reached set that does not fit adds only the
+defenders that fit, in table order, and a team's waiting defenders are cancelled when the point
+changes owner (DEC-350). Each reached checkpoint's defenders are one set; when a set's last
+defender is lost, the roster announces `checkpoint-cleared`, and `ProgressionSystem` shares the
+checkpoint's XP among the clearing team's living Legends near where it fell, biased toward the
+damage each dealt to the set (`xpSources.checkpointCleared`; the damage is kept in
+`GameState.defenderDamage`); DEC-376 fixes how the sources' silent points are read. Holding a zone applies
+`StatusEffects` from content: ability/ultimate cooldown reduction, removed on loss. Every capture
+point has a zone level-up (DEC-258): once a side has held it for the hold time without a break,
+that side's hordes spawned on its lane gain minion levels, and losing the point takes them back on
+the same tick. `ZoneLevelUpSystem` hears `CaptureSystem`'s ownership events and announces the levels
+with `minion-levels-granted`; `MinionLevelSystem` applies them on its pass as the one minion level of
+its two sources (DEC-168, DEC-353), so a lost zone never costs a level the kills earned (DEC-279). The hold
+time and the levels are fields of each capture point's `ZoneDefinition` (`levelUp`, DEC-353), and `loadZoneLevelUp` turns the hold time into ticks once, at load (DEC-241); the cap is the minion level cap. Mini-bosses at the quarter mark
 lock the outer zones (`lockedBy`) until they die (`MatchDirector` timeline).
 
 ## 8. Structure destruction effects
@@ -423,7 +437,7 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `Stronghold`, `SpawnerTower`, `BuffTower` and `Gate`, with `content/structures/structureCatalogue.ts`
   (base health from `balancing.md`) and their registry lines. `Simulation` builds one per map
   feature with a structure definition, in feature id order, carrying the feature's lane
-  (`Structure.laneId`) and id (`Structure.mapFeatureId`, which the snapshot carries as
+  (`Structure.laneId`) and id (a `MapFeatureLink` component, DEC-231; the snapshot carries it as
   `EntitySnapshot.mapFeatureId`, so the HUD structure strip binds each tile to its structure,
   DEC-212). `BreakabilityRule` (§3, without `all-of`) is evaluated by `StructureSystem`,
   which also emits `structure-destroyed`; `BreakabilityStep` blocks damage to unbreakable targets.
@@ -476,7 +490,9 @@ and a `Capturable` component, one per `capture-point` and `cathedral` map featur
 (`content/zones/`), moved by `CaptureSystem` with the weights and rates of
 `GameConfig.match.capturePoints`. `Simulation` computes each zone's floor from the map alone
 (`map/zoneArea.ts`) instead of taking it as an explicit placement (06): zones come from the map,
-so a replay or a match without map objects rebuilds the same zones. Interim differences:
+so a replay or a match without map objects rebuilds the same zones. Each zone carries its
+feature's `MapFeatureLink` (DEC-231), so the client binds a HUD capture point to its zone by the
+snapshot's `mapFeatureId`, not by position. Interim differences:
 
 - **Zone lock (2026-11-12).** `CaptureSystem` sets `lockedBy` every tick from the zone's guard
   posts: a living guard of a mob in `content/zones/zoneLocks.ts` (the capture point boss) locks
@@ -504,43 +520,57 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   does not follow the owner yet (the minimap entity markers, SCRUM-151).
 - The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
   capture tracker); this PR publishes the presence and draws the split bar in the world.
-- **Cathedral gem (2026-11-21, `feat/cathedral-gem-hittable`).** The gem is its own body, apart from
-  the building (DEC-292): a neutral `CathedralGem` structure built on the `cathedral` map feature,
-  `never` breakable, so `BreakabilityStep` blocks every hit. `DamagePipeline` announces a blocked
-  hit (`damage-blocked`); `CathedralGemSystem` answers each one that has an attacker, and each touch
-  (two discs overlapping), by landing `CATHEDRAL_GEM`'s statuses on that unit as environment damage
-  (the gem is no team's, so it hurts neutrals too): a stun, its tick damage, and a ward that spaces
-  out touch strikes. Weapons reach it today; a shot or ability aimed at the gem will through the
-  same pipeline. A stray shot does not yet: the projectile PR (#148) hits an unbreakable body only
-  when the shot was fired at it, so whichever of #132 and #148 merges second makes a stray shot
-  strike the gem too (DEC-292: contact "by accident" strikes). Bots and minions never pick it as a
-  target: perception sees only units, and a lane's objectives are playable-team structures only
-  (`LaneStructures`). The player can aim at it (`findGemAt`). The gem's content id is `cathedral`,
-  because `spawnStructures` builds one structure per map feature, matched by the feature's
-  definition id; the planned `Cathedral` building (§1) cannot share that id, so its PR changes the
-  spawn link (or renames the gem's id, which no save stores yet, ADR 0023). The gem blocks no movement (like every structure circle), so the lane
-  through the Cathedral crosses it, and the ward caps a passing unit at one strike. Its
+- **Cathedral gem (`feat/cathedral-gem-hittable`; DEC-291, DEC-292, DEC-346).** The gem is its own
+  body, apart from the building: a neutral `CathedralGem` structure built on the `cathedral` map
+  feature, `never` breakable, so `BreakabilityStep` blocks every hit. `DamagePipeline` announces a
+  blocked hit (`damage-blocked`); `CathedralGemSystem` answers each one that has an attacker by
+  landing `CATHEDRAL_GEM`'s statuses on that unit as environment damage (the gem is no team's, so it
+  hurts neutrals too): a stun and its tick damage. A touch strikes nobody (DEC-346): the gem blocks
+  movement instead, through an unbreakable plinth of the gem's own radius under it (a `cathedral`
+  map object, built by `CathedralInteriorBuilder`), so collision and the lane paths go round it.
+  A death by the gem's statuses counts for the victim's last enemy damager within the assist
+  window, or nobody (DEC-346): `KillCredit`, called by `DamagePipeline` before `entity-died`, so
+  every reader of the killer agrees; the last enemy hit is the hashed `LastEnemyHit` component.
+  Weapons reach the gem today, and the player's aim picks the gem before the plinth (`findGemAt`
+  before `findMapObjectAt`). The projectile PR (#148) stops a shot on static shapes: whichever of
+  #132 and #148 merges second must let a shot aimed at the gem reach the gem's circle before the
+  plinth around it (and make a stray shot strike it, DEC-292: contact "by accident" strikes).
+  Bots and minions never pick the gem as a target: perception sees only units, and a lane's
+  objectives are playable-team structures only (`LaneStructures`). The gem's content id is
+  `cathedral`, because `spawnStructures` builds one structure per map feature, matched by the
+  feature's definition id; the planned `Cathedral` building (§1) cannot share that id, so its PR
+  changes the spawn link (or renames the gem's id, which no save stores yet, ADR 0023). Its
   `CathedralGemState` (the Cathedral's holder from `capture-point-owner-changed`, and its glow) is
-  in the snapshot, and `CathedralGemView` draws it in the holder's colour (DEC-291). The system is
-  off in a Duel (DEC-36) until `INBOX.md` answers. The `Cathedral` building is not an entity yet:
-  its `Spawner` and `Aura` (§1, §6) and the gem's look over time are not built.
+  in the snapshot, and `CathedralGemView` draws it in the holder's colour (DEC-291). The gem system
+  is off in a Duel until the follow-up PR builds the owner's Duel design (DEC-346). The `Cathedral`
+  building is not an entity yet: its `Spawner` and `Aura` (§1, §6), and the gem's look over time
+  are not built.
 - **Gem eruption and the Greater Boss (2026-11-22, `feat/cathedral-eruption-boss`).** The
   `summon-greater-boss` timeline action (12 §3) erupts the gem at mid-game. On the next tick, each in its own
   pass after `greater-boss-summoned` (03 §Events), `SpawnSystem` fills the Greater Boss's post and
-  `CathedralGemSystem` removes the gem entity (`despawned`) before it answers any touch.
+  `CathedralGemSystem` removes the gem entity (`despawned`); its plinth is the map object the
+  gem carries (`carriedObjectId`), so it is destroyed with the gem and collision, the path grid
+  and the lane fields reopen there (§10). Earlier on that tick, with the other damage systems,
+  `GemEruptionSystem` kills every unit standing in the capture zone the gem stands in, Legends
+  too, as environment damage that credits no one (DEC-371 "BOSS guards").
   Interim for the Cathedral's `Spawner` (§1, §6): the boss is a guard of the Cathedral capture
   zone's guard plan (`content/structures/guardPlans.ts`, `cathedral-capture-point`), one post at
   the zone's centre with `activation: { at: 'gem-eruption' }` (posts that `GuardRoster.activate`
   fills for the summoned `bossId`) and `respawn: never`; `SpawnSystem` then emits
   `boss-summoned`. Its leash is balancing.md's 25 m centre zone (`GUARD_LEASH.greaterBossZone`).
   The boss is a neutral `heavy-mob` definition (`content/mobs/greaterBoss.ts`) on
-  `BossController` with six moves, not doc 04's `GreaterBoss` class (11's implementation status);
-  its guard post spawns it and its circle is the boss's zone, but it has no movement strategy, so
-  `PathingSystem` does not steer it to the post. Minions deal it
-  a quarter of their hit (`BOSS_MINION_DAMAGE_TAKEN`); its kill lifts the killer's team 5 levels
-  (DEC-237, `XP_SOURCES.teamKills`). Every number is `TUNE`; the questions are in `INBOX.md` (the
-  Greater Boss item). In a Duel the action does nothing (DEC-36), so the gem
-  stays and no boss comes.
+  `BossController` with six moves, not doc 04's `GreaterBoss` class (11's implementation status),
+  built by #160 and #164 (DEC-370); its guard post spawns it and its circle is the boss's zone,
+  but it has no movement strategy, so `PathingSystem` does not steer it to the post. It locks the
+  Cathedral's capture while it lives (`ZONE_LOCKING_MOBS`, DEC-371 E4), so no checkpoint is
+  reached and no defenders come. Its health and hit are multiples of the shared
+  `refHealth(level)` and its movement and reach the shared `HEAVY_MOB_BASE`
+  (`content/mobs/bossReference.ts`, DEC-371 E6), as the capture point boss's. Minions deal it a
+  quarter of their hit (`BOSS_MINION_DAMAGE_TAKEN`); its kill lifts the killer's team 2.5 levels
+  and the last hitter 5 (DEC-237, DEC-371 E8, DEC-416, `XP_SOURCES.teamKills`). The blast kills
+  every unit with no kill credit and the cut-scene's reach is 50 m (DEC-415). Every move number
+  is `TUNE`; the questions are in `INBOX.md` (the Greater Boss items). In a Duel the action does
+  nothing (DEC-36), so the gem stays and no boss comes.
 
 **2026-11-09 (`feat/bosses-p3`, corner camp boss, interim; updated 2026-11-17).** DEC-236
 approves corner camps for Phase 3, with the corner boss on `GuardController` as an interim

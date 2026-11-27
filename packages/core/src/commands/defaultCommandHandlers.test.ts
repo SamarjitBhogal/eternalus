@@ -26,6 +26,8 @@ const NOT_YET_SUPPORTED: readonly Command[] = [
   { type: 'dev-set-controller', entityId: 'entity-1', controllerId: 'bot-legend' },
 ];
 
+const TEST_CONTROLLER = { controllerId: 'rover', profileId: 'rover', memory: {} } as const;
+
 describe('createDefaultCommandHandlers', () => {
   it.each(NOT_YET_SUPPORTED)(
     'rejects $type as not supported until its system exists',
@@ -33,10 +35,14 @@ describe('createDefaultCommandHandlers', () => {
       const state = new GameState(createDefaultGameConfig(), 1);
       const reasons: string[] = [];
       state.events.on('command-rejected', ({ reason }) => reasons.push(reason));
-      applyCommand(command, createDefaultCommandHandlers({}), {
-        state,
-        factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
-      });
+      applyCommand(
+        command,
+        createDefaultCommandHandlers({ rover: TEST_CONTROLLER, bossTelegraphTicks: {} }),
+        {
+          state,
+          factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
+        },
+      );
       expect(reasons).toEqual(['not-supported']);
     },
   );
@@ -51,6 +57,7 @@ describe('createDefaultCommandHandlers', () => {
       intent: unsupported,
       'dev-spawn': unsupported,
       'dev-remove-entity': unsupported,
+      'dev-remove-legend': unsupported,
       'dev-set-controller': unsupported,
     };
     expect(Object.keys(handlers)).not.toContain('move');

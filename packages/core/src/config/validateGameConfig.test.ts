@@ -282,7 +282,7 @@ describe('validateGameConfig', () => {
           SUMMON_AT_COUNTDOWN,
           { ...SUMMON_AT_COUNTDOWN, id: 'second-eruption' },
         ],
-        'must have at most one summon-greater-boss entry: the gem erupts once (DEC-83)',
+        'must have at most one summon-greater-boss entry: the gem erupts once (architecture 12 §3)',
       ],
       [
         'an action kind inherited from Object',

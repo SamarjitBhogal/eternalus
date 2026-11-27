@@ -9,9 +9,11 @@ export const fakeKeyEvent = (
     readonly ctrlKey?: boolean;
     readonly metaKey?: boolean;
     readonly shiftKey?: boolean;
+    /** What `event.target` reads, as if the event came from that element. */
+    readonly target?: object;
   } = {},
-): Event =>
-  Object.assign(new Event(type, { cancelable: true }), {
+): Event => {
+  const event = Object.assign(new Event(type, { cancelable: true }), {
     code,
     key: options.key ?? code,
     repeat: options.repeat ?? false,
@@ -20,3 +22,8 @@ export const fakeKeyEvent = (
     metaKey: options.metaKey ?? false,
     shiftKey: options.shiftKey ?? false,
   });
+  if (options.target !== undefined) {
+    Object.defineProperty(event, 'target', { value: options.target });
+  }
+  return event;
+};

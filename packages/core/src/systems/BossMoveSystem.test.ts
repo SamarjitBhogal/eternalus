@@ -81,6 +81,7 @@ const postInZoneOfRadius4 = (state: GameState, bossId: string): void => {
     leashRadius: 3,
     leashTolerance: 3,
     respawnTicks: 0,
+    canLevel: false,
   });
   state.guards.fill(0, bossId);
 };

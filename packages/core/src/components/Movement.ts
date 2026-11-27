@@ -100,12 +100,13 @@ export class Movement {
   }
 
   /**
-   * This tick's step: the velocity plus the pending push, which it uses up. Read it, but do not
-   * keep it: the next call reuses it.
+   * This tick's step: `base` (the velocity by default; an airborne entity's takeoff velocity,
+   * DEC-390) plus the pending push, which it uses up. Read it, but do not keep it: the next call
+   * reuses it.
    */
-  public takeStep(): Vec2 {
-    this.currentStep.x = this.currentVelocity.x + this.pendingPush.x;
-    this.currentStep.y = this.currentVelocity.y + this.pendingPush.y;
+  public takeStep(base: Vec2 = this.currentVelocity): Vec2 {
+    this.currentStep.x = base.x + this.pendingPush.x;
+    this.currentStep.y = base.y + this.pendingPush.y;
     this.pendingPush.x = 0;
     this.pendingPush.y = 0;
     return this.currentStep;

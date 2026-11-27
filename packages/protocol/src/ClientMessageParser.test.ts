@@ -17,6 +17,26 @@ describe('ClientMessageParser', () => {
     });
   });
 
+  it('keeps a well-formed guest id on a join and drops a malformed one', () => {
+    const guestId = '123e4567-e89b-42d3-a456-426614174000';
+    expect(parser.parse(JSON.stringify({ type: 'queue-join', name: 'Ana', guestId }))).toEqual({
+      ok: true,
+      message: { type: 'queue-join', name: 'Ana', guestId },
+    });
+    for (const bad of ['', 'abc', guestId.toUpperCase(), `${guestId}0`, 7, null]) {
+      expect(
+        parser.parse(JSON.stringify({ type: 'queue-join', name: 'Ana', guestId: bad })),
+      ).toEqual({
+        ok: true,
+        message: { type: 'queue-join', name: 'Ana' },
+      });
+    }
+  });
+
+  it('parses a forfeit', () => {
+    expect(parser.parse('{"type":"forfeit"}')).toEqual({ ok: true, message: { type: 'forfeit' } });
+  });
+
   it.each(['Ana', 'Ana Maria', 'Ñandú_2-b', 'x'.repeat(MAX_PLAYER_NAME_LENGTH)])(
     'accepts the name %j',
     (name) => {
@@ -56,6 +76,14 @@ describe('ClientMessageParser', () => {
     expect(parser.parse(raw)).toEqual({
       ok: true,
       message: { type: 'intent', seq: 0, intent: { ...intent, aim: null, isAttacking: true } },
+    });
+  });
+
+  it('keeps isJumping (DEC-390)', () => {
+    const raw = JSON.stringify({ type: 'intent', seq: 0, intent: { ...intent, isJumping: true } });
+    expect(parser.parse(raw)).toEqual({
+      ok: true,
+      message: { type: 'intent', seq: 0, intent: { ...intent, isJumping: true } },
     });
   });
 
@@ -101,6 +129,10 @@ describe('ClientMessageParser', () => {
     [
       'a non-boolean isAttacking',
       JSON.stringify({ type: 'intent', seq: 1, intent: { ...intent, isAttacking: 1 } }),
+    ],
+    [
+      'a non-boolean isJumping',
+      JSON.stringify({ type: 'intent', seq: 1, intent: { ...intent, isJumping: 'yes' } }),
     ],
   ])('refuses %s as malformed', (_label, raw) => {
     expect(parser.parse(raw)).toEqual({ ok: false, reason: 'malformed' });

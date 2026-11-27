@@ -6,6 +6,7 @@ import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
@@ -29,7 +30,8 @@ import type {
 /**
  * Every live entity of a match, kept in insertion order. Systems iterate with `forEach`, so the
  * visiting order depends only on the order entities were added, never on hashing or timing.
- * The only way out is `remove(id, cause)`.
+ * The only ways out are `remove(id, cause)` and, for an entity that comes back,
+ * `withdraw(id, cause)`.
  */
 export class EntityStore {
   private readonly entities = new Map<EntityId, Entity>();
@@ -44,7 +46,10 @@ export class EntityStore {
     return this.entities.size;
   }
 
-  /** Adds a spawned entity; its id must be new. */
+  /**
+   * Adds a spawned entity, or a withdrawn one coming back (`withdraw`); its id must not be in the
+   * store.
+   */
   public add(entity: Entity): void {
     if (this.entities.has(entity.id)) {
       throw new Error(`Entity "${entity.id}" is already in the store.`);
@@ -70,6 +75,21 @@ export class EntityStore {
       throw new Error(`Cannot remove unknown entity "${id}" (${cause}).`);
     }
     entity.retire(cause);
+    this.entities.delete(id);
+    this.removals.push({ entityId: id, cause });
+    return entity;
+  }
+
+  /**
+   * Takes the entity with `id` out of the world with `cause` without retiring it: it keeps its
+   * components, so the same object can be added back later (a dead Legend waiting to respawn,
+   * FR-051, DEC-295). It counts as a removal of this tick, as `remove` does. Unknown ids throw.
+   */
+  public withdraw(id: EntityId, cause: RemovalCause): Entity {
+    const entity = this.entities.get(id);
+    if (entity === undefined) {
+      throw new Error(`Cannot withdraw unknown entity "${id}" (${cause}).`);
+    }
     this.entities.delete(id);
     this.removals.push({ entityId: id, cause });
     return entity;
@@ -134,6 +154,21 @@ export class EntityStore {
   /** Stops the entity at once (no speed, no heading); does nothing when it cannot move. */
   public halt(id: EntityId): void {
     this.entities.get(id)?.findComponent(Movement)?.stop();
+  }
+
+  /**
+   * Records whether the entity's jump key is held (`Jump`, DEC-390). Lets `commands/` jump
+   * without importing `components/`, as `steer` does for movement.
+   *
+   * @returns `false` when the entity is unknown or cannot jump.
+   */
+  public holdJump(id: EntityId, isHeld: boolean): boolean {
+    const jump = this.entities.get(id)?.findComponent(Jump);
+    if (jump === undefined) {
+      return false;
+    }
+    jump.hold(isHeld);
+    return true;
   }
 
   /** The entity's health as a fraction of its maximum, or `undefined` without `Health`. */

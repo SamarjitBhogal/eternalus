@@ -10,6 +10,11 @@ export type EntityDrawState = {
   readonly position: WorldPoint;
   /** The way the entity faces: a unit vector, interpolated like `position` (DEC-192). */
   readonly facing: WorldPoint;
+  /**
+   * Height above the ground in world units, interpolated like `position` (a jump, DEC-390).
+   * Absent or 0 on the ground.
+   */
+  readonly height?: number;
   /** True for the entity the player controls (highlighted). */
   readonly isFocused: boolean;
 };
@@ -19,8 +24,8 @@ export type EntityDrawState = {
  * snapshots and draw through the `Renderer` port (architecture 08 §8; 06 §8).
  */
 export interface EntityView {
-  /** Draws the entity in the main view, sized in world units. */
-  draw(state: EntityDrawState, renderer: Renderer): void;
+  /** Draws the entity and may return its visible height above its position in world units. */
+  draw(state: EntityDrawState, renderer: Renderer): number | undefined;
   /** Draws the entity's mini map marker, sized in CSS pixels, or nothing. */
   drawMinimap(state: EntityDrawState, renderer: Renderer): void;
   /**
@@ -28,4 +33,6 @@ export interface EntityView {
    * without one is on layer 0.
    */
   readonly minimapLayer?: number;
+  /** Radius of the artwork for pointer targeting and health-bar placement. */
+  visualRadiusOf?(entity: EntitySnapshot): number;
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Progression } from '../../components/Progression';
 import { MOB_DEFINITIONS } from '../mobs/mobCatalogue';
+import { STRUCTURE_DEFINITIONS } from '../structures/structureCatalogue';
 import { LEGEND_LEVEL_CURVE } from './levelCurves';
 import { XP_SOURCES } from './xpSources';
 
@@ -45,8 +46,8 @@ describe('legend XP design intent (DEC-190)', () => {
     }
   });
 
-  it('the Greater Boss pays 5 levels flat (DEC-237)', () => {
-    expect(XP_SOURCES.teamKills['greater-boss']).toEqual({ levels: 5 });
+  it('the Greater Boss pays its team 2.5 levels and its last hitter 5 in all (DEC-371 E8b)', () => {
+    expect(XP_SOURCES.teamKills['greater-boss']).toEqual({ levels: 2.5, lastHitterLevels: 5 });
   });
 
   it('a mini-boss team-kill reward lifts at most 2 levels (DEC-237)', () => {
@@ -64,6 +65,18 @@ describe('legend XP design intent (DEC-190)', () => {
           `${mobId} level ${String(level)}`,
         ).toBeLessThanOrEqual(maxLevels);
       }
+    }
+  });
+
+  it('a camp clear bonus names a camp structure, so a renamed camp id fails here (ADR 0023)', () => {
+    const entries = Object.entries(XP_SOURCES.campCleared);
+    expect(entries.length).toBeGreaterThan(0);
+    for (const [campId, xp] of entries) {
+      expect({ campId, kind: STRUCTURE_DEFINITIONS.get(campId).kind, isPaid: xp > 0 }).toEqual({
+        campId,
+        kind: 'camp',
+        isPaid: true,
+      });
     }
   });
 });

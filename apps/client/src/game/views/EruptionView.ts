@@ -6,7 +6,8 @@ import type { WorldLayer } from './SceneView.types';
 /**
  * Draws the Cathedral gem's eruption (Aryan 2026-11-22) while it lasts: a white flash that shrinks
  * away and two rings growing out from where the gem stood. It only reads `burst` (the cut-scene's),
- * so it holds no state. No mini map marker.
+ * so it holds no state. The minimap shows a ring growing at the gem, so a player far from the
+ * Cathedral, who keeps their own view, still sees it (DEC-371 E1).
  */
 export class EruptionView implements WorldLayer {
   /** @param burst - The burst to draw now, or `null` for none. */
@@ -30,8 +31,11 @@ export class EruptionView implements WorldLayer {
     }
   }
 
-  /** Draws nothing: the burst is only for the main view. */
-  public drawMinimap(): void {
-    // Intentionally empty: the mini map shows no effects.
+  /** Draws the burst's ring on the minimap while it lasts. */
+  public drawMinimap(renderer: Renderer): void {
+    const burst = this.burst();
+    if (burst === null) return;
+    const { size, color } = ERUPTION_LOOK.minimap;
+    renderer.drawGlyph({ shape: 'ring', size: size * (1 + burst.progress) }, burst.at, color);
   }
 }

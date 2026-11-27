@@ -46,11 +46,17 @@ describe('EruptionView (Aryan 2026-11-22)', () => {
     ]);
   });
 
-  it('marks nothing on the mini map', () => {
-    const renderer = new RecordingRenderer();
+  it('marks the burst on the minimap with a growing ring, and nothing without one (DEC-371 E1)', () => {
+    const { size, color } = ERUPTION_LOOK.minimap;
+    const minimap = (burst: EruptionBurst | null) => {
+      const renderer = new RecordingRenderer();
+      new EruptionView(() => burst).drawMinimap(renderer);
+      return renderer.calls;
+    };
 
-    new EruptionView(() => ({ at: AT, progress: 0 })).drawMinimap();
-
-    expect(renderer.calls).toEqual([]);
+    expect(minimap(null)).toEqual([]);
+    expect(minimap({ at: AT, progress: 0.5 })).toEqual([
+      { op: 'drawGlyph', args: [{ shape: 'ring', size: size * 1.5 }, AT, color] },
+    ]);
   });
 });

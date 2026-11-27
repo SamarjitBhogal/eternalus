@@ -4,7 +4,7 @@ description: The ports-and-adapters layer that isolates the game from the browse
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-27
 tags: [architecture, hal, input, ports, adapters, keybindings]
 paths:
   [
@@ -293,7 +293,10 @@ time (13 §6.3). Interim gaps: no `poll()` and no `wheel` or `gamepads` fields u
 (Sprint 1 brief), while the mouse relies on pointer capture, `pointercancel` and its owner's
 `releaseAll()` on focus loss; the §3 `Binding.types.ts` sketch
 is superseded by the Sprint 1 contract's flat `InputChord` (13 §10). Storage (§7) is covered in
-[14](14-persistence-and-resources.md) §14.
+[14](14-persistence-and-resources.md) §14. Since 2026-11-27 (DEC-390) `InputAction` also has
+`jump` (Space, held; `InputIntent.isJumping`), which the action list above predates.
+`KeyboardDevice` ignores a key pressed inside an open modal dialog (`[aria-modal="true"]`, the
+pause menu), so Space still presses the dialog's focused button.
 
 ## Related
 

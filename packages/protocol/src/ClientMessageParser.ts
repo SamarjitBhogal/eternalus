@@ -1,6 +1,7 @@
 import type { AbilitySlot, InputIntent, Vec2 } from '@eternalus/core';
 import {
   ABILITY_SLOTS,
+  GUEST_ID_PATTERN,
   MAX_CLIENT_MESSAGE_LENGTH,
   MAX_INTENT_SEQ,
   MAX_PLAYER_NAME_LENGTH,
@@ -35,6 +36,8 @@ export class ClientMessageParser {
         return ClientMessageParser.toJoinMessage(data);
       case 'queue-leave':
         return { type: 'queue-leave' };
+      case 'forfeit':
+        return { type: 'forfeit' };
       case 'intent':
         return this.toIntentMessage(data);
       default:
@@ -43,12 +46,18 @@ export class ClientMessageParser {
   }
 
   private static toJoinMessage(data: Readonly<Record<string, unknown>>): ClientMessage | undefined {
-    const { name } = data;
-    return typeof name === 'string' &&
-      name.length <= MAX_PLAYER_NAME_LENGTH &&
-      PLAYER_NAME_PATTERN.test(name)
-      ? { type: 'queue-join', name }
-      : undefined;
+    const { name, guestId } = data;
+    if (
+      typeof name !== 'string' ||
+      name.length > MAX_PLAYER_NAME_LENGTH ||
+      !PLAYER_NAME_PATTERN.test(name)
+    ) {
+      return undefined;
+    }
+    // A malformed id is dropped, not refused: the player gets a fresh guest id.
+    return typeof guestId === 'string' && GUEST_ID_PATTERN.test(guestId)
+      ? { type: 'queue-join', name, guestId }
+      : { type: 'queue-join', name };
   }
 
   private toIntentMessage(data: Readonly<Record<string, unknown>>): ClientMessage | undefined {
@@ -65,9 +74,10 @@ export class ClientMessageParser {
     const move = ClientMessageParser.toVec2(data.move);
     const aim = data.aim === null ? null : ClientMessageParser.toVec2(data.aim);
     const triggered = ClientMessageParser.toSlots(data.triggered);
-    const { isAttacking } = data;
+    const { isAttacking, isJumping } = data;
     if (move === undefined || aim === undefined || triggered === undefined) return undefined;
     if (isAttacking !== undefined && typeof isAttacking !== 'boolean') return undefined;
+    if (isJumping !== undefined && typeof isJumping !== 'boolean') return undefined;
     // The movement axes are a normalised vector (Command.types `InputIntent`).
     if (Math.abs(move.x) > 1 || Math.abs(move.y) > 1) return undefined;
     return {
@@ -75,6 +85,7 @@ export class ClientMessageParser {
       aim,
       triggered,
       ...(isAttacking === undefined ? {} : { isAttacking }),
+      ...(isJumping === undefined ? {} : { isJumping }),
     };
   }
 

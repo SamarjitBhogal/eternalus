@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Deploying } from '../components/Deploying';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
 import { Movement } from '../components/Movement';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { TeamMembership } from '../components/TeamMembership';
@@ -102,6 +103,23 @@ describe('EntityStore', () => {
     expect(idsOf(store)).toEqual(['entity-2']);
   });
 
+  it('withdraws an entity without retiring it, records the removal, and takes it back', () => {
+    const store = storeWith('entity-1', 'entity-2');
+    const walker = new Walker('entity-3', 'walker-definition');
+    walker.spawn(undefined);
+    store.add(walker);
+
+    const withdrawn = store.withdraw('entity-3', 'died');
+
+    expect(withdrawn).toBe(walker);
+    expect(walker.hasComponent(Movement)).toBe(true);
+    expect(store.has('entity-3')).toBe(false);
+    expect(store.removedThisTick()).toEqual([{ entityId: 'entity-3', cause: 'died' }]);
+    store.add(walker);
+    expect(idsOf(store)).toEqual(['entity-1', 'entity-2', 'entity-3']);
+    expect(() => store.withdraw('entity-9', 'died')).toThrow(/entity-9/);
+  });
+
   it('reports an entity as deploying only while it has the Deploying component', () => {
     const store = storeWith('entity-1');
     const entity = store.get('entity-1');
@@ -172,6 +190,21 @@ describe('EntityStore', () => {
     expect(walker.getComponent(Movement).heading).toEqual({ x: 0, y: 1 });
     expect(store.steer('still', { x: 1, y: 0 })).toBe(false);
     expect(store.steer('nobody', { x: 1, y: 0 })).toBe(false);
+  });
+
+  it('holds the jump key of an entity that has Jump and refuses one that does not', () => {
+    const store = storeWith('still');
+    const jumper = new Walker('jumper', 'walker-definition');
+    jumper.spawn({});
+    jumper.addComponent(new Jump());
+    store.add(jumper);
+
+    expect(store.holdJump('jumper', true)).toBe(true);
+    expect(jumper.getComponent(Jump).isHeld).toBe(true);
+    expect(store.holdJump('jumper', false)).toBe(true);
+    expect(jumper.getComponent(Jump).isHeld).toBe(false);
+    expect(store.holdJump('still', true)).toBe(false);
+    expect(store.holdJump('nobody', true)).toBe(false);
   });
 
   it("reads an entity's team and whether it is alive", () => {

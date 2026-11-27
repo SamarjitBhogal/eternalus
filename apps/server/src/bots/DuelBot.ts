@@ -72,6 +72,8 @@ export class DuelBot {
   public receive(message: ServerMessage): void {
     const { report, logger } = this;
     switch (message.type) {
+      case 'welcome':
+        break;
       case 'queue-waiting':
         report.isWaiting = true;
         logger.log(report.name, 'waiting in the queue');

@@ -100,6 +100,32 @@ describe('DamagePipeline', () => {
     expect(state.events.recentEvents()).toEqual([]);
   });
 
+  it('kills with one hit no step can change, with the same events as a lethal hit', () => {
+    const state = setUp();
+    const health = healthOf(state);
+    new DamagePipeline().apply(state, 'entity-1', health.max - 64, SOURCE);
+    // 64 + 0.1 − 0.1 < 64 in floating point: a hit of `health.total` would leave a sliver alive.
+    health.addShield('entity-50', 0.1);
+    const blockEverything = { name: 'block-everything', adjust: () => 0 };
+    const pipeline = new DamagePipeline([blockEverything]);
+
+    const result = pipeline.kill(state, 'entity-1', SOURCE);
+
+    expect(result).toEqual({ applied: true, amount: 64, absorbed: 0.1, killed: true });
+    expect(health.current).toBe(0);
+    expect(state.events.recentEvents().map((event) => event.type)).toEqual([
+      'damage-applied',
+      'damage-applied',
+      'entity-died',
+    ]);
+    const died = state.events.recentEvents().filter((event) => event.type === 'entity-died');
+    expect(died[0]?.payload).toEqual({ entityId: 'entity-1', killer: SOURCE });
+    expect(pipeline.kill(state, 'entity-1', SOURCE)).toEqual({
+      applied: false,
+      reason: 'already-dead',
+    });
+  });
+
   it('rejects a missing target without throwing', () => {
     expect(new DamagePipeline().apply(setUp(), 'entity-404', 5, SOURCE)).toEqual({
       applied: false,

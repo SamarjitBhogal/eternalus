@@ -1,3 +1,4 @@
+import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { TeamMembership } from '../components/TeamMembership';
@@ -20,9 +21,11 @@ export class WorldObjectStore {
    * Spawns physical objects through the existing registry/factory; terrain has no health entity.
    * An object named in `owners` gets no entity of its own: its health is its structure's (one pool,
    * DEC-185 B: a lane tower's fort map object; only towers, DEC-217 (13)), so a hit on it is a hit
-   * on the structure.
+   * on the structure. An `isUnbreakable` object's collider is unbreakable, so it takes no damage.
+   * An object with no health named in `carriers` is retired with its carrier (`removed`).
    *
-   * @param options - The objects, how to spawn them, and the structures some of them are bodies of.
+   * @param options - The objects, how to spawn them, and the structures some of them are bodies of
+   *   or carried by.
    */
   public constructor({
     objects,
@@ -30,6 +33,7 @@ export class WorldObjectStore {
     entities,
     definitions,
     owners = new Map(),
+    carriers = new Map(),
   }: WorldObjectStoreOptions) {
     for (const object of objects) {
       const definition = definitions[object.kind];
@@ -43,7 +47,10 @@ export class WorldObjectStore {
         continue;
       }
       if (definition.health === null) {
-        this.records.push({ object, entityId: null, health: null, bounds });
+        const carrierId = carriers.get(object.id);
+        // A carried object is retired with its carrier (`removed`), as an obstacle is with its own.
+        if (carrierId !== undefined) this.entityObjects.set(carrierId, object);
+        this.records.push({ object, entityId: carrierId ?? null, health: null, bounds });
         continue;
       }
       const position = points.reduce(
@@ -54,6 +61,8 @@ export class WorldObjectStore {
       entity.addComponent(new MapObjectBody(object));
       // Stand-in for the Structure family's Team (07 §1, sprint 2.1): own-side attacks are refused.
       if (object.team !== undefined) entity.addComponent(new TeamMembership(object.team));
+      // A Duel's Cathedral wall (DEC-348): `BreakabilityStep` blocks every hit on it.
+      if (object.isUnbreakable === true) entity.getComponent(Collider).setUnbreakable(true);
       entities.add(entity);
       this.entityObjects.set(entity.id, object);
       this.records.push({
@@ -68,7 +77,8 @@ export class WorldObjectStore {
   /**
    * Marks only actual retired entities destroyed; a roof toggle never changes this state. A
    * retired structure's own map object (its fort) stays standing, as it did when it had a pool of
-   * its own, with no health left to take: it is scenery from then on.
+   * its own, with no health left to take: it is scenery from then on. A carried object (the gem's
+   * plinth) is destroyed with its carrier.
    */
   public removed(entityId: string): void {
     const object = this.entityObjects.get(entityId);

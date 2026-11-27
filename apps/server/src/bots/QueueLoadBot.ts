@@ -5,8 +5,8 @@ import { BOT_NAME } from './DuelBot.constants';
 import type { JoinRecord, QueueLoadPhase } from './QueueLoadBot.types';
 
 /**
- * A matchmaking load player: joins the queue, and once paired the light seat forfeits (closes its
- * socket) while the dark seat waits for `match-ended`; then both open a new connection and join
+ * A matchmaking load player: joins the queue, and once paired the light seat forfeits (sends `forfeit`,
+ * then closes its socket) while the dark seat waits for `match-ended`; then both open a new connection and join
  * again, for `rounds` joins in all. It never plays, so a match costs the server a start and an end.
  */
 export class QueueLoadBot {
@@ -91,7 +91,10 @@ export class QueueLoadBot {
         join.matchId = message.matchId;
         join.timeToMatchMs = this.clock.nowMs() - join.sentAtMs;
         this.state = 'in-match';
-        if (message.team === 'light') this.requeue();
+        if (message.team === 'light') {
+          this.link?.send({ type: 'forfeit' });
+          this.requeue();
+        }
         break;
       case 'match-ended':
         if (this.state === 'in-match') this.requeue();
@@ -99,6 +102,7 @@ export class QueueLoadBot {
       case 'rejected':
         this.error ??= `rejected: ${message.reason}`;
         break;
+      case 'welcome':
       case 'state':
         break;
     }

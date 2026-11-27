@@ -7,7 +7,10 @@ import { ChaseWatch } from '../components/ChaseWatch';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { CombatClock } from '../components/CombatClock';
+import { LastEnemyHit } from '../components/LastEnemyHit';
+import { LastLegendHits } from '../components/LastLegendHits';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
 import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
 import { Veterancy } from '../components/Veterancy';
@@ -95,6 +98,32 @@ export class StateHasher {
       });
       parts.push(['guards', ...posts]);
     }
+    // Cleared checkpoint defender sets (07 §7) are appended only once one exists.
+    if (state.guards.cleared.length > 0) {
+      parts.push(['clearedSets', ...state.guards.cleared]);
+    }
+    // Dead Legends waiting to respawn (DEC-295) are appended only while some wait, for the same
+    // reason: each one's team, return tick and owed XP, then the waiting Legend's own fields, as
+    // an entity in the store hashes them, since it is out of the store meanwhile.
+    if (state.respawns.size > 0) {
+      const waiting: unknown[] = [];
+      state.respawns.forEach(({ legend, team, returnsAtTick, owedXp }) => {
+        waiting.push([
+          team,
+          returnsAtTick,
+          owedXp.map(({ cause, victimId, victimTeam, xp, maxLevels, levels }) => [
+            cause,
+            victimId,
+            victimTeam,
+            xp,
+            maxLevels ?? null,
+            levels ?? null,
+          ]),
+          StateHasher.fieldsOf(legend),
+        ]);
+      });
+      parts.push(['respawns', ...waiting]);
+    }
     // Ally damage (DEC-89) is appended only while some is counted, for the same reason.
     if (state.allyDamage.size > 0) {
       const tallies: unknown[] = [];
@@ -102,6 +131,14 @@ export class StateHasher {
         tallies.push([team, lane, amount]);
       });
       parts.push(['allyDamage', ...tallies]);
+    }
+    // Defender damage (07 §7) is appended only while some is counted, for the same reason.
+    if (state.defenderDamage.size > 0) {
+      const tallies: unknown[] = [];
+      state.defenderDamage.forEach((defenceId, legendId, amount) => {
+        tallies.push([defenceId, legendId, amount]);
+      });
+      parts.push(['defenderDamage', ...tallies]);
     }
     // Lost towers are appended only once a lane has one, for the same reason.
     const lost = PLAYABLE_TEAMS.flatMap((team) =>
@@ -221,6 +258,8 @@ export class StateHasher {
         capture.reachedBy('light'),
         capture.reachedBy('dark'),
         capture.reachedBy('neutral'),
+        // The zone level-up's clock (DEC-258).
+        capture.ownedSinceTick,
       ]);
     }
     const gem = entity.findComponent(CathedralGemState);
@@ -229,7 +268,14 @@ export class StateHasher {
     }
     const veterancy = entity.findComponent(Veterancy);
     if (veterancy !== undefined) {
-      fields.push(['veterancy', veterancy.kills, veterancy.level]);
+      fields.push([
+        'veterancy',
+        veterancy.kills,
+        veterancy.level,
+        veterancy.earned,
+        veterancy.granted,
+        veterancy.grantedBy,
+      ]);
     }
     const progression = entity.findComponent(Progression);
     if (progression !== undefined) {
@@ -242,6 +288,22 @@ export class StateHasher {
     const clock = entity.findComponent(CombatClock);
     if (clock !== undefined) {
       fields.push(['combat-clock', ...clock.fields]);
+    }
+    // Names the killer of a death by the gem (DEC-346), so it changes the match's future.
+    const lastEnemyHit = entity.findComponent(LastEnemyHit);
+    if (lastEnemyHit !== undefined) {
+      fields.push(['last-enemy-hit', ...lastEnemyHit.fields]);
+    }
+    // Only a held key or a jump in the air adds a field (DEC-390), so a Legend that never jumps
+    // hashes as before.
+    const jump = entity.findComponent(Jump);
+    if (jump !== undefined && (jump.isHeld || jump.isAirborne)) {
+      fields.push(['jump', ...jump.fields]);
+    }
+    // Names the Legend a boss's last-hitter levels go to (DEC-416).
+    const lastLegendHits = entity.findComponent(LastLegendHits);
+    if (lastLegendHits !== undefined) {
+      fields.push(['last-legend-hits', ...lastLegendHits.fields]);
     }
     return fields;
   }

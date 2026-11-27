@@ -9,7 +9,9 @@ import type { TimelineActionHandler } from '../TimelineActionRegistry.types';
  * (DEC-36): there the gem stays and no boss comes.
  */
 export class SummonGreaterBossAction implements TimelineActionHandler<'summon-greater-boss'> {
-  /** Erupts the gem for `action.bossId`, once per match (`MatchRecord.eruptGem`), outside a Duel. */
+  /**
+   * Erupts the gem for `action.bossId`, once per match (`MatchRecord.eruptGem`), outside a Duel.
+   */
   public run(action: TimelineAction<'summon-greater-boss'>, context: DirectorContext): void {
     if (context.state.match.duel !== null) return;
     context.state.match.eruptGem(action.bossId);

@@ -29,6 +29,8 @@ export type Aim = { readonly point: Vec2; readonly targetId: EntityId | null };
 export type InputIntent = {
   /** Whether the existing basic-attack binding is held. */
   readonly isAttacking?: boolean;
+  /** Whether the jump binding is held (DEC-390). */
+  readonly isJumping?: boolean;
   readonly move: Vec2;
   readonly aim: Vec2 | null;
   readonly triggered: readonly AbilitySlot[];
@@ -41,6 +43,11 @@ export type InputIntent = {
 type CommandPayloads = {
   readonly move: { readonly actorId: EntityId; readonly direction: Vec2 };
   readonly stop: { readonly actorId: EntityId };
+  /**
+   * Holds or releases a Legend's jump key (DEC-390): a held key lifts the Legend from the ground
+   * and again on each landing. Sent only when the held state changes, like `move`.
+   */
+  readonly jump: { readonly actorId: EntityId; readonly isHeld: boolean };
   readonly 'attack-target': { readonly actorId: EntityId; readonly targetId: EntityId };
   readonly 'cast-ability': {
     readonly actorId: EntityId;
@@ -76,8 +83,22 @@ type CommandPayloads = {
     readonly count: number;
     readonly origin: SpawnOrigin;
   };
-  /** Developer menu: remove an entity (cause `dev-removed`). */
+  /**
+   * Developer menu: add one bot Legend of class `definitionId` at `team`'s Stronghold, played by
+   * the Rover controller (it takes no lane). Refused at `maxLegendsPerTeam`.
+   */
+  readonly 'dev-spawn-legend': { readonly team: PlayableTeam; readonly definitionId: string };
+  /**
+   * Developer menu: remove an entity (cause `dev-removed`). A Legend a human plays is refused
+   * (`human-legend`): the human is removed only in sim mode (13 §4).
+   */
   readonly 'dev-remove-entity': { readonly entityId: EntityId };
+  /**
+   * Developer menu: remove a Legend (cause `dev-removed`; FR-097, DEC-293). Refused for an entity
+   * that is not a Legend (`not-a-legend`) and refused (`human-legend`) while a human seat holds
+   * the Legend, that is, outside sim mode.
+   */
+  readonly 'dev-remove-legend': { readonly entityId: EntityId };
   /** Developer menu: put a boss in `phase` (DEC-417), as if its health had crossed the line. */
   readonly 'dev-set-boss-phase': { readonly entityId: EntityId; readonly phase: BossPhaseId };
   /** Developer menu: hand an entity to another controller (sim mode). */
@@ -104,11 +125,15 @@ export type CommandRejectReason =
   | 'invalid-position'
   | 'invalid-origin'
   | 'cap-exceeded'
+  | 'not-a-legend'
+  | 'no-stronghold'
   | 'horde-only'
   | 'map-only'
   | 'invalid-direction'
   | 'not-movable'
   | 'cannot-attack'
+  | 'cannot-jump'
   | 'invalid-target'
   | 'not-supported'
+  | 'human-legend'
   | 'match-ended';

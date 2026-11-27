@@ -2,7 +2,7 @@ import type { Team } from '../teams/teams.types';
 
 /**
  * The Cathedral gem's state (DEC-291, DEC-292): the team that holds the Cathedral, whose colour the
- * gem shows, and the glow a hit or a touch leaves on it. `CathedralGemSystem` is the only writer;
+ * gem shows, and the glow a hit leaves on it. `CathedralGemSystem` is the only writer;
  * the snapshot carries it, so the view needs no other entity.
  */
 export class CathedralGemState {

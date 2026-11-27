@@ -23,6 +23,7 @@ const boss = (bossPhase: EntitySnapshot['bossPhase'] = null): EntitySnapshot => 
   health: { current: 10, max: 100 },
   progression: null,
   aether: null,
+  elevation: null,
   area: null,
   capture: null,
   gem: null,

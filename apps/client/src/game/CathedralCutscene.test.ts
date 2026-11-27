@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 
 import { CathedralCutscene } from './CathedralCutscene';
 import { CUTSCENE } from './CathedralCutscene.constants';
+import type { WorldPoint } from './engine/render/Renderer.types';
 
 /** Stands in for `Simulation.on`: keeps the handlers, so a test emits the events by hand. */
 class FakeEvents {
@@ -50,6 +51,7 @@ const GEM: EntitySnapshot = {
   definitionId: 'cathedral',
   team: 'neutral',
   transform: { ...GEM_AT, radius: 5, facing: { x: 1, y: 0 } },
+  elevation: null,
   health: { current: 1, max: 1 },
   progression: null,
   aether: null,
@@ -84,16 +86,30 @@ const snapshotAt = (tick: number, isDuel = false): Snapshot => ({
  */
 const runTo = (
   tick: number,
-  options: { hasErupted?: boolean; isDuel?: boolean; moving?: (tick: number) => boolean } = {},
+  options: {
+    hasErupted?: boolean;
+    isDuel?: boolean;
+    moving?: (tick: number) => boolean;
+    playerAt?: WorldPoint | null | ((tick: number) => WorldPoint | null);
+  } = {},
 ) => {
   const { hasErupted = true, isDuel = false, moving = () => false } = options;
+  // By default the player stands at the Cathedral's edge, near enough to see the cut-scene.
+  const playerAt =
+    options.playerAt === undefined
+      ? { x: GEM_AT.x + CUTSCENE.nearRadius, y: GEM_AT.y }
+      : options.playerAt;
   const events = new FakeEvents();
   const cutscene = new CathedralCutscene(events, TICK_RATE);
   for (let at = 1; at <= tick; at += 1) {
     if (at === ERUPTION && hasErupted) {
       events.emit('greater-boss-summoned', { bossId: 'greater-boss' });
     }
-    cutscene.observe(snapshotAt(at, isDuel), moving(at));
+    cutscene.observe(
+      snapshotAt(at, isDuel),
+      moving(at),
+      typeof playerAt === 'function' ? playerAt(at) : playerAt,
+    );
   }
   return { cutscene, events };
 };
@@ -130,6 +146,26 @@ describe('CathedralCutscene (Aryan 2026-11-22)', () => {
     const { cutscene } = runTo(ERUPTION - 1, { isDuel: true });
 
     expect(cutscene.focus()).toBeNull();
+  });
+
+  it('keeps the view of a player far from the Cathedral or dead, who still gets the burst (DEC-371 E1)', () => {
+    const far = { x: GEM_AT.x + CUTSCENE.nearRadius + 1, y: GEM_AT.y };
+    for (const playerAt of [far, null]) {
+      const { cutscene } = runTo(ERUPTION + 1, { playerAt });
+
+      expect(cutscene.focus()).toBeNull();
+      expect(cutscene.burst()).not.toBeNull();
+    }
+  });
+
+  it('decides "near" when it starts: a Legend killed by the blast keeps it, a late arrival never gets it', () => {
+    const near = { x: GEM_AT.x, y: GEM_AT.y + 10 };
+    const far = { x: GEM_AT.x + CUTSCENE.nearRadius + 1, y: GEM_AT.y };
+    const killed = runTo(ERUPTION + 2, { playerAt: (tick) => (tick < ERUPTION + 1 ? near : null) });
+    expect(killed.cutscene.focus()).not.toBeNull();
+
+    const late = runTo(ERUPTION + 2, { playerAt: (tick) => (tick < ERUPTION ? far : near) });
+    expect(late.cutscene.focus()).toBeNull();
   });
 
   it('is skipped by a fresh move press, not by a key already held when it started', () => {

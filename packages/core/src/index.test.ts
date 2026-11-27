@@ -11,6 +11,7 @@ describe('@eternalus/core public API', () => {
       'ConfigValidationError',
       'DEFAULT_MAP_CONFIG',
       'DUEL_RULES',
+      'GEM_ERUPTION_ENTRY_ID',
       'MapGenerator',
       'MapObjectBuilder',
       'MapPresentationBuilder',
