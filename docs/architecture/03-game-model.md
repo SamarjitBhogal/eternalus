@@ -260,7 +260,7 @@ export type EntitySnapshot = {
   readonly kind: EntityKind;
   readonly family: EntityFamily;
   readonly definitionId: string;
-  readonly mapFeatureId?: string; // a structure's map feature, so the HUD binds its tile (DEC-212)
+  readonly mapFeatureId?: string; // a structure's or zone's map feature (MapFeatureLink; DEC-212, DEC-231)
   readonly team: Team | null;
   readonly transform: {
     readonly x: number;
@@ -292,6 +292,10 @@ export type EntitySnapshot = {
   readonly anim: AnimState;
 };
 ```
+
+The groups a consumer may read by `mapFeatureId` are core's `FeatureKeyedGroup`, declared beside
+`EntitySnapshot`: at most one entity of a feature carries each, which `map-feature-groups-unique`
+checks ([15](15-diagnostics-and-runtime-testing.md) §3; DEC-233, DEC-256).
 
 `SnapshotSystem` builds each `EntitySnapshot` through `EntitySnapshotter`
 (`state/EntitySnapshotter.ts`), one group per component, so a new component group changes that
