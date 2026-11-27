@@ -30,7 +30,7 @@ const PRESENCE_ORDER: readonly Team[] = ['light', 'neutral', 'dark'];
  */
 export class CapturePointView extends DefaultEntityView {
   /** Draws the owner's outline, then the bars. */
-  public override draw({ entity, position }: EntityDrawState, renderer: Renderer): void {
+  public override draw({ entity, position }: EntityDrawState, renderer: Renderer): undefined {
     const { area, capture } = entity;
     const color = this.colorOf(capture?.owner ?? null);
     for (const polygon of area ?? []) {

@@ -3,12 +3,13 @@ import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import {
-  FACING_CHEVRON,
   MINI_MAP_MOB_GLYPH,
   MINI_MAP_OUTLINE_COLORS,
   MINI_MAP_OUTLINE_WIDTH,
   MOB_OUTLINE_COLOR,
+  FACING_CHEVRON,
   MOB_OUTLINE_SCALE,
+  MOB_VISUAL_SCALE,
   NEUTRAL_ENTITY_COLOR,
 } from './entityViews.constants';
 import { TEAM_COLORS } from './MapView.constants';
@@ -20,8 +21,9 @@ const MINION: EntitySnapshot = {
   family: 'mob',
   definitionId: 'light-minion',
   team: 'light',
-  transform: { x: 0, y: 0, radius: 0.4, facing: { x: 0, y: 1 } },
+  transform: { facing: { x: 1, y: 0 }, x: 0, y: 0, radius: 0.4 },
   health: { current: 150, max: 150 },
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
@@ -31,15 +33,16 @@ const MINION: EntitySnapshot = {
 
 const AT = { x: 0, y: 0 };
 
-const SOUTH = { x: 0, y: 1 };
-
-const DIAMETER = (MINION.transform?.radius ?? 0) * 2;
+const DIAMETER = (MINION.transform?.radius ?? 0) * 2 * MOB_VISUAL_SCALE;
 
 describe('MobView', () => {
-  it('draws a dark outline and the facing chevron under the team disc (DEC-192)', () => {
+  it('draws a dark outline under the team disc, so mobs show on their own Stronghold', () => {
     const renderer = new RecordingRenderer();
 
-    new MobView().draw({ entity: MINION, position: AT, facing: SOUTH, isFocused: false }, renderer);
+    new MobView().draw(
+      { facing: { x: 1, y: 0 }, entity: MINION, position: AT, isFocused: false },
+      renderer,
+    );
 
     expect(renderer.calls).toEqual([
       {
@@ -47,7 +50,7 @@ describe('MobView', () => {
         args: [{ shape: 'dot', size: DIAMETER * MOB_OUTLINE_SCALE }, AT, MOB_OUTLINE_COLOR],
       },
       {
-        op: 'strokePath',
+        op: 'strokePath', // DEC-192: mobs show their facing with a chevron.
         args: [expect.any(Array), FACING_CHEVRON.color, FACING_CHEVRON.lineWidth],
       },
       { op: 'drawWorldGlyph', args: [{ shape: 'dot', size: DIAMETER }, AT, TEAM_COLORS.light] },
@@ -55,13 +58,12 @@ describe('MobView', () => {
   });
 
   it('marks the minimap with a small team dot on a team outline (13 §7: not colour alone)', () => {
-    // Only glyphs: the facing chevron is main view only (DEC-192).
     const renderer = new RecordingRenderer();
     const view = new MobView();
     const at = (team: 'light' | 'dark' | 'neutral') => ({
+      facing: { x: 1, y: 0 },
       entity: { ...MINION, team },
       position: AT,
-      facing: SOUTH,
       isFocused: false,
     });
 

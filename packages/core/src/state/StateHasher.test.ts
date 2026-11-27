@@ -5,6 +5,8 @@ import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
+import { MapFeatureLink } from '../components/MapFeatureLink';
 import { Movement } from '../components/Movement';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { CombatClock } from '../components/CombatClock';
@@ -136,6 +138,14 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(before);
   });
 
+  it('hashes an entity the same with or without a map-feature link: setup the replay carries (DEC-231)', () => {
+    const { state: plain } = stateWithSoldier();
+    const { state: linked, soldier } = stateWithSoldier();
+    soldier.addComponent(new MapFeatureLink('light-stronghold'));
+
+    expect(hasher.hash(linked)).toBe(hasher.hash(plain));
+  });
+
   it('changes when only a granted minion level differs, the level capped (DEC-258)', () => {
     const { state, soldier } = stateWithSoldier();
     const veterancy = new Veterancy();
@@ -218,6 +228,28 @@ describe('StateHasher', () => {
     expect(hit).not.toBe(bare);
     expect(byAnother).not.toBe(hit);
     expect(hasher.hash(state)).not.toBe(byAnother);
+  });
+
+  it('hashes a jump only while its key is held or it flies, then with each field (DEC-390)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const bare = hasher.hash(state);
+    const jump = new Jump();
+    soldier.addComponent(jump);
+    const grounded = hasher.hash(state);
+    jump.hold(true);
+    const held = hasher.hash(state);
+    jump.takeOff({ x: 1, y: 0 });
+    const flying = hasher.hash(state);
+    jump.advance({ airTicks: 5, peakHeight: 1 });
+    const higher = hasher.hash(state);
+
+    jump.reset();
+
+    expect(grounded).toBe(bare);
+    expect(held).not.toBe(grounded);
+    expect(flying).not.toBe(held);
+    expect(higher).not.toBe(flying);
+    expect(hasher.hash(state)).toBe(bare);
   });
 
   it('differs between seeds', () => {
@@ -702,6 +734,42 @@ describe('StateHasher', () => {
         withTally(['light', 'lane-0', 6]),
       ];
 
+      expect(new Set(hashes).size).toBe(5);
+    });
+  });
+
+  it('changes when a checkpoint defender set is cleared, and with which set (07 §7)', () => {
+    const withCleared = (...sets: readonly string[]): number => {
+      const { state } = stateWithSoldier();
+      for (const set of sets) state.guards.markCleared(set);
+      return hasher.hash(state);
+    };
+
+    expect(new Set([withCleared(), withCleared('set-1'), withCleared('set-2')]).size).toBe(3);
+    expect(withCleared('set-1')).toBe(withCleared('set-1'));
+  });
+
+  describe('defender damage (07 §7)', () => {
+    const withTally = (set: string, legend: string, amount: number): number => {
+      const { state } = stateWithSoldier();
+      state.defenderDamage.add(set, legend, amount);
+      return hasher.hash(state);
+    };
+
+    it('hashes a taken tally as none, and changes with the set, the Legend and the amount', () => {
+      const { state } = stateWithSoldier();
+      const none = hasher.hash(state);
+      state.defenderDamage.add('set-1', 'legend-a', 9);
+      state.defenderDamage.take('set-1');
+      const hashes = [
+        none,
+        withTally('set-1', 'legend-a', 5),
+        withTally('set-2', 'legend-a', 5),
+        withTally('set-1', 'legend-b', 5),
+        withTally('set-1', 'legend-a', 6),
+      ];
+
+      expect(hasher.hash(state)).toBe(none);
       expect(new Set(hashes).size).toBe(5);
     });
   });
