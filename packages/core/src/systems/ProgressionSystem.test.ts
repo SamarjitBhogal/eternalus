@@ -38,6 +38,7 @@ const XP_SOURCES = {
   structureDestroyed: 300,
   campCleared: { 'forest-camp-light': 50 },
   teamKills: { 'capture-point-boss': { xp: 500, maxLevels: 2 } },
+  checkpointCleared: { xp: { 1: 60 }, shareRadius: 10, evenShare: 0.6 },
 };
 
 const setUp = () => {
