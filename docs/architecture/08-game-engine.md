@@ -271,20 +271,55 @@ flowchart LR
 Targets at the MVP cap (144 units per team plus 20 Legends, ~300 units; "engineered for
 hundreds"). **Recommendation:** these are the numbers the plan's phase gates check.
 
-| Metric                                                   | Budget                        | Where measured                                                           |
-| -------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------ |
-| `Simulation.step()` at 300 units                         | ≤ 8 ms (p95)                  | `performance.measure('tick')` in `Match`                                 |
-| `Match.render()` at 1080p, DPR 2                         | ≤ 8 ms (p95)                  | `performance.measure('render')`                                          |
-| Frame time                                               | ≤ 16.7 ms; no LoAF > 50 ms    | `PerformanceObserver('long-animation-frame')`                            |
-| Allocations in hot paths (steering, collision, snapshot) | zero per tick after warm-up   | heap sampling in the Performance panel; soak test counters               |
-| Flow-field rebuild after terrain change                  | ≤ 2 ms per tick (time-sliced) | `performance.measure('flow-rebuild')` in core via `Logger` timing events |
-| Minimap redraw                                           | ≤ 1 ms every 6th frame        | `performance.measure('minimap')`                                         |
+| Metric                                                   | Budget                                                                                                                             | Where measured                                                                   |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `Simulation.step()` at 300 units                         | ≤ 8 ms (p95)                                                                                                                       | `performance.measure('tick')` in `Match`                                         |
+| `Match.render()` at 1080p, DPR 2                         | ≤ 8 ms (p95)                                                                                                                       | `performance.measure('render')`                                                  |
+| Frame time                                               | median ≤ one 60 Hz frame; no missed frame, as the missed-frame count below defines it (DEC-328, DEC-336, DEC-368); no LoAF > 50 ms | the `PerfMonitor` frame histogram; `PerformanceObserver('long-animation-frame')` |
+| Allocations in hot paths (steering, collision, snapshot) | zero per tick after warm-up                                                                                                        | heap sampling in the Performance panel; soak test counters                       |
+| Flow-field rebuild after terrain change                  | ≤ 2 ms per tick (time-sliced)                                                                                                      | `performance.measure('flow-rebuild')` in core via `Logger` timing events         |
+| Minimap redraw                                           | ≤ 1 ms every 6th frame                                                                                                             | `performance.measure('minimap')`                                                 |
+
+**Frame terms (DEC-336).** This is the one definition. The plan's gates
+([README](../plan/README.md) §5, phase 1, phase 3, phase 6) and rule 7 of the
+[UI enhancements plan](../plan/ui-enhancements-plan.md) point here.
+
+- **Frame interval:** the time from one animation frame's timestamp to the next.
+- **One 60 Hz frame:** a frame interval of 1/60 s (16.67 ms). Chrome rounds the timestamps of a
+  page that is not cross-origin isolated to 0.1 ms, with jitter, so the same frame reads 16.5 to
+  16.8 ms there. The game page is such a page (§10), so in the game an interval of at most
+  16.8 ms, as Chrome reads it and rounded to the clock's step (0.1 ms), is one 60 Hz frame. On a
+  cross-origin isolated page the step is 0.005 ms and the limit is 16.67 ms. Only Chrome is
+  measured.
+- **Two 60 Hz frames (DEC-368):** twice the one-frame limit: 33.6 ms in the game, 33.34 ms on a
+  cross-origin isolated page. No histogram edge is near it, so a gate that uses it reads the median
+  from the raw frame intervals.
+- **Missed frame:** a frame interval over 25 ms, the midpoint between one 60 Hz frame and two.
+  The player sees it as a stutter.
+- **Missed-frame count (DEC-368):** the number of missed frames in a gate run. A gate allows none,
+  with two exceptions. The count skips the first frame interval after the loop starts or resumes
+  (after a pause) or after the page becomes visible again; after a resume that interval is long,
+  because no frame ran. Each terrain change in the run may cause one missed frame of up to 50 ms. A
+  terrain change is a `structure-destroyed`, `obstacle-destroyed` or `tree-felled` event; a gate
+  that opens or closes is not one.
 
 `PerfMonitor` (`engine/time/`) wraps `performance.mark`/`measure` with a `detail.devtools` track,
-keeps a fixed-bucket frame histogram (< 8, < 16, < 33, < 50, ≥ 50 ms) and subscribes a
-`PerformanceObserver` to `long-animation-frame` (feature-detected via `supportedEntryTypes`); the
-`PerfOverlay` HUD reads it through the bridge store
+keeps a fixed-bucket histogram of frame intervals and subscribes a `PerformanceObserver` to
+`long-animation-frame` (feature-detected via `supportedEntryTypes`); the `PerfOverlay` HUD reads
+it through the bridge store
 ([research C2](../research/persistence-input-diagnostics-research.md#c2-structured-logging-timing-memory-and-a-developer-overlay)).
+The frame histogram has three bucket edges: one 60 Hz frame, 25 ms and 50 ms. Its four buckets
+are: at most one 60 Hz frame; over that, up to 25 ms; over 25 ms, up to 50 ms; over 50 ms. The
+last two buckets hold the missed frames. `PerfMonitor` does not record the first frame interval
+after `GameLoop.start()` or after the page becomes visible again, and it counts the terrain
+changes of the run. So `PerfOverlay` reads the frame gates from the histogram: the median is
+within one 60 Hz frame when the first bucket holds at least half of the frames; the missed-frame
+gate passes when the over-50 ms bucket is empty and the 25–50 ms bucket holds no more frames than
+the run had terrain changes. The edges are named constants beside `PerfMonitor`. `PerfMonitor`
+rounds each interval to the clock's step (see "One 60 Hz frame") before it picks a bucket, and it
+compares whole clock steps (integers), so floating-point noise cannot move a reading over an edge.
+One injected isolation flag, which the composition root reads from `crossOriginIsolated`, picks
+the step and the first edge (DEC-368).
 GC-free hot paths come from pooling (projectiles, particles, events), pre-allocated typed arrays
 (spatial hash, flow fields, snapshot buffers) and scratch vectors in steering
 ([research §6](../research/game-architecture-and-performance-research.md#6-object-pooling-and-gc-avoidance)).

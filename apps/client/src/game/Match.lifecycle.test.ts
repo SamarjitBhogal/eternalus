@@ -270,7 +270,7 @@ describe('Match lifecycle', () => {
       deps.simulation
         .snapshot()
         .entities.flatMap(({ mapFeatureId, health }) =>
-          mapFeatureId === undefined ? [] : [[mapFeatureId, health] as const],
+          mapFeatureId === undefined || health === null ? [] : [[mapFeatureId, health] as const],
         ),
     );
     const shown = published[0]?.structures ?? [];

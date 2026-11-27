@@ -131,12 +131,6 @@ export class SpawnContextReader {
     return typeof specId === 'string' ? specId : null;
   }
 
-  /** The feature the context builds the entity from (a structure's `MapFeature.id`), or `null`. */
-  public mapFeatureId(context: unknown): string | null {
-    const { mapFeatureId } = SpawnContextReader.fields(context);
-    return typeof mapFeatureId === 'string' ? mapFeatureId : null;
-  }
-
   /** The weapon source the factory put in the context, or `null` when it has none. */
   public weapons(context: unknown): WeaponSource | null {
     const { weapons } = SpawnContextReader.fields(context);
