@@ -4,7 +4,7 @@ description: The accepted byte budgets for the eight Legend sprite sheets of PR 
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [adr, assets, legends]
 related:
   - docs/reference/legend-sprite-provenance.md
@@ -24,8 +24,7 @@ related:
 DEC-298 (6), the owner's words: "Decide after the cuts; the author brings one budget ADR with the
 real numbers." The first cut was that one local match loads only the player's sheet. DEC-378 (2)
 supersedes that cut: every Legend in the match gets its sprite. So `match-loading` loads the
-sheet of every Legend in the filled rosters, the player's first, after the `match` group
-(`matchAssetGroups`). Each sheet loads once, however many Legends share it. Each of the eight
+sheet of every Legend in the filled rosters after the `match` group (`matchAssetGroups`). Each sheet loads once, however many Legends share it. Each of the eight
 sub-classes with art has one sheet in its own asset group (`atlas-<sub-class>`). A sheet is a 6 x 10 grid of
 64 x 64 px cells at 1x (128 x 128 px at 2x), lossless WebP pixel art. Rows 0 to 5 hold idle,
 walk (four directions) and attack; the code plays only these. Rows 6 to 9 hold ability previews.
@@ -75,7 +74,8 @@ or more (option C).
   sizes above as accepted budgets.
 - If in-game performance drops noticeably, the author re-encodes the 2x sheets (quality 90 or
   more), measures the bytes, and updates the manifest, the budget rows and this record. The bot
-  fallback of DEC-378 (2) (the bots draw at 1x or at a lower frame rate) is the other lever;
-  architecture 08 §11 names it.
+  fallback of DEC-378 (2) is the other lever: the owner said only that the bots "can drop a
+  little (only if necessary)". For example, the bots draw at 1x or at a lower frame rate.
+  Architecture 08 §11 names it.
 - A new Legend sheet adds one group, one manifest entry and one budget row (see the
   better-than-design item on one atlas group family in `INBOX.md`).

@@ -4,7 +4,7 @@ description: Explicit provenance route for contributor-supplied local references
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-27
 tags: [adr, assets, provenance, guardrails]
 related:
   - docs/architecture/14-persistence-and-resources.md
@@ -48,3 +48,8 @@ Alternatives: obtain original public source URLs; retain placeholders until prov
 Local attachments become an explicit auditable source rather than an implicit exception.
 The permission record is the contributor's confirmation, not independent licence verification.
 The approval covers this structured route; filename-only exceptions remain forbidden.
+
+## Note 2026-11-27
+
+2026-11-27: ADR 0027 was accepted on 2026-11-26 (DEC-378 (3)). The Context sentence above about
+the draft is out of date.
