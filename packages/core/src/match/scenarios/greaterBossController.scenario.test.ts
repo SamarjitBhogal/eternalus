@@ -240,13 +240,13 @@ const punish = () => {
   return { ...run, attackerId, nearerId, firstGaps };
 };
 
-/** A Legend that keeps its distance: one Light Warrior 12 m from the boss, inside the zone. */
-const kite = () => {
-  let kiterId = '';
+/** A Legend out of melee range: one Light Warrior 12 m from the boss, inside the zone. */
+const outOfMelee = () => {
+  let legendId = '';
   const run = record((simulation, centre) => {
-    kiterId = spawnWarrior(simulation, { x: centre.x - 12, y: centre.y });
+    legendId = spawnWarrior(simulation, { x: centre.x - 12, y: centre.y });
   });
-  return { ...run, kiterId };
+  return { ...run, legendId };
 };
 
 /** The distance between two entities; `NaN` when either is gone. */
@@ -532,12 +532,12 @@ describe('the Greater Boss entrance roar (scenario, reference 04)', () => {
 
 describe('the Greater Boss brain picks its move for the situation (scenario, DEC-371 E7, DEC-417)', () => {
   let crowded: Recording;
-  let kited: ReturnType<typeof kite>;
+  let outOfMeleeRun: ReturnType<typeof outOfMelee>;
   let punished: ReturnType<typeof punish>;
 
   beforeAll(() => {
     crowded = fight(1, 3);
-    kited = kite();
+    outOfMeleeRun = outOfMelee();
     punished = punish();
   }, 240_000);
 
@@ -546,9 +546,9 @@ describe('the Greater Boss brain picks its move for the situation (scenario, DEC
     expect(crowded.landed).not.toContain(BEAM.id);
   });
 
-  it('opens on a Legend that keeps its distance with the beam, aimed at it', () => {
-    expect(kited.landed[0]).toBe(BEAM.id);
-    expect(struckBy(kited, [BEAM.id])).toEqual(new Set([kited.kiterId]));
+  it('opens on a Legend out of melee range with the beam, aimed at it', () => {
+    expect(outOfMeleeRun.landed[0]).toBe(BEAM.id);
+    expect(struckBy(outOfMeleeRun, [BEAM.id])).toEqual(new Set([outOfMeleeRun.legendId]));
   });
 
   it('beams the top damage dealer, never the unit that stands nearer', () => {
