@@ -4,6 +4,7 @@ import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { ContentCatalogue } from './content/ContentCatalogue';
+import type { MapDefinition } from './content/maps/maps.types';
 import { loadDefaultContent } from './content/loadDefaultContent';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { Simulation } from './Simulation';
@@ -24,6 +25,7 @@ const match = (
   roster: readonly RosterSlot[],
   withMap = true,
   legendsPerTeam = createDefaultGameConfig().match.legendsPerTeam,
+  map: MapDefinition = TWO_LANE_MAP,
 ) =>
   new Simulation({
     config: createDefaultGameConfig({
@@ -32,7 +34,7 @@ const match = (
     seed: 1,
     logger: new MemoryLogger(),
     debug: TEST_DEBUG_CONFIG,
-    ...(withMap ? { map: TWO_LANE_MAP } : {}),
+    ...(withMap ? { map } : {}),
     roster,
   });
 
@@ -67,7 +69,14 @@ describe('Simulation with bot laners (minion plan M3)', () => {
   });
 
   it('hits the enemy structures on its lane once its horde reaches them (11 §4.2 Push)', () => {
-    const simulation = match(laners('light', 2));
+    // No cathedral: its neutral checkpoint defenders (M6b) sit on lane 0's bend. A bot they wound
+    // falls back below its difficulty's `retreatHealthFraction` and heals out of combat (DEC-188)
+    // up to `rejoinHealthFraction` before it returns, which takes longer than these 90 s.
+    const noCathedral: MapDefinition = {
+      ...TWO_LANE_MAP,
+      features: TWO_LANE_MAP.features.filter(({ kind }) => kind !== 'cathedral'),
+    };
+    const simulation = match(laners('light', 2), true, undefined, noCathedral);
     const structures = new Set(
       simulation
         .snapshot()
