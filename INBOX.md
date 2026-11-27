@@ -2856,7 +2856,7 @@ Reply inline (`Decision: …`).
     should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has
     no rosters" is a type fact. For doc-gardening: the folder table of architecture 02 has no row
     for `game/duel/` and `game/engine/net/`, which import `@eternalus/protocol` (#97).
-- [ ] **HC-B47 — #129 merge critic: the Cathedral gem could find its zone by the map feature, not
+- [x] **HC-B47 — #129 merge critic: the Cathedral gem could find its zone by the map feature, not
       by position (`refactor/map-feature-link`; DEC-139).** The player sees no change today. The
       gem glows in the colour of the team that holds the Cathedral. To find that team, the gem
       looks for the capture zone whose area covers the gem's position. After #129, the gem and
@@ -2867,6 +2867,9 @@ Reply inline (`Decision: …`).
       `MapFeatureLink`. Not built on #129, because the gem code is #132's. Build it in the next
       PR that changes the gem (the Duel gem follow-up, DEC-346), or keep the position test?
       Recommendation: build it then; it is the identity rule of DEC-231.
+  - Answered 2026-11-27 (Owner Calls page v103, DEC-403): "A: build it in the next gem PR
+    (recommended)". Not built yet: the next PR that changes the gem (the Duel gem follow-up,
+    DEC-346) matches the zone by its `MapFeatureLink`.
 - [x] **HC-Q60 — GL-16 critic round 5: one better-than-design item (`refactor/map-feature-link`;
       DEC-139).** The critic approved the DEC-255 build. `FeatureKeyedGroup` lived in the
       invariant's companion file, so the client depended on a diagnostic, not on the snapshot
@@ -3548,11 +3551,19 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   (`feat/legend-jump`, PR #183): you chose A. The second of PR #183 and PR #136 to merge builds
   the one shared path. Decision: DEC-420.
 
+- 2026-11-27 — **Your answer on HC-B58: the corner boss levels (DEC-402)**
+  (`fix/corner-boss-levels`): "A: the corner boss levels, like the other neutral mobs". The
+  `corner-camp` guard plan now has `canLevel: true`, so the corner boss gains veteran levels from
+  its kills of minions, guards and camp mobs, as the other neutral mobs do. This changes (d) of
+  DEC-376 (next entry). Design doc changed: architecture 18 (the minion XP rules and the M6c
+  paragraph). Decision: DEC-402.
+
 - 2026-11-26 — **Minion M6c interpretations approved as built (DEC-376)**
   (`feat/minion-m6c-defender-followups`, PR #173): you approved (a) to (g) as built (the 10 m from
   where the last defender fell, the damage-biased share with an even split when Legends dealt
   none, the clearing team by the last killer, no corner-boss levelling, `rallied` for levelling
   guards, no XP for a set emptied by cancels, and the owner-change pass rule). Decision: DEC-376.
+  (d) is changed by DEC-402 (2026-11-27): the corner boss levels.
 
 - 2026-11-26 — **Camp rewards: the clearing Legend is the last killer; the three critic refactors
   are dropped (DEC-375)** (`feat/camp-rewards`, PR #153): you chose "as built" for who gets the
