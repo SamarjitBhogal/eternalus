@@ -3,11 +3,21 @@ import { ContentCatalogue } from '../ContentCatalogue';
 import { ContentValidationError } from '../ContentValidationError';
 import { stepInTicks, timeProblems } from '../timesInTicks';
 import { STATUS_EFFECTS } from './statusEffectCatalogue';
-import type { AuthoredStatusEffect, StatusEffectDefinition } from './statusEffects.types';
+import type {
+  AuthoredStatusEffect,
+  StatusEffectDefinition,
+  StatusStat,
+} from './statusEffects.types';
 
 const KEBAB_ID = /^[a-z]+(-[a-z]+)*$/;
 
 const isPositive = (value: number): boolean => value > 0 && Number.isFinite(value);
+
+/**
+ * The stats whose reader passes the holder's health to `StatusEffects.multiplier`
+ * (`StatusModifierStep`), so the only ones a `byLostHealth` modifier may scale.
+ */
+const HEALTH_SCALED_STATS: ReadonlySet<StatusStat> = new Set(['damageDealt', 'damageTaken']);
 
 /** What is wrong with `status` before (times) and after (caps) loading, or nothing. */
 const problemsOf = (authored: AuthoredStatusEffect, status: StatusEffectDefinition): string[] => {
@@ -32,6 +42,15 @@ const problemsOf = (authored: AuthoredStatusEffect, status: StatusEffectDefiniti
     problems.push('refresh needs maxStacks 1');
   if (status.modifiers.some(({ value }) => !isPositive(value))) {
     problems.push('modifier values must be positive');
+  }
+  for (const { stat, byLostHealth } of status.modifiers) {
+    if (byLostHealth === undefined) continue;
+    if (!HEALTH_SCALED_STATS.has(stat)) {
+      problems.push(`byLostHealth on "${stat}" has no reader that knows the health`);
+    }
+    if (!(byLostHealth.fullAt >= 0 && byLostHealth.fullAt < 1)) {
+      problems.push('byLostHealth fullAt must be at least 0 and below 1');
+    }
   }
   if (status.periodic?.effects.length === 0) problems.push('periodic needs at least one effect');
   problems.push(...timeProblems(authored.onHit ?? [], 'onHit'));

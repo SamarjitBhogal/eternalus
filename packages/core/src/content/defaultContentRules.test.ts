@@ -19,6 +19,8 @@ import { KnownProjectileRule } from './validation/KnownProjectileRule';
 import { KnownSpecWeaponRule } from './validation/KnownSpecWeaponRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
+import { MomentumWalkSpeedRule } from './validation/MomentumWalkSpeedRule';
+import { PassiveInOptionsRule } from './validation/PassiveInOptionsRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
@@ -33,6 +35,7 @@ describe('createDefaultContentRules', () => {
     expect(rules.map((rule) => rule.constructor)).toEqual([
       KebabCaseIdRule,
       PositiveStatsRule,
+      MomentumWalkSpeedRule,
       PositiveAetherRule,
       KnownLevelCurveRule,
       LevelScalingRule,
@@ -41,6 +44,7 @@ describe('createDefaultContentRules', () => {
       KnownProjectileRule,
       KnownAbilityRefsRule,
       KitInPoolRule,
+      PassiveInOptionsRule,
     ]);
   });
 
@@ -85,6 +89,7 @@ describe('createLegendSpecRules', () => {
       RoleRatingRangeRule,
       KnownAbilityRefsRule,
       KitInPoolRule,
+      PassiveInOptionsRule,
       KnownSpecWeaponRule,
       SpecWeaponAllowedRule,
     ]);

@@ -350,6 +350,24 @@ describe('RespawnSystem', () => {
     expect(bar.castsInProgress).toEqual([]);
   });
 
+  it('returns with its passive due again, so AbilitySystem puts it back on (05 §7, DEC-330)', () => {
+    const match = setUp();
+    // Every Sentinel has a passive from its class (DEC-307), so no spec source is needed.
+    const legend = match.factory.create('sentinel', 'sentinel', {
+      position: { x: 100, y: 10 },
+      team: 'dark',
+    });
+    match.state.entities.add(legend);
+    const bar = legend.getComponent(Abilities);
+    expect(bar.takeDuePassive()).toBe('wrecking-run'); // in place of AbilitySystem's spawn pass
+    kill(match, legend.id);
+
+    for (let tick = 0; tick <= DELAY; tick += 1) match.step();
+
+    expect(match.state.entities.has(legend.id)).toBe(true);
+    expect(bar.isPassiveDue).toBe(true);
+  });
+
   it("forgets the last enemy hit of the Legend's earlier life, so that hit earns no gem kill (DEC-346)", () => {
     const match = setUp();
     const legend = addLegend(match);

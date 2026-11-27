@@ -4,7 +4,7 @@ description: The art theme and its references, the MVP art level, the Light and 
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-23
 tags: [reference, game-design, art, lore, naming]
 related:
   - 'docs/reference/suggestions/naming.md'
@@ -89,7 +89,7 @@ tracked in `12-open-questions.md`.
 | Enchantment (rename pending)                               | Form change (post-MVP)                      | open                                                                                                                               |
 | Titan                                                      | Central boss                                | **removed**; replaced by Eternal (rename pending)                                                                                  |
 | Eternal (rename pending)                                   | Central boss and the final-hit form         | open (the same word is used for both)                                                                                              |
-| Studious (name pending)                                    | Magus passive                               | open                                                                                                                               |
+| Erudition (was Studious)                                   | Magus passive                               | decided (DEC-330)                                                                                                                  |
 | Death Ray (working title)                                  | Magus ultimate                              | open                                                                                                                               |
 | The bow (unnamed)                                          | Named weapon                                | open                                                                                                                               |
 | Second Sentinel artifact (TBD)                             | Artifact                                    | open                                                                                                                               |

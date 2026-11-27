@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ContentValidationError } from '../ContentValidationError';
 import { BLADE_RUNNER } from './bladeRunner';
+import { ERUDITION } from './erudition';
 import { FURY } from './fury';
 import { loadAbilities } from './loadAbilities';
 import { SHOCKWAVE } from './shockwave';
@@ -169,5 +170,17 @@ describe('loadAbilities', () => {
       .get('in-order')
       .effects.map((step) => ('delayTicks' in step ? step.delayTicks : 'none'));
     expect(delays).toEqual(['none', 15, 15]);
+  });
+
+  it('rejects a passive that costs aether or has a cooldown: it is never cast', () => {
+    const passive = ERUDITION;
+
+    expect(() => loadAbilities(30, [passive])).not.toThrow();
+    expect(() => loadAbilities(30, [{ ...passive, aetherCost: 5 }])).toThrow(
+      /Ability "erudition": a passive costs no aether and has no cooldown/,
+    );
+    expect(() => loadAbilities(30, [{ ...passive, cooldownSeconds: 2 }])).toThrow(
+      /Ability "erudition": a passive costs no aether and has no cooldown/,
+    );
   });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { StatusEffects } from '../../components/StatusEffects';
+import { loadStatusEffects } from '../../content/status-effects/loadStatusEffects';
 import { STATUS_EFFECTS } from '../../content/status-effects/statusEffectCatalogue';
 import type { GameEventMap } from '../../state/GameEvents.types';
 import { casterState } from '../__fixtures__/casterState';
@@ -71,5 +72,46 @@ describe('DebuffEffect', () => {
     expect(new DebuffEffect(STATUS_EFFECTS).describe(stun)).toEqual([
       { kind: 'debuff', shape: AREA },
     ]);
+  });
+
+  describe('with Erudition on the caster (abilityDuration x1.2)', () => {
+    const withErudition = () => {
+      const context = setUp();
+      context.caster
+        .getComponent(StatusEffects)
+        .apply(loadStatusEffects(30, 2).get('erudition'), null, 0);
+      return context;
+    };
+
+    it('stretches a step’s duration override: 90 ticks last 108', () => {
+      const { state, caster, at, expiryOf } = withErudition();
+      const enemy = at(2, 'dark');
+
+      castSteps(state, caster.id, [
+        { kind: 'debuff', statusId: 'stun', durationTicks: 90, shape: AREA },
+      ]);
+
+      expect(expiryOf(enemy, 'stun')).toBe(state.tick + 108);
+    });
+
+    it('stretches the status’s own duration when the step has no override: 90 ticks last 108', () => {
+      const { state, caster, at, expiryOf } = withErudition();
+      const enemy = at(2, 'dark');
+
+      castSteps(state, caster.id, [{ kind: 'debuff', statusId: 'concussion', shape: AREA }]);
+
+      expect(expiryOf(enemy, 'concussion')).toBe(state.tick + 108);
+    });
+
+    it('leaves the duration alone for a caster without it', () => {
+      const { state, caster, at, expiryOf } = setUp();
+      const enemy = at(2, 'dark');
+
+      castSteps(state, caster.id, [
+        { kind: 'debuff', statusId: 'stun', durationTicks: 90, shape: AREA },
+      ]);
+
+      expect(expiryOf(enemy, 'stun')).toBe(state.tick + 90);
+    });
   });
 });

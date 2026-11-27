@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ContentValidationError } from '../ContentValidationError';
+import type { StatusStat } from './statusEffects.types';
 import { FURY } from './fury';
 import { STUN } from './stun';
 import { loadStatusEffects } from './loadStatusEffects';
@@ -78,6 +79,41 @@ describe('loadStatusEffects', () => {
     expect(() => loadStatusEffects(30, 2, broken)).toThrow(ContentValidationError);
     expect(() => loadStatusEffects(30, 2, broken)).toThrow(
       /"Bad_Id": id must be kebab-case[\s\S]*"Bad_Id": refresh needs maxStacks 1[\s\S]*"frozen": modifier values must be positive[\s\S]*"instant": durationSeconds must be positive[\s\S]*"drip": everySeconds must be positive[\s\S]*"drip": periodic amounts must be positive[\s\S]*"daze": onExpire names unknown status "dizzy"[\s\S]*"sapping": debuff durationSeconds must not be negative/,
+    );
+  });
+
+  describe('byLostHealth', () => {
+    const withModifier = (stat: StatusStat, fullAt: number) =>
+      [
+        {
+          ...STUN,
+          id: 'scaled',
+          onExpire: [],
+          modifiers: [{ stat, op: 'mul', value: 1.3, byLostHealth: { fullAt } }],
+        },
+      ] as const;
+
+    it('is accepted on damageDealt, with fullAt 0', () => {
+      const loaded = loadStatusEffects(30, 2, withModifier('damageDealt', 0));
+
+      expect(loaded.get('scaled').modifiers).toEqual([
+        { stat: 'damageDealt', op: 'mul', value: 1.3, byLostHealth: { fullAt: 0 } },
+      ]);
+    });
+
+    it('is rejected on a stat other than damageDealt and damageTaken', () => {
+      expect(() => loadStatusEffects(30, 2, withModifier('moveSpeed', 0.15))).toThrow(
+        /"scaled": byLostHealth/,
+      );
+    });
+
+    it.each([1, -0.1])(
+      'is rejected with fullAt %s, outside 0 up to (not including) 1',
+      (fullAt) => {
+        expect(() => loadStatusEffects(30, 2, withModifier('damageDealt', fullAt))).toThrow(
+          /"scaled": .*fullAt/,
+        );
+      },
     );
   });
 });

@@ -16,9 +16,10 @@ import type { System, SystemContext } from './System.types';
  * damage over time cannot kill a Legend the tick after and a push cannot slide it off its start
  * point. Each status ends first through the match's `StatusEffectApplier`, oldest first, so each
  * one emits `status-expired` and an ability it granted leaves the `granted` slot with it (Fury's
- * dash). Both Legends' abilities but their ultimates are then ready (FR-117, DEC-411 (1)); both
- * keep their ultimate meters (DEC-295 (1)). It runs before `DeathSystem`, so the dead Legend is
- * healed before it would be removed.
+ * dash). A passive's status goes too, and the passive is due again, so `AbilitySystem` puts it
+ * back on the next tick, before any combat (05 §7). Both Legends' abilities but their ultimates
+ * are then ready (FR-117, DEC-411 (1)); both keep their ultimate meters (DEC-295 (1)). It runs
+ * before `DeathSystem`, so the dead Legend is healed before it would be removed.
  */
 export class DuelRoundSystem implements System {
   public readonly name = 'duel-round';

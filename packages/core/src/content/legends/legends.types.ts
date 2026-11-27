@@ -85,6 +85,12 @@ export type LegendDefinition = UnitDefinition & {
   readonly defaultKit: AbilityKit;
   /** The passives this class may choose from; empty when it has none. */
   readonly passiveOptions: readonly PassiveId[];
+  /**
+   * The passive a Legend of this class has unless its spec names its own
+   * (`LegendSpecDefinition.passiveId`; `passiveOf`), or `null` for none. One of `passiveOptions`
+   * (`PassiveInOptionsRule`).
+   */
+  readonly defaultPassiveId: PassiveId | null;
   /** The always-available action, or `null` when the class has none. */
   readonly defaultAction: DefaultActionId | null;
   /** Reference height in metres, for art and hit-box tuning (not used by physics). */

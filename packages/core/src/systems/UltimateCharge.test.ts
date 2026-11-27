@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { casterState } from '../abilities/__fixtures__/casterState';
 import { Abilities } from '../components/Abilities';
 import { Health } from '../components/Health';
+import { StatusEffects } from '../components/StatusEffects';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import type { UltimateChargeDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
 import type { GameEventMap } from '../state/GameEvents.types';
@@ -285,5 +287,53 @@ describe('UltimateCharge', () => {
 
     expect(chargeOf(legend)).toBe(0);
     expect(announced()).toEqual([]);
+  });
+
+  describe('with Erudition (ultimateGain x1.25, DEC-330)', () => {
+    const erudite = (legend: Entity) => {
+      legend.getComponent(StatusEffects).apply(loadStatusEffects(30, 2).get('erudition'), null, 0);
+    };
+
+    it('pays 1.25 times the points for a Legend kill', () => {
+      const { legend, spawn, chargeOf, kill, announced, pay } = setUp();
+      erudite(legend);
+
+      kill(legend, spawn('warrior', 'warrior', 'dark'));
+      pay();
+
+      expect(chargeOf(legend)).toBeCloseTo(0.25 * 1.25);
+      expect(announced()[0]?.amount).toBeCloseTo(0.25 * 1.25);
+    });
+
+    it('pays 1.25 times the points for an assist', () => {
+      const { state, legend, chargeOf, pay } = setUp();
+      erudite(legend);
+
+      state.events.emit('assist-earned', { legendId: legend.id, victimId: 'entity-gone' });
+      pay();
+
+      expect(chargeOf(legend)).toBeCloseTo(0.12 * 1.25);
+    });
+
+    it('takes the death loss unchanged', () => {
+      const { legend, meterOf, chargeOf, kill, pay } = setUp();
+      erudite(legend);
+      const meter = meterOf(legend);
+      if (meter !== undefined) meter.charge = 0.5;
+
+      kill(null, legend);
+      pay();
+
+      expect(chargeOf(legend)).toBeCloseTo(0.5 - 0.15);
+    });
+
+    it('pays an ordinary Legend the plain points', () => {
+      const { state, legend, chargeOf, pay } = setUp();
+
+      state.events.emit('assist-earned', { legendId: legend.id, victimId: 'entity-gone' });
+      pay();
+
+      expect(chargeOf(legend)).toBeCloseTo(0.12);
+    });
   });
 });

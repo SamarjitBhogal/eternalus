@@ -8,10 +8,11 @@ import { mustBePositive, mustNotBeNegative } from '../specChecks';
 /**
  * Damages every enemy in the step's shape through the match's one `DamagePipeline` (architecture
  * 05 §3). The hit is the content `amount` grown by the caster's level (`CastContext.scaled`, by
- * the ability's `scaling.amount.perLevel`), times the step's `structureMultiplier` against
- * anything that is not a unit: structures, obstacles and map objects (`balancing.md` "Structure
- * damage multipliers", DEC-209 (1)). Friendly fire, breakability and status modifiers stay the
- * pipeline's steps.
+ * the ability's `scaling.amount.perLevel`) and by its statuses' ability potency
+ * (`CastContext.potency`, Erudition), times the step's `structureMultiplier` against anything that
+ * is not a unit: structures, obstacles and map objects (`balancing.md` "Structure damage
+ * multipliers", DEC-209 (1)). Friendly fire, breakability and status modifiers stay the pipeline's
+ * steps.
  */
 export class DamageEffect implements AbilityEffect<DamageSpec> {
   public readonly kind = 'damage';
@@ -32,7 +33,7 @@ export class DamageEffect implements AbilityEffect<DamageSpec> {
   /** Deals the step's damage to every enemy in its shape, in id order. */
   public apply(spec: DamageSpec, cast: CastContext): void {
     const { state } = cast;
-    const amount = cast.scaled('amount', spec.amount);
+    const amount = cast.scaled('amount', spec.amount) * cast.potency;
     const source: DamageSource = {
       attackerId: cast.casterId,
       kind: 'ability',

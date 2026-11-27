@@ -8,6 +8,7 @@ import {
   testAbilityRegistry,
 } from '../abilities/__fixtures__/fakeAbilities';
 import { CastValidator } from '../abilities/CastValidator';
+import { createDefaultAbilityRegistry } from '../abilities/defaultAbilityRegistry';
 import { TargetQuery } from '../abilities/TargetQuery';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
@@ -16,6 +17,7 @@ import { Aether } from '../components/Aether';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
+import { loadAbilities } from '../content/abilities/loadAbilities';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { NullLogger } from '../diagnostics/NullLogger';
@@ -232,5 +234,74 @@ describe('AbilitySystem', () => {
 
     expect(log.map(({ spec }) => spec.kind)).toEqual(['fake-strike']);
     expect(bar.castsInProgress).toEqual([]);
+  });
+  it('gives a cast the ability stats its caster holds when the steps fire (Erudition, DEC-337)', () => {
+    const { state, caster, log, run } = setUp();
+    const statuses = caster.getComponent(StatusEffects);
+    statuses.apply(STATUSES.get('erudition'), null, 0);
+    caster.getComponent(Abilities).slot('ability-1')?.queue(AIM);
+
+    run();
+    log[0]?.cast.applyStatus(caster.id, { statusId: 'stun', durationTicks: 90 });
+
+    expect(log[0]?.cast.potency).toBeCloseTo(1.1);
+    const stun = statuses.active.find(({ definition }) => definition.id === 'stun');
+    expect(stun?.expiresTick).toBe(state.tick + 108);
+  });
+
+  it('reads the ability stats again on the tick a later step fires (DEC-337 (7))', () => {
+    const { caster, log, run, next } = setUp();
+    caster.getComponent(Abilities).slot('ability-3')?.queue(AIM);
+    run();
+    caster.getComponent(StatusEffects).apply(STATUSES.get('erudition'), null, 1);
+    next();
+    next();
+    next();
+
+    expect(log.map(({ spec }) => spec.kind)).toEqual(['fake-strike', 'fake-blast']);
+    expect(log[0]?.cast.potency).toBe(1);
+    expect(log[1]?.cast.potency).toBeCloseTo(1.1);
+  });
+
+  it('puts on each due passive in id order, with no price, no cooldown and no ability-cast', () => {
+    const { state, factory, caster } = casterState();
+    const registry = createDefaultAbilityRegistry(loadAbilities(30), 30);
+    const system = new AbilitySystem(
+      registry,
+      new CastValidator(registry),
+      new DamagePipeline(),
+      new StatusEffectApplier(STATUSES),
+      new TargetQuery(registry, new AreaHitQuery()),
+    );
+    const run = (): void => {
+      system.update({ state, logger: new NullLogger() });
+    };
+    const second = factory.create('warrior', 'warrior', { position: { x: 9, y: 9 }, team: 'dark' });
+    const third = factory.create('warrior', 'warrior', { position: { x: 1, y: 9 }, team: 'dark' });
+    state.entities.add(third); // the store holds them as 1, 3, 2
+    state.entities.add(second);
+    for (const entity of [caster, second, third]) {
+      entity.addComponent(new Abilities(TEST_KIT, 'erudition'));
+    }
+    const events: string[] = [];
+    state.events.on('ability-cast', ({ abilityId }) => events.push(abilityId));
+    const applied: string[] = [];
+    state.events.on('status-applied', ({ entityId, statusId }) =>
+      applied.push(`${entityId} ${statusId}`),
+    );
+    const before = caster.getComponent(Aether).current;
+
+    run();
+
+    expect(applied).toEqual(['entity-1 erudition', 'entity-2 erudition', 'entity-3 erudition']);
+    expect(events).toEqual([]);
+    expect(caster.getComponent(Aether).current).toBe(before);
+    const bar = caster.getComponent(Abilities);
+    expect(bar.isPassiveDue).toBe(false);
+    expect(bar.slots.every((slot) => slot.cooldownUntilTick === 0)).toBe(true);
+
+    run();
+
+    expect(applied).toHaveLength(3); // put on once, not every tick
   });
 });

@@ -29,6 +29,7 @@ export const WARRIOR = {
     ultimate: 'fury', // DEC-209 (2): key 4
   },
   passiveOptions: [],
+  defaultPassiveId: null, // the Vanguard has no passive (DISC-38)
   defaultAction: null,
   referenceHeight: 2.1, // TUNE: ~7 ft (Master Chief)
   footprintRadius: 0.5, // DEC-06

@@ -6,13 +6,14 @@ import { ABILITIES } from './abilityCatalogue';
 import type { AuthoredAbility, AuthoredEffectSpec } from './AbilityDefinition.types';
 import { loadAbilities } from './loadAbilities';
 
-/** Cost and cooldown of the eight abilities with no effects yet: balancing.md "Aether costs and cooldowns" (0 / 0 for an ultimate: the meter gates it). */
+/** Cost and cooldown of the abilities with no effects yet: balancing.md "Aether costs and cooldowns" (0 / 0 for an ultimate: the meter gates it; 0 / 0 for a passive: it is never cast). */
 const UNBUILT = {
   veil: { cooldownSeconds: 20, aetherCost: 40, slot: 'ability' },
   hamstring: { cooldownSeconds: 9, aetherCost: 25, slot: 'ability' },
   'rip-and-tear': { cooldownSeconds: 10, aetherCost: 30, slot: 'ability' },
   'shield-wall': { cooldownSeconds: 18, aetherCost: 40, slot: 'ability' },
   berserk: { cooldownSeconds: 0, aetherCost: 0, slot: 'ultimate' },
+  'wrecking-run': { cooldownSeconds: 0, aetherCost: 0, slot: 'passive' },
   sanctuary: { cooldownSeconds: 22, aetherCost: 60, slot: 'ability' },
   imbue: { cooldownSeconds: 20, aetherCost: 45, slot: 'ability' },
   'death-ray': { cooldownSeconds: 0, aetherCost: 0, slot: 'ultimate' },
@@ -22,7 +23,7 @@ const UNBUILT = {
 const BUILT_EFFECT_KINDS = ['damage', 'debuff', 'dash', 'knockback', 'buff'];
 
 describe('ABILITIES', () => {
-  it('lists the twelve kit abilities in class order, abilities before the ultimate, then what the ultimate grants', () => {
+  it('lists the twelve kit abilities in class order, abilities before the ultimate, then the passives, then what the ultimate grants', () => {
     expect(ABILITIES.ids).toEqual([
       'blade-runner',
       'veil',
@@ -33,10 +34,13 @@ describe('ABILITIES', () => {
       'rip-and-tear',
       'shield-wall',
       'berserk',
+      'wrecking-run',
       'shockwave',
       'sanctuary',
       'imbue',
       'death-ray',
+      'erudition',
+      'necromancy',
     ]);
   });
 
@@ -119,7 +123,7 @@ describe('ABILITIES', () => {
     expect(['blade-runner', 'slam', 'shockwave'].map(structureMultiplierOf)).toEqual([0.3, 2, 1]);
   });
 
-  it('prices the eight abilities not built yet from balancing.md and gives them no effects', () => {
+  it('prices the abilities not built yet from balancing.md and gives them no effects; Wrecking Run has none (its movement is the class momentum)', () => {
     const unbuilt = ABILITIES.all().filter((ability) => ability.effects.length === 0);
 
     expect(unbuilt.map((ability) => ability.id)).toEqual(Object.keys(UNBUILT));
@@ -151,14 +155,44 @@ describe('ABILITIES', () => {
     }
   });
 
-  it("puts every kit ability in its class's pool and every pool entry in the catalogue", () => {
-    for (const legend of LEGEND_CLASSES.all()) {
-      const ofClass = ABILITIES.all()
-        .filter((ability) => ability.classId === legend.id && ability.slot !== 'granted')
+  it("puts every kit ability in its class's pool, every passive in its passive options, and every entry of both in the catalogue", () => {
+    const idsOf = (classId: string, isPassive: boolean): string[] =>
+      ABILITIES.all()
+        .filter(
+          (ability) =>
+            ability.classId === classId &&
+            ability.slot !== 'granted' &&
+            (ability.slot === 'passive') === isPassive,
+        )
         .map((ability) => ability.id);
 
-      expect(legend.abilityPool).toEqual(ofClass);
+    for (const legend of LEGEND_CLASSES.all()) {
+      expect(legend.abilityPool).toEqual(idsOf(legend.id, false));
+      expect(legend.passiveOptions).toEqual(idsOf(legend.id, true));
     }
+  });
+
+  it('gives the Magus passives the numbers the owner chose (DEC-330) as permanent statuses put on at spawn', () => {
+    for (const id of ['erudition', 'necromancy']) {
+      expect(ABILITIES.get(id)).toMatchObject({
+        classId: 'magus',
+        slot: 'passive',
+        aetherCost: 0,
+        cooldownSeconds: 0,
+        targeting: { kind: 'self' },
+        effects: [{ kind: 'buff', statusId: id }],
+      });
+      expect(STATUS_EFFECTS.get(id)).toMatchObject({ durationSeconds: null, polarity: 'buff' });
+    }
+    expect(STATUS_EFFECTS.get('erudition').modifiers).toEqual([
+      { stat: 'abilityDuration', op: 'mul', value: 1.2 },
+      { stat: 'abilityPotency', op: 'mul', value: 1.1 },
+      { stat: 'ultimateGain', op: 'mul', value: 1.25 },
+    ]);
+    expect(STATUS_EFFECTS.get('necromancy').modifiers).toEqual([
+      { stat: 'damageDealt', op: 'mul', value: 1.3, byLostHealth: { fullAt: 0.15 } },
+      { stat: 'damageTaken', op: 'mul', value: 0.85, byLostHealth: { fullAt: 0.15 } },
+    ]);
   });
 
   it('leaves a granted ability out of every pool: only a status grants it (DEC-270)', () => {

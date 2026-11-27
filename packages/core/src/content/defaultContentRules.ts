@@ -30,6 +30,8 @@ import { KnownProjectileRule } from './validation/KnownProjectileRule';
 import { KnownSpecWeaponRule } from './validation/KnownSpecWeaponRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
+import { MomentumWalkSpeedRule } from './validation/MomentumWalkSpeedRule';
+import { PassiveInOptionsRule } from './validation/PassiveInOptionsRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
@@ -58,6 +60,7 @@ export const createDefaultContentRules = (
 ): readonly UnitDefinitionRule[] => [
   new KebabCaseIdRule(),
   new PositiveStatsRule(),
+  new MomentumWalkSpeedRule(),
   new PositiveAetherRule(),
   new KnownLevelCurveRule(curves),
   new LevelScalingRule(),
@@ -66,6 +69,7 @@ export const createDefaultContentRules = (
   new KnownProjectileRule(projectiles),
   new KnownAbilityRefsRule(abilities, legends),
   new KitInPoolRule(legends),
+  new PassiveInOptionsRule(legends),
 ];
 
 /**
@@ -86,6 +90,7 @@ export const createLegendSpecRules = (
   new RoleRatingRangeRule(),
   new KnownAbilityRefsRule(abilities, legends),
   new KitInPoolRule(legends),
+  new PassiveInOptionsRule(legends),
   new KnownSpecWeaponRule(weapons),
   new SpecWeaponAllowedRule(legends, weapons),
 ];

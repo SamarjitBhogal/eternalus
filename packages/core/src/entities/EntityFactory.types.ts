@@ -46,8 +46,9 @@ export type Placement = {
   /** The ground a zone covers, as polygons in world units (zones only, `ZoneArea`). */
   readonly area?: readonly Polygon[];
   /**
-   * The Legend spec whose kit and start weapon a Legend equips (`RosterSlot.specId`); absent = its
-   * class's.
+   * The Legend spec whose kit, passive and start weapon a Legend equips (`RosterSlot.specId`);
+   * absent = its class's `defaultKit`, `defaultPassiveId` (`passiveOf`, DEC-361) and default
+   * weapon.
    */
   readonly specId?: string;
 };

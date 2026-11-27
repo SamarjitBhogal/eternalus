@@ -19,9 +19,11 @@ type CastSource = Pick<Ability, 'id' | 'steps'> & {
 };
 
 /**
- * The facts of one cast, fixed when `AbilitySystem` (or `HitEffects`, on a hit) starts it: the
+ * The facts of one cast, fixed when `AbilitySystem` (or `HitEffects`, on a hit) builds it: the
  * fields of a `CastInProgress` (its aim, origin, level and tick) with the caster and the bound
- * ability in place of the ability's id and the step counter.
+ * ability in place of the ability's id and the step counter, and the two ability stats of the
+ * caster's statuses (Erudition, DEC-337). `AbilitySystem` reads them on each tick that steps fire;
+ * `HitEffects` gives 1 for both, because basic attacks do not change.
  */
 export type CastFacts = Omit<CastInProgress, 'abilityId' | 'nextStep'> & {
   readonly casterId: EntityId;
@@ -32,6 +34,10 @@ export type CastFacts = Omit<CastInProgress, 'abilityId' | 'nextStep'> & {
    * owner's enemies, not its allies.
    */
   readonly caster?: AreaAttacker;
+  /** What the cast's damage steps are multiplied by: the caster's `abilityPotency`. */
+  readonly potency: number;
+  /** What the durations of the statuses the cast applies are multiplied by: `abilityDuration`. */
+  readonly stretch: number;
 };
 
 /** What a cast's effects work with: the match's state, pipeline, applier and lookups. */

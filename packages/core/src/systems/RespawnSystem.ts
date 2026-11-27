@@ -20,14 +20,15 @@ import type { System, SystemContext } from './System.types';
  * every dead Legend of a playable team (the sovereign is not a Legend, so it never returns), which
  * `DeathSystem` then withdraws from the store without retiring it. Once `respawnTicks` have passed
  * it adds the same Legend object back at its team's Stronghold, facing the enemy Stronghold
- * (DEC-216 (6)), with full health and aether (DEC-295 (1)), no status effects, no movement and no
- * attack target; its id, level, XP, caps and loadout are its own, as it never left. Every ability
- * but the ultimate is ready (FR-117); the ultimate keeps its cooldown (FR-117) and charge
- * (DEC-295 (1)). A bot laner picks its lane again by the current threat (`assessLanes`,
- * DEC-295 (2)). It announces `entity-spawned` and `legend-respawned` (with the XP it is owed, which
- * `ProgressionSystem` pays, DEC-186). A match without a Stronghold for the team queues nothing: its
- * Legends stay gone. A returning Legend ignores every cap (DEC-295 (4)): each one waiting can take
- * its team one Unit over `limits.maxUnitsPerTeam`, and one Legend over `match.legendsPerTeam`.
+ * (DEC-216 (6)), with full health and aether (DEC-295 (1)), no status effects (its passive is due
+ * again, 05 §7), no movement and no attack target; its id, level, XP, caps and loadout are its own,
+ * as it never left. Every ability but the ultimate is ready (FR-117); the ultimate keeps its
+ * cooldown (FR-117) and charge (DEC-295 (1)). A bot laner picks its lane again by the current
+ * threat (`assessLanes`, DEC-295 (2)). It announces `entity-spawned` and `legend-respawned` (with
+ * the XP it is owed, which `ProgressionSystem` pays, DEC-186). A match without a Stronghold for the
+ * team queues nothing: its Legends stay gone. A returning Legend ignores every cap (DEC-295 (4)):
+ * each one waiting can take its team one Unit over `limits.maxUnitsPerTeam`, and one Legend over
+ * `match.legendsPerTeam`.
  */
 export class RespawnSystem implements System {
   public readonly name = 'respawn';

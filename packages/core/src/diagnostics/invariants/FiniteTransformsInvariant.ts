@@ -9,7 +9,8 @@ import { FACING_TOLERANCE } from './FiniteTransformsInvariant.constants';
 /**
  * `finite-transforms` (architecture 15 §3): every position and velocity is a finite vector, every
  * facing is a unit vector, and no velocity is longer than its top speed (`Movement.topSpeed`:
- * `maxSpeed` scaled by statuses).
+ * `maxSpeed` scaled by statuses; for a unit with momentum that slides down to a lower top, its
+ * speed before the tick, DEC-330).
  */
 export class FiniteTransformsInvariant implements Invariant {
   public readonly id = 'finite-transforms';

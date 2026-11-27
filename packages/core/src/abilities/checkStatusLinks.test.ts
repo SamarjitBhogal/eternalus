@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import type { AbilityDefinition } from '../content/abilities/AbilityDefinition.types';
 import { loadAbilities } from '../content/abilities/loadAbilities';
+import { ContentCatalogue } from '../content/ContentCatalogue';
 import { ContentValidationError } from '../content/ContentValidationError';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { testAbilityRegistry } from './__fixtures__/fakeAbilities';
@@ -43,6 +45,36 @@ describe('checkStatusLinks', () => {
     expect(() => {
       checkStatusLinks(registry, shortPush);
     }).toThrow('Status "fury" onHit: knockback distance must be positive.');
+  });
+
+  it('rejects a passive step that is not a buff, waits, has its own time, or puts on a status that ends', () => {
+    const abilities = loadAbilities(30);
+    const withNecromancy = (effects: AbilityDefinition['effects']) =>
+      createDefaultAbilityRegistry(
+        new ContentCatalogue([
+          ...abilities.all().filter(({ id }) => id !== 'necromancy'),
+          { ...abilities.get('necromancy'), effects },
+        ]),
+        30,
+      );
+    const check = (effects: AbilityDefinition['effects']) => () => {
+      checkStatusLinks(withNecromancy(effects), STATUSES.all());
+    };
+
+    expect(check([{ kind: 'buff', statusId: 'fury' }])).toThrow(
+      'Passive "necromancy" buffs "fury", which does not last until removed.',
+    );
+    expect(check([{ kind: 'buff', statusId: 'necromancy', durationTicks: 30 }])).toThrow(
+      'Passive "necromancy" gives "necromancy" a time of its own; a passive\'s buffs have none.',
+    );
+    expect(check([{ kind: 'buff', statusId: 'necromancy', delayTicks: 3 }])).toThrow(
+      'Passive "necromancy" buffs "necromancy" after a delay; a passive\'s steps run at once.',
+    );
+    expect(check([{ ...KNOCKBACK_ON_HIT, shape: { kind: 'circle', radius: 1 } }])).toThrow(
+      'Passive "necromancy" has a "knockback" step; a passive\'s steps are buffs.',
+    );
+    expect(check([{ kind: 'buff', statusId: 'necromancy' }])).not.toThrow();
+    expect(check([{ kind: 'buff', statusId: 'necromancy', delayTicks: 0 }])).not.toThrow();
   });
 
   it('names every problem of every status in one error', () => {

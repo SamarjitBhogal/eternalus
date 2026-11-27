@@ -13,10 +13,11 @@ import type { Vec2 } from '../utils/geometry.types';
  * (DEC-36): full health, no status effect and so no ability a status granted (the `granted` slot
  * empties: Fury's dash, DEC-270), no movement (a dash or knock-back under way ends too), no cast
  * step still to come (Fury's dash after its wind-up), no attack target, no last enemy hit (a hit
- * from an earlier life earns no gem kill, DEC-346), and back at `position`. Aether, ability
- * cooldowns, the ultimate meter, facing and the AI brain are the caller's concern. It removes the
- * statuses without events; a caller that must announce each end (`DuelRoundSystem`) ends them
- * through the match's `StatusEffectApplier` first.
+ * from an earlier life earns no gem kill, DEC-346), and back at `position`. The passive's status
+ * goes with the rest, so the passive is due again and `AbilitySystem` puts it back on the next
+ * tick (05 §7). Aether, ability cooldowns, the ultimate meter, facing and the AI brain are the
+ * caller's concern. It removes the statuses without events; a caller that must announce each end
+ * (`DuelRoundSystem`) ends them through the match's `StatusEffectApplier` first.
  */
 export class LegendReset {
   /** Resets `legend` in place and moves it to `position`. */
@@ -30,6 +31,7 @@ export class LegendReset {
     const abilities = legend.findComponent(Abilities);
     abilities?.slot('granted')?.hold(null);
     abilities?.endCasts();
+    abilities?.rearmPassive();
     const movement = legend.findComponent(Movement);
     movement?.stop();
     movement?.endPushes();

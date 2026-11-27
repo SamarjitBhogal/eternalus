@@ -20,4 +20,5 @@ export const CATALYST = {
   primaryWeaponId: 'magus-staff', // DEC-387; DEC-57
   detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
   kit: null, // the class default kit; no Legend has its own yet
+  passiveId: 'erudition', // DEC-330 (P1)
 } as const satisfies LegendSpecDefinition;

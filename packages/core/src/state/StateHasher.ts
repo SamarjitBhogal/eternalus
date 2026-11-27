@@ -210,6 +210,11 @@ export class StateHasher {
         ...movement.forcedPushes.flatMap(({ x, y, ticksLeft }) => [x, y, ticksLeft]),
       ]);
     }
+    // The walls a unit with momentum touched, which its next tick builds along (DEC-307): a field
+    // only while there are some, so every other entity hashes as before.
+    if (movement !== undefined && movement.wallNormals.length > 0) {
+      fields.push(['walls', ...movement.wallNormals.flatMap(({ x, y }) => [x, y])]);
+    }
     const collider = entity.findComponent(Collider);
     if (collider !== undefined) {
       // Only an unbreakable collider adds a field, so states without walls hash as before.
@@ -265,6 +270,11 @@ export class StateHasher {
           ...(abilityId === builtWith ? [] : [abilityId]),
         ]),
       ]);
+    }
+    // A passive adds a field only while it waits to be put on (from the spawn to the next
+    // `AbilitySystem` pass, and after a reset, `LegendReset`: a respawn or a Duel round).
+    if (entity.findComponent(Abilities)?.isPassiveDue === true) {
+      fields.push(['passive-due']);
     }
     // A cast with steps still to come (05 §4) adds a field only while one waits, so a match where
     // every step fired at its cast hashes as before.

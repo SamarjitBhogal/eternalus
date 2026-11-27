@@ -73,6 +73,24 @@ class Scout extends Entity {
   }
 }
 
+/** A unit with momentum (as the Sentinel's Wrecking Run, DEC-307), which keeps the walls it touched. */
+class Runner extends Entity {
+  public readonly kind = 'runner';
+  public readonly family = 'test';
+
+  protected installComponents(): void {
+    this.addComponent(new Transform({ x: 3, y: 4 }, 0.5));
+    this.addComponent(
+      new Movement({
+        maxSpeed: 2,
+        acceleration: 0.5,
+        mass: 1,
+        momentum: { walkSpeed: 1, rampDuration: 10, grip: 0.5 },
+      }),
+    );
+  }
+}
+
 class Bare extends Entity {
   public readonly kind = 'bare';
   public readonly family = 'test';
@@ -198,6 +216,29 @@ describe('StateHasher', () => {
     expect(new Set([empty, furyDash, leap]).size).toBe(3);
     // Empty again, the bar hashes as one never granted anything: the golden replays stay valid.
     expect(hasher.hash(state)).toBe(empty);
+  });
+
+  it('hashes a passive only while it is due (05 §7, DEC-330)', () => {
+    const kit = {
+      abilities: ['slam', 'rip-and-tear', 'shield-wall'],
+      ultimate: 'berserk',
+    } as const;
+    const { state: plain, soldier: none } = stateWithSoldier();
+    none.addComponent(new Abilities(kit));
+    const { state, soldier } = stateWithSoldier();
+    const bar = new Abilities(kit, 'necromancy');
+    soldier.addComponent(bar);
+    const without = hasher.hash(plain);
+
+    const due = hasher.hash(state);
+    bar.takeDuePassive();
+    const putOn = hasher.hash(state);
+    bar.rearmPassive();
+
+    expect(due).not.toBe(without);
+    // Put on, the bar hashes as one with no passive: the golden replays stay valid.
+    expect(putOn).toBe(without);
+    expect(hasher.hash(state)).toBe(due);
   });
 
   it('hashes a cast in progress only while one waits, then each of its fields (05 §4)', () => {
@@ -428,6 +469,24 @@ describe('StateHasher', () => {
     flight.light();
 
     expect(hasher.hash(state)).not.toBe(unlit);
+  });
+
+  it('hashes the walls a unit with momentum touched only while it has some, then each normal', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const runner = new Runner('entity-1', 'runner-definition');
+    runner.spawn({});
+    state.entities.add(runner);
+    const movement = runner.getComponent(Movement);
+    const before = hasher.hash(state);
+
+    movement.hitBlock([{ x: -1, y: 0 }]);
+    const walled = hasher.hash(state);
+    movement.hitBlock([{ x: 0, y: -1 }]);
+    const walledElsewhere = hasher.hash(state);
+    movement.hitBlock([]);
+
+    expect(new Set([before, walled, walledElsewhere]).size).toBe(3);
+    expect(hasher.hash(state)).toBe(before);
   });
 
   it('adds a speed limit only once one is set, so an entity without one hashes as before', () => {

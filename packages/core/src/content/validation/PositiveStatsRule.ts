@@ -5,10 +5,16 @@ import type { UnitDefinitionRule } from './ContentValidator.types';
 export class PositiveStatsRule implements UnitDefinitionRule {
   /** Flags each stat that is zero, negative, infinite or not a number. */
   public check(definition: UnitDefinition): readonly string[] {
+    const { momentum, ...movement } = definition.movementProfile;
     const stats = {
       baseHealth: definition.baseHealth,
       footprintRadius: definition.footprintRadius,
-      ...definition.movementProfile,
+      ...movement,
+      ...(momentum && {
+        'momentum.walkSpeed': momentum.walkSpeed,
+        'momentum.rampDuration': momentum.rampDuration,
+        'momentum.grip': momentum.grip,
+      }),
       ...(definition.attack && {
         'attack.damage': definition.attack.damage,
         'attack.reach': definition.attack.reach,

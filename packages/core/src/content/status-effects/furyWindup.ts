@@ -13,6 +13,7 @@ export const FURY_WINDUP = {
   polarity: 'buff',
   controlClass: 'none',
   durationSeconds: FURY_WINDUP_SECONDS,
+  hasFixedDuration: true, // it ends when the dash step fires (DEC-361)
   stacking: 'refresh',
   maxStacks: 1,
   modifiers: [],

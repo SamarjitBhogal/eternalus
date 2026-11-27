@@ -4,7 +4,7 @@ description: Themed name proposals for every placeholder in the game doc and the
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-23
 tags: [reference, suggestions, naming, content]
 paths: ['packages/core/src/content/**']
 related:
@@ -170,9 +170,11 @@ Spawns in the centre Cathedral, glows, explodes mid-game to summon the Eternal.
 
 ## Abilities, passives and gods
 
-### "Studious" (Magus passive; name pending) — MVP
+### "Studious" (Magus passive) — MVP
 
 Abilities last X% longer and are N% more potent; the ultimate fills faster.
+
+**Decided (DEC-330): Erudition**; id `erudition`. The display name is content: `displayName` in `packages/core/src/content/abilities/erudition.ts`. The options below are kept as the record of the proposal.
 
 | Option         | Why                                                                                        |
 | -------------- | ------------------------------------------------------------------------------------------ |
@@ -297,7 +299,7 @@ Code identifier stays `DeveloperMenu` (`apps/client/src/ui/hud/DeveloperMenu`).
 | Spawner tower                     | Garrison                                   | Barracks, Muster, Warcamp, Watchtower          | MVP         |
 | Capital's "summoner"              | Wellspring                                 | Altar, Font, Conclave                          | MVP         |
 | Cathedral gem                     | Godseed                                    | Eternal Shard, Heartgem, Ember of the Eternal  | MVP         |
-| Studious (passive)                | Erudition                                  | Attunement, Deep Lore, Litany, Scholar's Mind  | MVP         |
+| Studious (passive)                | decided (DEC-330): Erudition, in content   | Attunement, Deep Lore, Litany, Scholar's Mind  | MVP         |
 | Death Ray (ultimate)              | Judgement                                  | Unmaking, Requiem, Sunlance, Annihilation      | MVP         |
 | God invoked by Fury               | Aethon                                     | the Eternal, Vaerith, Solmund, Ithra, Kharos   | MVP         |
 | Unnamed bow                       | Ashveil                                    | Duskfang, Sunderer, Nightshard, Gloamstring    | MVP         |

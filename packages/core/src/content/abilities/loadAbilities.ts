@@ -30,6 +30,9 @@ const problemsOf = (ability: AuthoredAbilityWith<AuthoredStep>): string[] => {
   if (ability.slot === 'ultimate' && (ability.aetherCost !== 0 || ability.cooldownSeconds !== 0)) {
     problems.push('an ultimate costs no aether and has no cooldown (the meter gates it)');
   }
+  if (ability.slot === 'passive' && (ability.aetherCost !== 0 || ability.cooldownSeconds !== 0)) {
+    problems.push('a passive costs no aether and has no cooldown (it is never cast)');
+  }
   if (ability.effects.length > 0 && ability.targeting === null) {
     problems.push('an ability with effects needs targeting');
   }

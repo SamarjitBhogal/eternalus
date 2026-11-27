@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-26
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -55,9 +55,24 @@ Owner: _ (sim lane A). Week 7. Follows [04-entity-architecture.md](../architectu
       as a `MovementStrategy` flag). Owner: _. Test: a Sentinel reaches `maxSpeed` after the
       content-defined number of ticks and then satisfies Phase 2's sprint-through rule. Done
       when: the sprint-through dummy flag from Phase 2 is replaced by the Sentinel definition.
-- [ ] **Class passives as content** (`TUNE`: Sentinel "Wrecking Run", Magus "Studious" (name
-      pending) and "Necromancy") applied through `StatusEffects`/modifiers. Owner: _. Test: each
+- [ ] **Class passives as content** (`TUNE`: Sentinel "Wrecking Run", Magus "Erudition" (was
+      "Studious", DEC-330) and "Necromancy") applied through `StatusEffects`/modifiers. Owner: _. Test: each
       passive changes the documented stat. Done when: passives are entries, not subclasses.
+      **Status (2026-11-22, branch `feat/class-passives`, PR 8; DEC-307):** Wrecking Run's movement
+      is built as content: the Sentinel's `movementProfile.momentum` (a turn slides and loses
+      speed, a head-on hit stops it, it builds along a wall; 10 §12). The box stays unticked: the
+      rest of Wrecking Run (stun and self damage at full speed, barging through objects and
+      walls), Studious and Necromancy wait for the owner's answers on the PR 8 cards (DEC-307:
+      numbers on a page first).
+      **Status (2026-11-23, branch `feat/magus-passives`, PR 8 part 2; DEC-330):** Erudition and
+      Necromancy are built: each is a passive ability whose `buff` step puts on a permanent status
+      (05 §18, "Magus passives"). The sub-class sets the passive (`LegendSpecDefinition.passiveId`:
+      Heretic Necromancy, Catalyst and Oracle Erudition). Tests: each spec holds its passive's
+      status after the first tick, and a Duel round reset puts it back on. The box stays unticked
+      for the rest of Wrecking Run (above).
+      **Status (2026-11-26):** all PR 8 cards are answered (DEC-330, DEC-367). Erudition and
+      Necromancy are built on `feat/magus-passives` (DEC-330 (5)); a Wrecking Run hits PR builds
+      W3, W4 and DEC-367 and updates the docs that DEC-367 names. Owner of the hits PR: _.
 - [ ] **`LegendSpecDefinition` extension point** (D11: sub-classes as data-driven
       specializations; MVP since ADR 0018: the specs ship as display and setup data, and the phase
       that builds their gameplay is open, `INBOX.md` HC-Q17). Owner: _. Test: an empty spec is

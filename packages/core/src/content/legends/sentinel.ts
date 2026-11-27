@@ -3,8 +3,10 @@ import type { LegendDefinition } from './legends.types';
 /**
  * Sentinel: heavy and powerful; one of the highest top speeds but very slow acceleration.
  *
- * TUNE: health and movement are placeholders. Acceleration follows the game doc's "up to 1
- * minute of running straight to get to full speed". The radius is DEC-06.
+ * TUNE: health and movement are placeholders. Movement is Wrecking Run (DEC-307, DEC-330):
+ * momentum, so a turn slides and loses speed, a head-on hit stops it and it builds along a wall;
+ * the build-up follows the game doc's "up to 1 minute of running straight to get to full speed",
+ * shortened for the MVP map (balancing.md, "Sentinel wall sprint"). The radius is DEC-06.
  */
 export const SENTINEL = {
   id: 'sentinel',
@@ -27,15 +29,21 @@ export const SENTINEL = {
     abilities: ['slam', 'rip-and-tear', 'shield-wall'], // DEC-209 (2): keys 1-3, similar effects share a key
     ultimate: 'berserk', // DEC-209 (2): key 4
   },
-  passiveOptions: ['wrecking-run'],
+  passiveOptions: ['wrecking-run'], // its movement is `movementProfile.momentum` below; the stun, self damage and barging are not built (05 §7, 10 §12)
+  defaultPassiveId: 'wrecking-run', // every Sentinel (DEC-307, DEC-338 (5))
   defaultAction: null,
   referenceHeight: 4.6, // TUNE: ~15 ft (an elephant)
   footprintRadius: 1.25, // DEC-06
   visionRadius: 25, // TUNE:
   movementProfile: {
-    maxSpeed: 9, // TUNE: m/s
-    acceleration: 0.18, // TUNE: m/s², top speed after 50 s
+    maxSpeed: 9, // TUNE: m/s, balancing.md (sprint max)
+    acceleration: 3, // TUNE: m/s² up to walkSpeed, balancing.md (normal acceleration)
     mass: 6, // TUNE:
+    momentum: {
+      walkSpeed: 3.5, // TUNE: m/s, balancing.md (base speed); DEC-330 (W1): "Walk speed in about 1 s"
+      rampDuration: 20, // TUNE: s from walkSpeed to maxSpeed; DEC-330 (W1): "then build to 9 m/s over 20 s more"
+      grip: 8, // TUNE: m/s²; DEC-330 (W2): "a full reverse slides about 5 m in about 1.1 s"
+    },
   },
   defaultLoadout: { primaryWeaponId: 'wuuthrad' }, // TUNE: default weapon (05 §10 table) until the owner picks one (INBOX)
   levelCurveId: 'legend',

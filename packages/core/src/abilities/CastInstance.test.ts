@@ -4,6 +4,7 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { Combat } from '../components/Combat';
 import { Footprint } from '../components/Footprint';
+import { StatusEffects } from '../components/StatusEffects';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { AbilityDisplayStep } from '../content/loadDisplayContent';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
@@ -53,6 +54,8 @@ const timeline = () => {
       origin: { x: 0, y: 0 },
       casterLevel: 1,
       tick: 0,
+      potency: 1,
+      stretch: 1,
     },
     {
       state,
@@ -112,6 +115,8 @@ describe('CastInstance', () => {
         origin: { x: 0, y: 0 },
         casterLevel: 3,
         tick: 7,
+        potency: 1,
+        stretch: 1,
       },
       {
         state,
@@ -152,6 +157,8 @@ describe('CastInstance', () => {
         origin: { x: 0, y: 0 },
         casterLevel: 1,
         tick: 0,
+        potency: 1,
+        stretch: 1,
       },
       {
         state,
@@ -184,6 +191,8 @@ describe('CastInstance', () => {
         origin: { x: 0, y: 0 },
         casterLevel: 1,
         tick: 0,
+        potency: 1,
+        stretch: 1,
       },
       {
         state,
@@ -239,6 +248,104 @@ describe('CastInstance', () => {
       { x: 1, y: 0 },
       { x: 1, y: 0 },
     ]);
+  });
+
+  describe('the ability stats of the cast (Erudition, DEC-337)', () => {
+    /**
+     * The context a step sees in a cast with `potency` and `stretch`, and a second body that is
+     * not the caster.
+     */
+    const contextWith = (
+      potency: number,
+      stretch: number,
+    ): { readonly cast: CastContext | undefined; readonly otherId: string } => {
+      const { state, factory, caster } = casterState();
+      const other = factory.create('warrior', 'warrior', {
+        position: { x: 0, y: 1 },
+        team: 'dark',
+      });
+      state.entities.add(other);
+      const strike = new RecordingEffect('fake-strike');
+      const registry = testAbilityRegistry([strike]);
+      new CastInstance(
+        {
+          casterId: caster.id,
+          ability: registry.resolve('fake-strike'),
+          slot: 'ability-1',
+          aim: { point: { x: 4, y: 0 }, targetId: null },
+          origin: { x: 0, y: 0 },
+          casterLevel: 1,
+          tick: 0,
+          potency,
+          stretch,
+        },
+        {
+          state,
+          effects: registry,
+          targets: new TargetQuery(registry, new AreaHitQuery()),
+          damage: new DamagePipeline(),
+          statuses: new StatusEffectApplier(STATUSES),
+        },
+      ).run(AT_ORIGIN);
+      return { cast: strike.log[0]?.cast, otherId: other.id };
+    };
+
+    it('gives the steps the cast’s potency', () => {
+      expect(contextWith(1.1, 1).cast?.potency).toBeCloseTo(1.1);
+      expect(contextWith(1, 1).cast?.potency).toBe(1);
+    });
+
+    /**
+     * How many ticks `step`'s status lasts on a body that is not the caster when a step of a cast
+     * with `stretch` applies it (`CastContext.applyStatus`), and who it is credited to; `null`
+     * ticks for a status with no end.
+     */
+    const applied = (
+      stretch: number,
+      step: { readonly statusId: string; readonly durationTicks?: number },
+    ) => {
+      const { cast, otherId } = contextWith(1, stretch);
+      if (cast === undefined) throw new Error('the cast ran its step');
+      cast.applyStatus(otherId, step);
+      const runtime = cast.state.entities
+        .get(otherId)
+        ?.getComponent(StatusEffects)
+        .active.find(({ definition }) => definition.id === step.statusId);
+      if (runtime === undefined) throw new Error(`"${step.statusId}" was applied`);
+      const { expiresTick, sourceId } = runtime;
+      return {
+        ticks: expiresTick === null ? null : expiresTick - cast.state.tick,
+        isFromCaster: sourceId === cast.casterId,
+      };
+    };
+    const ticksOf = (stretch: number, step: Parameters<typeof applied>[1]) =>
+      applied(stretch, step).ticks;
+
+    it('stretches a step override by 1.2, rounded, and the status’s own duration when none is given', () => {
+      expect(ticksOf(1.2, { statusId: 'stun', durationTicks: 90 })).toBe(108);
+      expect(ticksOf(1.2, { statusId: 'stun', durationTicks: 15 })).toBe(18);
+      expect(ticksOf(1.2, { statusId: 'concussion' })).toBe(108);
+      expect(ticksOf(1.2, { statusId: 'stun', durationTicks: 8 })).toBe(10); // 9.6 rounds up
+    });
+
+    it('credits the status it applies to the caster', () => {
+      expect(applied(1, { statusId: 'stun' }).isFromCaster).toBe(true);
+    });
+
+    it('leaves a duration alone with stretch 1, and a permanent status without one', () => {
+      expect(ticksOf(1, { statusId: 'stun', durationTicks: 90 })).toBe(90);
+      expect(ticksOf(1, { statusId: 'concussion' })).toBe(90);
+      expect(ticksOf(1.2, { statusId: 'enraged' })).toBeNull();
+    });
+
+    it('keeps the time of a status with a fixed duration (Fury’s wind-up)', () => {
+      expect(ticksOf(1.2, { statusId: 'fury-windup' })).toBe(9);
+      expect(ticksOf(1.2, { statusId: 'fury-windup', durationTicks: 6 })).toBe(6);
+    });
+
+    it('never lets a stretched status last under one tick', () => {
+      expect(ticksOf(0.3, { statusId: 'stun', durationTicks: 1 })).toBe(1);
+    });
   });
 });
 

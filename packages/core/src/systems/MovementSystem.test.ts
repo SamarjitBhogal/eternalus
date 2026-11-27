@@ -7,6 +7,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import type { MapDefinition, MapPresentation } from '../content/maps/maps.types';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
+import { loadWeapons } from '../content/weapons/loadWeapons';
 import { MapObjectBuilder } from '../map/MapObjectBuilder';
 import { staticCollisionIndexOf } from '../map/staticCollisionIndexOf';
 import { NullLogger } from '../diagnostics/NullLogger';
@@ -195,6 +196,44 @@ describe('MovementSystem', () => {
     context.state.match.holdIdle(false);
     system.update(context);
     expect(transform.position.x).toBeGreaterThan(0);
+  });
+
+  it('slides a stunned Sentinel at top speed about 5 m to a stop, but the countdown hold stops it at once (DEC-330, F3)', () => {
+    const config = createDefaultGameConfig();
+    /** A Sentinel run east to its top speed: walk speed in about 1 s, then the 20 s ramp. */
+    const atTopSpeed = () => {
+      const context = { state: new GameState(config, 1), logger: new NullLogger() };
+      const sentinel = new EntityFactory(
+        createDefaultEntityRegistry(),
+        UNIT_DEFINITIONS,
+        undefined,
+        loadWeapons(config.tickRate),
+      ).create('sentinel', 'sentinel', { team: 'light', position: { x: 0, y: 0 } });
+      context.state.entities.add(sentinel);
+      const movement = sentinel.getComponent(Movement);
+      movement.steer({ x: 1, y: 0 });
+      for (let tick = 0; tick < 22 * config.tickRate; tick += 1)
+        new MovementSystem().update(context);
+      expect(movement.speed).toBe(movement.maxSpeed);
+      return { context, sentinel, movement };
+    };
+    const stunned = atTopSpeed();
+    const start = stunned.sentinel.getComponent(Transform).position.x;
+    stunned.sentinel
+      .getComponent(StatusEffects)
+      .apply(loadStatusEffects(config.tickRate, 2).get('stun'), null, stunned.context.state.tick);
+    let ticks = 0;
+    while (stunned.movement.speed > 0 && ticks < 10 * config.tickRate) {
+      new MovementSystem().update(stunned.context);
+      ticks += 1;
+    }
+    const held = atTopSpeed();
+    held.context.state.match.holdIdle(true);
+    new MovementSystem().update(held.context);
+
+    expect(stunned.sentinel.getComponent(Transform).position.x - start).toBeCloseTo(5, 0);
+    expect(ticks / config.tickRate).toBeCloseTo(1.1, 1);
+    expect(held.movement.speed).toBe(0);
   });
 
   it('adds forced motion to the walking step, and moves a stunned entity that cannot walk', () => {

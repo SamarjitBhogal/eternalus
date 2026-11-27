@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { STATUS_EFFECTS } from './statusEffectCatalogue';
 
 describe('STATUS_EFFECTS', () => {
-  it('holds the MVP set, the minion veterancy statuses, the knock-back statuses, Fury and its wind-up, the Cathedral gem’s, burn and sundered', () => {
+  it('holds the MVP set, the minion veterancy statuses, the knock-back statuses, Fury and its wind-up, the Cathedral gem’s, burn and sundered, the Magus passives', () => {
     expect(STATUS_EFFECTS.ids).toEqual([
       'bleed',
       'concussion',
@@ -22,6 +22,8 @@ describe('STATUS_EFFECTS', () => {
       'gem-burn',
       'burn',
       'sundered',
+      'erudition',
+      'necromancy',
     ]);
   });
 

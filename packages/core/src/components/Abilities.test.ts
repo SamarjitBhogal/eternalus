@@ -58,4 +58,30 @@ describe('Abilities', () => {
     ]);
     expect(bar.slot('ability-4')?.charge).toBe(0.4);
   });
+
+  describe('the passive (05 §7, DEC-338)', () => {
+    it('is due at once and given out once, then due again after a rearm', () => {
+      const bar = new Abilities(KIT, 'necromancy');
+
+      expect(bar.isPassiveDue).toBe(true);
+      expect(bar.takeDuePassive()).toBe('necromancy');
+      expect(bar.isPassiveDue).toBe(false);
+      expect(bar.takeDuePassive()).toBeNull();
+
+      bar.rearmPassive();
+
+      expect(bar.isPassiveDue).toBe(true);
+      expect(bar.takeDuePassive()).toBe('necromancy');
+    });
+
+    it('is never due for a Legend with no passive, even after a rearm', () => {
+      const bar = new Abilities(KIT);
+
+      expect(bar.passiveId).toBeNull();
+      expect(bar.isPassiveDue).toBe(false);
+      bar.rearmPassive();
+      expect(bar.isPassiveDue).toBe(false);
+      expect(bar.takeDuePassive()).toBeNull();
+    });
+  });
 });

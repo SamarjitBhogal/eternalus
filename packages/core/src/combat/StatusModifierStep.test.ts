@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { BLIND } from '../content/status-effects/blind';
 import { ENRAGED } from '../content/status-effects/enraged';
+import { NECROMANCY } from '../content/status-effects/necromancy';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import type { Entity } from '../entities/Entity';
@@ -17,6 +19,7 @@ const CONFIG = createDefaultGameConfig();
 const LOADED = loadStatusEffects(CONFIG.tickRate, 2, [
   ENRAGED,
   BLIND,
+  NECROMANCY,
   {
     ...BLIND,
     id: 'sundered',
@@ -81,5 +84,39 @@ describe('StatusModifierStep', () => {
 
     expect(adjust(attacker.id)).toBe(100);
     expect(adjust(attacker.id, 'ability')).toBe(100);
+  });
+
+  describe('Necromancy, scaled by the holder’s own health (DEC-330)', () => {
+    const wound = (entity: Entity, fraction: number) => {
+      const health = entity.getComponent(Health);
+      health.applyDamage(health.max * (1 - fraction));
+    };
+
+    it('raises an attacker’s damage by 30% at 15% health, and not at full health', () => {
+      const { attacker, give, adjust } = setUp();
+      give(attacker, 'necromancy');
+
+      expect(adjust(attacker.id)).toBe(100);
+      wound(attacker, 0.15);
+      expect(adjust(attacker.id)).toBeCloseTo(130);
+      expect(adjust(attacker.id, 'ability')).toBeCloseTo(130);
+    });
+
+    it('cuts the damage a target takes by 15% at 15% health, and not at full health', () => {
+      const { attacker, target, give, adjust } = setUp();
+      give(target, 'necromancy');
+
+      expect(adjust(attacker.id)).toBe(100);
+      wound(target, 0.15);
+      expect(adjust(attacker.id)).toBeCloseTo(85);
+    });
+
+    it('reads each side’s own health, not the other’s', () => {
+      const { attacker, target, give, adjust } = setUp();
+      give(attacker, 'necromancy');
+      wound(target, 0.15);
+
+      expect(adjust(attacker.id)).toBe(100);
+    });
   });
 });

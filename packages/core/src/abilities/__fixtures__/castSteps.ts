@@ -1,5 +1,6 @@
 import { DamagePipeline } from '../../combat/DamagePipeline';
 import { StatusEffectApplier } from '../../combat/StatusEffectApplier';
+import { StatusEffects } from '../../components/StatusEffects';
 import { Transform } from '../../components/Transform';
 import type { AbilityEffectSpec } from '../../content/abilities/AbilityDefinition.types';
 import { loadKnockback } from '../../content/abilities/loadKnockback';
@@ -10,6 +11,7 @@ import type { EntityId } from '../../state/EntityStore.types';
 import type { GameState } from '../../state/GameState';
 import type { Vec2 } from '../../utils/geometry.types';
 import { CastInstance } from '../CastInstance';
+import { castStatsOf } from '../castStatsOf';
 import { BuffEffect } from '../effects/BuffEffect';
 import { DamageEffect } from '../effects/DamageEffect';
 import { DashEffect } from '../effects/DashEffect';
@@ -32,8 +34,9 @@ type CastOptions = {
 
 /**
  * Casts a one-off ability made of `effects` for `casterId` at `state.tick`, as `AbilitySystem`
- * would after the checks: a real `CastInstance` with the five shipped effect strategies, the
- * shipped shapes, one `DamagePipeline` (`options.damage`) and one `StatusEffectApplier`.
+ * would after the checks, with the caster's ability stats (DEC-337): a real `CastInstance` with the
+ * five shipped effect strategies, the shipped shapes, one `DamagePipeline` (`options.damage`) and
+ * one `StatusEffectApplier`.
  */
 export const castSteps = (
   state: GameState,
@@ -62,6 +65,7 @@ export const castSteps = (
       origin,
       casterLevel: level,
       tick: state.tick,
+      ...castStatsOf(state.entities.get(casterId)?.findComponent(StatusEffects)),
     },
     {
       state,
