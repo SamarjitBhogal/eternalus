@@ -1081,6 +1081,27 @@ Reply inline (`Decision: …`).
     so a max-level Legend has about 4.9 times its level-1 health against the same damage, and a
     Duel kill takes about 2.5 to 3 times as long as before (the core Duel tests' fights went from
     4–8 s to 12–18 s). Is that the Duel pace you want, or should `killTarget` or damage change?
+  - 2026-11-25 (pre-PR critic on PR #142, better than the design): `DuelOptions` can carry the
+    flag, as the server already passes `DUEL_RULES.killTarget` there
+    (`apps/server/src/match/CoreDuelSimulationFactory.ts`). The replay setup then keeps it, so (3)
+    goes away, and `Simulation` no longer reads `DUEL_RULES` for it. To build in a follow-up to
+    PR #142 if the owner answers A or B on the Owner Calls card "PR142 (1) Duel max level".
+- [ ] **HC-B46 — Duel max-level start: two better-than-design items (critic on
+      `chore/duel-max-level-gate-followups`, 2026-11-26; owner sign-off asked).** Owner: sholtzman.
+      (1) Architecture 03 §4 says a listener that must change state defers the change to its own
+      system's pass. `ProgressionSystem` raises a Duel Legend in its `entity-spawned` listener, at
+      once (05 §18): the roster spawns in the `Simulation` constructor, before any pass, so a
+      deferred raise shows level-1 Legends on the first tick. Proposal: 03 §4 allows one
+      exception, a listener may finish the setup of the entity that `entity-spawned` names, and
+      its event table lists this listener. (2) Three Duel rules are read from live content, not
+      from the replay setup: `legendsStartAtMaxLevel`, `arena` and `startOffset`
+      (`Simulation.ts`). A retune then changes old Duel replays. Proposal: `DuelOptions` carries
+      the whole Duel rule set, which the server fills from `DUEL_RULES`, so every rule that
+      changes the simulation is in the replay setup, without one new field per rule. This covers
+      the `DuelOptions` note under DEC-36 above and claudiodh's item (9). Decision: …
+  - 2026-11-27: answered (DEC-406, Owner Calls v103). (1) A: 03 §4 now names the exception, and
+    its event table lists the listener (built in `chore/duel-max-level-gate-followups`). (2) A: a
+    follow-up PR builds the `DuelOptions` rule set. It is not built yet, so this item stays open.
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
       of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only
