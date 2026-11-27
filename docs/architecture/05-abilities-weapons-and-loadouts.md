@@ -584,7 +584,10 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 `combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The steps today are
 `BreakabilityStep` (first: an unbreakable wall or gate rejects the hit before any multiplier,
 which gives the same result as §9's late check; 07 §3), `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
-`INBOX.md`), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8), `MinionStrengthStep`
+`INBOX.md`), `BasicAttackLevelStep` (a Legend's `weapon` hit × its `Progression.potency` at its
+class's `basicAttackPerLevel`, or at the lower `basicAttackPerLevelOnStructures` when the target
+is a structure, §13, DEC-380 (2), DEC-405; an ability hit is scaled at cast instead, so it
+is not scaled twice), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8), `MinionStrengthStep`
 (the minion strength-by-distance curve, its base-stat point moved toward the enemy for each lane
 tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16; `createDefaultDamageSteps(progressOf)`
 injects the lane progress, the flow fields' path cost gate to gate (DEC-280), else the lane polyline
@@ -783,6 +786,7 @@ export type LevelScalingDefinition = {
   readonly healthPerLevel: number;
   readonly aetherPerLevel: number;
   readonly basicAttackPerLevel: number;
+  readonly basicAttackPerLevelOnStructures: number; // DEC-405, DEC-422: weapon and ability hits on structures
 }; // TUNE
 ```
 
@@ -792,7 +796,9 @@ export type LevelScalingDefinition = {
 `Recommendation:` balancing.md), emits `level-up { entityId, level }`, raises the `Health` base
 max and `Abilities.maxAether` by the class's `LevelScalingDefinition`, and applies the
 `UltimateChargeRule`s (§6). Ability potency is read at cast time (`CastContext.potency`), so
-`AbilitySystem` needs no listener. The **ability tree** (post-MVP, D12) is an extension point,
+`AbilitySystem` needs no listener. An ability hit on a structure grows at the class's
+`basicAttackPerLevelOnStructures`, or at its own rate when that is lower, the same middle rate
+as a weapon hit (DEC-422, DEC-405). The **ability tree** (post-MVP, D12) is an extension point,
 not a design: an `AbilityUpgradeDefinition` (`{ id, abilityId, tier, unlockLevel, patches }`) is
 applied by `AbilityRegistry.resolve` exactly like a variety, `Progression.upgradeIds` records the
 choice, and an `upgrade-ability` command carries the `near-structure` restriction from §5; "only
@@ -952,10 +958,19 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   home do not count). The bonus goes only to the Legend that killed the camp's last mob, and to
   nobody when a minion or turret lands that hit (DEC-375). The corner boss's capped XP and the
   corner camp's bonus together lift a Legend `maxLevels` levels at most; the bonus is paid uncapped,
-  so the content values keep this true and `xpSources.test.ts` guards it (DEC-423). Not built yet:
-  the share radius and damage bias, assists, checkpoint XP, the Eternal's flat 5 levels (DEC-237)
-  (their systems do not exist), basic-attack and ability potency per level, `upgradeIds` and the
-  ultimate charge rules. Numbers are
+  so the content values keep this true and `xpSources.test.ts` guards it (DEC-423). Checkpoint XP
+  is built (`CheckpointAwards`, 07 §7). Basic-attack potency is built (DEC-380 (2)):
+  `Progression.potency` and `BasicAttackLevelStep` (§9) multiply a Legend's weapon hit by
+  `1 + basicAttackPerLevel × (level − 1)`, read when the hit lands; a hit on a structure uses the
+  lower `basicAttackPerLevelOnStructures` (DEC-405). While walls, turrets, gates, forts and the
+  palace are map objects (07 §13), the step also counts a map object whose kind is in
+  `STRUCTURE_MAP_OBJECT_KINDS` (`content/maps/`) as a structure. A match mode can turn match XP
+  off (`ProgressionContent.hasMatchXp: false`, a Duel's rule, DEC-380 (1)): `ProgressionSystem`
+  then listens for no award (a cleared camp's and a checkpoint set's included), and the max-level
+  start still applies. Not built yet: the minion-kill share radius (balancing.md "XP sources"), assists,
+  the Eternal's flat 5 levels (DEC-237) (their systems do not exist), ability potency per level,
+  the structure rate for ability hits (DEC-422: a follow-up PR after `feat/ability-framework`
+  and this rate are both on phase/3), `upgradeIds` and the ultimate charge rules. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
   soak metric can change them) and live in `content/progression/`.
 - **Legend respawn (`fix/legend-respawn`, GL-12, DEC-295).** FR-051 and DEC-80, with the

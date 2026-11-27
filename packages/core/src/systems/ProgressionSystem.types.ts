@@ -19,6 +19,12 @@ export type ProgressionContent = {
    * each level (a Duel, `DUEL_RULES.legendsStartAtMaxLevel`, SCRUM-444). Mobs are untouched.
    */
   readonly legendsStartAtMaxLevel?: boolean;
+  /**
+   * When `false`, nothing earns match XP: no kill, destroyed structure, cleared camp, cleared
+   * checkpoint set or respawn pays any (a Duel, `DUEL_RULES.hasMatchXp`, DEC-380 (1)). Absent
+   * means XP is earned as normal.
+   */
+  readonly hasMatchXp?: boolean;
 };
 
 /** One kill waiting for this system's pass. */

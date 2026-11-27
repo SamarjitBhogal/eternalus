@@ -478,6 +478,9 @@ and rendering but release their collision footprints.
 
 The Structure family replaces this stand-in in Phase 2 sprint 2.1. Until then a side's map
 objects carry its team (`MapObject.team`), so only the other side can attack them (DEC-121 (a)).
+A Legend's weapon hit takes the structure level rate on a map object whose kind is in
+`STRUCTURE_MAP_OBJECT_KINDS` (DEC-405, 05 §18). Each entry there is dead data once a `structure`
+entity replaces that kind's map objects (`WallSegment` and `Turret`, 07 §1, are the planned ones).
 Blocking footprints already block the pathing grid and a destroyed one reopens its cells; the
 `terrain-changed` event follows in sprint 2.5. The game-loop integration uses `GameState.livingBuffTowerCount(team)`:
 only living `structure` / `buff-tower` entities with the owning team's membership count.

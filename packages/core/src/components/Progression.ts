@@ -45,6 +45,14 @@ export class Progression {
   }
 
   /**
+   * How much stronger this entity is at its level (05 §13): `1 + perLevel × (level − 1)`, so 1 at
+   * level 1. `perLevel` is a content scaling, e.g. `LevelScalingDefinition.basicAttackPerLevel`.
+   */
+  public potency(scaling: { readonly perLevel: number }): number {
+    return 1 + scaling.perLevel * (this.levelValue - 1);
+  }
+
+  /**
    * Where this entity stands inside its level on `curve` (05 §15, the HUD's XP ring): the XP earned
    * since the level began, and the XP that level needs to reach the next one, `null` at the cap.
    */

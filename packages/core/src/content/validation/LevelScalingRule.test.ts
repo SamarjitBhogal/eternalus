@@ -12,7 +12,12 @@ describe('LevelScalingRule', () => {
     expect(new LevelScalingRule().check(WARRIOR)).toEqual([]);
     const flat: LegendDefinition = {
       ...WARRIOR,
-      levelScaling: { healthPerLevel: 0, aetherPerLevel: 0 },
+      levelScaling: {
+        healthPerLevel: 0,
+        aetherPerLevel: 0,
+        basicAttackPerLevel: 0,
+        basicAttackPerLevelOnStructures: 0,
+      },
     };
     expect(new LevelScalingRule().check(flat)).toEqual([]);
     expect(new LevelScalingRule().check(TRAINING_DUMMY)).toEqual([]);
@@ -21,12 +26,39 @@ describe('LevelScalingRule', () => {
   it('flags negative or non-finite per-level scaling', () => {
     const broken: LegendDefinition = {
       ...WARRIOR,
-      levelScaling: { healthPerLevel: -0.08, aetherPerLevel: Number.NaN },
+      levelScaling: {
+        healthPerLevel: -0.08,
+        aetherPerLevel: Number.NaN,
+        basicAttackPerLevel: Number.POSITIVE_INFINITY,
+        basicAttackPerLevelOnStructures: -0.04,
+      },
     };
 
     expect(new LevelScalingRule().check(broken)).toEqual([
       'levelScaling.healthPerLevel must be a finite number of at least 0',
       'levelScaling.aetherPerLevel must be a finite number of at least 0',
+      'levelScaling.basicAttackPerLevel must be a finite number of at least 0',
+      'levelScaling.basicAttackPerLevelOnStructures must be a finite number of at least 0',
+    ]);
+  });
+
+  it('flags a structure rate above the unit rate, which is no middle ground (DEC-405)', () => {
+    const scaling = WARRIOR.levelScaling;
+    const equal: LegendDefinition = {
+      ...WARRIOR,
+      levelScaling: { ...scaling, basicAttackPerLevelOnStructures: scaling.basicAttackPerLevel },
+    };
+    const above: LegendDefinition = {
+      ...WARRIOR,
+      levelScaling: {
+        ...scaling,
+        basicAttackPerLevelOnStructures: scaling.basicAttackPerLevel * 2,
+      },
+    };
+
+    expect(new LevelScalingRule().check(equal)).toEqual([]);
+    expect(new LevelScalingRule().check(above)).toEqual([
+      'levelScaling.basicAttackPerLevelOnStructures must not exceed basicAttackPerLevel',
     ]);
   });
 });

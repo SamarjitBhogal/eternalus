@@ -105,6 +105,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     const damage = new DamagePipeline(
       createDefaultDamageSteps(
         DefaultSystemPipeline.laneProgressOf(flowFields, state.world?.routes ?? null),
+        progression.units,
       ),
       new KillCredit(assistWindowTicks, CATHEDRAL_GEM.statusIds),
     );

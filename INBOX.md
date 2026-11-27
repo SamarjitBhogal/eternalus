@@ -172,6 +172,39 @@ Reply inline (`Decision: …`).
       repository" (HTTP 403). Turn them on (repository settings, owner), or keep relying on a manual
       `npm audit`?
 
+- [ ] **HC-B49 move `DefinitionSource` to `content/` (`feat/legend-level-damage` critic round 2,
+      2026-11-26; better than the design, owner sign-off pending)** — `DefinitionSource` is the
+      port that looks up a definition by id. It lives in `entities/EntityFactory.types.ts`.
+      `entities/` and `systems/` use it. The level damage step in `combat/` needs the same lookup,
+      but architecture 02 §2 does not let `combat/` import `entities/`. So that branch types it as
+      `Pick<ContentCatalogue<EntityDefinitionBase>, 'has' | 'get'>`, the same shape under a second
+      name. Proposal: move `DefinitionSource` to `content/` (for example beside
+      `ContentCatalogue`), so every layer uses one name and no import rule changes. A later
+      `refactor(core)` PR; it touches files that branch does not. Decision: …
+- [ ] **HC-B59 one award-source list in `ProgressionSystem` (`feat/legend-level-damage` merge
+      critic, 2026-11-27; better than the design, owner sign-off pending)** — (1)
+      `ProgressionSystem.ts` has 346 lines (the limit is about 300). It buffers awards in two ways:
+      four inline listeners (kill, structure, camp, respawn) and `CheckpointAwards` (checkpoint
+      shares). It reads `hasMatchXp` twice, and its `checkpoints` field is nullable. Proposal: an
+      `AwardSource` port (`flush(state): Award[]`, the shape `CheckpointAwards` already has), one
+      implementation for each source, held in one list. A match with no match XP gets an empty
+      list, so the Duel gate is in one place. (2) Optional, low value:
+      `createDefaultDamageSteps(progressOf, units)` has two optional positional parameters, so a
+      caller that gives only `units` must give `null` first. An options object
+      (`{ progressOf?, units? }`) removes that. A later `refactor(core)` PR; no behaviour changes.
+      Decision: …
+- [ ] **HC-B63 one "is this a structure" rule for level damage and scoring
+      (`feat/legend-level-damage` DEC-405 critic, 2026-11-27; better than the design, owner
+      sign-off pending)** — The player sees no change today. (1) A high-level Legend's weapon hit
+      grows less on a structure (DEC-405). To know what is a structure, the code tests the target's
+      family, and for walls, turrets, gates and the palace (still map objects, 07 §13) a list of
+      map-object kinds. Proposal: each target's own definition says what share of the level
+      bonus it takes, as 07 §4 `damageMultipliers` do. Then walls and towers can be tuned apart,
+      and the step has no family test. Cost: a definition source for map-object targets in the
+      damage step. (2) The scoring rule for damage to structures (`defaultScoringRules.ts`,
+      `StructureHitRule`) tests only the `structure` family. So a hit on a wall or turret map
+      object scores no structure damage today. Proposal: one shared "is a structure target"
+      predicate for both. A later `refactor(core)` PR; (2) changes the scores. Decision: …
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
@@ -1000,6 +1033,32 @@ Reply inline (`Decision: …`).
     (`apps/server/src/match/CoreDuelSimulationFactory.ts`). The replay setup then keeps it, so (3)
     goes away, and `Simulation` no longer reads `DUEL_RULES` for it. To build in a follow-up to
     PR #142 if the owner answers A or B on the Owner Calls card "PR142 (1) Duel max level".
+  - 2026-11-26: (4) and (5) answered (DEC-380, Owner Calls v98 "PR142 (1)" and "(2)"). This also
+    answers 2026-11-12 (7). (4) A Duel earns no match XP (`DUEL_RULES.hasMatchXp: false`).
+    (5) Damage grows with level: a Legend's weapon hit by its class's `basicAttackPerLevel`, its
+    abilities by their own `perLevel`. Built in `feat/legend-level-damage`, except ability
+    scaling, which #136, #162 and #175 build (see the DEC-380 row). Three points for you: (a) 0.08 per level is the build's default,
+    not your number. It is the same as `healthPerLevel` (`TUNE`). Confirm it or give another.
+    (b) The scaled weapon hit lands on every target: Legends, mobs, structures, bosses, camps and
+    the Cathedral gem. A tower's, a boss's or the gem's health does not grow to match. So a level-10 Legend hits a tower
+    or a boss 1.72 times as hard as at level 1, and a level-50 Legend 4.92 times. Keep that, or
+    scale only hits on Legends? (Owner Calls card HC-Q119.) (c) Architecture 05 §13 is your design text. It does not name
+    `hasMatchXp` or say that a weapon hit reads the level when it lands. Only the §18 status note
+    says so. Add it to §13 if you want it in the design. Decision: …
+  - 2026-11-27: (b) answered (DEC-405, Owner Calls v103 HC-Q119): full rate on Legends, mobs and
+    bosses; a lower rate on structures (`basicAttackPerLevelOnStructures`, 0.04 per level, `TUNE`,
+    built in `feat/legend-level-damage`). (a) and (c) are still open.
+    A high-level Legend's weapon bonus is smaller against walls (the Cathedral's too), turrets,
+    gates, the palace and the 2 capture-point forts. Against trees, rocks, houses, furniture and
+    camp props it is full. This list is the build's reading of your "etc", not your words. Correct
+    it after playtests if an item is wrong: one `true` or `false` per item in
+    `content/maps/mapObjectDefinitions.ts` (DEC-405 row).
+  - 2026-11-27: HC-Q130 answered (DEC-422, Owner Calls v108): a Legend's ability hit on a tower,
+    gate or wall also grows at the lower structure rate (`basicAttackPerLevelOnStructures`,
+    `TUNE`). Not built yet: ability damage (`DamageEffect`) is in `feat/ability-framework`
+    (PR #123), and the structure rate is in `feat/legend-level-damage`. A small follow-up PR
+    builds it after both are on phase/3. Naming (your call): the field then covers ability hits
+    too, so that PR can rename it to `perLevelOnStructures`. Say if you want the new name.
 - [ ] **HC-B46 — Duel max-level start: two better-than-design items (critic on
       `chore/duel-max-level-gate-followups`, 2026-11-26; owner sign-off asked).** Owner: sholtzman.
       (1) Architecture 03 §4 says a listener that must change state defers the change to its own

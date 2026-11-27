@@ -48,4 +48,9 @@ export const DUEL_RULES = {
    * mob added from the developer menu keeps its normal level.
    */
   legendsStartAtMaxLevel: true,
+  /**
+   * A Duel earns no match XP: no kill, structure, camp, checkpoint or respawn award (DEC-380 (1)).
+   * Profile XP, once built, is apart from this.
+   */
+  hasMatchXp: false,
 } as const;

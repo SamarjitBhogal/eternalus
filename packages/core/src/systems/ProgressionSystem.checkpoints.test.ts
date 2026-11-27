@@ -29,8 +29,11 @@ const CENTER = { x: 100, y: 30 };
 const HALF = 10;
 const RULE = XP_SOURCES.checkpointCleared;
 
-/** A neutral capture point, the content's defenders and XP, and Legends placed by the test. */
-const setUp = () => {
+/**
+ * A neutral capture point, the content's defenders and XP, and Legends placed by the test. `rules`
+ * holds the match mode's progression rules (a Duel's `hasMatchXp: false`).
+ */
+const setUp = (rules: { readonly hasMatchXp?: boolean } = {}) => {
   const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
   const point = new CapturePoint('zone-1', CATHEDRAL_CAPTURE_POINT.id);
   point.spawn({
@@ -66,6 +69,7 @@ const setUp = () => {
     units,
     curves: LEVEL_CURVE_CATALOGUE,
     xpSources: XP_SOURCES,
+    ...rules,
   });
   const invariant = new LevelMatchesXpInvariant(LEVEL_CURVE_CATALOGUE);
   const violations: string[] = [];
@@ -174,6 +178,22 @@ describe('ProgressionSystem checkpoint XP through the guard roster (07 §7)', ()
     step();
 
     expect(awards).toEqual([]);
+    expect(state.defenderDamage.size).toBe(0);
+    expect(violations).toEqual([]);
+  });
+
+  it('pays no share and keeps no set damage when the match has no match XP (a Duel, DEC-380 (1))', () => {
+    const { state, step, legend, defend, hit, xpOf, awards, violations } = setUp({
+      hasMatchXp: false,
+    });
+    const solo = legend(CENTER.x);
+    for (const id of defend(1)) hit(solo, id);
+    step();
+    expect(state.defenderDamage.size).toBe(0);
+    step();
+
+    expect(awards).toEqual([]);
+    expect(xpOf(solo)).toBe(0);
     expect(state.defenderDamage.size).toBe(0);
     expect(violations).toEqual([]);
   });

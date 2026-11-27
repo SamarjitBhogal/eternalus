@@ -42,7 +42,13 @@ const XP_SOURCES = {
   checkpointCleared: { xp: { 1: 60 }, shareRadius: 10, evenShare: 0.6 },
 };
 
-const setUp = (legendsStartAtMaxLevel = false) => {
+/**
+ * `rules` holds the match mode's progression rules (a Duel's `hasMatchXp: false` and
+ * `legendsStartAtMaxLevel: true`).
+ */
+const setUp = (
+  rules: { readonly hasMatchXp?: boolean; readonly legendsStartAtMaxLevel?: boolean } = {},
+) => {
   const state = new GameState(CONFIG, 1);
   const ids = new IdGenerator();
   const factory = new EntityFactory(
@@ -61,7 +67,7 @@ const setUp = (legendsStartAtMaxLevel = false) => {
     units: UNITS,
     curves: CURVES,
     xpSources: XP_SOURCES,
-    ...(legendsStartAtMaxLevel ? { legendsStartAtMaxLevel } : {}),
+    ...rules,
   });
   const announceSpawn = (entity: Entity, team: Team) => {
     state.events.emit('entity-spawned', { entityId: entity.id, kind: entity.kind, team });
@@ -258,6 +264,28 @@ describe('ProgressionSystem', () => {
     };
 
     expect(hash()).toBe(hash());
+  });
+
+  it('pays no match XP for a kill, a structure, a camp or a respawn when the match has none (a Duel, DEC-380 (1))', () => {
+    const { state, spawn, kill, run, payloads, destroyStructure, clearCamp } = setUp({
+      hasMatchXp: false,
+    });
+    const warrior = spawn('warrior', 'warrior', 'light');
+
+    kill(warrior, spawn('light-mob', 'light-minion', 'dark'));
+    kill(warrior, spawn('magus', 'magus', 'dark'));
+    destroyStructure('dark');
+    clearCamp(warrior);
+    state.events.emit('legend-respawned', {
+      entityId: warrior.id,
+      team: 'light',
+      position: { x: 0, y: 0 },
+      owedXp: [{ cause: 'kill', victimId: 'entity-gone', victimTeam: 'dark', xp: 300 }],
+    });
+    run();
+
+    expect(warrior.getComponent(Progression)).toMatchObject({ xp: 0, level: 1 });
+    expect(payloads('xp-gained')).toEqual([]);
   });
 
   describe('structure destroyed (DEC-186)', () => {
@@ -581,7 +609,7 @@ describe('ProgressionSystem with legendsStartAtMaxLevel (a Duel, SCRUM-444)', ()
   const LEVELS_RAISED = 3;
 
   it("raises a spawned Legend to its curve's cap with each level's raises, at full health", () => {
-    const { spawn, announceSpawn } = setUp(true);
+    const { spawn, announceSpawn } = setUp({ legendsStartAtMaxLevel: true });
     const warrior = spawn('warrior', 'warrior', 'light');
     const health = warrior.getComponent(Health);
     const aether = warrior.getComponent(Aether);
@@ -598,7 +626,7 @@ describe('ProgressionSystem with legendsStartAtMaxLevel (a Duel, SCRUM-444)', ()
   });
 
   it('announces no award: no xp-gained and no level-up', () => {
-    const { spawn, announceSpawn, run, payloads } = setUp(true);
+    const { spawn, announceSpawn, run, payloads } = setUp({ legendsStartAtMaxLevel: true });
     const warrior = spawn('warrior', 'warrior', 'light');
     announceSpawn(warrior, 'light');
     run();
@@ -609,7 +637,7 @@ describe('ProgressionSystem with legendsStartAtMaxLevel (a Duel, SCRUM-444)', ()
   });
 
   it('leaves a mob as it is', () => {
-    const { spawn, announceSpawn } = setUp(true);
+    const { spawn, announceSpawn } = setUp({ legendsStartAtMaxLevel: true });
     const minion = spawn('light-mob', 'light-minion', 'light');
     const maxHealth = minion.getComponent(Health).max;
 
@@ -620,7 +648,7 @@ describe('ProgressionSystem with legendsStartAtMaxLevel (a Duel, SCRUM-444)', ()
   });
 
   it('raises nothing more when a Legend at the cap spawns again', () => {
-    const { spawn, announceSpawn } = setUp(true);
+    const { spawn, announceSpawn } = setUp({ legendsStartAtMaxLevel: true });
     const warrior = spawn('warrior', 'warrior', 'light');
     announceSpawn(warrior, 'light');
     const [maxHealth, maxAether] = [
