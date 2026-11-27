@@ -470,8 +470,8 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   (base health from balancing.md, the map pylon's radius, no lane, the walls' breakability rule,
   DEC-341). Reach to the turret is measured to its pylon map object (`hasMapFootprint`). The
   turret is mounted on the pylon (`isMounted`, DEC-388, which replaces the one health pool of
-  DEC-332 (1)): it has its own entity and health (a provisional `TUNE` in
-  `content/maps/mapObjectDefinitions.ts`), and it breaks under the turret's rule
+  DEC-332 (1)): it has its own entity and health (the value is in
+  `content/maps/mapObjectDefinitions.ts`, DEC-396), and it breaks under the turret's rule
   (`StructureSystem` flips both). Its fall takes the turret with it on the same tick:
   `MapDestructionSystem` fells what is mounted on the pylon with `DamagePipeline.collapse`, with the
   pylon's killer as its killer, so the turret's XP goes to the Legend that felled the pylon. Like

@@ -59,7 +59,7 @@ describe('Simulation wall turrets', () => {
     }
   });
 
-  it("gives each turret's pylon map object its own entity, 600 health and the turret's breakability, and reports the mounted turret's health on it (DEC-388)", () => {
+  it("gives each turret's pylon map object its own entity, 2,000 health and the turret's breakability, and reports the mounted turret's health on it (DEC-388)", () => {
     const { simulation, state, turretOf } = setUp();
     const { entities, mapObjects = [] } = simulation.snapshot();
 
@@ -67,7 +67,7 @@ describe('Simulation wall turrets', () => {
       const turret = turretOf(feature);
       const pylon = mapObjects.find(({ id }) => id === feature.id);
       expect(pylon).toMatchObject({
-        health: { current: 600, max: 600 },
+        health: { current: 2000, max: 2000 },
         condition: 'standing',
         mountedHealth: turret?.health,
       });
@@ -113,11 +113,11 @@ describe('Simulation wall turrets', () => {
 
     expect(afterTurretHit).toMatchObject({
       entityId: pylonId,
-      health: { current: 600, max: 600 },
+      health: { current: 2000, max: 2000 },
       mountedHealth: { current: 500, max: 600 },
     });
     expect(pylonOf()).toMatchObject({
-      health: { current: 550, max: 600 },
+      health: { current: 1950, max: 2000 },
       mountedHealth: { current: 500, max: 600 },
     });
     expect(turretOf(feature)?.health).toEqual({ current: 500, max: 600 });
@@ -181,7 +181,7 @@ describe('Simulation wall turrets', () => {
     expect(mapObjects.find(({ id }) => id === feature.id)).toEqual({
       id: feature.id,
       entityId: pylonId,
-      health: { current: 600, max: 600 },
+      health: { current: 2000, max: 2000 },
       condition: 'ruin',
     });
     expect(state.worldObjects?.blockingAt(probe, 0.3)).toBe(feature.id);

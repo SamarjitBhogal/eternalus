@@ -884,10 +884,11 @@ Reply inline (`Decision: …`).
     a new card (DEC-388 (4)). Only the FYI for Samarjit stays open: tick this item when he has
     read it.
 
-- [ ] **HC-Q120 — Wall turret pylon defaults (DEC-388; `feat/wall-turrets`, PR 4).** Owner card
+- [x] **HC-Q120 — Wall turret pylon defaults (DEC-388; `feat/wall-turrets`, PR 4).** Owner card
       HC-Q120 on Owner Calls v101. (1) The pylon's health is 600, provisional. (2) The turret's
       XP goes to the pylon's destroyer. (3) The pylon takes the turret's breakability rule.
       Built as these defaults. Say "no" to an item and it goes back.
+  - Answered 2026-11-27 (DEC-396): (1) B, 2,000; (2) A; (3) A.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

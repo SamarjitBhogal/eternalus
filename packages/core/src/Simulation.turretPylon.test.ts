@@ -121,7 +121,7 @@ describe('Simulation wall turret pylons (DEC-388)', () => {
     expect(afterTurret).toEqual({
       id: m.feature.id,
       entityId: m.pylonId,
-      health: { current: 500, max: 600 },
+      health: { current: 1900, max: 2000 },
       condition: 'ruin',
     });
     expect(m.removedAt.get(m.pylonId)).toBeGreaterThan(m.removedAt.get(m.turretId) ?? Infinity);
@@ -147,10 +147,10 @@ describe('Simulation wall turret pylons (DEC-388)', () => {
 
 /**
  * A match after the countdown where a dark Legend of `kind` stands `gap` from a light turret and
- * sends real `attack-target` commands at it for three seconds. Returns the health of the turret
+ * sends a real `attack-target` command at it for `seconds`. Returns the health of the turret
  * and of its pylon, the pylon's full health, and the pylon's condition.
  */
-const attackTurret = (kind: string, gap: number) => {
+const attackTurret = (kind: string, gap: number, seconds = 3) => {
   const match = setUp({ structures: BREAKABLE });
   const { simulation, state, run, turretOf } = match;
   const feature = LIGHT_TURRET ?? TURRET_FEATURES[0];
@@ -163,7 +163,7 @@ const attackTurret = (kind: string, gap: number) => {
   const pylonFull = simulation.snapshot().mapObjects?.find(({ id }) => id === feature.id)
     ?.health?.max;
   simulation.enqueueCommand({ type: 'attack-target', actorId, targetId: turretId });
-  run(config.tickRate * 3);
+  run(config.tickRate * seconds);
   const pylon = simulation.snapshot().mapObjects?.find(({ id }) => id === feature.id);
   return { turret: turretOf(feature)?.health, pylon, pylonFull };
 };
@@ -183,5 +183,13 @@ describe('Simulation Legend attacks on a wall turret and its pylon (DEC-388)', (
     expect(turret?.current).toBeLessThan(turret?.max ?? 0);
     expect(pylonFull).toBeDefined();
     expect(pylon?.health?.current).toBe(pylonFull);
+  });
+
+  it('leaves the pylon standing as a ruin with health left when a melee Legend fells the turret', () => {
+    const { turret, pylon } = attackTurret('warrior', 0.5, 40);
+
+    expect(turret).toBeUndefined();
+    expect(pylon?.condition).toBe('ruin');
+    expect(pylon?.health?.current).toBeGreaterThan(0);
   });
 });
