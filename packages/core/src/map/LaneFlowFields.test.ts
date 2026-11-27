@@ -358,11 +358,13 @@ describe('LaneFlowFields.progress', () => {
   /** One diagonal step's cost over the lane's cost: the most a cell boundary can move `t`. */
   const oneStep = (field: FlowField): number => stepCost(4) / (field.integration[field.start] ?? 1);
   /**
-   * The largest gaps measured between field and polyline `t`: 1.4% (3 lanes), 1.6% (5 lanes) on
-   * the bare grid at 5 m nav cells; on the 5-lane match grid with the map objects stamped, 1.95%
-   * at 5 m cells and 2.13% at the 2.5 m cells of DEC-227 (Q-A). The owner set 2.5% (DEC-391).
+   * The largest gaps measured between field and polyline `t` at the 2.5 m nav cells of DEC-227
+   * (Q-A), seed 1: 1.25% (5 lanes) on the bare grid; on the match grid with the map objects
+   * stamped, 1.61% (3 lanes) and 2.13% (5 lanes; 1.95% at 5 m cells). Only the 5-lane match grid
+   * needs more than 2%, and the owner allowed 2.5% (DEC-391).
    */
-  const POLYLINE_AGREEMENT = 0.025;
+  const POLYLINE_AGREEMENT = 0.02;
+  const FIVE_LANE_MATCH_GRID_AGREEMENT = 0.025;
 
   /** Points along `path`, eight per segment, with the polyline's own `t` for each. */
   const samples = (world: Pick<typeof THREE, 'map'>, laneId: string, team: 'light' | 'dark') => {
@@ -405,13 +407,13 @@ describe('LaneFlowFields.progress', () => {
   });
 
   it.each([
-    ['3 lanes', THREE],
-    ['5 lanes', FIVE],
-    ['3 lanes, match grid', stampedWorld(3, 1)],
-    ['5 lanes, match grid', stampedWorld(5, 1)],
+    ['3 lanes', THREE, POLYLINE_AGREEMENT],
+    ['5 lanes', FIVE, POLYLINE_AGREEMENT],
+    ['3 lanes, match grid', stampedWorld(3, 1), POLYLINE_AGREEMENT],
+    ['5 lanes, match grid', stampedWorld(5, 1), FIVE_LANE_MATCH_GRID_AGREEMENT],
   ] as const)(
-    'agrees with the lane polyline within 2.5%% wherever the field can say: %s',
-    (_, world) => {
+    'agrees with the lane polyline within its bound wherever the field can say: %s',
+    (_, world, bound) => {
       let largest = 0;
       for (const lane of world.map.lanes) {
         for (const team of ['light', 'dark'] as const) {
@@ -421,7 +423,7 @@ describe('LaneFlowFields.progress', () => {
           }
         }
       }
-      expect(largest).toBeLessThanOrEqual(POLYLINE_AGREEMENT);
+      expect(largest).toBeLessThanOrEqual(bound);
     },
   );
 

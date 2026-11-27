@@ -8,7 +8,7 @@ last-reviewed: 2026-11-26
 tags: [plan, progress, log]
 ---
 
-# Progress 2026-11-26: feat/tower-ruins-and-routes (phase/3 merge after #82, #84, #90, #170)
+# Progress 2026-11-26: feat/tower-ruins-and-routes (phase/3 merge after #82, #84, #90, #170; 7 tests left red)
 
 Phase 3 / tower ruins and routes · feat/tower-ruins-and-routes (PR #98) · SamarjitBhogal + Claude Code
 
