@@ -1,5 +1,6 @@
 import type { SlotReadiness } from '../state/SlotReadiness.types';
 import type { CommandHandlers } from './CommandHandler.types';
+import { AttackAimHandler } from './handlers/AttackAimHandler';
 import { AttackTargetHandler } from './handlers/AttackTargetHandler';
 import { CastAbilityHandler } from './handlers/CastAbilityHandler';
 import { DevRemoveEntityHandler } from './handlers/DevRemoveEntityHandler';
@@ -23,6 +24,7 @@ export const createDefaultCommandHandlers = (
     move: new MoveHandler(),
     stop: new StopHandler(),
     'attack-target': new AttackTargetHandler(),
+    'attack-aim': new AttackAimHandler(),
     'cast-ability': new CastAbilityHandler(cast),
     intent: unsupported, // TODO(sholtzman): with sprint 1.5 PlayerController
     'dev-spawn': new DevSpawnHandler(),

@@ -3,6 +3,7 @@ import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import type { CastInProgress } from '../components/Abilities.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { ShotLauncher } from '../state/ShotLauncher.types';
 import type { AbilityEffect } from './AbilityEffect.types';
 import type { Ability, ComposableAbility } from './AbilityRegistry.types';
 import type { AreaShape } from './shapes/AreaShape.types';
@@ -27,7 +28,7 @@ export type CastFacts = Omit<CastInProgress, 'abilityId' | 'nextStep'> & {
   readonly ability: CastSource;
 };
 
-/** What a cast's effects work with: the match's state, pipeline, applier and lookups. */
+/** What a cast's effects work with: the match's state, pipeline, applier, launcher and lookups. */
 export type CastServices = {
   readonly state: GameState;
   /** Where effect and shape strategies are found (the `AbilityRegistry`). */
@@ -35,4 +36,6 @@ export type CastServices = {
   readonly targets: TargetQuery;
   readonly damage: DamagePipeline;
   readonly statuses: StatusEffectApplier;
+  /** Puts a step's shot into the match (`ProjectileEffect`). */
+  readonly launcher: ShotLauncher;
 };

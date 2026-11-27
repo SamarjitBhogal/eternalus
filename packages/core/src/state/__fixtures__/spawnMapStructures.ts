@@ -35,7 +35,9 @@ export const spawnMapStructures = (
         ...(laneId !== undefined && { laneId }),
       });
       const body = hasMapFootprint === true ? bodies.get(id) : undefined;
-      if (body !== undefined) structure.addComponent(new Footprint(body.footprints));
+      if (body !== undefined) {
+        structure.addComponent(new Footprint(body.footprints, { isWalkOn: !body.isBlocking }));
+      }
       state.entities.add(structure);
     }
   }

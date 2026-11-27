@@ -95,6 +95,38 @@ describe('StatusEffects', () => {
     expect(statuses.multiplier('damageDealt')).toBe(1);
   });
 
+  it('stops counting a status that a hit broke at once, keeps it listed, and counts it again once reapplied (DEC-327)', () => {
+    const statuses = new StatusEffects();
+    const brittle = loadStatusEffects(30, 2, [
+      {
+        ...CONCUSSION,
+        id: 'brittle',
+        modifiers: [{ stat: 'moveSpeed', op: 'mul', value: 0.5 }],
+        endsOnHit: true,
+      },
+    ]).get('brittle');
+    statuses.apply(STUN, 'a', 0);
+    expect(statuses.breakOnHit(0)).toBe(false);
+
+    statuses.apply(LOADED.get('invisible'), 'a', 0);
+    statuses.apply(brittle, 'a', 0);
+    expect(statuses.breakOnHit(0)).toBe(true);
+
+    expect(statuses.has('untargetable')).toBe(false);
+    expect(statuses.has('hidden')).toBe(false);
+    expect(statuses.multiplier('moveSpeed')).toBe(1);
+    expect(statuses.has('cannot-move')).toBe(true);
+    expect(statuses.active.map((status) => status.definition.id)).toEqual([
+      'stun',
+      'invisible',
+      'brittle',
+    ]);
+
+    statuses.apply(LOADED.get('invisible'), 'a', 1);
+    expect(statuses.has('untargetable')).toBe(true);
+    expect(statuses.multiplier('moveSpeed')).toBe(1);
+  });
+
   it('reuses expired and removed instances (pooled) with none of their old state', () => {
     const statuses = new StatusEffects();
     statuses.apply(BLEED, 'a', 0);

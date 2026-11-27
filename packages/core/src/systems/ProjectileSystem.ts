@@ -1,0 +1,249 @@
+import { Health } from '../components/Health';
+import { Movement } from '../components/Movement';
+import { ProjectileFlight } from '../components/ProjectileFlight';
+import { ProjectilePayload } from '../components/ProjectilePayload';
+import type { ProjectileImpactKind } from '../components/ProjectilePayload.types';
+import { TeamMembership } from '../components/TeamMembership';
+import { Transform } from '../components/Transform';
+import type {
+  ProjectileHit,
+  ProjectileImpact,
+  ProjectileImpacts,
+} from '../combat/ProjectileImpact.types';
+import type { Entity } from '../entities/Entity';
+import { flightSpeed } from '../physics/flightSpeed';
+import { sweepCircle } from '../physics/sweepCircle';
+import { sweepDisc } from '../physics/sweepDisc';
+import { AreaHitQuery } from '../state/AreaHitQuery';
+import type { GameState } from '../state/GameState';
+import { isTouchedBeforeWall } from '../state/isTouchedBeforeWall';
+import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
+import { distance, doRectsOverlap, isPointInAnyPolygon } from '../utils/geometry';
+import type { Rect, Vec2 } from '../utils/geometry.types';
+import type { ShotBody, ShotContact } from './ProjectileSystem.types';
+import type { System, SystemContext } from './System.types';
+
+/**
+ * Flies the shots in the air to their end (architecture 10 §7): each tick, every shot's move (an
+ * entity with a `ProjectilePayload`) from `Transform.previousPosition` to `position` is swept as a
+ * circle against the bodies it can hit and the walls, and the earliest contact ends it. A body
+ * takes the hit when it is touched before the first wall (`isTouchedBeforeWall`: a fort is both a
+ * body and a wall); a wall or the map's edge spends the shot with no damage. A landed hit goes to
+ * the `ProjectileImpact` of the payload's impact kind (a weapon's: its damage, fallen off over the
+ * distance from the origin, then the owner's on-hit effects), the hit is recorded on the owner
+ * (`EntityStore.recordHits`, DEC-322 (2)), and the shot is removed as `consumed`. A body that
+ * takes no damage now (`EntityStore.takesNoDamage`: a forest camp, a wall or gate before its rule)
+ * stops the shot like any body, but nothing lands: no damage, no on-hit step, no hit recorded
+ * (DEC-317 addendum). A gate's outline is walk-on, so only a shot aimed at the gate stops on it.
+ *
+ * Which bodies stop a shot is `AreaHitQuery.stopsShot`, the rule `LineOfFire` predicts by: live
+ * things with `Health` other than the owner and its team (neutral bodies count as enemies). A body
+ * with an outline (`Footprint`, `MapObjectBody`) is hit on that outline, at once when the shot
+ * starts inside it. A walk-on outline (a palace floor, a gate's passage) is hit only by a shot
+ * aimed at that entity (`payload.targetId`: the locked target, or the walk-on outline the aim
+ * point was on, DEC-322 (1)), so a shot flies over the ground units stand on. A body is gathered
+ * once a tick, and each move tests only those whose box it reaches.
+ * Ties go to the first body in store order, except that the shot's target takes a near tie
+ * (`isTouchedBeforeWall` on the first body's contact): a palace wall whose face is the
+ * Stronghold's edge does not take a shot fired at the Stronghold (DEC-317 (8)).
+ *
+ * A shot that touches nothing flies to the end of its `range` (DEC-306): it slows from `slowFrom`
+ * (`flightSpeed`, through `Movement.limitSpeed`) so it stops exactly at `range`, then ends. The
+ * move that ends there is swept like any other, so a body under the end point takes the hit: an
+ * arrow damages what it lands on (DEC-322 (2)), and no extra landing test is needed. An
+ * ended shot is swept no more and hits nothing; it stays for its end duration (a mist, an arrow on
+ * the ground), then is removed as `consumed`. While the match holds units idle
+ * (`state.match.isIdleHeld`, the countdown) no shot lands, slows or ends.
+ *
+ * It runs right before `CombatSystem`, so a shot fired this tick flies a tick before it can land.
+ */
+export class ProjectileSystem implements System {
+  public readonly name = 'projectiles';
+  /**
+   * Shots in the air at the start of this tick. A copy, because a shot spawned by an on-hit effect
+   * during the walk would otherwise fly at once (`Map.forEach` visits entries added during it).
+   */
+  private readonly flying: Entity[] = [];
+  /** The bodies a shot can hit this tick, in store order; gathered on the first move. */
+  private readonly bodies: ShotBody[] = [];
+  private isGathered = false;
+
+  /** @param impacts - What a landed shot does, by its payload's impact kind. */
+  public constructor(private readonly impacts: ProjectileImpacts) {}
+
+  /** Flies every shot in the air, in store order. */
+  public update({ state }: SystemContext): void {
+    if (state.match.isIdleHeld) {
+      return;
+    }
+    state.entities.forEach((entity) => {
+      if (entity.hasComponent(ProjectilePayload)) {
+        this.flying.push(entity);
+      }
+    });
+    for (const shot of this.flying) {
+      this.fly(state, shot);
+    }
+    this.flying.length = 0;
+    this.bodies.length = 0;
+    this.isGathered = false;
+  }
+
+  private fly(state: GameState, shot: Entity): void {
+    const flight = shot.getComponent(ProjectileFlight);
+    if (flight.isEnded) {
+      if (flight.tickEnding()) this.spend(state, shot);
+      return;
+    }
+    if (!this.isGathered) this.gather(state);
+    const payload = shot.getComponent(ProjectilePayload);
+    const body = shot.getComponent(Transform);
+    const from = body.previousPosition;
+    const delta = { x: body.position.x - from.x, y: body.position.y - from.y };
+    const length = distance(from, body.position);
+
+    const wall = this.wallDistance(state, from, delta, length, body.radius);
+    const hit = this.firstBody(state, payload, from, delta, length, body.radius);
+    if (hit !== null && isTouchedBeforeWall(hit.time * length, wall)) {
+      if (!state.entities.takesNoDamage(hit.body.entity.id)) {
+        this.landOn(state, {
+          impact: payload.impact,
+          ownerId: payload.ownerId,
+          source: payload.source,
+          origin: payload.origin,
+          bodyId: hit.body.entity.id,
+          point: { x: from.x + delta.x * hit.time, y: from.y + delta.y * hit.time },
+        });
+        state.entities.recordHits(payload.ownerId, [hit.body.entity.id], state.tick);
+      }
+      this.spend(state, shot);
+    } else if (wall < Number.POSITIVE_INFINITY) {
+      this.spend(state, shot);
+    } else {
+      this.steerToEnd(shot, flight, distance(payload.origin, body.position));
+    }
+  }
+
+  /** Hands the hit to the impact of its kind. */
+  private landOn<K extends ProjectileImpactKind>(state: GameState, hit: ProjectileHit<K>): void {
+    const impact: ProjectileImpact<K> = this.impacts[hit.impact.kind];
+    impact.land(state, hit);
+  }
+
+  /** Slows the shot toward its range, or ends it and stops it there when it has flown all of it. */
+  private steerToEnd(shot: Entity, flight: ProjectileFlight, flown: number): void {
+    const movement = shot.getComponent(Movement);
+    const remaining = flight.range - flown;
+    if (remaining <= CONTACT_EPSILON) {
+      flight.end();
+      movement.steer({ x: 0, y: 0 });
+      return;
+    }
+    movement.limitSpeed(flightSpeed(movement.maxSpeed, flown, flight.range, flight.slowFrom));
+  }
+
+  /** How far along the move the first wall or the map's edge is; infinite when none is in it. */
+  private wallDistance(
+    state: GameState,
+    from: Vec2,
+    delta: Vec2,
+    length: number,
+    radius: number,
+  ): number {
+    if (state.collisions === null || length === 0) return Number.POSITIVE_INFINITY;
+    const dir = { x: delta.x / length, y: delta.y / length };
+    const reach = state.collisions.reach(from, dir, length, radius);
+    return reach < length ? reach : Number.POSITIVE_INFINITY;
+  }
+
+  /** Every live entity with `Health` and a `Transform`, in store order, with its outline if any. */
+  private gather(state: GameState): void {
+    state.entities.forEach((entity) => {
+      const health = entity.findComponent(Health);
+      const transform = entity.findComponent(Transform);
+      if (health === undefined || transform === undefined) return;
+      this.bodies.push({
+        entity,
+        transform,
+        health,
+        membership: entity.findComponent(TeamMembership),
+        outline: state.entities.outlineOf(entity.id) ?? null,
+      });
+    });
+    this.isGathered = true;
+  }
+
+  /**
+   * The earliest body the move touches, or `null`. Ties go to the first in store order; the
+   * shot's target takes a near tie, by the margin `LineOfFire` predicts it by (DEC-317 (8)).
+   */
+  private firstBody(
+    state: GameState,
+    payload: ProjectilePayload,
+    from: Vec2,
+    delta: Vec2,
+    length: number,
+    radius: number,
+  ): ShotContact | null {
+    // The box the moving circle sweeps, a contact's width wider so rounding never drops one.
+    const reach = radius + CONTACT_EPSILON;
+    const box: Rect = {
+      x: Math.min(from.x, from.x + delta.x) - reach,
+      y: Math.min(from.y, from.y + delta.y) - reach,
+      width: Math.abs(delta.x) + 2 * reach,
+      height: Math.abs(delta.y) + 2 * reach,
+    };
+    let first: ShotContact | null = null;
+    let target: ShotContact | null = null;
+    for (const body of this.bodies) {
+      if (
+        !ProjectileSystem.isNear(body, box) ||
+        !AreaHitQuery.stopsShot(state.entities, payload, body)
+      ) {
+        continue;
+      }
+      const time = ProjectileSystem.contactTime(body, from, delta, radius);
+      if (time === null) continue;
+      if (body.entity.id === payload.targetId) target = { body, time };
+      if (first === null || time < first.time) first = { body, time };
+    }
+    if (target === null || first === null) return first;
+    return isTouchedBeforeWall(target.time * length, first.time * length) ? target : first;
+  }
+
+  /** Whether the body's box (its outline's, or its collider circle's) meets `box`. */
+  private static isNear({ transform, outline }: ShotBody, box: Rect): boolean {
+    if (outline !== null) return doRectsOverlap(outline.bounds, box);
+    const { position, radius } = transform;
+    return (
+      position.x + radius >= box.x &&
+      position.x - radius <= box.x + box.width &&
+      position.y + radius >= box.y &&
+      position.y - radius <= box.y + box.height
+    );
+  }
+
+  /** The share (0 to 1) of the move at which it touches the body, 0 if it starts touching. */
+  private static contactTime(
+    { transform, outline }: ShotBody,
+    from: Vec2,
+    delta: Vec2,
+    radius: number,
+  ): number | null {
+    if (outline === null) {
+      return sweepDisc(from, delta, radius, transform.position, transform.radius);
+    }
+    if (isPointInAnyPolygon(from, outline.polygons)) return 0;
+    let first: number | null = null;
+    for (const polygon of outline.polygons) {
+      const time = sweepCircle(from, delta, radius, polygon)?.time;
+      if (time !== undefined && (first === null || time < first)) first = time;
+    }
+    return first;
+  }
+
+  private spend(state: GameState, shot: Entity): void {
+    state.entities.remove(shot.id, 'consumed');
+    state.events.emit('entity-removed', { entityId: shot.id, cause: 'consumed' });
+  }
+}

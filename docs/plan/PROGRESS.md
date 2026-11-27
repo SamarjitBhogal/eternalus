@@ -9806,6 +9806,140 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: `npm run docs:check`, Prettier on the five files, and `npm run check`.
 - Next step: the owner pushes PR #123, then PR #136.
 
+### 2026-11-20 — Phase 4 / combat lane A, PR 1: ranged attacks, shot endings (DEC-306), staff melee on F (DEC-308) — feat/ranged-attacks — sholtzman + Claude Code
+
+- What was done: built PR 1 of the combat plan (DEC-301) on `feat/ranged-attacks`, base
+  `feat/vanguard-kit` (PR #136, `e21692d6`). Core: the `ranged-projectile` attack strategy
+  (`RangedProjectileAttackStrategy`), projectile content (`content/projectiles/`: `magus-bolt`,
+  `arrow`, `loadProjectiles`), `ProjectilePayload`, `ProjectileLanding` (swept hits through
+  `physics/sweepDisc` and `sweepCircle`, walls through `state.collisions.reach`, damage times
+  `falloffMultiplier` through `DamagePipeline`, then `afterHit`), the Magus staff's ranged basic
+  attack and `obsidian-bow`. Shot endings (DEC-306): `ProjectileFlight`, `combat/flightSpeed`,
+  `Movement.limitSpeed`; a bolt fizzles at 100 m, an arrow slows from 80 m and drops at 100 m;
+  an ended shot hits nothing. `EntitySnapshot.projectile` (`speedShare`, `ending`). Staff melee
+  (DEC-308): `AttackMode` and an optional `attack-target` `mode`, `Combat` holds the melee
+  attack, `EntityStore.setAttackTarget` refuses `melee` without one. No projectile pool
+  (DEC-309). Client: `ProjectileView` (fizzle and drop looks, `colorWithAlpha`) and the
+  `melee-attack` action, default F. Records: DEC-301..310 and their `INBOX.md` answers;
+  design text for DEC-306, DEC-308 and DEC-309 in 05 §10, 04 §11, 03 §9, 02, 10 §12, the
+  glossary and the phase 2 and 4 plans; reference 09 controls (F row) and 13 §InputAction.
+- Checks run: `npm run check` exit 0 (core 337 files / 2123 tests, client 309 / 2134, server
+  21 / 84, docs check passed). Breaks in `eternalus-agent-work/abilities/pr1-breaks.log`.
+- Next step: pre-PR gate (architecture-reviewer, correctness and ponytail critics), then the
+  push and `gh pr create --base feat/vanguard-kit` for the owner; then lane A PR 2 (melee
+  sweeps, DEC-304 and DEC-305).
+
+### 2026-11-20 — Phase 4 / combat lane A, PR 1 gate round 1: critic fixes, DEC-314 (BTD-1 to BTD-5) — feat/ranged-attacks — sholtzman + Claude Code
+
+- What was done: fixed the round-1 findings of the pre-PR gate (architecture-reviewer, correctness
+  and ponytail critics; reports in `eternalus-agent-work/abilities/pr1-gate/r1-*.md`). Core:
+  `systems/ProjectileSystem` replaces `combat/ProjectileLanding` (flight, sweep and landing; runs
+  directly before `CombatSystem`; a broad phase per move; a body is hit just before the wall it
+  stands at), `combat/ProjectileImpact.types.ts` and `combat/WeaponImpact` (one landing class per
+  impact kind), `ProjectilePayload` carries `targetId` and plain `impact` data, a shot spawns at
+  the attacker's centre, `flightSpeed` moved to `physics/`, `Movement.limitSpeed` takes a number,
+  the hash adds `speed-limit` only when finite. `Combat` holds `UnitAttacks` by mode
+  (`content/units/attacksByMode`). `components/Outline.types.ts` (`Outline`, implemented by
+  `Footprint` and `MapObjectBody`; walk-on outlines are hit only by a shot aimed at their entity,
+  `Footprint.isWalkOn`). One `HitRunner` port (`state/HitRunner.types.ts`). `CombatSystem` takes
+  an options object with a required `factory`; `DefaultSystemPipelineOptions.factory` is required
+  at the top level (`hordes.factory` removed). `KnownProjectileRule` in the default content rules.
+  Bots hold only with a line of fire (`state/hasLineOfFire`); `Simulation` injects
+  `BotLegendControllerContent.shotRadiusOf`, now required. `entities/strategies/weaponSourceOf`.
+  Protocol and server: the Duel parses `isMeleeAttacking` and `SeatCommands` sends the melee mode.
+  Client: `ProjectileView` types file. Records: DEC-314 and `INBOX.md` HC-B18 (five
+  better-than-design items built under DEC-223). Design text: 02 (`combat/`, `physics/`,
+  `components/`, §9 "Projectile impacts"), 03 §4 and §12, 04 §3 and §12, 05 §3 and §10, 07 and 11
+  implementation status, 10 §2, §7, §8 and §12, 12 status, the glossary, the phase 2 plan.
+- Correction to the PR 1 entry above: its "03 §9" means 03 §4 and §12.
+- Open, not changed: a bot that loses its line of fire keeps its attack target, so it fires at the
+  wall while it closes in. Clearing the target needs a new command, and `StuckSystem` and
+  `PathingSystem` read the target to give the bot its detour (DEC-193). Noted in the PR body.
+- Checks run: `npm run check` (20:54-22:47, load 30-70): format, no-js, lint, typecheck passed;
+  knip failed on one unused export (`ProjectileImpactDataByKind`, now file-local). Then knip,
+  `test:coverage` (core 344 files / 2154 tests, protocol 1 / 31, client 309 / 2134, server
+  21 / 85), build and docs check passed (exit 0). `shotRadiusOf` break in
+  `eternalus-agent-work/abilities/pr1-breaks.log` (`tsc -b` TS2741 without the wiring).
+- Next step: gate round 2 (architecture-reviewer, correctness and ponytail critics), then the
+  push and `gh pr create --base feat/vanguard-kit` for the owner.
+
+### 2026-11-21 — Phase 4 / combat lane A, PR 1 gate round 2: critic fixes, DEC-317 — feat/ranged-attacks — sholtzman + Claude Code
+
+- What was done: fixed the round-2 findings of the pre-PR gate (reports in
+  `eternalus-agent-work/abilities/pr1-gate/r2-*.md`). Core: `state/LineOfFire` and its port
+  `LineOfFireQuery` replace `state/hasLineOfFire`; `Simulation` builds one and gives it to bots
+  (`fight` and `siege`) and `CombatSystem`, which fires a ranged attack only with a clear line
+  (F6, option A); it uses `ProjectileSystem`'s contact rule and `BODY_BEFORE_WALL_MARGIN`
+  (`state/CollisionQuery.constants.ts`). `systems/defaultProjectileImpacts.ts`. `Combat.setTarget`
+  refuses a mode the unit lacks. A body that takes no damage now stops only a shot fired at it
+  (C1). Zero-aim facing fallback (C6). Client: `RemoteIntentSender.withoutAttack` clears
+  `isMeleeAttacking` (C4); `ProjectileView` throws on a projectile id with no ending look and a
+  test checks its keys against `DisplayContent.projectileIds` (F1, ADR 0023). Records: DEC-317 and
+  `INBOX.md` HC-B20 (asked); HC-B18 reopened as "sign-off asked" and DEC-314 (6) (walk-on rule).
+  Design text: 02 §2 and §9, 03 §4, 04 §3, 05 §10, 10 §7 and §12, 11 status, 17 R10 and R27.
+- Correction to the round-1 entry above: its design-text list also includes 08 (pooling line,
+  DEC-309), and its check was a split run; this entry reports one full run.
+- Checks run: one full `npm run check` (2026-11-20 23:55 to 2026-11-21 00:04 MST) exit 0: format,
+  no-js, lint, typecheck, knip, `test:coverage` (core 345 files / 2170 tests, protocol 1 / 31,
+  client 309 / 2136, server 21 / 85), build, `Documentation check passed.` Every new test was seen
+  red under a deliberate break first (`eternalus-agent-work/abilities/pr1-breaks.log`, r2 sections).
+- Next step: gate round 3 (last loop) on the round-2 delta, then the push and
+  `gh pr create --base feat/vanguard-kit` for the owner.
+
+### 2026-11-21 — Phase 4 / combat lane A, PR 1 gate round 3: critic fixes, DEC-317 (6)-(8) — feat/ranged-attacks — sholtzman + Claude Code
+
+- What was done: fixed the round-3 findings of the pre-PR gate, the last loop (reports in
+  `eternalus-agent-work/abilities/pr1-gate/r3-*.md`: architecture pass with 12 nits, ponytail
+  pass, correctness 2 findings). Core: `state/isTouchedBeforeWall` is the one "body before the
+  wall" rule, which `ProjectileSystem` and `LineOfFire` both call (BTD-F, DEC-317 (6)). An attack
+  needs a line, and `KnownProjectileRule` checks it, when it has `projectile` (BTD-G, DEC-317 (7)).
+  `ProjectileSystem.firstBody` gives the shot's target a tie within the margin, so a palace wall
+  on the Stronghold floor's edge no longer takes a shot fired at the Stronghold (correctness
+  finding 1, DEC-317 (8)). `LineOfFire` reads a target past the shot's `range` as not clear
+  (R3-N5) and reads the target's radius with `getComponent` (finding 2). R3-N1, N9, N10, N11 and
+  the ponytail nit. Records: DEC-317 (6)-(8) and `INBOX.md` HC-B20 (4)-(8) and "Not built"
+  (BTD-B, BTD-E, BTD-H). Design text: 02 §2, 05 §10, 10 §12, 17 §1 and R27.
+- Not built: BTD-H (one shared definition lookup for `Simulation` and about 10 tests; it rewrites
+  test files outside this PR). No fourth critic loop (owner limit 3). The critic's own probes
+  were run again on the fix instead: 0 disagreements at all 10 structures of each team (was 114
+  and 205), 10 of 10 bolts on the Stronghold (was on palace wall `entity-782`).
+- Checks run: one full `npm run check` (2026-11-21 01:01:11 to 01:09:32 MST) exit 0: format,
+  no-js, lint, typecheck, knip, `test:coverage` (core 346 files / 2175 tests, protocol 1 / 31,
+  client 309 / 2136, server 21 / 85), build, `Documentation check passed.` Log
+  `eternalus-agent-work/abilities/pr1-gate/r4-pre-check.log`. Each new or changed test was seen red
+  first or under a deliberate break (`pr1-breaks.log`, Round 3).
+- Next step: the owner pushes `feat/ranged-attacks` and opens the PR on `feat/vanguard-kit`.
+
+### 2026-11-21 — Phase 4 / combat lane A, PR 2: melee sweeps, class reach, aimed attacks (DEC-319), gate round 1 fixes — feat/melee-sweeps — sholtzman + Claude Code
+
+- What was done: a weapon's melee attack sweeps a wedge in front of the Legend and hits every
+  enemy body it reaches (`MeleeSweepAttackStrategy`, `utils/sector.ts`; DEC-184, DEC-304), reach is
+  the class's part plus the weapon's (`LegendDefinition.meleeReach`, DEC-305), and the player
+  attacks along the aim with the new `attack-aim` command (client `PlayerCommands`, Duel server
+  `SeatCommands`); the swing wedge is drawn from `EntitySnapshot.swing`. Rules recorded as DEC-319.
+  Pre-PR gate round 1 (reports and the state of each finding in
+  `eternalus-agent-work/abilities/pr2-gate/r1-*.md`): an attacker killed earlier in the tick lands
+  nothing (m3); `CombatSystem` throws when a target in reach has no point to face (n1);
+  `EntitySnapshot.swing` is `SwingSnapshot | null` with one field name, `atTick` (R1-A16); new
+  `Simulation.aimed.test.ts` runs `attack-aim` through the command path, its release, a replay JSON
+  round trip and a determinism check (m1, R1-A11); the healing scenario spawns the enemy out of
+  reach (m2); ponytail cuts 2-4; TSDoc (R1-A18, R1-A20); design text 03, 04, 05, 06, 13, 17 and
+  DEC-319 (5)-(9) (R1-A6 to A10, A17, A21); `INBOX.md` HC-Q76 to HC-Q78.
+- Not built: HC-Q76 (blocker: with aimed attacks a player's weapon cannot hit the Stronghold, the
+  palace or a gate), HC-Q77 (what the AI counts as "attacking" for an aiming player) and HC-Q78
+  (one area-hit rule, B recommended) wait on the owner (Owner Calls v37; answers become DEC-322).
+  R1-A13 and R1-A19 wait on HC-Q76. Rejected findings and the reasons are in
+  `r1-dispositions.md`.
+- Checks run: `npm run check:quick` (pre-commit hook of the code commit `f7436d8e`, 2026-11-21
+  17:27:44 to 17:34:52 MST) exit 0: no-js, `tsc -b`, `eslint --max-warnings 0 .`. The run before
+  it failed on one lint error (`no-confusing-void-expression`, `CombatSystem.test.ts:293`), fixed.
+  Vitest on the changed areas: `Simulation.aimed.test.ts` 3/3, `Simulation.healing.test.ts` 3/3,
+  `CombatSystem.test.ts` 24/24. Each new or changed test was seen red under a deliberate break
+  (`eternalus-agent-work/abilities/pr2-sweeps/breaks.log`). The full `npm run check` waits for
+  the HC-Q76 and HC-Q77 build.
+- Next step: build the HC-Q76 and HC-Q77 answers (DEC-322), gate round 2, `npm run check`, then the
+  owner pushes `feat/melee-sweeps` and opens the PR on `feat/ranged-attacks`.
+
 ### 2026-11-19 — Phase 3 / the match-start countdown overlay (DEC-278) — feat/match-start-countdown — sholtzman + Claude Code
 
 - What was done: built the owner's ruling of 2026-11-19 (DEC-278, written as its own batch in the
@@ -10125,3 +10259,134 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   "Documentation check passed."; `eternalus-agent-work/scoring-at-load/check-4.log`); then `prettier --check` and
   `npm run docs:check` on this file.
 - Next step: the owner pushes the merge (coordinator checks the script); #139 merges.
+
+### 2026-11-20 — Phase 4 / combat PR 5 (lane B, DEC-301): Vanguard Veil — feat/vanguard-veil-hamstring — sholtzman + Claude Code
+
+- What was done: built Veil (DEC-266, DEC-267) in two commits on `feat/vanguard-kit` (`e21692d6`).
+  Core (`a6eca325`): the `invisible` status (5 s, `TUNE`) sets the flags `untargetable` and
+  `hidden` and has the new field `endsOnDamage`; `StatusEffectSystem` marks such a status broken
+  on `damage-applied` (holder or attacker) and removes it at the end of its pass;
+  `EntityStore.isTargetable` is the one targeting rule (perception's hostile queries, the leash,
+  `CombatSystem`, `attack-target`, the bot memory). Snapshot and client (this commit):
+  `EntitySnapshot.isHidden` (set only when `true`); `findUnitAt` skips hidden units;
+  `EntityLayer` leaves out a hidden unit of another team (body, status cues, health bar, minimap
+  dot) and draws one of the viewer's team faded through the new `Renderer.withOpacity`
+  (`HIDDEN_UNIT_OPACITY` 0.4, a look: DEC-266 says "faded" and names no value); the viewer's team
+  comes from `HealthBarVisibility.viewerTeam`, so it holds after the player dies. 05 §18 bullet
+  "Veil" and one pointer sentence in the §8 status note (implementation-status text only). Every
+  new test failed first on a deliberate break: B1 to B23 in
+  `eternalus-agent-work/abilities/veil-breaks.log`.
+- Open: the Owner Calls card "veil-own-bleed" (does a bleed the Vanguard applied before Veil end
+  Veil when it ticks?) is not answered; built as option 1 (yes).
+- Checks run: `npm run check`, exit 0 (core 2057/2057, client 2128/2128, server 84/84, protocol
+  30/30, docs check passed). An earlier run failed only on two duel-test timeouts under load
+  (core `Simulation.duel.test.ts` 61.6 s > 60 s, server `CoreDuelSimulation.test.ts`
+  31.7 s > 30 s). The core duel takes 1555 ticks on base `e21692d6` and on this branch (counted
+  side by side), so Veil does not make it longer.
+- Next step: pre-PR gate on Veil (branch against `e21692d6`); then Hamstring on lane A's
+  `ProjectileImpact` (DEC-314) once `feat/ranged-attacks` is committed.
+
+### 2026-11-21 — Phase 4 / combat PR 5 (lane B, DEC-301): Veil pre-PR gate, round 1 fixes — feat/vanguard-veil-hamstring — sholtzman + Claude Code
+
+- What was done: applied the round 1 findings of the three critics (architecture, correctness,
+  ponytail; reports in `eternalus-agent-work/abilities/veil-gate/`). Core: `CombatSystem`,
+  `PathingSystem` and `StuckSystem` keep an untargetable held target but neither hit nor chase it
+  (new `EntityStore.isUntargetable`, the status part of `isTargetable`, because `isAlive` needs
+  `Health`); a broken status stops counting at the hit (`StatusEffects.recompute` skips it,
+  BTD-4); `StateHasher` hashes a pending break (`'broken'`, only when set); a re-applied Veil
+  after the hit stays on (test). Client: `Viewer` (`game/Viewer.ts`, the player's Legend and
+  team, kept after death) gives each entity shown, faded or hidden; `Match` injects its rule into
+  `EntityLayer` (fades body, cues, bar and minimap dot) and `HealthBarVisibility` reads the same
+  `Viewer` (BTD-5); `HIDDEN_UNIT_OPACITY` moved to `EntityLayer.constants.ts`. Ponytail cuts and
+  TSDoc reflows; Veil cites balancing.md:182. Docs: 05 §18 "Veil" bullet rewritten; one pointer
+  line each in the implementation-status notes of 03, 08 and 11; `INBOX.md` HC-B19 (BTD-1..5,
+  built under DEC-223, sign-off asked). New tests failed first on breaks B25 to B39
+  (`eternalus-agent-work/abilities/veil-breaks.log`).
+- Open: Owner Calls card "veil-own-bleed" (Sam picked "Other" with an empty note; build stays as
+  option A until the note lands); HC-B19 sign-off.
+- Checks run: `npm run check:quick` exit 0; Prettier clean on every changed file;
+  `npm run docs:check` passed; full `npm run check` exit 0 (core 2062/2062, client 2131/2131,
+  server 84/84, protocol 30/30, docs check passed).
+- Next step: critics round 2 on `git diff 59c8f4a3..HEAD`; then the push line for Sam, PR base
+  `feat/vanguard-kit`; then Hamstring on lane A's `ProjectileImpact` (PR #148).
+
+### 2026-11-21 — Phase 4 / combat PR 5 (lane B, DEC-301): Veil pre-PR gate, round 2 fixes — feat/vanguard-veil-hamstring — sholtzman + Claude Code
+
+- What was done: critics round 2 on `59c8f4a3..9cf41171` (reports `architecture-r2.md`,
+  `ponytail-r2.md` in `eternalus-agent-work/abilities/veil-gate/`; correctness in chat). Fixed:
+  a bot Legend now drops a Veiled live attack with a `stop` at its next decision
+  (`BotLeaves.begin`, DEC-266); a broken status neither ticks nor runs out
+  (`StatusEffectRuntime`), so it always ends through the break (no `onExpire`);
+  `StatusEffectSystem` empties its broken set before removing, so a holder broken again by a
+  `status-expired` listener ends in the next pass; the scenario test for a held attack now holds
+  through 30 Veiled ticks; the Match test asserts the hidden enemy is not drawn. Ponytail cuts 1-4
+  (TSDoc), long comment lines, 08 `paths` gains `Viewer.ts`. 05 §18 "Veil" and `INBOX.md` HC-B19
+  updated ((6) added, not built). Owner question HC-Q75 "veil-held-attack" (the human player's
+  attack on a Veiled enemy: kept, as built, or dropped) is on Owner Calls v25. Tests red first:
+  B40 to B44 (`eternalus-agent-work/abilities/veil-breaks.log`). Rejected: ponytail cut 5
+  (`visibilityOf` per draw call is a cheap team check) and cut 6 (a private method grows
+  `Match.ts`).
+- Open: HC-Q75, HC-B19 sign-off, veil-own-bleed.
+- Checks run: `npm run check:quick` exit 0; Prettier clean; core vitest on `src/components`,
+  `src/systems`, `src/combat`, `src/abilities`, `src/state` (118 files, 832 tests) and `src/ai`
+  (16 files, 115 tests) pass; client `Match.healthBars.test.ts` passes. Full `npm run check` not
+  run yet on this commit.
+- Next step: full `npm run check`, then critics round 3 (the last) on the round 2 commits.
+
+### 2026-11-21 — Phase 4 / combat PR 5 (lane B, DEC-301): Veil pre-PR gate, round 3 (last) — feat/vanguard-veil-hamstring — sholtzman + Claude Code
+
+- What was done: full `npm run check` on the round 2 commits (38fedaa9) exit 0 (core 2065/2065,
+  client 2131/2131, server 84/84, protocol 30/30, docs check passed). Critics round 3 on
+  `9cf41171..38fedaa9`: architecture approve, no blocker (`architecture-r3.md`); correctness two
+  nits, no blocker (chat); ponytail comment trims only (`ponytail-r3.md`; reports in
+  `eternalus-agent-work/abilities/veil-gate/`). Fixed: a status that has run out when a hit lands
+  no longer breaks (`StatusEffects.breakOnDamage(tick)`), so a `status-expired` listener that
+  hurts the holder cannot end it twice (the critic's probe saw two `status-expired`); the
+  snapshot's `statuses` leaves out a broken status at once (`EntitySnapshotter`); TSDoc in
+  `CombatSystem` (one 142-column line) and `statusEffects.types.ts` (`isUntargetable` named);
+  `INBOX.md` gains the HC-Q75 entry, HC-B19 (4) and (6) reworded; 05 §18 "Veil" updated. Tests
+  red first: B45, B46 (`eternalus-agent-work/abilities/veil-breaks.log`). Rejected: ponytail r3
+  reverts of the `Match.ts` and `StatusEffects.ts` TSDoc rewraps (round 2 N3 asked for them).
+- Open: HC-Q75, HC-B19 sign-off, veil-own-bleed (all on Owner Calls; none blocks the PR).
+- Checks run: Prettier clean; core vitest on `src/components`, `src/systems`, `src/combat`,
+  `src/abilities`, `src/state`, `src/ai` (134 files, 949 tests) pass; full `npm run check` on
+  these fixes exit 0 (core 2067/2067, client 2131/2131, server 84/84, protocol 30/30, docs check
+  passed).
+- Next step: push line for Sam (PR base `feat/vanguard-kit`), then Hamstring on lane A's
+  `ProjectileImpact` (PR #148), then PR 6 (Sentinel).
+
+### 2026-11-22 — Phase 4 / combat lane B, PR 3: Hamstring (DEC-268, DEC-269) — feat/vanguard-hamstring — sholtzman + Claude Code
+
+- What was done: built Hamstring, the Warrior's `ability-3`: the `projectile` effect
+  (`ProjectileEffect`) throws `hamstring-blade` through the `ShotLauncher` port
+  (`entities/ProjectileLauncher`); `AbilityImpact` runs the shot's `onHit` steps on the first
+  enemy body (80 and 2 bleed stacks on a unit, 80 × 0.3 and no bleed on a structure or map object;
+  walls stop it, allies pass) through `HitEffects.runSteps`; the `hit` shape holds a map object by
+  its position; `debuff` takes `stacks`. Client: the blade drops at its range. A Warrior bot may now
+  cast it. Records: 05 §18 "Hamstring", 02 §12, `INBOX.md` HC-B26 (the step names its projectile).
+- Checks run: one full `npm run check` (2026-11-22 01:25:30 to 01:35:01 MST) exit 0: format,
+  no-js, lint, typecheck, knip, `test:coverage` (core 351 files / 2228 tests, protocol 1 / 31,
+  client 310 / 2146, server 21 / 85), build, `Documentation check passed.` Log
+  `eternalus-agent-work/abilities/hamstring-check-1.log`. Every new or changed test was seen red
+  first or under a deliberate break (H1-H20, `hamstring-breaks.log`).
+- Next step: the pre-PR gate (max 3 rounds), then the owner pushes and opens the PR on
+  `feat/vanguard-veil-hamstring` (#150).
+
+### 2026-11-22 — Phase 4 / combat lane B, PR 3 gate round 1: Hamstring fixes — feat/vanguard-hamstring — sholtzman + Claude Code
+
+- What was done: fixed the round-1 findings of the pre-PR gate (reports in
+  `eternalus-agent-work/abilities/hamstring-gate/r1-*.md`). A1: the shot carries the ability's
+  `scaling` and the caster's level from the cast, so a thrower who dies or levels up mid-flight
+  does not change the hit; `StateHasher` hashes the shot's `casterLevel`. A5: the `hit` shape holds
+  the struck body by its id (`ShapePlacement.targetId`, `ShapeBody`), so another body on the same
+  point is not hit. A2: a test pins the 30 m/s flight by its hit ticks. A7: the projectile
+  catalogue is injected into `createDefaultAbilityRegistry`. A8, A9, A10, A12, A13, C4, C5, P7:
+  TSDoc, a companion types file and 05 §18 text. Records: `INBOX.md` HC-B26 (2) one launcher for
+  every shot (not built, waits for #148) and (3) no slow (a reading); 05 §18 "Hamstring".
+- Checks run: one full `npm run check` (2026-11-22 03:14:00 to 03:23:29 MST) exit 0: format,
+  no-js, lint, typecheck, knip, `test:coverage` (core 351 files / 2233 tests, protocol 1 / 31,
+  client 310 / 2146, server 21 / 85), build, `Documentation check passed.` Log
+  `eternalus-agent-work/abilities/hamstring-r1fix-check.log`. Every new or changed test was seen
+  red under a deliberate break (H21-H29, `hamstring-breaks.log`).
+- Next step: merge #150 (DEC-327) and the pushed #148 into this branch, add the Veil scenario
+  (A11), then gate round 2.

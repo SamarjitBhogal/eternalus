@@ -24,6 +24,7 @@ import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import { HEALTH_BAR_FILL_COLORS } from './views/HealthBarView.constants';
 import type { HealthBarSide } from './views/HealthBarView.types';
+import { LEGEND_OUTLINE_COLOR } from './views/entityViews.constants';
 
 const SEED = 1;
 const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
@@ -112,6 +113,63 @@ const withFirstTickHit = (simulation: Simulation): MatchSimulation => {
     },
   };
 };
+
+/**
+ * `simulation` whose snapshots mark every Legend but the player hidden, as Veil would (DEC-266).
+ * Only the snapshot changes; the simulation plays on as it is.
+ */
+const withOthersHidden = (simulation: Simulation): MatchSimulation => ({
+  get tick() {
+    return simulation.tick;
+  },
+  step: () => {
+    simulation.step();
+  },
+  snapshot: () => {
+    const snapshot = simulation.snapshot();
+    const hide = (entity: EntitySnapshot): EntitySnapshot =>
+      entity.family === 'legend' && entity.id !== snapshot.match.humanLegendId
+        ? { ...entity, isHidden: true }
+        : entity;
+    return { ...snapshot, entities: snapshot.entities.map(hide) };
+  },
+  enqueueCommand: (command) => {
+    simulation.enqueueCommand(command);
+  },
+  on: (type, handler) => simulation.on(type, handler),
+});
+
+describe('Match hidden units: the viewer decides what a hidden unit shows (DEC-266)', () => {
+  it("fades the player's hidden ally and leaves the hidden enemy out", () => {
+    const { match, simulation, renderer } = setUp(withOthersHidden);
+    const at = match.snapshot.entities.find(({ id }) => id === match.playerEntityId)?.transform;
+    if (at === null || at === undefined) throw new Error('No player');
+    for (const team of ['light', 'dark'] as const) {
+      simulation.enqueueCommand({
+        type: 'dev-spawn',
+        kind: 'warrior',
+        definitionId: 'warrior',
+        team,
+        at: { x: at.x, y: at.y + 3 },
+        count: 1,
+      });
+    }
+    match.tick();
+    const hidden = match.snapshot.entities.filter(({ isHidden }) => isHidden === true);
+    expect(hidden.map(({ team }) => team).sort()).toEqual(['dark', 'light']);
+
+    match.render(0);
+
+    // The light ally fades, body and mini map dot (no cue, no bar yet); the dark one is not drawn:
+    // two Legend bodies (the player's and the ally's), not three.
+    expect(renderer.calls.filter(({ op }) => op === 'withOpacity')).toHaveLength(2);
+    const bodies = renderer.calls.filter(
+      (call) => call.op === 'drawWorldGlyph' && call.args[2] === LEGEND_OUTLINE_COLOR,
+    );
+    expect(bodies).toHaveLength(2);
+    match.destroy();
+  });
+});
 
 describe('Match health bars (DEC-195)', () => {
   it("shows an enemy Legend's bar once the player's attack hurts it, never the player's own", () => {

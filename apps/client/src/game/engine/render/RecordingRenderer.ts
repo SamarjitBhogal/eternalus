@@ -42,6 +42,12 @@ export class RecordingRenderer implements Renderer {
     args[1]();
   }
 
+  /** Records the call, then runs `draw`, so the calls it makes follow it in `calls`. */
+  public withOpacity(...args: Parameters<Renderer['withOpacity']>): void {
+    this.calls.push({ op: 'withOpacity', args });
+    args[1]();
+  }
+
   /** Records the call. */
   public fillPolygon(...args: Parameters<Renderer['fillPolygon']>): void {
     this.calls.push({ op: 'fillPolygon', args });

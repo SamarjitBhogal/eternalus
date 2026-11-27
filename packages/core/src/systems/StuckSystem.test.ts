@@ -1,11 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ChaseWatch } from '../components/ChaseWatch';
+import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { loadStuckDetection } from '../content/ai/loadStuckDetection';
 import { STUCK_DETECTION } from '../content/ai/stuckDetection';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
@@ -13,6 +15,7 @@ import { AStarPathfinder } from '../map/AStarPathfinder';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
+import { ReachQuery } from '../state/ReachQuery';
 import { StateHasher } from '../state/StateHasher';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { MovementSystem } from './MovementSystem';
@@ -91,7 +94,7 @@ const riftChase = (systems: (state: GameState) => readonly System[]) => {
     target,
     run,
     detours: () => detours,
-    isInReach: () => state.entities.isInReach(chaser.id, target.id),
+    isInReach: () => new ReachQuery().isInReach(state.entities, chaser.id, target.id),
   };
 };
 
@@ -159,6 +162,18 @@ describe('StuckSystem', () => {
     expect(chase.target.hasComponent(ChaseWatch)).toBe(false);
 
     chase.state.entities.clearAttackTarget(chase.chaser.id);
+    chase.run(1);
+
+    expect(chase.chaser.hasComponent(ChaseWatch)).toBe(false);
+  });
+
+  it('drops its watch while the target is untargetable (Veil, DEC-266)', () => {
+    const chase = riftChase(() => [new StuckSystem(RULE)]);
+    chase.run(1);
+    expect(chase.chaser.hasComponent(ChaseWatch)).toBe(true);
+
+    const veil = loadStatusEffects(config.tickRate, 2).get('invisible');
+    chase.target.getComponent(StatusEffects).apply(veil, null, chase.state.tick);
     chase.run(1);
 
     expect(chase.chaser.hasComponent(ChaseWatch)).toBe(false);

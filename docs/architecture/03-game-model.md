@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-22
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -92,7 +92,8 @@ Ids are strings (`entity-12`), so code that needs a total order compares them as
 store order; it never sorts them as numbers. `remove(id, cause)` is the only way out and always
 carries a `RemovalCause` (`'died' | 'despawned' | 'consumed' | 'dev-removed' | 'match-ended'`, plus
 the killer for `'died'`); an invariant checks no entity disappears any other way. The store never
-exposes a `Map` for iteration.
+exposes a `Map` for iteration. `isTargetable(id)` is the one rule for whether an enemy may pick a
+unit as a target: it is alive, and no status sets `untargetable` (Veil, DEC-266, DEC-327).
 
 `GameState` is mutable only inside `Simulation.step()`, and only through component methods that
 guard their own invariants (`Health.applyDamage` clamps; `Team.setTeam` emits `team-changed`).
@@ -109,8 +110,19 @@ command log is a complete replay and cheats are replayable too.
 // Sketch: packages/core/src/commands/Command.types.ts (fields per type in `CommandPayloads`)
 export type Command =
   | { readonly type: 'move'; readonly actorId: EntityId; readonly direction: Vec2 }
-  | { readonly type: 'stop'; readonly actorId: EntityId } // clears heading and attack target (18 §6.1)
-  | { readonly type: 'attack-target'; readonly actorId: EntityId; readonly targetId: EntityId }
+  | { readonly type: 'stop'; readonly actorId: EntityId } // clears heading, attack target and aim point (18 §6.1)
+  | {
+      readonly type: 'attack-target';
+      readonly actorId: EntityId;
+      readonly targetId: EntityId;
+      readonly mode?: AttackMode; // absent = 'basic'; 'melee' (DEC-308), later 'heavy' (05 §10)
+    }
+  | {
+      readonly type: 'attack-aim'; // attack towards a point with no target (DEC-184, DEC-319)
+      readonly actorId: EntityId;
+      readonly aim: Vec2 | null; // null stops the aimed attack
+      readonly mode?: AttackMode;
+    }
   | {
       readonly type: 'cast-ability';
       readonly actorId: EntityId;
@@ -183,34 +195,34 @@ plus a deferred queue, research §2). `GameEvents` keeps the most recent events 
 (`recentEvents()`, capacity in `GameEvents.constants.ts`) for invariant reports. Payload objects for
 high-frequency events (`damage-applied`) may be pooled (Recommendation, profile first).
 
-| Event                               | Payload                                                | Emitted by                                                      | Typical listeners                                                                                          |
-| ----------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster | `SnapshotSystem`, views, `Scoring` (a row per Legend)                                                      |
-| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                              | `HordeSystem`, `ProjectilePool`, invariants                                                                |
-| `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage)                   |
-| `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                 | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                                    |
-| `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212)                    |
-| `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                      | `StructureSystem`                                               | `HordeSystem` (gate holding), views                                                                        |
-| `camp-cleared`                      | `{ entityId, team, killerId }`                         | `SpawnSystem`                                                   | `ProgressionSystem` (camp reward), `MatchDirector`                                                         |
-| `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                               | HUD, views                                                                                                 |
-| `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                 | HUD, `MinimapView`                                                                                         |
-| `checkpoint-reached`                | `{ pointId, team, checkpoint, presentLegendIds }`      | `CaptureSystem`                                                 | `Scoring` (DEC-214, DEC-223), `ProgressionSystem` (ultimate meter, DEC-273), checkpoint spawners (Phase 3) |
-| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `MatchDirector`, `StatusEffectSystem`                                                                      |
-| `phase-changed`                     | `{ from, to }`                                         | `MatchRecord.setPhase` (called by `MatchDirector`)              | `Announcer`                                                                                                |
-| `match-ended`                       | `{ result: MatchResult }`                              | `MatchDirector`                                                 | client `MatchBridge` (the results flow)                                                                    |
-| `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                                                 | views (VFX), `Announcer`                                                                                   |
-| `status-applied`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectApplier` (DEC-41)                                  | views, HUD                                                                                                 |
-| `status-expired`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectSystem`                                            | views, HUD                                                                                                 |
-| `horde-spawned` / `horde-dissolved` | `{ hordeId, lane, team, memberIds }`                   | `SpawnSystem` / `HordeSystem`                                   | `EnragedSystem`, `MinimapView`                                                                             |
-| `level-up`                          | `{ entityId, level }`                                  | `ProgressionSystem`                                             | `AbilitySystem` (scaling), HUD                                                                             |
-| `ultimate-charged`                  | `{ entityId, amount, charge, cause }`                  | `ProgressionSystem` (05 §6)                                     | `GameState.charges` (`ultimate-never-fills-passively`, 05 §16)                                             |
-| `assist-earned`                     | `{ legendId, victimId }`                               | `LegendDeathRule` (in `Scoring`)                                | `ProgressionSystem` (ultimate meter, DEC-272)                                                              |
-| `team-changed`                      | `{ entityId, from, to, cause }`                        | `Team` component                                                | `HordeSystem`, views                                                                                       |
-| `boss-summoned`                     | `{ entityId, kind }`                                   | `SpawnSystem` (timeline)                                        | `Announcer`, `AiSystem` (camps turn aggressive)                                                            |
-| `command-rejected`                  | `{ command, reason }`                                  | `applyCommand`                                                  | `DeveloperMenu`, tests                                                                                     |
-| `collision-anomaly`                 | `{ entityId, from, to, colliderId }`                   | `CollisionSystem`                                               | `InvariantSystem`, `Logger`                                                                                |
-| `invariant-violated`                | `{ invariantId, tick, details }`                       | `InvariantRunner`                                               | `Logger`, `PerfOverlay`, tests (throw)                                                                     |
-| `tick-completed`                    | `{ tick }`                                             | `Simulation`                                                    | `Match` (publish snapshot, throttle to the store)                                                          |
+| Event                               | Payload                                                | Emitted by                                                                                                                                                                  | Typical listeners                                                                                          |
+| ----------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `entity-spawned`                    | `{ entityId, kind, team }`                             | Any code that adds an entity (for example `EntityFactory` via `SpawnSystem`, `Simulation` for a roster, `RangedProjectileAttackStrategy`, `DevSpawnHandler`, `GuardRoster`) | `SnapshotSystem`, views, `Scoring` (a row per Legend)                                                      |
+| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem`; `ProjectileSystem` for a spent shot (`consumed`)                                                                                                             | `HordeSystem`, invariants                                                                                  |
+| `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                                                                                                                            | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage)                   |
+| `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                                                                                                                             | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                                    |
+| `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                                                                                                                                           | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212)                    |
+| `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                      | `StructureSystem`                                                                                                                                                           | `HordeSystem` (gate holding), views                                                                        |
+| `camp-cleared`                      | `{ entityId, team, killerId }`                         | `SpawnSystem`                                                                                                                                                               | `ProgressionSystem` (camp reward), `MatchDirector`                                                         |
+| `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                                                                                                                                           | HUD, views                                                                                                 |
+| `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                                                                                                                             | HUD, `MinimapView`                                                                                         |
+| `checkpoint-reached`                | `{ pointId, team, checkpoint, presentLegendIds }`      | `CaptureSystem`                                                                                                                                                             | `Scoring` (DEC-214, DEC-223), `ProgressionSystem` (ultimate meter, DEC-273), checkpoint spawners (Phase 3) |
+| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                                                                                                                             | `MatchDirector`, `StatusEffectSystem`                                                                      |
+| `phase-changed`                     | `{ from, to }`                                         | `MatchRecord.setPhase` (called by `MatchDirector`)                                                                                                                          | `Announcer`                                                                                                |
+| `match-ended`                       | `{ result: MatchResult }`                              | `MatchDirector`                                                                                                                                                             | client `MatchBridge` (the results flow)                                                                    |
+| `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                                                                                                                                                             | views (VFX), `Announcer`                                                                                   |
+| `status-applied`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectApplier` (DEC-41)                                                                                                                                              | views, HUD                                                                                                 |
+| `status-expired`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectSystem`                                                                                                                                                        | views, HUD                                                                                                 |
+| `horde-spawned` / `horde-dissolved` | `{ hordeId, lane, team, memberIds }`                   | `SpawnSystem` / `HordeSystem`                                                                                                                                               | `EnragedSystem`, `MinimapView`                                                                             |
+| `level-up`                          | `{ entityId, level }`                                  | `ProgressionSystem`                                                                                                                                                         | `AbilitySystem` (scaling), HUD                                                                             |
+| `ultimate-charged`                  | `{ entityId, amount, charge, cause }`                  | `ProgressionSystem` (05 §6)                                                                                                                                                 | `GameState.charges` (`ultimate-never-fills-passively`, 05 §16)                                             |
+| `assist-earned`                     | `{ legendId, victimId }`                               | `LegendDeathRule` (in `Scoring`)                                                                                                                                            | `ProgressionSystem` (ultimate meter, DEC-272)                                                              |
+| `team-changed`                      | `{ entityId, from, to, cause }`                        | `Team` component                                                                                                                                                            | `HordeSystem`, views                                                                                       |
+| `boss-summoned`                     | `{ entityId, kind }`                                   | `SpawnSystem` (timeline)                                                                                                                                                    | `Announcer`, `AiSystem` (camps turn aggressive)                                                            |
+| `command-rejected`                  | `{ command, reason }`                                  | `applyCommand`                                                                                                                                                              | `DeveloperMenu`, tests                                                                                     |
+| `collision-anomaly`                 | `{ entityId, from, to, colliderId }`                   | `CollisionSystem`                                                                                                                                                           | `InvariantSystem`, `Logger`                                                                                |
+| `invariant-violated`                | `{ invariantId, tick, details }`                       | `InvariantRunner`                                                                                                                                                           | `Logger`, `PerfOverlay`, tests (throw)                                                                     |
+| `tick-completed`                    | `{ tick }`                                             | `Simulation`                                                                                                                                                                | `Match` (publish snapshot, throttle to the store)                                                          |
 
 Systems subscribe in their constructor and never call another system. `Simulation.on()` exposes
 the same channel to the client; the bridge re-publishes a throttled subset to React.
@@ -245,6 +257,7 @@ export type EntitySnapshot = {
   readonly definitionId: string;
   readonly mapFeatureId?: string; // a structure's map feature, so the HUD binds its tile (DEC-212)
   readonly team: Team | null;
+  readonly isHidden?: boolean; // present, true, while a status sets `hidden` (Veil, DEC-266, DEC-327)
   readonly transform: {
     readonly x: number;
     readonly y: number;
@@ -266,7 +279,15 @@ export type EntitySnapshot = {
     readonly max: number;
   } | null; // any entity with an aether pool (every Legend), not only the player (DEC-230)
   readonly statuses: readonly StatusSnapshot[] | null; // oldest first; null without StatusEffects
+  readonly projectile: ProjectileSnapshot | null; // a shot's flown share and ending (DEC-306, DEC-322); null for any other entity
+  readonly swing: SwingSnapshot | null; // the unit's latest melee sweep, display only (DEC-304); null when it made none
   readonly anim: AnimState;
+};
+export type SwingSnapshot = {
+  readonly atTick: number; // the tick the swing was made
+  readonly direction: { readonly x: number; readonly y: number }; // unit vector
+  readonly radius: number; // metres from the attacker's centre
+  readonly arcDegrees: number;
 };
 export type StatusSnapshot = {
   readonly id: StatusEffectId;
@@ -278,6 +299,12 @@ export type StatusSnapshot = {
 `SnapshotSystem` builds each `EntitySnapshot` through `EntitySnapshotter`
 (`state/EntitySnapshotter.ts`), one group per component, so a new component group changes that
 class and the `EntitySnapshot` type, never `GameState` (DEC-232).
+
+Core decides what is hidden (ADR 0016 point 1): `isHidden` is one flag for every viewer, made in
+core from the statuses, and present only while a status sets `hidden`. The client does not read
+the statuses to find it. Its `Viewer` decides how a hidden unit shows to the player
+([08](08-game-engine.md) §8), and `findUnitAt` (the unit under a click) skips a hidden unit, so a
+click does not pick one (DEC-327).
 
 `Match` keeps the two latest snapshots (`previous`, `current`); `SceneView.draw(previous, current,
 alpha)` pairs the entities of both by id (both arrays are in store order; an entity spawned or
@@ -480,8 +507,8 @@ each closed by the session or phase named:
   aim overlay (ADR 0026 decisions 4 and 7). `GameState` also carries the match's collision rule
   (`collisions`, the `CollisionQuery` port beside `space` and `paths`: the one `CollisionResolver`
   `CollisionSystem` uses; `null` without map objects).
-- `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
-  `AttackTargetHandler`). `cast-ability` has `CastAbilityHandler`, which checks with the
+- `move`, `stop`, `attack-target` and `attack-aim` have their own handlers (`MoveHandler`,
+  `StopHandler`, `AttackTargetHandler`, `AttackAimHandler`). `cast-ability` has `CastAbilityHandler`, which checks with the
   `CastValidator` that `Simulation` injects and queues the cast for `AbilitySystem`; a cast that
   fails `AbilitySystem`'s second check is announced with `command-rejected` from there (05 §7,
   ADR 0026 decision 2). `intent` and `dev-set-controller` are routed to
@@ -514,6 +541,16 @@ each closed by the session or phase named:
 - `Replay` has no `versions` yet (they arrive with the content catalogue).
 - `map/` still reads its own `MapConfig`, `DEFAULT_MAP_CONFIG`, `MapRandom` and
   `validateMapConfig` until session A swaps to `GameConfig` and `SeededRandom` (06 §10).
+- Veil (`feat/vanguard-veil-hamstring`, DEC-266, DEC-327): §2 and §5 state the build; the
+  systems that keep a held target that turned untargetable (`EntityStore.isUntargetable`) are in
+  [05 §18, "Veil"](05-abilities-weapons-and-loadouts.md#18-implementation-status).
+
+**Implementation status, 2026-11-20 (branch `feat/ranged-attacks`, PR 1; DEC-300).**
+`ProjectileSystem` removes each shot with cause `consumed`; projectiles are not pooled (04 §11,
+DEC-309), so nothing listens for `entity-removed` on a projectile's behalf. No `projectile-hit`
+event exists (05 §10, DEC-314). `StateHasher` hashes a shot's payload fields
+(`ProjectilePayload.fields`; an ability shot adds its cast level, 05 §18), its end ticks left and a `Movement` speed limit when one is set (10 §2,
+DEC-314); a match with no shot keeps its hash.
 
 ## Related
 

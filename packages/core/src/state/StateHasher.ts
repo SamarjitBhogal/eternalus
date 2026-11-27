@@ -7,6 +7,8 @@ import { Combat } from '../components/Combat';
 import { CombatClock } from '../components/CombatClock';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { ProjectileFlight } from '../components/ProjectileFlight';
+import { ProjectilePayload } from '../components/ProjectilePayload';
 import { Progression } from '../components/Progression';
 import { Veterancy } from '../components/Veterancy';
 import { StatusEffects } from '../components/StatusEffects';
@@ -151,6 +153,11 @@ export class StateHasher {
     if (movement !== undefined && (movement.heading.x !== 0 || movement.heading.y !== 0)) {
       fields.push(['heading', movement.heading.x, movement.heading.y]);
     }
+    // Only a set speed limit (a shot slowing to its end) adds a field, so states without one hash
+    // as before.
+    if (movement !== undefined && movement.speedLimit !== Number.POSITIVE_INFINITY) {
+      fields.push(['speed-limit', movement.speedLimit]);
+    }
     // Forced motion (a dash or knock-back, ADR 0026 decision 4) adds a field only while a push is
     // under way, so a match where nobody was pushed hashes as before.
     if (movement?.isForced === true) {
@@ -169,8 +176,24 @@ export class StateHasher {
       );
     }
     const combat = entity.findComponent(Combat);
-    if (combat !== undefined && (combat.targetId !== null || combat.readyAtTick > 0)) {
-      fields.push(['combat', combat.targetId, combat.readyAtTick]);
+    if (
+      combat !== undefined &&
+      (combat.targetId !== null ||
+        combat.aimPoint !== null ||
+        combat.readyAtTick > 0 ||
+        combat.hitIds.length > 0)
+    ) {
+      // Only the melee mode, an aim point and recorded hits add fields, so runs that never use
+      // them hash as before (DEC-308, DEC-184). The hits decide whom the AI sees a unit attack
+      // (DEC-322 (2)).
+      fields.push([
+        'combat',
+        combat.targetId,
+        combat.readyAtTick,
+        ...(combat.mode === 'melee' ? ['melee'] : []),
+        ...(combat.aimPoint === null ? [] : ['aim', combat.aimPoint.x, combat.aimPoint.y]),
+        ...(combat.hitIds.length === 0 ? [] : ['hits', combat.hitsUntilTick, ...combat.hitIds]),
+      ]);
     }
     const vision = entity.findComponent(Vision);
     if (vision !== undefined) {
@@ -229,6 +252,7 @@ export class StateHasher {
           status.stacks,
           status.periodAnchorTick,
           status.expiresTick,
+          ...(status.isBroken ? ['broken'] : []),
         ]),
       ]);
     }
@@ -253,6 +277,13 @@ export class StateHasher {
     const progression = entity.findComponent(Progression);
     if (progression !== undefined) {
       fields.push(['progression', progression.xp, progression.level]);
+    }
+    // A shot's payload is fixed at firing but decides its hit (`ProjectilePayload.fields`); how
+    // long it has been ending (-1 while it flies) decides when it is removed.
+    const shot = entity.findComponent(ProjectilePayload);
+    if (shot !== undefined) {
+      const endTicksLeft = entity.findComponent(ProjectileFlight)?.endTicksLeft ?? -1;
+      fields.push(['projectile', ...shot.fields, endTicksLeft]);
     }
     const watch = entity.findComponent(ChaseWatch);
     if (watch !== undefined) {

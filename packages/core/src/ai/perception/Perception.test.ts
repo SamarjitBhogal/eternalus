@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import { Combat } from '../../components/Combat';
 import { Health } from '../../components/Health';
+import { StatusEffects } from '../../components/StatusEffects';
 import { Transform } from '../../components/Transform';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
+import { loadStatusEffects } from '../../content/status-effects/loadStatusEffects';
 import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { SpaceIndex } from '../../physics/SpaceIndex';
@@ -76,6 +79,37 @@ describe('Perception', () => {
     // A neutral querier never sees another neutral unit as hostile.
     const asCamp = { hostileTo: 'neutral', neutralAttackersOf: camp.id } as const;
     expect(perception.unitsWithin(center, 5, asCamp)).toEqual([self.id, ally.id]);
+  });
+
+  it('leaves an untargetable (Veiled) unit out of a hostile query only (DEC-266)', () => {
+    const { state, add, index } = setUp();
+    const veiled = add('dark', 11);
+    const seen = add('dark', 12);
+    veiled
+      .getComponent(StatusEffects)
+      .apply(loadStatusEffects(30, 2).get('invisible'), null, state.tick);
+    index();
+    const perception = new Perception(state);
+    const center = { x: 10, y: 10 };
+
+    expect(perception.unitsWithin(center, 5, { hostileTo: 'light' })).toEqual([seen.id]);
+    expect(perception.nearest(center, 5, { hostileTo: 'light' })).toBe(seen.id);
+    expect(perception.unitsWithin(center, 5, { aliveOnly: true })).toEqual([veiled.id, seen.id]);
+  });
+
+  it("keeps a neutral unit with no lock while its last attack's hit on this unit counts (DEC-322 (2))", () => {
+    const { state, add, index } = setUp();
+    const self = add('light', 10);
+    const camp = add('neutral', 12, 'light-mob', 'light-camp-mob');
+    index();
+    const perception = new Perception(state);
+    const fightingBack = { hostileTo: 'light', neutralAttackersOf: self.id } as const;
+    const interval = camp.getComponent(Combat).attack.interval;
+
+    state.entities.recordHits(camp.id, [self.id], state.tick);
+    expect(perception.unitsWithin({ x: 10, y: 10 }, 5, fightingBack)).toEqual([camp.id]);
+    for (let tick = 0; tick <= interval; tick += 1) state.advanceTick();
+    expect(perception.unitsWithin({ x: 10, y: 10 }, 5, fightingBack)).toEqual([]);
   });
 
   it('returns ids in string order, and breaks a nearest tie toward the lower id', () => {

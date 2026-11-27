@@ -4,6 +4,8 @@ import type { AttackStrategy } from './AttackStrategy.types';
 import { LaneFollowMovementStrategy } from './LaneFollowMovementStrategy';
 import { LeashedChaseMovementStrategy } from './LeashedChaseMovementStrategy';
 import { MeleeAttackStrategy } from './MeleeAttackStrategy';
+import { MeleeSweepAttackStrategy } from './MeleeSweepAttackStrategy';
+import { RangedProjectileAttackStrategy } from './RangedProjectileAttackStrategy';
 import type { MovementStrategy } from './MovementStrategy.types';
 
 /**
@@ -23,5 +25,7 @@ export const createDefaultStrategyRegistry = (): StrategyRegistry => ({
   },
   attack: {
     melee: new MeleeAttackStrategy(),
+    'melee-sweep': new MeleeSweepAttackStrategy(),
+    'ranged-projectile': new RangedProjectileAttackStrategy(),
   },
 });

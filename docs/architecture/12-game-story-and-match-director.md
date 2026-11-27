@@ -505,6 +505,10 @@ structure points (DEC-212) and capture and hold points (GL-15, DEC-214, DEC-223)
 scorer), and `checkpoint-reached` carries `presentLegendIds`. The other §5 counters join with the
 work that fills them.
 
+Implementation status, 2026-11-20 (branch `feat/ranged-attacks`, PR 1; DEC-300): projectiles now
+deal damage. `WeaponImpact` (called by `ProjectileSystem`, DEC-314) applies each hit through
+`DamagePipeline`, so the hit goes through the same path as a melee hit (05 §10).
+
 Implementation status, 2026-11-16 (branch `feat/vanguard-kit`, DEC-272; `INBOX.md` HC-B7 (3),
 signed off by DEC-283 (3)): `LegendDeathRule` also announces each assist it awards as `assist-earned { legendId,
 victimId }`, which fills the helper's ultimate meter

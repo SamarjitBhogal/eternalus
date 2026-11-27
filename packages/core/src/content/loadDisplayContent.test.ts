@@ -17,6 +17,7 @@ import type { AbilityStepDescriber, DisplayCatalogues } from './loadDisplayConte
 import { loadDisplayContent } from './loadDisplayContent';
 import { MAP_FEATURE_DEFINITIONS } from './maps/mapFeatureDefinitions';
 import { VERDICT_LINES } from './narrative/verdictLines';
+import { PROJECTILES } from './projectiles/projectileCatalogue';
 import { STATUS_EFFECTS } from './status-effects/statusEffectCatalogue';
 import { BOT_ROSTER } from './teams/botRoster';
 
@@ -78,6 +79,11 @@ describe('loadDisplayContent', () => {
       STATUS_EFFECTS.all().map(({ id, displayName }) => ({ id, displayName })),
     );
     expect(load().statuses).toContainEqual({ id: 'fury-windup', displayName: 'Wind-up' });
+  });
+
+  it('publishes every projectile id, in catalogue order', () => {
+    expect(load().projectileIds).toEqual(PROJECTILES.all().map(({ id }) => id));
+    expect(load().projectileIds).toEqual(['magus-bolt', 'arrow', 'hamstring-blade']);
   });
 
   it('carries each feature kind with its name', () => {
@@ -181,11 +187,11 @@ describe('loadDisplayContent', () => {
     );
   });
 
-  it('marks exactly the five built abilities available; the others have no steps', () => {
+  it('marks exactly the seven built abilities available; the others have no steps', () => {
     const { abilities } = load();
 
     expect(abilities.filter((ability) => ability.isAvailable).map((ability) => ability.id)).toEqual(
-      ['blade-runner', 'fury', 'fury-dash', 'slam', 'shockwave'],
+      ['blade-runner', 'veil', 'hamstring', 'fury', 'fury-dash', 'slam', 'shockwave'],
     );
     for (const ability of abilities.filter((entry) => !entry.isAvailable)) {
       expect(ability.steps).toEqual([]);

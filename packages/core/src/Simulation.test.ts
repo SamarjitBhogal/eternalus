@@ -121,6 +121,8 @@ describe('Simulation', () => {
         area: null,
         capture: null,
         statuses: [],
+        projectile: null,
+        swing: null,
       },
     ]);
   });

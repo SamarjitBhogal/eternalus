@@ -29,7 +29,7 @@ export const doesCircleOverlapPolygon = (point: Vec2, radius: number, shape: Pol
 /**
  * Whether a disc of `radius` at `centre` reaches `shape`: the centre is inside it, or its outline is
  * at most `radius` away (touching counts, unlike `doesCircleOverlapPolygon`). How an ability's
- * circle hits a map object; a basic attack's reach to an outline (`EntityStore.isInReach`, through
+ * circle hits a map object; a basic attack's reach to an outline (`ReachQuery.isInReach`, through
  * `aimPointOf`) is the same rule. `false` for a shape with no corners.
  */
 export const doesDiscReachPolygon = (centre: Vec2, radius: number, shape: Polygon): boolean => {

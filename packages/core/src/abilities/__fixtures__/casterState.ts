@@ -46,6 +46,6 @@ export const casterState = (
 
 /** The kit of the cast tests: a strike, an unbuilt ability, a dash and an ultimate with an effect. */
 export const TEST_KIT: AbilityKit = {
-  abilities: ['fake-strike', 'veil', 'fake-dash'],
+  abilities: ['fake-strike', 'fake-unbuilt', 'fake-dash'],
   ultimate: 'fake-ultimate',
 };

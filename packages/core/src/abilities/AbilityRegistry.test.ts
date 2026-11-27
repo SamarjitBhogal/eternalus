@@ -47,7 +47,7 @@ describe('AbilityRegistry', () => {
     expect(dash?.spec).toEqual({ kind: 'directional' });
     expect(furyDash?.strategy).toBeInstanceOf(HeadingTargeting);
     expect(furyDash?.spec).toEqual({ kind: 'heading' });
-    expect(registry.resolve('veil').targeting).toBeNull();
+    expect(registry.resolve('fake-unbuilt').targeting).toBeNull();
   });
 
   it('binds each step with its delay after the cast, 0 for a step with none (05 §4)', () => {
@@ -104,8 +104,8 @@ describe('AbilityRegistry', () => {
   });
 
   it('makes an ability with no effects (not built, S1) unavailable', () => {
-    const veil = testAbilityRegistry([]).resolve('veil');
-    expect(veil).toMatchObject({ isAvailable: false, steps: [] });
+    const unbuilt = testAbilityRegistry([]).resolve('fake-unbuilt');
+    expect(unbuilt).toMatchObject({ isAvailable: false, steps: [] });
   });
 
   it('fails loudly on an effect kind with no strategy, nested ones included (no more unavailable interim)', () => {

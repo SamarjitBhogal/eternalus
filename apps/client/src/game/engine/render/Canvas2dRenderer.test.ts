@@ -48,6 +48,7 @@ const createFakeContext = (): FakeContext => {
   const context: DrawContext = {
     ...spies,
     fillStyle: '',
+    globalAlpha: 1,
     strokeStyle: '',
     lineWidth: 1,
     lineJoin: 'miter',
@@ -243,6 +244,35 @@ describe('Canvas2dRenderer', () => {
     };
 
     expect(clipFailing).toThrow('draw failed');
+    expect(spies.save).toHaveBeenCalledOnce();
+    expect(spies.restore).toHaveBeenCalledOnce();
+  });
+
+  it('draws see-through by multiplying the current opacity, then restores the context', () => {
+    const { context, spies } = createFakeContext();
+    const renderer = createFittedRenderer(context);
+    const order: string[] = [];
+    for (const step of ['save', 'restore'] as const) {
+      spies[step].mockImplementation(() => order.push(step));
+    }
+    context.globalAlpha = 0.8;
+
+    renderer.withOpacity(0.5, () => order.push(`draw at ${String(context.globalAlpha)}`));
+
+    expect(order).toEqual(['save', 'draw at 0.4', 'restore']);
+  });
+
+  it('restores the context even when the see-through drawing throws', () => {
+    const { context, spies } = createFakeContext();
+    const renderer = createFittedRenderer(context);
+
+    const drawFailing = (): void => {
+      renderer.withOpacity(0.5, () => {
+        throw new Error('draw failed');
+      });
+    };
+
+    expect(drawFailing).toThrow('draw failed');
     expect(spies.save).toHaveBeenCalledOnce();
     expect(spies.restore).toHaveBeenCalledOnce();
   });

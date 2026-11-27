@@ -6,6 +6,7 @@ import { Transform } from '../components/Transform';
 import type { StuckDetectionRule } from '../content/ai/ai.types';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
+import { ReachQuery } from '../state/ReachQuery';
 import { distance } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
@@ -14,7 +15,7 @@ import type { System, SystemContext } from './System.types';
 /**
  * Finds the AI units stuck on their way to their attack target and plans their way round (owner
  * 2026-11-05, DEC-193): every mob and bot Legend with a target keeps a `ChaseWatch` of how close it
- * has come to what it heads for: the point of its target it aims at (`EntityStore.aimPointOf`, as
+ * has come to what it heads for: the point of its target it aims at (`ReachQuery.aimPointOf`, as
  * `PathingSystem` aims), or its detour waypoint. One that has not come
  * `minProgress` closer in `windowTicks`, and is not in reach, is stuck: it heads for the A\*
  * waypoint toward that point over the nav grid (`state.paths`), and asks again each time it comes
@@ -35,11 +36,15 @@ export class StuckSystem implements System {
   public readonly name = 'stuck';
   private readonly aim: MutableVec2 = { x: 0, y: 0 };
   private readonly step: MutableVec2 = { x: 0, y: 0 };
+  private readonly reach = new ReachQuery();
 
   /** @param rule - When a chase counts as stuck and how it goes round, from content, in ticks. */
   public constructor(private readonly rule: StuckDetectionRule) {}
 
-  /** Watches every AI unit with an attack target, in store order; drops the watch of the rest. */
+  /**
+   * Watches every AI unit with an attack target it may pick (not Veiled, DEC-266), in store order;
+   * drops the watch of the rest.
+   */
   public update({ state }: SystemContext): void {
     const window = {
       tick: state.tick,
@@ -52,10 +57,11 @@ export class StuckSystem implements System {
       const self = entity.findComponent(Transform);
       if (
         targetId === null ||
+        state.entities.isUntargetable(targetId) ||
         self === undefined ||
         !entity.hasComponent(ControllerBinding) ||
         entity.hasComponent(Deploying) ||
-        state.entities.aimPointOf(targetId, self.position, this.aim) === null
+        this.reach.aimPointOf(state.entities, targetId, self.position, this.aim) === null
       ) {
         entity.removeComponent(ChaseWatch);
         return;
@@ -65,7 +71,7 @@ export class StuckSystem implements System {
         watch = new ChaseWatch();
         entity.addComponent(watch);
       }
-      const isInReach = state.entities.isInReach(entity.id, targetId);
+      const isInReach = this.reach.isInReach(state.entities, entity.id, targetId);
       const gap = distance(self.position, watch.waypointFor(targetId) ?? this.aim);
       const isStuck = watch.observe(targetId, gap, isInReach, window);
       const isAtWaypoint = watch.waypoint !== null && gap <= this.rule.waypointRadius;

@@ -24,6 +24,8 @@ const entity = (
   area: null,
   capture: null,
   statuses: null,
+  projectile: null,
+  swing: null,
 });
 
 const PLAYER = entity('player', 'legend', 'light', 100);
@@ -71,6 +73,16 @@ describe('findUnitAt', () => {
       noPosition,
     ];
     expect(findUnitAt(units, 'player', { x: 0, y: 0 })).toBeNull();
+  });
+
+  it('skips a hidden (Veiled) enemy, so a click picks the unit drawn behind it (DEC-266)', () => {
+    const veiled: EntitySnapshot = {
+      ...entity('veiled', 'legend', 'dark', 0, 2, 1),
+      isHidden: true,
+    };
+    const units = [PLAYER, entity('behind', 'mob', 'dark', 0, 2, 0), veiled];
+    expect(findUnitAt(units, 'player', { x: 0, y: 0.5 })).toBe('behind');
+    expect(findUnitAt([PLAYER, veiled], 'player', { x: 0, y: 1 })).toBeNull();
   });
 
   it('where discs overlap, the unit drawn on top (largest y; the later one on a tie) wins', () => {

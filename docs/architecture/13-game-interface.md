@@ -317,6 +317,7 @@ export const INPUT_ACTIONS = [
   'move-left',
   'move-right',
   'attack',
+  'melee-attack',
   'ability-1',
   'ability-2',
   'ability-3',
@@ -379,6 +380,7 @@ demands it); no screen, prompt or system names a key.
 | `InputAction`                                        | Default (`TUNE`, [09-controls](../reference/game-design/09-controls.md))                                                                    | Effect                                                                                                                                                                                                                             | Status                                    |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
 | `move-up/down/left/right`                            | W S A D (`wasd`); arrows (`arrows`)                                                                                                         | `intent.move` axis, normalised                                                                                                                                                                                                     | **MVP**                                   |
+| `melee-attack`                                       | F                                                                                                                                           | `intent.isMeleeAttacking` held with the aim → `attack-aim { mode: 'melee' }`; the Magus staff's melee, rebindable (DEC-308)                                                                                                        | **MVP**                                   |
 | `attack`; `ability-1..3`, `ability-4`                | mouse 0; 1 2 3, 4 (ultimate)                                                                                                                | `intent.attack` edge with the aim; `intent.cast` slot (ids equal the `AbilitySlot` literals, 05 §15)                                                                                                                               | **MVP**                                   |
 | `gadget-1`, `gadget-2`                               | Z, C                                                                                                                                        | `intent.cast` gadget slots → `cast-ability { slot: 'gadget-1' \| 'gadget-2' }` (DISC-61)                                                                                                                                           | **MVP** (artifacts **MVP-if-time**)       |
 | `sprint`, `interact`                                 | `Recommendation:` Shift, E                                                                                                                  | `intent.isSprinting`; pick-up/drop, enter a turret                                                                                                                                                                                 | **MVP** (pick-up **MVP-if-time**)         |
@@ -412,7 +414,7 @@ export class InputMapper {
 
 `Match.tick()` polls the devices, calls `resolve` and `toIntent`, and enqueues one
 `{ type: 'intent', actorId: humanLegendId, intent }` command when the intent changed;
-`PlayerController.decide` turns it into `move`, `attack-target`, `cast-ability` (gadget slots
+`PlayerController.decide` turns it into `move`, `attack-aim` (DEC-184), `cast-ability` (gadget slots
 included), `pick-up`, `throw` ([11](11-game-ai.md) §4.1). `InputIntent` is a core type (public API,
 [02](02-code-structure.md) §6) with no key names in it, so the replay log is device-agnostic and
 bots and the human share one `Command` vocabulary. `BindingResolver` keys chords with

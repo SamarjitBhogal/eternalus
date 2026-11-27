@@ -3,12 +3,13 @@ import type { CommandContext, CommandHandler } from '../CommandHandler.types';
 
 /**
  * Points an attacker at a target; from then on `CombatSystem` hits it whenever it is in reach and
- * the attack is off cooldown, until the target dies or another `attack-target` replaces it.
+ * the attack is off cooldown, until the target dies or another `attack-target` replaces it. A
+ * dead or untargetable (Veiled, DEC-266) target is refused.
  */
 export class AttackTargetHandler implements CommandHandler<'attack-target'> {
   /** Validates the attacker and target, then sets the target. */
   public handle(
-    { actorId, targetId }: Command<'attack-target'>,
+    { actorId, targetId, mode }: Command<'attack-target'>,
     { state }: CommandContext,
   ): CommandRejectReason | null {
     const { entities } = state;
@@ -17,9 +18,9 @@ export class AttackTargetHandler implements CommandHandler<'attack-target'> {
     }
     const actorTeam = entities.teamOf(actorId);
     const isAlly = actorTeam !== undefined && actorTeam === entities.teamOf(targetId);
-    if (isAlly || !entities.isAlive(targetId)) {
+    if (isAlly || !entities.isTargetable(targetId)) {
       return 'invalid-target';
     }
-    return entities.setAttackTarget(actorId, targetId) ? null : 'cannot-attack';
+    return entities.setAttackTarget(actorId, targetId, mode) ? null : 'cannot-attack';
   }
 }

@@ -5,10 +5,11 @@ import type { EntitySnapshot } from './Snapshot.types';
 
 /**
  * Selects the living enemy unit (Legend, mob or boss) drawn under `point` (world units): the
- * snapshot position and `radius` set its disc. Allies (the attacker included) and dead units are
- * skipped. Where discs overlap the unit drawn on top wins: the largest `y`, the order of
- * the client's `EntityLayer.draw` (a later entity wins a tie as it is drawn later; DEC-183). Structures and map
- * objects are no units, so a click on a unit wins over the building behind it.
+ * snapshot position and `radius` set its disc. Allies (the attacker included), dead units and
+ * hidden units (`isHidden`, Veil: the screen does not draw them) are skipped. Where discs overlap
+ * the unit drawn on top wins: the largest `y`, the order of the client's `EntityLayer.draw` (a
+ * later entity wins a tie as it is drawn later; DEC-183). Structures and map objects are no units,
+ * so a click on a unit wins over the building behind it.
  *
  * ponytail: the hit test uses the snapshot position; the drawn one is interpolated up to one tick
  * (about 0.12 world units) behind it. Fine at the smallest radius of 0.4. Upgrade: pass the
@@ -24,9 +25,10 @@ export const findUnitAt = (
   const actorTeam = entities.find((entity) => entity.id === actorId)?.team ?? null;
   let selected: EntityId | null = null;
   let frontY = -Infinity;
-  for (const { id, family, team, transform, health } of entities) {
+  for (const { id, family, team, transform, health, isHidden } of entities) {
     if (
       team === actorTeam ||
+      isHidden === true ||
       !isUnitFamily(family) ||
       transform === null ||
       health === null ||

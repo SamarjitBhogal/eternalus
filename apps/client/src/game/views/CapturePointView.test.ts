@@ -37,6 +37,8 @@ const zone = (
   area,
   capture,
   statuses: null,
+  projectile: null,
+  swing: null,
 });
 
 const capture = (overrides: Partial<CaptureSnapshot> = {}): CaptureSnapshot => ({
@@ -52,7 +54,7 @@ const capture = (overrides: Partial<CaptureSnapshot> = {}): CaptureSnapshot => (
 const draw = (entity: EntitySnapshot): RecordingRenderer => {
   const renderer = new RecordingRenderer();
   new CapturePointView().draw(
-    { entity, position: AT, facing: { x: 1, y: 0 }, isFocused: false },
+    { entity, position: AT, facing: { x: 1, y: 0 }, tick: 0, isFocused: false },
     renderer,
   );
   return renderer;

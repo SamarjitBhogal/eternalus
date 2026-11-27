@@ -21,6 +21,7 @@ import { MatchCamera } from './MatchCamera';
 import { MatchViewControls } from './MatchViewControls';
 import type { PlayerActions } from './PlayerActions';
 import { PlayerCommands } from './PlayerCommands';
+import { Viewer } from './Viewer';
 import { createDefaultStatusCueRegistry } from './views/defaultStatusCueRegistry';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
@@ -54,6 +55,9 @@ export class Match implements LoopTarget {
 
   /** Which units draw a world health bar, and on which side; it listens to the simulation's events. */
   private readonly healthBars: HealthBarVisibility;
+
+  /** Who watches: the player's Legend and team, read by the rules that depend on it. */
+  private readonly viewer: Viewer;
 
   /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */
   private readonly objects: WorldObjectsView;
@@ -94,10 +98,12 @@ export class Match implements LoopTarget {
   public constructor(private readonly deps: MatchDeps) {
     const { simulation, world, tickRate, scheduler, camera, logger, bridge, input } = deps;
     const { map, presentation, mapObjects } = world;
-    this.healthBars = new HealthBarVisibility(simulation);
     this.current = simulation.snapshot();
     this.playerId = deps.remote?.legendId ?? this.current.match.humanLegendId;
-    this.healthBars.observe(this.current, this.playerId);
+    this.viewer = new Viewer(this.playerId);
+    this.healthBars = new HealthBarVisibility(simulation, this.viewer);
+    this.viewer.observe(this.current);
+    this.healthBars.observe(this.current);
     this.entities = new EntityLayer(
       createDefaultViewRegistry((kind) => {
         logger.log(
@@ -111,6 +117,7 @@ export class Match implements LoopTarget {
       createDefaultStatusCueRegistry(),
       isDead,
       this.healthBars.healthBarOf,
+      this.viewer.visibilityOf,
     );
     this.camera = new MatchCamera(camera, map);
     this.casts = new AbilityCasts(
@@ -233,7 +240,7 @@ export class Match implements LoopTarget {
    */
   public tick(): void {
     if (this.playerId !== null) {
-      const isMoving = this.commands.apply(this.playerId, this.current);
+      const isMoving = this.commands.apply(this.playerId);
       if (isMoving) {
         this.camera.playerMoved();
       }
@@ -241,7 +248,8 @@ export class Match implements LoopTarget {
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
-    this.healthBars.observe(this.current, this.playerId);
+    this.viewer.observe(this.current);
+    this.healthBars.observe(this.current);
     this.roofs.playerAt(this.livingPlayerAt());
     if (this.bridge.afterTick(this.current, this.playerId)) {
       this.deps.observer.ended();

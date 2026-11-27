@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-22
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -176,6 +176,23 @@ Owner: _ (sim lane). Week 8.
       (an arc where the weapon sweeps); a projectile weapon goes along the aim. Everything in that
       area takes damage, so a minion and an object in one sweep are both hit. A click does not
       need a target under the cursor.
+      **Status (2026-11-20, branch `feat/ranged-attacks`, PR 1; DEC-300):** `ranged-projectile` is built
+      beside `melee`, with projectile content in `content/projectiles/`, the Magus staff's ranged basic
+      attack and the new `obsidian-bow`. The two weapon boxes above stay unticked: the
+      `AttackStrategy` box also needs the flex attack, heavy attack and parry, and the
+      `WeaponDefinition` box needs the loadout validation test (SCRUM-290). All numbers are `TUNE`
+      (DEC-306, DEC-310). The staff's melee attack is on its own action, default F (DEC-308).
+      Stand-in until PR 2 (melee sweeps, which builds the click that needs no target): the
+      player fires only at a target under the cursor (`attack-target`), and the shot flies at
+      that target, not along the aim that DEC-184 sets. PR 2 adds aimed fire for ranged weapons
+      with the same command.
+      **Status (2026-11-21, branch `feat/melee-sweeps`, PR 2; DEC-319):** `melee-sweep` is built:
+      the talons, Wuuthrad and the staff's melee attack hit every enemy body in a wedge (arcs
+      DEC-304), reach is the class's part plus the weapon's (DEC-305), and the player's attack
+      button and melee key attack along the aim with the new `attack-aim` command, so the PR 1
+      stand-in above has ended. The owner's answers are built: DEC-322 (aim at a building to hit it, the AI's reading of "attacking", one area-hit rule), the DEC-317 addendum (shots go into walls) and DEC-326 (the attack button, a busy minion). The two weapon boxes stay unticked for the reasons above; PR 3
+      adds the remaining weapons and their arcs.
+
 - [ ] **`ArtifactDefinition` content + gadget slots Z/C** (`TUNE`: Sentinel Mortar with impact
       and air-burst modes; Magus Soul Orb (pending) with Cast Forward and Follower; the second
       Sentinel artifact and the Warrior artifact per INBOX). Owner: _. Test: artifacts are

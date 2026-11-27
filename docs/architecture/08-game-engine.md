@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-22
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -12,6 +12,7 @@ paths:
     'apps/client/src/game/views/**',
     'apps/client/src/game/Match.ts',
     'apps/client/src/game/HealthBarVisibility.ts',
+    'apps/client/src/game/Viewer.ts',
   ]
 related:
   [
@@ -262,6 +263,14 @@ flowchart LR
   the status's time passes, read from the snapshot (`EntitySnapshot.statuses`); the look is in
   `WindupRingsView.constants.ts`. `main.tsx` passes the registry's `statusIds` to the display
   catalogue's boot check, which refuses a status core does not have (ADR 0023).
+- Hidden units: `Viewer` (`game/Viewer.ts`) decides what the player sees. It keeps the player's
+  Legend and team (also after the player dies) and gives each entity shown, faded or hidden from
+  `EntitySnapshot.isHidden` ([03](03-game-model.md) §5). `Match` injects its `visibilityOf` into
+  `EntityLayer`, as it injects the health-bar rule: a hidden unit of the viewer's team draws
+  faded (`Renderer.withOpacity`), any other hidden unit not at all, also while the viewer's team
+  is not known yet. `HealthBarVisibility` reads the same `Viewer`, so it holds no team of its own.
+  The later per-seat filter (multiplayer plan W10) replaces this one rule, not view code
+  (DEC-327).
 - `MinimapView` runs at a lower cadence into the `'minimap'` layer (`06-map-and-minimap.md` §8).
 
 ## 9. Performance budget and how it is measured
@@ -283,7 +292,8 @@ keeps a fixed-bucket frame histogram (< 8, < 16, < 33, < 50, ≥ 50 ms) and subs
 `PerformanceObserver` to `long-animation-frame` (feature-detected via `supportedEntryTypes`); the
 `PerfOverlay` HUD reads it through the bridge store
 ([research C2](../research/persistence-input-diagnostics-research.md#c2-structured-logging-timing-memory-and-a-developer-overlay)).
-GC-free hot paths come from pooling (projectiles, particles, events), pre-allocated typed arrays
+GC-free hot paths come from pooling (particles; projectiles only if the soak test shows pauses
+from them, DEC-309; event payloads only once profiling shows GC pauses, DEC-94), pre-allocated typed arrays
 (spatial hash, flow fields, snapshot buffers) and scratch vectors in steering
 ([research §6](../research/game-architecture-and-performance-research.md#6-object-pooling-and-gc-avoidance)).
 Profile before optimising; struct-of-arrays layouts are adopted only where a measure shows a hot
@@ -317,7 +327,7 @@ HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
   the match factory that only `main.tsx` binds, and `MatchHost` owns the window, document and
   canvas listeners, the devices and the ordered teardown.
 - The tick has `PlayerCommands` read the intent source (`input.read`) and enqueue `move`, `stop`
-  or `attack-target`, steps the simulation, swaps the snapshots and lets `MatchBridge`
+  or `attack-aim` (DEC-319), steps the simulation, swaps the snapshots and lets `MatchBridge`
   publish; there is no `devices.poll()` or `inputMapper.map` step and no `PerfMonitor` yet.
 - The minimap is drawn into the main canvas, clipped to the HUD's ring
   ([06](06-map-and-minimap.md) §10), not into a separate `'minimap'` layer.
@@ -335,6 +345,10 @@ Game-loop plan GL-5 (`feat/results-flow`): `Match.tick` calls the match observer
 after the tick on which `MatchBridge` publishes `match-ended`; the world keeps running (DEC-92)
 until `MatchState` leaves the phase ([13](13-game-interface.md) §2). A pause overlay still pauses
 the loop, but not the timer that leaves the phase (DEC-134).
+
+Veil (`feat/vanguard-veil-hamstring`, DEC-266, DEC-327): §8 states the `Viewer`; the faded draw
+of body, status cues, health bar and minimap dot, and sim mode, are in
+[05 §18, "Veil"](05-abilities-weapons-and-loadouts.md#18-implementation-status).
 
 ## Related
 

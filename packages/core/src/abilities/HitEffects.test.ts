@@ -3,15 +3,21 @@ import { describe, expect, it } from 'vitest';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { Movement } from '../components/Movement';
+import type { AbilityEffectSpec } from '../content/abilities/AbilityDefinition.types';
 import { loadAbilities } from '../content/abilities/loadAbilities';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import type { Entity } from '../entities/Entity';
 import type { GameEventMap } from '../state/GameEvents.types';
 import { casterState } from './__fixtures__/casterState';
+import { RecordingLauncher } from './__fixtures__/RecordingLauncher';
 import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 import { HitEffects } from './HitEffects';
 
 const STATUSES = loadStatusEffects(30, 2);
+/** A shot's on-hit step: 80 to the struck body. */
+const SHOT_HIT: readonly AbilityEffectSpec[] = [
+  { kind: 'damage', amount: 80, damageType: 'physical', shape: { kind: 'hit' } },
+];
 const REGISTRY = createDefaultAbilityRegistry(loadAbilities(30), 30);
 
 /** A light Vanguard at the origin, a dark Vanguard it struck 1 m north, and one beside that. */
@@ -28,7 +34,7 @@ const setUp = (statusId: string) => {
   statuses.apply(state, caster.id, statusId, caster.id);
   const applied: GameEventMap['status-applied'][] = [];
   state.events.on('status-applied', (payload) => applied.push(payload));
-  const hits = new HitEffects(REGISTRY, new DamagePipeline(), statuses);
+  const hits = new HitEffects(REGISTRY, new DamagePipeline(), statuses, new RecordingLauncher());
   return { state, caster, struck, neighbour, applied, hits };
 };
 
@@ -60,6 +66,32 @@ describe('HitEffects', () => {
 
     expect(applied).toEqual([]);
     expect(pushOf(struck)).toEqual({ x: 0, y: 0 });
+  });
+
+  it('runs a shot’s steps on the struck body only, under the given id, grown by the level', () => {
+    // Bleed on the caster: a status with no modifiers, so the hit is the step's amount alone.
+    const { state, caster, struck, hits } = setUp('bleed');
+    const dealt: GameEventMap['damage-applied'][] = [];
+    state.events.on('damage-applied', (payload) => dealt.push(payload));
+
+    hits.runSteps(
+      state,
+      {
+        casterId: caster.id,
+        sourceId: 'hamstring',
+        slot: 'ability-3',
+        steps: SHOT_HIT,
+        scaling: { amount: { perLevel: 0.5 } },
+        casterLevel: 3,
+      },
+      { from: { x: 0, y: 0.5 }, to: { x: 0, y: 1 } },
+      struck.id,
+    );
+
+    // 80 x (1 + 0.5 x (3 - 1)); the neighbour 0.5 m further is not in the `hit` shape.
+    expect(dealt.map(({ targetId, amount, source }) => [targetId, amount, source])).toEqual([
+      [struck.id, 160, { attackerId: caster.id, kind: 'ability', definitionId: 'hamstring' }],
+    ]);
   });
 
   it('runs nothing when the struck body is gone', () => {

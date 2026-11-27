@@ -1,8 +1,11 @@
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
+import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Progression } from '../components/Progression';
+import { ProjectileFlight } from '../components/ProjectileFlight';
+import { ProjectilePayload } from '../components/ProjectilePayload';
 import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -11,12 +14,14 @@ import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
 import { Structure } from '../entities/structures/Structure';
-import type { EntitySnapshot, StatusSnapshot } from './Snapshot.types';
+import { distance } from '../utils/geometry';
+import type { EntitySnapshot, ProjectileSnapshot, StatusSnapshot } from './Snapshot.types';
 
 /**
  * Projects one entity into its `EntitySnapshot` (architecture 03 §5): one group per component,
- * `null` when the entity has no such component (DEC-17); `mapObjectId` and `mapFeatureId` are
- * left out instead. A new component group is added here, never in `GameState` (DEC-232).
+ * `null` when the entity has no such component (DEC-17); `mapObjectId`, `mapFeatureId` and
+ * `isHidden` are left out instead. A new component group is added here, never in `GameState`
+ * (DEC-232).
  */
 export class EntitySnapshotter {
   /**
@@ -48,6 +53,7 @@ export class EntitySnapshotter {
         : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
       ...(entity instanceof Structure &&
         entity.mapFeatureId !== null && { mapFeatureId: entity.mapFeatureId }),
+      ...(entity.findComponent(StatusEffects)?.has('hidden') === true && { isHidden: true }),
       team: entity.findComponent(TeamMembership)?.team ?? null,
       transform:
         transform === undefined
@@ -80,10 +86,35 @@ export class EntitySnapshotter {
               presence: capture.presence,
             },
       statuses: this.statusesOf(entity.findComponent(StatusEffects)),
+      projectile: this.projectileOf(entity, transform),
+      // `Combat.recordSwing` keeps a copy and replaces it on each swing, so it is shared as is.
+      swing: entity.findComponent(Combat)?.lastSwing ?? null,
     };
   }
 
-  /** The active statuses as plain data; one shared empty list for none, so most allocate none. */
+  /**
+   * A fired shot's flown share and ending as plain data; `null` for an entity that is not one (no
+   * `ProjectileFlight`, `ProjectilePayload` or `Transform`).
+   */
+  private projectileOf(
+    entity: Entity,
+    transform: Transform | undefined,
+  ): ProjectileSnapshot | null {
+    const flight = entity.findComponent(ProjectileFlight);
+    const payload = entity.findComponent(ProjectilePayload);
+    if (flight === undefined || payload === undefined || transform === undefined) {
+      return null;
+    }
+    return {
+      flownShare: Math.min(1, distance(payload.origin, transform.position) / flight.range),
+      ending: flight.isEnded ? flight.endingShare : null,
+    };
+  }
+
+  /**
+   * The active statuses as plain data, less a broken one (it stopped counting at the hit, DEC-267);
+   * one shared empty list for none, so most allocate none.
+   */
   private statusesOf(statuses: StatusEffects | undefined): readonly StatusSnapshot[] | null {
     const { tick } = this;
     if (statuses === undefined) {
@@ -92,11 +123,13 @@ export class EntitySnapshotter {
     const { active } = statuses;
     return active.length === 0
       ? NO_STATUSES
-      : active.map(({ definition, periodAnchorTick, expiresTick }) => ({
-          id: definition.id,
-          ticksActive: tick - periodAnchorTick,
-          ticksLeft: expiresTick === null ? null : expiresTick - tick,
-        }));
+      : active
+          .filter(({ isBroken }) => !isBroken)
+          .map(({ definition, periodAnchorTick, expiresTick }) => ({
+            id: definition.id,
+            ticksActive: tick - periodAnchorTick,
+            ticksLeft: expiresTick === null ? null : expiresTick - tick,
+          }));
   }
 }
 

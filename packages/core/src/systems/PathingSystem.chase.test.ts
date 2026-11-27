@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { Footprint } from '../components/Footprint';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
+import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
@@ -15,6 +17,7 @@ import { LaneFlowFields } from '../map/LaneFlowFields';
 import { WorldMap } from '../map/WorldMap';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
+import { ReachQuery } from '../state/ReachQuery';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { PathingSystem } from './PathingSystem';
 import { FORMATIONS, logger, STRATEGIES } from './__fixtures__/pathingSystemSetup';
@@ -94,6 +97,53 @@ describe('PathingSystem', () => {
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 
+  it('does not chase a target that turns untargetable (Veil, DEC-266); chases it again after', () => {
+    const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
+    const config = createDefaultGameConfig();
+    const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP), { space });
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 60, y: 20 },
+    });
+    const enemy = factory.create('light-mob', 'light-minion', {
+      team: 'dark',
+      position: { x: 60, y: 30 },
+    });
+    state.entities.add(minion);
+    state.entities.add(enemy);
+    // The anchor (60, 20) is where the minion stands, so without a chase it holds.
+    state.hordes.add({
+      id: 'horde-1',
+      team: 'light',
+      weightClass: 'light',
+      lane: 'lane-0',
+      formationId: 'ranks',
+      memberIds: [minion.id],
+      progress: 40,
+    });
+    state.entities.setAttackTarget(minion.id, enemy.id);
+    const veil = loadStatusEffects(config.tickRate, 2).get('invisible');
+    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
+    const step = () => {
+      space.begin(state.entities.size);
+      state.entities.forEach((entity) => {
+        const { x, y } = entity.getComponent(Transform).position;
+        space.add(entity.id, x, y);
+      });
+      space.commit();
+      system.update({ state, logger });
+    };
+
+    enemy.getComponent(StatusEffects).apply(veil, null, state.tick);
+    step();
+    expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
+
+    enemy.getComponent(StatusEffects).remove('invisible');
+    step();
+    expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 1 });
+  });
+
   it('chases a tower to its fort outline and stops in reach of it, not of its collider circle (DEC-185)', () => {
     const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
     const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
@@ -134,7 +184,7 @@ describe('PathingSystem', () => {
     // 0.8 m from the wall: within the 0.4 m radius + 1.5 m reach, though 15.8 m from the centre.
     minion.getComponent(Transform).moveTo({ x: 83.2, y: 22 });
     update();
-    expect(state.entities.isInReach(minion.id, tower.id)).toBe(true);
+    expect(new ReachQuery().isInReach(state.entities, minion.id, tower.id)).toBe(true);
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 
@@ -179,7 +229,7 @@ describe('PathingSystem', () => {
     // outline), so it holds, where a chase of the centre would still close in.
     minion.getComponent(Transform).moveTo({ x: 83.2, y: 22 });
     update();
-    expect(state.entities.isInReach(minion.id, house.id)).toBe(true);
+    expect(new ReachQuery().isInReach(state.entities, minion.id, house.id)).toBe(true);
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 
@@ -218,7 +268,7 @@ describe('PathingSystem', () => {
       logger,
     });
 
-    expect(state.entities.isInReach(minion.id, house.id)).toBe(true);
+    expect(new ReachQuery().isInReach(state.entities, minion.id, house.id)).toBe(true);
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 

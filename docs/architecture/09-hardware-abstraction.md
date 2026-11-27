@@ -4,7 +4,7 @@ description: The ports-and-adapters layer that isolates the game from the browse
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-21
 tags: [architecture, hal, input, ports, adapters, keybindings]
 paths:
   [
@@ -164,7 +164,7 @@ frame; an action is active if **any** chord of any device matches) and `toIntent
 projection): InputIntent` (movement axes become one normalised move vector; edges become the
 `cast` slot (`ability-1` … `gadget-2`) and the `attack` aim with the pointer resolved through
 `Camera.screenToWorld`). `Match` enqueues the intent as one `intent` command and
-`PlayerController` turns it into `move`, `cast-ability { slot }` and `attack-target` commands
+`PlayerController` turns it into `move`, `cast-ability { slot }` and `attack-aim` commands
 (13 §6.2). Bots produce the same `Command` objects, so the
 simulation never knows a human is present (Command pattern,
 [research §B2](../research/persistence-input-diagnostics-research.md#b2-rebinding-ux-and-data-representation)).

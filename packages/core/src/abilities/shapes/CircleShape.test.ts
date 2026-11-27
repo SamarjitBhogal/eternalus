@@ -10,16 +10,18 @@ const HOUSE = [
   { x: 15, y: 5 },
   { x: 5, y: 5 },
 ];
+/** A body with no id that matters, its circle at (`x`, `y`). */
+const body = (x: number, y: number, radius: number) => ({ id: 'b', position: { x, y }, radius });
 const ON_CASTER = { from: { x: 0, y: 0 }, to: { x: 10, y: 0 } };
 
 describe('CircleShape', () => {
   it('is centred on the placement’s end point and counts a body that overlaps its edge', () => {
     const circle = new CircleShape();
 
-    expect(circle.overlaps(DISC, ON_CASTER, { x: 14, y: 0 }, 0)).toBe(true);
-    expect(circle.overlaps(DISC, ON_CASTER, { x: 14.9, y: 0 }, 1)).toBe(true);
-    expect(circle.overlaps(DISC, ON_CASTER, { x: 15.1, y: 0 }, 1)).toBe(false);
-    expect(circle.overlaps(DISC, ON_CASTER, { x: 0, y: 0 }, 1)).toBe(false);
+    expect(circle.overlaps(DISC, ON_CASTER, body(14, 0, 0))).toBe(true);
+    expect(circle.overlaps(DISC, ON_CASTER, body(14.9, 0, 1))).toBe(true);
+    expect(circle.overlaps(DISC, ON_CASTER, body(15.1, 0, 1))).toBe(false);
+    expect(circle.overlaps(DISC, ON_CASTER, body(0, 0, 1))).toBe(false);
   });
 
   it('pushes away from its centre, the placement’s end point', () => {

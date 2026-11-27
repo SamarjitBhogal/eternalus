@@ -46,6 +46,12 @@ const playOut = (prepare: (state: GameState) => void = () => undefined) => {
     logger,
     scoring: loadScoring(CONFIG.tickRate),
   });
+  const factory = new EntityFactory(
+    createDefaultEntityRegistry(),
+    UNITS,
+    undefined,
+    loadWeapons(CONFIG.tickRate),
+  );
   const pipeline = new DefaultSystemPipeline({
     invariants: new DefaultInvariantRunner({
       debug: TEST_DEBUG_CONFIG,
@@ -56,6 +62,7 @@ const playOut = (prepare: (state: GameState) => void = () => undefined) => {
       terminalPhases: TERMINAL_MATCH_PHASES,
     }),
     state,
+    factory,
     progression: {
       units: UNITS,
       curves: CURVES,
@@ -65,12 +72,6 @@ const playOut = (prepare: (state: GameState) => void = () => undefined) => {
     director,
   });
   director.start(state);
-  const factory = new EntityFactory(
-    createDefaultEntityRegistry(),
-    UNITS,
-    undefined,
-    loadWeapons(CONFIG.tickRate),
-  );
   const warrior = factory.create('warrior', 'warrior', { position: { x: 0, y: 0 }, team: 'light' });
   const objective = factory.create('light-mob', 'training-dummy', {
     position: { x: 1, y: 0 },

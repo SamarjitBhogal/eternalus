@@ -10,7 +10,15 @@ export const RAPTOR_TALONS = {
   id: 'raptor-talons',
   displayName: 'Raptor Talons',
   weaponClass: 'glove',
-  attacks: [{ strategy: 'melee', damage: 45, reach: 1.5, interval: 0.7 }], // TUNE: balancing.md Warrior (45 / 0.7 s); reach unspecified
+  attacks: [
+    {
+      strategy: 'melee-sweep',
+      damage: 45, // TUNE: balancing.md Warrior (45 / 0.7 s)
+      reach: 1, // TUNE: DEC-305, the weapon's part; the class adds its own (`LegendDefinition.meleeReach`)
+      interval: 0.7, // TUNE: balancing.md Warrior (0.7 s)
+      arcDegrees: 90, // TUNE: DEC-304
+    },
+  ],
   allowedClasses: 'any',
   uniqueTo: null,
 } as const satisfies WeaponDefinition;

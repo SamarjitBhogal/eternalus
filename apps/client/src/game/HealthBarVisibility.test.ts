@@ -9,6 +9,7 @@ import type {
 import { describe, expect, it } from 'vitest';
 
 import { HealthBarVisibility } from './HealthBarVisibility';
+import { Viewer } from './Viewer';
 
 /** Stands in for `Simulation.on`: keeps the handlers, so a test emits the events by hand. */
 class FakeEvents {
@@ -61,6 +62,8 @@ const entity = (
   area: null,
   capture: null,
   statuses: null,
+  projectile: null,
+  swing: null,
 });
 
 const PLAYER = entity('me', 'legend', 'light');
@@ -90,8 +93,11 @@ const snapshotOf = (entities: EntitySnapshot[], humanLegendId: string | null = '
 /** A visibility rule over `entities`, with its fake event source. */
 const setUp = (entities = [PLAYER, ENEMY, ALLY, CAMP, TOWER], humanLegendId?: string | null) => {
   const events = new FakeEvents();
-  const bars = new HealthBarVisibility(events);
-  bars.observe(snapshotOf(entities, humanLegendId));
+  const snapshot = snapshotOf(entities, humanLegendId);
+  const viewer = new Viewer(snapshot.match.humanLegendId);
+  const bars = new HealthBarVisibility(events, viewer);
+  viewer.observe(snapshot);
+  bars.observe(snapshot);
   const damage = (targetId: string, attackerId: string | null) => {
     events.emit('damage-applied', { targetId, amount: 1, absorbed: 0, source: hit(attackerId) });
   };
@@ -156,13 +162,16 @@ describe('HealthBarVisibility (DEC-195)', () => {
     expect([PLAYER, ALLY, TOWER].map(bars.healthBarOf)).toEqual([null, 'ally', null]);
   });
 
-  it('takes the player from the caller in an online Duel, not the snapshot human (ADR 0016)', () => {
+  it('takes the player from the viewer in an online Duel, not the snapshot human (ADR 0016)', () => {
     // The dark seat: the snapshot's human is the light player, the caller names its own Legend.
     const OPPONENT = entity('rival', 'legend', 'light');
     const DARK_PLAYER = entity('mine', 'legend', 'dark');
     const events = new FakeEvents();
-    const bars = new HealthBarVisibility(events);
-    bars.observe(snapshotOf([OPPONENT, DARK_PLAYER, ENEMY], 'rival'), 'mine');
+    const viewer = new Viewer('mine');
+    const bars = new HealthBarVisibility(events, viewer);
+    const snapshot = snapshotOf([OPPONENT, DARK_PLAYER, ENEMY], 'rival');
+    viewer.observe(snapshot);
+    bars.observe(snapshot);
     const damage = (targetId: string) => {
       events.emit('damage-applied', { targetId, amount: 1, absorbed: 0, source: hit('x') });
     };

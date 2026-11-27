@@ -1,4 +1,5 @@
 import { loadKnockback } from '../content/abilities/loadKnockback';
+import { PROJECTILES } from '../content/projectiles/projectileCatalogue';
 import { STATUS_EFFECTS } from '../content/status-effects/statusEffectCatalogue';
 import { AbilityRegistry } from './AbilityRegistry';
 import type { AbilitySource } from './AbilityRegistry.types';
@@ -7,6 +8,7 @@ import { DamageEffect } from './effects/DamageEffect';
 import { DashEffect } from './effects/DashEffect';
 import { DebuffEffect } from './effects/DebuffEffect';
 import { KnockbackEffect } from './effects/KnockbackEffect';
+import { ProjectileEffect } from './effects/ProjectileEffect';
 import { MinLevelRestriction } from './restrictions/MinLevelRestriction';
 import { CircleShape } from './shapes/CircleShape';
 import { HitShape } from './shapes/HitShape';
@@ -26,6 +28,7 @@ import { SelfTargeting } from './targeting/SelfTargeting';
  * @param tickRate - Ticks per second (`GameConfig.tickRate`), for the knock-back's travel time
  *   (`loadKnockback`).
  * @param statuses - The statuses a debuff or a buff may name; the shipped ones by default.
+ * @param projectiles - The projectiles a shot step may name; the shipped ones by default.
  * @throws ContentValidationError when the knock-back tuning is invalid (`loadKnockback`), or
  *   listing every ability that names a kind with no line here or has a step or shape its strategy
  *   refuses.
@@ -34,6 +37,7 @@ export const createDefaultAbilityRegistry = (
   abilities: AbilitySource,
   tickRate: number,
   statuses: { has(id: string): boolean } = STATUS_EFFECTS,
+  projectiles: ConstructorParameters<typeof ProjectileEffect>[0] = PROJECTILES,
 ): AbilityRegistry => {
   const registry = new AbilityRegistry(abilities);
   registry.registerEffect(new DamageEffect());
@@ -41,6 +45,7 @@ export const createDefaultAbilityRegistry = (
   registry.registerEffect(new KnockbackEffect(loadKnockback(tickRate)));
   registry.registerEffect(new DashEffect());
   registry.registerEffect(new BuffEffect(statuses));
+  registry.registerEffect(new ProjectileEffect(projectiles));
   registry.registerShape(new CircleShape());
   registry.registerShape(new PathShape());
   registry.registerShape(new HitShape());

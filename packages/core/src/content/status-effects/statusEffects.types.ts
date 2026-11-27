@@ -7,8 +7,13 @@ export type StatusStat = 'moveSpeed' | 'attackSpeed' | 'damageDealt' | 'damageTa
  * A yes/no rule a status imposes. `cannot-cast` waits for `AbilitySystem` (phase 4);
  * `cannot-move` and `cannot-attack` are read by `MovementSystem` and `CombatSystem`;
  * `control-immune` is read by `StatusEffectApplier`, which then refuses hard control.
+ * `untargetable` keeps enemies from picking the holder as a target (`EntityStore.isTargetable`)
+ * and from hitting or chasing it while they hold it (`EntityStore.isUntargetable`; Veil, DEC-266);
+ * an area still hits it.
+ * `hidden` keeps the holder off its enemies' screens (`EntitySnapshot.isHidden`, DEC-266).
  */
-export type StatusFlag = 'cannot-move' | 'cannot-attack' | 'cannot-cast' | 'control-immune';
+export type StatusFlag =
+  'cannot-move' | 'cannot-attack' | 'cannot-cast' | 'control-immune' | 'untargetable' | 'hidden';
 
 /** Whether a status helps, hurts or transforms its target (architecture 05 section 8). */
 type StatusPolarity = 'buff' | 'debuff' | 'form';
@@ -72,6 +77,14 @@ type StatusEffectBase = {
    * while it lasts (Fury's dash, DEC-270); absent = none.
    */
   readonly grants?: string;
+  /**
+   * Whether the status ends when its holder hits or is hit (Veil, DEC-267, DEC-327): a
+   * `damage-applied` that names the holder as target or attacker, except a periodic status tick
+   * (a bleed), and a `status-applied` of a debuff from another entity, on the one struck and on
+   * the one credited. `StatusEffectSystem` holds the rule and removes it in its next pass;
+   * absent = it does not.
+   */
+  readonly endsOnHit?: boolean;
 };
 
 /**

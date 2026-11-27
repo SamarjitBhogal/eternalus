@@ -12,6 +12,7 @@ export type InputAction =
   | 'move-left'
   | 'move-right'
   | 'attack'
+  | 'melee-attack'
   | 'ability-1'
   | 'ability-2'
   | 'ability-3'

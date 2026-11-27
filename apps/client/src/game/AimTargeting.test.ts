@@ -25,6 +25,8 @@ const CASTER: EntitySnapshot = {
   area: null,
   capture: null,
   statuses: null,
+  projectile: null,
+  swing: null,
 };
 /** Where the Legend is drawn this frame: between snapshots, so not its snapshot position. */
 const DRAWN_AT = { x: 9, y: 20 };

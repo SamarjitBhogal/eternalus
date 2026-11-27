@@ -1,29 +1,8 @@
-import type { Command, EntitySnapshot, InputIntent, MapObject } from '@eternalus/core';
+import type { Command, InputIntent } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 import { SeatCommands } from './SeatCommands';
 
 const ACTOR = 'legend-1';
-
-const unit = (
-  id: string,
-  team: 'light' | 'dark',
-  x: number,
-  y: number,
-  hp = 10,
-): EntitySnapshot => ({
-  id,
-  kind: 'minion',
-  family: 'mob',
-  definitionId: 'minion',
-  team,
-  transform: { x, y, radius: 1, facing: { x: 1, y: 0 } },
-  health: { current: hp, max: 10 },
-  progression: null,
-  aether: null,
-  area: null,
-  capture: null,
-  statuses: null,
-});
 
 const intent = (over: Partial<InputIntent>): InputIntent => ({
   move: { x: 0, y: 0 },
@@ -32,94 +11,79 @@ const intent = (over: Partial<InputIntent>): InputIntent => ({
   ...over,
 });
 
-function setup(mapObjects: readonly MapObject[] = []): {
-  seat: SeatCommands;
-  commands: Command[];
-} {
+function setup(): { seat: SeatCommands; commands: Command[] } {
   const commands: Command[] = [];
-  return { seat: new SeatCommands(ACTOR, mapObjects, (c) => commands.push(c)), commands };
+  return { seat: new SeatCommands(ACTOR, (c) => commands.push(c)), commands };
 }
+
+const AIM = { x: 5, y: 5 };
 
 describe('SeatCommands', () => {
   it('queues move only when the axes change, then stop', () => {
     const { seat, commands } = setup();
-    const snapshot = { entities: [] };
-    seat.apply(intent({}), snapshot);
-    seat.apply(intent({ move: { x: 1, y: 0 } }), snapshot);
-    seat.apply(intent({ move: { x: 1, y: 0 } }), snapshot);
-    seat.apply(intent({}), snapshot);
+    seat.apply(intent({}));
+    seat.apply(intent({ move: { x: 1, y: 0 } }));
+    seat.apply(intent({ move: { x: 1, y: 0 } }));
+    seat.apply(intent({}));
     expect(commands).toEqual([
       { type: 'move', actorId: ACTOR, direction: { x: 1, y: 0 } },
       { type: 'stop', actorId: ACTOR },
     ]);
   });
 
-  it('attacks the living enemy under the aim once per target', () => {
+  it('sends attack-aim when the held point changes, not when it stays', () => {
     const { seat, commands } = setup();
-    const snapshot = {
-      entities: [
-        unit(ACTOR, 'light', 0, 0),
-        unit('ally', 'light', 5, 5),
-        unit('foe', 'dark', 5, 5),
-        unit('dead', 'dark', 9, 9, 0),
-      ],
-    };
-    const attack = intent({ isAttacking: true, aim: { x: 5, y: 5 } });
-    seat.apply(attack, snapshot);
-    seat.apply(attack, snapshot);
-    seat.apply(intent({ isAttacking: true, aim: { x: 9, y: 9 } }), snapshot);
-    expect(commands).toEqual([{ type: 'attack-target', actorId: ACTOR, targetId: 'foe' }]);
+    seat.apply(intent({ isAttacking: true, aim: AIM }));
+    seat.apply(intent({ isAttacking: true, aim: { ...AIM } }));
+    seat.apply(intent({ isAttacking: true, aim: { x: 9, y: 9 } }));
+    expect(commands).toEqual([
+      { type: 'attack-aim', actorId: ACTOR, aim: AIM },
+      { type: 'attack-aim', actorId: ACTOR, aim: { x: 9, y: 9 } },
+    ]);
   });
 
-  it('attacks a map object when no unit is under the aim', () => {
-    const house: MapObject = {
-      id: 'house',
-      kind: 'house',
-      isBlocking: true,
-      footprints: [
-        [
-          { x: 0, y: 0 },
-          { x: 4, y: 0 },
-          { x: 4, y: 4 },
-          { x: 0, y: 4 },
-        ],
-      ],
-    };
-    const { seat, commands } = setup([house]);
-    const snapshot = {
-      entities: [],
-      mapObjects: [
-        {
-          id: 'house',
-          entityId: 'house-entity',
-          health: { current: 5, max: 5 },
-          isDestroyed: false,
-        },
-      ],
-    };
-    seat.apply(intent({ isAttacking: true, aim: { x: 2, y: 2 } }), snapshot);
-    expect(commands).toEqual([{ type: 'attack-target', actorId: ACTOR, targetId: 'house-entity' }]);
-  });
-
-  it('does not attack without isAttacking, and re-queues a held attack after stop', () => {
+  it('sends one attack-aim with a null aim on release, and nothing while up', () => {
     const { seat, commands } = setup();
-    const snapshot = { entities: [unit('foe', 'dark', 5, 5)] };
-    seat.apply(intent({ aim: { x: 5, y: 5 } }), snapshot);
+    seat.apply(intent({ aim: AIM }));
     expect(commands).toEqual([]);
-    const attack = intent({ isAttacking: true, aim: { x: 5, y: 5 } });
-    seat.apply(intent({ ...attack, move: { x: 1, y: 0 } }), snapshot);
-    seat.apply(attack, snapshot);
-    seat.apply(attack, snapshot);
-    expect(commands.map((c) => c.type)).toEqual(['attack-target', 'move', 'stop', 'attack-target']);
+    seat.apply(intent({ isAttacking: true, aim: AIM }));
+    seat.apply(intent({ aim: AIM }));
+    seat.apply(intent({ aim: AIM }));
+    expect(commands).toEqual([
+      { type: 'attack-aim', actorId: ACTOR, aim: AIM },
+      { type: 'attack-aim', actorId: ACTOR, aim: null },
+    ]);
+  });
+
+  it('sends attack-aim again after a stop while the button is still held', () => {
+    const { seat, commands } = setup();
+    const attack = intent({ isAttacking: true, aim: AIM });
+    seat.apply(intent({ ...attack, move: { x: 1, y: 0 } }));
+    seat.apply(attack);
+    seat.apply(attack);
+    expect(commands.map((c) => c.type)).toEqual(['attack-aim', 'move', 'stop', 'attack-aim']);
+  });
+
+  it('aims in melee mode while the melee key is held, and re-sends on a change of mode (DEC-308)', () => {
+    const { seat, commands } = setup();
+    seat.apply(intent({ isAttacking: true, aim: AIM }));
+    seat.apply(intent({ isAttacking: true, isMeleeAttacking: true, aim: AIM }));
+    seat.apply(intent({ isAttacking: true, isMeleeAttacking: true, aim: AIM }));
+    seat.apply(intent({ isMeleeAttacking: true, aim: AIM }));
+    seat.apply(intent({ isAttacking: true, aim: AIM }));
+    expect(commands).toEqual([
+      { type: 'attack-aim', actorId: ACTOR, aim: AIM },
+      { type: 'attack-aim', actorId: ACTOR, aim: AIM, mode: 'melee' },
+      { type: 'attack-aim', actorId: ACTOR, aim: AIM },
+    ]);
   });
 
   it('queues a held movement and attack again after reset', () => {
     const { seat, commands } = setup();
-    const snapshot = { entities: [unit('foe', 'dark', 5, 5)] };
-    const held = intent({ move: { x: 1, y: 0 }, isAttacking: true, aim: { x: 5, y: 5 } });
-    seat.apply(held, snapshot);
+    const held = intent({ move: { x: 1, y: 0 }, isAttacking: true, aim: AIM });
+    seat.apply(held);
     seat.reset();
-    seat.apply(held, snapshot);
-    expect(commands.map((c) => c.type)).toEqual(['attack-target', 'move', 'attack-target', 'move']);
+    seat.apply(held);
+    expect(commands.map((c) => c.type)).toEqual(['attack-aim', 'move', 'attack-aim', 'move']);
   });
 });

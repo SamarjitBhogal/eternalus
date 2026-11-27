@@ -53,6 +53,19 @@ describe('DebuffEffect', () => {
     expect(expiryOf(enemy, 'concussion')).toBe(state.tick + 90);
   });
 
+  it('applies its status `stacks` times to each enemy: an intensity status gains that many stacks', () => {
+    const { state, caster, at, applied } = setUp();
+    const enemy = at(2, 'dark');
+
+    castSteps(state, caster.id, [{ kind: 'debuff', statusId: 'bleed', stacks: 2, shape: AREA }]);
+
+    const bleed = enemy
+      .getComponent(StatusEffects)
+      .active.find(({ definition }) => definition.id === 'bleed');
+    expect(bleed?.stacks).toBe(2);
+    expect(applied.map(({ entityId }) => entityId)).toEqual([enemy.id, enemy.id]);
+  });
+
   it('checks its own fields: a known status, a duration override of at least one tick', () => {
     const debuff = new DebuffEffect(STATUS_EFFECTS);
     const stun = { kind: 'debuff', statusId: 'stun', shape: AREA } as const;
@@ -62,6 +75,19 @@ describe('DebuffEffect', () => {
     expect(debuff.validate({ ...stun, statusId: 'frozen', durationTicks: 0 })).toEqual([
       'debuff status "frozen" is unknown',
       'debuff duration must be positive',
+    ]);
+  });
+
+  it('checks a stack count, when set, is a positive whole number', () => {
+    const debuff = new DebuffEffect(STATUS_EFFECTS);
+    const bleed = { kind: 'debuff', statusId: 'bleed', shape: AREA } as const;
+
+    expect(debuff.validate({ ...bleed, stacks: 2 })).toEqual([]);
+    expect(debuff.validate({ ...bleed, stacks: 0 })).toEqual([
+      'debuff stacks must be a positive whole number',
+    ]);
+    expect(debuff.validate({ ...bleed, stacks: 1.5 })).toEqual([
+      'debuff stacks must be a positive whole number',
     ]);
   });
 

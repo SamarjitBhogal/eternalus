@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-23
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -165,7 +165,7 @@ and the `DamagePipeline`, never each other and never a system (rule 12). The cat
 | `dash`       | `DashEffect`                 | Moves the caster along `aim` with swept collision; collects units on the path                           | `distance`, `durationTicks`, `teleport?`, `onPath`, `onEnd`         | MVP (Blade Runner, Fury dash, Meteor Fall)   |
 | `knockback`  | `KnockbackEffect`            | `Movement.push` from the centre, less for heavier targets, summed per tick; `knockup` adds `knockup`    | `distance`, `knockup?`, `shape` (DEC-208; ADR 0026 decision 4)      | MVP (Slam, Shockwave, Nova)                  |
 | `zone`       | `ZoneEffect`                 | Spawns an `EffectZone` (`Zone` family, kind `effect-zone`) with a lifetime; children `onEnter`/`onTick` | `shape`, `lifetimeSeconds`, `everyTicks`, `follow?`, `grow?`        | MVP (Death Ray, Nova, flame trail)           |
-| `projectile` | `ProjectileEffect`           | Spawns a pooled `Projectile`; children `onHit`; `pierce` or burst                                       | `speed`, `radius`, `range`, `pierce?`, `onHit`                      | MVP (weapons; Hamstring proposed)            |
+| `projectile` | `ProjectileEffect`           | Spawns a `Projectile` (not pooled, DEC-309); children `onHit`; `pierce` or burst                        | `projectileId` (speed, width, range; DEC-343), `pierce?`, `onHit`   | MVP (weapons; Hamstring proposed)            |
 | `summon`     | `SummonEffect`               | Spawns entities from a definition, owned by the caster, with an expiry (`RemovalCause` `'despawned'`)   | `definitionId`, `count`, `lifetimeSeconds`, `controllerId?`         | MVP-if-time (Soul Orb; Shield Wall proposed) |
 | `reveal`     | `RevealEffect`               | Grants allied `Vision` over an area or marks targets                                                    | `shape`, `durationSeconds`, `markStatusId?`                         | post-MVP (Eagle Eye; `Vision` beyond MVP)    |
 | `revive`     | `ReviveEffect`               | Returns an intact allied corpse to play at a health fraction                                            | `healthFraction`, `corpseMaxAgeSeconds`, `reviveLockoutSeconds`     | MVP (Magus default action)                   |
@@ -178,7 +178,8 @@ browsers. Every spec may carry `delaySeconds` (converted to `delayTicks`), which
 list of effects into a timeline. `EffectZone` is a new concrete `Zone` kind (depth 2) carrying an
 `AreaEffect` component (`casterId`, `abilityId`, `varietyId`, step path, `expiresTick`,
 `nextTick`; `Recommendation:`) so its state is ids only; a `Projectile` likewise carries a
-`payload` naming the weapon attack or the ability step whose `onHit` list runs on impact.
+`payload` naming the weapon attack or the ability step whose `onHit` list runs on impact (an
+impact kind with its data, landed by the `ProjectileImpact` of that kind, §10).
 
 ## 4. Composing an ability: two worked examples
 
@@ -491,6 +492,7 @@ export type StatusEffectDefinition = {
     readonly effects: readonly AbilityEffectSpec[];
   } | null; // bleed, burn
   readonly onExpire: readonly AbilityEffectSpec[]; // e.g. apply 'control-immune' after a stun
+  readonly endsOnHit?: boolean; // ends when its holder hits or is hit (Veil, DEC-327); absent = no
   readonly appliesTo: 'units' | 'structures' | 'all';
 };
 
@@ -516,7 +518,26 @@ dead and immune targets and emits `status-applied`. `StatusEffectSystem` walks `
 components in id order: it fires `periodic` effects through the registry, expires instances
 (`status-expired`) and runs `onExpire`. `StatusEffects` recomputes its cached modifier table
 (`StatusEffects.multiplier('moveSpeed')`) whenever its list changes (DEC-41), so `MovementSystem`,
-`DamagePipeline` and `AbilityRuntime` each read one number. Mode semantics and the full id table
+`DamagePipeline` and `AbilityRuntime` each read one number.
+
+A status with `endsOnHit` (Veil) ends when its holder hits or is hit: the act of hitting ends it,
+not the damage (DEC-327). A hit is a `damage-applied` that names the holder as target or
+attacker, except a periodic status tick (`source.kind: 'status'`), or a `status-applied` of a
+`debuff` from another entity, on the one struck and on the one credited. So a bleed that was on
+before Veil keeps ticking and the Veil stays. Build readings, not the owner's words (DEC-327): a
+buff from another entity (an ally's aura) and a status from the holder itself do not end it
+(Veil is itself a status its holder applies); a debuff from no one ends it on the one struck, as
+damage with no attacker does. A hit that touches an enemy ends it also when the hit does nothing
+(DEC-343, HC-Q79): a hit that the damage pipeline blocks to 0 (an unbreakable structure), and a
+debuff the target refuses (hard control on a `control-immune` target). Lane A's attack rework
+builds this, because it decides contact in one place (§18 states what is built today).
+`StatusEffectSystem` holds this one end rule
+(DEC-267): a hit marks the status as broken, and the system's next pass removes it
+(`status-expired`, no `onExpire`). A broken status stops at the hit: `StatusEffects` recomputes
+without it (no flags, no modifiers), it neither ticks nor runs out, and the snapshot leaves it
+out. A status that has already run out when the hit lands ends by expiry, once.
+
+Mode semantics and the full id table
 (bleed, burn, concussion, blind, stun, knockup, crushed, marked, enraged, ascended, invisible,
 sundered, slowed, rooted, taunted, pulled, staggered, control-immune, eternal, hallowed,
 emboldened, hexed) are in
@@ -557,6 +578,8 @@ that re-applies a stun before it ends can hold a target until it stops.
 Not built yet: `controlResistance` (bosses, Eternal), `appliesTo` (the component is the gate), the `duration`,
 `independent` and `permanent` modes, and a max-health stat (the FR-029 aura). `StatusEffectSystem`
 runs before movement. Fury adds two optional status fields, `onHit` and `grants` (§18, "Fury").
+Veil adds a third, `endsOnHit` (above), and the readers of `untargetable` and `hidden` (§18,
+"Veil").
 
 ## 9. Combat pipeline (`combat/`)
 
@@ -619,21 +642,22 @@ units with no attack (`cannot-attack`).
 ```ts
 // Sketch: packages/core/src/content/weapons/WeaponDefinition.types.ts
 export type WeaponClass = 'glove' | 'bow' | 'sword' | 'spear' | 'battle-axe' | 'staff';
-export type AttackStrategyId = 'melee' | 'ranged-projectile' | 'beam'; // 'beam' reserved (04 §4)
+export type AttackStrategyId = 'melee' | 'melee-sweep' | 'ranged-projectile' | 'beam'; // 'beam' reserved (04 §4)
 export type WeaponAttack = {
   readonly strategy: AttackStrategyId;
-  readonly reach: number;
+  readonly reach: number; // metres from the body edge; a melee attack adds the class's part, LegendDefinition.meleeReach (DEC-305)
+  readonly arcDegrees?: number; // 'melee-sweep' only: above 0, at most 180 (DEC-304)
   readonly damage: number;
   readonly damageType: DamageType;
   readonly intervalTicks: number;
-  readonly projectile?: ProjectileSpec;
+  readonly projectile?: ProjectileLaunch; // ranged only: { projectileId, falloff }; the flight (speed, radius, range) is the ProjectileDefinition by id (DEC-314)
   readonly onHit: readonly AbilityEffectSpec[];
 };
 export type WeaponDefinition = {
   readonly id: WeaponId;
   readonly displayName: string;
   readonly weaponClass: WeaponClass;
-  readonly attacks: readonly WeaponAttack[]; // first attack whose reach covers the target wins: melee-with-ranged-flex is data
+  readonly attacks: readonly WeaponAttack[]; // attacks[0] is the basic attack; an attack mode picks another (melee: the first melee attack, DEC-308)
   readonly heavyAttack: (WeaponAttack & { readonly cooldownTicks: number }) | null; // Wuuthrad, Lightbringer
   readonly parry: {
     readonly windowTicks: number;
@@ -651,14 +675,44 @@ export type WeaponDefinition = {
 Until weapons land, a unit's basic attack is `UnitDefinition.attack` (same shape as `WeaponAttack`
 minus `onHit` and `projectile`; `interval` authored in seconds, converted to ticks at load like
 movement speeds). `Combat.weaponId` names the equipped weapon; `CombatSystem` calls the weapon's `AttackStrategy`
-(`attack(self, target, weapon, ctx)`,
+(`attack(self, aim, attack, ctx)`, with `AttackAim { targetId, direction, point }`,
 [04 §4](04-entity-architecture.md#4-strategies-behaviour-that-varies-by-kind)):
-`MeleeAttackStrategy` applies `damage` and `onHit` in the tick; `RangedProjectileAttackStrategy`
-spawns a pooled `Projectile` whose `payload` names the weapon attack, so `CombatSystem` runs
-`onHit` on `projectile-hit`. A heavy attack arrives as `attack-target` with `mode: 'heavy'`
+`MeleeAttackStrategy` applies `damage` and `onHit` to one target in the tick;
+`MeleeSweepAttackStrategy` does the same to every live enemy body in the wedge in front of the
+attacker (its radius is the body radius plus `reach`, its angle is `arcDegrees`); `RangedProjectileAttackStrategy`
+spawns a `Projectile` (not pooled, DEC-309) whose `payload` carries its impact as plain data by
+impact kind (a weapon's: the attack). `ProjectileSystem` flies every shot the same way and hands
+the hit to the `ProjectileImpact` of its kind (`WeaponImpact`: the damage with its fall-off, then
+the owner's `onHit`); an ability's shot is one more kind and one more impact class, and no
+`projectile-hit` event is needed (DEC-314). `Combat` holds a unit's attacks by mode, resolved once
+at spawn by one selector per mode, so `'heavy'` is one more selector (DEC-314). A heavy attack arrives as `attack-target` with `mode: 'heavy'`
 (`Recommendation:` one optional field on the existing command; **MVP-if-time**) and uses its own
 cooldown on `Combat`; a parry is a `parrying` status with a window. Non-unique weapons are usable
 by any class (reference 07: the class table's bias is a bias); `uniqueTo` locks the class weapons.
+
+A shot flies straight from the attacker's centre until it hits an enemy body or a wall, or reaches
+its `ProjectileDefinition.range` (metres from the origin). It passes through allies, as the
+Hamstring blade does (DEC-269). A walk-on outline (a palace floor, a gate's passage) is ground units
+stand on, so a shot flies over it unless the shot aims at that entity: its locked target, or an aim
+point on the outline from outside it (DEC-314, DEC-322 (1)). A body that takes no damage now (its
+collider is unbreakable, for example a forest camp) stops every shot and takes no damage (DEC-317
+addendum). `CombatSystem` fires an attack without a line-of-fire check, for every unit, so a shot
+into a wall ends there (DEC-317 addendum). A bot holds its ranged attack only with a clear line
+(`LineOfFire`: the shot touches the target within its `range` and before a wall or a body that
+stops a shot); else it drops its lock and moves for a clear shot (11, DEC-193). A shot that touches its target and another body at the same point hits its target:
+at a Stronghold, the palace wall on the edge of its floor does not take a shot fired at the
+Stronghold (DEC-317 (8)). At its range it stops.
+The move that ends there is swept like every other move, so a body under the end point takes the
+hit: an arrow damages what it lands on (DEC-322 (2)). A walk-on floor that the shot does not aim at
+takes nothing there either (the owner's HC-Q78 note: "walk-on floors shouldnt take damage"). With
+no hit, the shot ends: it hits nothing more and stays for its `endDuration` (a bolt's mist fading,
+an arrow lying on the ground), then it is removed. `slowFrom` (at most `range`) is where the shot starts to ease to
+that stop; equal to `range`, the shot flies at full speed to the end. Its damage drops in a straight
+line from the attack's `falloff.fullTo` to `falloff.floor` at `falloff.floorAt`, and stays at the
+floor after that (DEC-306). A weapon with a melee attack beside its default attack also takes
+`attack-target` with `mode: 'melee'`: the unit attacks with that melee attack (the Magus staff's
+melee, on its own rebindable action, DEC-308). `mode` is the same optional field as the heavy
+attack's. The basic and melee attacks share the unit's one cooldown (a reading of DEC-308).
 
 | Weapon (`id`)                               | Class      | Attacks (`TUNE`, reference 07)                                                          | Unique to | Status                  |
 | ------------------------------------------- | ---------- | --------------------------------------------------------------------------------------- | --------- | ----------------------- |
@@ -688,6 +742,64 @@ their own `attack` and name their own definition (04 §5). Not built yet: ranged
 `damageType`, `damageClass`, `damageMultipliers`, `sprite`, the `AttackStrategy` contract's
 `weapon` argument, and `allowedClasses` / `uniqueTo` enforcement in a loadout (`WeaponAllowedRule`,
 SCRUM-290).
+
+**Implementation status, 2026-11-20 (branch `feat/ranged-attacks`, PR 1; DEC-300, DEC-314).** Ranged attacks
+are built. `AttackStrategyId` is `'melee' | 'ranged-projectile'` (`'beam'` is not built).
+`UnitAttack` is a union: `MeleeAttack` or `RangedAttack`, and a `RangedAttack` carries
+`projectile: { projectileId, falloff }` (`content/units/units.types.ts`). The Magus staff's basic
+attack is ranged, and `obsidian-bow` exists. Projectile content is in `content/projectiles/`
+(`magusBolt.ts`, `arrow.ts`, `projectileCatalogue.ts`, `loadProjectiles`). All numbers are `TUNE`
+(DEC-306, DEC-310). Content validation checks that every weapon's projectile id exists
+(`KnownProjectileRule`, which `loadWeapons` also runs). `RangedProjectileAttackStrategy` spawns the
+`Projectile` at the attacker's centre through `AttackContext.factory` (required: a missing factory
+does not compile). Its `ProjectilePayload` holds the owner, team, source, the entity it was fired
+at (`targetId`, `null` for none), its impact (`{ kind: 'weapon', attack }`) and the origin. The
+shot flies straight at the target's facing point, with no lead. Stand-in until PR 2 (melee sweeps,
+phase 4 sprint 4.4): the player fires only at a target under the cursor (`attack-target`), not
+along the aim DEC-184 sets. A bot holds its ranged attack only with a clear line of fire
+(`state/LineOfFire`, with the shot's radius from its `ProjectileDefinition`); PR 2 removed the
+same check from `CombatSystem` (DEC-317 addendum). The projectile is not pooled (04 §11, DEC-309). Shot endings (DEC-306) are built: `ProjectileFlight` holds `range`,
+`slowFrom` and the ending countdown; `physics/flightSpeed` caps the shot's speed each tick through
+`Movement.limitSpeed`, so it stops exactly at `range`, ends, and is removed as `consumed` after
+`endDuration`. `EntitySnapshot.projectile` (`flownShare`, `ending`) lets the client draw the
+slowing and the ending. The staff's melee attack is on its own action (DEC-308): `attack-target`
+has an optional `mode` (`AttackMode`, `'basic' | 'melee'`, in `content/units/units.types.ts`);
+`Combat` holds the attacks by mode (`UnitAttacks`, resolved at spawn by
+`content/units/attacksByMode`), with one shared cooldown; `EntityStore.setAttackTarget` refuses a
+mode the unit has no attack for (`Combat.hasMode`, `cannot-attack`); the client's `melee-attack`
+action (default F) sends it, and a Duel seat's `isMeleeAttacking` intent does the same.
+`ProjectileSystem` (in the pipeline directly before `CombatSystem`) sweeps each shot and hands a
+hit to the impact of its payload's kind (its `impacts`, composed in `DefaultSystemPipeline`). The
+`ProjectileImpact` interface is in `combat/ProjectileImpact.types.ts`, so both `combat/` and
+`abilities/` can implement it; it is not in `StrategyRegistry`, because `entities/` may import
+neither and an ability's impact needs the match's services. `WeaponImpact` applies damage times
+`falloffMultiplier` through `DamagePipeline`, then the owner's statuses' `onHit` steps through
+the `HitRunner` port (`state/HitRunner.types.ts`, which `HitEffects` satisfies); the shot is then
+removed with cause `consumed`. No `projectile-hit` event exists (DEC-314). Still not built: `heavyAttack`, `parry`, `grants`, the flex attack,
+`a-fine-line` and turret lead.
+
+**Implementation status, 2026-11-22 (branch `feat/melee-sweeps`, PR 2; DEC-184, DEC-304, DEC-305,
+DEC-319).** Melee sweeps, class reach and aimed attacks are built. The talons, Wuuthrad and the Magus
+staff's melee attack are sweeps; mobs keep the one-target `melee` attack. The wedge geometry is
+`utils/sector.ts`. One hit rule serves weapon sweeps and ability areas (`state/AreaHitQuery`,
+DEC-322 (3); `abilities/TargetQuery` is a thin adapter over it): a walk-on outline is hit only when
+the hit aims at it (DEC-322 (1)), and a body that takes no damage now is never hit. Shots and
+`LineOfFire` use the same module's `stopsShot`, and a shot fired along an aim names the walk-on
+body under the aim point (`aimedBodyOf`; a structure before a map object). Every contact reports
+its bodies once through `EntityStore.recordHits`, so the AI sees every body a unit attacks, not
+only its lock (`Combat.recordHits`, `EntityStore.victimsOf`, DEC-322 (2), DEC-333 (1)). The client draws the arrow's arc from
+`EntitySnapshot.projectile.flownShare` (`views/ProjectileView`). A new command,
+`attack-aim { actorId, aim: Vec2 | null, mode? }`, sets an aim point on `Combat` (a target or an aim
+point, never both; `stop` clears both). With an aim point, `CombatSystem` turns the unit to the point
+each tick and attacks along the line when off cooldown, with no reach check and no line-of-fire
+check. The player's held attack button and melee key send `attack-aim` (client `PlayerCommands`,
+Duel server `SeatCommands`); the developer explorer's clicks stay `attack-target`. This ends the PR 1
+stand-in above: the player now fires along the aim, not only at a target under the cursor.
+`StateHasher` hashes the aim point only when one is set. `Combat.recordSwing` keeps the last sweep
+(not hashed), `EntitySnapshot.swing` sends it, and the client draws a fading wedge
+(`views/swingWedge.ts`). Still not built: the PR 3 weapons and their arcs (dual blades, great sword,
+Bastions), two arcs for a dual-wield weapon (DEC-304, an idea), `heavyAttack`, `parry`, `grants`,
+the flex attack and `a-fine-line`.
 
 ## 11. Artifacts (gadgets Z and C)
 
@@ -967,6 +1079,11 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   until respawn (FR-051), which O4's posthumous XP needs. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
   soak metric can change them) and live in `content/progression/`.
+- **Ranged attacks and projectiles (`feat/ranged-attacks`, 2026-11-20; DEC-300).** See the
+  2026-11-20 note under §10: the `ranged-projectile` strategy, the projectile content,
+  `ProjectileSystem` and `WeaponImpact` are built. The shot is not pooled (DEC-309). The client
+  draws a shot with `ProjectileView` (`apps/client/src/game/views/`), registered in
+  `defaultViewRegistry`.
 - **HUD (`feat/hud-and-character-select`, 2026-10-24).** The client's `MatchBridge` joins the
   player's `EntitySnapshot` groups and the slots of core's `Snapshot.player` (since
   `feat/ability-framework`, the bullet below) into `PlayerHudSnapshot` (`bridge/hud.types.ts`), as
@@ -1147,7 +1264,8 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **On-hit steps on a status.** A status has two optional fields §8 does not have: `onHit`
     (effect steps, loaded in ticks as an ability's are) and `grants` (an ability id).
     `abilities/HitEffects` runs the attacker's statuses' `onHit` steps where each basic attack
-    lands: the attack strategy calls it (`MeleeAttackStrategy` in the tick, after the damage, as
+    lands: the attack strategy calls it (`MeleeAttackStrategy` in the tick, after the damage, and
+    `MeleeSweepAttackStrategy` the same way for each body it hits (DEC-319), as
     §10 plans for a weapon's `onHit`; `CombatSystem` hands it over in the attack context), as one cast through the registry's strategies: credited to
     the attacker under the status's id, from the `default-action` slot, placed from the attacker
     to the struck body. The shape `hit` (`abilities/shapes/HitShape`) holds the struck body only
@@ -1209,6 +1327,109 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     client checks neither the slot nor the targeting kind. The HUD shows a prompt (key and name)
     while the slot holds an ability (DEC-283 (7)). A bot may cast a filled `granted` slot
     (`pickReadySlot`).
+- **Veil (`feat/vanguard-veil-hamstring`, 2026-11-20; DEC-266, DEC-267, DEC-327).** Veil targets
+  `self` and casts the `buff` effect with the status `invisible`
+  (`content/status-effects/invisible.ts`), which sets the flags `untargetable` and `hidden`.
+  The owner answered its build items in DEC-327 (`INBOX.md` HC-B19: (1) replaced by the end
+  rule of §8, (2) to (5) signed off); §8, 03 §5, 08 §8 and 11 §3 now state them. The owner
+  expects that playtests may change the end rule. Build details:
+  - **Ends on a hit.** The status field `endsOnHit` and its rule are in §8.
+    `StatusEffectSystem` listens to `damage-applied` and `status-applied` and marks each such
+    status of the one struck and of the one credited as broken (`StatusEffects.breakOnHit`); the
+    end of its pass removes them (`StatusEffectApplier.removeBroken`). The listeners only mark,
+    because a hit can land inside a loop over the holder's statuses (an `onHit` step). The
+    removal and `status-expired` come in the same tick's pass for a hit from a system that runs
+    before it (`AbilitySystem`) and in the next tick's pass for a hit from a later system
+    (combat). The polarity of an applied status comes from its definition
+    (`StatusEffectApplier.polarityOf`, the applier the system already holds), so the event and
+    the constructor stay as they were. Casting does not end it.
+  - **Not built yet: a hit that does nothing (DEC-343, HC-Q79).** Today such a hit sends no
+    event, so Veil stays. Since lane A's PR 2 (#159), three places drop a hit on a body that takes
+    no damage before any event: rule 2 of `AreaHitQuery.find`, `MeleeAttackStrategy.attack` and
+    `ProjectileSystem`. A refused debuff sends no `status-applied`. Lane A's attack rework sends
+    one contact event from each place, and `StatusEffectSystem` listens to it.
+  - **Untargetable.** `EntityStore.isTargetable(id)` (alive and not `isUntargetable`) is the one
+    rule for every picker: perception's hostile queries, the leashed mobs (`LeashBehaviour`),
+    `attack-target` (`invalid-target`) and the bot memory (`BotLeaves`). The systems that act on a
+    held target (`CombatSystem`, `PathingSystem`, `StuckSystem`) keep an untargetable one
+    (`EntityStore.isUntargetable`) but neither hit nor chase it. An AI controller drops it when it
+    next decides (a leashed mob or a bot with a `stop`). The human player attacks by aim
+    (`attack-aim`, DEC-319 (5), (6)) and holds no target (DEC-327, HC-Q75): an aimed sweep or
+    shot that touches a Veiled unit hits it and ends Veil, and a miss leaves the unit hidden. The
+    developer explorer's click lock (`attack-target`, DEC-150) is kept and resumes after Veil. An
+    area still hits the holder.
+  - **Hidden.** `EntitySnapshot.isHidden` is present, `true`, while a status sets `hidden`. The
+    client's `Viewer` (the player's Legend and team, kept after the player dies) decides how each
+    entity shows (`visibilityOf`: shown, faded or hidden), injected into `EntityLayer` as
+    `healthBarOf` is: a hidden unit of the viewer's team draws faded (body, status cues, health bar
+    and minimap dot, `Renderer.withOpacity`), every other hidden unit not at all, also while the
+    player's team is not known yet; with no player (sim mode) every hidden unit draws faded.
+    `HealthBarVisibility` reads the same `Viewer`. `findUnitAt` skips hidden units, so a click does
+    not pick one. The aim-point test of a walk-on outline (`AreaHitQuery`, DEC-322 (1)) skips them
+    too, so an aim at the floor under a hidden unit names the floor. Every seat gets the same
+    snapshot (`Simulation.snapshot`); a per-seat filter waits for plan W10 / ADR 0016 point 1.
+  - **Not built.** HC-B19 (6), one `EntityStore` query for "the held target, while targetable",
+    got no answer; `CombatSystem`, `PathingSystem` and `StuckSystem` each keep their own check.
+- **Hamstring (`feat/vanguard-hamstring`, 2026-11-22; DEC-268, DEC-269).** Hamstring is the
+  Warrior's `ability-3` (`content/abilities/hamstring.ts`): `directional`, with one `projectile`
+  step that throws the `hamstring-blade` projectile (`content/projectiles/hamstringBlade.ts`).
+  Where the code differs from §3 and §10:
+  - **A shot step names its projectile (DEC-343, HC-B26 (1)).** The `projectile` spec is
+    `{ projectileId, onHit }`. The flight (speed, width, range) is the `ProjectileDefinition` by
+    id, as for a weapon's shot (DEC-314 (5)). The owner signed off this change, and §3 now states
+    it. `pierce` and burst are not built: no ability needs them yet. `ProjectileEffect.validate`
+    checks the id; `describe` gives the range as `distance` and the width as a `path`, so the aim
+    overlay draws the line the shot flies. The overlay stops the line where a dash of the caster's
+    size stops (`dashReach`), so in a gap narrower than the caster but wider than the blade the
+    line stops short where the blade flies on.
+  - **Launch.** `abilities/` may not import `entities/` ([02](02-code-structure.md) §2), so the
+    step launches through a port, `ShotLauncher` (`state/ShotLauncher.types.ts`, on
+    `CastContext.launcher`), which `entities/ProjectileLauncher` satisfies: the match's one
+    `EntityFactory` builds the projectile at the caster, it gets its `ProjectilePayload`, is
+    steered along the cast's direction, added and announced (`entity-spawned`).
+    `DefaultSystemPipeline` builds one launcher for `AbilitySystem` and `HitEffects`. The shot is
+    fired at no unit, so `ProjectileSystem` lands it on the first enemy body it touches before a
+    wall and passes allies (DEC-269). A walk-on outline (the enemy Stronghold's palace, a gate)
+    takes only a shot aimed at it (DEC-314 (6), DEC-322 (1)): the shot's `targetId` is the walk-on
+    outline the cast's aim point is on (`AreaHitQuery.aimedBodyOf`), and nothing else. A weapon's
+    shot names its locked target first. That target wins a near tie (DEC-317 (8)). The blade does
+    not read the cast's `aim.targetId`. So when a bot casts the blade at an enemy unit, that unit
+    does not win a near tie. One rule for both comes with the one shot launcher, which lane B
+    builds with lane A after #148 merges (DEC-343, HC-B26 (2)). A blade aimed at the palace floor
+    from outside hits the Stronghold; one aimed past it flies over. A "wall" in DEC-269 is one with
+    no body (terrain, the map edge). A breakable enemy `wall` segment is a map object with a body:
+    the blade strikes it and it takes 80 × 0.3, as for a house. `AbilitySystem` runs before the
+    flight, so the shot moves, and can land, in its cast tick; the one tick of flight before a
+    landing (DEC-314 (1)) holds for the shots `CombatSystem` fires.
+  - **Landing.** The payload's impact is
+    `{ kind: 'ability', abilityId, slot, onHit, scaling, casterLevel }`. The cast puts the
+    ability's `scaling` and the caster's level in it (`CastContext` carries both), so the steps
+    grow by the level of the cast, also when the owner levels up, dies or leaves the match while
+    the shot flies. `StateHasher` hashes the shot's `casterLevel`, as it hashes a cast in progress.
+    `AbilityImpact` (`abilities/AbilityImpact.ts`, one more line in
+    `createDefaultProjectileImpacts`) runs the `onHit` steps as one cast on the struck body
+    through `HitEffects.runSteps`, which `afterHit` also uses for a status's steps. The cast is
+    placed from the contact point to the body's position and credited to the shot's owner under
+    the ability. No `projectile-hit` event (DEC-314).
+  - **`hit` holds the struck body by its id.** `ShapePlacement` gets `targetId`, the struck body,
+    which `HitEffects.runSteps` sets. `AreaShape.overlaps` gets the body (`ShapeBody`: id,
+    position, radius) in place of a point and a radius, and `overlapsPolygon` also gets the map
+    object's id. The `hit` shape holds the one body whose id is `targetId`: a unit, or a map object
+    whatever its footprints, so the 80 × 0.3 of DEC-269 lands on a house or a fort. Another body
+    on the same point is not hit, for Hamstring and for Fury.
+  - **No slow (DEC-199, HC-B26 (3)).** The default kit's Hamstring is the "Serrated" variety of
+    `more-abilities.md` §2 (DEC-199): damage and bleed and no slow, as DEC-269 names. The base
+    ability of the game design (06, DEC-11) also slows. The content has no `slowed` status, so
+    Hamstring does not slow.
+  - **Bleed stacks.** A `debuff` step's `stacks` (§3) applies the status that many times to each
+    target; `bleed` gains a stack each time, so Hamstring's 2 stacks bleed twice as fast as one
+    (`content/status-effects/bleed.ts`).
+  - **Veil.** The blade hits a Veiled enemy on its line, as an area does (a reading of DEC-266 and DEC-327):
+    `ProjectileSystem` and `TargetQuery` do not read `untargetable`. Its hit ends Veil on the
+    thrower and on the one struck (DEC-327). A scenario test pins both.
+  - **Bots and client.** A Warrior bot may now cast Hamstring at the enemy it fights
+    (`pickReadySlot` aims at the enemy's position). The client draws the blade as a shot that
+    drops at its range (`PROJECTILE_ENDING_LOOKS`).
 
 ## Related
 

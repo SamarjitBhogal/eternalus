@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
+import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { RETREAT_STRUCTURES } from '../content/ai/botLaner';
 import { BOT_DIFFICULTIES } from '../content/ai/difficulties/botDifficulties';
 import { NORMAL_BOT } from '../content/ai/difficulties/normal';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import type { MapDefinition } from '../content/maps/maps.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
@@ -18,6 +20,7 @@ import { SpaceIndex } from '../physics/SpaceIndex';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import type { AiMemory } from '../state/AiState.types';
 import { GameState } from '../state/GameState';
+import { ReachQuery } from '../state/ReachQuery';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import type { Team } from '../teams/teams.types';
@@ -26,6 +29,7 @@ import type { SlotReadiness } from '../state/SlotReadiness.types';
 import { onlyReady } from '../state/__fixtures__/stubReadiness';
 import type { SeededRandomState } from '../utils/SeededRandom.types';
 import { Perception } from './perception/Perception';
+import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
 
 /** The shipped difficulties, plus `normal` pinned to never and to always cast. */
 const controllerWith = (readiness: SlotReadiness) =>
@@ -37,6 +41,7 @@ const controllerWith = (readiness: SlotReadiness) =>
     },
     retreatTo: RETREAT_STRUCTURES,
     readiness,
+    lineOfFire: SHIPPED_LINE_OF_FIRE,
   });
 /** Only `ability-1` is ready, so the cast rule has one choice. */
 const controller = controllerWith(onlyReady('ability-1'));
@@ -155,10 +160,11 @@ const setUp = (
 
 describe('BotLegendController (laner tree, 11 §4.2)', () => {
   it('Survive: below the retreat line it drops its target and heads for the nearest allied tower', () => {
-    const { bot, decide, hurt } = setUp({ x: 80, y: 20 });
+    const { bot, add, decide, hurt } = setUp({ x: 80, y: 20 });
+    const enemy = add('dark', 120);
     hurt(1 - NORMAL_BOT.retreatHealthFraction + 0.05);
 
-    const decision = decide({ lane: 'lane-0', targetId: 'entity-9' });
+    const decision = decide({ lane: 'lane-0', targetId: enemy });
 
     // The light SpawnerTower on lane-0 stands at (60, 20).
     expect(decision.commands).toEqual([
@@ -220,6 +226,39 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     expect(decide({ lane: 'lane-0', targetId: near }, 'never-casts').commands).toEqual([
       { type: 'move', actorId: bot, direction: { x: 0, y: 0 } },
     ]);
+  });
+
+  it('Fight: forgets a remembered target that turned untargetable (Veil, DEC-266), so it attacks it anew once seen', () => {
+    const { state, bot, add, decide } = setUp();
+    const enemy = add('dark', 64);
+    const statuses = state.entities.get(enemy)?.getComponent(StatusEffects);
+    statuses?.apply(loadStatusEffects(30, 2).get('invisible'), null, state.tick);
+
+    const veiled = decide({ lane: 'lane-0', targetId: enemy }, 'never-casts');
+    expect(veiled.memory).toMatchObject({ targetId: null });
+
+    statuses?.remove('invisible');
+    expect(decide(veiled.memory, 'never-casts').commands).toContainEqual({
+      type: 'attack-target',
+      actorId: bot,
+      targetId: enemy,
+    });
+  });
+
+  it('Fight: drops its live attack on a target that turned untargetable with a stop (Veil, DEC-266)', () => {
+    const { state, bot, add, decide } = setUp();
+    const enemy = add('dark', 61);
+    state.entities.setAttackTarget(bot, enemy);
+    const stop = { type: 'stop', actorId: bot };
+    expect(decide({ lane: 'lane-0', targetId: enemy }, 'never-casts').commands).not.toContainEqual(
+      stop,
+    );
+
+    const statuses = state.entities.get(enemy)?.getComponent(StatusEffects);
+    statuses?.apply(loadStatusEffects(30, 2).get('invisible'), null, state.tick);
+    const veiled = decide({ lane: 'lane-0', targetId: enemy }, 'never-casts');
+    expect(veiled.commands[0]).toEqual(stop);
+    expect(veiled.memory).toMatchObject({ targetId: null });
   });
 
   it('holds still in reach, or at its destination, without re-sending an idle move every decision (B66-F2)', () => {
@@ -360,7 +399,11 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     let memory: AiMemory = { lane: 'lane-0' };
     let heading = { x: 0, y: 0 };
     // Walks as a held `move` drives it, blocked (not slid) by the wall, until it is in reach.
-    for (let turn = 0; turn < 300 && !state.entities.isInReach(bot, stronghold); turn += 1) {
+    for (
+      let turn = 0;
+      turn < 300 && !new ReachQuery().isInReach(state.entities, bot, stronghold);
+      turn += 1
+    ) {
       const decision = decide(memory);
       memory = decision.memory;
       const move = decision.commands.findLast(({ type }) => type === 'move');
@@ -379,7 +422,7 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     }
 
     expect(stronghold).toBe('entity-1001');
-    expect(state.entities.isInReach(bot, stronghold)).toBe(true);
+    expect(new ReachQuery().isInReach(state.entities, bot, stronghold)).toBe(true);
   });
 
   it('Fight before Push: an enemy unit near the structure is fought first', () => {

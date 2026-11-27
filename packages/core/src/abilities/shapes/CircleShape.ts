@@ -1,7 +1,7 @@
 import { doesDiscReachPolygon } from '../../utils/circlePolygon';
 import type { Polygon, Vec2 } from '../../utils/geometry.types';
 import { mustBePositive } from '../specChecks';
-import type { AreaShape, ShapePlacement } from './AreaShape.types';
+import type { AreaShape, ShapeBody, ShapePlacement } from './AreaShape.types';
 import type { CircleSpec } from './CircleShape.types';
 
 /**
@@ -17,9 +17,13 @@ export class CircleShape implements AreaShape<CircleSpec> {
   }
 
   /** Whether the body's circle overlaps the disc. */
-  public overlaps(shape: CircleSpec, { to }: ShapePlacement, point: Vec2, radius: number): boolean {
-    const dx = point.x - to.x;
-    const dy = point.y - to.y;
+  public overlaps(
+    shape: CircleSpec,
+    { to }: ShapePlacement,
+    { position, radius }: ShapeBody,
+  ): boolean {
+    const dx = position.x - to.x;
+    const dy = position.y - to.y;
     const reach = shape.radius + radius;
     return dx * dx + dy * dy <= reach * reach;
   }

@@ -2,7 +2,8 @@ import type { EntitySnapshot, Snapshot } from '@eternalus/core';
 
 import type { Renderer } from '../engine/render/Renderer';
 import type { WorldPoint } from '../engine/render/Renderer.types';
-import type { HealthBarRule } from './EntityLayer.types';
+import { HIDDEN_UNIT_OPACITY } from './EntityLayer.constants';
+import type { HealthBarRule, VisibilityRule } from './EntityLayer.types';
 import type { EntityDrawState } from './EntityView.types';
 import { HealthBarView } from './HealthBarView';
 import type { WorldLayer } from './SceneView.types';
@@ -14,7 +15,9 @@ import type { ViewRegistry } from './ViewRegistry';
  * (architecture 08 §8), in the main view and on the mini map (06 §8). In the main view positions
  * and facings are interpolated between the previous and current snapshot by `alpha`; an entity
  * that appeared this tick draws where it is (no ghost from the origin). It draws back to front by
- * `y`. A mini map dot sits at the snapshot position (DEC-187 (C)).
+ * `y`. A mini map dot sits at the snapshot position (DEC-187 (C)). The visibility rule decides
+ * how a hidden (Veiled) unit shows (DEC-266): one it leaves out is not drawn at all; a faded one
+ * draws see-through, body, cues, health bar and mini map dot alike.
  */
 export class EntityLayer implements WorldLayer {
   private states: readonly EntityDrawState[] = [];
@@ -25,13 +28,14 @@ export class EntityLayer implements WorldLayer {
    * Creates the layer over a view registry and a status cue registry. `isDead` is the one dead rule
    * (DEC-151 (2)), injected by `Match`, because views import nothing from `bridge/`. `healthBarOf`
    * is the world health bar rule (`HealthBarVisibility`, DEC-195), injected because it reads the
-   * simulation's events.
+   * simulation's events. `visibilityOf` is the viewer's rule for hidden units (`Viewer`, DEC-266).
    */
   public constructor(
     private readonly views: ViewRegistry,
     private readonly cues: StatusCueRegistry,
     private readonly isDead: (health: EntitySnapshot['health']) => boolean,
     private readonly healthBarOf: HealthBarRule,
+    private readonly visibilityOf: VisibilityRule,
   ) {}
 
   /**
@@ -51,11 +55,12 @@ export class EntityLayer implements WorldLayer {
     const before = new Map(previous?.entities.map((entity) => [entity.id, entity]) ?? []);
     this.states = current.entities.flatMap((entity) => {
       const now = entity.transform;
-      if (entity.mapObjectId !== undefined || now === null) return [];
+      const isLeftOut = this.visibilityOf(entity) === 'hidden';
+      if (entity.mapObjectId !== undefined || now === null || isLeftOut) return [];
       const then = before.get(entity.id)?.transform ?? now;
       const position = EntityLayer.lerp(then, now, alpha);
       const facing = EntityLayer.turn(then.facing, now.facing, alpha);
-      return [{ entity, position, facing, isFocused: entity.id === focusId }];
+      return [{ entity, position, facing, tick: current.tick, isFocused: entity.id === focusId }];
     });
   }
 
@@ -76,20 +81,26 @@ export class EntityLayer implements WorldLayer {
   public draw(renderer: Renderer): void {
     const ordered = [...this.states].sort((a, b) => a.position.y - b.position.y);
     for (const state of ordered) {
-      this.views.viewFor(state.entity).draw(state, renderer);
+      this.paint(state, renderer, () => {
+        this.views.viewFor(state.entity).draw(state, renderer);
+      });
     }
     for (const state of ordered) {
-      const { statuses } = state.entity;
-      if (statuses !== null) {
-        for (const status of statuses) {
-          this.cues.viewFor(status.id)?.draw(state, status, renderer);
+      for (const status of state.entity.statuses ?? []) {
+        const cue = this.cues.viewFor(status.id);
+        if (cue !== undefined) {
+          this.paint(state, renderer, () => {
+            cue.draw(state, status, renderer);
+          });
         }
       }
     }
     for (const state of ordered) {
       const side = this.healthBarOf(state.entity);
       if (side !== null) {
-        this.healthBars.draw(state, side, renderer);
+        this.paint(state, renderer, () => {
+          this.healthBars.draw(state, side, renderer);
+        });
       }
     }
   }
@@ -107,8 +118,19 @@ export class EntityLayer implements WorldLayer {
     for (const { state, view } of marked) {
       const at = state.entity.transform;
       if (at !== null) {
-        view.drawMinimap({ ...state, position: { x: at.x, y: at.y } }, renderer);
+        this.paint(state, renderer, () => {
+          view.drawMinimap({ ...state, position: { x: at.x, y: at.y } }, renderer);
+        });
       }
+    }
+  }
+
+  /** Runs `draw` for `state`'s entity, see-through when the visibility rule fades it. */
+  private paint(state: EntityDrawState, renderer: Renderer, draw: () => void): void {
+    if (this.visibilityOf(state.entity) === 'faded') {
+      renderer.withOpacity(HIDDEN_UNIT_OPACITY, draw);
+    } else {
+      draw();
     }
   }
 

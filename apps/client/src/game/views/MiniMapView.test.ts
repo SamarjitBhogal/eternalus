@@ -67,6 +67,7 @@ const createFakeContext = (): DrawContext => ({
   stroke: vi.fn(),
   strokeRect: vi.fn(),
   fillStyle: '',
+  globalAlpha: 1,
   strokeStyle: '',
   lineWidth: 1,
   lineJoin: 'miter',
@@ -355,6 +356,8 @@ describe('MiniMapView unit markers (DEC-187)', () => {
       area: null,
       capture: null,
       statuses: null,
+      projectile: null,
+      swing: null,
     };
     const counters = { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} };
     const snapshot: Snapshot = {
@@ -376,6 +379,7 @@ describe('MiniMapView unit markers (DEC-187)', () => {
       new StatusCueRegistry(),
       () => false,
       () => null,
+      () => 'shown',
     );
     units.show(null, snapshot, 0, null);
     const renderer = new RecordingRenderer();

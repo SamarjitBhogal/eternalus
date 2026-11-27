@@ -6,6 +6,7 @@ import { SHOCKWAVE } from '../content/abilities/shockwave';
 import { SLAM } from '../content/abilities/slam';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { ContentValidationError } from '../content/ContentValidationError';
+import { PROJECTILES } from '../content/projectiles/projectileCatalogue';
 import { fakeAbility, SHIPPED_EFFECT_KINDS } from './__fixtures__/fakeAbilities';
 import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 
@@ -29,6 +30,8 @@ describe('createDefaultAbilityRegistry', () => {
 
     expect(abilities.ids.filter((id) => registry.resolve(id).isAvailable)).toEqual([
       'blade-runner',
+      'veil',
+      'hamstring',
       'fury',
       'fury-dash',
       'slam',
@@ -122,6 +125,14 @@ describe('createDefaultAbilityRegistry', () => {
   it('checks a debuff against the statuses it is given', () => {
     expect(() => createDefaultAbilityRegistry(loadAbilities(30), 30, { has: () => false })).toThrow(
       'Ability "shockwave": debuff status "concussion" is unknown.',
+    );
+  });
+
+  it('checks a shot step against the projectiles it is given', () => {
+    const none = { has: () => false, get: PROJECTILES.get.bind(PROJECTILES) };
+
+    expect(() => createDefaultAbilityRegistry(loadAbilities(30), 30, undefined, none)).toThrow(
+      'hamstring-blade',
     );
   });
 });

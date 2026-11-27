@@ -1,14 +1,11 @@
-import type { Vec2 } from '../../utils/geometry.types';
-import type { AreaShape, ShapePlacement } from './AreaShape.types';
+import type { Polygon, Vec2 } from '../../utils/geometry.types';
+import type { AreaShape, ShapeBody, ShapePlacement } from './AreaShape.types';
 import type { HitSpec } from './HitShape.types';
 
 /**
- * The body a basic attack just struck, for a status's `onHit` steps (Fury's knock-back): the
- * on-hit placement runs from the attacker (`from`) to the struck body's centre (`to`), and a body
- * is in the shape when its centre is exactly `to`, so the step reaches the struck body and no
- * neighbour (two bodies on the very same point are both reached). A map object is never in it:
- * on-hit steps act on units, not on the walls and houses a basic attack can also strike. A push
- * moves away from the attacker.
+ * The one body a basic attack or a shot just struck (the placement's `targetId`), for a status's
+ * `onHit` steps (Fury's knock-back) and a shot's (Hamstring, DEC-269: a unit or a map object), and
+ * no other body. A push moves away from `from`, the attacker or the shot's contact point.
  */
 export class HitShape implements AreaShape<HitSpec> {
   public readonly kind = 'hit';
@@ -18,17 +15,22 @@ export class HitShape implements AreaShape<HitSpec> {
     return [];
   }
 
-  /** Whether the body's centre is the struck point. */
-  public overlaps(_shape: HitSpec, { to }: ShapePlacement, point: Vec2): boolean {
-    return point.x === to.x && point.y === to.y;
+  /** Whether the body is the struck one. */
+  public overlaps(_shape: HitSpec, { targetId }: ShapePlacement, { id }: ShapeBody): boolean {
+    return id === targetId;
   }
 
-  /** Never: on-hit steps do not reach map objects. */
-  public overlapsPolygon(): boolean {
-    return false;
+  /** Whether the map object is the struck one; its footprints do not matter. */
+  public overlapsPolygon(
+    _shape: HitSpec,
+    { targetId }: ShapePlacement,
+    _polygon: Polygon,
+    { id }: Pick<ShapeBody, 'id'>,
+  ): boolean {
+    return id === targetId;
   }
 
-  /** The attacker, so a push moves the struck body away from it. */
+  /** `from` (the attacker or the shot's contact point), so a push moves the struck body away. */
   public centreFor(_shape: HitSpec, { from }: ShapePlacement): Vec2 {
     return { x: from.x, y: from.y };
   }

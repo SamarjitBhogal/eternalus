@@ -3,6 +3,7 @@ import type {
   AbilitySlot,
 } from '../content/abilities/AbilityDefinition.types';
 import type { Aim } from '../components/AbilitySlotRuntime.types';
+import type { AttackMode } from '../content/units/units.types';
 import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { Vec2 } from '../utils/geometry.types';
@@ -24,6 +25,8 @@ export type SpawnOrigin =
 export type InputIntent = {
   /** Whether the existing basic-attack binding is held. */
   readonly isAttacking?: boolean;
+  /** Whether the melee-attack binding is held (DEC-308); it wins over `isAttacking`. */
+  readonly isMeleeAttacking?: boolean;
   readonly move: Vec2;
   readonly aim: Vec2 | null;
   readonly triggered: readonly AbilitySlot[];
@@ -36,7 +39,22 @@ export type InputIntent = {
 type CommandPayloads = {
   readonly move: { readonly actorId: EntityId; readonly direction: Vec2 };
   readonly stop: { readonly actorId: EntityId };
-  readonly 'attack-target': { readonly actorId: EntityId; readonly targetId: EntityId };
+  readonly 'attack-target': {
+    readonly actorId: EntityId;
+    readonly targetId: EntityId;
+    /** Which attack to use; absent means `'basic'`, so recorded replays stay valid (DEC-308). */
+    readonly mode?: AttackMode;
+  };
+  /**
+   * Attack towards a world point with no target (DEC-184): a sweep hits what its wedge reaches, a
+   * shot flies along the line. `aim: null` stops the aimed attack.
+   */
+  readonly 'attack-aim': {
+    readonly actorId: EntityId;
+    readonly aim: Vec2 | null;
+    /** Which attack to use; absent means `'basic'`. */
+    readonly mode?: AttackMode;
+  };
   readonly 'cast-ability': {
     readonly actorId: EntityId;
     readonly slot: AbilitySlot;

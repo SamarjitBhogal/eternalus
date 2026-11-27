@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
+import { StatusEffects } from '../components/StatusEffects';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { LANE_MINION_AGGRO } from '../content/ai/aggro/laneMinion';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { engagingOn, setUp } from './__fixtures__/minionControllerSetup';
 import { MINION_STATES } from './MinionController.constants';
 import { LeashBehaviour } from './LeashBehaviour';
@@ -101,7 +104,7 @@ describe('LeashBehaviour', () => {
     ]);
   });
 
-  it('engaging: switches only to a strictly better-ranked enemy', () => {
+  it('engaging on a unit: finishes its fight, and takes no better-ranked enemy (DEC-326 (2))', () => {
     const { state, add, decide } = setUp();
     const self = add('light', 50);
     const target = add('dark', 54);
@@ -112,8 +115,8 @@ describe('LeashBehaviour', () => {
     const legend = add('light', 49, 20, 'warrior', 'warrior');
     state.entities.setAttackTarget(closer, legend);
     const decision = decide(self, engagingOn(target));
-    expect(decision.commands).toEqual([{ type: 'attack-target', actorId: self, targetId: closer }]);
-    expect(decision.memory).toMatchObject({ targetId: closer });
+    expect(decision.commands).toEqual([]);
+    expect(decision.memory).toMatchObject({ fsm: 'engaging', targetId: target });
   });
 
   it('engaging: fights a target inside the leash with no time limit, a Legend too (MS-36)', () => {
@@ -360,6 +363,19 @@ describe('LeashBehaviour', () => {
     ]);
   });
 
+  it('engaging: rests with no cooldown when its target turns untargetable (Veil, DEC-266)', () => {
+    const { state, add, decide } = setUp();
+    const self = add('light', 50);
+    const target = add('dark', 52);
+    const veil = loadStatusEffects(tickRate, 2).get('invisible');
+    state.entities.get(target)?.getComponent(StatusEffects).apply(veil, null, state.tick);
+
+    expect(decide(self, engagingOn(target))).toMatchObject({
+      commands: [{ type: 'stop', actorId: self }],
+      memory: { fsm: 'marching', targetId: null, cooldownUntilTick: 0 },
+    });
+  });
+
   it('engaging: when its target dies far from where it took it, takes the next enemy in reach here', () => {
     const { state, add, decide } = setUp();
     const self = add('light', 50);
@@ -424,5 +440,58 @@ describe('LeashBehaviour', () => {
       commands: [{ type: 'attack-target', actorId: self, targetId: enemy }],
       memory: { fsm: 'engaging', targetId: enemy, leashX: 50 },
     });
+  });
+
+  it('answers a call for help from an enemy with no lock whose last attack hit a mate, for one attack interval (DEC-322 (2))', () => {
+    const { state, add, decide, advance } = setUp();
+    const self = add('light', 50);
+    const mate = add('light', 56);
+    // 7 away: past the 5.4 reach, inside the 8.625 call for help.
+    const enemy = add('dark', 57, 20, 'warrior', 'warrior');
+    state.hordes.add({
+      id: 'horde-1',
+      team: 'light',
+      weightClass: 'light',
+      lane: 'lane-0',
+      formationId: 'ranks',
+      memberIds: [self, mate],
+      progress: 40,
+    });
+    const interval = state.entities.get(enemy)?.getComponent(Combat).attack.interval ?? 0;
+
+    state.entities.recordHits(enemy, [mate], state.tick);
+    expect(state.entities.attackTargetOf(enemy)).toBeNull();
+    expect(decide(self).commands).toEqual([
+      { type: 'attack-target', actorId: self, targetId: enemy },
+    ]);
+    advance(interval + 1);
+    expect(decide(self).commands).toEqual([]);
+  });
+
+  it('engaging on a unit: ignores a call for help, and picks again when its target dies (DEC-326 (2))', () => {
+    const { state, add, decide } = setUp();
+    const self = add('light', 50);
+    const mate = add('light', 56);
+    const target = add('dark', 53);
+    const enemy = add('dark', 57);
+    state.hordes.add({
+      id: 'horde-1',
+      team: 'light',
+      weightClass: 'light',
+      lane: 'lane-0',
+      formationId: 'ranks',
+      memberIds: [self, mate],
+      progress: 40,
+    });
+    state.entities.setAttackTarget(enemy, mate);
+
+    const busy = decide(self, engagingOn(target));
+    expect(busy.commands).toEqual([]);
+    expect(busy.memory).toMatchObject({ fsm: 'engaging', targetId: target });
+
+    state.entities.get(target)?.getComponent(Health).applyDamage(1_000_000);
+    expect(decide(self, engagingOn(target)).commands).toEqual([
+      { type: 'attack-target', actorId: self, targetId: enemy },
+    ]);
   });
 });

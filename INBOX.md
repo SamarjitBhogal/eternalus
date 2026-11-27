@@ -446,6 +446,503 @@ Reply inline (`Decision: …`).
       Also noted, acceptable: only an ability's top-level steps may wait (05 §3 says every spec
       may); no content needs nested delays, and the `Delayed<Step>` type refuses them.
       Keep all six, or name the ones to change?
+- [x] **HC-Q75 — "veil-held-attack": does the enemy player's attack on a Vanguard who Veils
+      survive the Veil? (`feat/vanguard-veil-hamstring`, 2026-11-21; Owner Calls card
+      "veil-held-attack"; DEC-266).** DEC-266 says what bots, mobs and turrets do, not the human
+      player. Built and tested; nothing waits on the answer. (A) **Kept (built):** while Veil
+      lasts, the player's Legend neither faces, hits nor chases the Vanguard; when Veil ends it
+      attacks again without a new click, unless the player moved and stopped in between (stopping
+      sends `stop`). While the attack is kept, the player's Legend counts as attacking the
+      Vanguard, so the Vanguard's allied minions and guards rank it as attacking an ally Legend
+      (aggro). (B) **Dropped:** the attack ends when Veil starts, and the player clicks again
+      after it. (B) is a small follow-up: the client's `PlayerCommands` and the server's
+      `SeatCommands` forget their attack target when it turns hidden and send `stop`. My advice
+      is (B): it is the genre norm, and under (A) the Legend runs at the Vanguard the moment Veil
+      ends. Every AI controller already drops a Veiled target at its next decision (HC-B19 (3)).
+      HC-B19 (6) stays open under either answer, because the systems keep a held target until the
+      controller's `stop` arrives. Keep (A), or switch to (B)?
+  - Answered 2026-11-22 (DEC-327): neither (A) nor (B). Attacks become isolated events with no
+    target (lane A's attack rework, owner calls HC-Q77 and attack-click-hold). An attack area
+    that touches the Vanguard after Veil starts ends Veil; a miss leaves the Vanguard hidden.
+    Lane A builds the target-free attack; `feat/vanguard-veil-hamstring` makes no code change for
+    it, and the held attack (A) goes away with that rework. 05 §18 "Veil" says so.
+- [x] **HC-B19 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: five parts of the Veil build (`feat/vanguard-veil-hamstring`, 2026-11-21; pre-PR
+      critic rounds 1 and 2), and one more not built.** Nothing waits on the answer; parts (1) to
+      (5) are built and tested. The design
+      text of 03, 05, 08 and 11 changes only after your sign-off; until then each doc's
+      "Implementation status" points to 05 §18, "Veil".
+      (1) **A status may end on damage (`endsOnDamage`).** The 05 §8 sketch of a status definition
+      has no such field. DEC-267 asks for "one end rule in one place": the field is on the status,
+      and `StatusEffectSystem` holds the one rule (a hit marks the status, the system removes it:
+      `status-expired`, no `onExpire`). Rejected: an `ends-on-damage` flag, because flags are rules
+      on the holder, and this is the status's own life.
+      (2) **`EntitySnapshot.isHidden`.** One flag for every viewer, present only while a status
+      sets `hidden`, made in core. Rejected: the client reads `statuses` and a "hides" flag per
+      status, which puts a game rule in the client (ADR 0016 point 1: core owns visibility).
+      03 §5 does not list it yet.
+      (3) **`EntityStore.isTargetable` is the one targeting rule.** Alive, and no status sets
+      `untargetable`. Perception's hostile queries, the leashed mobs, `attack-target` and the bot
+      memory use it, so `ai/` does not read components. `CombatSystem`, `PathingSystem` and
+      `StuckSystem` read `isUntargetable` (the status part only): they keep a Veiled target but do
+      not hit or chase it, and each AI controller drops it at its next decision (a bot with a
+      `stop`). 11 §3 should say that a hostile query keeps only units an enemy may pick (a dead
+      unit is left out too). Whether the human player's attack is kept is a separate question
+      (HC-Q75).
+      (4) **A broken status stops at the hit.** Before, a status a hit broke stayed in force until
+      the next tick's pass, so the Vanguard that hit stayed hidden and untargetable for one or two
+      ticks. Now `StatusEffects` recomputes without a broken status at once (no flags, no
+      modifiers), and a broken status neither ticks nor runs out, so it always ends through the
+      break (no `onExpire`); the snapshot's `statuses` leaves it out at once, and only its removal
+      and `status-expired` wait for the pass. A status that has already run out when the hit lands
+      does not break: it ends by expiry, once. `StateHasher` hashes the pending break.
+      (5) **`Viewer` decides what the player sees.** A small `Viewer` in `game/` keeps the
+      player's Legend and team (also after the player dies) and gives each entity shown, faded or
+      hidden; `Match` injects that rule into `EntityLayer` and `HealthBarVisibility` reads the same
+      `Viewer`. Before, `HealthBarVisibility` (the health-bar rule) also held the viewer's team, and
+      a team not known yet showed hidden enemies faded. With `Viewer`, an unknown team hides them,
+      and the later per-seat filter (multiplayer plan W10) replaces one rule, not view code.
+      (6) **Not built, my advice is no: one query for "the held target, while targetable".** The
+      round 2 critic noted that `CombatSystem`, `PathingSystem` and `StuckSystem` each check
+      `isUntargetable` on their held target, and one `EntityStore` query could hold the rule.
+      It would serve all three, with `CombatSystem` keeping its own dead check beside it (a dead
+      target clears, a Veiled one stays). The gain is one line in each of three systems, and
+      `EntityStore` is already over 300 lines; build it when a fourth caller appears.
+      Keep all five, build (6) now, or name the ones to change?
+  - Answered 2026-11-22 (DEC-327): (1) replaced by the owner's end rule: the act of hitting ends
+    Veil, not the damage. A periodic status tick (a bleed on before Veil) does not end it; any
+    other hit dealt or taken does, and so does a debuff from another entity. The field is now
+    `endsOnHit` (`StatusEffects.breakOnHit`). (2) to (5) signed off: (2) and (3) "sure sounds
+    good", (3) with the note that a basic attack needs no target (lane A's attack rework), (4)
+    "sure? if it fits what ive been saying" (it does: a hit ends Veil at once), (5) "yes". (6) got
+    no answer and stays not built. Built on `feat/vanguard-veil-hamstring`; 03 §2 and §5, 05 §8,
+    08 §8 and 11 §3 now state (1) to (5).
+- [x] **HC-Q79 — "veil-no-damage-hit": does a hit that does no damage end Veil? (DEC-327 delta
+      critic F1, `feat/vanguard-veil-hamstring`, 2026-11-22; asked on the Owner Calls page, v46).**
+      Today a Veiled Vanguard that strikes an enemy wall that cannot break, or tries to stun an
+      enemy that cannot be stunned, stays hidden: the hit does nothing (the damage pipeline blocks
+      it to 0, or the target refuses the debuff), so no event marks it. Your words in DEC-327: "the
+      action of attacking ... not the damage they did itself, but the interaction". (A) Any hit
+      that touches something ends Veil, also with no damage (recommended): built with lane A's
+      target-free attack rework, which decides contact in one place (one hit event at contact,
+      handed to lane A). (B) Only a hit that does something ends Veil, as built now. Until you
+      answer, the rule stays as built.
+  - Note 2026-11-22 (Hamstring merge critic M1-7; not asked again): the outcome is the same.
+    Such a hit still leaves the Vanguard hidden. The reason changed. Lane A's attack rework (PR 2,
+    #159) is now in the Hamstring branch, and it drops a sweep, shot or melee hit on a body that
+    takes no damage before the damage step. So the game records no hit, and no event marks it
+    (rule 2 of `AreaHitQuery`, `ProjectileSystem`, `MeleeAttackStrategy`; DEC-333 (2)). The stun
+    case did not change. For (A), the contact goes in `EntityStore.recordHits` or where a shot
+    stops on a body that takes no damage.
+  - Correction 2026-11-22 (Hamstring merge critic round 2, M2-1): the last sentence of the note
+    above is wrong in part. Veil does not end through `EntityStore.recordHits`. It ends when
+    `StatusEffectSystem` sees a `damage-applied` or `status-applied` event. Three places drop a
+    hit on a body that takes no damage before any record or event: rule 2 of `AreaHitQuery.find`
+    (sweeps and ability areas), `MeleeAttackStrategy.attack`, and `ProjectileSystem` (a shot
+    stops on such a body). For (A), each of the three places sends one contact event, and
+    `StatusEffectSystem` listens to it.
+  - Answered 2026-11-23 (DEC-343): (A). Any hit that touches an enemy ends Veil, also when it
+    does nothing. Lane A's attack rework builds it. Until then, the rule stays as built. Your
+    answer also said that an attack from behind while invisible does critical damage. The game
+    has no critical hits and no bonus from behind, so that is not today's rule. The coordinator
+    asks you if you want it as a new rule. 05 §8 states (A); 05 §18 states what is built today.
+- [x] **HC-B26 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: Hamstring's blade takes its speed, width and range from the blade's own definition
+      (`feat/vanguard-hamstring`, 2026-11-22; DEC-268, DEC-269).** Nothing waits on the answer;
+      it is built and tested. The player sees no difference: the blade flies at 30 m/s, 0.3 m
+      wide, for 12 m (DEC-268, all `TUNE`). The design puts the speed, width and range on the
+      ability's step (05 §3, the `projectile` row). The build puts them in one place, the blade's
+      projectile definition (`content/projectiles/hamstringBlade.ts`), and the step names it by
+      id, as a weapon names its arrow or bolt (DEC-314 (5)). So the blade is tuned in one file,
+      and it flies and drops at its range the same way the weapons' shots do. Not built:
+      a shot that passes through enemies (`pierce`) or bursts (no ability needs them yet). The
+      design text of 05 §3 changes only after your sign-off; until then 05 §18, "Hamstring",
+      records the difference. Keep it, or put the numbers back on the step?
+  - (2) Also better than the design, not built yet (gate round 1, 2026-11-22): one way to put
+    every shot in the match. Today there are two. `ProjectileLauncher.launch` (Hamstring) repeats
+    the last five steps of the weapons' `RangedProjectileAttackStrategy`: build the projectile,
+    add its payload, steer it, add it, announce it. The two copies must always stay the same. The
+    fix: the weapon strategy also launches through the one `ShotLauncher`. The player sees no
+    difference. It changes lane A's weapon code (#148), so lane B builds it with lane A after #148
+    merges. (A) Build it. (B) Keep the two copies.
+    - Note 2026-11-22 (Hamstring merge critic M1-6): (A) also removes a second difference. A
+      weapon's shot aims first at the unit it attacks, then at the floor under the aim point.
+      Hamstring's blade aims only at the floor under the aim point. A player sees no difference. A
+      bot casts the blade at an enemy unit. When that unit and another body touch the blade at the
+      same point, the blade can hit the other body; a bot's arrow hits the unit (DEC-317 (8)). (A)
+      makes one rule for the target of every shot, with a test. #148 and PR 2 (#159) are now in
+      the Hamstring branch; #148 is not merged yet.
+  - (3) A reading, sign-off asked: Hamstring does not slow. DEC-269 names 80 damage and 2 bleed
+    stacks, and no slow. That matches the "Serrated" variety in `more-abilities.md` §2 ("2 bleed
+    stacks, no slow"). The game design (`06-abilities-and-progression.md`, approved with DEC-11)
+    says the first enemy hit "bleeds and is slowed", and the base ability in `more-abilities.md`
+    §2 is "slowed 1.5 s". (A) No slow, as built. (B) Also slow the enemy for 1.5 s: this needs a
+    new `slowed` status and the slow amount from you.
+    - Answered by DEC-199 (batch 2026-11-11) and the readings line of batch 2026-11-16: the default kit's Hamstring is the Serrated form,
+      "80 damage and 2 bleed stacks, no slow", a reading you did not change. So (A) holds and is
+      not asked again. `06-abilities-and-progression.md` now names the Serrated default.
+  - (4) Built under your standing rule (DEC-223), sign-off asked (gate round 2, R2-A6,
+    2026-11-22): the player sees no difference, and every match hash stays the same. Each shot
+    now lists its own hashed fields (`ProjectilePayload.fields`), as a chase watch does
+    (`ChaseWatch.fields`). Before, `StateHasher` read them one by one and chose the cast level by
+    the impact kind. Keep it?
+  - (5) Found, not built (gate round 2, R2-C6; reason corrected in round 3, R3-2; 2026-11-22):
+    the player sees no difference today. A `hit` area ("the one body just struck") works only in
+    an `onHit` list (a status's or a shot's). Content that puts it on a cast's own step or on a
+    dash's path loads without an error and hits nothing. No content does this today; the shape's
+    TSDoc and a test say so. The fix is a load-time check of about 15 lines with tests: the step
+    walk learns which lists are `onHit` lists, and it passes that to each shape's check, which
+    only the `hit` shape reads. It is not built here because round 3 was this branch's last
+    critic round (your limit), so new code would ship with no review. Under your standing rule
+    (DEC-223) it should not stay open. (A) Build it in lane B's next PR (PR 6, Sentinel Rip &
+    Tear, which adds the `cone` shape and goes through the same check) (advised). (B) Leave it,
+    as documented.
+  - (6) Found, not built (Hamstring merge critic round 2, M2-5; 2026-11-22): the player sees no
+    difference. Two places decide if an enemy unit stands on a point: a click on a unit
+    (`findUnitAt`, on the screen's data) and an aim at a palace floor or a gate (`AreaHitQuery`,
+    on the live game). Each has its own copy of the rule. The copies already disagreed once: a
+    Veiled unit blocked an aim at the floor, but not a click (fixed by M1-1, with a test on each
+    side). The fix: one rule that both use, with one test. It is not built here because it
+    changes lane A's PR 2 code (`AreaHitQuery`; #159 is still open). (A) Build it in lane B's
+    next PR, after #159 merges (advised). (B) Keep the two copies; a test on each side keeps them
+    the same.
+  - Answered 2026-11-23 (DEC-343): (1) kept, as built; 05 §3 now states it. (2) (A): lane B
+    builds the one shot launcher with lane A after #148 merges. (4) kept, as built. (5) (A): built
+    in lane B's PR 6 (Sentinel Rip & Tear). (6) (A): built in lane B's next PR, after #159 merges.
+- [x] **HC-Q67 — Combat gaps: build before the presentation (2026-11-27)? In which order?
+      (combat audit, COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).**
+      Your nine combat questions: 0 of 9 are true today. Evidence and the proposed PRs (two lanes,
+      PR 1 to PR 9): https://claude.ai/artifact/F6z1XMJ6ZsDC3EaZGNrXuQ. The feature freeze was
+      today (2026-11-20). The nine gaps are about nine PRs. With a critic round and a full check
+      per PR, the estimate is 3 to 5 PRs by 2026-11-26 with two sessions in parallel. PR 1 (ranged
+      attacks), PR 2 (melee sweeps) and PR 5 (Veil) can start on a branch without this answer;
+      nothing merges before it. Proposed order. Lane A (attacks): PR 1 ranged attacks and
+      projectiles (staff, bow), PR 2 melee sweeps, PR 3 a weapon per sub-class, PR 4 wall turrets.
+      Lane B (abilities): PR 5 Vanguard Veil and Hamstring, PR 6 Sentinel Rip & Tear, Shield Wall,
+      Berserk, PR 7 Magus Imbue, Sanctuary, Death Ray. Last: PR 8 passives, PR 9 second weapon and
+      swap. Options: (A) build now for combat, two sessions, the order above (recommended): what
+      lands by 2026-11-26 is in the demo; the rest continues after the presentation; (B) build
+      now, one session, the order above: fewer merge conflicts, about half the output; (C) keep
+      the freeze and build all of it after the presentation: the demo shows today's combat, which
+      is melee for every class and 4 abilities that cast; (D) other (note). A, B, C or D?
+  - Answered 2026-11-20 (DEC-301): "Build now for combat, two sessions, the order above". Lane A
+    (this session) builds PR 1 to PR 4; lane B (PR 5 to PR 7) needs its own session.
+- [x] **HC-Q68 — Tower orbs with splash damage: which towers shoot, and what? (combat audit,
+      COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).** No document has
+      tower orbs or splash damage. The documents have wall turrets: they fire bolts at one target
+      and lead it (MVP requirements FR-027, FR-073). The balancing suggestions give range 14 m,
+      150 damage every 5 s, heavy ammo 500 every 10 s against Sentinels, heavy minions and bosses.
+      Lane towers (spawner and buff towers) do not attack; their guards defend them. Today nothing
+      on the map shoots. The only orb in the design is the Magus artifact Soul Orb (its Cast
+      Forward mode is a small turret, after Destiny 2's Arc Soul). Options: (A) build the
+      documented wall turrets, with bolts at one target (recommended): MVP in the documents,
+      numbers exist, and it reuses PR 1's projectiles (PR 4); (B) lane towers also shoot orbs with
+      splash damage: new design, so put the radius, damage, fire rate and which towers in the
+      note; built after the turrets; (C) turret bolts deal splash damage: put the splash radius in
+      the note; (D) you meant the Magus Soul Orb: an artifact (sprint 4.4), not in this plan yet;
+      say in the note if it should be; (E) other (note). A, B, C, D or E?
+  - Answered 2026-11-20 (DEC-302): "Lane towers also shoot orbs with splash damage", with a note:
+    wall turrets keep their documented bolts (PR 4); lane towers defend themselves with splash orbs
+    from their new team-coloured gems, built after the turrets, before the new visuals land. The orb
+    numbers (splash radius, damage, fire rate, range) go on a page before the build.
+- [x] **HC-Q69 — Weapon swap: which Vanguard sub-classes get a second weapon, and which key
+      swaps? (combat audit, COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls
+      page).** Today each Legend has one weapon and no swap. Your start-weapon ruling (DEC-57)
+      gives a second weapon only to the Zealot: "Raptor talons are starter for Velite with a bow
+      as a secondary weapon" (Velite is now Zealot). The loadout document puts a second weapon at
+      MVP-if-time: "one weapon is enough for the MVP attack". Free keys today: Q, F, R, X, G (V
+      opens View Details). Options: (A) the Zealot only (talons and bow), Q swaps, built last
+      (PR 9) (recommended): matches DEC-57; a loadout with a primary and a secondary weapon, one
+      swap action, rebindable; (B) every Vanguard sub-class gets one: name the Templar's and the
+      Paladin's second weapon in the note; (C) every class can carry two weapons: name the weapons
+      in the note; (D) after the presentation (MVP-if-time); (E) other (note). A, B, C, D or E?
+  - Answered 2026-11-20 (DEC-303): "Zealot only (talons and bow), Q swaps; built last (PR 9)", with
+    a note: the swap is one of the Zealot's two gadget slots, not Q.
+- [x] **HC-Q70 — Melee sweep: how wide is each weapon's arc? (combat audit,
+      COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).** Your ruling
+      DEC-184: "A physical weapon (sword, axe) swipes the area in front of the user, with a range
+      set by the weapon's reach ... Everything the weapon's area reaches takes damage." Today a
+      melee hit damages one target. Each weapon already has its own reach; no arc width is set
+      anywhere. The numbers below are a proposal, not from a document. Options: (A) each weapon
+      has its own arc in content (recommended): proposed talons 90°, dual blades 100°, great sword
+      140°, Wuuthrad 160°, Bastions 70°, staff melee 90°; a bigger weapon sweeps wider and
+      further; marked `TUNE`; (B) one arc for every melee weapon (120°): only the reach changes
+      with the weapon; (C) other (note). A, B or C?
+  - Answered 2026-11-20 (DEC-304): "Each weapon has its own arc in content", with a note: mark
+    `TUNE`, test for feel; two arcs for dual-wield weapons is an idea to think about; single arcs
+    now. Built in PR 2.
+- [x] **HC-Q71 — Reach: the class's number plus the weapon's? (combat audit,
+      COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).** Your words in the
+      combat review on 2026-10-19 (not yet in the decisions log; PR 1 logs them as DEC-300):
+      "Reach depends on character + weapon type. Swords 2 m, short blades 1 m, etc.; Warriors
+      another 2 m, Sentinels 4 m, Magus 3 m." Open since then: do the two add up? Today reach is
+      per weapon: talons 1.5 m, Wuuthrad 1.8 m, staff 1.5 m. Reach counts from the edge of the
+      body, so a bigger body already reaches further (body radius: Warrior 0.5 m, Magus 0.75 m,
+      Sentinel 1.25 m). Talons, Wuuthrad, Bastions and staff melee have no number in your words;
+      the proposal is 1 m, 2 m, 1 m and 1 m. Options: (A) they add, class + weapon (recommended):
+      Zealot 3 m, Templar 3 m, Paladin 4 m, Bulwark 6 m, Colossus 5 m, Magus staff melee 4 m; this
+      is long, as the Paladin hits 8 body-radii away; (B) the weapon's number only: swords 2 m,
+      short blades 1 m for any class, and the class numbers are dropped; body size still adds;
+      (C) other (note). A, B or C?
+  - Answered 2026-11-20 (DEC-305): "They add: class + weapon", with a note: proposed distances go
+    ahead as `TUNE` and may need tuning after user testing (a standing rule). Built in PR 2.
+- [x] **HC-Q72 — Staff and bow: how does damage fall off with distance? (combat audit,
+      COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).** Your words
+      (2026-10-19): "Staff range is infinite (think gun) with damage fall-off after 15 m. Bows
+      fall off after 50 m." The balancing suggestions give the Magus staff 8 m; your words win
+      over them (DEC-300). Open: how fast damage drops and its floor. A shot must also end
+      somewhere. The numbers below are a proposal. Options: (A) a straight-line drop to a floor
+      (recommended): staff has full damage to 15 m, then drops to 40% at 45 m and stays at 40%
+      after that; bow has full damage to 50 m, then drops to 40% at 80 m; a shot flies until it
+      hits something or leaves the map; all `TUNE` in content; (B) one step, half damage past 15 m
+      (bow 50 m): simpler for players to read, no slope; (C) other (note). A, B or C?
+  - Answered 2026-11-20 (DEC-306): "Straight-line drop to a floor", with a note: a staff bolt
+    fizzles out into mist after 100 m; an arrow slows down and falls to the ground at its maximum
+    distance, with a shadow. Built on `feat/ranged-attacks` (PR 1).
+- [x] **HC-Q72 (b) — Staff and bow: placeholder numbers HC-Q72 does not ask about
+      (`feat/ranged-attacks`, 2026-11-20; COMBAT-WEAPONS-ABILITIES-37).** HC-Q72 asks how damage
+      falls off. PR 1 also needs these numbers, which no document gives. All are `TUNE` in
+      content. (1) Firing reach: a bot walks this close before it shoots. Staff 15 m, bow 50 m
+      (your full-damage distances). (2) Shot speed: 60 m/s for both (the physics document's sizing
+      example; wall-turret bolts are 30 m/s and 24 m/s). (3) Bow damage: 45 every 0.7 s (the
+      Warrior basic attack); no document has bow damage. The staff keeps the Magus basic: 40
+      every 0.9 s. (4) Range: no cap in a match. A shot flies until it hits something, a wall or
+      the map edge (your 2026-10-19 ruling that staff range is infinite, "think gun"). Code goes
+      ahead on these numbers; nothing merges before HC-Q67. Options: (A) use these placeholders
+      (recommended): change any number in a note; (B) other (note). A or B?
+  - Answered 2026-11-20 (DEC-310): "Use these placeholders". Point (4), no range cap, is replaced by
+    DEC-306. Built on `feat/ranged-attacks` (PR 1).
+- [x] **HC-Q73 — Passives: build before the presentation? (combat audit,
+      COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).** The passives are
+      Sentinel Wrecking Run, Magus Studious and Necromancy (the Vanguard has none yet). Today they
+      are names only. The documents disagree: the class table (classes and sub-classes) says MVP;
+      the MVP requirements (FR-053), the MVP scope and the loadout document say MVP-if-time.
+      Wrecking Run has a rule ("While holding sprint, speed gradually increases to a max of N
+      m/s"); Studious and Necromancy have no numbers. Options: (A) MVP-if-time: after the
+      abilities (PR 8), Wrecking Run first (recommended): Studious and Necromancy get proposed
+      numbers on a page before they are built; (B) build them now, before the abilities; (C) other
+      (note). A, B or C?
+  - Answered 2026-11-20 (DEC-307): "MVP-if-time: after the abilities (PR 8), Wrecking Run first",
+    with a note: momentum exists but needs a physics feel (turns that slide, a Shield Wall-type
+    ability that stops a Sentinel, barging through objects and buildings).
+- [x] **HC-Q74 — Magus staff: keep a melee attack when it turns ranged? (combat audit,
+      COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).** Your weapon
+      ruling (DEC-64): "Mages all have staves, which have ranged attacks (default) and melee
+      attacks (TBD how to trigger a different type of attack; likely copying whatever Battlefield
+      does on PC for melee attacks)." PR 1 makes the staff's default attack ranged. The melee
+      trigger is still open. Options: (A) ranged only for now; staff melee on its own key with PR 9
+      (recommended): one attack per click; the melee key (proposed F, rebindable) comes with the
+      swap's input work; (B) automatic: melee when the target is close, ranged otherwise: no new
+      key; (C) staff melee on its own key now (F), in PR 1: one new input action, rebindable;
+      (D) other (note). A, B, C or D?
+  - Answered 2026-11-20 (DEC-308): "Ranged only for now; staff melee on its own key with PR 9", with
+    a note read as: keep the staff melee and put it on its own rebindable action (default F) now, in
+    PR 1 (DEC-308's reading); a per-class "auto-melee on/off" setting comes later. The staff keeps its melee
+    attack as its second attack on `feat/ranged-attacks`.
+- [x] **HC-B16 — Better than the design, sign-off asked: no projectile pool for now
+      (`feat/ranged-attacks`, 2026-11-20; COMBAT-WEAPONS-ABILITIES-37).** Built on
+      `feat/ranged-attacks`; nothing waits on the answer. The design says projectiles come from a
+      `ProjectilePool` (reused objects, to avoid garbage-collection pauses). The build creates
+      each shot new and removes it when it lands. Reasons: (1) an entity's id cannot change, so a
+      pool that gives each shot a fresh id needs a change to the entity base class; (2) spawning
+      rebuilds every component anyway; (3) each shot already makes new event objects, which DEC-94
+      leaves unpooled, so a pool cannot make a shot garbage-free. This is the same "measure first"
+      rule DEC-94 used. The pool comes back if the performance soak test (NFR-023) shows pauses
+      from projectiles. Options: (A) no pool now; add it if the soak test shows pauses
+      (recommended): less code, and the design docs get an implementation-status note; (B) build
+      the pool in PR 1, as designed: entity ids become changeable, and more code for no measured
+      gain; (C) other (note). A, B or C?
+  - Answered 2026-11-20 (DEC-309): "No pool now; add it if the soak test shows pauses". The design
+    docs say so with PR 1.
+- [ ] **HC-B18 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: six parts of the ranged attacks (`feat/ranged-attacks`, PR 1 critic round 1,
+      2026-11-20; COMBAT-WEAPONS-ABILITIES-41).** Built and tested; recorded as DEC-314. Nothing
+      waits on you; name a part to change it. (1) One `ProjectileSystem` flies every shot and
+      lands it, just before `CombatSystem`; there is no `projectile-hit` event. (2) What a shot
+      does where it lands is one class per kind: a weapon's shot now, an ability's shot (the
+      Hamstring blade) next, with the same flight. (3) A unit's attacks are held by mode (basic,
+      melee, later heavy), one rule per mode. (4) A general speed cap on `Movement` slows a shot
+      to its range; an ability can reuse it. (5) A weapon names its shot and its fall-off; the
+      shot's flight is its own definition. (6) A shot flies over a walk-on outline (a palace
+      floor, a gate's passage) unless it was fired at that entity. Also recorded here, a stand-in
+      that PR 2 replaces (scheduled, phase 4 sprint 4.4): the player fires only at a target under
+      the cursor, not along the aim (DEC-184).
+- [ ] **HC-B20 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: eight more parts of the ranged attacks (`feat/ranged-attacks`, PR 1 critic rounds 2
+      and 3, 2026-11-20/21; COMBAT-WEAPONS-ABILITIES-44 to -46).** Built and tested; recorded as
+      DEC-317. Nothing
+      waits on you; name a part to change it. (1) One line-of-fire check tells whether a shot
+      would reach its target now; bots and the combat system both use it, and it uses the same
+      contact rule that lands shots, so a fort that is also its own wall reads clear. (2) One
+      list of what shots do where they land; a missing kind does not compile. (3) A unit given an
+      attack mode it does not have (for example melee on a bow-only unit) refuses the command and
+      changes nothing, with no quiet fallback to the basic attack. (4) A unit fires a ranged
+      attack only with a clear line, every unit, the player's too (option A); without one it
+      faces the target and waits while its controller moves it. Your own Legend too: with its
+      target behind a wall it turns to the target and does not shoot, with no on-screen cue,
+      until you move it to a clear line. Not chosen: (B) bots only, which needs a hold-fire
+      command, or (C) leave shots going into walls and schedule the fix. (5) A body that takes
+      no damage now stops only a shot fired at it, as a walk-on floor does; other shots fly on.
+      Today this changes only the forest camps: the other such bodies are walk-on or stand in a
+      wall that stops the shot anyway. Alternative: only structures that can never be broken
+      let shots pass. Added by critic round 3: (6) the "a body just before the wall takes the
+      hit" test is one function, which landing and the line-of-fire check both call; (7) every
+      attack that fires a projectile gets the line-of-fire check and the content check, not
+      only today's ranged strategy; (8) at a Stronghold, each palace wall's outer face lies on
+      the edge of the palace floor. A shot fired at the Stronghold that touches the wall and the
+      floor at the same point hits the Stronghold, not the wall, as a hit on a fort wall counts
+      for its tower (DEC-185). Before, rounding picked one of the two, and a unit could spend
+      about 45 s of shots breaking the wall. Alternative: the line-of-fire check reads such a
+      wall as in the way, and the unit moves elsewhere or attacks the wall. Not built (reasons
+      in the PR body): the ending look as core
+      content data (BTD-B), one shared intent rule for the client and the Duel server (BTD-E),
+      one reusable "first source with the id" definition lookup for `Simulation` and about ten
+      tests (BTD-H).
+  - Answered 2026-11-22 for (1) to (8) (Owner Calls v40, DEC-317 addendum): "C: leave shots going
+    into walls; schedule (4)", with a note on the weapon model ("I can shoot my bow or my staff at
+    a rock if i want"). (4) is replaced: every unit fires without a line-of-fire check, and a bot
+    whose shot is blocked drops its lock and moves for a clear shot (scheduled to PR 2 by the
+    coordinator under the standing rule). (5) is replaced: a body that takes no damage stops every
+    shot and takes no damage. Built in PR 2 (`feat/melee-sweeps`). The AI half of (4) is also
+    built there: a bot's line of fire uses the shot's own stop rule (`AreaHitQuery.stopsShot`),
+    so a body that takes no damage blocks it. Still open: BTD-B, BTD-E and BTD-H (they were not
+    on the card).
+
+- [x] **HC-B25 — A rule the design did not state, built under your standing rule (DEC-223),
+      sign-off asked: what a melee sweep passes over (`feat/melee-sweeps`, PR 2, 2026-11-21;
+      COMBAT-WEAPONS-ABILITIES-48 and -49).** Built and tested; recorded as DEC-319 (9). Nothing
+      waits on you. (A, built) A sweep passes over a walk-on floor (a palace floor, a gate's
+      passage) and over a body that takes no damage now (a wall or gate before its rule lets it
+      break), unless you lock onto it: the same rule as a shot (DEC-317 (5)). Without it, a
+      Legend inside the enemy palace hit the Stronghold on every swing, because the palace floor
+      is the Stronghold's outline, and a swing at an unbreakable gate ran Fury's knock-back on it.
+      (B) A sweep also hits those bodies: every swing inside an enemy palace damages the
+      Stronghold. **Answered 2026-11-21 in chat: "A".** Signed off as built; recorded in DEC-319
+      (9).
+  - Re-asked 2026-11-21 as HC-Q76: this question did not say that PR 2 removes the player's lock,
+    so the 'A' answer was given on incomplete facts. Not Sam's error.
+
+- [x] **HC-Q76 — Correction to HC-B25: with aimed attacks, a player's weapon cannot hit the
+      Stronghold, the palace or a gate (`feat/melee-sweeps`, PR 2).** Your "A" on HC-B25 said a
+      sweep passes over a walk-on floor or a no-damage body "unless you lock onto it". The
+      question did not say that PR 2 also removes the player's lock: the attack button aims, it
+      does not lock (DEC-319 (6)). So a player's weapon never damages the enemy Stronghold, the
+      palace or a gate, with sweeps or with shots (probe: lock 3-5 hits, aim 0 hits). This also
+      breaks DEC-185 (D). Abilities and bots still hit these bodies. Options: (A, recommended)
+      aim at it to hit it: a walk-on floor or a no-damage body counts as locked while the aim
+      point is on its outline and not on a unit; inside the enemy palace, aiming at a defender
+      hits the defender, aiming at bare floor hits the Stronghold too; (B) as A, but only while
+      the attacker stands outside that outline; (C) a press on a building locks it (client and
+      Duel server only; the attack then follows the building, not the cursor); (D) keep as
+      built: weapons never hit these bodies. Answer will be recorded as DEC-322. Asked on Owner
+      Calls v35, 2026-11-21, COMBAT-WEAPONS-ABILITIES-50.
+  - Answered 2026-11-22 (DEC-322 (1), Owner Calls v40): "A: aim at it to hit it". Reading, from
+    the HC-Q78 note ("if a character is standing in a room and sweeps their sword one time, it
+    shouldnt bring the roof down on them"): the aim counts only while the attacker stands outside
+    the outline (option B's condition). Built in PR 2.
+
+- [x] **HC-Q77 — What the AI counts as "attacking" when the player aims (`feat/melee-sweeps`,
+      PR 2).** Minions, tower guards and the leash help call read whom a unit attacks from its
+      lock. The player has no lock now, so for the AI the player attacks nobody: guards and
+      minions do not turn on a player who attacks their Legend, the leash help call never fires
+      for a player, and a player can lead a guard to its leash edge and hit it with no answer.
+      Bots still lock. Samarjit owns this AI and will be told. Options: (A, recommended) a unit
+      attacks its lock, or each body its last attack hit, until its next attack is due (one
+      attack interval; no new number); (B) the unit under the aim point counts as the target
+      while the button is held; (C) reuse the scoring record of Legend-on-Legend hits (DEC-132)
+      with a new short window (a new TUNE number); covers only Legend attacks on Legends; (D)
+      leave it and schedule the fix. Asked on Owner Calls v35, 2026-11-21,
+      COMBAT-WEAPONS-ABILITIES-50.
+  - Answered 2026-11-22 (DEC-322 (2), Owner Calls v40), note only: the owner's weapon model,
+    which ends "Player do attack and hit enemy. Enemy hurt. Enemy fight back. Nearby enemy help
+    attacking enemy do attack if nearby enemy not already defending self or attacking someone
+    else." Reading: option A (a unit attacks each body its last attack hit, until its next attack
+    is due). Built in PR 2. Samarjit: FYI below.
+
+- [x] **HC-Q78 — Better than the design: one hit rule for weapon areas and ability areas
+      (`feat/melee-sweeps`, PR 2).** Two pieces of code answer "which bodies does this area
+      touch": the weapon sweep and the ability target query. They already disagree: an ability
+      tests a tower's fort as a circle, not its outline, and hits a walk-on floor (an ability
+      cast inside the enemy palace hits the Stronghold). Lane B's Rip & Tear cone (PR 6) will use
+      the same wedge shape as a sweep but the ability rules, so the same wedge hits different
+      bodies. Architecture critic, PR 2 round 1. Lane B is changing the ability area code now
+      (`AreaShape`, `HitShape` on `feat/vanguard-hamstring`), so building the shared rule in PR 2
+      would conflict with that work. Options: (A) one rule, built in PR 2: one area-hit query in
+      core for abilities and weapons, with one outline test and the Q76 floor rule; abilities
+      change, and lane B must merge it; (B, recommended) the same design, built with the cone
+      (lane B PR 6; scheduled, so not deferred debt); (C) keep two rules. Asked on Owner Calls
+      v35, 2026-11-21, recommendation changed from A to B in v37, COMBAT-WEAPONS-ABILITIES-50.
+  - Answered 2026-11-22 (DEC-322 (3), Owner Calls v40): "A: one rule, build it in PR 2", note
+    "Whatever is best architecturally. Also "walk-on floors" shouldnt take damage." Built in PR 2;
+    lane B merges it.
+
+- [x] **Owner Calls card `attack-click-hold` — Clicking and holding the attack button
+      (`feat/melee-sweeps`, PR 2).** Asked on Owner Calls v40, 2026-11-22. Answered the same day
+      (DEC-326 (1)): "C (click during recovery is lost) but holding also keeps attacking ...
+      Basically disables the attack button while the attack is attacking and recovering but a
+      hold just attacks again if still held when the recovery is done." This is the behaviour
+      built in DEC-319 (5) and (6); no change.
+
+- [x] **Owner Calls card `busy-minion-help` — A busy minion and a call for help
+      (`feat/melee-sweeps`, PR 2).** Asked on Owner Calls v40, 2026-11-22. Answered the same day
+      (DEC-326 (2)): "A: a busy minion finishes its own fight; only minions that are not fighting
+      come to help". Built in PR 2 (`LeashBehaviour.engage`).
+
+- [ ] **Owner Calls card `busy-minion-building` — Minions hitting a tower: do they come to help?
+      (`feat/melee-sweeps`, PR 2).** Asked on Owner Calls v54, 2026-11-22, by
+      COMBAT-WEAPONS-ABILITIES-55. Does a minion that hits an enemy tower or Stronghold count as
+      "fighting" under DEC-326 (2)? A (built now): no, it leaves the building and helps; only a
+      minion that fights a unit stays. B: yes, it keeps hitting the building. The rule also
+      reaches guards and forest-camp mobs (DEC-144 (C)). Recorded as a reading in DEC-326 (2).
+
+- [ ] **HC-B35 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: the hit record and the takes-no-damage rule move onto `EntityStore`
+      (`feat/melee-sweeps`, PR 2, pre-PR gate round 2, 2026-11-22; COMBAT-WEAPONS-ABILITIES-58).**
+      Built and tested; recorded as DEC-333. Nothing waits on you. (1) The record of whom a unit
+      hit sits on `EntityStore` beside the code that reads it (`recordHits`, `victimsOf`), and
+      one function reads a unit's attack speed. A hit counts for the larger of the attack
+      interval and the slowed cooldown, so a faster attack (Fury) no longer shortens it and a
+      slow does not leave the AI blind. (2) One rule, `EntityStore.takesNoDamage`, says a body
+      takes no damage now; the hit rule, shots, the bots' line of fire, the damage step and
+      one-target melee all use it. Say "no" to either and it goes back. Two critic items were
+      rejected: (R2-A8, rest) injecting `ReachQuery` and `AreaHitQuery` into six classes: they
+      are stateless rule objects with no port, the base holds such helpers the same way
+      (`BotLeaves.movement = new BotMovement()`), and `stopsShot` stays static; (R2-A10)
+      splitting `BotLeaves.ts` (328 lines): a split rewires the bot tree in the last critic
+      round, and the leaves are one cohesive set.
+
+- [ ] **HC-Q87 — Inside the enemy palace, your weapon never hits the Stronghold
+      (`feat/melee-sweeps`, PR 2, critic R2-A2).** Confirm. Your answer to HC-Q76 was "A: aim at
+      it to hit it". Your HC-Q78 note says a swing inside a room should not bring the roof down
+      on the swinger. So the game does this: when you stand inside the enemy palace, your sword
+      and your arrows do not hit the Stronghold. Step outside and aim at the palace, and they
+      hit it. Defenders inside are still hit as normal. Options: (A, recommended) keep it as
+      built; (B) a weapon also hits the Stronghold from inside the palace when you aim at bare
+      floor (the text of option A of HC-Q76). Code names: `AreaHitQuery` rule 1,
+      `isOnOutlineFromOutside`; recorded in DEC-322 (1).
+
+- [ ] **HC-Q88 — An ability hit counts as attacking for the AI (`feat/melee-sweeps`, PR 2,
+      critic R2-A3).** Confirm. When a Legend hits an enemy with an ability, the AI treats it
+      like a basic attack: the enemy's guards and minions turn on that Legend, and a call for
+      help can fire. Your Veil note says "whether via basic attack casting or ability casting",
+      which supports this. Options: (A, recommended) keep it as built; (B) only a basic attack
+      counts. Code names: `CastInstance` records its targets as hits (`EntityStore.recordHits`);
+      recorded in DEC-322 (2), correction 2026-11-22.
+
+- [ ] **FYI for Samarjit (minion AI owner): three changes to minion AI in PR 2
+      (`feat/melee-sweeps`).** Nothing to decide. (1) DEC-326 (2): a minion that is already
+      fighting does not leave its fight for a call for help or a better-ranked enemy; only
+      minions that are not fighting come to help. (2) DEC-322 (2): a player who hits a unit counts
+      as attacking it until the player's next attack is due, so guards and minions answer a
+      player's hits (`EntityStore.victimsOf` and `isAttacking`; `attackTargetOf` still gives the
+      lock only, and `HordeSystem` keeps reading it). A unit attacks its lock and each other body
+      its last attack hit (a union, not "or else"), and an ability's hits count too (DEC-322 (2),
+      correction 2026-11-22). A hit counts through the tick the next attack may land (inclusive),
+      for the larger of the attack interval and the slowed cooldown (DEC-333 (1)). (3) Rule (1) is in `LeashBehaviour`, so it
+      also reaches tower and Stronghold guards, forest-camp mobs and the capture point guards
+      (guards follow the minion rules, DEC-144 (C)). A minion that hits its lane objective is not
+      "fighting" and still turns to help (Owner Calls card `busy-minion-building`, open).
+      Architecture 18 §6.1 changes to match. Tick this item when Samarjit has read it.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
@@ -735,6 +1232,8 @@ Reply inline (`Decision: …`).
   - **(2) done by DEC-234** (#85, 2026-11-09): the inside test runs once, in `aimPointOf`, which
     returns an `AimedAt` tag; `isInReach` and `facingPointOf` read it. The tidy PR builds no
     helper for it.
+  - **(3) built by PR 2 (`state/ReachQuery`); `outlineOf` stays on `EntityStore`** (R2-A6,
+    2026-11-22).
 
 - [ ] **PR #69 critic, round 3 (2026-11-05), better than the design — optional, no decision
       blocks work.** `MapFeature.wallBoundary` (`content/maps/maps.types.ts`) is optional on

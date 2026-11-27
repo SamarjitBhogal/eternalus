@@ -8,9 +8,9 @@ import { StatusEffectRuntime } from './StatusEffectRuntime';
 /**
  * The statuses on an entity (architecture 05 section 8) and what they add up to: one multiplier per
  * stat (each modifier's `value` once per stack, `StatModifier`) and the set of flags, recomputed
- * whenever the list changes, so every reader asks one question per tick. An entity without this
- * component is immune to statuses (structures). Ids are plain strings (`components/` may not import
- * `state/`).
+ * whenever the list changes or a status breaks, so every reader asks one question per tick. An
+ * entity without this component is immune to statuses (structures). Ids are plain strings
+ * (`components/` may not import `state/`).
  */
 export class StatusEffects {
   private readonly activeList: StatusEffectRuntime[] = [];
@@ -85,6 +85,27 @@ export class StatusEffects {
     }
   }
 
+  /**
+   * Marks every active status that `endsOnHit` as broken (its holder hit or was hit, DEC-267,
+   * DEC-327) and returns whether any was. A broken status stops counting at once (no flags, no
+   * modifiers), so a Veil ends at the hit; it stays listed, so this is safe inside a loop over
+   * `active`, until `StatusEffectApplier.removeBroken` removes it. One that has run out at `tick`
+   * does not break: it ends by expiry, so a hit inside its `status-expired` cannot end it twice.
+   */
+  public breakOnHit(tick: number): boolean {
+    let hasBroken = false;
+    for (const status of this.activeList) {
+      if (status.definition.endsOnHit === true && !status.hasExpired(tick)) {
+        status.isBroken = true;
+        hasBroken = true;
+      }
+    }
+    if (hasBroken) {
+      this.recompute();
+    }
+    return hasBroken;
+  }
+
   /** What `stat` is multiplied by: 1 with no modifier on it. */
   public multiplier(stat: StatusStat): number {
     return this.multipliers.get(stat) ?? 1;
@@ -108,7 +129,10 @@ export class StatusEffects {
     this.multipliers.clear();
     this.bonuses.clear();
     this.flags.clear();
-    for (const { definition, stacks } of this.activeList) {
+    for (const { definition, stacks, isBroken } of this.activeList) {
+      if (isBroken) {
+        continue;
+      }
       for (const { stat, op, value } of definition.modifiers) {
         if (op === 'add') {
           this.bonuses.set(stat, (this.bonuses.get(stat) ?? 0) + value * stacks);

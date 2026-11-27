@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { Collider } from '../components/Collider';
+import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { EffectShape } from '../content/abilities/AbilityDefinition.types';
@@ -8,16 +10,24 @@ import type { MapObject } from '../content/maps/mapObjects.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
+import type { AreaAim } from '../state/AreaHitQuery.types';
 import { GameState } from '../state/GameState';
 import { WorldObjectStore } from '../state/WorldObjectStore';
 import type { Team } from '../teams/teams.types';
-import type { Vec2 } from '../utils/geometry.types';
+import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { casterState, unitsWithWarriorKit } from './__fixtures__/casterState';
 import { testAbilityRegistry } from './__fixtures__/fakeAbilities';
 import { TargetQuery } from './TargetQuery';
 
 const DISC = { kind: 'circle', radius: 5 } as const;
 const ON_CASTER = { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } };
+
+const square = (x: number, y: number, size: number): Polygon => [
+  { x, y },
+  { x: x + size, y },
+  { x: x + size, y: y + size },
+  { x, y: y + size },
+];
 
 const setUp = () => {
   const { state, factory, caster } = casterState();
@@ -72,9 +82,20 @@ const withHouse = (house: MapObject) => {
   });
   const houseId = world.snapshot()[0]?.entityId;
   const query = new TargetQuery(testAbilityRegistry([]));
-  const hits = (shape: EffectShape, from: Vec2, to: Vec2) =>
-    query.find(state, caster.id, shape, { from, to }, { team: 'enemies' });
-  return { houseId, hits };
+  const hits = (shape: EffectShape, from: Vec2, to: Vec2, targetId?: string) =>
+    query.find(
+      state,
+      caster.id,
+      shape,
+      targetId === undefined ? { from, to } : { from, to, targetId },
+      { team: 'enemies' },
+    );
+  const addEnemyAt = (position: Vec2) => {
+    const enemy = factory.create('warrior', 'warrior', { position, team: 'dark' });
+    state.entities.add(enemy);
+    return enemy.id;
+  };
+  return { houseId, hits, addEnemyAt };
 };
 
 describe('TargetQuery', () => {
@@ -133,5 +154,39 @@ describe('TargetQuery', () => {
     expect(hits(path(3), { x: 0, y: -11 }, { x: 20, y: -11 })).toEqual([]);
     // Straight through the house, both ends and every corner far from the line.
     expect(hits(path(1), { x: 5, y: -30 }, { x: 5, y: 30 })).toEqual([houseId]);
+  });
+
+  it('finds only the struck body with `hit`, by its id: a house whatever its walls, not a unit on its position', () => {
+    const { houseId, hits, addEnemyAt } = withHouse(houseEastOf(1.5));
+    const westWall = { x: 1.5, y: 0 };
+    const housePosition = { x: 8.5, y: 0 }; // its corners' average, on none of its walls
+    const enemyId = addEnemyAt(housePosition);
+
+    expect(hits({ kind: 'hit' }, westWall, housePosition, houseId ?? '')).toEqual([houseId]);
+    expect(hits({ kind: 'hit' }, westWall, housePosition, enemyId)).toEqual([enemyId]);
+    expect(hits({ kind: 'hit' }, westWall, housePosition)).toEqual([]);
+  });
+
+  it('tests a structure footprint by its outline, not its circle (one outline rule, DEC-322 (3))', () => {
+    const { state, caster, add, query } = setUp();
+    const fort = add('light-mob', 'training-dummy', 'dark', { x: 30, y: 30 });
+    fort.addComponent(new Footprint([square(3, -1, 2)]));
+
+    expect(query.find(state, caster.id, DISC, ON_CASTER, { team: 'enemies' })).toEqual([fort.id]);
+  });
+
+  it('hits a walk-on floor only when the cast aims at it, and never a body that takes no damage now (DEC-322)', () => {
+    const { state, caster, add, query } = setUp();
+    const floor = add('light-mob', 'training-dummy', 'dark', { x: 30, y: 30 });
+    floor.addComponent(new Footprint([square(2, -4, 8)], { isWalkOn: true }));
+    const gate = add('light-mob', 'training-dummy', 'dark', { x: -1, y: 0 });
+    gate.getComponent(Collider).setUnbreakable(true);
+    const find = (aim?: AreaAim) =>
+      query.find(state, caster.id, DISC, ON_CASTER, { team: 'enemies' }, aim);
+
+    expect(find()).toEqual([]);
+    expect(find({ targetId: null, point: { x: 6, y: 0 } })).toEqual([floor.id]);
+    expect(find({ targetId: floor.id, point: null })).toEqual([floor.id]);
+    expect(find({ targetId: gate.id, point: null })).toEqual([]);
   });
 });

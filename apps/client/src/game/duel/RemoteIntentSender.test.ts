@@ -27,11 +27,11 @@ function setUp() {
 
 describe('RemoteIntentSender', () => {
   it('sends the raw intent each tick and tells whether the player moves', () => {
-    const { input, link, sender, snapshot } = setUp();
+    const { input, link, sender } = setUp();
 
-    expect(sender.apply('entity-2', snapshot)).toBe(false);
+    expect(sender.apply('entity-2')).toBe(false);
     input.intent = { move: { x: 1, y: 0 }, aim: { x: 5, y: 6 }, isAttacking: true, triggered: [] };
-    expect(sender.apply('entity-2', snapshot)).toBe(true);
+    expect(sender.apply('entity-2')).toBe(true);
 
     expect(link.intents).toEqual([
       { move: { x: 0, y: 0 }, aim: null, triggered: [] },
@@ -40,13 +40,28 @@ describe('RemoteIntentSender', () => {
   });
 
   it('sends no attack while the canvas gestures own the press', () => {
-    const { input, link, sender, snapshot } = setUp();
+    const { input, link, sender } = setUp();
     input.intent = { move: { x: 0, y: 0 }, aim: { x: 5, y: 6 }, isAttacking: true, triggered: [] };
 
     sender.setPointerClaimed(true);
-    sender.apply('entity-2', snapshot);
+    sender.apply('entity-2');
 
     expect(link.intents[0]?.isAttacking).toBe(false);
+  });
+
+  it('sends no melee attack either while the canvas gestures own the press, as locally (DEC-308)', () => {
+    const { input, link, sender } = setUp();
+    input.intent = {
+      move: { x: 0, y: 0 },
+      aim: { x: 5, y: 6 },
+      isMeleeAttacking: true,
+      triggered: [],
+    };
+
+    sender.setPointerClaimed(true);
+    sender.apply('entity-2');
+
+    expect(link.intents[0]?.isMeleeAttacking).toBe(false);
   });
 
   it('makes no developer-explorer attack: no command is made on the client', () => {

@@ -14,8 +14,8 @@ import type { Polygon } from '../utils/geometry.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
- * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`, `Capturable`
- * or `StatusEffects`), never a made-up default.
+ * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`, `Capturable`,
+ * `StatusEffects` or `ProjectileFlight`), never a made-up default.
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
@@ -24,6 +24,12 @@ export type EntitySnapshot = {
    * to its structure by identity, never by position.
    */
   readonly mapFeatureId?: string;
+  /**
+   * `true` while a status makes the entity `hidden` (Veil, DEC-266): an enemy's screen does not
+   * draw it and a click does not pick it; its own side draws it faded. Absent otherwise (set only
+   * when `true`, so no other snapshot changes).
+   */
+  readonly isHidden?: boolean;
   readonly id: EntityId;
   readonly kind: string;
   readonly family: string;
@@ -50,6 +56,40 @@ export type EntitySnapshot = {
    * takes none (a structure). The client draws Fury's wind-up from it (DEC-283).
    */
   readonly statuses: readonly StatusSnapshot[] | null;
+  /**
+   * A shot in the air (`ProjectileFlight`, DEC-306): how fast it flies and how far through its
+   * ending it is, so the client can draw an arrow falling or a bolt fizzling; `null` for every
+   * other entity.
+   */
+  readonly projectile: ProjectileSnapshot | null;
+  /**
+   * The unit's latest melee sweep (`Combat.lastSwing`, DEC-304), so the client can draw a fading
+   * wedge for a few frames; `null` when it has made none. Display only.
+   */
+  readonly swing: SwingSnapshot | null;
+};
+
+/** A melee sweep as the client sees it. */
+export type SwingSnapshot = {
+  /** The tick the swing was made. */
+  readonly atTick: number;
+  /** Unit vector the wedge points along. */
+  readonly direction: { readonly x: number; readonly y: number };
+  /** How far the wedge reaches from the attacker's centre, metres. */
+  readonly radius: number;
+  /** The wedge's angle in degrees. */
+  readonly arcDegrees: number;
+};
+
+/** A projectile's flight as the client sees it. */
+export type ProjectileSnapshot = {
+  /**
+   * How far it has flown, as a share of its `range`: 0 at its origin, 1 at its end (an ended
+   * shot). The client draws an arrow's arc along it (DEC-322 (2)).
+   */
+  readonly flownShare: number;
+  /** How far through its ending it is, 0 to 1 (`ProjectileFlight.endingShare`); `null` while it flies. */
+  readonly ending: number | null;
 };
 
 /** One active status as the client sees it: its id and how far through its time it is. */
