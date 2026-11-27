@@ -37,6 +37,7 @@ const zone = (
   area,
   capture,
   gem: null,
+  bossPhase: null,
 });
 
 const capture = (overrides: Partial<CaptureSnapshot> = {}): CaptureSnapshot => ({

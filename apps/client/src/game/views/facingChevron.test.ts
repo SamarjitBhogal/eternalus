@@ -28,6 +28,7 @@ const UNIT: EntitySnapshot = {
   area: null,
   capture: null,
   gem: null,
+  bossPhase: null,
 };
 
 /** The points of the one path the chevron draws for `facing`. */

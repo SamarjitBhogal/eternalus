@@ -2,6 +2,7 @@ import type { EntitySnapshot, Snapshot } from '@eternalus/core';
 
 import type { Renderer } from '../engine/render/Renderer';
 import type { WorldPoint } from '../engine/render/Renderer.types';
+import { BossPhaseCueView } from './BossPhaseCueView';
 import type { HealthBarRule } from './EntityLayer.types';
 import type { EntityDrawState } from './EntityView.types';
 import { HealthBarView } from './HealthBarView';
@@ -18,7 +19,12 @@ import type { ViewRegistry } from './ViewRegistry';
 export class EntityLayer implements WorldLayer {
   private states: readonly EntityDrawState[] = [];
 
+  /** The moment `show` was given, in ticks: the snapshot's tick plus `alpha`. */
+  private clock = 0;
+
   private readonly healthBars = new HealthBarView();
+
+  private readonly phaseCues = new BossPhaseCueView();
 
   /**
    * Creates the layer over a view registry. `isDead` is the one dead rule (DEC-151 (2)), injected
@@ -45,6 +51,7 @@ export class EntityLayer implements WorldLayer {
     alpha: number,
     focusId: string | null,
   ): void {
+    this.clock = current.tick + alpha;
     const before = new Map(previous?.entities.map((entity) => [entity.id, entity]) ?? []);
     this.states = current.entities.flatMap((entity) => {
       const now = entity.transform;
@@ -57,11 +64,15 @@ export class EntityLayer implements WorldLayer {
   }
 
   /**
-   * Draws every entity, back to front by `y`, so lower entities overlap higher ones. The health
+   * Draws every entity, back to front by `y`, so lower entities overlap higher ones. The boss
+   * phase cues (`BossPhaseCueView`) come first, on the ground under every entity; the health
    * bars (`HealthBarView`) come after every entity of this layer, so no entity hides a bar.
    */
   public draw(renderer: Renderer): void {
     const ordered = [...this.states].sort((a, b) => a.position.y - b.position.y);
+    for (const state of ordered) {
+      this.phaseCues.draw(state, this.clock, renderer);
+    }
     for (const state of ordered) {
       this.views.viewFor(state.entity).draw(state, renderer);
     }
