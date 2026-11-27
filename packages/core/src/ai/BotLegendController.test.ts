@@ -22,6 +22,7 @@ import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import type { Team } from '../teams/teams.types';
 import { BotLegendController } from './BotLegendController';
+import { NO_PATH } from './BotMovement.constants';
 import { Perception } from './perception/Perception';
 
 /** The shipped difficulties, plus `normal` pinned to never and to always cast. */
@@ -155,6 +156,8 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
       targetId: null,
       nextCastTick: 0,
       isHalted: false,
+      // No pathfinder in this match, so nothing is cached.
+      ...NO_PATH,
     });
   });
 
