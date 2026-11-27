@@ -15,7 +15,7 @@ export const MATCH_BOSS_ASSETS: readonly AssetManifestEntry[] = [
     id: 'colossus-idle',
     type: 'ui-image',
     group: 'boss',
-    licence: 'owner',
+    licence: 'colossus-art',
     source:
       'Colossus artwork generated in Codex (https://openai.com/codex/), master SHA-256 d54e18c8b4e7ffb71b0ddb958e212818f810c977ba2e182bd2f64d4226cdd508, downscaled to 768 × 512 and exported as lossless WebP.',
     file: {
@@ -28,7 +28,7 @@ export const MATCH_BOSS_ASSETS: readonly AssetManifestEntry[] = [
     id: 'colossus-move',
     type: 'ui-image',
     group: 'boss',
-    licence: 'owner',
+    licence: 'colossus-art',
     source:
       'Colossus artwork generated in Codex (https://openai.com/codex/), master SHA-256 b49b7819a54559dbede0e39c9ca41e803b7016f52621e3b2161393b00c8500e6, downscaled to 768 × 512 and exported as lossless WebP.',
     file: {
@@ -41,7 +41,7 @@ export const MATCH_BOSS_ASSETS: readonly AssetManifestEntry[] = [
     id: 'colossus-melee',
     type: 'ui-image',
     group: 'boss',
-    licence: 'owner',
+    licence: 'colossus-art',
     source:
       'Colossus artwork generated in Codex (https://openai.com/codex/), master SHA-256 af1f1e05e1f1e421d550b32c0fe6f0ac58769d1a7bddd801f22c678e2d2967dc, downscaled to 768 × 512 and exported as lossless WebP.',
     file: {
@@ -54,7 +54,7 @@ export const MATCH_BOSS_ASSETS: readonly AssetManifestEntry[] = [
     id: 'colossus-faultline-slam',
     type: 'ui-image',
     group: 'boss',
-    licence: 'owner',
+    licence: 'colossus-art',
     source:
       'Colossus artwork generated in Codex (https://openai.com/codex/), master SHA-256 29ea14a3b87083e5d126fcb347b0eade4c08321f4dd45037dd76d7e9abe32906, downscaled to 768 × 512 and exported as lossless WebP.',
     file: {
@@ -67,7 +67,7 @@ export const MATCH_BOSS_ASSETS: readonly AssetManifestEntry[] = [
     id: 'colossus-grasping-roots',
     type: 'ui-image',
     group: 'boss',
-    licence: 'owner',
+    licence: 'colossus-art',
     source:
       'Colossus artwork generated in Codex (https://openai.com/codex/), master SHA-256 f56406f1824fc539c7d4acc5f41930df9a86f11272009f52aababbe072aebac1, downscaled to 768 × 512 and exported as lossless WebP.',
     file: {
@@ -80,7 +80,7 @@ export const MATCH_BOSS_ASSETS: readonly AssetManifestEntry[] = [
     id: 'colossus-obsidian-bulwark',
     type: 'ui-image',
     group: 'boss',
-    licence: 'owner',
+    licence: 'colossus-art',
     source:
       'Colossus artwork generated in Codex (https://openai.com/codex/), master SHA-256 1b6131c30ace93336b643678aa4c38117ca8bd2ce230c3b7a7f2198c5e095438, downscaled to 768 × 512 and exported as lossless WebP.',
     file: {
@@ -93,7 +93,7 @@ export const MATCH_BOSS_ASSETS: readonly AssetManifestEntry[] = [
     id: 'colossus-gravity-collapse',
     type: 'ui-image',
     group: 'boss',
-    licence: 'owner',
+    licence: 'colossus-art',
     source:
       'Colossus artwork generated in Codex (https://openai.com/codex/), master SHA-256 391dbfffa3dde69cab353b4f30704067e87a982ea937733a4a77ce47d13e3287, downscaled to 768 × 512 and exported as lossless WebP.',
     file: {
@@ -106,7 +106,7 @@ export const MATCH_BOSS_ASSETS: readonly AssetManifestEntry[] = [
     id: 'colossus-void-sweep',
     type: 'ui-image',
     group: 'boss',
-    licence: 'owner',
+    licence: 'colossus-art',
     source:
       'Colossus artwork generated in Codex (https://openai.com/codex/), master SHA-256 dd83a9051712c49c906749e3df33b0b54440b4484b03e9b06f2c5de87ed10bfd, downscaled to 768 × 512 and exported as lossless WebP.',
     file: {

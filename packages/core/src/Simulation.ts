@@ -199,7 +199,7 @@ export class Simulation {
       undefined,
       weaponSource,
     );
-    const owners = Simulation.spawnStructures(this.state, factory, {
+    const { owners, carriers } = Simulation.spawnStructures(this.state, factory, {
       structures,
       mapObjects,
       omittedIds: arena?.omittedStructureIds ?? [],
@@ -218,6 +218,7 @@ export class Simulation {
         entities: this.state.entities,
         definitions: MAP_OBJECT_DEFINITIONS,
         owners,
+        carriers,
       });
       this.state.events.on('entity-removed', ({ entityId }) =>
         this.state.worldObjects?.removed(entityId),
@@ -380,7 +381,11 @@ export class Simulation {
    * health. A Duel does not build the structures its `omittedStructureIds` list (DEC-348: towers,
    * gates, camps and Strongholds; the Cathedral's gem stays).
    *
-   * @returns Map object id → the id of the structure it is the body of.
+   * A structure whose definition names a `carriedObjectId` carries that map object (the gem's
+   * plinth): the object is destroyed when the structure is removed.
+   *
+   * @returns Map object id → the id of the structure it is the body of (`owners`), or that
+   *   carries it (`carriers`).
    */
   private static spawnStructures(
     state: GameState,
@@ -394,15 +399,19 @@ export class Simulation {
       readonly mapObjects?: readonly MapObject[] | undefined;
       readonly omittedIds: readonly string[];
     },
-  ): ReadonlyMap<string, string> {
+  ): {
+    readonly owners: ReadonlyMap<string, string>;
+    readonly carriers: ReadonlyMap<string, string>;
+  } {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
       compareById(a.id, b.id),
     );
     const bodies = new Map(mapObjects.map((object) => [object.id, object]));
     const owners = new Map<string, string>();
+    const carriers = new Map<string, string>();
     for (const { id, definitionId, position, team, laneId } of features) {
       if (structures.has(definitionId) && !omittedIds.includes(definitionId)) {
-        const { kind, hasMapFootprint } = structures.get(definitionId);
+        const { kind, hasMapFootprint, carriedObjectId } = structures.get(definitionId);
         const placement = {
           position,
           team,
@@ -413,10 +422,11 @@ export class Simulation {
         const body = hasMapFootprint === true ? bodies.get(id) : undefined;
         if (body !== undefined) structure.addComponent(new Footprint(body.footprints));
         if (body?.isBlocking === true) owners.set(body.id, structure.id);
+        if (carriedObjectId !== undefined) carriers.set(carriedObjectId, structure.id);
         state.entities.add(structure);
       }
     }
-    return owners;
+    return { owners, carriers };
   }
 
   /**
@@ -617,10 +627,10 @@ export class Simulation {
   /**
    * Spawns one zone per map feature that places one (`ZONE_PLACEMENTS`): a capture point where
    * each lane crosses the centre line, the middle one in the Cathedral (architecture 07 §7), each
-   * covering its building's floor (DEC-145 (a)). They come from the map alone, so a replay (seed,
-   * config and commands) rebuilds them. They spawn right after the structures, before the system
-   * pipeline is built, since a zone can be a guard home (18 §7); the caller announces them once the
-   * pipeline listens.
+   * covering its building's floor (DEC-145 (a)) and linked to its feature (`MapFeatureLink`,
+   * DEC-231). They come from the map alone, so a replay (seed, config and commands) rebuilds them.
+   * They spawn right after the structures, before the system pipeline is built, since a zone can be
+   * a guard home (18 §7); the caller announces them once the pipeline listens.
    *
    * @returns Each zone's `entity-spawned` payload, in spawn order.
    */
@@ -642,6 +652,7 @@ export class Simulation {
       const entity = factory.create(kind, definitionId, {
         position: feature.position,
         team: feature.team,
+        mapFeatureId: feature.id,
         area: zoneAreaOf(map, feature),
         ...(feature.laneId !== undefined && { laneId: feature.laneId }),
       });

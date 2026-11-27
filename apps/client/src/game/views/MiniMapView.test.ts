@@ -68,6 +68,7 @@ const createFakeContext = (): DrawContext => ({
   drawImage: vi.fn(),
   scale: vi.fn(),
   translate: vi.fn(),
+  imageSmoothingEnabled: true,
   fillStyle: '',
   strokeStyle: '',
   lineWidth: 1,

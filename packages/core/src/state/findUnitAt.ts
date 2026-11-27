@@ -6,7 +6,8 @@ import type { EntitySnapshot } from './Snapshot.types';
 
 /**
  * Selects the living enemy unit (Legend, mob or boss) drawn under `point` (world units): the
- * snapshot supplies its combat outline or a disc based on position and radius. Allies (the attacker included) and dead units are
+ * snapshot supplies its combat outline or a disc using the position and radius resolver.
+ * Allies (the attacker included) and dead units are
  * skipped. Where discs overlap the unit drawn on top wins: the largest `y`, the order of
  * the client's `EntityLayer.draw` (a later entity wins a tie as it is drawn later; DEC-183). Structures and map
  * objects are no units, so a click on a unit wins over the building behind it.
@@ -21,11 +22,13 @@ export const findUnitAt = (
   entities: readonly EntitySnapshot[],
   actorId: EntityId,
   point: Vec2,
+  radiusFor: (entity: EntitySnapshot) => number = (entity) => entity.transform?.radius ?? 0,
 ): EntityId | null => {
   const actorTeam = entities.find((entity) => entity.id === actorId)?.team ?? null;
   let selected: EntityId | null = null;
   let frontY = -Infinity;
-  for (const { id, family, team, transform, health, combatHitbox } of entities) {
+  for (const entity of entities) {
+    const { id, family, team, transform, health, combatHitbox } = entity;
     if (
       team === actorTeam ||
       !isUnitFamily(family) ||
@@ -38,9 +41,10 @@ export const findUnitAt = (
     const dx = transform.x - point.x;
     const dy = transform.y - point.y;
     // Squared distances: core keeps transcendental Math out (ADR 0012).
+    const radius = radiusFor(entity);
     const isUnderPoint =
       combatHitbox === undefined
-        ? dx * dx + dy * dy <= transform.radius * transform.radius
+        ? dx * dx + dy * dy <= radius * radius
         : isPointInPolygon(point, combatHitbox);
     if (isUnderPoint && transform.y >= frontY) {
       selected = id;

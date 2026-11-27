@@ -145,6 +145,7 @@ describe('DefaultSystemPipeline', () => {
       'spawn',
       'enraged',
       'out-of-combat-healing',
+      'gem-eruption',
       'respawn',
       'death',
       'capture',

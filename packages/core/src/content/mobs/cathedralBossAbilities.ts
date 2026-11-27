@@ -1,7 +1,10 @@
-/** Provisional Cathedral boss moves, in cast order. Distances are world units. */
+import type { BossMoveDefinition } from './bossMoves.types';
+
+/** Provisional Cathedral boss moves selectable by the encounter. Distances are world units. */
 export const CATHEDRAL_BOSS_ABILITIES = [
   {
     id: 'faultline-slam',
+    effect: 'line',
     charge: 0.75,
     active: 0.1,
     recovery: 0.55,
@@ -12,6 +15,7 @@ export const CATHEDRAL_BOSS_ABILITIES = [
   },
   {
     id: 'grasping-roots',
+    effect: 'stun-line',
     charge: 0.7,
     active: 0.1,
     recovery: 0.55,
@@ -22,6 +26,7 @@ export const CATHEDRAL_BOSS_ABILITIES = [
   },
   {
     id: 'obsidian-bulwark',
+    effect: 'shield',
     charge: 0.55,
     active: 3,
     recovery: 0.35,
@@ -32,6 +37,7 @@ export const CATHEDRAL_BOSS_ABILITIES = [
   },
   {
     id: 'gravity-collapse',
+    effect: 'pull-area',
     charge: 1,
     active: 0.1,
     recovery: 0.6,
@@ -42,6 +48,7 @@ export const CATHEDRAL_BOSS_ABILITIES = [
   },
   {
     id: 'void-sweep',
+    effect: 'line',
     charge: 2.5,
     active: 2.2,
     recovery: 0.9,
@@ -50,7 +57,7 @@ export const CATHEDRAL_BOSS_ABILITIES = [
     damage: 1600,
     sweep: 2.6,
   },
-] as const; // TUNE: first-pass encounter timings, reach and damage
+] as const satisfies readonly BossMoveDefinition[]; // TUNE: first-pass encounter timings, reach and damage
 
 /** TUNE: spacing between specials, temporary shield and pull distance. */
 export const CATHEDRAL_BOSS_CAST = { delay: 4, shield: 4100, pull: 9 } as const;

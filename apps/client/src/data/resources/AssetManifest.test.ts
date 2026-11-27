@@ -1,7 +1,12 @@
+import { MAGUS_SPRITE_ASSETS } from './magusSpriteAssets';
+import { LEGEND_SPRITE_ASSETS } from './legendSpriteAssets';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { ASSET_LICENCES } from './assetLicences';
 import { ASSET_MANIFEST } from './AssetManifest';
+import { ATTACHMENT_REFERENCES } from './attachmentReferences';
+import { hasAssetProvenance } from './assetProvenance';
+import legendProvenance from '../../../../../docs/reference/legend-sprite-provenance.md?raw';
 import type {
   AssetFile,
   AssetGroup,
@@ -19,7 +24,7 @@ import { SELECTION_PRIMARY_RASTER_ASSETS } from './selectionPrimaryRasterAssets'
 import { SELECTION_RASTER_ASSETS } from './selectionRasterAssets';
 
 /**
- * The groups (14 §14); a new `AssetGroup` member fails the `expectTypeOf` case until added.
+ * Shipped groups (14 §14); a new `AssetGroup` member fails the `expectTypeOf` case until added.
  */
 const GROUPS = [
   'boot',
@@ -30,6 +35,14 @@ const GROUPS = [
   'selection-primary-raster',
   'match',
   'boss',
+  'atlas-assassin',
+  'atlas-knight',
+  'atlas-paladin',
+  'atlas-colossus',
+  'atlas-juggernaut',
+  'atlas-catalyst',
+  'atlas-oracle',
+  'atlas-necromancer',
 ] as const satisfies readonly AssetGroup[];
 
 /** Each group's file, in `ASSET_MANIFEST` order. */
@@ -42,6 +55,9 @@ const GROUP_FILES: readonly (readonly [AssetGroup, readonly AssetManifestEntry[]
   ['selection-primary-raster', SELECTION_PRIMARY_RASTER_ASSETS],
   ['match', MATCH_ASSETS],
   ['boss', MATCH_BOSS_ASSETS],
+  ...[...LEGEND_SPRITE_ASSETS, ...MAGUS_SPRITE_ASSETS].map(
+    (asset) => [asset.group, [asset]] as const,
+  ),
 ];
 
 /** The WebP files, read inline as data URLs, for their RIFF chunk. */
@@ -152,9 +168,29 @@ describe('ASSET_MANIFEST', () => {
     expect(files.filter((file) => !/^[0-9a-f]{64}$/.test(file.hash))).toEqual([]);
   });
 
-  it('licenses every entry and names its Figma node or download in its source', () => {
+  it('licenses every entry and requires a Figma node or HTTPS source for non-attachments', () => {
     expect(assets.filter((entry) => !(entry.licence in ASSET_LICENCES))).toEqual([]);
-    expect(assets.filter((entry) => !/\b\d+:\d+\b|https:\/\//.test(entry.source))).toEqual([]);
+    const nonAttachments = assets.filter(
+      ({ attachmentReferenceId }) => attachmentReferenceId === undefined,
+    );
+    expect(nonAttachments.filter((entry) => !/\b\d+:\d+\b|https:\/\//.test(entry.source))).toEqual(
+      [],
+    );
+  });
+
+  it('validates each registered attachment against its provenance record (ADR 0028)', () => {
+    const attachments = assets.filter(
+      ({ attachmentReferenceId }) => attachmentReferenceId !== undefined,
+    );
+    expect(attachments).toHaveLength(Object.keys(ATTACHMENT_REFERENCES).length);
+    expect(
+      attachments.filter(
+        (entry) =>
+          !hasAssetProvenance(entry, ATTACHMENT_REFERENCES, {
+            'docs/reference/legend-sprite-provenance.md': legendProvenance,
+          }),
+      ),
+    ).toEqual([]);
   });
 
   it('names both the owner and Phosphor in the source of the arcane intellect icon', () => {

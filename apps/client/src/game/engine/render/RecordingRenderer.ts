@@ -11,6 +11,11 @@ export class RecordingRenderer implements Renderer {
   /** Every call so far, oldest first. */
   public readonly calls: RecordedCall[] = [];
 
+  /** Records an atlas frame request without decoding images. */
+  public drawSprite(...args: Parameters<Renderer['drawSprite']>): boolean {
+    this.calls.push({ op: 'drawSprite', args });
+    return true;
+  }
   /** Records the call. */
   public resize(...args: Parameters<Renderer['resize']>): void {
     this.calls.push({ op: 'resize', args });
@@ -58,8 +63,8 @@ export class RecordingRenderer implements Renderer {
   }
 
   /** Records the sprite frame and its world placement. */
-  public drawSprite(...args: Parameters<Renderer['drawSprite']>): void {
-    this.calls.push({ op: 'drawSprite', args });
+  public drawImageRegion(...args: Parameters<Renderer['drawImageRegion']>): void {
+    this.calls.push({ op: 'drawImageRegion', args });
   }
 
   /** Records the call. */

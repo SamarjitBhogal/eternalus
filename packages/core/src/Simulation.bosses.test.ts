@@ -36,6 +36,70 @@ const ZONE_TABLE = Object.fromEntries(
 );
 
 describe('Simulation capture point bosses', () => {
+  it('erupts at the configured mid-game, clears the Cathedral and locks capture around the Eternal', () => {
+    const config = createDefaultGameConfig({
+      match: { countdownSeconds: 1, plannedMatchSeconds: 4 },
+    });
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const simulation = new Simulation({
+      config,
+      seed: 1,
+      logger: new MemoryLogger(),
+      map,
+      mapObjects,
+    });
+    const before = simulation.snapshot();
+    const gem = before.entities.find(({ kind }) => kind === 'cathedral-gem');
+    const area = before.entities.find(
+      ({ definitionId }) => definitionId === 'cathedral-capture-point',
+    );
+    if (gem?.transform == null || area?.transform == null)
+      throw new Error('Missing Cathedral setup');
+    const spawnDummy = (at: { x: number; y: number }) => {
+      simulation.enqueueCommand({
+        type: 'dev-spawn',
+        team: 'light',
+        kind: 'heavy-mob',
+        definitionId: 'corner-boss',
+        count: 1,
+        at,
+      });
+    };
+    spawnDummy(gem.transform);
+    spawnDummy({ x: 150, y: 450 });
+    simulation.step();
+    const dummies = simulation
+      .snapshot()
+      .entities.filter(
+        ({ definitionId, team }) => definitionId === 'corner-boss' && team === 'light',
+      );
+    expect(dummies).toHaveLength(2);
+    const midpoint = before.match.upcoming.find(({ entryId }) => entryId === 'mid-game')?.tick;
+    if (midpoint === undefined) throw new Error('Missing midpoint');
+    while (simulation.tick < midpoint) simulation.step();
+    expect(simulation.snapshot().entities.some(({ kind }) => kind === 'cathedral-gem')).toBe(true);
+    const summoned: string[] = [];
+    simulation.on('boss-summoned', ({ entityId }) => {
+      summoned.push(entityId);
+    });
+    simulation.step();
+    const after = simulation.snapshot();
+    const boss = after.entities.find(({ definitionId }) => definitionId === 'cathedral-boss');
+    expect(boss).toBeDefined();
+    expect(summoned).toEqual([boss?.id]);
+    expect(after.entities.some(({ id }) => id === gem.id || id === dummies[0]?.id)).toBe(false);
+    expect(after.entities.some(({ id }) => id === dummies[1]?.id)).toBe(true);
+    expect(after.entities.find(({ id }) => id === area.id)?.capture?.lockedBy).toBe(boss?.id);
+    expect(
+      after.mapObjects?.find(({ id }) => id === 'cathedral-interior-gem-plinth')?.isDestroyed,
+    ).toBe(true);
+    const spawn = boss?.transform;
+    if (spawn == null) throw new Error('Missing boss position');
+    run(simulation, 2 * config.tickRate);
+    const roamingBoss = simulation.snapshot().entities.find(({ id }) => id === boss?.id);
+    expect(roamingBoss?.transform).not.toMatchObject({ x: spawn.x, y: spawn.y });
+  });
   it('does not spawn a Cathedral boss in a Duel, even after its activation or a dev command', () => {
     const seed = 1;
     const cathedral = GUARD_PLANS['cathedral-capture-point'];

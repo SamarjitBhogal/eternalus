@@ -47,9 +47,10 @@ function encounter() {
     leashRadius: 25,
     leashTolerance: 0,
     respawnTicks: 0,
+    canLevel: false,
   });
   state.guards.fill(0, boss.id);
-  const target = spawn('light-mob', 'training-dummy', 'light', 10);
+  const target = spawn('light-mob', 'training-dummy', 'light', 6.4);
   const bystander = spawn('light-mob', 'training-dummy', 'neutral', 5);
   const outside = spawn('light-mob', 'training-dummy', 'light', 26);
   const outsideHealth = outside.getComponent(Health);
@@ -70,13 +71,9 @@ function encounter() {
   // Give the defensive move melee proximity while keeping other actions in range.
   for (let tick = 0; tick < config.tickRate * 35; tick += 1) {
     const cycle = boss.findComponent(BossCombat);
-    if (cycle?.nextMove === 2) target.getComponent(Transform).moveTo({ x: 6.4, y: 0 });
-    if (cycle?.nextMove === 3 && cycle.cast === null) {
-      target.getComponent(Transform).moveTo({ x: 12, y: 0 });
-    }
     system.update({ state, logger });
     if (cycle?.cast?.id === 'gravity-collapse' && state.tick === cycle.cast.fire) {
-      wasPulled = target.getComponent(Transform).position.x < 12;
+      wasPulled = target.getComponent(Transform).position.x < 6.4;
     }
     if (cycle?.cast?.id === 'obsidian-bulwark' && state.tick === cycle.cast.fire) {
       expect(boss.getComponent(Health).shields).toHaveLength(1);
@@ -89,7 +86,7 @@ function encounter() {
 }
 
 describe('CathedralBossSystem', () => {
-  it('cycles through the five specials, works on enemy units and replays deterministically', () => {
+  it('selects all five specials without repeats, affects enemies, and replays deterministically', () => {
     const { state, hits, boss, target, bystander, outsideHealth, wasPulled } = encounter();
     expect(hits.toSorted()).toEqual(
       CATHEDRAL_BOSS_ABILITIES.filter(({ damage }) => damage > 0)

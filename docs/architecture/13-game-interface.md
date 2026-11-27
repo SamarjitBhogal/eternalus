@@ -743,10 +743,18 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   Wall tile, which also stands for the wall segments, sums the health of its members whose health
   is known, today its gates, and shows no data only while none is (DEC-214 (B)); a destroyed gate
   still marks it destroyed (DEC-108). Breakability on the strip is plan task GL-7. Each capture point
-  takes its owner and progress from the zone that stands on its feature's position (PR #64). For
-  either roster, the bridge re-sends each unchanged tile or point, and the last array while nothing
-  in it changes, so the roster selectors return the same value (DEC-221 (3)). Each other field becomes live when
-  core publishes it: abilities (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
+  takes its owner and progress from the zone that names its feature (`EntitySnapshot.mapFeatureId`,
+  core's `MapFeatureLink`; PR #64, DEC-231), never from where the zone stands. One feature may
+  back several entities (the Cathedral's zone and its gem structure), so the bridge indexes
+  the snapshot by feature id through the group each roster reads: health for a tile, capture for
+  a point (DEC-233); at most one entity of a feature carries each group, which core checks
+  (`map-feature-groups-unique`, [15](15-diagnostics-and-runtime-testing.md) §3), and the bridge
+  names the group by core's `FeatureKeyedGroup` (the snapshot's feature-keyed groups), so it reads
+  by feature only a group that check covers (DEC-255, DEC-256). For either roster, the bridge re-sends each unchanged tile or point, and the
+  last array while nothing in it changes, so the roster selectors return the same value
+  (DEC-221 (3)); one `PublishedRoster` (`game/PublishedRoster.ts`) per roster holds the last array
+  and that rule (DEC-222). Each other field becomes live when core publishes it: abilities
+  (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
   [05](05-abilities-weapons-and-loadouts.md) §15).
 - **HUD elements beyond §3's table.** `LevelBadge` (class emblem, XP ring, level), `WeaponPanel`
   (the weapon art at its manifest draw box, and the weapon-level bar, OQ-63), `GadgetBar` (the

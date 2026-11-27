@@ -1,4 +1,5 @@
 import type { MobDefinition } from './mobs.types';
+import { CATHEDRAL_BOSS_ABILITIES } from './cathedralBossAbilities';
 
 /** The Eternal's arena and guard post at the Cathedral's centre. */
 export const CATHEDRAL_BOSS_ARENA = { leash: 25, postGap: 0, tolerance: 9 } as const;
@@ -8,6 +9,7 @@ export const CATHEDRAL_BOSS = {
   id: 'cathedral-boss',
   kind: 'heavy-mob',
   displayName: 'The Eternal',
+  bossMoves: CATHEDRAL_BOSS_ABILITIES,
   baseHealth: 41_000,
   footprintRadius: 1.25, // TUNE: keep navigation on the shared guard footprint scale.
   // The 48 m sprite's solid shoulders, torso and planted limbs in its left-facing pose.

@@ -1,4 +1,5 @@
 import { Collider } from '../components/Collider';
+import { BossCombat } from '../components/BossCombat';
 import { Combat } from '../components/Combat';
 import { CombatHitbox } from '../components/CombatHitbox';
 import { ControllerBinding } from '../components/ControllerBinding';
@@ -56,6 +57,9 @@ export abstract class Unit extends Entity {
     this.addComponent(transform);
     if (definition.combatHitbox !== undefined) {
       this.addComponent(new CombatHitbox(definition.combatHitbox));
+    }
+    if (definition.bossMoves !== undefined && definition.bossMoves.length > 0) {
+      this.addComponent(new BossCombat(definition.bossMoves));
     }
     this.addComponent(new Health(definition.baseHealth));
     this.addComponent(new Movement(definition.movementProfile, definition.movementStrategy));

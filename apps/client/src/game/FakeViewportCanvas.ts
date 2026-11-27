@@ -72,6 +72,7 @@ export class FakeViewportCanvas extends FakeBrowserTarget implements ViewportCan
       drawImage: ignore,
       scale: ignore,
       translate: ignore,
+      imageSmoothingEnabled: true,
       fillStyle: '',
       strokeStyle: '',
       lineWidth: 1,

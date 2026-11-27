@@ -1,4 +1,4 @@
-import type { GlyphSpec, ScreenRect, WorldPoint, WorldRect } from './Renderer.types';
+import type { GlyphSpec, ScreenRect, SpriteRef, WorldPoint, WorldRect } from './Renderer.types';
 
 /**
  * The display port (architecture 09 §4): everything views may ask of the screen. Views call
@@ -6,6 +6,8 @@ import type { GlyphSpec, ScreenRect, WorldPoint, WorldRect } from './Renderer.ty
  * implementation that touches `CanvasRenderingContext2D`; tests pass recording fakes.
  */
 export interface Renderer {
+  /** Copies a prepared frame centred above its feet; false lets views draw a fallback. */
+  drawSprite(sprite: SpriteRef, feet: WorldPoint, size: number): boolean;
   /** Sets the drawing area in device pixels and how many device pixels make one CSS pixel. */
   resize(screenWidth: number, screenHeight: number, pixelRatio?: number): void;
   /**
@@ -28,7 +30,12 @@ export interface Renderer {
   /** Draws a marker centred on a world position, sized in world units (scales with zoom). */
   drawWorldGlyph(glyph: GlyphSpec, center: WorldPoint, color: string): void;
   /** Paints one source rectangle of a decoded sprite at a world-space rectangle. */
-  drawSprite(image: CanvasImageSource, source: ScreenRect, area: WorldRect, flipX: boolean): void;
+  drawImageRegion(
+    image: CanvasImageSource,
+    source: ScreenRect,
+    area: WorldRect,
+    flipX: boolean,
+  ): void;
   /** Draws a marker centred on a world position, sized in CSS pixels (minimap markers). */
   drawGlyph(glyph: GlyphSpec, center: WorldPoint, color: string): void;
   /** Converts a world position to a screen position in device pixels. */

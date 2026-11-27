@@ -1,3 +1,5 @@
+import { MAGUS_SPRITE_ASSETS } from './magusSpriteAssets';
+import { LEGEND_SPRITE_ASSETS } from './legendSpriteAssets';
 import type { AssetManifest } from './AssetManifest.types';
 import { BOOT_ASSETS } from './bootAssets';
 import { MATCH_ASSETS } from './matchAssets';
@@ -24,5 +26,7 @@ export const ASSET_MANIFEST: AssetManifest = {
     ...SELECTION_PRIMARY_RASTER_ASSETS,
     ...MATCH_ASSETS,
     ...MATCH_BOSS_ASSETS,
+    ...LEGEND_SPRITE_ASSETS,
+    ...MAGUS_SPRITE_ASSETS,
   ],
 };

@@ -7,7 +7,7 @@ import { AGGRO_RULES } from '../ai/aggro/aggroRules';
 import { AI_CADENCE } from '../ai/cadence';
 import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import { MOB_DEFINITIONS } from '../mobs/mobCatalogue';
-import { GUARD_PLANS } from './guardPlans';
+import { CHECKPOINT_DEFENDERS, GUARD_PLANS } from './guardPlans';
 import { ZONE_DEFINITIONS } from '../zones/zoneCatalogue';
 import { STRUCTURE_DEFINITIONS } from './structureCatalogue';
 
@@ -41,14 +41,11 @@ describe('GUARD_PLANS', () => {
     );
   });
 
-  it.each([
-    ['capture-point', 'quarter-mark'],
-    ['cathedral-capture-point', 'mid-game'],
-  ])('activates %s at the default timeline %s', (zone, mark) => {
+  it('activates the outer capture-point boss at the default quarter mark', () => {
     const config = createDefaultGameConfig();
     const frame = timelineFrameOf(config);
-    const entry = config.match.timeline.find(({ id }) => id === mark);
-    const activation = GUARD_PLANS[zone]?.activation;
+    const entry = config.match.timeline.find(({ id }) => id === 'quarter-mark');
+    const activation = GUARD_PLANS['capture-point']?.activation;
     // Timeline fractions and the guard plan both count from the countdown's end (DEC-282).
     const activationTick = entry === undefined ? -1 : timelineMarkTick(entry.at, frame);
     const delayTicks =
@@ -58,6 +55,13 @@ describe('GUARD_PLANS', () => {
 
     expect(activation?.at).toBe('countdown-end');
     expect(frame.countdownEndTick + delayTicks).toBe(activationTick);
+  });
+
+  it('uses the resolved mid-game timeline for the Eternal', () => {
+    expect(GUARD_PLANS['cathedral-capture-point']?.activation).toEqual({
+      at: 'timeline',
+      entryId: 'mid-game',
+    });
   });
 
   it('covers a guard whose decision waits its turn at the unit cap, 16 ticks apart not 10 (DEC-181)', () => {
@@ -103,5 +107,22 @@ describe('GUARD_PLANS', () => {
     );
 
     expect(unknown).toEqual([]);
+  });
+
+  it('levels tower guards, forest-camp mobs, the capture point boss group and every checkpoint defender, but not the corner boss (DEC-165, DEC-260, DEC-350)', () => {
+    const levellers = Object.entries(GUARD_PLANS)
+      .filter(([, plan]) => plan.canLevel)
+      .map(([id]) => id);
+
+    expect(levellers.sort()).toEqual([
+      'buff-tower',
+      'capture-point',
+      'forest-camp-heavy',
+      'forest-camp-light',
+      'forest-camp-medium',
+      'spawner-tower',
+      'stronghold',
+    ]);
+    expect(Object.values(CHECKPOINT_DEFENDERS).every(({ canLevel }) => canLevel)).toBe(true);
   });
 });

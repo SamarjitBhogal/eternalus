@@ -23,6 +23,14 @@ const NO_GROUPS: ByGroup<never> = {
   'selection-primary-raster': {},
   match: {},
   boss: {},
+  'atlas-assassin': {},
+  'atlas-knight': {},
+  'atlas-paladin': {},
+  'atlas-colossus': {},
+  'atlas-juggernaut': {},
+  'atlas-catalyst': {},
+  'atlas-oracle': {},
+  'atlas-necromancer': {},
 };
 
 const initialState: AssetsSliceState = {

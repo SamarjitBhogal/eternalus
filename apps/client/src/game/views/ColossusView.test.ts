@@ -48,7 +48,7 @@ describe('ColossusView', () => {
     view.draw({ ...STATE, isMoving: true, tick: 16 }, renderer);
     expect(renderer.calls).toEqual([
       {
-        op: 'drawSprite',
+        op: 'drawImageRegion',
         args: [
           SHEET,
           { x: 256, y: 256, width: 256, height: 256 },

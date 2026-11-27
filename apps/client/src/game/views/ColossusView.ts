@@ -11,7 +11,7 @@ export class ColossusView extends MobView {
   }
 
   /** Selects an animation frame from the simulation tick and draws any active beam. */
-  public override draw(state: EntityDrawState, renderer: Renderer): void {
+  public override draw(state: EntityDrawState, renderer: Renderer): number | undefined {
     const { entity, position, facing, tick = 0 } = state;
     const cast = entity.bossCast;
     const frame = this.frameOf(state, tick);
@@ -25,7 +25,7 @@ export class ColossusView extends MobView {
       const isIdle = image === this.image('colossus-idle');
       const width = isIdle ? image.naturalWidth : cell;
       const height = isIdle ? image.naturalHeight : cell;
-      renderer.drawSprite(
+      renderer.drawImageRegion(
         image,
         {
           x: isIdle ? 0 : (frame.index % columns) * cell,
@@ -69,6 +69,7 @@ export class ColossusView extends MobView {
         renderer.strokePath([visor, end], '#fbe4ff', 3);
       }
     }
+    return image === undefined ? undefined : size * 0.65;
   }
 
   private frameOf(state: EntityDrawState, tick: number): { id: string; index: number } {

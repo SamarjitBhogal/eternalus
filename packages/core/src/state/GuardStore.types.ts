@@ -26,12 +26,21 @@ export type GuardSlot = {
   /** Measured from the home's edge. */
   readonly leashRadius: number;
   readonly leashTolerance: number;
+  /** Picks a walkable destination in the leash when there is no target to chase. */
+  readonly roams?: true;
   readonly respawnTicks: number;
   /**
    * The capture-point checkpoint whose defenders hold this post (07 §7, DEC-257); absent for a
    * post of the home's own guard plan.
    */
   readonly checkpoint?: number;
+  /**
+   * The defender set this post belongs to: one per reached checkpoint (`checkpoint-reached`), as
+   * a checkpoint can be reached again after its point changes owner. Absent with `checkpoint`.
+   */
+  readonly defenceId?: string;
+  /** Whether the post's guard levels and is rallied (its plan's `canLevel`, 18 MS-16). */
+  readonly canLevel: boolean;
   /** The guard holding the post, or `null` while it waits to respawn. */
   readonly guardId: EntityId | null;
   /**

@@ -52,7 +52,7 @@ export class EntityLayer implements WorldLayer {
       const then = before.get(entity.id)?.transform ?? now;
       const position = EntityLayer.lerp(then, now, alpha);
       const facing = EntityLayer.turn(then.facing, now.facing, alpha);
-      if (entity.definitionId === 'cathedral-boss') {
+      if (entity.definitionId === 'cathedral-boss' || entity.gem !== null) {
         return [
           {
             entity,
@@ -74,15 +74,16 @@ export class EntityLayer implements WorldLayer {
    */
   public draw(renderer: Renderer): void {
     const ordered = [...this.states].sort((a, b) => a.position.y - b.position.y);
-    for (const state of ordered) {
-      this.views.viewFor(state.entity).draw(state, renderer);
-    }
-    for (const state of ordered) {
+    const heights = ordered.map((state) => this.views.viewFor(state.entity).draw(state, renderer));
+    ordered.forEach((state, index) => {
       const side = this.healthBarOf(state.entity);
       if (side !== null) {
-        this.healthBars.draw(state, side, renderer);
+        // A sprite reports how tall it drew; any other view falls back to its artwork radius.
+        const view = this.views.viewFor(state.entity);
+        const above = heights[index] ?? view.visualRadiusOf?.(state.entity);
+        this.healthBars.draw(state, side, renderer, above);
       }
-    }
+    });
   }
 
   /**

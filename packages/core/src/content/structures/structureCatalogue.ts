@@ -93,5 +93,8 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       // TUNE: DEC-291 keeps the gem a 10 × 16 diamond; its hit and touch circle is the diamond's
       // half-width, in world units (`CathedralGemView` draws the diamond from this radius)
       footprintRadius: 5,
+      // The plinth that blocks movement under it (DEC-346, `CathedralInteriorBuilder`), destroyed
+      // with the gem when it erupts (12 §3), so the Greater Boss stands where the gem stood.
+      carriedObjectId: 'cathedral-interior-gem-plinth',
     },
   ]);

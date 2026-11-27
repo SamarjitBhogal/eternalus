@@ -14,6 +14,22 @@ export const GEM_COLORS: Readonly<Record<Team, string>> = {
 /** The diamond's height over its width (DEC-291 keeps the gem 10 × 16). */
 export const GEM_HEIGHT_PER_WIDTH = 1.6;
 
+/** Crystal facets and ambient effects by Cathedral holder. */
+export const GEM_FACETS: Readonly<Record<Team, { bright: string; shadow: string; aura: string }>> =
+  {
+    light: { bright: '#adebff', shadow: '#1b4b9f', aura: '#63c7ff34' },
+    dark: { bright: '#ff9eac', shadow: '#4b164f', aura: '#ff538e34' },
+    neutral: { bright: '#e3c7ff', shadow: '#4a258d', aura: '#b47cff38' },
+  };
+
+/** Presentation cycles in simulation ticks. */
+export const GEM_IDLE = {
+  orbitTicks: 150,
+  shimmerTicks: 96,
+  orbiters: 4,
+  core: '#fff2ff',
+} as const;
+
 /**
  * The purple glow and pulse when the gem is hit (DEC-292: "a purple pulse aura when hit and glows
  * purple for the stun duration + 5 ticks. multiple hits make it glow brighter and the aura of the

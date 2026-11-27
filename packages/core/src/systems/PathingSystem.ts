@@ -21,6 +21,7 @@ import type { Rect, Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { PathingWorld } from './PathingSystem.types';
 import type { System, SystemContext } from './System.types';
+import { guardDestination } from './guardDestination';
 
 /**
  * Sets next tick's heading of every horde member and every guard (architecture 10 §9, 18 §5): it
@@ -282,12 +283,17 @@ export class PathingSystem implements System {
       ) {
         return;
       }
-      this.target.x = post.postX;
-      this.target.y = post.postY;
+      const destination =
+        post.roams === true && state.entities.attackTargetOf(guard.id) === null
+          ? guardDestination(state, post, movement, guard.findComponent(Transform))
+          : undefined;
+      this.target.x = destination?.x ?? post.postX;
+      this.target.y = destination?.y ?? post.postY;
       this.steer(state, guard.id, index, movement, strategy, context);
       const dx = (positions[2 * index] ?? 0) - post.postX;
       const dy = (positions[2 * index + 1] ?? 0) - post.postY;
       if (
+        post.roams !== true &&
         !context.isChasing &&
         dx * dx + dy * dy <= this.slotArrivalRadius ** 2 &&
         guard.findComponent(StatusEffects)?.has('cannot-move') !== true

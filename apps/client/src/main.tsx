@@ -1,3 +1,4 @@
+import { SpriteAtlasLoader } from './data/resources/loaders/SpriteAtlasLoader';
 import { createDefaultGameConfig, type Logger, makeLogRecord, SEVERITY } from '@eternalus/core';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -118,6 +119,11 @@ const settings = new SettingsController({
 const resources = new ResourceController({
   manifest: ASSET_MANIFEST,
   loaders: [
+    new SpriteAtlasLoader(async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Atlas request failed: ' + String(response.status));
+      return createImageBitmap(await response.blob());
+    }),
     new UiImageLoader({ createImage: () => new Image() }),
     new FontLoader<FontFace>({
       createFace: (family, source, descriptors) => new FontFace(family, source, descriptors),

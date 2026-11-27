@@ -139,7 +139,15 @@ export type AssetGroup =
   | 'selection-raster'
   | 'selection-primary-raster'
   | 'match'
-  | 'boss';
+  | 'boss'
+  | 'atlas-assassin'
+  | 'atlas-knight'
+  | 'atlas-paladin'
+  | 'atlas-colossus'
+  | 'atlas-juggernaut'
+  | 'atlas-catalyst'
+  | 'atlas-oracle'
+  | 'atlas-necromancer';
 
 /**
  * URLs of a group's loaded images and the draw boxes its entries declare (both `{}` after

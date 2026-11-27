@@ -1,4 +1,5 @@
 import { assetBoxes } from './assetBoxes';
+import { SpriteAtlasAsset } from './SpriteAtlasAsset';
 import { assetFileFor } from './assetFileFor';
 import type {
   AssetGroup,
@@ -141,6 +142,16 @@ export class ResourceController {
    */
   public boxes(group: AssetGroup): Readonly<Record<string, RasterBox>> {
     return assetBoxes(this.entriesOf(group));
+  }
+
+  /** Loaded world atlases by manifest id; ownership remains with this controller. */
+  public atlases(group: AssetGroup): Readonly<Record<string, SpriteAtlasAsset>> {
+    const atlases: Record<string, SpriteAtlasAsset> = {};
+    for (const entry of this.entriesOf(group)) {
+      const handle = this.cache.get(entry.id)?.handle;
+      if (handle instanceof SpriteAtlasAsset) atlases[entry.id] = handle;
+    }
+    return atlases;
   }
 
   /**
