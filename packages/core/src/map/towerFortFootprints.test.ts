@@ -24,7 +24,13 @@ describe('DEC-238 tower forts', () => {
           .map((piece) => piece.shape.map((point) => ({ x: point.x * sx, y: point.y * sy })));
         expect(expected).toHaveLength(12);
         const object = objects.find((entry) => entry.id === tower.id);
-        expect(object?.footprints).toEqual(expected);
+        // The fort's 11 wall pieces are their own `wall` objects, part of the tower's body
+        // (DEC-227 (Q-C), DEC-217 (12)); the tower's own object keeps the keep.
+        const pieces = objects.filter((entry) => entry.partOf === tower.id);
+        expect(pieces.map(({ kind }) => kind)).toEqual(Array<string>(11).fill('wall'));
+        const footprints = [object, ...pieces].flatMap((entry) => entry?.footprints ?? []);
+        expect(footprints).toHaveLength(expected.length);
+        expect(footprints).toEqual(expect.arrayContaining(expected));
         expect(object?.kind).toBe(tower.kind);
         expect(
           presentation.scenery

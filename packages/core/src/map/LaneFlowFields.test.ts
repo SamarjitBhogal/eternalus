@@ -359,9 +359,10 @@ describe('LaneFlowFields.progress', () => {
   const oneStep = (field: FlowField): number => stepCost(4) / (field.integration[field.start] ?? 1);
   /**
    * The largest gaps measured between field and polyline `t`: 1.4% (3 lanes), 1.6% (5 lanes) on
-   * the bare grid; 1.95% on the match grid with the map objects stamped.
+   * the bare grid at 5 m nav cells; on the 5-lane match grid with the map objects stamped, 1.95%
+   * at 5 m cells and 2.13% at the 2.5 m cells of DEC-227 (Q-A). The owner set 2.5% (DEC-391).
    */
-  const POLYLINE_AGREEMENT = 0.02;
+  const POLYLINE_AGREEMENT = 0.025;
 
   /** Points along `path`, eight per segment, with the polyline's own `t` for each. */
   const samples = (world: Pick<typeof THREE, 'map'>, laneId: string, team: 'light' | 'dark') => {
@@ -409,7 +410,7 @@ describe('LaneFlowFields.progress', () => {
     ['3 lanes, match grid', stampedWorld(3, 1)],
     ['5 lanes, match grid', stampedWorld(5, 1)],
   ] as const)(
-    'agrees with the lane polyline within 2%% wherever the field can say: %s',
+    'agrees with the lane polyline within 2.5%% wherever the field can say: %s',
     (_, world) => {
       let largest = 0;
       for (const lane of world.map.lanes) {

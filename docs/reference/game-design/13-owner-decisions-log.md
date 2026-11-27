@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,18 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-27 (the lane flow field's polyline agreement bound)
+
+The owner's answer of 2026-11-27, given at about 06:58Z in the question dialog of session
+eternalus-160 (the PR #98 merge session that continues eternalus-159). After DEC-227 (Q-A) made the
+nav cells 2.5 m, the `LaneFlowFields.test.ts` test "agrees with the lane polyline" measured a gap of
+2.13% on the 5-lane match grid and failed its 2% bound. The test came from PR #82; its author left
+the bound to the owner. DEC-391 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Docs changed                                                 |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| DEC-391 | **The lane flow field's progress and the lane polyline must agree within 2.5%, not 2%** (follows DEC-227 (Q-A); PR #98). The owner chose "A: allow 2.5%": `POLYLINE_AGREEMENT` in `packages/core/src/map/LaneFlowFields.test.ts` goes from 0.02 to 0.025, and its comment cites this row. Minion strength reads this progress (DEC-280), so at the worst point a minion counts as about 2.1% less far along its lane than the polyline says. Measured on the 5-lane match grid with the map objects stamped (seed 1): 1.95% at 5 m cells (phase/3 before PR #98) and 2.13% at 2.5 m cells (lane-1, light team, near (603.9, 290)). The cell size alone causes the change: the phase/3 code at 2.5 m cells gives the same 2.13%. Options not chosen: (B) 2.2%, the same small margin as the old 2% over 1.95%; (C) keep 2% and change the flow field or the stamping, which changes how units path. | None; the bound is a test value, and no design doc states it |
 
 ## Batch 2026-11-26 (minion M6c: the seven interpretations)
 
