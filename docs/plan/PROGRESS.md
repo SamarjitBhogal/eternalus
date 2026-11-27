@@ -10647,3 +10647,83 @@ tick)`), and a minion records the point that granted its levels (`Veterancy.gran
   style!"; core "Tests 1684 passed (1684)"; protocol "Tests 29 passed (29)"; client "Tests 2011
   passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 376ms"; "Documentation check passed."
 - Next step: merge `phase/3-sprint-3-work` into the branch, then re-request review.
+
+### 2026-11-07 — Phase 3 / bot path cache (minion plan §3, M8 stand-in) — feat/minion-bot-path-cache — SamarjitBhogal + Claude Code
+
+- What was done: a bot Legend's brain caches its last A\* search (11 §6): `BotMemory` gains
+  `pathGoalX`, `pathGoalY`, `pathStepX`, `pathStepY` (plain numbers, so the cache is hashed and
+  replayed like the rest of the memory), and `BotLeaves.moveTo` reuses the cached waypoint without
+  a search while the destination stays within the bot's `arrivalDistance` of the cached one, the
+  waypoint is not yet reached but still nearer than the destination, and the straight line to it
+  is clear. Only a real search is cached: a clear line to the destination caches nothing, so a
+  chased enemy is followed where it is now; arriving clears the cache. `PathQuery` gains
+  `isLineClear`, which `AStarPathfinder` implements on the `WorldMap`. A search that finds no way
+  clears it too. Doc 11 §6 and its Implementation status describe it; the minion plan's
+  "A\* again on each blocked decision" stand-in is removed.
+- Why: the `npm run bench` of `chore/minion-perf-check` measured tick p95 8 to 12 ms against the
+  8 ms target, and a one-off probe (not committed) put almost all of it in the bot laners' A\*
+  searches (3,010 searches, 1.9 s of 900 ticks, about one per bot decision).
+- Measured with that bench (its exact-fill version) on this branch, three runs, same machine as
+  that entry: 144 mobs per team + 10 Legends each: p50 0.7 to 0.9 ms, p95 2.9 to 3.1 ms, max 15.7
+  to 17.2 ms; 290 mobs per team + 10 Legends each: p50 1.1 to 1.7 ms, p95 2.9 to 4.1 ms, max 9.7
+  to 14.7 ms. The p95 target (≤ 8 ms) now holds at both counts; single ticks still reach 10 to
+  17 ms.
+- Checks run: `npm run check` passed: core `Tests  1088 passed (1088)`, client
+  `Tests  1754 passed (1754)`, `Documentation check passed.`
+- Next step: the remaining items of the minion plan §1.2 (M6b and M10 wait for PR #64).
+
+### 2026-11-12 — Phase 3 / sync — feat/minion-bot-path-cache — SamarjitBhogal + Claude Code
+
+- What was done: merged `docs/minion-plan-mvp-gaps` (PR #81, which now carries
+  `phase/3-sprint-3-work` at `3dc9e908`) into PR #84; it was 166 commits behind and conflicting.
+  Append-only logs: both sides kept, this branch's entries last. Docs 11 and the minion plan:
+  the later `last-reviewed` each. No code conflict.
+- Checks run: `npm run check` (Node 24.21.0) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 1330 passed (1330)"; client "Tests 1818 passed (1818)"; "✓ built in
+  337ms"; "Documentation check passed."
+- Next step: review once PR #81 merges.
+
+### 2026-11-20 — Phase 3 / minion plan M8 follow-up — feat/minion-bot-path-cache (PR #84 review round) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`5a7cc8dc`) and ported the cache instead of
+  merging text (B1): phase/3 moved `moveTo` into `ai/BotMovement.ts`, so the conflicted files take
+  phase/3's side and the cache is re-applied there, after `edgeOf` (the edge point is the cached
+  goal). No-way adds `NO_PATH` beside `BotMovement.stop`; arrival clears the cache only when one is
+  set, so a halted bot stays allocation-free; `BotMemory`/`BotLeaves.read` keep `isHalted` and the
+  four `path*` fields; `NO_PATH` moved to `BotMovement.constants.ts`. Nits: the reuse check tests
+  plain numbers and copies into `step` only on success (N1); a cached waypoint is dropped once the
+  straight line to the destination opens (N2, one extra line test, new test); INBOX M8 item (2)
+  has an update line (N3); the PR body names why `PathQuery.isLineClear` stays a port (N4, doc 11
+  status). S1: the `AStarPathfinder` `ponytail:` remark now names the ceiling left (a destination
+  moving more than `arrivalDistance` per decision still searches each decision). S3: doc 11 §6 is
+  rebuilt from phase/3's text (`pathMaxSearchArea`, the `StuckSystem` sentence) without the "next
+  step" note. Deliberate breaks: dropping the line-opened check fails 1 test; returning `true`
+  without copying the waypoint fails the reuse test (it now uses a fresh brain, so a leftover
+  scratch vector cannot pass it).
+- Measured (S2): `npm run bench` from PR #83's fixed script (`chore/minion-perf-check` after its
+  2026-11-20 review round) run against this merge, Node 24.21.0, AMD Ryzen AI 9 HX 370, load
+  average 13.5 (another check was running, so treat as an upper bound): 144/team p50 1.68 / p95
+  2.27 / max 5.55 ms; 290/team p50 3.15 / p95 3.90 / max 6.66 ms. #83 on phase/3 without the
+  cache, at load 2.7: 144/team p95 3.47 / max 4.85 ms; 290/team p95 3.44 / max 11.65 ms.
+- Checks run: `npm run check` (Node 24.21.0) on the merge → `EXIT=0`: "All matched files use
+  Prettier code style!"; core "Tests 1684 passed (1684)"; protocol "Tests 29 passed (29)"; client
+  "Tests 2011 passed (2011)"; server "Tests 84 passed (84)"; "✓ built in 528ms"; "Documentation
+  check passed." (A first run failed lint on an unbound static method reference; fixed by calling
+  it directly.)
+- Next step: re-request review on PR #84; #121 is merged, so S3's `pathMaxSearchArea` is in.
+
+### 2026-11-21 — Phase 3 / minion plan M8 follow-up — feat/minion-bot-path-cache (PR #84 review round 2) — SamarjitBhogal + Claude Code
+
+- What was done: re-checked both CHANGES_REQUESTED reviews (claudiodh, swholtzman, both on
+  `9cabf9ae`) against the head `3760bcee`; B1, S1, S3 and N1 to N4 were already fixed there. Two
+  leftovers fixed in `BotMovement`: `reuseStep` no longer builds a `{ x, y }` object for its line
+  test on each moving decision (a `cachedStep` scratch vector, 11 §6 "no allocation in hot paths",
+  N1), and the `moveTo` TSDoc names `reuseStep` instead of a method that does not exist. No
+  behaviour change; the existing cache tests cover it. CodeRabbit posted no findings (rate
+  limited).
+- Open: the PR conflicts with `phase/3-sprint-3-work` (`54615afa`) in this file only; not merged
+  here. The PR body's "Measured" table, "Merge after #81" and the `fix/minion-stack-followups`
+  heads-up are stale (S2, N5): the 2026-11-20 entry holds the current numbers.
+- Checks run: `npm run check` (Node 24.21.0), see the PR #84 round-2 report.
+- Next step: merge phase/3 (PROGRESS conflict, keep both sides), refresh the PR body, re-request
+  review.
