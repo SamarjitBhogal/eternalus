@@ -568,8 +568,12 @@ export class DamagePipeline {
 The order is fixed and every multiplier is data: attacker statuses (`imbue`, `enraged`, the minion
 strength-by-distance curve), target statuses (`sundered`, `marked`, `hexed`), the target's
 `damageMultipliers` keyed by the attacker's `damageClass`
-([07 §4](07-structures-obstacles-and-destructibles.md#4-gates)), `Collider.isUnbreakable`
-(rejects), then `Health.applyDamage`. `DeathResolver` turns an overflow into `entity-died {
+([07 §4](07-structures-obstacles-and-destructibles.md#4-gates)), a big boss's body-part bonus
+(DEC-381: a hit that came from the zone behind it, `backZoneDegrees` wide and centred on the side
+its art shows its back; or a shot whose line of flight, carried on from where it struck, crosses
+its head outline; only the larger when both hold; a hit from no side, such as a status tick,
+gets neither), `Collider.isUnbreakable` (rejects), then `Health.applyDamage`.
+`DeathResolver` turns an overflow into `entity-died {
 entityId, killer: DamageSource }` and records the cause for `DeathSystem` (rule B). A death by
 attacker-less damage that credits a killer (the Cathedral gem's statuses, DEC-346) names the
 victim's last enemy damager inside the assist window as the attacker, keeping the gem's source kind
@@ -579,7 +583,7 @@ That is why every ability, weapon, status tick and gate fire names a `DamageSour
 effective against Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `CombatSystem`.
 
 **Implementation status (sprint 2.2, PR #34).** `DamagePipeline.apply(state, targetId, amount,
-source)` is built and, with `kill(state, targetId, source)`, is the only caller of
+source, path?)` is built and, with `kill(state, targetId, source)`, is the only caller of
 `Health.applyDamage`. `kill` deals the target's whole health, shields included, past every step,
 with the same events and kill credit as a lethal `apply`; the gem eruption's blast uses it, so no
 modifier lets a unit in the zone live (DEC-371 "BOSS guards" C). Each modifier above is a
@@ -594,11 +598,18 @@ is not scaled twice), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §
 (the minion strength-by-distance curve, its base-stat point moved toward the enemy for each lane
 tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16; `createDefaultDamageSteps(progressOf)`
 injects the lane progress, the flow fields' path cost gate to gate (DEC-280), else the lane polyline
-(DEC-384); see 18's status note) and
+(DEC-384); see 18's status note),
 `BossMinionDamageStep` (a boss takes only its share of a lane minion's hit, balancing.md; the
-shares are `BOSS_MINION_DAMAGE_TAKEN` in `content/mobs/minionModifiers.ts`). Interim differences:
-no `DamageType` yet (nothing reads it; it joins `DamageHit` and
-`apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
+shares are `BOSS_MINION_DAMAGE_TAKEN` in `content/mobs/minionModifiers.ts`) and
+`BodyPartBonusStep` (DEC-381: the back-hit and head-shot bonuses on a unit with a `CombatHitbox`;
+the multipliers are `BODY_PART_BONUS` in `content/mobs/bodyPartBonus.ts`). `DamageHit` and
+`apply` carry an optional `HitPath`: `origin`, where the hit came from, and `impactPoint`, where a
+shot struck. A melee hit's origin is its attacker's position (`MeleeAttackStrategy`). A status
+tick and the map collapse pass no path, so they get no bonus; `kill` (the gem's eruption) runs no
+step at all. No projectile deals damage yet, so only tests reach the head-shot bonus today; when
+ranged attacks land, the projectile hit passes where it started and where it struck (`INBOX.md`).
+Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and `apply` with
+the first resistance); the pipeline itself emits `entity-died` with the killer, so
 `DeathResolver` is not a separate class yet. The gem's kill credit is `KillCredit`, which the
 pipeline asks on each landed hit (it keeps the `LastEnemyHit` component) and before
 `entity-died`. `BossMinionDamageStep` stands in for the target's
@@ -609,7 +620,8 @@ the step keys its own table by boss id and finds a lane minion by horde membersh
 `no-death-without-killer` (15) flags a death without one.
 `DefaultSystemPipeline` builds the match's one `DamagePipeline` and injects it into every system
 that deals damage. `CombatSystem` (after movement, before death) runs each unit's `Combat` target
-through its `AttackStrategy` (melee only) when in reach (edge to edge) and off cooldown;
+through its `AttackStrategy` (melee only) when in reach (edge to edge; a big boss's edge is its
+drawn body outline, and its chase holds once a target is in that reach, DEC-421) and off cooldown;
 `attack-target` sets the target and rejects allies, itself and dead targets (`invalid-target`) and
 units with no attack (`cannot-attack`).
 

@@ -263,6 +263,7 @@ export type EntitySnapshot = {
   readonly definitionId: string;
   readonly mapFeatureId?: string; // a structure's or zone's map feature (MapFeatureLink; DEC-212, DEC-231)
   readonly specId?: string; // a Legend's sub-class from its roster slot, so the client draws its sprite (DEC-378 (2), DEC-397)
+  readonly combatHitbox?: Polygon; // a big boss's body outline in world units, mirrored to its facing; a click inside it selects the unit (DEC-381)
   readonly team: Team | null;
   readonly transform: {
     readonly x: number;

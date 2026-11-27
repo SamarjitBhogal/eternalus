@@ -474,7 +474,8 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
   Stronghold's palace, a gate, 07 §13) aims at the nearest point of its outline, the point attack
   reach is measured to (`EntityStore.aimPointOf`); a mob that stands inside the outline is in reach
   already, so it holds there, as every chase stops at reach (DEC-234); it faces the building's
-  centre (DEC-220 (1)). The blocked
+  centre (DEC-220 (1)). A unit with a body shape (a big boss) reaches from its drawn body, so its
+  chase holds once the target is in that reach (DEC-421). The blocked
   ground under the target (a fort's cells, under the structure or under a unit inside its court,
   or a map object's cells)
   never holds or turns a chase: the mob closes in until collision stops it at a wall, in reach

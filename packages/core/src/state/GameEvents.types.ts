@@ -17,6 +17,18 @@ export type DamageSource = {
   readonly definitionId: string;
 };
 
+/**
+ * Where a hit came from, in world units (DEC-381). The body-part bonuses read it
+ * (`combat/BodyPartBonusStep`). Lives in `state/` beside `DamageSource` because the `entities/`
+ * damage port carries it too and `entities/` may not import `combat/` (02).
+ */
+export type HitPath = {
+  /** Where the hit came from: the melee attacker's position, or where a shot started. */
+  readonly origin: Vec2;
+  /** Where a shot struck; a melee hit leaves it out. */
+  readonly impactPoint?: Vec2;
+};
+
 /** A horde's announcement payload. */
 type HordePayload = {
   readonly hordeId: string;

@@ -11,6 +11,25 @@ export type MobDefinition = UnitDefinition & {
   readonly xpValue: number;
 };
 
+/**
+ * The damage multipliers on a big boss's body parts (DEC-381), each a finite number of at least 1,
+ * and how wide the zone behind it is. Only a unit with a body shape (`bodyShape`) gets them.
+ */
+export type BodyPartBonus = {
+  /** A hit whose path starts in the zone behind the boss (`HitPath.origin`; no status tick). */
+  readonly backHit: number;
+  /**
+   * A shot that struck the boss's head (`bodyShape.head`), or whose line of flight, carried on
+   * through the body, crosses it (HC-B60 A).
+   */
+  readonly headShot: number;
+  /**
+   * The zone behind the boss, in degrees, centred on the side its art shows its back: 180 is the
+   * whole rear half. Above 0 and at most 180.
+   */
+  readonly backZoneDegrees: number;
+};
+
 /** The veterancy fields that are the same as authored and as loaded. */
 type MinionVeterancyBase = {
   readonly killsPerLevel: number;

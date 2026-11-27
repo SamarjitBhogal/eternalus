@@ -18,6 +18,7 @@ import { Simulation } from '../../Simulation';
 import type { GameConfig } from '../../config/GameConfig.types';
 import type { GameState } from '../../state/GameState';
 import type { EntitySnapshot } from '../../state/Snapshot.types';
+import { isPointInAnyPolygon, nearestPointOnPolygons } from '../../utils/geometry';
 
 const BOSS = MOB_DEFINITIONS.get('greater-boss');
 
@@ -172,31 +173,32 @@ describe('the Greater Boss spawns at the gem eruption (scenario, 12 §3)', () =>
     const zone = GUARD_LEASH.greaterBossZone;
     stepTo(simulation, spawnTick + 1);
     const boss = theBoss(simulation);
+    // Below the boss, where its drawn body ends nearest its feet (8 m): it hits from that body
+    // (DEC-421), so here it must walk out over half the zone to reach the Legend.
     const warriorId = spawnWarrior(simulation, {
-      x: feature.position.x - (zone - 4),
-      y: feature.position.y,
+      x: feature.position.x,
+      y: feature.position.y + (zone - 1),
     });
     simulation.enqueueCommand({ type: 'attack-target', actorId: warriorId, targetId: boss.id });
     const fromCentre = (): number => {
       const at = theBoss(simulation).transform;
       return at === null ? NaN : Math.hypot(at.x - feature.position.x, at.y - feature.position.y);
     };
+    const nearest = { x: 0, y: 0 };
     const gapToWarrior = (): number => {
-      const at = theBoss(simulation).transform;
+      const body = theBoss(simulation).combatHitbox;
       const warrior = simulation.snapshot().entities.find(({ id }) => id === warriorId);
-      return at === null || warrior?.transform == null
-        ? Infinity
-        : Math.hypot(at.x - warrior.transform.x, at.y - warrior.transform.y);
+      if (body === undefined || warrior?.transform == null) return Infinity;
+      return isPointInAnyPolygon(warrior.transform, [body])
+        ? 0
+        : nearestPointOnPolygons(warrior.transform, [body], nearest);
     };
     let farthest = 0;
-    // Just outside the boss's hit (centre to centre), so the Legend turns before it is struck.
-    const runAway =
-      BOSS.footprintRadius +
-      (BOSS.attack?.reach ?? 0) +
-      LEGEND_CLASSES.get('warrior').footprintRadius +
-      0.5;
+    // Just outside the boss's hit (its drawn body's edge to the Legend's centre), so the Legend
+    // turns before it is struck.
+    const runAway = (BOSS.attack?.reach ?? 0) + LEGEND_CLASSES.get('warrior').footprintRadius + 0.5;
     // The boss walks out to the Legend; once it is close, the Legend backs out of the zone, faster
-    // than the boss, which chases it to the leash.
+    // than the boss, which follows it until it leaves the leash.
     for (let tick = 0; tick < 15 * config.tickRate && gapToWarrior() > runAway; tick += 1) {
       simulation.step();
       farthest = Math.max(farthest, fromCentre());

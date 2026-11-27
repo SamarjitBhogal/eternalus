@@ -29,6 +29,11 @@ export type EntitySnapshot = {
    * names none.
    */
   readonly specId?: string;
+  /**
+   * A big boss's body outline in world units (`CombatHitbox`, DEC-381): a click inside it selects
+   * the unit. Left out for every unit that is only its disc.
+   */
+  readonly combatHitbox?: Polygon;
   readonly id: EntityId;
   readonly kind: string;
   readonly family: string;

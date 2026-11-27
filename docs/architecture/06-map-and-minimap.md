@@ -492,7 +492,9 @@ approved them, `INBOX.md` HC-T1), and this note gives the detail:
   explorer shown, a click (a press whose pointer travels less than the click slop in total before
   its release) is resolved once at its release point in this order (`MatchViewControls.clickAt`,
   DEC-183): a living enemy unit there is attacked; else a click that toggles a roof is a roof
-  click; else the click attacks the map object there. A drag does neither. When units overlap, the
+  click; else the click attacks the map object there. A drag does neither. A unit is there when
+  the point is inside its hit disc (DEC-183 (2)), or, for a big boss with a body shape, inside
+  that outline (`combatHitbox`, DEC-381, the exception to DEC-183 (2)). When units overlap, the
   one drawn on top wins (DEC-183). The held attack button aims the same way: a unit first, else a
   map object (`PlayerCommands`). In local matches, both inputs pick Legends and mobs by the
   hit radius reported by their registered view. Health bars use the same display extent.

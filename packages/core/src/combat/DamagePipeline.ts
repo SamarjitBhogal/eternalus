@@ -1,7 +1,7 @@
 import { Health } from '../components/Health';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
-import type { DamageSource } from '../state/GameEvents.types';
+import type { DamageSource, HitPath } from '../state/GameEvents.types';
 import type { DamageResult } from './DamagePipeline.types';
 import type { DamageStep } from './DamageStep.types';
 import type { KillCredit } from './KillCredit';
@@ -30,14 +30,19 @@ export class DamagePipeline {
     private readonly credit?: KillCredit,
   ) {}
 
-  /** Deals `amount` (finite, ≥ 0) damage from `source` to `targetId`. */
+  /**
+   * Deals `amount` (finite, ≥ 0) damage from `source` to `targetId`. `path` is where the hit came
+   * from (the body-part bonuses read it, DEC-381); a hit from no side (a status tick, a collapse)
+   * leaves it out.
+   */
   public apply(
     state: GameState,
     targetId: EntityId,
     amount: number,
     source: DamageSource,
+    path?: HitPath,
   ): DamageResult {
-    return this.hit(state, targetId, amount, source, this.steps);
+    return this.hit(state, targetId, amount, source, this.steps, path);
   }
 
   /**
@@ -57,6 +62,7 @@ export class DamagePipeline {
     amount: number,
     source: DamageSource,
     steps: readonly DamageStep[],
+    path?: HitPath,
   ): DamageResult {
     const target = state.entities.get(targetId);
     if (target === undefined) {
@@ -74,8 +80,10 @@ export class DamagePipeline {
     if (amount === 0) {
       return { applied: false, reason: 'zero-damage' };
     }
+    const from = path === undefined ? {} : { path };
     const final = steps.reduce(
-      (current, step) => Math.max(0, step.adjust({ targetId, amount: current, source }, state)),
+      (current, step) =>
+        Math.max(0, step.adjust({ targetId, amount: current, source, ...from }, state)),
       amount,
     );
     if (final === 0) {

@@ -13,6 +13,52 @@ review comments under "Feedback". Answered decisions are recorded in
 
 ## Decisions needed from Sam
 
+- [ ] **Boss body parts: the built defaults (DEC-381, `feat/boss-hit-area` on PR #160,
+      2026-11-27).** You said: build defaults, then ask with options. Built: the Greater Boss's
+      body outline (from #161's colossus art) counts for clicks and attack reach. A hit from
+      behind (a 120-degree zone) does 15% more damage. A shot to the head does 25% more. When both
+      hold, only the larger applies. "Behind" is the side the art shows the boss's back. A bleed
+      or burn tick gets no bonus. A melee hit gets no head bonus. Each number is `TUNE` in
+      `content/mobs/bodyPartBonus.ts`. Sam answered cards (1) to (7) on 2026-11-27 (DEC-381 row).
+      Sam answered cards HC-B60 and HC-B61 on 2026-11-27 (DEC-421): a shot is a head shot when
+      its line of flight crosses the head (A, as built), and the boss hits from its whole drawn
+      body (B, built).
+      Open, for the agents (no answer needed): (a) no projectile deals damage yet. When ranged
+      attacks (#148, `feat/ranged-attacks`) and this branch are both on phase/3, the later PR
+      passes `{ origin: hit.origin, impactPoint: hit.point }` to `DamagePipeline.apply` in
+      `WeaponImpact`, and feeds `CombatHitbox` into #148's `Outline` (B2 below). Until then only
+      the tests reach the head bonus. (b) Play test: players now hit the boss from up to about
+      20 m (the outline's edge), and the boss hits players up to 1.5 m past the same outline
+      (DEC-421; DEC-371 E2 keeps the 1.5 m). (c) The outlines fit the idle art. When
+      #161's art lands (Unit 2), check that its other frames draw on the same anchor. (d) Interim
+      gap: until #161's view lands (Unit 2), `MobView` draws the boss as a disc of about 3.5 m,
+      but clicks and hits count on the outline of about 40 m.
+      Better than the design (the branch critic's items B1 to B4; sign-off asked): B1 (built) the
+      unit definition has one `bodyShape` (`outline`, `head`) in place of two loose polygons. B2
+      (not built; at #148's merge) `CombatHitbox` gives #148's `Outline` its world polygon, its
+      bounds and "not walkable", so a shot stops on the body shape, not the circle. B3 (part
+      built) a hit's path goes to `DamagePipeline.apply` as one object (`HitPath`); one object
+      for the whole hit is not built, because it changes every caller. B4 (built) a hit says
+      where it came from (`HitPath.origin`), so the bonus step needs no attacker lookup and no
+      status check: a hit without a path gets no bonus. From the pre-PR critic (2026-11-27,
+      sign-off asked): B5 (built) `HitPath` lives in `state/` beside `DamageSource`, so the
+      `entities/` damage port uses the same type and does not copy it. B6 (built) a content rule
+      (`BodyShapeRule`) checks every body shape at load (at least 3 finite corners, the head inside
+      the outline), so a bad shape fails at boot, not when the boss spawns in a match. B7 (not
+      built; `ponytail:` note) `EntityStore.outlineOf` builds a new body polygon on each call;
+      08 §9 says profile first, so it stays until a profile shows the cost. B6 also checks (DEC-421
+      critic, built) that the outline holds the whole footprint circle: the boss walks on its
+      circle but hits from its outline, so a circle past the outline would stop its chase short of
+      its reach. From the DEC-421 critic (2026-11-27, not built, sign-off asked): B8
+      `CombatHitbox.gapTo` works out the reach gap in local space, as `isHeadShot` does, so it
+      allocates nothing and the mirror rule stays in one class; one `utils/geometry` helper serves
+      the same "0 inside, else the nearest edge" pattern in `EntityStore` and a scenario test. B9
+      one "reach gap" query on `EntityStore`, used by every chase, so chase and hit share one rule
+      (04 §3) and `PathingSystem` needs no boss case; it costs one aim computation per chaser a
+      tick (profile first). B10 the reach and aim geometry (`isInReach`, `outlineOf`,
+      `aimPointOf`, about 120 lines) moves out of `EntityStore` into its own `state/` class, which
+      brings `EntityStore` under 300 lines; a `refactor(core)` change of its own.
+
 - [x] **Minion strength port (PR #82, 2026-11-25): sign off `LaneProgressOf`.** Built: `combat/`
       reads lane progress through a new port, `LaneProgressOf = (laneId, team, position) => number
 | null` (`MinionStrengthStep.types.ts`), which `LaneFlowFields.progress` implements and

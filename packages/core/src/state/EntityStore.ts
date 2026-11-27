@@ -1,5 +1,6 @@
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
+import { CombatHitbox } from '../components/CombatHitbox';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
 import { Footprint } from '../components/Footprint';
@@ -33,7 +34,7 @@ export class EntityStore {
   private readonly removals: RemovalRecord[] = [];
   private added = 0;
   private sizeAtStart = 0;
-  /** Scratch for `isInReach`'s aim point. */
+  /** Scratch for `isInReach`: the aim point, then the nearest point on a big boss's body. */
   private readonly aim: MutableVec2 = { x: 0, y: 0 };
 
   /** Number of live entities. */
@@ -170,16 +171,17 @@ export class EntityStore {
   /**
    * Whether `targetId` is within `attackerId`'s attack reach, measured edge to edge between the
    * two footprints (architecture 05 §10) to the point `aimPointOf` gives: on the target's outline
-   * when it has one (`outlineOf`: a map object, or a lane tower's fort, DEC-185), standing inside
-   * an outline counting as in reach; else to its collider circle. `false` when either is unknown,
-   * either has no `Transform`, or the attacker cannot attack.
+   * when it has one (`outlineOf`: a map object, a lane tower's fort, DEC-185, or a big boss's
+   * body, DEC-381), standing inside an outline counting as in reach; else to its collider circle.
+   * A big boss reaches a unit from its whole drawn body (`gapPastEdgeOf`, DEC-421).
+   * `false` when either is unknown, either has no `Transform`, or the attacker cannot attack.
    */
   public isInReach(attackerId: EntityId, targetId: EntityId): boolean {
     const attacker = this.entities.get(attackerId);
     const combat = attacker?.findComponent(Combat);
     const from = attacker?.findComponent(Transform);
     const to = this.entities.get(targetId)?.findComponent(Transform);
-    if (combat === undefined || from === undefined || to === undefined) {
+    if (attacker === undefined || combat === undefined || from === undefined || to === undefined) {
       return false;
     }
     const aimed = this.aimPointOf(targetId, from.position, this.aim);
@@ -187,23 +189,49 @@ export class EntityStore {
       return false;
     }
     if (aimed === 'centre') {
-      const gap = distance(from.position, this.aim);
-      return gap - from.radius - to.radius <= combat.attack.reach;
+      return this.gapPastEdgeOf(attacker, from, to.position) - to.radius <= combat.attack.reach;
     }
+    // ponytail: a big boss still reaches an outlined target (a building) from its circle; guards
+    // only take units (`LeashBehaviour` acquires through `unitsWithin`). Upgrade: an outline-to-
+    // outline gap when a unit with a body shape can attack a building.
     return distance(from.position, this.aim) <= from.radius + combat.attack.reach;
   }
 
   /**
-   * The outlines attack reach to `id` is measured to and a chase of it aims at: its map object's
-   * footprints, else its structure `Footprint`'s polygons (a lane tower's fort, the Stronghold's
-   * palace, DEC-185; a gate's outline, DEC-217 (17)). `undefined` for a body that is only its
-   * collider circle, or an unknown id.
+   * How far `point` lies past the attacker's edge, where its attack reach starts: its drawn body
+   * outline when it has one (`CombatHitbox`: a big boss hits from its whole body, DEC-421), 0
+   * inside the outline; else its collider circle, negative inside the circle.
+   */
+  private gapPastEdgeOf(attacker: Entity, from: Transform, point: Vec2): number {
+    const hitbox = attacker.findComponent(CombatHitbox);
+    if (hitbox === undefined) {
+      return distance(from.position, point) - from.radius;
+    }
+    // ponytail: a new world polygon on each call, as `outlineOf` (see its note).
+    const body = [hitbox.polygonAt(from.position, from.facing)];
+    return isPointInAnyPolygon(point, body) ? 0 : nearestPointOnPolygons(point, body, this.aim);
+  }
+
+  /**
+   * The outlines attack reach to `id` is measured to and a chase of it aims at: a big boss's body
+   * outline where it stands now (`CombatHitbox`, DEC-381), else its map object's footprints, else
+   * its structure `Footprint`'s polygons (a lane tower's fort, the Stronghold's palace, DEC-185; a
+   * gate's outline, DEC-217 (17)). `undefined` for a body that is only its collider circle, a body
+   * shape with no `Transform`, or an unknown id.
    */
   public outlineOf(id: EntityId): readonly Polygon[] | undefined {
     const entity = this.entities.get(id);
+    if (entity === undefined) return undefined;
+    const hitbox = entity.findComponent(CombatHitbox);
+    const transform = entity.findComponent(Transform);
+    if (hitbox !== undefined && transform !== undefined) {
+      // ponytail: a new world polygon on each call (a few a tick per attacker of a big boss); 08 §9
+      // says profile first. Upgrade: keep one polygon per CombatHitbox, rebuilt when it moves.
+      return [hitbox.polygonAt(transform.position, transform.facing)];
+    }
     return (
-      entity?.findComponent(MapObjectBody)?.object.footprints ??
-      entity?.findComponent(Footprint)?.polygons
+      entity.findComponent(MapObjectBody)?.object.footprints ??
+      entity.findComponent(Footprint)?.polygons
     );
   }
 

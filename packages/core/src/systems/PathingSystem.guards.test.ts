@@ -19,24 +19,25 @@ import { FORMATIONS, logger, STRATEGIES } from './__fixtures__/pathingSystemSetu
 
 describe('PathingSystem', () => {
   describe('guards (18 §7)', () => {
-    /** A light guard at (60, 20) posted at (60, 30), with no horde anywhere. */
-    const guarded = () => {
+    /** A light guard (or `kind` `mobId`) at (60, 20) posted at (60, 30), with no horde anywhere. */
+    const guarded = (kind = 'light-mob', mobId = 'light-guard') => {
       const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
       const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
         space,
       });
       const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
       const add = (team: 'light' | 'dark', x: number, y: number, definitionId: string) => {
-        const entity = factory.create('light-mob', definitionId, { team, position: { x, y } });
+        const entityKind = definitionId === mobId ? kind : 'light-mob';
+        const entity = factory.create(entityKind, definitionId, { team, position: { x, y } });
         state.entities.add(entity);
         return entity;
       };
-      const guard = add('light', 60, 20, 'light-guard');
+      const guard = add('light', 60, 20, mobId);
       state.guards.add({
         id: 'home:0',
         homeId: 'home',
         team: 'light',
-        mobId: 'light-guard',
+        mobId,
         row: 0,
         indexInRow: 0,
         postX: 60,
@@ -82,6 +83,22 @@ describe('PathingSystem', () => {
       step();
 
       expect(guard.getComponent(Movement).heading).toEqual({ x: 1, y: 0 });
+    });
+
+    it('holds a big boss once its target is in reach of its drawn body, not its feet (DEC-421)', () => {
+      const { state, guard, add, step } = guarded('heavy-mob', 'greater-boss');
+      // 1 m past the body's right edge (x 20 at y -6), about 22 m from its feet.
+      const enemy = add('dark', 81, 14, 'light-minion');
+      state.entities.setAttackTarget(guard.id, enemy.id);
+
+      step();
+
+      expect(guard.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
+
+      enemy.getComponent(Transform).moveTo({ x: 85, y: 14 });
+      step();
+
+      expect(guard.getComponent(Movement).heading.x).toBeGreaterThan(0.9);
     });
 
     it('turns a guard pulled off its post to face outward once it is back (DEC-220 (3))', () => {
