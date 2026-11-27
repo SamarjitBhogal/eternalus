@@ -609,14 +609,15 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-23 (DEC-343): (1) kept, as built; 05 §3 now states it. (2) (A): lane B
     builds the one shot launcher with lane A after #148 merges. (4) kept, as built. (5) (A): built
     in lane B's PR 6 (Sentinel Rip & Tear). (6) (A): built in lane B's next PR, after #159 merges.
-- [ ] **HC-Q107 — Rip & Tear: how wide is the fan in front of the Sentinel? (lane B PR 6,
+- [x] **HC-Q107 — Rip & Tear: how wide is the fan in front of the Sentinel? (lane B PR 6,
       `feat/sentinel-kit`, card "PR6 R1 cone" on the Owner Calls page v92, 2026-11-23).**
       Nothing waits on the answer; the build uses (A), marked `TUNE`. The Sentinel claws in a fan
       in front of it, and every enemy in the fan is hit. The fan reaches 3 m past the Sentinel's
       body (`balancing.md`, Rip & Tear row). Nothing gives its width. The weapon arcs (DEC-304)
       are 70° (Bastions) to 160° (Wuuthrad). (A) 90°, a quarter circle (built). (B) 120°.
       (C) 60°. (D) Other (note). Code: `content/abilities/ripAndTear.ts`.
-- [ ] **HC-Q108 — Rip & Tear: do weak enemies (under 30% health) also take double damage, and
+  - Answered 2026-11-26 (DEC-382, R1): (A) 90°, a quarter circle. As built.
+- [x] **HC-Q108 — Rip & Tear: do weak enemies (under 30% health) also take double damage, and
       how far are they pushed? (lane B PR 6, card "PR6 R2 low health", 2026-11-23).** Nothing
       waits on the answer; the build uses (A). The balancing row says enemies under 30% health
       "take double and are dragged 1.5 m toward you". DEC-204 changed the drag to a push away and
@@ -625,7 +626,8 @@ Reply inline (`Decision: …`).
       then the kill, then the push. So an enemy that the 90 damage takes under 30% is also pushed,
       and an enemy that it takes to 10% or less dies. (A) Double damage (180), pushed 1.5 m away
       (built). (B) Normal damage (90), pushed 1.5 m away. (C) Other (note).
-- [ ] **HC-Q109 — Rip & Tear Fear: do enemies run or cower, and for how long? (lane B PR 6, card
+  - Answered 2026-11-26 (DEC-382, R2): (A) double damage (180), pushed 1.5 m away. As built.
+- [x] **HC-Q109 — Rip & Tear Fear: do enemies run or cower, and for how long? (lane B PR 6, card
       "PR6 R3 fear", 2026-11-23).** Nothing waits on the answer; the build uses (A). After Rip &
       Tear, every enemy that survives within 3 m of the Sentinel's body is feared. DEC-203: a
       feared unit runs away at half speed or cowers in place, for 2 to 4 s, and the source may
@@ -635,7 +637,10 @@ Reply inline (`Decision: …`).
       Sentinels are never feared (DEC-207). (A) Run away for 2 s (built). (B) Run away for 3 s.
       (C) Cower in place for 2 s. (D) Random run or cower, 2 to 4 s. (E) Other (note). Code:
       `content/status-effects/feared.ts`.
-- [ ] **HC-Q110 — Shield Wall: where does it stand, and who can break it? (lane B PR 6, card
+  - Answered 2026-11-26 (DEC-382, R3): (D) random run or cower, 2 to 4 s. Built: each Fear draws
+    its form and its duration from the match's seeded random numbers (`StatusEffectApplier`;
+    `content/status-effects/feared.ts`).
+- [x] **HC-Q110 — Shield Wall: where does it stand, and who can break it? (lane B PR 6, card
       "PR6 R4 wall", 2026-11-23).** Nothing waits on the answer; the build uses (A). DEC-330 (7):
       the wall stays until it breaks, each Legend has at most 2, and a third removes the oldest.
       The build: the wall is 4 m long and 1 m thick, at a right angle to the aim, with its middle
@@ -650,7 +655,9 @@ Reply inline (`Decision: …`).
       (B) As built, but only the Sentinel's enemies can damage it. (C) As built, but a wall cannot
       be placed in a gate opening. (D) Other (note). Code: `content/abilities/shieldWall.ts`,
       `content/obstacles/shieldWallBarrier.ts`.
-- [ ] **HC-Q111 — Berserk: does "speed +20%" mean a higher top speed only? (lane B PR 6, card
+  - Answered 2026-11-26 (DEC-382, R4): (A) as built. Both teams can break the wall, and it may
+    stand in a gate.
+- [x] **HC-Q111 — Berserk: does "speed +20%" mean a higher top speed only? (lane B PR 6, card
       "PR6 R5 berserk speed", 2026-11-23).** Nothing waits on the answer; the build uses (A).
       Berserk lasts 12 s: the Sentinel grows 1.3 times bigger, deals 1.5 times the damage, takes
       30% less damage and gets 20% more speed (`balancing.md`). The Sentinel speeds up very slowly
@@ -658,7 +665,9 @@ Reply inline (`Decision: …`).
       the top speed by 20%, so a Sentinel that starts from a stop gains almost nothing in 12 s.
       (A) Top speed +20% only (built). (B) Top speed +20%, and it also speeds up 20% faster.
       (C) Other (note). Code: `content/status-effects/berserk.ts`.
-- [ ] **HC-Q112 — Rip & Tear: does the 10% kill also work on towers and the Stronghold? (lane B
+  - Answered 2026-11-26 (DEC-382, R5): (B) top speed +20%, and it also speeds up 20% faster.
+    Built: the `acceleration` status stat (`content/status-effects/berserk.ts`, `MovementSystem`).
+- [x] **HC-Q112 — Rip & Tear: does the 10% kill also work on towers and the Stronghold? (lane B
       PR 6, card "PR6 R6 execute", 2026-11-23).** Nothing waits on the answer; the build uses
       (A). Rip & Tear kills every enemy in the fan that has 10% health or less (DEC-204). DEC-206
       (1) says the attack applies to "every enemy in the fan", and towers, the Stronghold, gates
@@ -667,7 +676,8 @@ Reply inline (`Decision: …`).
       monsters and bosses. Buildings still take the normal damage. (A) Units only (built).
       (B) Every enemy in the fan. (C) Other (note). Code: `abilities/effects/ExecuteEffect.ts`
       (`TargetFilter.families`).
-- [ ] **HC-Q113 — Berserk in a tight space: what happens when the bigger Sentinel does not fit?
+  - Answered 2026-11-26 (DEC-382, R6): (A) units only. As built.
+- [x] **HC-Q113 — Berserk in a tight space: what happens when the bigger Sentinel does not fit?
       (lane B PR 6, correctness critic round 3, M1, 2026-11-24).** Nothing waits on the answer;
       the build uses (A). Berserk makes the Sentinel 1.3 times as wide: 3.25 m, from 2.5 m.
       Between two rocks or walls less than 3.25 m apart, the bigger body does not fit. Before
@@ -678,6 +688,11 @@ Reply inline (`Decision: …`).
       size until there is room (built, DEC-365 (1)). (B) Move the Sentinel to the nearest free
       ground and grow it there; it can jump a few metres. (C) Grow in place and stand partly
       inside the rock. (D) Other (note). Code: `systems/BodySizeSystem.ts`.
+  - Answered 2026-11-26 (DEC-382): Other (note): "cannot activate if there isnt enough space.
+    normal size until the user clears the area, then they can activate it. gives small prompt
+    saying "not enough space"". Built: the cast is refused with the reason `no-room` and spends
+    nothing; the ultimate slot shows "Not enough space" while the reason holds. The DEC-365 (1)
+    rule stays as the safety net.
 - [ ] **HC-S13 — Scheduled: an online Duel must not send a hidden enemy to a player
       (Samarjit's review of #150, 6026306663, nit 1; lane B PR 6, 2026-11-23).** Nothing to
       answer now. `isHidden` on a snapshot entity only tells the client not to draw the unit
@@ -688,7 +703,7 @@ Reply inline (`Decision: …`).
       seat only what core filters. That filter must leave out every enemy that is hidden from the
       seat's team (Veil today, any `hidden` status later). Scheduled with W10; it needs no change
       before a server-run Duel exists.
-- [ ] **HC-B43 — Better than the design, sign-off asked: nine items from the PR 6 critics
+- [x] **HC-B43 — Better than the design, sign-off asked: nine items from the PR 6 critics
       (lane B PR 6, `feat/sentinel-kit`, pre-PR gate rounds 1 and 2, 2026-11-23;
       COMBAT-ABILITIES-LANE-2-24 and -25).** Nothing blocks the PR. Item (4) changes one design
       line after your yes. (1) Built, recorded as DEC-363: one rule pushes a unit out of the
@@ -718,6 +733,15 @@ Reply inline (`Decision: …`).
       it tests the collision code from outside (DEC-364 (3)). (9) Not built, kept as it is: the
       ledger of placed walls could forget a broken wall when it breaks. Today the one reader
       (`SummonEffect`) skips broken walls.
+  - Answered 2026-11-26 (DEC-382; Owner Calls v97, the card's words): (1) keep it, as built.
+    (2) one path, in a follow-up PR, not in PR 6. (3) store the owner on each wall, after a
+    critic pass on the design: built (the `Summoned` component; `SummonLedger` is gone). (4) yes,
+    reach and degrees: 05 §3 now says `cone { reach, arcDegrees }`. (5) keep 6 m. (6) keep it,
+    and a unit that a push moves into an object takes damage, "balanced; tuneable": built for a
+    knock-back and for the push-out under a new Shield Wall, 40 per push, credited to the caster
+    (`content/abilities/knockback.ts`, `TUNE`). (7) build it in PR 6 now, red where the wall
+    cannot stand: built (HC-S15). (8) the check keeps its own rule. (9) the list forgets a broken
+    wall: it falls out of (3).
 - [ ] **HC-S14 — Scheduled: the map-object overlap check does not see placed walls (lane B PR 6,
       `feat/sentinel-kit`, critic N8, 2026-11-23).** Nothing to answer now.
       `NoMapObjectOverlapInvariant` checks that no unit stands inside a map object. It does not
@@ -729,7 +753,7 @@ Reply inline (`Decision: …`).
       with PR 8 (passives), which changes placed walls again (DEC-307: a charging Sentinel stops
       at the wall, 05 §18): the check for placed walls, and a swept first leg for a move that
       starts inside one (the `ponytail` remark on `CollisionResolver`).
-- [ ] **HC-S15 — Scheduled: the Shield Wall aim outline does not show a refused cast (lane B
+- [x] **HC-S15 — Scheduled: the Shield Wall aim outline does not show a refused cast (lane B
       PR 6, `feat/sentinel-kit`, architecture critic round 2, BTD-1, 2026-11-23).** Nothing to
       answer now. The outline shows where the wall will stand. A cast is refused, and spends
       nothing, where the wall would overlap a wall or leave the map; the outline looks the same
@@ -740,6 +764,9 @@ Reply inline (`Decision: …`).
       refused cast. It is not built in PR 6: it adds a port across core and the client, and the
       gate's three critic rounds are used. PR 7 is the next lane B PR, and its placed zone
       (Sanctuary) is a second user of the preview.
+  - Built 2026-11-27 in PR 6 (DEC-382, HC-B43 (7) B): core places the outline (`summonPreview`:
+    the placed outline and whether the cast is refused there), and the client draws exactly that
+    outline, red where the cast is refused. The client keeps no copy of `placePolygon`.
 - [x] **HC-Q67 — Combat gaps: build before the presentation (2026-11-27)? In which order?
       (combat audit, COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).**
       Your nine combat questions: 0 of 9 are true today. Evidence and the proposed PRs (two lanes,

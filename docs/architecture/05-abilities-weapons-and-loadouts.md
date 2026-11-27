@@ -171,7 +171,9 @@ and the `DamagePipeline`, never each other and never a system (rule 12). The cat
 | `revive`     | `ReviveEffect`               | Returns an intact allied corpse to play at a health fraction                                            | `healthFraction`, `corpseMaxAgeSeconds`, `reviveLockoutSeconds`     | MVP (Magus default action)                   |
 
 Shapes and filters are shared types: `EffectShape` is `self`, `circle { radius }`,
-`cone { radius, cosHalfAngle }`, `line { length, width }` or `path` (the dash capsule);
+`cone { reach, arcDegrees }` (a reach past the caster's body edge and an arc in degrees, the
+words of the weapon sweeps; DEC-382, `INBOX.md` HC-B43 (4)), `line { length, width }` or `path`
+(the dash capsule);
 `TargetFilter` is `{ team: 'allies' | 'enemies' | 'all'; includeSelf?; facing?: 'toward-caster';
 families? }`. Cones and "facing" are dot products on unit vectors, so they are deterministic across
 browsers. Every spec may carry `delaySeconds` (converted to `delayTicks`), which is what turns a
