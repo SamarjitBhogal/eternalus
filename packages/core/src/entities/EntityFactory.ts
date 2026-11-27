@@ -1,3 +1,4 @@
+import { MapFeatureLink } from '../components/MapFeatureLink';
 import { IdGenerator } from '../utils/IdGenerator';
 import { Entity } from './Entity';
 import { ENTITY_ID_PREFIX } from './EntityFactory.constants';
@@ -7,7 +8,8 @@ import type { EntityRegistry } from './EntityRegistry';
 /**
  * Builds and spawns entities (architecture 04 §6). It looks the definition up by id, checks once
  * that the kind builds it, takes a fresh id from an `IdGenerator` (the same creation order yields
- * the same ids) and spawns the entity with its definition and placement. Callers (commands,
+ * the same ids) and spawns the entity with its definition and placement. An entity placed from a
+ * map feature gets its `MapFeatureLink` here, whatever its family (DEC-252). Callers (commands,
  * systems) only say what to build and where.
  */
 export class EntityFactory {
@@ -70,6 +72,9 @@ export class EntityFactory {
     }
 
     entity.spawn({ ...placement, definition, ...(this.weapons && { weapons: this.weapons }) });
+    if (placement.mapFeatureId !== undefined) {
+      entity.addComponent(new MapFeatureLink(placement.mapFeatureId));
+    }
     return entity;
   }
 }
