@@ -1135,6 +1135,22 @@ Reply inline (`Decision: …`).
       `WorldObjectStore.blockingAt` (`state/`), `physics/StaticCollisionIndex`, a new
       `utils/BoxGrid.ts`; architecture 10 §5 and the 02 key-files list change.
 
+- [ ] **HC-B70 — Better than the design, sign-off asked: two tidy-ups where arc shots and lit
+      shots meet (`chore/wall-turrets-fold`, the wall-turrets fold, pre-PR critic, 2026-11-27;
+      PLAYER-STACK-FOLD-5).** Nothing changes in play today. The fold joins two features: arc
+      shots, which fly over walls and units (tower orbs, turret bolts, DEC-342), and shots that
+      catch fire over lava (DEC-345). (1) An arc shot never catches fire: it flies over
+      everything, so the lava check never runs for it. No arc shot ships with a fire effect, so
+      nothing is lost now. But if someone gives an arc shot a fire effect, the game loads it and
+      the fire never happens. Options: (A, recommended) a content check refuses an arc shot with
+      a fire effect, so the mistake shows when the game loads; (B) arc shots catch fire over lava
+      too (new play, your call). (2) Code only: the shot's flight state takes "is it an arc
+      shot" as a bare true or false before the fire effect, so a reader sees `false` with no
+      name. Options: (A, recommended) named options; (B) keep it. Not built in the fold: a fold
+      only joins branches, and (1) B is your call. Code names: the `ProjectileFlight`
+      constructor (`components/`), a new `ArcShotLitRule` next to `ArcShotSpeedRule`
+      (`content/validation/`), `isArc` and `litOnHit` in `content/projectiles/projectiles.types.ts`.
+
 - [ ] **HC-B36 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: one health pool for a wall turret, and the wall turret code layout
       (`feat/wall-turrets`, PR 4, pre-PR gate round 1, 2026-11-22; PR-REVIEW-ASSIST-34).**
