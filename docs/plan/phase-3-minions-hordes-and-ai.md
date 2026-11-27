@@ -4,7 +4,7 @@ description: Sprint checklists for the Mob family, the Horde composite, flow-fie
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-26
 tags: [plan, phase-3, minions, hordes, ai, pathing, match-director]
 paths: ['packages/core/src/ai/**', 'packages/core/src/match/**', 'packages/core/src/map/**']
 related:
@@ -103,7 +103,7 @@ Owner: _ (map owner). Weeks 5–6. Follows
 
 **Success metric:** pathing plus steering for 288 mobs costs ≤ 2.5 ms per tick p95 in
 `npm run bench` (`Recommendation:` budget split from the 8 ms tick), and a terrain change is
-absorbed without a frame above 50 ms.
+absorbed with at most one missed frame and no frame above 50 ms (architecture 08 §9, DEC-368).
 
 ## Sprint 3.3 — MinionController FSM and aggro data
 
@@ -234,15 +234,15 @@ invariant violations; identical hashes on replay.
 
 ## Success metrics (phase level)
 
-| Metric                                        | Target                                                 |
-| --------------------------------------------- | ------------------------------------------------------ |
-| Tick time at 144 units/team + 20 Legends      | p95 ≤ 8 ms at 30 TPS on the reference laptop           |
-| Bot-vs-bot sim match                          | completes with a `MatchResult` inside the timeline cap |
-| Replay determinism with AI                    | 5 seeds × full match, identical hashes every 100 ticks |
-| Stuck units (hordes reaching the enemy tower) | 0 in the lane test for `numLanes` 3 and 5              |
-| Invariant violations (10-minute soak)         | 0                                                      |
-| Flow-field rebuild after terrain change       | within budget, no frame > 50 ms                        |
-| Coverage                                      | core ≥ 85%, client ≥ 55%                               |
+| Metric                                        | Target                                                                                     |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Tick time at 144 units/team + 20 Legends      | p95 ≤ 8 ms at 30 TPS on the reference laptop                                               |
+| Bot-vs-bot sim match                          | completes with a `MatchResult` inside the timeline cap                                     |
+| Replay determinism with AI                    | 5 seeds × full match, identical hashes every 100 ticks                                     |
+| Stuck units (hordes reaching the enemy tower) | 0 in the lane test for `numLanes` 3 and 5                                                  |
+| Invariant violations (10-minute soak)         | 0                                                                                          |
+| Flow-field rebuild after terrain change       | within budget, at most one missed frame and no frame > 50 ms (architecture 08 §9, DEC-368) |
+| Coverage                                      | core ≥ 85%, client ≥ 55%                                                                   |
 
 ## Exit criteria
 

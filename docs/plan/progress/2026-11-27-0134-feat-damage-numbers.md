@@ -37,3 +37,6 @@ Phase 3 / sprint 3 · feat/damage-numbers (from `phase/3-sprint-3-work` f801af9a
   Breaks B47 to B52 all turned the tests red. `npm run check` (09:40Z to 09:50Z): `EXIT 0`. Tests:
   core 1918 passed, protocol 31 passed, client 2308 passed, server 163 passed; build passed;
   "Documentation check passed."
+- Appended 2026-11-27 (DAMAGE-NUMBERS-4): merged `phase/3-sprint-3-work` 8ad77bfd (#149, #177). One
+  conflict: both sides added a 2026-11-27 batch at the top of the decisions log. Both are kept,
+  DEC-410 above DEC-406 (newest batch first). The full check result on the merge is in the PR body.

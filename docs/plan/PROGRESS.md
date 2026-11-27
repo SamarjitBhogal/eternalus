@@ -10972,6 +10972,56 @@ tick)`), and a minion records the point that granted its levels (`Veterancy.gran
   `npm run docs:check` on this file.
 - Next step: the owner pushes the merge (coordinator checks the script); #139 merges.
 
+### 2026-11-21 — Phase 3 / the match-start countdown: Rule 7 frame latency (DEC-299 (3)) — docs/rule7-frame-latency — sholtzman + Claude Code
+
+- What was done: answered the `INBOX.md` request "Rule 7 frame latency" (the owner's "we should
+  find out why theres latency"). Measured with the rule-7 `perf.mjs` code plus the raw frame
+  stamps, the timer's step and page-load traces (`perf-raw.mjs`); headless Chrome 158.0.8127.36,
+  Apple M4 Pro (10 performance and 4 efficiency cores), 24 GB.
+  - The 16.8 ms readings are not latency. Chrome rounds `performance.now()` and frame timestamps
+    to 0.1 ms, with jitter, in a page that is not cross-origin isolated (step read: 0.0999999 ms),
+    so a 16.67 ms frame reads 16.5 to 16.8 ms and the p95 reads 16.8 when more than 5 % land
+    there. A blank page with no app code (6 runs) and the HUD harness (`ue-perf-soak`, 12 runs,
+    tree `05b89ae3`) read the same spread; mean interval 16.6658 to 16.6663 ms (one HUD ×4 run
+    16.7055: one 33.2 ms interval, load 16.9 at its start and 41.3 just after). Cross-origin
+    isolated (step 0.005 ms) the blank page reads 16.660 to 16.670 ms. `over16_7` counts
+    floating-point noise (16.700000000000728 > 16.7).
+  - Missed frames: 2 of 40 ×4 runs on file have an interval over 25 ms (also 33.3 ms in the quiet
+    ui-off control, 2026-11-20). Not explained; HC-B22 (new) asks whether rule 7 counts them.
+  - Long tasks at ×4 (traces of 8 page loads): the harness entry module, React's first render
+    and the first-frame step (React's commit plus harness code), 11.1 to 14.4 ms each at ×1 and
+    49.2 to 99.0 ms at ×4, all before the harness is ready, so outside rule 7. On the 50 ms line:
+    49.2 and 49.9 ms were not counted. Why the 2026-11-20 06:11 runs counted none is not found:
+    the same Chrome build, script, harness, tree and dependencies, and a like load average (1.9
+    against 1.5 to 2.3). Replayed in their order (warm-up `hud-soak`, its runs first), 9 runs
+    count 0, 1 or 2 (one 0), against 2 or 3 in the 10 ×4 runs warmed up on `ue-perf-soak`: the
+    order changes the count; the mechanism is not found.
+  - Evidence and tables: `eternalus-agent-work/game-loop-plan/ue-shots-2026-11-20/frame-clock-2026-11-21/NOTE.md`.
+  - UI enhancements plan rule 7 (owner's text): the pointer to the request is replaced by the
+    reason, a fact found by measurement. `INBOX.md`: the request moves to Done.
+  - Critic r1 (`architecture-reviewer`): request changes, no blocker, 1 major (the 06:11 cause was
+    stated as found), 5 minor or nit wording fixes, all applied; BTD1 to BTD3 are HC-B22.
+- Checks run: `npm run check` → `EXIT=0`
+  (`eternalus-agent-work/game-loop-plan/check-rule7-final-2026-11-21.log`): core "Tests 1679
+  passed (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2077 passed (2077)"; server
+  "Tests 84 passed (84)"; "Documentation check passed.". This check line was filled in after that
+  run (docs only).
+- Next step: push and open the pull request (the coordinator); HC-B22 waits on the owner.
+
+### 2026-11-21 — Phase 3 / the match-start countdown: merge phase/3 (54615afa, #135) — docs/rule7-frame-latency — GAME-LOOP-AND-POST-GAME-53 (Claude Code)
+
+- What was done: merged `phase/3-sprint-3-work` at `54615afa` (#135, DEC-276) into PR #149. One
+  conflict, in this file: both sides only appended entries; #135's five entries come first, then
+  this branch's. `INBOX.md` and the UI enhancements plan merged on their own; against `54615afa`
+  their diff is the same as the branch's.
+- Checks run: `npm run check` → `EXIT=0` on the merged tree
+  (`eternalus-agent-work/game-loop-plan/check-149-merge-54615afa.log`): core "Tests 1679 passed
+  (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2077 passed (2077)"; server "Tests 84
+  passed (84)"; "Documentation check passed.". This check line was filled in after that run (docs
+  only).
+- Next step: push (the coordinator). If #149 merges before #137, #137's own phase/3 merge takes
+  this branch's entries; if #137 merges first, #149 needs one more phase/3 merge.
+
 ### 2026-11-20 — Phase 3 / sprint 3: respawn review round 3 and DEC-295 — fix/legend-respawn (PR #100) — claudiodh + Claude Code
 
 - What was done: answered swholtzman's CHANGES_REQUESTED review and the owner's DEC-295. A dead Legend now waits as itself: `DeathSystem` withdraws it (`EntityStore.withdraw`, not retired), `RespawnQueue` holds the same object and `StateHasher` hashes its fields; on return it gets full health and aether, no statuses, movement or target, faces the enemy Stronghold (S1), and a bot laner re-plans its lane (`assessLanes`). `createWithId` and `Progression.restore` are gone. DEC-186 "pay on respawn" (B1): a waiting Legend is owed its team's structure and boss XP and late kill XP, paid on `legend-respawned` with cause `respawn`, which `level-matches-xp` accepts only for a Legend back this tick. `RespawnSystem` is registered in every match, after the Duel round (a Duel test pins it, S4). Client: `LegendBodies` and `LegendBodyLayer` leave a greyed body where a Legend fell. Docs: DEC-295 row, BUG-6 `Fixed`, the INBOX item moved to Done, this file's #97 entry made whole again (B2). Not done: the design-doc updates of review S3 and N4.
