@@ -11,6 +11,7 @@ const entity = (id: string, x: number, isGem: boolean): EntitySnapshot => ({
   team: 'neutral',
   transform: { x, y: 0, radius: 5, facing: { x: 1, y: 0 } },
   health: { current: 1, max: 1 },
+  jump: null,
   progression: null,
   aether: null,
   area: null,

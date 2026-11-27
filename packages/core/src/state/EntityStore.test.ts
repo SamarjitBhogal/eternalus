@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Deploying } from '../components/Deploying';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
 import { Movement } from '../components/Movement';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { TeamMembership } from '../components/TeamMembership';
@@ -189,6 +190,21 @@ describe('EntityStore', () => {
     expect(walker.getComponent(Movement).heading).toEqual({ x: 0, y: 1 });
     expect(store.steer('still', { x: 1, y: 0 })).toBe(false);
     expect(store.steer('nobody', { x: 1, y: 0 })).toBe(false);
+  });
+
+  it('holds the jump key of an entity that has Jump and refuses one that does not', () => {
+    const store = storeWith('still');
+    const jumper = new Walker('jumper', 'walker-definition');
+    jumper.spawn({});
+    jumper.addComponent(new Jump());
+    store.add(jumper);
+
+    expect(store.holdJump('jumper', true)).toBe(true);
+    expect(jumper.getComponent(Jump).isHeld).toBe(true);
+    expect(store.holdJump('jumper', false)).toBe(true);
+    expect(jumper.getComponent(Jump).isHeld).toBe(false);
+    expect(store.holdJump('still', true)).toBe(false);
+    expect(store.holdJump('nobody', true)).toBe(false);
   });
 
   it("reads an entity's team and whether it is alive", () => {
