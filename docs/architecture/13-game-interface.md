@@ -846,6 +846,8 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   persisted (14 §13 and §14: an optional group, no version bump). The settings screen has no HUD tab, so
   the toggle sits on the Video tab. `minimapVisible` is not in the group yet (the bullet above).
   `Match` reads the group through `SettingsController.current`, which the match factories pass in.
+  The factories also pass `isReducedMotion`: the Reduce motion setting or the system's
+  `prefers-reduced-motion` (§7), so the badges stop moving under either.
 
 ## Related
 

@@ -269,8 +269,9 @@ flowchart LR
   and which badge kind each part of a hit gets. `DamageBadgeLayer` draws each badge as a shape with
   its number on top of the scene (the overlay role of §4). The look of each kind is one entry in a
   registry beside the layer, and its numbers are `// TUNE:` constants there. `Match` injects the
-  badges into the layer and gives both a reader of the current settings, because views read only
-  snapshots.
+  badges into the layer, because views read only snapshots. It gives `DamageBadges` a reader of
+  the current settings and the layer `isReducedMotion` (the Reduce motion setting or the system's
+  `prefers-reduced-motion`, 13 §7).
 - `MinimapView` runs at a lower cadence into the `'minimap'` layer (`06-map-and-minimap.md` §8).
 
 ## 9. Performance budget and how it is measured
@@ -405,7 +406,9 @@ The renderer has no `layer()` call yet, so `DamageBadgeLayer` is the last `World
 `Match` gives `SceneView`; drawn last, it takes §4's overlay role for its text. `Renderer.drawText`
 takes a world centre and a `TextStyle` (height in world units, outline in CSS pixels), not the
 sketch's `x, y`. Status ticks already carry `source.kind 'status'` and the status id, so the badge
-kind is a client map by status id and core did not change.
+kind is a client map by status id and core did not change. An online Duel shows no damage
+numbers: `RemoteSimulation.on` never fires (the server sends snapshots only), as for the health
+bars.
 
 ## Related
 

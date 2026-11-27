@@ -150,6 +150,7 @@ const browserMatchDeps: BrowserMatchDeps = {
   gameConfig,
   bus: eventBus,
   settings,
+  prefersReducedMotion: () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   clock: sessionClock,
   sinks: pageSinks,
 };

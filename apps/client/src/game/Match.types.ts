@@ -102,9 +102,15 @@ export type MatchDeps = {
   readonly input: IntentSource;
   /**
    * The player's current settings, read while the match runs: the damage numbers follow "show
-   * every hit" (W5c) and Reduce motion (UE-03). `null` (or left out) means the defaults.
+   * every hit" (W5c). `null` (or left out) means the defaults.
    */
-  readonly settings?: () => Pick<SettingsSliceState, 'accessibility' | 'hud'> | null;
+  readonly settings?: () => Pick<SettingsSliceState, 'hud'> | null;
+  /**
+   * Whether motion is reduced, read each frame: the in-game Reduce motion setting (UE-03) or the
+   * system's `prefers-reduced-motion` (13 §7). The damage numbers then only appear and fade. Off
+   * when left out.
+   */
+  readonly isReducedMotion?: () => boolean;
   /** Whether the developer menu exists in this match (`?dev=1`, 13 §4); off when left out. */
   readonly isDeveloperMenuEnabled?: boolean;
   /** Where client-side problems are reported (e.g. a kind drawn with the default view). */

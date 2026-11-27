@@ -8,23 +8,25 @@ import { DamageBadgeLayer } from './DamageBadgeLayer';
 import {
   BADGE_EDGE_RGB,
   BADGE_EDGE_WIDTH,
-  BADGE_FADE_SECONDS,
   BADGE_FONT,
   BADGE_GOLD_RGB,
   BADGE_GOLD_WIDTH,
-  BADGE_HOLD_SECONDS,
-  BADGE_LIFETIME_SECONDS,
   BADGE_LIFT,
   BADGE_POP_SCALE,
   BADGE_POP_SECONDS,
   BADGE_RADIUS,
-  BADGE_SLOT_OFFSETS,
   BADGE_SPACING,
   BADGE_TEXT_SCALE,
   BIG_BADGE_SCALE,
   DAMAGE_BADGE_STYLES,
 } from './DamageBadgeLayer.constants';
-import type { DamageBadge, DamageBadgeKind } from './DamageBadgeLayer.types';
+import {
+  BADGE_FADE_SECONDS,
+  BADGE_HOLD_SECONDS,
+  BADGE_LIFETIME_SECONDS,
+  BADGE_SLOT_OFFSETS,
+} from './damageBadge.constants';
+import type { DamageBadge, DamageBadgeKind } from './damageBadge.types';
 import type { WorldLayer } from './SceneView.types';
 
 const TICK_RATE = 30;
@@ -191,6 +193,16 @@ describe('DamageBadgeLayer (W5, DEC-410)', () => {
     expect(textY('bleed', false)).toBeGreaterThan(textY('bleed', true));
     expect(textY('burn', false)).toBeLessThan(textY('burn', true));
     expect(textY('hit', false)).toBe(textY('hit', true));
+  });
+
+  it('sways a flame sideways only as it fades, and not with reduced motion (W5b)', () => {
+    const textX = (seconds: number, isReducedMotion = false): number =>
+      draw([badge({ kind: 'burn' })], seconds, { isReducedMotion })[0]?.textAt.x ?? Number.NaN;
+    const fading = BADGE_HOLD_SECONDS + BADGE_FADE_SECONDS / 2;
+
+    expect(textX(BADGE_HOLD_SECONDS)).toBeCloseTo(0);
+    expect(Math.abs(textX(fading))).toBeGreaterThan(0.01);
+    expect(textX(fading, true)).toBe(0);
   });
 
   it('with reduced motion on, neither pops nor moves a badge: it only appears and fades', () => {

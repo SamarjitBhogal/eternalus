@@ -1,5 +1,6 @@
 import type { WorldPoint } from '../engine/render/Renderer.types';
-import type { DamageBadgeKind, DamageBadgeStyle } from './DamageBadgeLayer.types';
+import type { DamageBadgeKind } from './damageBadge.types';
+import type { DamageBadgeStyle } from './DamageBadgeLayer.types';
 
 /** One full turn in radians. */
 const FULL_TURN = 2 * Math.PI;
@@ -10,23 +11,13 @@ const CURVE_POINTS = 24;
 /** A badge that does not move as it fades. */
 const STILL: WorldPoint = { x: 0, y: 0 };
 
-/**
- * How long a badge shows at full strength after it appears, then how long it takes to fade
- * (W5b: "stays about 1 s, then fades"). A badge is gone after both.
- */
-// TUNE: W5b (DEC-410)
-export const BADGE_HOLD_SECONDS = 1;
-// TUNE: W5b (DEC-410)
-export const BADGE_FADE_SECONDS = 0.35;
-export const BADGE_LIFETIME_SECONDS = BADGE_HOLD_SECONDS + BADGE_FADE_SECONDS;
-
 /** The pop (W5b): a badge appears this much larger and shrinks to its size over the pop time. */
 // TUNE: W5b (DEC-410)
 export const BADGE_POP_SCALE = 1.5;
 // TUNE: W5b (DEC-410)
 export const BADGE_POP_SECONDS = 0.15;
 
-/** A badge's radius in world units (a Legend is `LEGEND_VISUAL_DIAMETER` = 5.2 wide). */
+/** A badge's radius in world units (a Legend is `LEGEND_VISUAL_DIAMETER` wide). */
 // TUNE: W5a (DEC-410)
 export const BADGE_RADIUS = 1.2;
 
@@ -42,14 +33,6 @@ export const BADGE_LIFT = 2.6;
 // TUNE: W5b (DEC-410)
 export const BADGE_SPACING = 2.7;
 
-/**
- * Where each of a target's side-by-side places sits, in `BADGE_SPACING` steps from its centre:
- * one entry per place, so its length is W5b's stack limit ("up to 4 side by side"). The first
- * badge sits in the middle; the next ones go left, right, then right again.
- */
-// TUNE: W5b (DEC-410)
-export const BADGE_SLOT_OFFSETS: readonly number[] = [0, -1, 1, 2];
-
 /** The number: Cinzel (DEC-67), white on every badge (W5a), its height in badge radii. */
 export const BADGE_FONT = 'Cinzel, serif';
 export const BADGE_FONT_WEIGHT = 700;
@@ -59,7 +42,9 @@ export const BADGE_TEXT_RGB = '255,255,255';
 
 /**
  * The dark edge of a badge and of its number, as `r,g,b`: the badge's edge width is in screen
- * pixels (`Renderer.strokePath`), the number's outline in CSS pixels (`Renderer.drawText`).
+ * pixels (`Renderer.strokePath`), the number's outline in CSS pixels (`Renderer.drawText`). The
+ * outline is the number's contrast pair (13 §7, at least 4.5:1): white on it is about 17:1, while
+ * white on the burn and steel fills alone is only about 3:1.
  */
 export const BADGE_EDGE_RGB = '27,27,27';
 // TUNE: W5a (DEC-410)

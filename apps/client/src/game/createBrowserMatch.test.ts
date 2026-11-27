@@ -13,7 +13,12 @@ import { TypedEventBus } from '../bridge/TypedEventBus';
 import type { LogSink } from '../data/logging/LogSink.types';
 import { RingBufferSink } from '../data/logging/RingBufferSink';
 import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
-import { createBrowserMatch, type BrowserMatchDeps } from './createBrowserMatch';
+import { settingsSlice } from '../bridge/slices/settingsSlice';
+import {
+  createBrowserMatch,
+  type BrowserMatchDeps,
+  matchSettingReaders,
+} from './createBrowserMatch';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
 import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
@@ -52,6 +57,8 @@ function setUp(
   const window = new FakeBrowserTarget();
   const document = new FakeBrowserTarget();
   const bus = new TypedEventBus<BridgeEventMap>();
+  /** How often the match asked the system for reduced motion. */
+  const motion = { reads: 0 };
   const factory = createBrowserMatch({
     window,
     document,
@@ -59,6 +66,10 @@ function setUp(
     isDeveloperMenuEnabled,
     bus,
     settings: { bindings: null, current: null },
+    prefersReducedMotion: () => {
+      motion.reads += 1;
+      return false;
+    },
     clock: new FakeSessionClock(),
     sinks,
     ...(resources === undefined ? {} : { resources }),
@@ -85,7 +96,7 @@ function setUp(
   /** Every listener on the window, the document and the canvas. */
   const listeners = (): number =>
     window.listenerCount() + document.listenerCount() + canvas.listenerCount();
-  return { window, bus, factory, viewport, request, listeners };
+  return { window, bus, factory, viewport, request, listeners, motion };
 }
 
 describe('createBrowserMatch', () => {
@@ -325,6 +336,35 @@ describe('createBrowserMatch', () => {
     expect(world.mapObjects.length).toBeGreaterThan(0);
     expect(replay.mapObjects).toEqual(world.mapObjects);
     running.destroy();
+  });
+
+  it('gives the match the settings readers: the drawn frame asks for reduced motion (DEC-410)', () => {
+    const { window, factory, viewport, request, motion } = setUp();
+    const running = factory(request(), viewport);
+
+    window.runFrame(0);
+    window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
+
+    expect(motion.reads).toBeGreaterThan(0);
+    running.destroy();
+  });
+
+  it('reads the HUD settings, and reduces motion by the setting or by the system (13 §7)', () => {
+    const initial = settingsSlice.getInitialState();
+    const reduced = { ...initial, accessibility: { ...initial.accessibility, reduceMotion: true } };
+    const readersOf = (current: typeof initial | null, isSystemReduced: boolean) =>
+      matchSettingReaders({
+        settings: { bindings: null, current },
+        prefersReducedMotion: () => isSystemReduced,
+      });
+
+    expect(readersOf(initial, false).settings()).toBe(initial);
+    expect(readersOf(null, false).settings()).toBeNull();
+    expect(readersOf(initial, false).isReducedMotion()).toBe(false);
+    expect(readersOf(null, false).isReducedMotion()).toBe(false);
+    expect(readersOf(reduced, false).isReducedMotion()).toBe(true);
+    expect(readersOf(initial, true).isReducedMotion()).toBe(true);
+    expect(readersOf(null, true).isReducedMotion()).toBe(true);
   });
 
   it('draws the minimap every frame, with the developer explorer hidden or shown (DEC-143)', () => {

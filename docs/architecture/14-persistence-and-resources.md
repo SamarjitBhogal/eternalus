@@ -522,8 +522,8 @@ reads through the shared `readOrQuarantine`. Interim gaps, to settle before
 `IndexedDbStorageAdapter` (S2) fixes v1 on disk:
 
 - Settings are one `SettingsDtoV1` record per profile keyed by `profileId`, not §7's
-  `SettingsGroupDtoV1` keyed by `[profileId, group]`; the groups are `audio`, `video` and
-  `accessibility` (the Sprint 1 contract's `settingsSlice`), with no `developer` or `storage`
+  `SettingsGroupDtoV1` keyed by `[profileId, group]`; the groups are `audio`, `video`,
+  `accessibility` (the Sprint 1 contract's `settingsSlice`) and `hud` (DEC-410, below), with no `developer` or `storage`
   group yet. Changing the key path after IndexedDB ships needs a new store and a `transform`.
 - One profile (`LOCAL_PROFILE_ID`) until the profiles store exists.
 - The validation helpers (`isRecord`, `groupProblem`, field checks) are private to

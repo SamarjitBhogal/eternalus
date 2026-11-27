@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { mobAt, snapshotAt } from './__fixtures__/damageSnapshots';
 import { FakeGameEvents } from './__fixtures__/FakeGameEvents';
 import { DamageBadges } from './DamageBadges';
-import { BADGE_LIFETIME_SECONDS, BADGE_SLOT_OFFSETS } from './views/DamageBadgeLayer.constants';
+import { BADGE_LIFETIME_SECONDS, BADGE_SLOT_OFFSETS } from './views/damageBadge.constants';
 
 const TICK_RATE = 30;
 
@@ -122,7 +122,7 @@ describe('DamageBadges (W5, DEC-410)', () => {
     expect(badges.badges.map(({ kind, text }) => [kind, text])).toEqual([['hit', '3']]);
   });
 
-  it('makes a part above the big-hit share of max health big (W5a)', () => {
+  it('makes a hit above the big-hit share of max health big (W5a)', () => {
     const { badges, damage, stepTo } = setUp();
 
     damage({ targetId: 'foe', amount: 20 });
@@ -130,6 +130,18 @@ describe('DamageBadges (W5, DEC-410)', () => {
     stepTo(1);
 
     expect(badges.badges.map(({ isBig }) => isBig)).toEqual([false, true]);
+  });
+
+  it('counts the shielded part in a big hit, and makes both its badges big (W5a)', () => {
+    const { badges, damage, stepTo } = setUp();
+
+    damage({ amount: 12, absorbed: 9 });
+    stepTo(1);
+
+    expect(badges.badges.map(({ kind, isBig }) => [kind, isBig])).toEqual([
+      ['steel', true],
+      ['hit', true],
+    ]);
   });
 
   it('shows a hit only from the next snapshot, born on its tick, where the target stood', () => {

@@ -119,15 +119,14 @@ export class Match implements LoopTarget {
     );
     this.healthBars = new HealthBarVisibility(simulation);
     this.bodies = new LegendBodies(simulation);
-    const settings = deps.settings ?? ((): null => null);
     this.damageBadges = new DamageBadges(
       simulation,
-      () => settings()?.hud.shouldShowEveryHit ?? false,
+      () => deps.settings?.()?.hud.shouldShowEveryHit ?? false,
       tickRate,
     );
     this.badgeLayer = new DamageBadgeLayer(
       () => this.damageBadges.badges,
-      () => settings()?.accessibility.reduceMotion ?? false,
+      () => deps.isReducedMotion?.() ?? false,
       tickRate,
     );
     const views = createDefaultViewRegistry(

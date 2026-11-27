@@ -19,6 +19,8 @@ import type { DuelMatchRequest } from './SessionController.types';
 const CONFIG = createDefaultGameConfig();
 
 function setUp(canvas = new FakeViewportCanvas()) {
+  /** How often the match asked the system for reduced motion. */
+  const motion = { reads: 0 };
   const window = new FakeBrowserTarget();
   const document = new FakeBrowserTarget();
   const factory = createBrowserDuelMatch({
@@ -27,6 +29,10 @@ function setUp(canvas = new FakeViewportCanvas()) {
     gameConfig: CONFIG,
     bus: new TypedEventBus<BridgeEventMap>(),
     settings: { bindings: null, current: null },
+    prefersReducedMotion: () => {
+      motion.reads += 1;
+      return false;
+    },
     clock: new FakeSessionClock(),
     sinks: [],
   });
@@ -56,7 +62,7 @@ function setUp(canvas = new FakeViewportCanvas()) {
   };
   const listeners = (): number =>
     window.listenerCount() + document.listenerCount() + canvas.listenerCount();
-  return { window, factory, viewport, request, link, listeners };
+  return { window, factory, viewport, request, link, listeners, motion };
 }
 
 describe('createBrowserDuelMatch', () => {
@@ -99,6 +105,17 @@ describe('createBrowserDuelMatch', () => {
     expect(crashed).toHaveBeenCalledTimes(1);
     expect(crashed.mock.calls[0]?.[0].error).toBe(error);
     expect(window.pendingFrames).toBe(0);
+  });
+
+  it('gives the match the settings readers: the drawn frame asks for reduced motion (DEC-410)', () => {
+    const { window, factory, viewport, request, motion } = setUp();
+    const running = factory(request, viewport);
+
+    window.runFrame(0);
+    window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
+
+    expect(motion.reads).toBeGreaterThan(0);
+    running.destroy();
   });
 
   it('sends an intent per tick on the browser frames, reports no evidence and cleans up', () => {

@@ -28,3 +28,12 @@ Phase 3 / sprint 3 · feat/damage-numbers (from `phase/3-sprint-3-work` f801af9a
 - Next step: the pre-PR gate (critic, ponytail, re-check), then the coordinator runs the push
   script and opens the PR into `phase/3-sprint-3-work`. Owner: Sam (the Video-tab placement is a
   UX call flagged in the PR body).
+- Appended 2026-11-27 (DAMAGE-NUMBERS-4): critic round 1 passed with findings and no blockers.
+  Fixed: C1 and C2 (`MatchDeps.isReducedMotion` reads the Reduce motion setting or the system's
+  `prefers-reduced-motion`, through the factories' shared `matchSettingReaders`), C3 (docs: an
+  online Duel shows no damage numbers), C4 (shared `views/damageBadge.types.ts` and
+  `.constants.ts`), C5 (a big hit counts the shielded part, and both its badges are big), C6, C9,
+  C10, C12, C13. Not applied: C7 and C8 (reasons in the PR body); C11 is an Owner Calls card.
+  Breaks B47 to B52 all turned the tests red. `npm run check` (09:40Z to 09:50Z): `EXIT 0`. Tests:
+  core 1918 passed, protocol 31 passed, client 2308 passed, server 163 passed; build passed;
+  "Documentation check passed."

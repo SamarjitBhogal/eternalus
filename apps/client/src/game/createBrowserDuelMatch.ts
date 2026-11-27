@@ -1,6 +1,10 @@
 import { DeviceIntentSource } from './DeviceIntentSource';
 import { RingBufferSink } from '../data/logging/RingBufferSink';
-import { type BrowserMatchDeps, createMatchLogger } from './createBrowserMatch';
+import {
+  type BrowserMatchDeps,
+  createMatchLogger,
+  matchSettingReaders,
+} from './createBrowserMatch';
 import { RemoteIntentSender } from './duel/RemoteIntentSender';
 import { NEUTRAL_INTENT } from './duel/RemoteIntentSender.constants';
 import { RemoteSimulation } from './duel/RemoteSimulation';
@@ -58,7 +62,7 @@ export function createBrowserDuelMatch(deps: BrowserMatchDeps): DuelMatchFactory
         input,
         logger,
         observer: request.observer,
-        settings: () => settings.current,
+        ...matchSettingReaders(deps),
         bridge: {
           bus: deps.bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

@@ -5,18 +5,14 @@ import type { WorldPoint } from '../engine/render/Renderer.types';
 import {
   BADGE_EDGE_RGB,
   BADGE_EDGE_WIDTH,
-  BADGE_FADE_SECONDS,
   BADGE_FONT,
   BADGE_FONT_WEIGHT,
   BADGE_GOLD_RGB,
   BADGE_GOLD_WIDTH,
-  BADGE_HOLD_SECONDS,
-  BADGE_LIFETIME_SECONDS,
   BADGE_LIFT,
   BADGE_POP_SCALE,
   BADGE_POP_SECONDS,
   BADGE_RADIUS,
-  BADGE_SLOT_OFFSETS,
   BADGE_SPACING,
   BADGE_TEXT_OUTLINE_WIDTH,
   BADGE_TEXT_RGB,
@@ -24,7 +20,13 @@ import {
   BIG_BADGE_SCALE,
   DAMAGE_BADGE_STYLES,
 } from './DamageBadgeLayer.constants';
-import type { DamageBadge } from './DamageBadgeLayer.types';
+import {
+  BADGE_FADE_SECONDS,
+  BADGE_HOLD_SECONDS,
+  BADGE_LIFETIME_SECONDS,
+  BADGE_SLOT_OFFSETS,
+} from './damageBadge.constants';
+import type { DamageBadge } from './damageBadge.types';
 import { lerpPoint } from './lerpPoint';
 import type { WorldLayer } from './SceneView.types';
 

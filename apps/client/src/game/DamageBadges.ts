@@ -2,8 +2,8 @@ import type { EntityId, GameEventMap, Simulation, Snapshot, Unsubscribe } from '
 
 import { BIG_HIT_SHARE, STATUS_BADGE_KINDS } from './DamageBadges.constants';
 import type { WorldPoint } from './engine/render/Renderer.types';
-import { BADGE_LIFETIME_SECONDS, BADGE_SLOT_OFFSETS } from './views/DamageBadgeLayer.constants';
-import type { DamageBadge, DamageBadgeKind } from './views/DamageBadgeLayer.types';
+import { BADGE_LIFETIME_SECONDS, BADGE_SLOT_OFFSETS } from './views/damageBadge.constants';
+import type { DamageBadge, DamageBadgeKind } from './views/damageBadge.types';
 
 /** A badge from a hit of the step in progress, before the next snapshot gives it its tick and place. */
 type HeardBadge = Omit<DamageBadge, 'slot' | 'bornTick'>;
@@ -16,9 +16,10 @@ type Target = { readonly at: WorldPoint; readonly maxHealth: number };
  * through `Simulation.on`, as `HealthBarVisibility` does. By default the player sees only the
  * hits their Legend deals (a bleed or burn they applied counts) and takes; with the "show every
  * hit" setting on, every hit (W5c). The part of a hit a shield soaked up is a `steel` badge, the
- * rest a `hit` shield, or a drop or flame for a bleed or burn tick (`STATUS_BADGE_KINDS`); a part
- * above `BIG_HIT_SHARE` of the target's max health is big (W5a). A target shows up to
- * `BADGE_SLOT_OFFSETS.length` badges side by side; a newer one takes the oldest one's place (W5b).
+ * rest a `hit` shield, or a drop or flame for a bleed or burn tick (`STATUS_BADGE_KINDS`); a hit
+ * (both parts together) above `BIG_HIT_SHARE` of the target's max health is big, and so are its
+ * badges (W5a). A target shows up to `BADGE_SLOT_OFFSETS.length` badges side by side; a newer
+ * one takes the oldest one's place (W5b).
  * The views get only `badges`.
  */
 export class DamageBadges {
@@ -94,6 +95,7 @@ export class DamageBadges {
     }
     const onBase =
       (source.kind === 'status' ? STATUS_BADGE_KINDS[source.definitionId] : undefined) ?? 'hit';
+    const isBig = amount + absorbed > BIG_HIT_SHARE * target.maxHealth;
     const parts: readonly (readonly [number, DamageBadgeKind])[] = [
       [absorbed, 'steel'],
       [amount, onBase],
@@ -101,7 +103,6 @@ export class DamageBadges {
     for (const [damage, kind] of parts) {
       const shown = Math.round(damage);
       if (shown > 0) {
-        const isBig = damage > BIG_HIT_SHARE * target.maxHealth;
         this.heard.push({ targetId, text: String(shown), kind, isBig, at: target.at });
       }
     }

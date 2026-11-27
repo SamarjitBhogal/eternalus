@@ -9,7 +9,6 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
-import type { SettingsSliceState } from '../bridge/slices/settingsSlice';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import { withFirstTickHit } from './__fixtures__/withFirstTickHit';
 import { withPlayer } from './__fixtures__/withPlayer';
@@ -18,7 +17,7 @@ import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
-import type { IntentSource } from './Match.types';
+import type { IntentSource, MatchDeps } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 
@@ -29,12 +28,12 @@ const IDLE: IntentSource = {
   read: (): InputIntent => ({ move: { x: 0, y: 0 }, aim: null, triggered: [] }),
 };
 
-type Settings = Pick<SettingsSliceState, 'accessibility' | 'hud'>;
+type Settings = Pick<MatchDeps, 'settings' | 'isReducedMotion'>;
 
-/** The settings with "show every hit" and Reduce motion as given. */
-const settingsOf = (shouldShowEveryHit: boolean, reduceMotion = false): Settings => ({
-  accessibility: { reduceMotion, colourBlindMode: false },
-  hud: { shouldShowEveryHit },
+/** The readers of "show every hit" and of reduced motion, as given. */
+const settingsOf = (shouldShowEveryHit: boolean, isReducedMotion = false): Settings => ({
+  settings: () => ({ hud: { shouldShowEveryHit } }),
+  isReducedMotion: () => isReducedMotion,
 });
 
 /** A hit of 7 on the player, from no one. */
@@ -70,7 +69,7 @@ const onOther = ({ entities, match }: Snapshot): GameEventMap['damage-applied'] 
  */
 const numbersAfterFirstHit = (
   hitOf: (snapshot: Snapshot) => GameEventMap['damage-applied'] | undefined,
-  settings?: Settings,
+  settings: Settings = {},
 ) => {
   const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
   const world = prepareMatchWorld(config, SEED);
@@ -89,7 +88,7 @@ const numbersAfterFirstHit = (
     renderer,
     camera: new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT),
     input: IDLE,
-    ...(settings === undefined ? {} : { settings: () => settings }),
+    ...settings,
     logger: new NullLogger(),
     observer: { crashed: () => undefined, ended: () => undefined },
     bridge: {
@@ -118,7 +117,7 @@ describe('Match damage numbers (W5, DEC-410)', () => {
     expect(numbersAfterFirstHit(onOther, settingsOf(true)).map(({ text }) => text)).toEqual(['9']);
   });
 
-  it('passes Reduce motion to the badges: a new badge does not pop', () => {
+  it('passes reduced motion to the badges: a new badge does not pop', () => {
     const [popping] = numbersAfterFirstHit(onPlayer, settingsOf(false));
     const [still] = numbersAfterFirstHit(onPlayer, settingsOf(false, true));
 
