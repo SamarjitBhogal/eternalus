@@ -45,7 +45,10 @@ export type Placement = {
   readonly facing?: Vec2;
   /** The ground a zone covers, as polygons in world units (zones only, `ZoneArea`). */
   readonly area?: readonly Polygon[];
-  /** The Legend spec whose kit a Legend equips (`RosterSlot.specId`); absent = its class's kit. */
+  /**
+   * The Legend spec whose kit and start weapon a Legend equips (`RosterSlot.specId`); absent = its
+   * class's.
+   */
   readonly specId?: string;
 };
 
@@ -61,7 +64,8 @@ export interface WeaponSource {
 }
 
 /**
- * Where a Legend finds the spec a `Placement.specId` names, for its kit (ADR 0026 decision 1).
+ * Where a Legend finds the spec a `Placement.specId` names, for its kit and start weapon (ADR 0026
+ * decision 1; DEC-374).
  * A `ContentCatalogue<LegendSpecDefinition>` satisfies it.
  */
 export interface LegendSpecSource {

@@ -714,9 +714,11 @@ client's look of the shot follow it.
 | Obsidian bow (`obsidian-bow`, name pending) | bow        | ranged magical projectile; `onHit: sundered` (stacks)                                   | —         | MVP                     |
 | A Fine Line (`a-fine-line`)                 | staff      | melee physical + ranged magical, both `pierce`                                          | —         | MVP                     |
 | Staff (`magus-staff`)                       | staff      | melee physical, ranged magical; `grants: ['spell-potency']`                             | magus     | MVP                     |
+| Long sword (`long-sword`)                   | sword      | melee physical (DEC-374 W1)                                                             | —         | MVP (DEC-374)           |
+| Great sword (`great-sword`)                 | sword      | melee physical; heavier, harder and wider than the long sword (DEC-374 W4)              | —         | MVP (DEC-374)           |
 | Wuuthrad (`wuuthrad`)                       | battle-axe | melee physical, long reach; heavy: `concussion`; `damageMultipliers.sentinel`           | —         | MVP-if-time             |
 | Lightbringer (`lightbringer`)               | sword      | melee magical + physical; heavy (cooldown): stun, concussion, blind; parry: blind, stun | —         | MVP-if-time             |
-| Short blades (`short-blades`)               | glove      | fast melee; throwable (a persistent projectile, retrieve or regenerate)                 | warrior   | MVP-if-time             |
+| Dual blades (`dual-blades`)                 | sword      | fast melee (DEC-374 W2); throwable (a persistent projectile, retrieve or regenerate)    | warrior   | MVP; throw MVP-if-time  |
 | Barricades (`barricades`)                   | —          | movement lock, `mass` change, moving collider, knockback absorption                     | sentinel  | post-MVP ("needs work") |
 
 **Implementation status (SCRUM-183 / SCRUM-287, first slice).** `content/weapons/` holds
@@ -827,6 +829,32 @@ a shot not aimed at a body fly over more bodies than that: the rule is in the 20
 correction note in 10 §7. So a forest camp no longer stops every shot, and the text above that
 names it as a body that takes no damage does not hold for it. The owner is asked to confirm the
 reading (`INBOX.md` HC-Q115). `LineOfFire` uses the same rule.
+
+**Implementation status, 2026-11-26 (branch `feat/start-weapons`, lane A PR 3; DEC-374).** A Legend
+spawns with the weapon of its spec. `LegendSpecDefinition.primaryWeaponId` (`string | null`) is the
+start weapon; `null` falls back to the class's `defaultLoadout.primaryWeaponId`, as `kit: null`
+falls back to `defaultKit`. `content/legends/specs/primaryWeaponIdOf.ts` holds the rule (the sibling
+of `kitOf`) and `Legend.basicAttack` calls it. `KnownSpecWeaponRule` rejects a spec weapon id that
+names no weapon. `content/weapons/isWeaponAllowedFor.ts` is the one class-access rule
+(`allowedClasses`, `uniqueTo`): `SpecWeaponAllowedRule` applies it to a spec's start weapon and
+`DefaultWeaponAllowedRule` to a class's default weapon, and each skips an id that does not resolve.
+They check at content load what §12's `WeaponAllowedRule` checks in a loadout. This is the build of
+§12's `LoadoutTemplate.primaryWeaponId` at the spec, the one place that varies per Legend today; the
+class default stays as the fallback and the `defaultLoadout` of a class is unchanged. New weapons,
+each of class `sword` with a melee sweep: `long-sword` and `great-sword` (open to every class) and
+`dual-blades` (Warrior only). Raptor Talons and the Obsidian Bow have an attack `onHit` step: one
+stack of `bleed` and of the new `sundered` status (`damageTaken`, added per stack; its numbers live
+in `content/status-effects/sundered.ts`) on each hit. The Colossus' Bastions are not built:
+reference 07 names no weapon class for them (DEC-374 (7), `INBOX.md` HC-Q118). The table above
+records the dual blades (the id `dual-blades` and the class `sword`: DEC-57 "two swords", DEC-64,
+card W2), the long sword and the great sword (cards W1 and W4); the dual blades' throw is not built
+and stays MVP-if-time. One difference from the design text remains, and it is acceptable: the start
+weapon is on the spec, with the class's `defaultLoadout` as the fallback (§12 builds a loadout from
+the class, `autoBuildLoadout(classId, content)`; ADR 0026 decision 1 reads the spec only to choose
+the kit): DEC-57 sets the start weapon per Legend, recipe R2 applies the spec over the class
+definition, DEC-374 (6). Two design-text updates wait for the owner and are listed in the PR body:
+§12's `autoBuildLoadout` takes the spec (`primaryWeaponIdOf`), and ADR 0026's Status line gets an
+"extended by DEC-374" note.
 
 ## 11. Artifacts (gadgets Z and C)
 
@@ -1079,8 +1107,8 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | The framework (§2–§9), 3 abilities + ultimate per class, aether, charge rules, XP scaling, `Loadout` + validator + auto-build, `AbilityBar` glyphs                         | **MVP**                                                                             |
 | Veil, Blade Runner (both varieties), Rip & Tear, Slam, Imbue (both varieties), Shockwave; one ultimate per class (Fury; Berserk or Meteor Fall; Death Ray or Nova); Revive | **MVP** (third abilities and ultimate picks: INBOX; proposals in more-abilities.md) |
-| Raptor Talons, obsidian bow, A Fine Line, Magus staff; gadget slots Z/C                                                                                                    | **MVP**                                                                             |
-| Wuuthrad, Lightbringer, Short blades, Mortar, Soul Orb, secondary weapon, passive slot, in-match loadout changes, Ultimate Plus, combos, `summon`                          | **MVP-if-time**                                                                     |
+| Raptor Talons, obsidian bow, A Fine Line, Magus staff, dual blades, long sword, great sword (DEC-374); gadget slots Z/C                                                    | **MVP**                                                                             |
+| Wuuthrad, Lightbringer, Dual blades (throw), Mortar, Soul Orb, secondary weapon, passive slot, in-match loadout changes, Ultimate Plus, combos, `summon`                   | **MVP-if-time**                                                                     |
 | Ability tree, class-switch penalty, Barricades, Eagle Eye, Firestorm, `reveal`, armour set, skins, weapon abilities (`WeaponDefinition.abilityIds` reuses `Ability`)       | **post-MVP**                                                                        |
 
 ## 18. Implementation status

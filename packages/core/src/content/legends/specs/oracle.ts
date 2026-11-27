@@ -24,6 +24,7 @@ export const ORACLE = {
   },
   // DEC-65: Ultimate / Abilities; Figma 56:63's Aetheric Recall (the Magus default ability) is not
   // a Legend row.
+  primaryWeaponId: 'magus-staff', // DEC-374; DEC-57
   detailNames: {
     ultimate: 'Severed Accord', // Figma 56:51
     // DEC-103: Unison Ward (Figma 56:57) is ability 1, a preview until next sprint's abilities.

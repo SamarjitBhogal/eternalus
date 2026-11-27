@@ -96,12 +96,15 @@ describe('loadWeapons', () => {
     expect(broken).toThrow('Weapon "test-talons": debuff durationSeconds must not be negative.');
   });
 
-  it('ships each class default weapon', () => {
+  it('ships each class default weapon and the sword catalogue', () => {
     expect(loadWeapons(30).ids).toEqual([
       'raptor-talons',
       'wuuthrad',
       'magus-staff',
       'obsidian-bow',
+      'long-sword',
+      'great-sword',
+      'dual-blades',
     ]);
   });
 
@@ -124,7 +127,7 @@ describe('loadWeapons', () => {
     );
   });
 
-  it('ships the DEC-304 arcs and the DEC-305 weapon reach parts', () => {
+  it('ships the DEC-304 arcs, the DEC-305 weapon reach parts and the DEC-374 sword intervals', () => {
     const weapons = loadWeapons(30);
     const sweep = (id: string, index = 0) => {
       const attack = weapons.get(id).attacks[index];
@@ -134,6 +137,15 @@ describe('loadWeapons', () => {
     expect(sweep('raptor-talons')).toEqual([90, 1]);
     expect(sweep('wuuthrad')).toEqual([160, 2]);
     expect(sweep('magus-staff', 1)).toEqual([90, 1]);
+    expect(sweep('dual-blades')).toEqual([100, 1]);
+    expect(sweep('great-sword')).toEqual([140, 2]);
+    expect(sweep('long-sword')).toEqual([120, 2]);
+    // DEC-374: 0.45 s, 1.2 s and 0.9 s at 30 ticks per second (GameConfig.tickRate)
+    expect(
+      ['dual-blades', 'great-sword', 'long-sword'].map(
+        (id) => weapons.get(id).attacks[0]?.interval,
+      ),
+    ).toEqual([14, 36, 27]);
   });
 
   it.each([0, -10, 181, 360, Number.NaN])('rejects a sweep arc of %s degrees', (arcDegrees) => {

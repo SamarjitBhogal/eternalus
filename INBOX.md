@@ -913,6 +913,40 @@ Reply inline (`Decision: …`).
       was at most 1 level. Options: (A, built) keep 2 levels; (B) cap it at 1 level, as the boss
       reward is capped (DEC-237). Also: when a minion lands the last hit, no one gets the XP.
 
+- [ ] **HC-Q118 — What type of weapon are the Colossus's Bastions? (`feat/start-weapons`, PR 3
+      W3, Owner Calls v100).** You said yes to the Bastions at 120 damage every 1.6 s (DEC-374).
+      They are not built yet, because each weapon has one weapon type and reference 07 gives the
+      Bastions none. Until you answer, the Colossus starts with the Wuuthrad battle axe. The type
+      does not change how a weapon hits. Options: (A, recommended) a new type, Shield, because the
+      Bastions are walls on the arms; (B) Glove, like the Raptor Talons. Either way the Bastions
+      are one weapon file and one line in the Colossus spec. Code names: `WeaponClass` in
+      `content/weapons/weapons.types.ts`; DEC-374 (7).
+
+- [ ] **HC-B48 — Better than the design, sign-off asked: 3 code ideas from the critic
+      (`feat/start-weapons`, PR 3, critic rounds 1 to 3, 2026-11-26;
+      COMBAT-WEAPONS-ABILITIES-68 and -72).** Nothing changes in play.
+      (1) Read a Legend's sub-class once when it spawns. Not built yet. Today a Legend
+      that spawns reads its sub-class twice: once for its start weapon and once for its
+      abilities. Better: one step reads the sub-class once and gives the abilities, the start
+      weapon and, after PR #156, the second weapon. When: in PR #156's loadout code, after #156
+      merges. Say "no" and the two reads stay. Code names: `loadoutOf(spec, legend)` replaces
+      `kitOf`, `primaryWeaponIdOf` and #156's inline `spec?.secondaryWeaponId ?? null`, in the
+      `Loadout` construction of `Legend`; DEC-374.
+      (2) Built (critic round 2): one check now decides which Legend classes may hold a weapon.
+      It runs on each sub-class's start weapon and each class's default weapon (and, after #156
+      merges, the second weapon). Before, only the start weapon was checked, and that check had
+      its own copy of the rule. Every sub-class and class in the game today passes it. Say "no"
+      and the check goes back to the start weapon only. Code names:
+      `content/weapons/isWeaponAllowedFor.ts`, `SpecWeaponAllowedRule`,
+      `DefaultWeaponAllowedRule`, #156's `SecondaryWeaponRule`; DEC-374 (10).
+      (3) Not built (critic round 3, after the last critic loop): the check in (2) runs in two
+      content rules, one for sub-classes and one for classes. Better: one rule that first finds
+      the weapon to check for a class or a sub-class, as the abilities check already does. Then
+      #156's second weapon adds one field, not a third rule. The gain is small: the two rules
+      already share the check itself. Options: (A) do it in a follow-up PR; (B) leave it as it
+      is. Code names: one `WeaponAllowedRule` (the 05 §12 name) with a
+      `weaponSubjectOf(definition, legends)` resolver, as `KitInPoolRule` + `kitSubjectOf`.
+
 - [ ] **HC-B38 — Better than the design, sign-off asked: 5 code ideas from the critic
       (`feat/wall-turrets`, PR 4, critic rounds 4 and 5, 2026-11-23; PR-REVIEW-ASSIST-38/39).**
       Nothing changes in play. Say "no" to a built item and it goes back.
@@ -3629,6 +3663,11 @@ Reply inline (`Decision: …`).
       `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
       rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
       (SCRUM-290).
+  - Answered for point (2) (DEC-57, 2026-10-28; built by DEC-374 on `feat/start-weapons`,
+    2026-11-26): each Legend spawns with the start weapon of its sub-class. The Zealot has the
+    Raptor Talons, the Templar the dual blades, the Paladin the great sword, the Bulwark Wuuthrad
+    and every Magus Legend the staff. The Colossus's Bastions wait for HC-Q118. This note does
+    not answer points (1) and (3), so the box stays open.
 - [x] **ObjectPool — pooled `GameEvents` payloads (SCRUM-427, branch `feat/object-pool`).** The
       `ObjectPool` base is built in `utils/` (phase 1 plan, sprint 1.2: "pool resets fields on
       acquire and nulls references on release"). The item's "done when" (high-frequency

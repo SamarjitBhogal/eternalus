@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Command } from './commands/Command.types';
+import { weaponsWithoutTalonBleed } from './__fixtures__/weaponsWithoutTalonBleed';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { NullLogger } from './diagnostics/NullLogger';
@@ -57,7 +58,16 @@ const play = (live: Simulation, aim: Vec2): Replay =>
 
 describe('Simulation: aimed attacks (DEC-184, DEC-319)', () => {
   it('sweeps the body in front of the aim with no target, spares the one behind, and stops on release', () => {
-    const live = createMatch(SETUP);
+    // Talons without bleed (DEC-374 W5): bleed would kill the front dummy. This test checks the
+    // sweep, not bleed.
+    const noBleed = weaponsWithoutTalonBleed(SETUP.config.tickRate);
+    const live = new Simulation({
+      config: SETUP.config,
+      seed: SETUP.seed,
+      logger: new NullLogger(),
+      debug: TEST_DEBUG_CONFIG,
+      weapons: noBleed,
+    });
     const hits: { readonly tick: number; readonly targetId: string }[] = [];
     live.on('damage-applied', ({ targetId, source }) => {
       if (source.attackerId === WARRIOR) hits.push({ tick: live.tick, targetId });

@@ -1,4 +1,7 @@
 import { ContentCatalogue } from '../ContentCatalogue';
+import { DUAL_BLADES } from './dualBlades';
+import { GREAT_SWORD } from './greatSword';
+import { LONG_SWORD } from './longSword';
 import { MAGUS_STAFF } from './magusStaff';
 import { OBSIDIAN_BOW } from './obsidianBow';
 import { RAPTOR_TALONS } from './raptorTalons';
@@ -14,4 +17,7 @@ export const WEAPONS = new ContentCatalogue<AuthoredWeaponDefinition>([
   WUUTHRAD,
   MAGUS_STAFF,
   OBSIDIAN_BOW,
+  LONG_SWORD,
+  GREAT_SWORD,
+  DUAL_BLADES,
 ]);

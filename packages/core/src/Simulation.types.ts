@@ -87,8 +87,8 @@ type RosterSlotBase = {
   /** A `laner` gets a lane at setup; the `rover` takes none and starts at its Stronghold (MS-20). */
   readonly role: BotRole;
   /**
-   * The Legend (spec) of that class whose kit it equips (DEC-198, plan arch call 1, amending ADR
-   * 0018 point 2); absent = the class's `defaultKit`.
+   * The Legend (spec) of that class whose kit and start weapon it equips (DEC-198, plan arch call
+   * 1, amending ADR 0018 point 2; DEC-374); absent = the class's `defaultKit` and weapon.
    */
   readonly specId?: string;
 };
