@@ -4,7 +4,9 @@ import { Progression } from '../components/Progression';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { WARRIOR } from '../content/legends/warrior';
+import { ContentCatalogue } from '../content/ContentCatalogue';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import { loadScoring } from '../content/match/loadScoring';
 import { LEGEND_LEVEL_CURVE } from '../content/progression/levelCurves';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
@@ -18,21 +20,64 @@ import { EntityFactory } from '../entities/EntityFactory';
 import type { DefinitionSource } from '../entities/EntityFactory.types';
 import type { GameEventMap } from '../state/GameEvents.types';
 import { GameState } from '../state/GameState';
+import { WorldObjectStore } from '../state/WorldObjectStore';
+import { IdGenerator } from '../utils/IdGenerator';
 import { DefaultSystemPipeline } from './DefaultSystemPipeline';
 
 const config = createDefaultGameConfig();
 const DEFAULT_UNITS = loadDefaultContent(config.tickRate);
-/** The default units, with the Warrior's basic attack growing 50% per level. */
+/** The default units, with the Warrior's basic attack growing 50% per level, 25% on structures. */
 const STEEP_UNITS: DefinitionSource = {
   has: (id) => DEFAULT_UNITS.has(id),
   get: (id) =>
     id === WARRIOR.id
-      ? { ...WARRIOR, levelScaling: { ...WARRIOR.levelScaling, basicAttackPerLevel: 0.5 } }
+      ? {
+          ...WARRIOR,
+          levelScaling: {
+            ...WARRIOR.levelScaling,
+            basicAttackPerLevel: 0.5,
+            basicAttackPerLevelOnStructures: 0.25,
+          },
+        }
       : DEFAULT_UNITS.get(id),
 };
 
-/** The first hit a Warrior at `level` lands on a dummy, in a match built with `units`. */
-const firstHit = (units: DefinitionSource, level: number): number => {
+/** An enemy wall map object (07 §13), spawned as a match spawns it; returns its entity id. */
+const spawnWall = (state: GameState): string =>
+  new WorldObjectStore({
+    objects: [
+      {
+        id: 'wall',
+        kind: 'wall',
+        team: 'dark',
+        isBlocking: true,
+        footprints: [
+          [
+            { x: 0.5, y: -0.5 },
+            { x: 1.5, y: -0.5 },
+            { x: 1.5, y: 0.5 },
+            { x: 0.5, y: 0.5 },
+          ],
+        ],
+      },
+    ],
+    factory: new EntityFactory(
+      createDefaultEntityRegistry(),
+      new ContentCatalogue(Object.values(MAP_OBJECT_DEFINITIONS)),
+      new IdGenerator(2000),
+    ),
+    entities: state.entities,
+    definitions: MAP_OBJECT_DEFINITIONS,
+  }).snapshot()[0]?.entityId ?? '';
+
+/**
+ * The first hit a Warrior at `level` lands on a dummy (or a wall), in a match built with `units`.
+ */
+const firstHit = (
+  units: DefinitionSource,
+  level: number,
+  target: 'dummy' | 'wall' = 'dummy',
+): number => {
   const logger = new MemoryLogger();
   const state = new GameState(config, 1);
   const curves = loadLevelCurves();
@@ -62,11 +107,12 @@ const firstHit = (units: DefinitionSource, level: number): number => {
   });
   state.entities.add(warrior);
   state.entities.add(dummy);
+  const targetId = target === 'wall' ? spawnWall(state) : dummy.id;
   const progression = warrior.getComponent(Progression);
   progression.addXp(progression.xpToReach(level, LEGEND_LEVEL_CURVE), LEGEND_LEVEL_CURVE);
   const hits: GameEventMap['damage-applied'][] = [];
   state.events.on('damage-applied', (event) => hits.push(event));
-  state.entities.setAttackTarget(warrior.id, dummy.id);
+  state.entities.setAttackTarget(warrior.id, targetId);
 
   pipeline.run({ state, logger });
 
@@ -79,5 +125,11 @@ describe('DefaultSystemPipeline basic-attack level scaling (DEC-380 (2))', () =>
     // 1 + 0.5 × (3 − 1) = 2 with the injected 0.5; the catalogue's own value would give less.
     expect(firstHit(STEEP_UNITS, 1)).toBeGreaterThan(0);
     expect(firstHit(STEEP_UNITS, 3)).toBeCloseTo(2 * firstHit(STEEP_UNITS, 1));
+  });
+
+  it('scales a weapon hit on a wall map object at the structure rate (DEC-405)', () => {
+    // 1 + 0.25 × (3 − 1) = 1.5 with the injected structure rate, not the unit rate's 2.
+    expect(firstHit(STEEP_UNITS, 1, 'wall')).toBeGreaterThan(0);
+    expect(firstHit(STEEP_UNITS, 3, 'wall')).toBeCloseTo(1.5 * firstHit(STEEP_UNITS, 1, 'wall'));
   });
 });

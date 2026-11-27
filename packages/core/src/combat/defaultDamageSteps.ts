@@ -2,6 +2,7 @@ import type { DamageStep } from './DamageStep.types';
 import { BasicAttackLevelStep } from './BasicAttackLevelStep';
 import { BreakabilityStep } from './BreakabilityStep';
 import { LEGEND_CLASSES } from '../content/legends/legendCatalogue';
+import { STRUCTURE_MAP_OBJECT_KINDS } from '../content/maps/mapObjectDefinitions';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { EntityDefinitionBase } from '../content/EntityDefinition.types';
 import { BOSS_MINION_DAMAGE_TAKEN, MINION_STRENGTH } from '../content/mobs/minionModifiers';
@@ -27,7 +28,7 @@ export const createDefaultDamageSteps = (
 ): readonly DamageStep[] => [
   new BreakabilityStep(),
   new FriendlyFireStep(),
-  new BasicAttackLevelStep(units),
+  new BasicAttackLevelStep(units, STRUCTURE_MAP_OBJECT_KINDS),
   new StatusModifierStep(),
   new MinionStrengthStep(MINION_STRENGTH, progressOf),
   new BossMinionDamageStep(BOSS_MINION_DAMAGE_TAKEN, MOB_DEFINITIONS.ids),

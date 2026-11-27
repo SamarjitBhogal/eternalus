@@ -37,5 +37,6 @@ export const SENTINEL = {
     healthPerLevel: 0.08, // TUNE: balancing.md
     aetherPerLevel: 10, // TUNE: balancing.md
     basicAttackPerLevel: 0.08, // TUNE: DEC-380 (2), keeps pace with health until playtests
+    basicAttackPerLevelOnStructures: 0.04, // TUNE: DEC-405 default, HC-Q119 option C's example
   },
 } as const satisfies LegendDefinition;

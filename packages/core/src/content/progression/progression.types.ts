@@ -18,6 +18,12 @@ export type LevelScalingDefinition = {
   readonly aetherPerLevel: number;
   /** Fraction of a basic-attack (weapon) hit added per level (0.08 = +8%). */
   readonly basicAttackPerLevel: number;
+  /**
+   * The same on a structure: a `structure` entity, or a map object of a kind in
+   * `STRUCTURE_MAP_OBJECT_KINDS` (a wall, turret, gate, fort or the palace). A middle ground, never
+   * above `basicAttackPerLevel` (DEC-405).
+   */
+  readonly basicAttackPerLevelOnStructures: number;
 };
 
 /** How much XP a kill is worth (06 "XP sources"); a mob's own XP is its `xpValue` (04 §5). */
