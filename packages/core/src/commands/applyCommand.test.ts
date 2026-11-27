@@ -24,6 +24,7 @@ describe('applyCommand', () => {
         rover: TEST_CONTROLLER,
         player: 'player',
         missingRole: () => TEST_CONTROLLER,
+        pickedBot: () => undefined,
       }),
       stop: {
         handle: (command) => {
@@ -51,6 +52,7 @@ describe('applyCommand', () => {
         rover: TEST_CONTROLLER,
         player: 'player',
         missingRole: () => TEST_CONTROLLER,
+        pickedBot: () => undefined,
       }),
       ctx,
     );
@@ -65,6 +67,7 @@ describe('applyCommand', () => {
         rover: TEST_CONTROLLER,
         player: 'player',
         missingRole: () => TEST_CONTROLLER,
+        pickedBot: () => undefined,
       }),
       stop: {
         handle: () => {

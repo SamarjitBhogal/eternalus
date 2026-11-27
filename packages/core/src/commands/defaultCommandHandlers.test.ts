@@ -40,6 +40,7 @@ describe('createDefaultCommandHandlers', () => {
           rover: TEST_CONTROLLER,
           player: 'player',
           missingRole: () => TEST_CONTROLLER,
+          pickedBot: () => undefined,
         }),
         {
           state,

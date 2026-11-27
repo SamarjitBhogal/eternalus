@@ -34,9 +34,8 @@ import { BOT_DIFFICULTIES } from './content/ai/difficulties/botDifficulties';
 import { RANKS_FORMATION } from './content/mobs/formations/ranks';
 import type { EntityId } from './state/EntityStore.types';
 import { assignLanes } from './state/assignLanes';
-import { createMissingRoleChooser } from './state/missingRoleChooser';
-import { BOT_ROSTER } from './content/teams/botRoster';
-import { ROVER_SPAWN } from './Simulation.constants';
+import { createMissingRoleChooser, createPickedBotChooser } from './state/missingRoleChooser';
+import { ROVER_SPAWN, SIM_MODE_BOTS } from './Simulation.constants';
 import { formationSlot } from './state/formationSlot';
 import { unitClassOf } from './content/ai/unitClasses';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
@@ -104,10 +103,8 @@ export class Simulation {
   private readonly handlers: CommandHandlers = createDefaultCommandHandlers({
     rover: ROVER_SPAWN,
     player: 'player' satisfies ControllerId,
-    missingRole: createMissingRoleChooser({
-      rover: ROVER_SPAWN,
-      laner: { controllerId: 'bot-legend', profileId: BOT_ROSTER.difficulties.laner },
-    }),
+    missingRole: createMissingRoleChooser(SIM_MODE_BOTS),
+    pickedBot: createPickedBotChooser(SIM_MODE_BOTS),
   });
   private readonly commandContext: CommandContext;
   private readonly systemContext: SystemContext;

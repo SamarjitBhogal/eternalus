@@ -10,7 +10,7 @@ import type { PlayableTeam } from '../teams/teams.types';
 import { TWO_LANE_MAP } from './__fixtures__/twoLaneMap';
 import { GameState } from './GameState';
 import { MatchWorld } from './MatchWorld';
-import { createMissingRoleChooser } from './missingRoleChooser';
+import { createMissingRoleChooser, createPickedBotChooser } from './missingRoleChooser';
 
 class Hero extends Legend {
   public readonly kind = 'hero';
@@ -22,10 +22,9 @@ class Hero extends Legend {
 }
 
 const ROVER = { controllerId: 'rover', profileId: 'rover', memory: {} } as const;
-const choose = createMissingRoleChooser({
-  rover: ROVER,
-  laner: { controllerId: 'bot-legend', profileId: 'normal' },
-});
+const BOTS = { rover: ROVER, laner: { controllerId: 'bot-legend', profileId: 'normal' } } as const;
+const choose = createMissingRoleChooser(BOTS);
+const pick = createPickedBotChooser(BOTS);
 
 /** A match on the two-lane map (`lane-0`, `lane-1`) with one Legend per lane per team. */
 const stateWith = (hasMap = true): GameState =>
@@ -131,5 +130,69 @@ describe('createMissingRoleChooser', () => {
     addLegend(state, 'entity-1', 'light', { controllerId: 'rover', memory: {} });
 
     expect(choose(state, 'entity-1', 'light')).toEqual(ROVER);
+  });
+});
+
+describe('createPickedBotChooser (DEC-356)', () => {
+  it('gives the Rover for its id, also when the team has a Rover bot', () => {
+    const state = stateWith();
+    addLegend(state, 'entity-1', 'light');
+    addLegend(state, 'entity-2', 'light', { controllerId: 'rover', memory: {} });
+
+    expect(pick(state, 'entity-1', 'light', 'rover')).toEqual(ROVER);
+  });
+
+  it('gives a lane bot on the lane with the fewest of its team lane bots, also when the team lacks a Rover', () => {
+    const state = stateWith();
+    addLegend(state, 'entity-1', 'light');
+    addLegend(state, 'entity-2', 'light', {
+      controllerId: 'bot-legend',
+      memory: { lane: 'lane-0' },
+    });
+    addLegend(state, 'entity-3', 'dark', {
+      controllerId: 'bot-legend',
+      memory: { lane: 'lane-1' },
+    });
+
+    expect(pick(state, 'entity-1', 'light', 'bot-legend')).toEqual({
+      controllerId: 'bot-legend',
+      profileId: 'normal',
+      memory: { lane: 'lane-1' },
+    });
+  });
+
+  it('goes past legendsPerLane when every lane is full, and falls back to the Rover with no map', () => {
+    const full = stateWith();
+    addLegend(full, 'entity-1', 'light');
+    for (const [id, lane] of [
+      ['entity-2', 'lane-0'],
+      ['entity-3', 'lane-1'],
+      ['entity-4', 'lane-0'],
+    ] as const) {
+      addLegend(full, id, 'light', { controllerId: 'bot-legend', memory: { lane } });
+    }
+    expect(pick(full, 'entity-1', 'light', 'bot-legend')?.memory).toEqual({ lane: 'lane-1' });
+
+    const mapless = stateWith(false);
+    addLegend(mapless, 'entity-1', 'light');
+    expect(pick(mapless, 'entity-1', 'light', 'bot-legend')).toEqual(ROVER);
+  });
+
+  it('does not count the Legend itself', () => {
+    const state = stateWith();
+    addLegend(state, 'entity-1', 'light', {
+      controllerId: 'bot-legend',
+      memory: { lane: 'lane-0' },
+    });
+
+    expect(pick(state, 'entity-1', 'light', 'bot-legend')?.memory).toEqual({ lane: 'lane-0' });
+  });
+
+  it('names no bot for any other controller id', () => {
+    const state = stateWith();
+    addLegend(state, 'entity-1', 'light');
+
+    expect(pick(state, 'entity-1', 'light', 'player')).toBeUndefined();
+    expect(pick(state, 'entity-1', 'light', 'no-such')).toBeUndefined();
   });
 });

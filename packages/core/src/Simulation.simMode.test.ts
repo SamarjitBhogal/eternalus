@@ -178,10 +178,12 @@ describe('Simulation sim mode (FR-099, dev-set-controller)', () => {
     const { simulation } = newMatch();
     const former = humanOf(simulation) ?? '';
     const chosen = darkLanerOf(simulation);
+    // `null` (the bot its team lacks) and a picked `bot-legend` (DEC-356) replay too; the first
+    // test covers `rover` twice.
     simulation.enqueueCommand({
       type: 'dev-set-controller',
       entityId: former,
-      controllerId: 'rover',
+      controllerId: null,
     });
     run(simulation, REPLAY_CHECKPOINT_EVERY);
     simulation.enqueueCommand({
@@ -190,13 +192,20 @@ describe('Simulation sim mode (FR-099, dev-set-controller)', () => {
       controllerId: 'player',
     });
     run(simulation, 2 * REPLAY_CHECKPOINT_EVERY);
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: chosen,
+      controllerId: 'bot-legend',
+    });
+    run(simulation, REPLAY_CHECKPOINT_EVERY);
 
     const replay = simulation.exportReplay();
 
-    expect(replay.commands.map(({ command }) => command.type)).toEqual([
-      'dev-set-controller',
-      'dev-set-controller',
-    ]);
+    expect(
+      replay.commands.map(({ command }) =>
+        command.type === 'dev-set-controller' ? command.controllerId : command.type,
+      ),
+    ).toEqual([null, 'player', 'bot-legend']);
     expect(
       runReplay(
         replay,
@@ -246,16 +255,39 @@ describe('Simulation sim mode (FR-099, dev-set-controller)', () => {
     simulation.step();
     expect(bindingOf(former)?.controllerId).toBe('rover');
 
-    // Now the team has its Rover: the Legend the human leaves takes a lane.
+    // Now the team has its Rover: with no bot picked, the Legend the human leaves takes a lane.
     simulation.enqueueCommand({
       type: 'dev-set-controller',
       entityId: chosen,
-      controllerId: 'rover',
+      controllerId: null,
     });
     simulation.step();
     expect(humanOf(simulation)).toBeNull();
     expect(bindingOf(chosen)?.controllerId).toBe('bot-legend');
     expect(bindingOf(chosen)?.initialMemory).toEqual({ lane: 'lane-0' });
+    fold.mockRestore();
+  });
+
+  it('gives the human Legend the bot the developer picks, not the role its team lacks (DEC-356)', () => {
+    // `Simulation` keeps its state private: read it from the first call of a spy on `Scoring.fold`.
+    const fold = vi.spyOn(Scoring.prototype, 'fold');
+    const { simulation } = newMatch();
+    const former = humanOf(simulation) ?? '';
+    simulation.step();
+    const bindingOf = (id: string) => fold.mock.calls[0]?.[0].state.entities.controllerOf(id);
+
+    // The human plays the dark Rover, so the team lacks a Rover; the developer picks a lane bot.
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: former,
+      controllerId: 'bot-legend',
+    });
+    simulation.step();
+
+    expect(humanOf(simulation)).toBeNull();
+    expect(bindingOf(former)?.controllerId).toBe('bot-legend');
+    // The dark laner holds lane-0, so the game picks lane-1.
+    expect(bindingOf(former)?.initialMemory).toEqual({ lane: 'lane-1' });
     fold.mockRestore();
   });
 });

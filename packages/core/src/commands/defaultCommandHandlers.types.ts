@@ -1,5 +1,5 @@
 import type { ControllerSpawn } from '../entities/EntityFactory.types';
-import type { MissingRoleChooser } from '../state/missingRoleChooser.types';
+import type { MissingRoleChooser, PickedBotChooser } from '../state/missingRoleChooser.types';
 
 /** What `createDefaultCommandHandlers` is built from (content `commands/` may not import). */
 export type DefaultCommandHandlerDeps = {
@@ -11,8 +11,10 @@ export type DefaultCommandHandlerDeps = {
    */
   readonly player: string;
   /**
-   * The bot the human's Legend becomes when `dev-set-controller` takes the human off it: the role
-   * its team lacks (`createMissingRoleChooser`).
+   * The bot a Legend becomes when `dev-set-controller` picks no bot (`null`), or takes the human off
+   * it on a seat move: the role its team lacks (`createMissingRoleChooser`).
    */
   readonly missingRole: MissingRoleChooser;
+  /** The bot a `dev-set-controller` bot id gives a Legend (`createPickedBotChooser`, DEC-356). */
+  readonly pickedBot: PickedBotChooser;
 };

@@ -15,14 +15,15 @@ import { UnsupportedCommandHandler } from './handlers/UnsupportedCommandHandler'
  * The command registry: one line per command type (architecture 02 §9).
  *
  * @param deps - What the handlers need from `content/`, which `commands/` may not read (the
- *   Rover controller `dev-spawn-legend` and `dev-set-controller` give a Legend, and the role
- *   chooser for a Legend the human leaves);
+ *   Rover controller `dev-spawn-legend` gives a Legend, and the two bot choosers of
+ *   `dev-set-controller`);
  *   `Simulation` passes it in. One object, so a new dependency adds a field, not a parameter.
  */
 export const createDefaultCommandHandlers = ({
   rover,
   player,
   missingRole,
+  pickedBot,
 }: DefaultCommandHandlerDeps): CommandHandlers => {
   const unsupported = new UnsupportedCommandHandler();
   const removeEntity = new DevRemoveEntityHandler();
@@ -37,6 +38,6 @@ export const createDefaultCommandHandlers = ({
     'dev-spawn-mobs': new DevSpawnMobsHandler(),
     'dev-remove-entity': removeEntity,
     'dev-remove-legend': new DevRemoveLegendHandler(removeEntity),
-    'dev-set-controller': new DevSetControllerHandler(rover, player, missingRole),
+    'dev-set-controller': new DevSetControllerHandler(player, missingRole, pickedBot),
   };
 };

@@ -85,10 +85,15 @@ type CommandPayloads = {
   readonly 'dev-remove-legend': { readonly entityId: EntityId };
   /**
    * Developer menu, sim mode: hand a Legend to a controller. `controllerId` is `player` (the Legend
-   * becomes the human's; a Legend of `playerTeam` only; a seated human is swapped off to the Rover,
-   * DEC-294) or the Rover's id (a bot plays it; on the human's Legend, no human is left).
+   * becomes the human's; a Legend of `playerTeam` only; a seated human is swapped off to the bot
+   * its team lacks, DEC-294), a bot's id (the Rover's or the lane bot's: that bot plays it; the
+   * game picks the lane) or `null` (the bot its team lacks plays it). On the human's Legend, a bot
+   * id or `null` leaves no human (DEC-356).
    */
-  readonly 'dev-set-controller': { readonly entityId: EntityId; readonly controllerId: string };
+  readonly 'dev-set-controller': {
+    readonly entityId: EntityId;
+    readonly controllerId: string | null;
+  };
 };
 
 /** The name of a command. */
