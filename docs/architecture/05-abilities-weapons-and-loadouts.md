@@ -959,7 +959,7 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   `1 + basicAttackPerLevel × (level − 1)`, read when the hit lands. A match mode can turn match XP
   off (`ProgressionContent.hasMatchXp: false`, a Duel's rule, DEC-380 (1)): `ProgressionSystem`
   then listens for no award (a cleared camp's and a checkpoint set's included), and the max-level
-  start still applies. Not built yet: the share radius and damage bias, assists,
+  start still applies. Not built yet: the minion-kill share radius (balancing.md "XP sources"), assists,
   the Eternal's flat 5 levels (DEC-237) (their systems do not exist), ability potency per level,
   `upgradeIds` and the ultimate charge rules. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the

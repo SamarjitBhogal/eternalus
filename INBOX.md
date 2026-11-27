@@ -147,6 +147,18 @@ Reply inline (`Decision: …`).
       name. Proposal: move `DefinitionSource` to `content/` (for example beside
       `ContentCatalogue`), so every layer uses one name and no import rule changes. A later
       `refactor(core)` PR; it touches files that branch does not. Decision: …
+- [ ] **HC-B59 one award-source list in `ProgressionSystem` (`feat/legend-level-damage` merge
+      critic, 2026-11-27; better than the design, owner sign-off pending)** — (1)
+      `ProgressionSystem.ts` has 346 lines (the limit is about 300). It buffers awards in two ways:
+      four inline listeners (kill, structure, camp, respawn) and `CheckpointAwards` (checkpoint
+      shares). It reads `hasMatchXp` twice, and its `checkpoints` field is nullable. Proposal: an
+      `AwardSource` port (`flush(state): Award[]`, the shape `CheckpointAwards` already has), one
+      implementation for each source, held in one list. A match with no match XP gets an empty
+      list, so the Duel gate is in one place. (2) Optional, low value:
+      `createDefaultDamageSteps(progressOf, units)` has two optional positional parameters, so a
+      caller that gives only `units` must give `null` first. An options object
+      (`{ progressOf?, units? }`) removes that. A later `refactor(core)` PR; no behaviour changes.
+      Decision: …
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
