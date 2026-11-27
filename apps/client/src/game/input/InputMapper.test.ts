@@ -129,6 +129,12 @@ describe('InputMapper', () => {
     expect(intentFor(mapper, snapshotWith([])).isAttacking).toBeUndefined();
   });
 
+  it('reports a held jump while Space is down (DEC-390)', () => {
+    const mapper = new InputMapper(PRESETS.wasd);
+    expect(intentFor(mapper, snapshotWith(['Space'])).isJumping).toBe(true);
+    expect(intentFor(mapper, snapshotWith([])).isJumping).toBeUndefined();
+  });
+
   it('follows a rebinding of W to ArrowUp with no code change', () => {
     const mapper = new InputMapper(PRESETS.wasd);
     const upArrow = { device: 'keyboard', code: 'ArrowUp', label: '↑' } as const;
