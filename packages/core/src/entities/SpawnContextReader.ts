@@ -2,7 +2,7 @@ import type { ControllerSpawn } from './EntityFactory.types';
 import { CONTROLLER_IDS } from '../content/ai/controllerIds';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 import type { Entity } from './Entity';
-import type { LegendSpecSource, WeaponSource } from './EntityFactory.types';
+import type { LegendSpecSource, TurretAmmoSource, WeaponSource } from './EntityFactory.types';
 import { SPAWNABLE_TEAMS } from './SpawnContextReader.constants';
 import type {
   DefinitionRef,
@@ -149,11 +149,21 @@ export class SpawnContextReader {
     return SpawnContextReader.isSpecSource(specs) ? specs : null;
   }
 
+  /** The turret ammo source the factory put in the context, or `null` when it has none. */
+  public ammo(context: unknown): TurretAmmoSource | null {
+    const { ammo } = SpawnContextReader.fields(context);
+    return SpawnContextReader.isAmmoSource(ammo) ? ammo : null;
+  }
+
   private static isWeaponSource(value: unknown): value is WeaponSource {
     return SpawnContextReader.isLookup(value);
   }
 
   private static isSpecSource(value: unknown): value is LegendSpecSource {
+    return SpawnContextReader.isLookup(value);
+  }
+
+  private static isAmmoSource(value: unknown): value is TurretAmmoSource {
     return SpawnContextReader.isLookup(value);
   }
 

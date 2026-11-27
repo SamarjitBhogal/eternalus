@@ -17,7 +17,6 @@ import { TEST_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from '../diagnostics/MemoryLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
-import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
 import type { GameEventMap } from '../state/GameEvents.types';
 import { GameState } from '../state/GameState';
 import { IdGenerator } from '../utils/IdGenerator';
@@ -42,7 +41,6 @@ const setUp = (assistWindowTicks = loadScoring(config.tickRate).assistWindowTick
     state,
     // Warriors fire no shot and nothing spawns here, so this factory builds nothing.
     factory: new EntityFactory(createDefaultEntityRegistry(), UNITS),
-    lineOfFire: SHIPPED_LINE_OF_FIRE,
     progression: {
       units: UNITS,
       curves: loadLevelCurves(),

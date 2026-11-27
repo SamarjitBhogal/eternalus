@@ -16,6 +16,7 @@ import { Veterancy } from '../components/Veterancy';
 import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { TurretState } from '../components/TurretState';
 import { INITIAL_FACING } from '../components/Transform.constants';
 import { Vision } from '../components/Vision';
 import type { Entity } from '../entities/Entity';
@@ -133,6 +134,14 @@ export class StateHasher {
       });
       parts.push(['defenderDamage', ...tallies]);
     }
+    // Legend hits (DEC-335) are appended only while some are recorded, for the same reason.
+    if (state.legendHits.size > 0) {
+      const hits: unknown[] = [];
+      state.legendHits.forEach((legendId, team, tick) => {
+        hits.push([legendId, team, tick]);
+      });
+      parts.push(['legendHits', ...hits]);
+    }
     // Lost towers are appended only once a lane has one, for the same reason.
     const lost = PLAYABLE_TEAMS.flatMap((team) =>
       Object.keys(state.teams[team].towersLostByLane)
@@ -211,13 +220,24 @@ export class StateHasher {
       );
     }
     const combat = entity.findComponent(Combat);
-    if (combat !== undefined && (combat.targetId !== null || combat.readyAtTick > 0)) {
-      // Only the melee mode adds a field, so runs that never use it hash as before (DEC-308).
-      fields.push(
-        combat.mode === 'melee'
-          ? ['combat', combat.targetId, combat.readyAtTick, 'melee']
-          : ['combat', combat.targetId, combat.readyAtTick],
-      );
+    if (
+      combat !== undefined &&
+      (combat.targetId !== null ||
+        combat.aimPoint !== null ||
+        combat.readyAtTick > 0 ||
+        combat.hitIds.length > 0)
+    ) {
+      // Only the melee mode, an aim point and recorded hits add fields, so runs that never use
+      // them hash as before (DEC-308, DEC-184). The hits decide whom the AI sees a unit attack
+      // (DEC-322 (2)).
+      fields.push([
+        'combat',
+        combat.targetId,
+        combat.readyAtTick,
+        ...(combat.mode === 'melee' ? ['melee'] : []),
+        ...(combat.aimPoint === null ? [] : ['aim', combat.aimPoint.x, combat.aimPoint.y]),
+        ...(combat.hitIds.length === 0 ? [] : ['hits', combat.hitsUntilTick, ...combat.hitIds]),
+      ]);
     }
     const vision = entity.findComponent(Vision);
     if (vision !== undefined) {
@@ -316,11 +336,12 @@ export class StateHasher {
     }
     // A shot's payload is fixed at firing but decides who it spares (owner), which walk-on outline
     // it may hit (target), what it does there (impact kind, credited weapon or ability) and how
-    // hard it hits (origin); how long it has been ending (-1 while it flies) decides when it is
+    // hard it hits (origin); its range and where it slows (an arc shot's are cut to its aim point)
+    // decide where it stops; how long it has been ending (-1 while it flies) decides when it is
     // removed.
     const shot = entity.findComponent(ProjectilePayload);
     if (shot !== undefined) {
-      const endTicksLeft = entity.findComponent(ProjectileFlight)?.endTicksLeft ?? -1;
+      const flight = entity.findComponent(ProjectileFlight);
       fields.push([
         'projectile',
         shot.ownerId,
@@ -329,8 +350,15 @@ export class StateHasher {
         shot.source.definitionId,
         shot.origin.x,
         shot.origin.y,
-        endTicksLeft,
+        flight?.endTicksLeft ?? -1,
+        flight?.range ?? -1,
+        flight?.slowFrom ?? -1,
       ]);
+      // Whether it is lit decides whether it runs its `litOnHit` steps where it lands (HC-Q89,
+      // DEC-345). Only a lit shot adds a field, so a match with no lit shot hashes as before.
+      if (flight?.isLit === true) {
+        fields.push(['lit']);
+      }
     }
     const watch = entity.findComponent(ChaseWatch);
     if (watch !== undefined) {
@@ -344,6 +372,10 @@ export class StateHasher {
     const lastEnemyHit = entity.findComponent(LastEnemyHit);
     if (lastEnemyHit !== undefined) {
       fields.push(['last-enemy-hit', ...lastEnemyHit.fields]);
+    }
+    const turret = entity.findComponent(TurretState);
+    if (turret !== undefined) {
+      fields.push(['turret', turret.loadedId]);
     }
     return fields;
   }

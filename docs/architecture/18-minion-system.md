@@ -466,7 +466,7 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
   plans a tick, are `STUCK_DETECTION` in `content/ai/stuckDetection.ts`). A chase of a target
   with an outline (a map object, or a structure with a `Footprint`: a lane tower's fort, the
   Stronghold's palace, a gate, 07 §13) aims at the nearest point of its outline, the point attack
-  reach is measured to (`EntityStore.aimPointOf`); a mob that stands inside the outline is in reach
+  reach is measured to (`ReachQuery.aimPointOf`); a mob that stands inside the outline is in reach
   already, so it holds there, as every chase stops at reach (DEC-234); it faces the building's
   centre (DEC-220 (1)). The blocked
   ground under the target (a fort's cells, under the structure or under a unit inside its court,
@@ -501,7 +501,9 @@ escaped its leash (DEC-144 F).
 - **acquire** (at cadence, in every state): candidates from `Perception.unitsWithin(pos, radius,
 { hostileTo: team, neutralAttackersOf: id })` plus the horde's next objective (§6.2). A unit counts when it is within
   `acquisitionRadius`, or within `callForHelpRadius` while it attacks a horde-mate ("call for
-  help"), and when it lies inside a leash anchored where the mob stands. A neutral camp mob is a
+  help"; it attacks its locked target and each other body its last attack hit, for one attack
+  interval, or the slowed cooldown when that is longer, so at least through the tick its next attack
+  may land; a player's aimed hits count, DEC-322 (2), DEC-333 (1)), and when it lies inside a leash anchored where the mob stands. A neutral camp mob is a
   candidate only while it attacks the mob itself, so a mob fights back but does not farm a camp
   (DEC-166). Candidates rank by the
   aggro priority list, then distance, then id. The list and its numbers are the
@@ -512,7 +514,11 @@ escaped its leash (DEC-144 F).
   (DEC-160). From then on the attack is `CombatSystem`'s job (05)
   and the chase is the movement strategy's (§5.2).
   - While the target is inside `leashRadius` of the anchor, the mob fights it with no time limit,
-    a Legend too, and switches only to a strictly higher priority. The lane minion's leash, and
+    a Legend too. It does not switch for a call for help or for a better-ranked enemy: a busy
+    mob finishes its own fight, and only mobs that are not fighting come to help (DEC-326 (2)).
+    The lane objective is not a fight: a minion that attacks its next structure still switches to
+    an enemy the priority list ranks higher: hitting a building is not a fight (DEC-344 (1)).
+    Guards and camp mobs share this rule (§7, DEC-144 (C)). The lane minion's leash, and
     with it its `callForHelpRadius`, is `LEASH` in `content/ai/aggro/laneMinion.ts`, grown by
     15 percent on the owner's word (DEC-193).
   - When the target leaves the leash, the mob takes the best other enemy in reach at once. With

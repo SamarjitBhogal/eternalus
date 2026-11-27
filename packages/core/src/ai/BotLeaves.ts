@@ -4,7 +4,6 @@ import { compareById } from '../utils/compareById';
 import { sqrt } from '../utils/deterministicMath';
 import type { Vec2 } from '../utils/geometry.types';
 import { SeededRandom } from '../utils/SeededRandom';
-import type { MutableVec2 } from '../utils/vec2.types';
 import type { BtStatus } from './bt/BtNode.types';
 import type { BotMemory, BotLegendControllerContent, BotTurn } from './BotLegendController.types';
 import { BotMovement } from './BotMovement';
@@ -17,18 +16,19 @@ import { isPlayableTeam } from '../teams/playableTeams';
 /**
  * The conditions and actions every bot Legend tree is built from (architecture 11 §4.2):
  * surviving, choosing and fighting an enemy (and casting), attacking the lane's next enemy
- * structure, following the lead horde and walking. How the bot gets there (A\* round obstacles,
- * footprint edges, detours) is `BotMovement`'s. `BotLegendController` and `RoverController`
- * arrange the leaves into their trees. Stateless apart from scratch: what a bot remembers is its
- * brain.
+ * structure and walking. How the bot gets there (A\* round obstacles,
+ * footprint edges, detours) is `BotMovement`'s; following the lane is `BotLaneLeaves`'.
+ * `BotLegendController` and `RoverController` arrange the leaves into their trees. Stateless
+ * apart from scratch: what a bot remembers is its brain.
  */
 export class BotLeaves {
   private readonly scorers = new Map<string, UtilityScorer<'closeness' | 'weakness'>>();
-  private readonly anchor: MutableVec2 = { x: 0, y: 0 };
-  private readonly forward: MutableVec2 = { x: 0, y: 0 };
   private readonly movement = new BotMovement();
 
-  /** @param content - Difficulties and retreat points; the leaves hold no numbers. */
+  /**
+   * @param content - The difficulties, the retreat points and the bots' queries (`readiness`,
+   *   `lineOfFire`, `reach`); the leaves hold no numbers.
+   */
   public constructor(private readonly content: BotLegendControllerContent) {}
 
   /** Whether `profileId` names one of the injected difficulties. */
@@ -134,7 +134,8 @@ export class BotLeaves {
 
   /**
    * Attacks `turn.enemy`, may cast at it, and closes in until it is in reach with a clear line of
-   * fire (DEC-317). An enemy on ground
+   * fire (DEC-317). While a wall would stop its shot, it holds no target, so it does not shoot
+   * into the wall, and it moves for a clear shot (DEC-317 addendum). An enemy on ground
    * the nav grid blocks (inside a tower's fort court) is closed in on as a siege closes in, so the
    * bot follows it inside instead of waiting at the edge (DEC-189). A bot stuck on the way goes
    * round (`BotMovement.goRound`, DEC-193).
@@ -148,7 +149,8 @@ export class BotLeaves {
     const isHolding = BotLeaves.attackAndHold(
       turn,
       enemy,
-      state.entities.isInReach(id, enemy) && this.content.lineOfFire.isClear(state, id, enemy),
+      this.content.reach.isInReach(state.entities, id, enemy),
+      this.content.lineOfFire.isClear(state, id, enemy),
     );
     this.mayCast(turn, enemy, at);
     if (isHolding) {
@@ -188,7 +190,8 @@ export class BotLeaves {
   /**
    * Attacks `turn.objective` (11 §4.2 `Push`): A\* to the edge of its footprint on the bot's side
    * (from its collider radius), then straight at it for the last step, holding once it is in
-   * reach with a clear line of fire (B66-F1, `BotMovement.closeIn`, DEC-317). The edge faces the
+   * reach with a clear line of fire (B66-F1, `BotMovement.closeIn`, DEC-317). While a wall would
+   * stop its shot it holds no target, as in `fight`. The edge faces the
    * bot, so a Stronghold behind its wall ring is reached through the ring's gate instead of leaned
    * on from outside. A bot stuck on the way goes round (`BotMovement.goRound`, DEC-193).
    */
@@ -197,49 +200,16 @@ export class BotLeaves {
     if (objective === null) {
       return 'failure';
     }
-    const isHolding =
-      state.entities.isInReach(id, objective.id) &&
-      this.content.lineOfFire.isClear(state, id, objective.id);
-    if (BotLeaves.attackAndHold(turn, objective.id, isHolding) || BotMovement.goRound(turn)) {
+    const isHolding = BotLeaves.attackAndHold(
+      turn,
+      objective.id,
+      this.content.reach.isInReach(state.entities, id, objective.id),
+      this.content.lineOfFire.isClear(state, id, objective.id),
+    );
+    if (isHolding || BotMovement.goRound(turn)) {
       return 'running';
     }
     return this.movement.closeIn(turn, objective, objective.radius);
-  }
-
-  /** Finds the anchor of the most advanced allied horde on `lane`. */
-  public findHorde(turn: BotTurn, lane: string): boolean {
-    const { state, team } = turn;
-    const routes = state.world?.routes ?? null;
-    let lead = -1;
-    state.hordes.forEach((horde) => {
-      // The progress is all that is read, so which of two equal hordes wins does not matter.
-      if (horde.team === team && horde.lane === lane && horde.progress > lead) {
-        lead = horde.progress;
-      }
-    });
-    if (routes === null || lead < 0) {
-      return false;
-    }
-    routes.pose(lane, team, lead, this.anchor, this.forward);
-    turn.destination = { x: this.anchor.x, y: this.anchor.y };
-    return true;
-  }
-
-  /** Finds the nearest point of `lane` to `point` (the lane corridor, 11 §4.2). */
-  public findLanePoint(turn: BotTurn, lane: string, point: Vec2): boolean {
-    const routes = turn.state.world?.routes ?? null;
-    if (routes === null || lane === '') {
-      return false;
-    }
-    routes.pose(
-      lane,
-      turn.team,
-      routes.distanceAlong(lane, turn.team, point),
-      this.anchor,
-      this.forward,
-    );
-    turn.destination = { x: this.anchor.x, y: this.anchor.y };
-    return true;
   }
 
   /**
@@ -251,19 +221,33 @@ export class BotLeaves {
   }
 
   /**
-   * Points the bot's attack at `targetId` unless it already is, and holds it still when
-   * `shouldHold` (in reach, with a clear line for a ranged attack): the opening Fight and Push
-   * share (DEC-168, B9). Returns whether it holds.
+   * The opening Fight and Push share (DEC-168, B9). With a clear line of fire (`isClear`; always
+   * for a melee attack) it points the bot's attack at `targetId` unless it already is, and holds
+   * the bot still when it is also in reach. Without one it drops the target it holds, so
+   * `CombatSystem`, which fires with no line-of-fire check, does not shoot into the wall (DEC-317
+   * addendum). The `stop` that drops it also drops the heading, so the caller's `move` that
+   * follows in the same turn keeps the bot moving for a clear shot. Returns whether it holds.
    */
-  private static attackAndHold(turn: BotTurn, targetId: EntityId, shouldHold: boolean): boolean {
+  private static attackAndHold(
+    turn: BotTurn,
+    targetId: EntityId,
+    isInReach: boolean,
+    isClear: boolean,
+  ): boolean {
+    if (!isClear) {
+      if (turn.memory.targetId !== null) {
+        BotMovement.stop(turn);
+      }
+      return false;
+    }
     if (targetId !== turn.memory.targetId) {
       turn.commands.push({ type: 'attack-target', actorId: turn.id, targetId });
       turn.next = { ...turn.next, targetId };
     }
-    if (shouldHold) {
+    if (isInReach) {
       BotMovement.halt(turn);
     }
-    return shouldHold;
+    return isInReach;
   }
 
   /**

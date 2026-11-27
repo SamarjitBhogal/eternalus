@@ -47,7 +47,8 @@ const match = () => {
   const hits: string[] = [];
   scenario.sim.on('ultimate-charged', (change) => charged.push(change));
   scenario.sim.on('damage-applied', ({ targetId, amount, source }) => {
-    if (source.attackerId === vanguard && targetId !== '') {
+    // Bleed from the talons (DEC-387 W5) is not what this test checks: count weapon hits only.
+    if (source.attackerId === vanguard && source.kind === 'weapon' && targetId !== '') {
       hits.push(`${String(scenario.sim.tick)} ${targetId} ${String(amount)}`);
     }
   });
@@ -62,6 +63,8 @@ const match = () => {
   /** Kills the four Magi one by one: the meter is then full. */
   const fillMeter = (): void => {
     for (const magus of magi) {
+      // A sweep (DEC-184) can kill the next Magus too: attack only the ones still standing.
+      if (scenario.entity(magus) === undefined) continue;
       attack(magus);
       scenario.run(25);
     }
@@ -153,6 +156,8 @@ describe('Fury (scenario)', () => {
     const { sentinel, warrior, attack, stop, run, at, log, startFury, hitsOn } = match();
 
     startFury();
+    // The sweeps that killed the Magi (DEC-184) also hit the bodies near them: count from here.
+    const hitsBefore = [hitsOn(warrior).length, hitsOn(sentinel).length];
     const warriorFrom = at(warrior);
     const sentinelFrom = at(sentinel);
     attack(warrior); // one hit, then stop: the push takes 0.25 s (8 ticks)
@@ -164,7 +169,10 @@ describe('Fury (scenario)', () => {
     stop();
     run(9);
 
-    expect([hitsOn(warrior).length, hitsOn(sentinel).length]).toEqual([1, 1]);
+    expect([
+      hitsOn(warrior).length - (hitsBefore[0] ?? 0),
+      hitsOn(sentinel).length - (hitsBefore[1] ?? 0),
+    ]).toEqual([1, 1]);
     expect(at(warrior).x - warriorFrom.x).toBeCloseTo(0, 5); // straight away from the Vanguard
     expect(at(warrior).y - warriorFrom.y).toBeCloseTo(1, 5);
     expect(at(sentinel).x - sentinelFrom.x).toBeCloseTo(1 / 6, 5); // mass 6: 1 m x 1 / 6

@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { lavaBridge } from '../__fixtures__/lavaBridge';
+import { isPointInAnyPolygon, isPointInPolygon } from '../utils/geometry';
 import { CollisionResolver } from './CollisionResolver';
 import { StaticCollisionIndex } from './StaticCollisionIndex';
 
@@ -112,6 +114,65 @@ describe('CollisionResolver', () => {
       expect(wall().reach({ x: 0, y: 0 }, EAST, 100, 0.5)).toBeLessThan(4.5);
     });
 
+    describe('the launch-shape rule (DEC-334)', () => {
+      /** The bolt's radius: the width a shot sweeps. */
+      const SHOT = 0.15;
+
+      it('lets a shot leave a shape whose blocking area holds its launch point, and no other shape', () => {
+        const resolver = new CollisionResolver(
+          new StaticCollisionIndex([
+            { id: 'pylon', polygon: rect(-1, -1, 10, 2) },
+            { id: 'far-wall', polygon: rect(15, -20, 1, 40) },
+          ]),
+          OPEN,
+        );
+        const launch = { x: -0.5, y: 0 };
+
+        // Without a launch point, a start inside that goes deeper stops at once.
+        expect(resolver.reach(launch, EAST, 3, SHOT)).toBe(0);
+        expect(resolver.shotReach(launch, EAST, 3, SHOT, launch)).toBe(3);
+        expect(resolver.shotReach(launch, EAST, 20, SHOT, launch)).toBeCloseTo(15.35, 6);
+        expect(resolver.shotReach(launch, EAST, 20, SHOT, launch)).toBeLessThan(15.35);
+      });
+
+      it('still stops a shot whose circle, but not its launch point, overlaps the wall at launch', () => {
+        const thick = new CollisionResolver(
+          new StaticCollisionIndex([{ id: 'wall', polygon: rect(5, -20, 10, 40) }]),
+          OPEN,
+        );
+        const pressed = { x: 5 - SHOT / 3, y: 0 };
+
+        expect(thick.reach(pressed, EAST, 2, SHOT)).toBe(0);
+        expect(thick.shotReach(pressed, EAST, 2, SHOT, pressed)).toBe(0);
+      });
+
+      it('still stops a shot launched in a passage where it leaves the passage over a shape shots cannot cross', () => {
+        const barrier = new CollisionResolver(
+          new StaticCollisionIndex([
+            { id: 'barrier', polygon: rect(5, -20, 5, 40), passages: [rect(3, -2, 9, 4)] },
+          ]),
+          OPEN,
+        );
+        const inPassage = { x: 7, y: 0 };
+        const north = { x: 0, y: 1 };
+
+        expect(barrier.reach(inPassage, north, 10, SHOT)).toBeCloseTo(2 - SHOT, 6);
+        expect(barrier.shotReach(inPassage, north, 10, SHOT, inPassage)).toBe(
+          barrier.reach(inPassage, north, 10, SHOT),
+        );
+      });
+
+      it("stops a mover from the seed 1 map's lava bridge at the lava, 3.46 m out, but a shot flies over it (DEC-345)", () => {
+        const { river, collisions, onBridge, offTheSide } = lavaBridge();
+
+        expect(isPointInAnyPolygon(onBridge, river.footprints)).toBe(true);
+        expect(river.passages?.some((passage) => isPointInPolygon(onBridge, passage))).toBe(true);
+        expect(river.canShotsCross).toBe(true);
+        expect(collisions.reach(onBridge, offTheSide, 14, SHOT)).toBeCloseTo(3.46, 2);
+        expect(collisions.shotReach(onBridge, offTheSide, 14, SHOT, onBridge)).toBe(14);
+      });
+    });
+
     // Moved from `abilities/dashReach.test.ts`: the bounds are the resolver's now (critic r2 BTD-A).
     it('stops where the circle meets the edge of the bounds, as `move` keeps it inside them', () => {
       const bounds = { x: 0, y: 0, width: 200, height: 60 };
@@ -127,6 +188,83 @@ describe('CollisionResolver', () => {
       expect(beyondEdge.reach({ x: 195, y: 30 }, EAST, 8, 0.5)).toBe(
         open.reach({ x: 195, y: 30 }, EAST, 8, 0.5),
       );
+    });
+  });
+
+  describe('shots over shapes they can cross (HC-Q89, DEC-345)', () => {
+    const EAST = { x: 1, y: 0 };
+    const SHOT = 0.15;
+    const LAUNCH = { x: 0, y: 0 };
+    const resolverOf = (flags: { canShotsCross?: true; canLightShots?: true }) =>
+      new CollisionResolver(
+        new StaticCollisionIndex([{ id: 'water', polygon: rect(5, -20, 5, 40), ...flags }]),
+        OPEN,
+      );
+
+    it('lets a shot fly over a shape shots can cross but stops a mover and a shape without the flag', () => {
+      const lake = resolverOf({ canShotsCross: true });
+      const mountain = resolverOf({});
+
+      expect(lake.shotReach(LAUNCH, EAST, 20, SHOT, LAUNCH)).toBe(20);
+      expect(lake.reach(LAUNCH, EAST, 20, SHOT)).toBeCloseTo(5 - SHOT, 6);
+      expect(mountain.shotReach(LAUNCH, EAST, 20, SHOT, LAUNCH)).toBeCloseTo(5 - SHOT, 6);
+      expect(mountain.reach(LAUNCH, EAST, 20, SHOT)).toBeCloseTo(5 - SHOT, 6);
+    });
+
+    it('lets a shot fly over a shape that also lights shots (lava)', () => {
+      const lava = resolverOf({ canShotsCross: true, canLightShots: true });
+
+      expect(lava.shotReach(LAUNCH, EAST, 20, SHOT, LAUNCH)).toBe(20);
+    });
+
+    describe('lightsShot', () => {
+      it('is true across a shape that lights shots, also when the move ends on its far side', () => {
+        const lava = resolverOf({ canShotsCross: true, canLightShots: true });
+
+        expect(lava.lightsShot(LAUNCH, { x: 20, y: 0 }, SHOT)).toBe(true);
+        expect(lava.lightsShot(LAUNCH, { x: 6, y: 0 }, SHOT)).toBe(true);
+      });
+
+      it('is false for a move that stops short of the shape or goes away from it', () => {
+        const lava = resolverOf({ canShotsCross: true, canLightShots: true });
+
+        expect(lava.lightsShot(LAUNCH, { x: 4, y: 0 }, SHOT)).toBe(false);
+        expect(lava.lightsShot(LAUNCH, { x: -20, y: 0 }, SHOT)).toBe(false);
+      });
+
+      it('is false across a shape shots can cross that does not light them (a lake)', () => {
+        expect(resolverOf({ canShotsCross: true }).lightsShot(LAUNCH, { x: 20, y: 0 }, SHOT)).toBe(
+          false,
+        );
+        expect(resolverOf({}).lightsShot(LAUNCH, { x: 20, y: 0 }, SHOT)).toBe(false);
+      });
+
+      it('is true when the move starts inside the shape', () => {
+        const lava = resolverOf({ canShotsCross: true, canLightShots: true });
+
+        expect(lava.lightsShot({ x: 7, y: 0 }, { x: 0.5, y: 0 }, SHOT)).toBe(true);
+        expect(lava.lightsShot({ x: 7, y: 0 }, { x: 0, y: 0 }, SHOT)).toBe(true);
+      });
+
+      it('is false over a bridge deck inside the shape (a passage does not light a shot)', () => {
+        const lava = new CollisionResolver(
+          new StaticCollisionIndex([
+            {
+              id: 'lava',
+              polygon: rect(5, -20, 5, 40),
+              passages: [rect(3, -2, 9, 4)],
+              canShotsCross: true,
+              canLightShots: true,
+            },
+          ]),
+          OPEN,
+        );
+
+        expect(lava.lightsShot({ x: 0, y: 0 }, { x: 20, y: 0 }, SHOT)).toBe(false);
+        expect(lava.lightsShot({ x: 7, y: 0 }, { x: 0.5, y: 0 }, SHOT)).toBe(false);
+        expect(lava.lightsShot({ x: 7, y: 0 }, { x: 0, y: 10 }, SHOT)).toBe(true);
+        expect(lava.lightsShot({ x: 0, y: 5 }, { x: 20, y: 0 }, SHOT)).toBe(true);
+      });
     });
   });
 });

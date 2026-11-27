@@ -1,10 +1,13 @@
-import { Health } from '../components/Health';
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { GameState } from '../state/GameState';
 import type { System, SystemContext } from './System.types';
 import type { BuildingCollapse } from './MapDestructionSystem.types';
 
-/** Collapses building contents through ordinary damage events before DeathSystem retires them. */
+/**
+ * Collapses what falls with a destroyed map object (a building's contents; the wall turret on a
+ * pylon, DEC-388) through ordinary damage events before DeathSystem retires them. Each one falls
+ * at once (`DamagePipeline.collapse`), with the object's killer as its killer.
+ */
 export class MapDestructionSystem implements System {
   public readonly name = 'map-destruction';
   private readonly pending: BuildingCollapse[] = [];
@@ -24,10 +27,7 @@ export class MapDestructionSystem implements System {
   /** Destruction never changes Health directly or silently removes a child entity. */
   public update({ state }: SystemContext): void {
     for (const collapse of this.pending.splice(0))
-      for (const entityId of state.worldObjects?.contentsOf(collapse.buildingId) ?? []) {
-        const health = state.entities.get(entityId)?.findComponent(Health);
-        if (health !== undefined && !health.isDead)
-          this.damage.apply(state, entityId, health.total, collapse.source);
-      }
+      for (const entityId of state.worldObjects?.contentsOf(collapse.buildingId) ?? [])
+        this.damage.collapse(state, entityId, collapse.source);
   }
 }

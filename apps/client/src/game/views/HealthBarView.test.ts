@@ -28,13 +28,14 @@ const unit: EntitySnapshot = {
   statuses: null,
   projectile: null,
   gem: null,
+  swing: null,
 };
 
 /** The colours `HealthBarView` fills for `entity`, in drawing order. */
 const fills = (entity: EntitySnapshot): unknown[] => {
   const renderer = new RecordingRenderer();
   new HealthBarView().draw(
-    { entity, position: { x: 0, y: 0 }, facing: EAST, isFocused: false },
+    { entity, position: { x: 0, y: 0 }, facing: EAST, tick: 0, isFocused: false },
     'enemy',
     renderer,
   );
@@ -51,7 +52,7 @@ describe('HealthBarView', () => {
     const renderer = new RecordingRenderer();
     const foe = { ...unit, health: { current: 3, max: 10 } };
     new HealthBarView().draw(
-      { entity: foe, position: { x: 10, y: 20 }, facing: EAST, isFocused: false },
+      { entity: foe, position: { x: 10, y: 20 }, facing: EAST, tick: 0, isFocused: false },
       'enemy',
       renderer,
     );
@@ -78,7 +79,7 @@ describe('HealthBarView', () => {
     const renderer = new RecordingRenderer();
     const visibleHeight = 3;
     new HealthBarView().draw(
-      { entity: unit, position: { x: 0, y: 20 }, facing: EAST, isFocused: false },
+      { entity: unit, position: { x: 0, y: 20 }, facing: EAST, tick: 0, isFocused: false },
       'enemy',
       renderer,
       visibleHeight,

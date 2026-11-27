@@ -30,6 +30,7 @@ const LEGEND: EntitySnapshot = {
   statuses: null,
   projectile: null,
   gem: null,
+  swing: null,
 };
 
 /** The wind-up `ticksActive` ticks in, of the 9 it lasts. */
@@ -43,7 +44,7 @@ const windup = (ticksActive: number): StatusSnapshot => ({
 const draw = (status: StatusSnapshot, entity = LEGEND): RecordingRenderer => {
   const renderer = new RecordingRenderer();
   new WindupRingsView().draw(
-    { entity, position: DRAWN_AT, facing: EAST, isFocused: false },
+    { entity, position: DRAWN_AT, facing: EAST, tick: 0, isFocused: false },
     status,
     renderer,
   );

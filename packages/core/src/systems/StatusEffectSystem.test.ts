@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadAbilities } from '../content/abilities/loadAbilities';
 
+import { weaponsWithoutTalonBleed } from '../__fixtures__/weaponsWithoutTalonBleed';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -30,7 +31,6 @@ import { DefaultSystemPipeline } from './DefaultSystemPipeline';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import type { System, SystemContext } from './System.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
-import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
 
 /** The match's assist window, as `Simulation` passes it (DEC-346). */
 const ASSIST_WINDOW_TICKS = loadScoring(createDefaultGameConfig().tickRate).assistWindowTicks;
@@ -41,13 +41,13 @@ const statusSystem = (applier: StatusEffectApplier) =>
 const STRUCTURES_PER_LANE = CONFIG.map.spawnTowersPerLane + CONFIG.map.buffTowersPerLane;
 
 /** A Warrior (light) at the origin next to a dark training dummy, an applier and an event log. */
-const setUp = () => {
+const setUp = (weapons = loadWeapons(CONFIG.tickRate)) => {
   const state = new GameState(CONFIG, 1);
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     loadDefaultContent(CONFIG.tickRate),
     undefined,
-    loadWeapons(CONFIG.tickRate),
+    weapons,
   );
   const spawn = (kind: string, definitionId: string, x: number, team: Team): Entity => {
     const entity = factory.create(kind, definitionId, { position: { x, y: 0 }, team });
@@ -77,7 +77,12 @@ const setUp = () => {
   };
   const ticksOf = (type: TimedEvent['type']) =>
     events.filter((event) => event.type === type).map((event) => event.tick);
-  return { state, warrior, dummy, apply, applier, events, run, ticksOf };
+  // Bleed from the talons (DEC-387 W5) is not what the weapon-hit tests check: count weapon hits only.
+  const weaponHitTicks = () =>
+    events.flatMap((event) =>
+      event.type === 'damage-applied' && event.payload.source.kind === 'weapon' ? [event.tick] : [],
+    );
+  return { state, warrior, dummy, apply, applier, events, run, ticksOf, weaponHitTicks };
 };
 
 /** The whole default tick of `state` as one system, so `run` can drive it. */
@@ -95,7 +100,6 @@ const tickPipeline = (state: GameState): System => {
     state,
     // A warrior fires no shot and nothing spawns here, so this factory builds nothing.
     factory: new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(CONFIG.tickRate)),
-    lineOfFire: SHIPPED_LINE_OF_FIRE,
     progression: {
       units: loadDefaultContent(CONFIG.tickRate),
       curves: loadLevelCurves(),
@@ -198,18 +202,21 @@ describe('statuses in the tick', () => {
   });
 
   it('concussion stretches the gap between two hits by 1 / 0.7', () => {
-    const { state, warrior, dummy, apply, run, ticksOf } = setUp();
+    const { state, warrior, dummy, apply, run, weaponHitTicks } = setUp();
     const { interval } = warrior.getComponent(Combat).attack;
     state.entities.setAttackTarget(warrior.id, dummy.id);
     apply(warrior, 'concussion');
 
     run(tickPipeline(state), 2 * interval);
 
-    expect(ticksOf('damage-applied')).toEqual([0, Math.round(interval / 0.7)]);
+    expect(weaponHitTicks()).toEqual([0, Math.round(interval / 0.7)]);
   });
 
   it('a blinded unit still lands its hits: blind has no hard miss (DEC-42)', () => {
-    const { state, warrior, dummy, apply, run, ticksOf } = setUp();
+    // Talons without bleed (DEC-387 W5): bleed would kill the dummy before the third hit. This test
+    // checks blind, not bleed.
+    const noBleed = weaponsWithoutTalonBleed(CONFIG.tickRate);
+    const { state, warrior, dummy, apply, run, ticksOf } = setUp(noBleed);
     const { interval } = warrior.getComponent(Combat).attack;
     state.entities.setAttackTarget(warrior.id, dummy.id);
     apply(warrior, 'blind'); // 45 ticks
@@ -217,6 +224,32 @@ describe('statuses in the tick', () => {
     run(tickPipeline(state), 2 * interval + 1); // inside the 45 ticks of blind
 
     expect(ticksOf('damage-applied')).toEqual([0, interval, 2 * interval]);
+  });
+
+  it('a talon hit lands a bleed, and a later bleed tick is credited to the attacker (DEC-387 W5)', () => {
+    const { state, warrior, dummy, run, events } = setUp();
+    state.entities.setAttackTarget(warrior.id, dummy.id);
+
+    run(tickPipeline(state), 31);
+
+    expect(
+      events.flatMap((event) =>
+        event.type === 'damage-applied'
+          ? [
+              {
+                tick: event.tick,
+                amount: event.payload.amount,
+                kind: event.payload.source.kind,
+                attackerId: event.payload.source.attackerId,
+              },
+            ]
+          : [],
+      ),
+    ).toEqual([
+      { tick: 0, amount: 45, kind: 'weapon', attackerId: warrior.id },
+      { tick: 21, amount: 45, kind: 'weapon', attackerId: warrior.id },
+      { tick: 30, amount: 10, kind: 'status', attackerId: warrior.id },
+    ]);
   });
 
   it('an enraged unit hits 15% harder', () => {

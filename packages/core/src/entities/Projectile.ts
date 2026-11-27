@@ -10,7 +10,7 @@ import { SpawnContextReader } from './SpawnContextReader';
 
 /**
  * A fast mover fired by a weapon or ability. Installs `Transform`, `Movement`, a `Collider` on the
- * projectile layer, `ProjectileFlight` (range and ending) and `TeamMembership` (whose side fired
+ * projectile layer, `ProjectileFlight` (range, ending and what lights it) and `TeamMembership` (whose side fired
  * it). The firing attack adds a `ProjectilePayload`; `ProjectileSystem` flies and lands it.
  */
 export class Projectile extends Entity {
@@ -36,7 +36,13 @@ export class Projectile extends Entity {
       new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'projectile'),
     );
     this.addComponent(
-      new ProjectileFlight(definition.range, definition.slowFrom, definition.endDuration),
+      new ProjectileFlight(
+        definition.range,
+        definition.slowFrom,
+        definition.endDuration,
+        definition.isArc === true,
+        definition.litOnHit,
+      ),
     );
     this.addComponent(new TeamMembership(team));
   }

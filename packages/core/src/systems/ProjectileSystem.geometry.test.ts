@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { lavaBridge } from '../__fixtures__/lavaBridge';
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { Combat } from '../components/Combat';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
@@ -21,8 +23,6 @@ import { Projectile } from '../entities/Projectile';
 import { CollisionResolver } from '../physics/CollisionResolver';
 import { StaticCollisionIndex } from '../physics/StaticCollisionIndex';
 import { GameState } from '../state/GameState';
-import { LineOfFire } from '../state/LineOfFire';
-import type { LineOfFireQuery } from '../state/LineOfFire.types';
 import { cos, sin } from '../utils/deterministicMath';
 import type { Team } from '../teams/teams.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
@@ -30,6 +30,8 @@ import { CombatSystem } from './CombatSystem';
 import { MovementSystem } from './MovementSystem';
 import { createDefaultProjectileImpacts } from './defaultProjectileImpacts';
 import { ProjectileSystem } from './ProjectileSystem';
+import { AreaHitQuery } from '../state/AreaHitQuery';
+import { ReachQuery } from '../state/ReachQuery';
 
 /*
  * Shots against the match's real collision rule: `CollisionResolver.reach` on a
@@ -67,6 +69,8 @@ type BodySpec = {
   /** A map object's outline (`MapObjectBody`) instead. */
   readonly object?: readonly Polygon[];
   readonly isWalkOn: boolean;
+  /** With an outline: the solid polygons of its other body objects (DEC-386 (1)). */
+  readonly solid?: readonly Polygon[];
 };
 
 /** A body with health: a circle, a structure outline or a map object outline. */
@@ -74,11 +78,13 @@ class Body extends Entity {
   public readonly kind = 'dummy';
   public readonly family = 'mob';
   protected installComponents(context: unknown): void {
-    const { at, team, radius, outline, object, isWalkOn } = context as BodySpec;
+    const { at, team, radius, outline, object, isWalkOn, solid } = context as BodySpec;
     this.addComponent(new Transform(at, radius));
     this.addComponent(new Health(FULL_HEALTH));
     this.addComponent(new TeamMembership(team));
-    if (outline !== undefined) this.addComponent(new Footprint(outline, { isWalkOn }));
+    if (outline !== undefined) {
+      this.addComponent(new Footprint(outline, { isWalkOn, solid: solid ?? [] }));
+    }
     if (object !== undefined) {
       const kind = isWalkOn ? 'stronghold' : 'fort';
       this.addComponent(
@@ -88,16 +94,23 @@ class Body extends Entity {
   }
 }
 
-/** A world whose walls are `walls`, with a projectile system and movement for whole flights. */
-const world = (walls: readonly Polygon[]) => {
-  const collisions = new CollisionResolver(
+/**
+ * A world whose walls are `walls`, or whose collision rule is `collisions`, with a projectile
+ * system and movement for whole flights.
+ */
+const world = (
+  walls: readonly Polygon[],
+  collisions = new CollisionResolver(
     new StaticCollisionIndex(walls.map((polygon, i) => ({ id: `wall-${String(i)}`, polygon }))),
     BOUNDS,
-  );
+  ),
+) => {
   const state = new GameState(CONFIG, 1, null, { collisions });
   const context = { state, logger: new NullLogger() };
+  const areas = new AreaHitQuery();
   const projectiles = new ProjectileSystem(
-    createDefaultProjectileImpacts(new DamagePipeline(), null),
+    createDefaultProjectileImpacts(new DamagePipeline(), null, areas),
+    areas,
   );
   const movement = new MovementSystem();
   let counter = 0;
@@ -117,6 +130,7 @@ const world = (walls: readonly Polygon[]) => {
       new ProjectilePayload({
         ownerId: 'owner',
         team: 'light',
+        ownerLevel: 1,
         source: { attackerId: 'owner', kind: 'weapon', definitionId: 'magus-staff' },
         targetId,
         impact: { kind: 'weapon', attack: ATTACK },
@@ -185,10 +199,10 @@ describe('ProjectileSystem on real geometry', () => {
   });
 
   /**
-   * A Magus hugging a wall attacks a dummy behind it, in reach, for 40 ticks with `lineOfFire`;
-   * returns the shots it fired and the damage the dummy took.
+   * A Magus hugging a wall attacks a dummy behind it, in reach, for 40 ticks; returns the shots it
+   * fired, its attack interval and the damage the dummy took.
    */
-  const hugWallAndAttack = (lineOfFire: LineOfFireQuery) => {
+  const hugWallAndAttack = () => {
     const units = loadDefaultContent(CONFIG.tickRate);
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),
@@ -215,7 +229,12 @@ describe('ProjectileSystem on real geometry', () => {
     scene.state.events.on('entity-spawned', ({ kind }) => {
       if (kind === 'projectile') shots += 1;
     });
-    const combat = new CombatSystem({ damage: new DamagePipeline(), factory, lineOfFire });
+    const combat = new CombatSystem({
+      damage: new DamagePipeline(),
+      factory,
+      areas: new AreaHitQuery(),
+      reach: new ReachQuery(),
+    });
     expect(scene.state.entities.setAttackTarget(magus.id, dummy.id)).toBe(true);
 
     for (let tick = 0; tick < 40; tick += 1) {
@@ -224,22 +243,22 @@ describe('ProjectileSystem on real geometry', () => {
       scene.state.advanceTick();
     }
     const health = dummy.getComponent(Health);
-    return { shots, damage: health.max - health.current };
+    const { interval } = magus.getComponent(Combat).attack;
+    return { shots, interval, damage: health.max - health.current };
   };
 
   it('stops at the wall a shot fired by a unit hugging that wall, with a target behind it in reach', () => {
-    // A line that always reads clear: aimed fire (PR 2) shoots across walls, so the flight must stop.
-    const { shots, damage } = hugWallAndAttack({ isClear: () => true });
+    const { shots, damage } = hugWallAndAttack();
 
     expect(shots).toBeGreaterThan(0);
     expect(damage).toBe(0);
   });
 
-  it('fires no shot from a unit hugging a wall at a target behind it, on the real line of fire', () => {
-    const { shots, damage } = hugWallAndAttack(new LineOfFire(PROJECTILES));
+  it('fires every interval from a unit hugging a wall at a target behind it: no line-of-fire gate (DEC-317 addendum)', () => {
+    const { shots, interval } = hugWallAndAttack();
 
-    expect(shots).toBe(0);
-    expect(damage).toBe(0);
+    // Ticks 0, interval, 2 x interval, ... below 40.
+    expect(shots).toBe(Math.ceil(40 / interval));
   });
 
   describe('from inside a fort court, ringed by its walls', () => {
@@ -341,6 +360,32 @@ describe('ProjectileSystem on real geometry', () => {
       expect(scene.state.entities.has(shot.id)).toBe(false);
     });
 
+    it('flies over the floor of an outline with solid walls too, and lands on a solid wall it meets (DEC-386 (1))', () => {
+      // The Stronghold: a walk-on palace floor and a solid outer wall north of it.
+      const stronghold = {
+        at: { x: 10, y: 10 },
+        radius: 10,
+        outline: [floor],
+        solid: [box(0, 22, 20, 2)],
+        isWalkOn: true,
+      };
+      const over = world([]);
+      const overStronghold = over.addBody(stronghold);
+      const unit = over.addBody({ at: { x: 6, y: 5 } });
+      over.shoot({ x: -10, y: 5 }, { x: 1, y: 0 }, unit.id);
+      const into = world([]);
+      const intoStronghold = into.addBody(stronghold);
+      const shot = into.shoot({ x: -10, y: 23 }, { x: 1, y: 0 });
+
+      over.fly(12);
+      into.fly(12);
+
+      expect(over.healthOf(unit)).toBe(FULL_HEALTH - ATTACK.damage);
+      expect(over.healthOf(overStronghold)).toBe(FULL_HEALTH);
+      expect(into.healthOf(intoStronghold)).toBe(FULL_HEALTH - ATTACK.damage);
+      expect(into.state.entities.has(shot.id)).toBe(false);
+    });
+
     it('flies over it with a shot fired at no one', () => {
       const scene = world([]);
       const { structure, object } = palace(scene);
@@ -368,5 +413,46 @@ describe('ProjectileSystem on real geometry', () => {
     expect(scene.healthOf(outline)).toBe(FULL_HEALTH - ATTACK.damage);
     expect(scene.state.entities.has(above.id)).toBe(false);
     expect(scene.state.entities.has(below.id)).toBe(false);
+  });
+
+  describe('the launch-shape rule (DEC-334)', () => {
+    it('lets a bolt launched inside its pylon and wall leave both and hit a body outside', () => {
+      // A wall turret's pylon on its wall: the launch point is inside both shapes, near the wall's
+      // end, so the first move goes deeper into the wall.
+      const scene = world([box(-2.5, -2, 4, 4), box(-1, -1, 10, 2)]);
+      const target = scene.addBody({ at: { x: 14, y: 0 } });
+      const bolt = scene.shoot({ x: -0.5, y: 0 }, { x: 1, y: 0 }, target.id);
+
+      scene.fly(10);
+
+      expect(scene.healthOf(target)).toBe(FULL_HEALTH - ATTACK.damage);
+      expect(scene.state.entities.has(bolt.id)).toBe(false);
+    });
+
+    it('still ends a shot at a wall its circle, but not its launch point, overlaps at launch', () => {
+      const scene = world([box(1, -5, 10, 10)]);
+      const behind = scene.addBody({ at: { x: 13, y: 0 } });
+      const shot = scene.shoot(
+        { x: 1 - BOLT.footprintRadius / 3, y: 0 },
+        { x: 1, y: 0 },
+        behind.id,
+      );
+
+      expect(scene.fly(10, shot)).toEqual([]);
+      expect(scene.healthOf(behind)).toBe(FULL_HEALTH);
+    });
+
+    it("flies a shot fired from the seed 1 map's lava bridge over the lava, onto the body past it (HC-Q89, DEC-345)", () => {
+      const { collisions, onBridge, offTheSide } = lavaBridge();
+      const scene = world([], collisions);
+      const past = scene.addBody({
+        at: { x: onBridge.x + offTheSide.x * 6, y: onBridge.y + offTheSide.y * 6 },
+      });
+      const shot = scene.shoot(onBridge, offTheSide, past.id);
+
+      // 2 m per tick: the lava no longer ends it: it flies two ticks, lands in the third.
+      expect(scene.fly(10, shot)).toHaveLength(2);
+      expect(scene.healthOf(past)).toBeLessThan(FULL_HEALTH);
+    });
   });
 });

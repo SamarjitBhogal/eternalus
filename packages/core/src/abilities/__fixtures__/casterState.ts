@@ -1,4 +1,5 @@
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
+import { loadTurrets } from '../../content/structures/loadTurrets';
 import type { AbilityKit } from '../../content/abilities/AbilityDefinition.types';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { STRUCTURE_DEFINITIONS } from '../../content/structures/structureCatalogue';
@@ -38,6 +39,8 @@ export const casterState = (
     unitsWithWarriorKit(kit),
     undefined,
     loadWeapons(30),
+    null,
+    loadTurrets(30).ammo,
   );
   const caster = factory.create('warrior', 'warrior', { position: { x: 0, y: 0 }, team: 'light' });
   state.entities.add(caster);

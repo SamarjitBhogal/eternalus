@@ -26,6 +26,7 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
   statuses: null,
   projectile: null,
   gem: null,
+  swing: null,
 });
 
 describe('createDefaultViewRegistry', () => {

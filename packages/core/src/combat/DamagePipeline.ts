@@ -14,8 +14,8 @@ import type { KillCredit } from './KillCredit';
  *
  * Emits `damage-applied` for every hit that lands, `damage-blocked` for one a step takes to 0, and
  * `entity-died` with the killer for the hit that takes health to 0; `DeathSystem` removes the dead
- * later in the tick. With a `KillCredit`, a death by the Cathedral gem names the victim's last
- * enemy damager as its killer (DEC-346).
+ * later in the tick. A fall (`collapse`) is announced the same way. With a `KillCredit`, a death by
+ * the Cathedral gem names the victim's last enemy damager as its killer (DEC-346).
  *
  * Every rule that changes a hit (friendly fire, statuses, structure multipliers, breakability) is a
  * `DamageStep`, run in order before `Health`; add one in `defaultDamageSteps.ts`.
@@ -61,13 +61,39 @@ export class DamagePipeline {
       state.events.emit('damage-blocked', { targetId, source });
       return { applied: false, reason: 'blocked' };
     }
+    return this.land(state, targetId, health, final, source);
+  }
 
-    const { toShields, toBase } = health.applyDamage(final);
+  /**
+   * Takes all of `targetId`'s health from `source` in one hit that no step changes: it falls with
+   * what it stands on or in (a building's contents, 07 §13; a wall turret on its pylon, DEC-388).
+   * No modifier can leave it alive, so it falls on the same tick. It is announced as `apply`
+   * announces a lethal hit, so the fall scores and pays as a last hit does.
+   */
+  public collapse(state: GameState, targetId: EntityId, source: DamageSource): DamageResult {
+    const health = state.entities.get(targetId)?.findComponent(Health);
+    if (health === undefined) {
+      return { applied: false, reason: state.entities.has(targetId) ? 'no-health' : 'no-target' };
+    }
+    if (health.isDead) {
+      return { applied: false, reason: 'already-dead' };
+    }
+    return this.land(state, targetId, health, health.total, source);
+  }
+
+  /** Takes `amount` off `health` and announces the hit, and the death when it kills. */
+  private land(
+    state: GameState,
+    targetId: EntityId,
+    health: Health,
+    amount: number,
+    source: DamageSource,
+  ): DamageResult {
+    const { toShields, toBase } = health.applyDamage(amount);
     state.events.emit('damage-applied', { targetId, amount: toBase, absorbed: toShields, source });
     this.credit?.recordHit(state, targetId, source);
 
-    // Not `health.isDead`: TypeScript still narrows it to false from the check above.
-    const killed = health.current === 0;
+    const killed = health.isDead;
     if (killed) {
       const killer = this.credit?.killerOf(state, targetId, source) ?? source;
       state.events.emit('entity-died', { entityId: targetId, killer });

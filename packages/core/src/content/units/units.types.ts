@@ -1,4 +1,5 @@
 import type { ControllerId } from '../ai/ai.types';
+import type { AbilityEffectSpec, AuthoredEffectSpec } from '../abilities/AbilityDefinition.types';
 import type { EntityDefinitionBase } from '../EntityDefinition.types';
 
 /**
@@ -22,7 +23,7 @@ export type MovementProfile = {
 export type MovementStrategyId = 'lane-follow' | 'leashed-chase';
 
 /** How an attack is carried out; one `AttackStrategy` per id in `entities/strategies/defaultStrategyRegistry.ts`. */
-export type AttackStrategyId = 'melee' | 'ranged-projectile';
+export type AttackStrategyId = 'melee' | 'melee-sweep' | 'ranged-projectile';
 
 /**
  * How a ranged shot loses damage with distance travelled (05 §10): full damage up to `fullTo`
@@ -36,38 +37,74 @@ export type ProjectileFalloff = {
 };
 
 /**
- * What a ranged attack fires: a projectile definition id and its damage fall-off (`null`: none).
+ * A shot's blast (DEC-342): where it lands it damages every enemy unit whose circle meets a circle
+ * of `radius` metres. `radius` must be positive; `edgeMultiplier` in [0, 1].
+ */
+export type ProjectileSplash = {
+  /** Blast radius in metres. */
+  readonly radius: number;
+  /** Share of the damage a unit at the blast's edge takes; the share rises straight to 1 at the centre. */
+  readonly edgeMultiplier: number;
+};
+
+/**
+ * What a ranged attack fires: a projectile definition id, its damage fall-off (`null`: none) and,
+ * for a shot that bursts where it lands, its blast. Absent `splash`: the shot hits one body.
  */
 export type ProjectileLaunch = {
   readonly projectileId: string;
   readonly falloff: ProjectileFalloff | null;
+  readonly splash?: ProjectileSplash;
 };
 
-/** The fields every basic attack has. All values must be positive. */
-type AttackBase = {
+/**
+ * The fields every basic attack has. All numbers must be positive. `Step` is the type of its
+ * `onHit` steps: `AuthoredEffectSpec` as authored (`AuthoredUnitAttack`), `AbilityEffectSpec` once
+ * loaded (the default), as a status's `onHit` steps are.
+ */
+type AttackBase<Step> = {
   /** Damage per hit, before damage steps. */
   readonly damage: number;
   /** Reach in metres, measured edge to edge between the two footprints. */
   readonly reach: number;
   /** Time between hits: seconds in content files, ticks once loaded. */
   readonly interval: number;
+  /**
+   * Effect steps run on each body the attack strikes, after its damage and before the attacker's
+   * statuses' `onHit` steps (05 §10 `WeaponAttack.onHit`; a turret bolt's concussion): times in
+   * seconds as authored, in ticks once loaded (`loadWeapons`, `loadTurrets`, DEC-241). Absent =
+   * none.
+   */
+  readonly onHit?: readonly Step[];
 };
 
 /** A hit that lands in the tick it is made. */
-export type MeleeAttack = AttackBase & { readonly strategy: 'melee' };
+export type MeleeAttack<Step = AbilityEffectSpec> = AttackBase<Step> & {
+  readonly strategy: 'melee';
+};
+
+/**
+ * A weapon swing (DEC-184): hits every body the area in front of the attacker reaches, not one
+ * target. `reach` is the swing's radius from the body edge; `arcDegrees` is the angle of the
+ * wedge, authored in degrees (the owner's unit) and in (0, 180] (DEC-304).
+ */
+export type SweepAttack<Step = AbilityEffectSpec> = AttackBase<Step> & {
+  readonly strategy: 'melee-sweep';
+  readonly arcDegrees: number;
+};
 
 /**
  * A shot: spawns a projectile that lands later (05 §10). `reach` is the distance it is fired from.
  */
-export type RangedAttack = AttackBase & {
+export type RangedAttack<Step = AbilityEffectSpec> = AttackBase<Step> & {
   readonly strategy: 'ranged-projectile';
   readonly projectile: ProjectileLaunch;
 };
 
 /**
- * Which of a unit's attacks an `attack-target` command uses: `'basic'` (the default, the first
- * attack of its weapon) or `'melee'` (its melee attack, DEC-308). Architecture 05 §10 plans a
- * later `'heavy'`.
+ * Which of a unit's attacks an `attack-target` or `attack-aim` command uses: `'basic'` (the
+ * default, the first attack of its weapon) or `'melee'` (its melee attack, DEC-308). Architecture
+ * 05 §10 plans a later `'heavy'`.
  */
 export type AttackMode = 'basic' | 'melee';
 
@@ -75,7 +112,14 @@ export type AttackMode = 'basic' | 'melee';
  * A unit's basic attack (architecture 05 §10, `WeaponAttack`). A mob's attack lives on its
  * definition; a Legend has none and attacks with its weapon (`Legend`).
  */
-export type UnitAttack = MeleeAttack | RangedAttack;
+export type UnitAttack<Step = AbilityEffectSpec> =
+  MeleeAttack<Step> | SweepAttack<Step> | RangedAttack<Step>;
+
+/**
+ * A basic attack as authored: its `onHit` steps' times in seconds. `loadWeapons` and `loadTurrets`
+ * load it into a `UnitAttack`.
+ */
+export type AuthoredUnitAttack = UnitAttack<AuthoredEffectSpec>;
 
 /**
  * A unit's attacks by mode, resolved once at spawn (`attacksByMode`). Every unit has a basic
@@ -97,8 +141,12 @@ export type UnitDefinition = EntityDefinitionBase & {
   readonly movementProfile: MovementProfile;
   /** The strategy that steers this unit each tick; none for a unit nothing steers. */
   readonly movementStrategy?: MovementStrategyId;
-  /** The basic attack; a unit without one cannot attack (a training dummy). */
-  readonly attack?: UnitAttack;
+  /**
+   * The basic attack; a unit without one cannot attack (a training dummy). Its `onHit` is typed
+   * `never[]`: a mob's attack has no `onHit` until the loader converts its times to ticks
+   * (DEC-241), so authoring one is a type error.
+   */
+  readonly attack?: UnitAttack<never>;
   /** The controller that drives this unit (architecture 11 §2); none for the player. */
   readonly controller?: ControllerId;
   /** The AI profile its controller reads (`content/ai/profiles/`); the controller id by default. */

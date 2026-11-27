@@ -1,96 +1,206 @@
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
+import { Combat } from '../components/Combat';
 import { Progression } from '../components/Progression';
 import type { StatusEffectRuntime } from '../components/StatusEffectRuntime';
 import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
+import type { AbilityEffectSpec } from '../content/abilities/AbilityDefinition.types';
+import type { UnitAttack } from '../content/units/units.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { Shooter } from '../state/HitRunner.types';
 import type { AbilityRegistry } from './AbilityRegistry';
 import { CastInstance } from './CastInstance';
-import { TargetQuery } from './TargetQuery';
+import type { LandedHit } from './HitEffects.types';
+import type { TargetQuery } from './TargetQuery';
 
 /**
- * Runs the `onHit` steps of an attacker's statuses each time one of its basic attacks lands
- * (architecture 05 §8; Fury's knock-back). Each status's steps run as one cast through the
- * registry's strategies, as an ability's do (`CastInstance`): credited to the attacker under the
- * status's id, from the `default-action` slot (the basic attack), aimed at the struck body and
- * placed from the attacker to it, which the `hit` shape reads. The attack strategy calls it where
- * the hit lands (`MeleeAttackStrategy` in the tick); a weapon's `onHit` (05 §10) can run through it
- * too.
+ * Runs the on-hit steps each time a basic attack lands (architecture 05 §8, §10): the attack's own
+ * `onHit` (05 §10 `WeaponAttack.onHit`; a heavy bolt's concussion), then the `onHit` of each of the
+ * attacker's statuses (Fury's knock-back). Each list runs as one cast through the registry's
+ * strategies, as an ability's steps do (`CastInstance`): credited to the attacker, from the
+ * `default-action` slot (the basic attack), aimed at the struck body and placed from the attacker
+ * to it, which the `hit` shape reads. The attack's cast is named after the attacker's weapon, or
+ * its definition when it has none (a turret), as the attack's damage source is
+ * (`weaponSourceOf`); a status's after the status. The attack strategy calls it where the hit
+ * lands (`MeleeAttackStrategy` in the tick, `WeaponImpact` when a shot lands). A shot whose owner
+ * left the store before it landed still runs its attack's steps, cast from the owner as it fired
+ * (`Shooter`); the statuses' steps need the live owner, so they do not run. `runSteps` runs any
+ * list of steps for a landed hit the same way, without the statuses': a lit arrow's burn.
  */
 export class HitEffects {
-  private readonly targets: TargetQuery;
+  /** What `afterHit` reads for an attacker with no `StatusEffects`. */
+  private static readonly NO_STATUSES: readonly StatusEffectRuntime[] = [];
+
+  /** What `afterHit` reads for an attack with no `onHit` steps. */
+  private static readonly NO_STEPS: readonly AbilityEffectSpec[] = [];
 
   /**
    * @param registry - Where effect and shape strategies are found (the `AbilityRegistry`).
    * @param damage - The match's one damage pipeline, for the steps.
    * @param statuses - The match's one status applier, for the steps.
+   * @param targets - The match's one target query, for the steps' targets.
    */
   public constructor(
     private readonly registry: Pick<AbilityRegistry, 'effectFor' | 'shapeFor'>,
     private readonly damage: DamagePipeline,
     private readonly statuses: StatusEffectApplier,
-  ) {
-    this.targets = new TargetQuery(registry);
+    private readonly targets: Pick<TargetQuery, 'find'>,
+  ) {}
+
+  /**
+   * Runs the `onHit` steps of `attack`, then those of every status on `attackerId`, oldest status
+   * first, for the basic attack that just struck `targetId`. Nothing runs, and nothing is
+   * allocated (NFR-023), when neither the attack nor any status has `onHit` steps; nothing runs
+   * when the struck body is gone or has no position, or the attacker has no position, or the
+   * attacker is gone and no `shooter` is given.
+   *
+   * @param attack - The attack that struck; absent runs only the statuses' steps.
+   * @param shooter - A shot's owner as it fired: the attack's steps run from it when the attacker
+   *   is gone. Ignored while the attacker is in the store.
+   */
+  public afterHit(
+    state: GameState,
+    attackerId: EntityId,
+    targetId: EntityId,
+    attack?: UnitAttack,
+    shooter?: Shooter,
+  ): void {
+    const active =
+      state.entities.get(attackerId)?.findComponent(StatusEffects)?.active ??
+      HitEffects.NO_STATUSES;
+    const steps = attack?.onHit ?? HitEffects.NO_STEPS;
+    if (steps.length === 0 && !HitEffects.hasOnHit(active)) {
+      return;
+    }
+    const landed = HitEffects.landing(state, attackerId, targetId, shooter);
+    if (landed === undefined) {
+      return;
+    }
+    const { hit, caster } = landed;
+    if (steps.length > 0) {
+      this.run(state, hit, caster.source.definitionId, steps);
+    }
+    // Only the statuses active at the hit (none once the attacker is gone): a step may add one to
+    // the attacker (a buff on hit).
+    for (let index = 0, count = active.length; index < count; index += 1) {
+      const definition = active[index]?.definition;
+      if (definition?.onHit !== undefined) {
+        this.run(state, hit, definition.id, definition.onHit);
+      }
+    }
   }
 
   /**
-   * Runs the `onHit` steps of every status on `attackerId`, oldest status first, for its basic
-   * attack that just struck `targetId`. Nothing runs, and nothing is allocated (NFR-023), when the
-   * attacker has no status with `onHit` steps; nothing runs when either entity has no position.
+   * Runs `steps` as one cast named `id` for a hit that landed: the steps of a lit shot's
+   * `litOnHit` (HC-Q89, DEC-345). The attacker's statuses' steps do not run. Nothing runs for no
+   * steps, or when the struck body is gone or has no position, or the attacker has no position, or
+   * the attacker is gone and no `shooter` is given.
+   *
+   * @param id - The cast's name: the weapon that fired the shot (its `payload.source.definitionId`).
+   * @param shooter - A shot's owner as it fired: the steps run from it when the attacker is gone.
+   *   Ignored while the attacker is in the store.
    */
-  public afterHit(state: GameState, attackerId: EntityId, targetId: EntityId): void {
-    const attacker = state.entities.get(attackerId);
-    const active = attacker?.findComponent(StatusEffects)?.active;
-    const position = attacker?.findComponent(Transform)?.position;
+  public runSteps(
+    state: GameState,
+    attackerId: EntityId,
+    targetId: EntityId,
+    id: string,
+    steps: readonly AbilityEffectSpec[],
+    shooter?: Shooter,
+  ): void {
+    const landed = HitEffects.landing(state, attackerId, targetId, shooter);
+    if (landed !== undefined) {
+      this.run(state, landed.hit, id, steps);
+    }
+  }
+
+  /**
+   * The hit of `attackerId` on `targetId` as the steps cast it, and its caster: the attacker as it
+   * is now, or `shooter` when the attacker is gone. `undefined` when the struck body is gone or has
+   * no position, or the attacker has no position, or the attacker is gone and no `shooter` is
+   * given. The one look-up of `afterHit` and `runSteps`.
+   */
+  private static landing(
+    state: GameState,
+    attackerId: EntityId,
+    targetId: EntityId,
+    shooter: Shooter | undefined,
+  ): { readonly hit: LandedHit; readonly caster: Shooter } | undefined {
     const struck = state.entities.get(targetId)?.findComponent(Transform)?.position;
-    if (
-      attacker === undefined ||
-      active === undefined ||
-      position === undefined ||
-      struck === undefined ||
-      !HitEffects.hasOnHit(active)
-    ) {
-      return;
+    const caster =
+      state.entities.get(attackerId) === undefined
+        ? shooter
+        : HitEffects.liveShooter(state, attackerId);
+    if (struck === undefined || caster === undefined) {
+      return undefined;
     }
-    const from = { x: position.x, y: position.y };
-    const to = { x: struck.x, y: struck.y };
-    // Only the statuses active at the hit: a step may add one to the attacker (a buff on hit).
-    for (let index = 0, count = active.length; index < count; index += 1) {
-      const definition = active[index]?.definition;
-      if (definition?.onHit === undefined) {
-        continue;
-      }
-      // ponytail: steps bound and one CastInstance per hit, fine at a few hits a second; cache the
-      // bound steps per status if on-hit statuses become common.
-      new CastInstance(
-        {
-          casterId: attacker.id,
-          ability: {
-            id: definition.id,
-            steps: definition.onHit.map((spec) => ({
-              effect: this.registry.effectFor(spec.kind),
-              spec,
-              delayTicks: 0, // an on-hit step never waits: it runs where the hit lands
-            })),
-            definition: { scaling: {} },
-          },
-          slot: 'default-action',
-          aim: { point: to, targetId },
-          origin: from,
-          casterLevel: attacker.findComponent(Progression)?.level ?? 1,
-          tick: state.tick,
+    const hit: LandedHit = {
+      casterId: attackerId,
+      casterLevel: caster.ownerLevel,
+      casterTeam: caster.team,
+      targetId,
+      from: { x: caster.origin.x, y: caster.origin.y },
+      to: { x: struck.x, y: struck.y },
+    };
+    return { hit, caster };
+  }
+
+  /** Runs `steps` as one cast named `id`, by the attacker of `hit`, at the struck body. */
+  private run(
+    state: GameState,
+    { casterId, casterLevel, casterTeam, targetId, from, to }: LandedHit,
+    id: string,
+    steps: readonly AbilityEffectSpec[],
+  ): void {
+    // ponytail: steps bound and one CastInstance per hit, fine at a few hits a second; cache the
+    // bound steps per status or attack if on-hit steps become common.
+    new CastInstance(
+      {
+        casterId,
+        caster: { team: casterTeam, position: from },
+        ability: {
+          id,
+          steps: steps.map((spec) => ({
+            effect: this.registry.effectFor(spec.kind),
+            spec,
+            delayTicks: 0, // an on-hit step never waits: it runs where the hit lands
+          })),
+          definition: { scaling: {} },
         },
-        {
-          state,
-          effects: this.registry,
-          targets: this.targets,
-          damage: this.damage,
-          statuses: this.statuses,
-        },
-      ).run({ from, to });
+        slot: 'default-action',
+        aim: { point: to, targetId },
+        origin: from,
+        casterLevel,
+        tick: state.tick,
+      },
+      {
+        state,
+        effects: this.registry,
+        targets: this.targets,
+        damage: this.damage,
+        statuses: this.statuses,
+      },
+    ).run({ from, to });
+  }
+
+  /**
+   * The attacker in the store as the shooter of its own hit, as it is now: its cast named after its
+   * weapon, or its definition (`weaponSourceOf`). `undefined` when it has no position.
+   */
+  private static liveShooter(state: GameState, attackerId: EntityId): Shooter | undefined {
+    const attacker = state.entities.get(attackerId);
+    const origin = attacker?.findComponent(Transform)?.position;
+    if (attacker === undefined || origin === undefined) {
+      return undefined;
     }
+    return {
+      team: state.entities.teamOf(attackerId),
+      ownerLevel: attacker.findComponent(Progression)?.level ?? 1,
+      origin,
+      source: { definitionId: attacker.findComponent(Combat)?.weaponId ?? attacker.definitionId },
+    };
   }
 
   /** Whether any of `active` has `onHit` steps; a loop, so a hit with none allocates nothing. */

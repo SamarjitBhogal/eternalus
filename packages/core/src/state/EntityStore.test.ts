@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import { Abilities } from '../components/Abilities';
+import { Collider } from '../components/Collider';
+import { Combat } from '../components/Combat';
 import { Deploying } from '../components/Deploying';
-import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { StatusEffects } from '../components/StatusEffects';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { Team } from '../teams/teams.types';
@@ -14,9 +18,8 @@ import { Entity } from '../entities/Entity';
 import { EntityFactory } from '../entities/EntityFactory';
 import { Legend } from '../entities/Legend';
 import { Unit } from '../entities/Unit';
+import { IdGenerator } from '../utils/IdGenerator';
 import { EntityStore } from './EntityStore';
-import { MapObjectBody } from '../components/MapObjectBody';
-import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 
 class Dummy extends Entity {
   public readonly kind = 'dummy';
@@ -192,6 +195,30 @@ describe('EntityStore', () => {
     expect(store.steer('nobody', { x: 1, y: 0 })).toBe(false);
   });
 
+  it("reads an entity's place and velocity, and nothing for an entity without them", () => {
+    const store = storeWith('still');
+    const minion = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)).create(
+      'light-mob',
+      'light-minion',
+      { team: 'dark', position: { x: 4, y: 5 } },
+    );
+    store.add(minion);
+    const movement = minion.getComponent(Movement);
+    movement.steer({ x: 1, y: 0 });
+    movement.advance();
+
+    expect(store.placeOf(minion.id)).toMatchObject({
+      position: { x: 4, y: 5 },
+      radius: minion.getComponent(Transform).radius,
+    });
+    expect(store.velocityOf(minion.id)).toEqual(movement.velocity);
+    expect(store.velocityOf(minion.id)?.x).toBeGreaterThan(0);
+    expect(store.placeOf('still')).toBeUndefined();
+    expect(store.velocityOf('still')).toBeUndefined();
+    expect(store.placeOf('nobody')).toBeUndefined();
+    expect(store.velocityOf('nobody')).toBeUndefined();
+  });
+
   it("reads an entity's team and whether it is alive", () => {
     const store = storeWith('dummy');
     const minion = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)).create(
@@ -229,6 +256,117 @@ describe('EntityStore', () => {
     expect(store.attackTargetOf('nobody')).toBeNull();
   });
 
+  it('reads whom an entity attacks: its lock first, then each living body its last attack hit while the hits count, once each (DEC-322 (2))', () => {
+    const store = new EntityStore();
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const spawn = (team: Team) => {
+      const entity = factory.create('light-mob', 'light-minion', {
+        team,
+        position: { x: 0, y: 0 },
+      });
+      store.add(entity);
+      return entity;
+    };
+    const attacker = spawn('dark');
+    const [first, second, locked] = [spawn('light'), spawn('light'), spawn('light')];
+    const combat = attacker.getComponent(Combat);
+
+    expect(store.victimsOf(attacker.id, 0)).toEqual([]);
+    combat.recordHits([first.id, second.id], 0, 1);
+    expect(store.victimsOf(attacker.id, 0)).toEqual([first.id, second.id]);
+    expect(store.isAttacking(attacker.id, second.id, combat.attack.interval)).toBe(true);
+    expect(store.isAttacking(attacker.id, second.id, combat.attack.interval + 1)).toBe(false);
+
+    // A locked sweep hits more than its lock; each body it hit is attacked too.
+    store.setAttackTarget(attacker.id, locked.id);
+    expect(store.victimsOf(attacker.id, 0)).toEqual([locked.id, first.id, second.id]);
+    expect(store.isAttacking(attacker.id, first.id, 0)).toBe(true);
+    store.setAttackTarget(attacker.id, first.id);
+    expect(store.victimsOf(attacker.id, 0)).toEqual([first.id, second.id]);
+    store.clearAttackTarget(attacker.id);
+
+    first.getComponent(Health).applyDamage(first.getComponent(Health).current);
+    expect(store.victimsOf(attacker.id, 0)).toEqual([second.id]);
+    expect(store.victimsOf(first.id, 0)).toEqual([]);
+    expect(store.victimsOf('nobody', 0)).toEqual([]);
+    expect(store.isAttacking('nobody', first.id, 0)).toBe(false);
+  });
+
+  it('records the bodies an attack hit on the living attacker, for one attack interval or its slowed cooldown when longer (DEC-322 (2), DEC-333 (1))', () => {
+    const store = new EntityStore();
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const statuses = loadStatusEffects(30, 2);
+    const spawn = () => {
+      const entity = factory.create('light-mob', 'light-minion', {
+        team: 'dark',
+        position: { x: 0, y: 0 },
+      });
+      store.add(entity);
+      return entity;
+    };
+    const [attacker, slowed, hasted, dead] = [spawn(), spawn(), spawn(), spawn()];
+    slowed.getComponent(StatusEffects).apply(statuses.get('concussion'), null, 0);
+    hasted.getComponent(StatusEffects).apply(statuses.get('fury'), null, 0);
+    dead.getComponent(Health).applyDamage(dead.getComponent(Health).current);
+    const { interval } = attacker.getComponent(Combat).attack;
+
+    for (const entity of [attacker, slowed, hasted, dead]) store.recordHits(entity.id, ['a'], 1);
+    store.recordHits(attacker.id, ['b'], 1);
+    store.recordHits('nobody', ['a'], 1);
+
+    expect(store.attackSpeedOf(attacker.id)).toBe(1);
+    expect(store.attackSpeedOf(slowed.id)).toBe(0.7);
+    expect(store.attackSpeedOf('nobody')).toBe(1);
+    expect(attacker.getComponent(Combat).hitsAt(1)).toEqual(['a', 'b']);
+    expect(attacker.getComponent(Combat).hitsUntilTick).toBe(1 + interval);
+    expect(slowed.getComponent(Combat).hitsUntilTick).toBe(1 + Math.round(interval / 0.7));
+    // Fury triples the attack speed; its hits still count for one full interval.
+    expect(hasted.getComponent(Combat).hitsUntilTick).toBe(1 + interval);
+    expect(dead.getComponent(Combat).hitIds).toEqual([]);
+  });
+
+  it('reads whether an entity takes no damage now: only while its collider is unbreakable', () => {
+    const store = storeWith('no-collider');
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const gate = factory.create('light-mob', 'light-minion', {
+      team: 'dark',
+      position: { x: 0, y: 0 },
+    });
+    store.add(gate);
+
+    expect(store.takesNoDamage(gate.id)).toBe(false);
+    gate.getComponent(Collider).setUnbreakable(true);
+    expect(store.takesNoDamage(gate.id)).toBe(true);
+    expect(store.takesNoDamage('no-collider')).toBe(false);
+    expect(store.takesNoDamage('nobody')).toBe(false);
+  });
+
+  it('ignores hits on a body that takes no damage, except the Cathedral gem (DEC-292)', () => {
+    const store = new EntityStore();
+    const ids = new IdGenerator();
+    const registry = createDefaultEntityRegistry();
+    const minion = new EntityFactory(registry, loadDefaultContent(30), ids).create(
+      'light-mob',
+      'light-minion',
+      { team: 'dark', position: { x: 0, y: 0 } },
+    );
+    const gem = new EntityFactory(registry, STRUCTURE_DEFINITIONS, ids).create(
+      'cathedral-gem',
+      'cathedral',
+      { team: 'neutral', position: { x: 0, y: 0 } },
+    );
+    store.add(minion);
+    store.add(gem);
+
+    expect(store.ignoresHits(minion.id)).toBe(false);
+    minion.getComponent(Collider).setUnbreakable(true);
+    expect(store.ignoresHits(minion.id)).toBe(true);
+    // The gem takes no damage, but a hit on it lands so the gem can strike back.
+    expect(store.takesNoDamage(gem.id)).toBe(true);
+    expect(store.ignoresHits(gem.id)).toBe(false);
+    expect(store.ignoresHits('nobody')).toBe(false);
+  });
+
   it('queues a cast on an ability slot, and refuses an entity without that slot', () => {
     const store = storeWith('dummy');
     const legend = new Dummy('legend-1', 'dummy-definition');
@@ -246,190 +384,18 @@ describe('EntityStore', () => {
     expect(store.queueCast('nobody', 'ability-2', aim)).toBe(false);
   });
 
-  it('reads health as a fraction and whether a target is in attack reach', () => {
+  it('reads health as a fraction', () => {
     const store = storeWith('dummy');
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
     const minion = factory.create('light-mob', 'light-minion', {
       team: 'dark',
       position: { x: 0, y: 0 },
     });
-    const near = factory.create('light-mob', 'light-minion', {
-      team: 'light',
-      position: { x: 2, y: 0 },
-    });
-    const far = factory.create('light-mob', 'light-minion', {
-      team: 'light',
-      position: { x: 5, y: 0 },
-    });
     store.add(minion);
-    store.add(near);
-    store.add(far);
     const health = minion.getComponent(Health);
     health.applyDamage(health.max / 4);
 
     expect(store.healthFractionOf(minion.id)).toBe(0.75);
     expect(store.healthFractionOf('dummy')).toBeUndefined();
-    // Edge to edge: 2 − 0.4 − 0.4 = 1.2 m, inside the 1.5 m reach; 4.2 m is not.
-    expect(store.isInReach(minion.id, near.id)).toBe(true);
-    expect(store.isInReach(minion.id, far.id)).toBe(false);
-    expect(store.isInReach('dummy', near.id)).toBe(false);
-    expect(store.isInReach(minion.id, 'nobody')).toBe(false);
-  });
-
-  it('measures reach to a map object from its footprint edge, and never to a cornerless one', () => {
-    const store = new EntityStore();
-    const content = loadDefaultContent(30);
-    const { house } = MAP_OBJECT_DEFINITIONS;
-    const factory = new EntityFactory(createDefaultEntityRegistry(), {
-      has: (id) => id === house.id || content.has(id),
-      get: (id) => (id === house.id ? house : content.get(id)),
-    });
-    const minion = factory.create('light-mob', 'light-minion', {
-      team: 'dark',
-      position: { x: 0, y: 0 },
-    });
-    const body = (id: string, footprint: readonly { x: number; y: number }[]) => {
-      const entity = factory.create('obstacle', house.id, {
-        position: { x: 50, y: 50 },
-      });
-      entity.addComponent(
-        new MapObjectBody({ id, kind: 'house', isBlocking: true, footprints: [footprint] }),
-      );
-      store.add(entity);
-      return entity.id;
-    };
-    store.add(minion);
-    // The closing edge (x = 1.5) is the near one: 1.5 − 0.4 radius = 1.1 m, inside the 1.5 m reach.
-    const near = body('near', [
-      { x: 1.5, y: 5 },
-      { x: 20, y: 5 },
-      { x: 20, y: -5 },
-      { x: 1.5, y: -5 },
-    ]);
-    const far = body('far', [
-      { x: 4, y: 5 },
-      { x: 20, y: 5 },
-      { x: 20, y: -5 },
-      { x: 4, y: -5 },
-    ]);
-    const cornerless = body('cornerless', []);
-
-    expect(store.isInReach(minion.id, near)).toBe(true);
-    expect(store.isInReach(minion.id, far)).toBe(false);
-    expect(store.isInReach(minion.id, cornerless)).toBe(false);
-  });
-
-  it("measures reach to a structure with a Footprint from its fort's outline, not its circle (DEC-185)", () => {
-    const store = new EntityStore();
-    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
-    const tower = new Dummy('tower', 'tower-definition');
-    // The collider circle: 14 m around (30, 0). The fort's west wall: x 14..17.2.
-    tower.addComponent(new Transform({ x: 30, y: 0 }, 14));
-    tower.addComponent(
-      new Footprint([
-        [
-          { x: 14, y: -16 },
-          { x: 17.2, y: -16 },
-          { x: 17.2, y: 16 },
-          { x: 14, y: 16 },
-        ],
-      ]),
-    );
-    const minionAt = (x: number) => {
-      const minion = factory.create('light-mob', 'light-minion', {
-        team: 'dark',
-        position: { x, y: 0 },
-      });
-      store.add(minion);
-      return minion.id;
-    };
-    store.add(tower);
-    // Pressed on the wall, its 0.4 m radius off it: 16.4 m from the centre, 2 m edge to edge from
-    // the circle (past the 1.5 m reach), yet in reach of the wall. 2.5 m off the wall is not.
-    const pressed = minionAt(13.6);
-    const off = minionAt(11.5);
-
-    expect(store.isInReach(pressed, tower.id)).toBe(true);
-    expect(store.isInReach(off, tower.id)).toBe(false);
-  });
-
-  it('aims at the outline point nearest the attacker, at the attacker inside it, else at the centre, as reach measures (one aim rule)', () => {
-    const store = new EntityStore();
-    const square = [
-      { x: 10, y: -5 },
-      { x: 20, y: -5 },
-      { x: 20, y: 5 },
-      { x: 10, y: 5 },
-    ];
-    const house = new Dummy('house', 'house-definition');
-    house.addComponent(new Transform({ x: 15, y: 0 }, 0.5));
-    house.addComponent(
-      new MapObjectBody({ id: 'house', kind: 'house', isBlocking: true, footprints: [square] }),
-    );
-    const tower = new Dummy('tower', 'tower-definition');
-    tower.addComponent(new Transform({ x: 45, y: 0 }, 14));
-    tower.addComponent(new Footprint([square.map(({ x, y }) => ({ x: x + 30, y }))]));
-    const round = new Dummy('round', 'round-definition');
-    round.addComponent(new Transform({ x: -7, y: 3 }, 1));
-    store.add(house);
-    store.add(tower);
-    store.add(round);
-    const aim = { x: 0, y: 0 };
-    const aimAt = (id: string, from: { x: number; y: number }) =>
-      store.aimPointOf(id, from, aim) ? { ...aim } : null;
-
-    expect(store.outlineOf('house')?.polygons).toEqual([square]);
-    expect(store.outlineOf('tower')?.polygons).toHaveLength(1);
-    expect(store.outlineOf('round')).toBeUndefined();
-    expect(aimAt('house', { x: 0, y: 2 })).toEqual({ x: 10, y: 2 });
-    expect(aimAt('tower', { x: 60, y: 9 })).toEqual({ x: 50, y: 5 });
-    expect(aimAt('round', { x: 0, y: 0 })).toEqual({ x: -7, y: 3 });
-    expect(aimAt('nobody', { x: 0, y: 0 })).toBeNull();
-    // Inside the outline: the attacker's own position, so reach and chase hold there (DEC-234).
-    expect(aimAt('house', { x: 13, y: 1 })).toEqual({ x: 13, y: 1 });
-    expect(store.aimPointOf('house', { x: 0, y: 2 }, aim)).toBe('outline');
-    expect(store.aimPointOf('house', { x: 13, y: 1 }, aim)).toBe('inside');
-    expect(store.aimPointOf('tower', { x: 60, y: 9 }, aim)).toBe('outline');
-    expect(store.aimPointOf('round', { x: 0, y: 0 }, aim)).toBe('centre');
-    expect(store.aimPointOf('nobody', { x: 0, y: 0 }, aim)).toBeNull();
-  });
-
-  it('faces the aim point from outside an outline and the centre from inside it (DEC-220 (1))', () => {
-    const store = new EntityStore();
-    const at = (id: string, x: number, y: number): Dummy => {
-      const entity = new Dummy(id, `${id}-definition`);
-      entity.addComponent(new Transform({ x, y }, 0.5));
-      store.add(entity);
-      return entity;
-    };
-    at('house', 15, 0).addComponent(
-      new MapObjectBody({
-        id: 'house',
-        kind: 'house',
-        isBlocking: true,
-        footprints: [
-          [
-            { x: 10, y: -5 },
-            { x: 20, y: -5 },
-            { x: 20, y: 5 },
-            { x: 10, y: 5 },
-          ],
-        ],
-      }),
-    );
-    at('outside', 0, 2);
-    at('inside', 11, 4);
-    at('round', -7, 3);
-    store.add(new Dummy('nowhere', 'nowhere-definition'));
-    const out = { x: 0, y: 0 };
-    const faceAt = (attackerId: string, targetId: string) =>
-      store.facingPointOf(attackerId, targetId, out) ? { ...out } : null;
-
-    expect(faceAt('outside', 'house')).toEqual({ x: 10, y: 2 });
-    expect(faceAt('inside', 'house')).toEqual({ x: 15, y: 0 });
-    expect(faceAt('outside', 'round')).toEqual({ x: -7, y: 3 });
-    expect(faceAt('nowhere', 'house')).toBeNull();
-    expect(faceAt('outside', 'nowhere')).toBeNull();
-    expect(faceAt('outside', 'nobody')).toBeNull();
   });
 });

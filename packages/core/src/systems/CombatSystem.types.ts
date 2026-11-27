@@ -1,8 +1,9 @@
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { EntityFactory } from '../entities/EntityFactory';
+import type { AttackContext } from '../entities/strategies/AttackStrategy.types';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import type { HitRunner } from '../state/HitRunner.types';
-import type { LineOfFireQuery } from '../state/LineOfFire.types';
+import type { ReachQuery } from '../state/ReachQuery';
 
 /** What `CombatSystem` is built from. */
 export type CombatSystemOptions = {
@@ -10,11 +11,10 @@ export type CombatSystemOptions = {
   readonly damage: DamagePipeline;
   /** The match's one entity factory: it builds the projectiles ranged attacks fire. */
   readonly factory: EntityFactory;
-  /**
-   * Whether a shot would reach the target now; a ranged attack fires only when it would (DEC-317).
-   * Required, so no unit fires into a wall by omission.
-   */
-  readonly lineOfFire: LineOfFireQuery;
+  /** The match's one hit rule for areas, which the sweep and the shot apply (`Simulation`'s). */
+  readonly areas: AttackContext['areas'];
+  /** The match's one aim rule: reach and the point a unit faces (`Simulation`'s). */
+  readonly reach: Pick<ReachQuery, 'isInReach' | 'facingPointOf'>;
   /**
    * Runs the attacker's statuses' `onHit` steps when an attack lands, handed to the attack
    * strategy; none run when omitted.

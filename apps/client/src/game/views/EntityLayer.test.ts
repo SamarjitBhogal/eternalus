@@ -38,6 +38,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   statuses: null,
   projectile: null,
   gem: null,
+  swing: null,
 });
 
 const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
@@ -207,6 +208,21 @@ describe('EntityLayer', () => {
     ]);
   });
 
+  it("hands the views the shown snapshot's tick", () => {
+    const spy = new SpyView();
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      new StatusCueRegistry(),
+      () => false,
+      () => null,
+    );
+
+    layer.show(snapshot(7, [unit('a', 0, 0)]), snapshot(8, [unit('a', 0, 0)]), 0.5, null);
+    layer.draw(new RecordingRenderer());
+
+    expect(spy.drawn.map((state) => state.tick)).toEqual([8]);
+  });
+
   it('marks Legends and mobs on the minimap at the snapshot position, Legends last', () => {
     // DEC-187 (C): "a dot sits at the snapshot position", not the interpolated one.
     const layer = new EntityLayer(
@@ -308,6 +324,7 @@ describe('EntityLayer', () => {
       ...member('vanguard', 'mob', 10),
       statuses: [{ id: 'fury-windup', ticksActive: 2, ticksLeft: 7 }],
       projectile: null,
+      swing: null,
     };
     layer.show(null, snapshot(1, [vanguard, member('foe', 'mob', 30)]), 0, null);
     const renderer = new RecordingRenderer();

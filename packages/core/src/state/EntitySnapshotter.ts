@@ -1,11 +1,12 @@
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
+import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
-import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
 import { ProjectileFlight } from '../components/ProjectileFlight';
+import { ProjectilePayload } from '../components/ProjectilePayload';
 import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -14,6 +15,7 @@ import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
 import { Structure } from '../entities/structures/Structure';
+import { distance } from '../utils/geometry';
 import type { EntitySnapshot, ProjectileSnapshot, StatusSnapshot } from './Snapshot.types';
 
 /**
@@ -84,7 +86,7 @@ export class EntitySnapshotter {
               presence: capture.presence,
             },
       statuses: this.statusesOf(entity.findComponent(StatusEffects)),
-      projectile: this.projectileOf(entity),
+      projectile: this.projectileOf(entity, transform),
       gem:
         gem === undefined
           ? null
@@ -94,19 +96,36 @@ export class EntitySnapshotter {
               glowHits: gem.glowHits,
               ticksSinceHit: gem.ticksSinceHit,
             },
+      // `Combat.recordSwing` keeps a copy and replaces it on each swing, so it is shared as is.
+      swing: entity.findComponent(Combat)?.lastSwing ?? null,
     };
   }
 
-  /** A shot's speed and ending as plain data; `null` for an entity with no `ProjectileFlight`. */
-  private projectileOf(entity: Entity): ProjectileSnapshot | null {
+  /**
+   * A fired shot as plain data: its flown share, whether it is an arc shot and its range (both
+   * `ProjectileFlight`'s), whether it is lit (`ProjectileFlight.isLit`), its blast radius
+   * (`ProjectilePayload.blastRadius`) and its ending; `null` for an entity that is not one (no
+   * `ProjectileFlight`, `ProjectilePayload` or `Transform`).
+   */
+  private projectileOf(
+    entity: Entity,
+    transform: Transform | undefined,
+  ): ProjectileSnapshot | null {
     const flight = entity.findComponent(ProjectileFlight);
-    const movement = entity.findComponent(Movement);
-    if (flight === undefined || movement === undefined) {
+    const payload = entity.findComponent(ProjectilePayload);
+    if (flight === undefined || payload === undefined || transform === undefined) {
       return null;
     }
     return {
-      speedShare: movement.speed / movement.maxSpeed,
+      flownShare:
+        flight.range === 0
+          ? 1
+          : Math.min(1, distance(payload.origin, transform.position) / flight.range),
+      isArc: flight.isArc,
+      range: flight.range,
+      blastRadius: payload.blastRadius,
       ending: flight.isEnded ? flight.endingShare : null,
+      isLit: flight.isLit,
     };
   }
 

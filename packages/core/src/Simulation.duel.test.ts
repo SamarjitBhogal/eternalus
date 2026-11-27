@@ -72,19 +72,21 @@ const towards = (from: Vec2, to: Vec2): Vec2 => ({
 /**
  * Steps until `done` holds (at most `limit` ticks), the light Legend walking at the dark one and
  * hitting it. The gem between the start points blocks movement (DEC-346), so near it the walker
- * also steps south and slides round it.
+ * also steps south and slides round it. One snapshot per tick: a whole-map snapshot is the test's
+ * largest cost.
  */
 const fightUntil = (sim: Simulation, done: (snapshot: Snapshot) => boolean, limit = 6000) => {
-  for (let i = 0; i < limit && !done(sim.snapshot()); i += 1) {
-    const snapshot = sim.snapshot();
+  let snapshot = sim.snapshot();
+  for (let i = 0; i < limit && !done(snapshot); i += 1) {
     const { id: light, legend: from } = legendOf(sim, snapshot, 'light');
     const { id: dark, legend: to } = legendOf(sim, snapshot, 'dark');
     const direction = towards(from.transform ?? { x: 0, y: 0 }, to.transform ?? { x: 0, y: 0 });
     sim.enqueueCommand({ type: 'move', actorId: light, direction });
     sim.enqueueCommand({ type: 'attack-target', actorId: light, targetId: dark });
     sim.step();
+    snapshot = sim.snapshot();
   }
-  return sim.snapshot();
+  return snapshot;
 };
 
 /**

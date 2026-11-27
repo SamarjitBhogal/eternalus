@@ -9,6 +9,7 @@ import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { ChaseWatch } from '../components/ChaseWatch';
+import { Combat } from '../components/Combat';
 import { CombatClock } from '../components/CombatClock';
 import { LastEnemyHit } from '../components/LastEnemyHit';
 import { ProjectileFlight } from '../components/ProjectileFlight';
@@ -39,6 +40,22 @@ class Soldier extends Entity {
     this.addComponent(new Health(100));
     this.addComponent(new TeamMembership('light'));
     this.addComponent(new Movement({ maxSpeed: 2, acceleration: 0.5, mass: 1 }));
+  }
+}
+
+class Champion extends Entity {
+  public readonly kind = 'champion';
+  public readonly family = 'legend';
+
+  public constructor(
+    id: string,
+    private readonly team: 'light' | 'dark',
+  ) {
+    super(id, 'champion-definition');
+  }
+
+  protected installComponents(): void {
+    this.addComponent(new TeamMembership(this.team));
   }
 }
 
@@ -273,6 +290,7 @@ describe('StateHasher', () => {
       new ProjectilePayload({
         ownerId,
         team: 'light',
+        ownerLevel: 1,
         source: { attackerId: ownerId, kind: 'weapon', definitionId: weaponId },
         targetId,
         impact: { kind: 'weapon', attack: SHOT_ATTACK },
@@ -300,6 +318,7 @@ describe('StateHasher', () => {
       new ProjectilePayload({
         ownerId: 'a',
         team: 'light',
+        ownerLevel: 1,
         source: { attackerId: 'a', kind: 'weapon', definitionId: 'magus-staff' },
         targetId: 't',
         impact: { kind: 'weapon', attack: SHOT_ATTACK },
@@ -317,6 +336,98 @@ describe('StateHasher', () => {
 
     expect(ending).not.toBe(flying);
     expect(later).not.toBe(ending);
+  });
+
+  it("changes with a shot's range and where it slows, which an arc shot cuts to its aim point (DEC-342)", () => {
+    const hashWith = (range: number, slowFrom: number, shortenTo?: number): number => {
+      const { state, soldier } = stateWithSoldier();
+      soldier.addComponent(
+        new ProjectilePayload({
+          ownerId: 'a',
+          team: 'light',
+          ownerLevel: 1,
+          source: { attackerId: 'a', kind: 'weapon', definitionId: 'magus-staff' },
+          targetId: null,
+          impact: { kind: 'weapon', attack: SHOT_ATTACK },
+          origin: { x: 1, y: 0 },
+        }),
+      );
+      const flight = new ProjectileFlight(range, slowFrom, 5, true);
+      if (shortenTo !== undefined) flight.shortenTo(shortenTo);
+      soldier.addComponent(flight);
+      return hasher.hash(state);
+    };
+    const base = hashWith(100, 80);
+
+    expect(hashWith(100, 80)).toBe(base);
+    expect(hashWith(100, 60)).not.toBe(base);
+    expect(hashWith(100, 80, 90)).not.toBe(base);
+    // Cut below where it slows, both change: the same as a shot authored that way.
+    expect(hashWith(100, 80, 50)).toBe(hashWith(50, 50));
+  });
+
+  it('hashes an unlit shot as before shots could catch fire: only a lit shot adds a field (HC-Q89, DEC-345)', () => {
+    const { state, soldier } = stateWithSoldier();
+    soldier.addComponent(
+      new ProjectilePayload({
+        ownerId: 'a',
+        team: 'light',
+        ownerLevel: 1,
+        source: { attackerId: 'a', kind: 'weapon', definitionId: 'bow' },
+        targetId: null,
+        impact: { kind: 'weapon', attack: SHOT_ATTACK },
+        origin: { x: 1, y: 0 },
+      }),
+    );
+    soldier.addComponent(
+      new ProjectileFlight(100, 80, 5, false, [
+        { kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } },
+      ]),
+    );
+    // The soldier's fields, then the shot's as `StateHasher` hashed them before DEC-345.
+    const legacy = [
+      state.tick,
+      state.match.phase,
+      state.rng.getState(),
+      [
+        [
+          soldier.id,
+          soldier.kind,
+          soldier.definitionId,
+          'light',
+          [3, 4, 0.5],
+          [100, 100],
+          [0, 0, 0],
+          ['projectile', 'a', null, 'weapon', 'bow', 1, 0, -1, 100, 80],
+        ],
+      ],
+    ];
+
+    expect(hasher.hash(state)).toBe(fnv1a(JSON.stringify(legacy)));
+  });
+
+  it('changes when a shot catches fire (HC-Q89, DEC-345)', () => {
+    const { state, soldier } = stateWithSoldier();
+    soldier.addComponent(
+      new ProjectilePayload({
+        ownerId: 'a',
+        team: 'light',
+        ownerLevel: 1,
+        source: { attackerId: 'a', kind: 'weapon', definitionId: 'obsidian-bow' },
+        targetId: null,
+        impact: { kind: 'weapon', attack: SHOT_ATTACK },
+        origin: { x: 1, y: 0 },
+      }),
+    );
+    const flight = new ProjectileFlight(100, 80, 5, false, [
+      { kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } },
+    ]);
+    soldier.addComponent(flight);
+    const unlit = hasher.hash(state);
+
+    flight.light();
+
+    expect(hasher.hash(state)).not.toBe(unlit);
   });
 
   it('adds a speed limit only once one is set, so an entity without one hashes as before', () => {
@@ -415,6 +526,98 @@ describe('StateHasher', () => {
     expect(hit).not.toBe(bare);
     expect(byAnother).not.toBe(hit);
     expect(hasher.hash(state)).not.toBe(byAnother);
+  });
+
+  it('hashes an aim point only while one is set, and tells aim points apart (DEC-184)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });
+    soldier.addComponent(combat);
+    combat.setTarget('entity-9');
+    const targeting = hasher.hash(state);
+
+    combat.setAim({ x: 5, y: 6 });
+    const aimed = hasher.hash(state);
+    combat.setAim({ x: 5, y: 7 });
+    const aimedElsewhere = hasher.hash(state);
+    combat.setAim(null);
+    combat.setTarget('entity-9');
+
+    expect(aimed).not.toBe(targeting);
+    expect(aimedElsewhere).not.toBe(aimed);
+    // Without an aim the field is the same as before aimed attacks existed: back to the old hash.
+    expect(hasher.hash(state)).toBe(targeting);
+  });
+
+  it('hashes a unit with a target, and a melee target, exactly as before aimed attacks existed (DEC-184)', () => {
+    // Pinned from the hasher at the commit before `attack-aim`; a changed value breaks old replays.
+    const hashWith = (mode: 'basic' | 'melee', isReady: boolean): number => {
+      const { state, soldier } = stateWithSoldier();
+      const attack = { strategy: 'melee', damage: 1, reach: 1, interval: 5 } as const;
+      const combat = new Combat({ basic: attack, melee: attack });
+      soldier.addComponent(combat);
+      combat.setTarget('entity-9', mode);
+      if (isReady) combat.beginAttack(2);
+      return hasher.hash(state);
+    };
+
+    expect(hashWith('basic', false)).toBe(1983316836);
+    expect(hashWith('basic', true)).toBe(3886219609);
+    expect(hashWith('melee', false)).toBe(3814708316);
+    expect(hashWith('melee', true)).toBe(2312166913);
+  });
+
+  it('hashes an aimed attack that has not yet landed, with no target and no cooldown', () => {
+    const { state, soldier } = stateWithSoldier();
+    const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });
+    soldier.addComponent(combat);
+    const idle = hasher.hash(state);
+
+    combat.setAim({ x: 5, y: 6 });
+
+    expect(hasher.hash(state)).not.toBe(idle);
+  });
+
+  it('hashes recorded hits once there are some, with their ids and the tick they stop counting, which decide whom the AI sees a unit attack (DEC-322 (2))', () => {
+    const { state, soldier } = stateWithSoldier();
+    const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });
+    soldier.addComponent(combat);
+    combat.setTarget('entity-9');
+    combat.beginAttack(2);
+    const before = hasher.hash(state);
+
+    combat.recordHits(['entity-9'], 2, 1);
+    const hit = hasher.hash(state);
+    combat.recordHits(['entity-8'], 2, 1);
+    const twoHits = hasher.hash(state);
+    combat.recordHits(['entity-9'], 3, 1);
+    const later = hasher.hash(state);
+
+    expect(hit).not.toBe(before);
+    expect(twoHits).not.toBe(hit);
+    expect(later).not.toBe(hit);
+  });
+
+  it('hashes recorded hits on a unit with no target, no aim and no cooldown: an ability cast before any attack', () => {
+    const { state, soldier } = stateWithSoldier();
+    const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });
+    soldier.addComponent(combat);
+    const idle = hasher.hash(state);
+
+    combat.recordHits(['entity-9'], 0, 1);
+
+    expect(hasher.hash(state)).not.toBe(idle);
+  });
+
+  it('does not hash the swing record, which is display only (DEC-304)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });
+    soldier.addComponent(combat);
+    combat.setTarget('entity-9');
+    const before = hasher.hash(state);
+
+    combat.recordSwing({ atTick: 3, direction: { x: 1, y: 0 }, radius: 3, arcDegrees: 90 });
+
+    expect(hasher.hash(state)).toBe(before);
   });
 
   it('differs between seeds', () => {
@@ -936,6 +1139,34 @@ describe('StateHasher', () => {
 
       expect(hasher.hash(state)).toBe(none);
       expect(new Set(hashes).size).toBe(5);
+    });
+  });
+
+  describe('Legend hits (DEC-335)', () => {
+    const withHits = (...ticks: readonly number[]): number => {
+      const { state } = stateWithSoldier();
+      for (const entity of [new Champion('light-1', 'light'), new Champion('dark-1', 'dark')]) {
+        entity.spawn({});
+        state.entities.add(entity);
+      }
+      for (const tick of ticks) {
+        while (state.tick < tick) state.advanceTick();
+        state.events.emit('damage-applied', {
+          targetId: 'light-1',
+          amount: 1,
+          absorbed: 0,
+          source: { attackerId: 'dark-1', kind: 'weapon', definitionId: 'sword' },
+        });
+      }
+      while (state.tick < 10) state.advanceTick();
+      return hasher.hash(state);
+    };
+
+    it('hashes a recorded Legend hit, and the tick of it', () => {
+      const hashes = [withHits(), withHits(5), withHits(6)];
+
+      expect(new Set(hashes).size).toBe(3);
+      expect(withHits(5)).toBe(withHits(5));
     });
   });
 });

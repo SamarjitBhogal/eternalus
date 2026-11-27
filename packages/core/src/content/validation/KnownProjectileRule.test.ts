@@ -15,7 +15,7 @@ const MOB = MOB_DEFINITIONS.get('light-minion');
 const shot = (
   projectileId: string,
   falloff: RangedAttack['projectile']['falloff'],
-): RangedAttack => ({
+): RangedAttack<never> => ({
   strategy: 'ranged-projectile',
   damage: 5,
   reach: 10,
@@ -56,5 +56,28 @@ describe('KnownProjectileRule', () => {
 
   it('flags a weapon whose arrow names no projectile', () => {
     expect(rule.check(OBSIDIAN_BOW)).toEqual(['unknown projectile "arrow"']);
+  });
+
+  it('accepts a valid splash and flags a radius that is not positive and an edge multiplier outside [0, 1]', () => {
+    const splashed = (splash: { radius: number; edgeMultiplier: number }) => ({
+      ...MOB,
+      attack: {
+        ...shot('magus-bolt', null),
+        projectile: { projectileId: 'magus-bolt', falloff: null, splash },
+      },
+    });
+
+    expect(rule.check(splashed({ radius: 3, edgeMultiplier: 0.5 }))).toEqual([]);
+    expect(rule.check(splashed({ radius: 3, edgeMultiplier: 0 }))).toEqual([]);
+    expect(rule.check(splashed({ radius: 3, edgeMultiplier: 1 }))).toEqual([]);
+    expect(rule.check(splashed({ radius: 0, edgeMultiplier: 0.5 }))).toEqual([
+      'splash radius must be positive',
+    ]);
+    expect(rule.check(splashed({ radius: 3, edgeMultiplier: 1.5 }))).toEqual([
+      'splash edgeMultiplier must be in [0, 1]',
+    ]);
+    expect(rule.check(splashed({ radius: 3, edgeMultiplier: -0.1 }))).toEqual([
+      'splash edgeMultiplier must be in [0, 1]',
+    ]);
   });
 });

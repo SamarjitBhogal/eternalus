@@ -112,12 +112,18 @@ command log is a complete replay and cheats are replayable too.
 // Sketch: packages/core/src/commands/Command.types.ts (fields per type in `CommandPayloads`)
 export type Command =
   | { readonly type: 'move'; readonly actorId: EntityId; readonly direction: Vec2 }
-  | { readonly type: 'stop'; readonly actorId: EntityId } // clears heading and attack target (18 §6.1)
+  | { readonly type: 'stop'; readonly actorId: EntityId } // clears heading, attack target and aim point (18 §6.1)
   | {
       readonly type: 'attack-target';
       readonly actorId: EntityId;
       readonly targetId: EntityId;
       readonly mode?: AttackMode; // absent = 'basic'; 'melee' (DEC-308), later 'heavy' (05 §10)
+    }
+  | {
+      readonly type: 'attack-aim'; // attack towards a point with no target (DEC-184, DEC-319)
+      readonly actorId: EntityId;
+      readonly aim: Vec2 | null; // null stops the aimed attack
+      readonly mode?: AttackMode;
     }
   | {
       readonly type: 'cast-ability';
@@ -204,7 +210,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }`                        | `DamagePipeline`                                                                                                                                                                                                    | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage)                                                                          |
 | `damage-blocked`                    | `{ targetId, source: DamageSource }`                                          | `DamagePipeline` (a step took the hit to 0)                                                                                                                                                                         | `CathedralGemSystem` (DEC-292)                                                                                                                                    |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                                          | `DeathResolver`                                                                                                                                                                                                     | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                                                                                           |
-| `structure-destroyed`               | `{ entityId, kind, team, lane }`                                              | `StructureSystem`                                                                                                                                                                                                   | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212)                                                                           |
+| `structure-destroyed`               | `{ entityId, kind, definitionId, team, lane }`                                | `StructureSystem`                                                                                                                                                                                                   | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212), `ProgressionSystem` (structure XP, DEC-186; destroyer-only, DEC-341)     |
 | `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                                             | `StructureSystem`                                                                                                                                                                                                   | `HordeSystem` (gate holding), views                                                                                                                               |
 | `camp-cleared`                      | `{ entityId, team, killerId }`                                                | `SpawnSystem`                                                                                                                                                                                                       | `ProgressionSystem` (camp reward), `MatchDirector`                                                                                                                |
 | `checkpoint-cleared`                | `{ pointId, checkpoint, defenceId, defendersTeam, team, killerId, position }` | `SpawnSystem` (`CheckpointGuardRespawn`)                                                                                                                                                                            | `ProgressionSystem` (checkpoint XP share, 07 §7)                                                                                                                  |
@@ -286,13 +292,21 @@ export type EntitySnapshot = {
     readonly max: number;
   } | null; // any entity with an aether pool (every Legend), not only the player (DEC-230)
   readonly statuses: readonly StatusSnapshot[] | null; // oldest first; null without StatusEffects
+  readonly projectile: ProjectileSnapshot | null; // a shot's flown share and ending (DEC-306, DEC-322); null for any other entity
   readonly gem: {
     readonly holder: Team; // who holds the Cathedral: the gem shows that team's colour (DEC-291)
     readonly glowTicksLeft: number;
     readonly glowHits: number; // hits since the glow last went dark (DEC-292)
     readonly ticksSinceHit: number | null;
   } | null; // the Cathedral gem's CathedralGemState only
+  readonly swing: SwingSnapshot | null; // the unit's latest melee sweep, display only (DEC-304); null when it made none
   readonly anim: AnimState;
+};
+export type SwingSnapshot = {
+  readonly atTick: number; // the tick the swing was made
+  readonly direction: { readonly x: number; readonly y: number }; // unit vector
+  readonly radius: number; // metres from the attacker's centre
+  readonly arcDegrees: number;
 };
 export type StatusSnapshot = {
   readonly id: StatusEffectId;
@@ -506,8 +520,8 @@ each closed by the session or phase named:
   aim overlay (ADR 0026 decisions 4 and 7). `GameState` also carries the match's collision rule
   (`collisions`, the `CollisionQuery` port beside `space` and `paths`: the one `CollisionResolver`
   `CollisionSystem` uses; `null` without map objects).
-- `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
-  `AttackTargetHandler`). `cast-ability` has `CastAbilityHandler`, which checks with the
+- `move`, `stop`, `attack-target` and `attack-aim` have their own handlers (`MoveHandler`,
+  `StopHandler`, `AttackTargetHandler`, `AttackAimHandler`). `cast-ability` has `CastAbilityHandler`, which checks with the
   `CastValidator` that `Simulation` injects and queues the cast for `AbilitySystem`; a cast that
   fails `AbilitySystem`'s second check is announced with `command-rejected` from there (05 §7,
   ADR 0026 decision 2). `intent` and `dev-set-controller` are routed to
@@ -551,6 +565,25 @@ DEC-309), so nothing listens for `entity-removed` on a projectile's behalf. No `
 event exists (05 §10, DEC-314). `StateHasher` hashes a shot's payload (owner, target, impact kind,
 source definition, origin, end ticks left) and a `Movement` speed limit when one is set (10 §2,
 DEC-314); a match with no shot keeps its hash.
+
+**Implementation status, 2026-11-22 (branch `feat/wall-turrets`, PR 4; DEC-335).** `StateHasher`
+hashes the Legend hit log (`state/LegendHitLog`, `legendHits`) only while it is not empty, as it
+hashes the ally damage (DEC-89). A wall turret's target choice reads that log, so two runs that
+differ in it show it at the next hash. The golden replay `abilityCastsSeed11` changed at its
+checkpoints 350 to 450, once Legends hit Legends; with the new line left out, every old hash
+reproduced.
+
+**Implementation status, 2026-11-23 (branch `feat/shots-over-lava`, DEC-345).** A shot can be
+lit: it flew over a shape that lights shots (a lava river) and runs its definition's `litOnHit`
+steps where it lands (05 §10). `StateHasher` adds a `lit` field for a shot only while the shot is
+lit, so a match with no lit shot hashes as before. `ProjectileSnapshot` carries `isLit` for the
+client. The `CollisionQuery` port has two more methods beside `reach` (movers and dashes):
+`shotReach` (the sweep of a shot, launch point required, DEC-360) and `lightsShot` (whether a
+shot's move touches a shape that lights shots, 10 §7). `state/HitRunner.types.ts` has a second port
+beside `HitRunner`: `StepRunner` (`runSteps`, run a list of steps for a landed hit, without the
+attacker's statuses' steps), which `abilities/HitEffects` satisfies and `ProjectileSystem` uses for
+a lit shot. It is apart from `HitRunner`, so a consumer that runs only an attack's own `onHit`
+steps does not depend on it.
 
 ## Related
 

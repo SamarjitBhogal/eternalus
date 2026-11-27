@@ -14,9 +14,18 @@ import { ABILITY_CASTS_PLAN } from './abilityCastsPlan';
  * commands and checkpoint 0 were unchanged, and with those two hash fields left out the old hashes
  * still reproduced. `config.map.pathMaxExpansions: 6000` became `pathMaxSearchArea: 150000` on
  * 2026-11-19 with the phase/3 merge of DEC-243: the same 6000 cells on this config's 5 m cells; it
- * is not hashed, and every checkpoint reproduced unchanged. Regenerated 2026-11-25 when phase/3
- * (#132) began hashing `LastEnemyHit` (DEC-346): the commands and checkpoints 0 to 300 were
- * unchanged, and with that hash field left out the old hashes still reproduced.
+ * is not hashed, and every checkpoint reproduced unchanged. Regenerated 2026-11-22 when the hash
+ * began to cover a hit record without a target (DEC-322 (2), PR 2 round 2): checkpoints 0 to 300
+ * and the commands were unchanged; a dump every 10 ticks of positions, health, motion, facing,
+ * statuses, abilities, the RNG and the AI brains matched the old code at every tenth tick to 450,
+ * and only the new `hits` fields differed. The round-3 correctness critic hashed the full state on
+ * every tick to 450 with the old hasher minus its `hits` line: identical. Regenerated 2026-11-22
+ * when the hash began to cover the Legend hit log (DEC-335 (V2), wall turrets PR 4, critic round 2
+ * S1): checkpoints 0 to 300 and the commands were unchanged, and with the new `legendHits` line left
+ * out every old hash reproduced; only checkpoints 350, 400 and 450 changed, once Legends hit
+ * Legends. Regenerated 2026-11-25 when phase/3 (#132) began hashing `LastEnemyHit` (DEC-346):
+ * the commands and checkpoints 0 to 300 were unchanged, and with that hash field left out the old
+ * hashes still reproduced.
  */
 export const ABILITY_CASTS_SEED_11: ReplayOf<{
   readonly seed: number;

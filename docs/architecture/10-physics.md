@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-27
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -198,7 +198,28 @@ Overlap tests are therefore not enough:
   sprint). **Swept when fast**: any unit whose displacement this tick exceeds its radius.
   Projectiles are swept by `ProjectileSystem`, not by the resolver's step 1: a shot is not pushed
   or slid, it ends at the first body or wall it touches (05 §10, DEC-314). Walls still come from
-  the resolver's `CollisionQuery.reach`. The resolver's steps below are for units.
+  the resolver's `CollisionQuery.shotReach`. The resolver's steps below are for units. An arc shot
+  (`ProjectileFlight.isArc`, 05 §10, DEC-342) is the exception: `ProjectileSystem` does not sweep
+  it while it flies, so no wall, body or map edge stops it. It moves to its range, which its
+  attack set to the aim point, and lands there (`ArcLanding`). It is then ended and hits nothing
+  more.
+- **Shapes that shots cross, shapes that light shots (HC-Q89, DEC-345).** A shot flies over some
+  map shapes that a unit and a dash collide with. Each map object says what it does to a shot
+  with two flags (`MapObjectFlags` in `content/maps/mapObjects.types.ts`): `canShotsCross` (a shot
+  flies over it) and `canLightShots` (a shot that flies over it catches fire). The map builder
+  that draws the object sets them (`MapDecorationBuilder.beginObject`), `MapObjectBuilder` copies
+  them to the `MapObject`, and the static index keeps them on each shape. One predicate decides
+  whether a shape stops a shot: `doesShapeStopShot` (`utils/geometry.ts`) is false when shots can cross the shape or when the shape's blocking area
+  holds the shot's launch point (the launch-shape rule, DEC-334). `CollisionQuery.shotReach` applies
+  it (a shot must give its launch point); `CollisionQuery.reach`, for a mover or a dash, does not, so
+  every blocking shape stops them (DEC-360).
+  `WorldObjectStore.blockingAt` also applies it, for `NoMapObjectOverlapInvariant`, so the sweep
+  and the invariant agree. Every shape without `canShotsCross` stops a shot.
+  `CollisionQuery.lightsShot` answers whether a circle that moves along a delta touches (or starts
+  in) a shape with `canLightShots`, outside its passages: a bridge deck (a
+  passage) does not light a shot, so a move along the deck does not, while a move that leaves the
+  deck over the lava does. `ProjectileSystem` asks it for a shot whose definition has `litOnHit`
+  steps, over the part of the move before the body the shot lands on (05 §10).
 - The test casts the segment `previousPosition → position` (expanded by the circle's radius, i.e.
   a capsule) against `StaticColliderIndex` entries flagged `isUnbreakable`, plus closed gates and
   map bounds; the earliest time of impact `t ∈ [0, 1]` wins; the mover is placed at
@@ -321,6 +342,12 @@ gaps in the same wall geometry used for drawing. Bridge decks permit passage acr
 while retaining collision at their sides. Destroyed object IDs disable their static footprints.
 Unit-to-unit momentum, SAT and the remaining physics described above are still planned.
 
+**2026-11-27 (`fix/tower-orbs-windows-timeout`, PR #168).** `WorldObjectStore.blockingAt` (the
+check behind `NoMapObjectOverlapInvariant`, separate from the collision solver) has its own lazy
+grid of record boxes, with the same cell scheme as `StaticCollisionIndex`. One shared box grid in
+`utils/` for both is a better-than-design item that waits for the owner's sign-off (`INBOX.md`
+HC-B67).
+
 **2026-11-13, updated 2026-11-14 (`feat/ability-framework`, ADR 0026 decision 4).** `Movement` has `push` and
 `takeForcedStep` for dashes and knock-backs; it has no `pendingImpulse` or `desiredVelocity` (a
 heading set by `steer`). Forced motion moves an entity that `cannot-move` (Slam knocks back and up
@@ -353,6 +380,120 @@ collider is unbreakable (DEC-317 (5)) are hit only by a shot fired at their enti
 `CollisionSystem` skips the `projectile` layer. A shot with nothing in its path is slowed by
 `Movement.limitSpeed` (`physics/flightSpeed`, from `slowFrom`) so it stops exactly at its `range`;
 it then ends and hits nothing until it is removed (`ProjectileFlight`, DEC-306).
+
+**2026-11-22 (branch `feat/melee-sweeps`, PR 2; DEC-317 addendum, DEC-322).** One rule decides
+which body stops a shot: `state/AreaHitQuery.stopsShot`, which `ProjectileSystem` and `LineOfFire`
+both use. This replaces two parts of the 2026-11-20 note above. A body whose collider is
+unbreakable now stops every shot and takes no damage (DEC-317 addendum). A walk-on outline still
+lets a shot fly over unless the shot aims at it: its locked target, or the walk-on body its aim
+point names (`AreaHitQuery.aimedBodyOf`, DEC-322 (1)). The last move up to `range` is swept like any
+other, so a body under the end point takes the hit: an arrow damages what it lands on (DEC-322 (2)).
+
+**2026-11-22 (branch `feat/wall-turrets`, part 2; DEC-334).** The launch-shape rule: a shot is
+not stopped by a blocking shape whose blocking area holds its launch point; the shot can only
+leave that shape. The blocking area is the shape's polygon outside its passages, as
+`CollisionResolver.startsInside` and `WorldObjectStore.blockingAt` read it. So a unit on a bridge
+still has its shot stopped by the lava beside the deck. "Holds" means the launch point, not the
+shot's circle: a shot whose circle touches a wall at launch is still stopped there. A launch point
+on the polygon's edge is held too (within `CONTACT_EPSILON`, `utils/geometry`
+`isPointInBlockingArea`). A wall turret stands on the joint of two wall pieces, and the even-odd
+point test gives a point on a shared edge to one piece at most. Without the edge, the other piece
+stopped every bolt that flew into it, and `NoMapObjectOverlapInvariant` flagged the bolt at launch
+(12 of the 20 turrets on each of the seed 1 to 8 maps).
+Known limit (a map bug from before PR 4; Owner Calls card HC-Q95, owner call pending): blocking
+corner mountains (`map/MapMountainBuilder`) can cover a fort's wall ring. A mountain covers turret
+0 of each side on each of the seed 1 to 8 maps, the lane gate on seeds 3 and 5 to 8, and turret 1
+or 9 on some seeds. Where a mountain holds a turret's centre (turret 0 on seeds 3 to 8, turret 1 on
+seeds 3, 6 and 8, turret 9 on seed 6), that turret's bolts ignore that mountain for their whole
+flight. Where the mountain's edge is nearer than a bolt's radius (seed 2: 0.04 m), the mountain
+stops the bolts fired into it at launch. A new bolt also stays at the turret's centre until the
+next tick (`ProjectileSystem` runs before `CombatSystem`), so `NoMapObjectOverlapInvariant` flags
+every bolt of that turret, in any direction. The client's release setting logs one ERROR for each
+such bolt. Turrets fired no bolts before PR 4, so this log is new. The fix is in the map: keep
+blocking terrain off the wall ring.
+`CollisionQuery.reach` takes the launch point as an optional argument. `ProjectileSystem` passes
+the shot's `origin`, and `LineOfFire` passes the attacker's centre, so line of fire and shots keep
+one stop rule (DEC-317 B9). `NoMapObjectOverlapInvariant` passes a shot's origin to
+`WorldObjectStore.blockingAt`, which skips such a shape too. A unit's centre is never in a blocking
+area (the invariant), so the rule changes only wall turret bolts, which start at the turret's
+centre inside its pylon and wall (07 §13). The body stop (`AreaHitQuery.stopsShot`) is unchanged:
+on the seed 1 to 8 maps, every body outline that holds a turret's centre is on the turret's team
+(a scenario test checks each seed). The rule assumes a convex launch shape: the shape is skipped
+for the whole flight, so a shot that leaves a concave shape and enters it again is not stopped by
+it. A pylon is a convex 12-gon. The wall pieces under a turret are launch shapes too, and they are
+not convex: each is an arc band (`map/wallRing` `arcFootprint`). So a bolt that leaves its own wall
+piece toward the court can cross that piece again further along the ring and pass through it. The
+ring's size puts that second crossing far from the turret, near the end of the bolt's range (not
+measured). The sentence in §4 that concave footprints are split into convex colliders does not hold
+for wall pieces; that was so before PR 4.
+
+**2026-11-23 (branch `feat/tower-orbs`; DEC-342).** Both wall turret bolts and the tower orb are
+arc shots (`ProjectileFlight.isArc`, 05 §10). `ProjectileSystem` does not sweep an arc shot while
+it flies (§7), and `NoMapObjectOverlapInvariant` skips it. So three statements of the 2026-11-22
+DEC-334 note no longer hold for the bolts: a mountain at a turret does not stop its bolts at
+launch, the invariant does not flag them, and the release client logs no ERROR for them. No shot
+in play uses the launch-shape rule now: a unit's centre is never in a blocking area, and every
+shot that starts inside one is an arc shot. The rule stays: `LineOfFire` and straight shots keep
+it, and a straight orb (the owner chose the arc, DEC-366) would need it. The corner mountains on the
+wall ring (HC-Q95) still need the map fix; they no longer show as bolt errors.
+**2026-11-23 (branch `feat/shots-over-lava`; HC-Q89, DEC-345).** Shots fly over lakes and lava
+rivers (§7 "Shapes that shots cross, shapes that light shots"). This replaces one sentence of the
+DEC-334 note above: a unit on a bridge no longer has its shot stopped by the lava beside the deck,
+because no shot is stopped by lava; a mover from the bridge is still stopped there. The rest of
+the launch-shape rule stands (it still applies to walls and every shape without `canShotsCross`).
+The sweep and `WorldObjectStore.blockingAt` share one predicate for both rules,
+`doesShapeStopShot` (`utils/geometry.ts`), so the DEC-334 note's "which skips such a shape too"
+also holds for a shape shots can cross: `NoMapObjectOverlapInvariant` does not flag a shot over a
+lake or a lava river, and still flags a unit in one. `MapObject`, `MapObjectArt` and
+`StaticCollisionShape` carry `canShotsCross` and `canLightShots` (set in `MapLandscapeBuilder` for
+`lake-N` and `lava-river-N`, copied by `MapObjectBuilder` and `staticCollisionIndexOf`); `physics/`
+declares its own two fields, so it imports nothing from `content/`. Camp fires do not light arrows
+yet (HC-Q105). The `CollisionQuery` port has two more methods: `shotReach`, the sweep of a shot,
+whose launch point is required, so a shot cannot get the mover rule by leaving it out (DEC-360);
+and `lightsShot`. So where the dated notes above say that a shot's walls come from
+`CollisionQuery.reach` (the 2026-11-20 note, `state.collisions.reach`, and the DEC-334 note), read
+`shotReach`; `reach` serves movers and dashes only.
+`doesShapeStopShot` uses game words but lives in `utils/`: `state/` (`WorldObjectStore`) may not
+import `physics/`, and `physics/` may not import `state/` or `content/`, so `utils/` is the one
+layer both can call (as for `isPointInBlockingArea`, DEC-334).
+
+**2026-11-26 (branch `feat/shots-over-lava`; HC-Q105, DEC-386 (2)).** Camp fires now light arrows:
+`MapSceneryBuilder` sets `canShotsCross` and `canLightShots` on each `<camp>-fire` object, so the
+2026-11-23 note's "Camp fires do not light arrows yet" no longer holds. The palace kitchen hearths
+still stop shots.
+
+**2026-11-26, correction (branch `feat/shots-over-lava`; critic Q105-C-1, C-2; DEC-386 correction,
+HC-Q115).** The note above took the fire's stones out of the shot's wall sweep only. Two bodies at
+each camp fire still stopped a shot: the fire's own body (furniture with health, `MapObjectBody`)
+and, at a forest camp, the camp's home at the fire's centre (it takes no damage). Bodies now follow
+one shot rule, `AreaHitQuery.stopsShot` (05 §10), which reads one property: `Outline.canShotsFlyOver`
+(a walk-on outline, or a map object flagged `canShotsCross`), or `Collider.canShotsFlyOver` for a
+body with no outline (set from `StructureDefinition.canShotsFlyOver`, on the forest camps). A shot
+not aimed at such a body flies over it; a shot aimed at it stops there. So a body flagged
+`canShotsCross` and a forest camp's home follow the same rule as a walk-on floor, for
+`ProjectileSystem` and `LineOfFire` alike. The melee rule still reads `isWalkOn`.
+
+**2026-11-26 (branch `feat/palace-stronghold-pool`, DEC-386 (1)).** The 2026-11-20 note above
+names `Footprint.isWalkOn` and `MapObjectBody.isWalkOn`; they no longer exist. An `Outline` now has
+two polygon lists, `walkOn` and `solid`. `AreaHitQuery.shotPolygonsOf` gives the polygons that stop
+a shot: every polygon when the shot aims at the entity, else only the solid ones. `ProjectileSystem`
+(`contactTime`) and `LineOfFire` test only those polygons. The Stronghold's outer walls and throne
+are solid polygons of its `Footprint`, so they stop every enemy shot. The palace floor is the
+palace map object's walk-on outline only (DEC-344 (4)).
+
+**2026-11-26, merge of `feat/shots-over-lava` into `feat/palace-stronghold-pool` (Q104-9).** The
+shots-over-lava correction note and the palace-stronghold-pool note above meet in one shot rule,
+per polygon. `Outline.canShotsFlyOver` (for the whole outline) is gone, because one outline can
+hold walk-on and solid polygons. An `Outline` has a third polygon list, `shotsCross`: the solid
+polygons that a shot not aimed at the entity flies over. A `MapObjectBody` whose object has
+`canShotsCross` (a camp fire's body) puts its footprints there; a structure's `Footprint` has
+none. `AreaHitQuery.shotPolygonsOf` gives every polygon to a shot aimed at the entity, and to any
+other shot the solid polygons not in `shotsCross`. So such a shot flies over a walk-on floor and a
+camp fire, and stops on the Stronghold's outer walls and throne. A body with no outline still
+reads `Collider.canShotsFlyOver` (a forest camp's home). `AreaHitQuery.aimedBodyOf` names a body
+by its walk-on or `shotsCross` polygons. The melee rule (`AreaHitQuery.find`) reads `walkOn` and
+`solid` only. The 07 note that names `Outline.canShotsFlyOver`, and the 05 §10 note (its 10 §7
+pointer means this §12 note), mean this rule now.
 
 ## Related
 

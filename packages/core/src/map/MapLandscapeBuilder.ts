@@ -70,7 +70,10 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
           P.lavaWeathering,
         );
       this.ribbon(`lava-bank-${String(i)}`, path, lava.bankWidth, P.basalt);
-      this.beginObject(`lava-river-${String(i)}`, 'terrain');
+      this.beginObject(`lava-river-${String(i)}`, 'terrain', {
+        canShotsCross: true,
+        canLightShots: true,
+      });
       this.ribbon(`lava-river-${String(i)}`, path, lava.riverWidth, P.lavaRiver);
       this.blockLastShape();
       this.ribbon(`lava-flow-${String(i)}`, path, lava.flowWidth, P.lava);
@@ -113,7 +116,7 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
   private lakes(): void {
     this.endObject();
     this.lakePositions.forEach((lake, i) => {
-      this.beginObject(`lake-${String(i)}`, 'terrain');
+      this.beginObject(`lake-${String(i)}`, 'terrain', { canShotsCross: true });
       this.blob(
         `lake-shore-${String(i)}`,
         ...MAP_LANDSCAPE_GEOMETRY.lakeShoreBounds(lake),

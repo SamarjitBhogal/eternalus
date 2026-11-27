@@ -1,14 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
+import { loadTurrets } from '../content/structures/loadTurrets';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { ContentCatalogue } from '../content/ContentCatalogue';
+import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import type { Entity } from '../entities/Entity';
 import type { GameEventMap } from '../state/GameEvents.types';
 import { GameState } from '../state/GameState';
+import { WorldObjectStore } from '../state/WorldObjectStore';
+import { IdGenerator } from '../utils/IdGenerator';
 import { StructureSystem } from './StructureSystem';
 
 const CONFIG = createDefaultGameConfig();
@@ -16,7 +21,14 @@ const CONFIG = createDefaultGameConfig();
 /** A light gate on lane-0 behind three light BuffTowers, a light SpawnerTower and a dark Stronghold. */
 const setUp = () => {
   const state = new GameState(CONFIG, 1);
-  const factory = new EntityFactory(createDefaultEntityRegistry(), STRUCTURE_DEFINITIONS);
+  const factory = new EntityFactory(
+    createDefaultEntityRegistry(),
+    STRUCTURE_DEFINITIONS,
+    undefined,
+    null,
+    null,
+    loadTurrets(30).ammo,
+  );
   const spawn = (definitionId: string, team: 'light' | 'dark', laneId?: string): Entity => {
     const { kind } = STRUCTURE_DEFINITIONS.get(definitionId);
     const placement = { position: { x: 0, y: 0 }, team, ...(laneId !== undefined && { laneId }) };
@@ -52,7 +64,13 @@ describe('StructureSystem', () => {
     kill(spawner);
 
     expect(destroyed).toEqual([
-      { entityId: spawner.id, kind: 'spawner-tower', team: 'light', lane: 'lane-1' },
+      {
+        entityId: spawner.id,
+        kind: 'spawner-tower',
+        definitionId: spawner.definitionId,
+        team: 'light',
+        lane: 'lane-1',
+      },
     ]);
   });
 
@@ -73,6 +91,46 @@ describe('StructureSystem', () => {
 
     expect(gate.getComponent(Collider).isUnbreakable).toBe(false);
     expect(changed).toEqual([{ entityId: gate.id, isBreakable: true, lane: 'lane-0' }]);
+  });
+
+  it("flips the map object a structure is mounted on (a wall turret's pylon) with it (DEC-388)", () => {
+    const { state, system, gate, buffTowers, kill } = setUp();
+    const [first, second] = buffTowers;
+    if (first === undefined || second === undefined) {
+      throw new Error('fixture has three BuffTowers');
+    }
+    const pylon = {
+      id: 'pylon',
+      kind: 'turret',
+      isBlocking: true,
+      footprints: [
+        [
+          { x: 0, y: 0 },
+          { x: 4, y: 0 },
+          { x: 4, y: 4 },
+        ],
+      ],
+    } as const;
+    state.worldObjects = new WorldObjectStore({
+      objects: [pylon],
+      factory: new EntityFactory(
+        createDefaultEntityRegistry(),
+        new ContentCatalogue(Object.values(MAP_OBJECT_DEFINITIONS)),
+        new IdGenerator(2000),
+      ),
+      entities: state.entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+      mounted: new Map([['pylon', gate.id]]),
+    });
+    const pylonId = state.worldObjects.mountOf(gate.id) ?? '';
+
+    expect(state.entities.takesNoDamage(pylonId)).toBe(true);
+    kill(first);
+    kill(second);
+    system.update({ state, logger: { log: () => undefined } });
+
+    expect(state.entities.takesNoDamage(gate.id)).toBe(false);
+    expect(state.entities.takesNoDamage(pylonId)).toBe(false);
   });
 
   it('never makes towers unbreakable', () => {

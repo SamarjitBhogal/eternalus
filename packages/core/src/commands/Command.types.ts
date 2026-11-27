@@ -45,6 +45,21 @@ type CommandPayloads = {
     /** Which attack to use; absent means `'basic'`, so recorded replays stay valid (DEC-308). */
     readonly mode?: AttackMode;
   };
+  /**
+   * Attack towards a world point with no target (DEC-184): a sweep hits what its wedge reaches, a
+   * shot flies along the line. `aim: null` stops the aimed attack.
+   */
+  readonly 'attack-aim': {
+    readonly actorId: EntityId;
+    readonly aim: Vec2 | null;
+    /** Which attack to use; absent means `'basic'`. */
+    readonly mode?: AttackMode;
+  };
+  /**
+   * Loads one of a turret's ammo (architecture 11 §4.5): its `Combat` fires that ammo's attack from
+   * then on. Its attack timer stays, so a switch never gives a free shot.
+   */
+  readonly 'switch-ammo': { readonly actorId: EntityId; readonly ammoId: string };
   readonly 'cast-ability': {
     readonly actorId: EntityId;
     readonly slot: AbilitySlot;
@@ -117,6 +132,8 @@ export type CommandRejectReason =
   | 'map-only'
   | 'invalid-direction'
   | 'not-movable'
+  | 'not-a-turret'
+  | 'unknown-ammo'
   | 'cannot-attack'
   | 'invalid-target'
   | 'not-supported'

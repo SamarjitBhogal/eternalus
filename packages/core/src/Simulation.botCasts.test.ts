@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { TEST_KIT, unitsWithWarriorKit } from './abilities/__fixtures__/casterState';
-import { statusOnHitEffects, testAbilityRegistry } from './abilities/__fixtures__/fakeAbilities';
+import { shippedOnHitEffects, testAbilityRegistry } from './abilities/__fixtures__/fakeAbilities';
 import { RecordingEffect } from './abilities/__fixtures__/RecordingEffect';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { NullLogger } from './diagnostics/NullLogger';
@@ -23,7 +23,7 @@ const play = (ticks: number) => {
     map: TWO_LANE_MAP,
     roster: ROSTER,
     content: unitsWithWarriorKit(TEST_KIT),
-    abilities: testAbilityRegistry([new RecordingEffect('fake-strike'), ...statusOnHitEffects()]),
+    abilities: testAbilityRegistry([new RecordingEffect('fake-strike'), ...shippedOnHitEffects()]),
   });
   const casts: string[] = [];
   sim.on('ability-cast', ({ casterId, abilityId }) => casts.push(`${casterId}:${abilityId}`));

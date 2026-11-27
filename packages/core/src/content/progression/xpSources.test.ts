@@ -68,4 +68,25 @@ describe('legend XP design intent (DEC-190)', () => {
       });
     }
   });
+
+  it('a destroyer-only reward names a structure definition (a renamed id must fail here)', () => {
+    for (const structureId of Object.keys(XP_SOURCES.destroyerOnly)) {
+      expect({ structureId, isDefined: STRUCTURE_DEFINITIONS.has(structureId) }).toEqual({
+        structureId,
+        isDefined: true,
+      });
+    }
+  });
+
+  // DEC-341 is the exception to the DEC-190 "at most one level" test above: the owner's newer,
+  // specific words ("2 or 3 heavy minions") win for the turret (DEC-341 (3)).
+  it('a destroyer-only reward is worth 2 to 3 heavy-minion kills (DEC-341 exception to DEC-190)', () => {
+    const heavyKill = MOB_DEFINITIONS.get('heavy-minion').xpValue;
+    for (const [structureId, xp] of Object.entries(XP_SOURCES.destroyerOnly)) {
+      expect({ structureId, isInRange: xp >= 2 * heavyKill && xp <= 3 * heavyKill }).toEqual({
+        structureId,
+        isInRange: true,
+      });
+    }
+  });
 });

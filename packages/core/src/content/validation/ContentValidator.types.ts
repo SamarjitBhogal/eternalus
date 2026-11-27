@@ -1,6 +1,7 @@
 import type { ContentCatalogue } from '../ContentCatalogue';
 import type { IdentifiedDefinition } from '../ContentCatalogue.types';
 import type { UnitDefinition } from '../units/units.types';
+import type { WeaponDefinition } from '../weapons/weapons.types';
 
 /**
  * One content rule over definitions of type `Definition`. Each rule checks one thing, so a new
@@ -18,3 +19,13 @@ export interface ContentRule<Definition extends IdentifiedDefinition> {
 
 /** The unit rules' contract, unchanged for every existing rule. */
 export type UnitDefinitionRule = ContentRule<UnitDefinition>;
+
+/**
+ * The weapons a class-access rule reads (`isWeaponAllowedFor`): each weapon's class limits, looked
+ * up by id. A catalogue of authored or loaded weapons satisfies it. `id` stays because
+ * `ContentCatalogue` needs it.
+ */
+export type WeaponAccessCatalogue = Pick<
+  ContentCatalogue<Pick<WeaponDefinition, 'id' | 'allowedClasses' | 'uniqueTo'>>,
+  'has' | 'get'
+>;

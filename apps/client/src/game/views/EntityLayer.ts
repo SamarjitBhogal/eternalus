@@ -55,7 +55,7 @@ export class EntityLayer implements WorldLayer {
       const then = before.get(entity.id)?.transform ?? now;
       const position = EntityLayer.lerp(then, now, alpha);
       const facing = EntityLayer.turn(then.facing, now.facing, alpha);
-      return [{ entity, position, facing, isFocused: entity.id === focusId }];
+      return [{ entity, position, facing, tick: current.tick, isFocused: entity.id === focusId }];
     });
   }
 

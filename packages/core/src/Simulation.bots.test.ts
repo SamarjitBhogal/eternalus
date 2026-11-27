@@ -13,6 +13,7 @@ import type { RosterSlot } from './Simulation.types';
 import { AiState } from './state/AiState';
 import { GameEvents } from './state/GameEvents';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
+import { UNARMED_STRUCTURES } from './__fixtures__/hordeMatches';
 
 const laners = (team: 'light' | 'dark', count: number): RosterSlot[] =>
   Array.from({ length: count }, () => ({
@@ -28,6 +29,7 @@ const match = (
   withMap = true,
   legendsPerTeam = createDefaultGameConfig().match.legendsPerTeam,
   map: MapDefinition = TWO_LANE_MAP,
+  areTowersArmed = true,
 ) =>
   new Simulation({
     config: createDefaultGameConfig({
@@ -37,6 +39,7 @@ const match = (
     logger: new MemoryLogger(),
     debug: TEST_DEBUG_CONFIG,
     ...(withMap ? { map } : {}),
+    ...(areTowersArmed ? {} : { structures: UNARMED_STRUCTURES }),
     roster,
   });
 
@@ -78,7 +81,8 @@ describe('Simulation with bot laners (minion plan M3)', () => {
       ...TWO_LANE_MAP,
       features: TWO_LANE_MAP.features.filter(({ kind }) => kind !== 'cathedral'),
     };
-    const simulation = match(laners('light', 2), true, undefined, noCathedral);
+    // Unarmed towers: this test is about the push, not the tower's orbs (DEC-302).
+    const simulation = match(laners('light', 2), true, undefined, noCathedral, false);
     const structures = new Set(
       simulation
         .snapshot()

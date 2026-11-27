@@ -30,6 +30,7 @@ const MINION: EntitySnapshot = {
   statuses: null,
   projectile: null,
   gem: null,
+  swing: null,
 };
 
 const AT = { x: 0, y: 0 };
@@ -41,7 +42,7 @@ describe('MobView', () => {
     const renderer = new RecordingRenderer();
 
     new MobView().draw(
-      { facing: { x: 1, y: 0 }, entity: MINION, position: AT, isFocused: false },
+      { facing: { x: 1, y: 0 }, entity: MINION, position: AT, tick: 0, isFocused: false },
       renderer,
     );
 
@@ -65,6 +66,7 @@ describe('MobView', () => {
       facing: { x: 1, y: 0 },
       entity: { ...MINION, team },
       position: AT,
+      tick: 0,
       isFocused: false,
     });
 

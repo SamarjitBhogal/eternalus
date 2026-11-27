@@ -21,8 +21,10 @@ describe('withVisualRadius', () => {
         gem: null,
         statuses: null,
         projectile: null,
+        swing: null,
       },
       position: { x: 1, y: 2 },
+      tick: 0,
       isFocused: true,
     };
     const visual = withVisualRadius(state, 3);

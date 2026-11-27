@@ -224,6 +224,7 @@ describe('CaptureHoldRule (through Scoring)', () => {
     state.events.emit('structure-destroyed', {
       entityId: 'entity-90',
       kind: 'spawner-tower',
+      definitionId: 'spawner-tower',
       team: 'dark',
       lane: null,
     });

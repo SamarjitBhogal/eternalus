@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-27
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -488,9 +488,11 @@ approved them, `INBOX.md` HC-T1), and this note gives the detail:
   its release) is resolved once at its release point in this order (`MatchViewControls.clickAt`,
   DEC-183): a living enemy unit there is attacked; else a click that toggles a roof is a roof
   click; else the click attacks the map object there. A drag does neither. When units overlap, the
-  one drawn on top wins (DEC-183). The held attack button aims the same way: a unit first, else a
-  map object (`PlayerCommands`). In local matches, both inputs pick Legends and mobs by the
-  hit radius reported by their registered view. Health bars use the same display extent.
+  one drawn on top wins (DEC-183). The held attack button does not pick a target: it aims at the
+  point under the cursor (`attack-aim`, DEC-319 (6); `PlayerCommands`), and only the explorer's
+  click picks a target, a unit first, else a map object. In local matches, the explorer's click
+  picks Legends and mobs by the hit radius reported by their registered view. Health bars use the
+  same display extent.
   Movement collision and attack reach still use simulation geometry. When Duel intent moves into
   core, its targeting needs the shared drawn-size rule as well.
   A click on the building the player's Legend stands in toggles
@@ -697,6 +699,36 @@ drawing is not built, and is requested in `INBOX.md` ("Duel closed-door drawing"
 object and everything a side built (`DUEL_RULES.arena.omittedObjectKinds`, `omitsSideObjects`), and
 marks the Cathedral's walls `MapObject.isUnbreakable`, all in `match/duelArena.ts` before the walk
 grid is built; trees, houses and rocks stay. The dropped objects' art is still drawn.
+
+### 2026-11-23 — A structure's body that outlives its structure (DEC-341)
+
+A structure's body that outlives its structure (a lane tower's fort, a wall turret's pylon) is a
+ruin: its snapshot's `condition` is `ruin` (DEC-389), it still blocks, and its cells stay closed.
+The client draws one ruin per footprint polygon, so a ruined fort keeps the shape of its walls. A
+destroyed object draws one ruin over its whole box. The pylon stays as a ruin (DEC-341 (2)), with
+its own health and bar (DEC-388). Until the tower-ruins work (#98) lands, every wall of a fallen
+tower's fort blocks (DEC-217 (12)). #98 lets a fort's keep and the struck wall fall; its merge
+note is in DEC-341 (2) and DEC-388.
+
+### 2026-11-23 — Implementation status (branch `feat/shots-over-lava`, DEC-345)
+
+A map object can carry two flags that say what its footprint does to a shot (`MapObjectFlags` in
+`content/maps/mapObjects.types.ts`): `canShotsCross` (a shot flies over it; a unit or a dash still
+collides with it) and `canLightShots` (a shot that flies over it, outside its passages, catches
+fire). The map builder sets them: `MapLandscapeBuilder` gives lakes `canShotsCross` and lava rivers
+both, through `MapDecorationBuilder.beginObject`. `MapObjectBuilder` copies them to the
+`MapObject`, and `staticCollisionIndexOf` to each collision shape. Every other object has neither,
+so it stops a shot. Collision reads the flags (10 §7); the map does not.
+
+### 2026-11-26 — Camp fires carry the shot flags (branch `feat/shots-over-lava`, DEC-386, HC-Q105)
+
+`MapSceneryBuilder` now sets both flags, `canShotsCross` and `canLightShots`, on each camp fire
+object (`<camp>-fire`), through `MapDecorationBuilder.beginObject`. So the note above ("Every other
+object has neither") no longer holds for camp fires. The fire's body follows the shot rule in the
+2026-11-26 correction note in 10 §7. The map still decides nothing about shots: it only sets the
+flags. The palace kitchen hearths (`MapPalaceRoomsBuilder`) carry no flag (`INBOX.md` HC-Q116).
+2026-11-27: DEC-409 (2) keeps this: each hearth's stone block holds its fire, so the stone stops a
+shot before the fire can light it.
 
 ## Related
 

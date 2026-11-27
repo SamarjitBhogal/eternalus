@@ -20,6 +20,15 @@ export class ContentValidator<Definition extends IdentifiedDefinition> {
   public constructor(private readonly rules: readonly ContentRule<Definition>[]) {}
 
   /**
+   * Runs every rule on one definition.
+   *
+   * @returns The message of each broken rule, with no id prefix; empty when the definition passes.
+   */
+  public problemsOf(definition: Definition, catalogue: ContentCatalogue<Definition>): string[] {
+    return this.rules.flatMap((rule) => rule.check(definition, catalogue));
+  }
+
+  /**
    * Runs every rule on every definition in `catalogue`.
    *
    * @throws ContentValidationError listing each broken rule as `<definition id>: <message>`.
@@ -28,9 +37,7 @@ export class ContentValidator<Definition extends IdentifiedDefinition> {
     const problems = catalogue
       .all()
       .flatMap((definition) =>
-        this.rules.flatMap((rule) =>
-          rule.check(definition, catalogue).map((m) => `${definition.id}: ${m}`),
-        ),
+        this.problemsOf(definition, catalogue).map((m) => `${definition.id}: ${m}`),
       );
 
     if (problems.length > 0) {

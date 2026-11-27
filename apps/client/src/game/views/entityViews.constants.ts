@@ -113,3 +113,16 @@ export const MINI_MAP_OUTLINE_COLORS: Readonly<Record<Team, string>> = {
 
 /** Mini map layer of Legends' markers: above the mobs' (layer 0), so a Legend stays on top. */
 export const MINI_MAP_LEGEND_LAYER = 1;
+
+/**
+ * The swing wedge of a melee sweep (DEC-304), main view only: how many ticks it takes to fade out
+ * after the swing (`SwingSnapshot.atTick`), how many straight pieces draw its arc, its colour and
+ * its opacity at the swing's tick.
+ */
+// TUNE: DEC-304 feel test: the visual numbers are provisional
+export const SWING_WEDGE = {
+  fadeTicks: 6,
+  arcSegments: 12,
+  color: '#ffffff',
+  startOpacity: 0.5,
+} as const;

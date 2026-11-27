@@ -31,6 +31,7 @@ export const MAGUS = {
     specialty: 'Arcane Intellect', // Figma 72:761
   },
   baseHealth: 800, // TUNE:
+  meleeReach: 3, // TUNE: DEC-305
   baseAether: 140, // TUNE: balancing.md (level 1)
   weaponBias: 'staff',
   damageFocus: 'magic',

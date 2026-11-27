@@ -8,6 +8,14 @@ import type { ColliderShape, CollisionLayer } from './Collider.types';
 export class Collider {
   public readonly shape: ColliderShape;
 
+  /**
+   * Whether a shot not aimed at the owner flies over its circle (`AreaHitQuery.stopsShot`): a
+   * forest camp's home, which sits unseen inside its camp fire (HC-Q105, HC-Q115). Read only for a
+   * body with no outline; an outline says it by its polygons (`Outline.walkOn`,
+   * `Outline.shotsCross`).
+   */
+  public readonly canShotsFlyOver: boolean;
+
   private isEnabledValue = true;
 
   private isUnbreakableValue = false;
@@ -18,17 +26,21 @@ export class Collider {
    * @param shape - The footprint; a circle's radius must be positive.
    * @param layer - Which collision group the entity belongs to.
    * @param isStatic - Whether collision resolution may never move this entity (structures, walls).
+   * @param options - `canShotsFlyOver`: a shot not aimed at the owner flies over it; `false` when
+   *   omitted.
    */
   public constructor(
     shape: ColliderShape,
     public readonly layer: CollisionLayer,
     public readonly isStatic = false,
+    { canShotsFlyOver = false }: { readonly canShotsFlyOver?: boolean } = {},
   ) {
     if (!(shape.radius > 0) || !Number.isFinite(shape.radius)) {
       throw new Error(`Collider radius must be a positive number, got ${String(shape.radius)}.`);
     }
 
     this.shape = { kind: shape.kind, radius: shape.radius };
+    this.canShotsFlyOver = canShotsFlyOver;
   }
 
   /** Whether the collider takes part in collisions (false while carried or dead). */
@@ -48,7 +60,8 @@ export class Collider {
 
   /**
    * Whether the owner takes no damage right now (architecture 07 §3): a wall or gate before its
-   * breakability rule passes. Set only by `StructureSystem`.
+   * breakability rule passes, and a wall turret's pylon with its turret (DEC-388). Set at spawn,
+   * then only by `StructureSystem`.
    */
   public get isUnbreakable(): boolean {
     return this.isUnbreakableValue;

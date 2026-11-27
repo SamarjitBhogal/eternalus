@@ -597,7 +597,9 @@ That is why every ability, weapon, status tick and gate fire names a `DamageSour
 effective against Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `CombatSystem`.
 
 **Implementation status (sprint 2.2, PR #34).** `DamagePipeline.apply(state, targetId, amount,
-source)` is built and is the only caller of `Health.applyDamage`. Each modifier above is a
+source)` is built. `DamagePipeline` is the only caller of `Health.applyDamage`: through `apply`,
+and through `collapse`, a fall that no step changes (a building's contents, a wall turret on its
+fallen pylon, DEC-388). Each modifier above is a
 `DamageStep` (`adjust(hit, state) → amount`, 0 blocks) and **the order is the list in
 `combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The steps today are
 `BreakabilityStep` (first: an unbreakable wall or gate rejects the hit before any multiplier,
@@ -628,11 +630,12 @@ units with no attack (`cannot-attack`).
 
 ```ts
 // Sketch: packages/core/src/content/weapons/WeaponDefinition.types.ts
-export type WeaponClass = 'glove' | 'bow' | 'sword' | 'spear' | 'battle-axe' | 'staff';
-export type AttackStrategyId = 'melee' | 'ranged-projectile' | 'beam'; // 'beam' reserved (04 §4)
+export type WeaponClass = 'glove' | 'bow' | 'sword' | 'spear' | 'battle-axe' | 'staff' | 'shield';
+export type AttackStrategyId = 'melee' | 'melee-sweep' | 'ranged-projectile' | 'beam'; // 'beam' reserved (04 §4)
 export type WeaponAttack = {
   readonly strategy: AttackStrategyId;
-  readonly reach: number;
+  readonly reach: number; // metres from the body edge; a melee attack adds the class's part, LegendDefinition.meleeReach (DEC-305)
+  readonly arcDegrees?: number; // 'melee-sweep' only: above 0, at most 180 (DEC-304)
   readonly damage: number;
   readonly damageType: DamageType;
   readonly intervalTicks: number;
@@ -661,33 +664,42 @@ export type WeaponDefinition = {
 Until weapons land, a unit's basic attack is `UnitDefinition.attack` (same shape as `WeaponAttack`
 minus `onHit` and `projectile`; `interval` authored in seconds, converted to ticks at load like
 movement speeds). `Combat.weaponId` names the equipped weapon; `CombatSystem` calls the weapon's `AttackStrategy`
-(`attack(self, target, weapon, ctx)`,
+(`attack(self, aim, attack, ctx)`, with `AttackAim { targetId, direction, point }`,
 [04 §4](04-entity-architecture.md#4-strategies-behaviour-that-varies-by-kind)):
-`MeleeAttackStrategy` applies `damage` and `onHit` in the tick; `RangedProjectileAttackStrategy`
+`MeleeAttackStrategy` applies `damage` and `onHit` to one target in the tick;
+`MeleeSweepAttackStrategy` does the same to every live enemy body in the wedge in front of the
+attacker (its radius is the body radius plus `reach`, its angle is `arcDegrees`); `RangedProjectileAttackStrategy`
 spawns a `Projectile` (not pooled, DEC-309) whose `payload` carries its impact as plain data by
-impact kind (a weapon's: the attack). `ProjectileSystem` flies every shot the same way and hands
-the hit to the `ProjectileImpact` of its kind (`WeaponImpact`: the damage with its fall-off, then
-the owner's `onHit`); an ability's shot is one more kind and one more impact class, and no
+impact kind (a weapon's: the attack). `ProjectileSystem` flies every shot, straight or in an arc
+(below), and hands the hit to the `ProjectileImpact` of its kind (`WeaponImpact`: the damage with
+its fall-off, or a blast, then the on-hit steps); an ability's shot is one more kind and one more impact class, and no
 `projectile-hit` event is needed (DEC-314). `Combat` holds a unit's attacks by mode, resolved once
 at spawn by one selector per mode, so `'heavy'` is one more selector (DEC-314). A heavy attack arrives as `attack-target` with `mode: 'heavy'`
 (`Recommendation:` one optional field on the existing command; **MVP-if-time**) and uses its own
 cooldown on `Combat`; a parry is a `parrying` status with a window. Non-unique weapons are usable
 by any class (reference 07: the class table's bias is a bias); `uniqueTo` locks the class weapons.
 
-A shot flies straight from the attacker's centre until it hits an enemy body or a wall, or reaches
+A straight shot flies from the attacker's centre until it hits an enemy body or a wall, or reaches
 its `ProjectileDefinition.range` (metres from the origin). It passes through allies, as the
-Hamstring blade does (DEC-269). A walk-on outline (a palace floor, a gate's passage) is ground units
-stand on, so a shot flies over it unless it was fired at that entity (DEC-314). A body that takes no
-damage now (its collider is unbreakable) also lets a shot pass unless the shot was fired at it
-(DEC-317); in today's content that changes only the forest camps, because the other such bodies are
-walk-on or stand in a wall that stops the shot. `CombatSystem` fires a ranged attack only when its
-target has a clear line of fire (`LineOfFire`, DEC-317: the shot touches it within its `range` and
-before a wall); else the unit faces the target and waits, and its controller moves it (a bot goes
-round, DEC-193). A shot that touches its target and another body at the same point hits its target:
-at a Stronghold, the palace wall on the edge of its floor does not take a shot fired at the
-Stronghold (DEC-317 (8)). At its range it stops
-and ends: it hits nothing and stays for its `endDuration` (a bolt's mist fading, an arrow lying on
-the ground), then it is removed. `slowFrom` (at most `range`) is where the shot starts to ease to
+Hamstring blade does (DEC-269). A walk-on polygon of an outline (a palace floor, a gate's passage)
+is ground units stand on, so a shot flies over it unless the shot aims at that entity: its locked
+target, or an aim point on its walk-on polygons from outside them (DEC-314, DEC-322 (1)). A solid
+polygon (a fort, the Stronghold's outer walls and throne) stops every shot (DEC-386 (1)), except a
+solid polygon that shots cross (a camp fire's body, DEC-386 (2), HC-Q105, `Outline.shotsCross`):
+only a shot aimed at its entity stops on it. A body
+that takes no damage now (its collider is unbreakable, for example a forest camp) stops every shot
+and takes no damage (DEC-317 addendum). `CombatSystem` fires an attack without a line-of-fire check,
+for every unit, so a shot
+into a wall ends there (DEC-317 addendum). A bot holds its ranged attack only with a clear line
+(`LineOfFire`: the shot touches the target within its `range` and before a wall or a body that
+stops a shot); else it drops its lock and moves for a clear shot (11, DEC-193). A shot that touches its target and another body at the same point hits its target:
+a palace wall whose face is the palace floor's edge does not take a shot fired at the floor
+(DEC-317 (8)). At its range it stops.
+The move that ends there is swept like every other move, so a body under the end point takes the
+hit: an arrow damages what it lands on (DEC-322 (2)). A walk-on floor that the shot does not aim at
+takes nothing there either (the owner's HC-Q78 note: "walk-on floors shouldnt take damage"). With
+no hit, the shot ends: it hits nothing more and stays for its `endDuration` (a bolt's mist fading,
+an arrow lying on the ground), then it is removed. `slowFrom` (at most `range`) is where the shot starts to ease to
 that stop; equal to `range`, the shot flies at full speed to the end. Its damage drops in a straight
 line from the attack's `falloff.fullTo` to `falloff.floor` at `falloff.floorAt`, and stays at the
 floor after that (DEC-306). A weapon with a melee attack beside its default attack also takes
@@ -695,16 +707,45 @@ floor after that (DEC-306). A weapon with a melee attack beside its default atta
 melee, on its own rebindable action, DEC-308). `mode` is the same optional field as the heavy
 attack's. The basic and melee attacks share the unit's one cooldown (a reading of DEC-308).
 
-| Weapon (`id`)                               | Class      | Attacks (`TUNE`, reference 07)                                                          | Unique to | Status                  |
-| ------------------------------------------- | ---------- | --------------------------------------------------------------------------------------- | --------- | ----------------------- |
-| Raptor Talons (`raptor-talons`)             | glove      | melee physical; `onHit: bleed`                                                          | —         | MVP                     |
-| Obsidian bow (`obsidian-bow`, name pending) | bow        | ranged magical projectile; `onHit: sundered` (stacks)                                   | —         | MVP                     |
-| A Fine Line (`a-fine-line`)                 | staff      | melee physical + ranged magical, both `pierce`                                          | —         | MVP                     |
-| Staff (`magus-staff`)                       | staff      | melee physical, ranged magical; `grants: ['spell-potency']`                             | magus     | MVP                     |
-| Wuuthrad (`wuuthrad`)                       | battle-axe | melee physical, long reach; heavy: `concussion`; `damageMultipliers.sentinel`           | —         | MVP-if-time             |
-| Lightbringer (`lightbringer`)               | sword      | melee magical + physical; heavy (cooldown): stun, concussion, blind; parry: blind, stun | —         | MVP-if-time             |
-| Short blades (`short-blades`)               | glove      | fast melee; throwable (a persistent projectile, retrieve or regenerate)                 | warrior   | MVP-if-time             |
-| Barricades (`barricades`)                   | —          | movement lock, `mass` change, moving collider, knockback absorption                     | sentinel  | post-MVP ("needs work") |
+An arc shot (`ProjectileDefinition.isArc`; DEC-341 (4), DEC-342) comes from above. Nothing stops
+it in the air: no wall, body or map edge. It flies to its aim point and no further (its
+definition's `range` is the cap), lands on the body under it that a straight shot would stop on
+and that can take damage, or on bare ground, and then ends as a straight shot does. It needs no
+clear line of fire, only its range. An attack with a `splash` bursts where its shot lands: every
+live enemy unit whose circle meets the blast circle takes the damage, which falls from full at
+the centre to the splash's edge multiplier at its radius. Structures and allies take nothing.
+The blast finds its units through `AreaHitQuery`, the one area-hit rule (DEC-322 (3)). Which
+shots arc and the splash numbers live in `content/projectiles/` and the attack's `projectile`
+data.
+
+**Lit shots (HC-Q89, DEC-345).** A shot flies over a map shape flagged `canShotsCross` (a map
+builder sets the flags, 10 §7). A shot whose definition has `litOnHit` steps catches fire when it
+flies over a shape flagged `canLightShots` (`CollisionQuery.lightsShot`, 10 §7) before it reaches
+the body it lands on. It stays lit
+until it lands or ends. Where a lit shot lands damage, `ProjectileSystem` runs its `litOnHit` steps
+on the body through the `StepRunner` port (`HitEffects.runSteps`), as the attack's `onHit` runs:
+one cast named after the weapon that fired it, credited to the owner (or to the payload as the
+`Shooter` when the owner is gone). Content decides which shots can catch fire and what a lit shot
+does: each projectile's `litOnHit` in `content/projectiles/` (authored in seconds, loaded in ticks
+by `loadProjectiles`, checked against the ability registry at boot by `checkAttackLinks`), and the
+statuses those steps apply in `content/status-effects/`. A shot with no `litOnHit` flies over such
+a shape and does not catch fire. A body with no `StatusEffects` takes the shot's damage and no
+status.
+`ProjectileFlight` holds whether a shot is lit; the hash, `EntitySnapshot.projectile` and the
+client's look of the shot follow it.
+
+| Weapon (`id`)                                    | Class      | Attacks (`TUNE`, reference 07)                                                          | Unique to | Status                 |
+| ------------------------------------------------ | ---------- | --------------------------------------------------------------------------------------- | --------- | ---------------------- |
+| Raptor Talons (`raptor-talons`)                  | glove      | melee physical; `onHit: bleed`                                                          | —         | MVP                    |
+| Obsidian bow (`obsidian-bow`, name pending)      | bow        | ranged magical projectile; `onHit: sundered` (stacks)                                   | —         | MVP                    |
+| A Fine Line (`a-fine-line`)                      | staff      | melee physical + ranged magical, both `pierce`                                          | —         | MVP                    |
+| Staff (`magus-staff`)                            | staff      | melee physical, ranged magical; `grants: ['spell-potency']`                             | magus     | MVP                    |
+| Long sword (`long-sword`)                        | sword      | melee physical (DEC-387 W1)                                                             | —         | MVP (DEC-387)          |
+| Great sword (`great-sword`)                      | sword      | melee physical; heavier, harder and wider than the long sword (DEC-387 W4)              | —         | MVP (DEC-387)          |
+| Wuuthrad (`wuuthrad`)                            | battle-axe | melee physical, long reach; heavy: `concussion`; `damageMultipliers.sentinel`           | —         | MVP-if-time            |
+| Lightbringer (`lightbringer`)                    | sword      | melee magical + physical; heavy (cooldown): stun, concussion, blind; parry: blind, stun | —         | MVP-if-time            |
+| Dual blades (`dual-blades`)                      | sword      | fast melee (DEC-387 W2); throwable (a persistent projectile, retrieve or regenerate)    | warrior   | MVP; throw MVP-if-time |
+| Bastions (`bastions`; reference 07's Barricades) | shield     | heavy, slow melee, dual-wielded; post-MVP: lock, `mass`, moving collider, knockback     | sentinel  | MVP (DEC-407)          |
 
 **Implementation status (SCRUM-183 / SCRUM-287, first slice).** `content/weapons/` holds
 `WeaponDefinition` (`id`, `displayName`, `weaponClass`, `attacks`, `allowedClasses`, `uniqueTo`;
@@ -734,15 +775,16 @@ attack is ranged, and `obsidian-bow` exists. Projectile content is in `content/p
 (`KnownProjectileRule`, which `loadWeapons` also runs). `RangedProjectileAttackStrategy` spawns the
 `Projectile` at the attacker's centre through `AttackContext.factory` (required: a missing factory
 does not compile). Its `ProjectilePayload` holds the owner, team, source, the entity it was fired
-at (`targetId`, `null` for none), its impact (`{ kind: 'weapon', attack }`) and the origin. The
+at (`targetId`, `null` for none), its impact (`{ kind: 'weapon', attack }`), the origin and the
+owner's level at firing (`ownerLevel`, 1 without `Progression`; PR 4). The
 shot flies straight at the target's facing point, with no lead. Stand-in until PR 2 (melee sweeps,
 phase 4 sprint 4.4): the player fires only at a target under the cursor (`attack-target`), not
 along the aim DEC-184 sets. A bot holds its ranged attack only with a clear line of fire
-(`state/LineOfFire`, with the shot's radius from its `ProjectileDefinition`), and `CombatSystem`
-fires one only with that clear line (DEC-317). The projectile is not pooled (04 §11, DEC-309). Shot endings (DEC-306) are built: `ProjectileFlight` holds `range`,
+(`state/LineOfFire`, with the shot's radius from its `ProjectileDefinition`); PR 2 removed the
+same check from `CombatSystem` (DEC-317 addendum). The projectile is not pooled (04 §11, DEC-309). Shot endings (DEC-306) are built: `ProjectileFlight` holds `range`,
 `slowFrom` and the ending countdown; `physics/flightSpeed` caps the shot's speed each tick through
 `Movement.limitSpeed`, so it stops exactly at `range`, ends, and is removed as `consumed` after
-`endDuration`. `EntitySnapshot.projectile` (`speedShare`, `ending`) lets the client draw the
+`endDuration`. `EntitySnapshot.projectile` (`flownShare`, `ending`) lets the client draw the
 slowing and the ending. The staff's melee attack is on its own action (DEC-308): `attack-target`
 has an optional `mode` (`AttackMode`, `'basic' | 'melee'`, in `content/units/units.types.ts`);
 `Combat` holds the attacks by mode (`UnitAttacks`, resolved at spawn by
@@ -754,10 +796,125 @@ hit to the impact of its payload's kind (its `impacts`, composed in `DefaultSyst
 `ProjectileImpact` interface is in `combat/ProjectileImpact.types.ts`, so both `combat/` and
 `abilities/` can implement it; it is not in `StrategyRegistry`, because `entities/` may import
 neither and an ability's impact needs the match's services. `WeaponImpact` applies damage times
-`falloffMultiplier` through `DamagePipeline`, then the owner's statuses' `onHit` steps through
+`falloffMultiplier` through `DamagePipeline`, then the shot's attack's own `onHit` steps and the
+owner's statuses' `onHit` steps (PR 4) through
 the `HitRunner` port (`state/HitRunner.types.ts`, which `HitEffects` satisfies); the shot is then
 removed with cause `consumed`. No `projectile-hit` event exists (DEC-314). Still not built: `heavyAttack`, `parry`, `grants`, the flex attack,
 `a-fine-line` and turret lead.
+
+**Implementation status, 2026-11-22 (branch `feat/melee-sweeps`, PR 2; DEC-184, DEC-304, DEC-305,
+DEC-319).** Melee sweeps, class reach and aimed attacks are built. The talons, Wuuthrad and the Magus
+staff's melee attack are sweeps; mobs keep the one-target `melee` attack. The wedge geometry is
+`utils/sector.ts`. One hit rule serves weapon sweeps and ability areas (`state/AreaHitQuery`,
+DEC-322 (3); `abilities/TargetQuery` is a thin adapter over it): a walk-on outline is hit only when
+the hit aims at it (DEC-322 (1)), and a body that takes no damage now is never hit. Shots and
+`LineOfFire` use the same module's `stopsShot`, and a shot fired along an aim names the walk-on
+body under the aim point (`aimedBodyOf`; a structure before a map object). Every contact reports
+its bodies once through `EntityStore.recordHits`, so the AI sees every body a unit attacks, not
+only its lock (`Combat.recordHits`, `EntityStore.victimsOf`, DEC-322 (2), DEC-333 (1)). The client draws the arrow's arc from
+`EntitySnapshot.projectile.flownShare` (`views/ProjectileView`). A new command,
+`attack-aim { actorId, aim: Vec2 | null, mode? }`, sets an aim point on `Combat` (a target or an aim
+point, never both; `stop` clears both). With an aim point, `CombatSystem` turns the unit to the point
+each tick and attacks along the line when off cooldown, with no reach check and no line-of-fire
+check. The player's held attack button and melee key send `attack-aim` (client `PlayerCommands`,
+Duel server `SeatCommands`); the developer explorer's clicks stay `attack-target`. This ends the PR 1
+stand-in above: the player now fires along the aim, not only at a target under the cursor.
+`StateHasher` hashes the aim point only when one is set. `Combat.recordSwing` keeps the last sweep
+(not hashed), `EntitySnapshot.swing` sends it, and the client draws a fading wedge
+(`views/swingWedge.ts`). Still not built: the PR 3 weapons and their arcs (dual blades, great sword,
+Bastions), two arcs for a dual-wield weapon (DEC-304, an idea), `heavyAttack`, `parry`, `grants`,
+the flex attack and `a-fine-line`.
+
+**Implementation status, 2026-11-27 (player-stack fold U5, `chore/ranged-attacks-fold`; DEC-292).**
+One change to the note above: a body that takes no damage now is never hit, except the Cathedral
+gem (`EntityStore.ignoresHits`). A weapon sweep, a straight shot or a damaging ability area that
+touches the gem lands on it. The damage pipeline blocks the damage, and the gem strikes the hitter
+(07, "Implementation status", Cathedral gem).
+
+**Implementation status, 2026-11-22 (branch `feat/wall-turrets`, part 2).** An attack's own `onHit`
+steps run (§10 `WeaponAttack.onHit`). `AttackBase` has an optional `onHit`, authored in seconds
+(`AuthoredUnitAttack`) and loaded in ticks (`UnitAttack`, `attackInTicks`, DEC-241), as a status's
+`onHit` is. `loadWeapons` and `loadTurrets` load it. `HitRunner.afterHit` takes the attack that
+struck: `HitEffects` runs that attack's `onHit` first, then the `onHit` of the attacker's statuses.
+A shot keeps the attack it was fired with (`WeaponImpact` passes the payload's attack), and the two
+melee strategies pass the attack they used. `abilities/checkAttackLinks` checks the steps of every
+weapon attack and turret ammo against the ability registry at boot, as `checkStatusLinks` checks a
+status's `onHit`. The first content that uses it is the heavy turret bolt's `concussion` (07 §5).
+Bleed and sundered (lane A PR 3) are still to come as content. A shot that lands after its owner
+left the store (a destroyed turret, a Legend that died while its arrow flew) still runs its attack's
+own `onHit` steps (PR 4 critic round 2, S4; built in PR 4, since the lane A owner did not take it
+into lane A PR 3). The shot carries its owner as it fired: `ProjectilePayload` holds the owner's
+team, its level at firing (`ownerLevel`) and the origin, and `WeaponImpact` passes them to
+`HitRunner.afterHit` as the `Shooter`. `HitEffects` then casts the attack's steps from the shot's
+origin, at that level, named after the payload's source (the name `weaponSourceOf` gives a live
+owner). The statuses' `onHit` steps need the live owner, so they do not run. The cast facts carry
+the caster's team and position (`CastFacts.caster`), and `AreaHitQuery.find` uses them, so an
+`enemies` area of a gone caster still spares that caster's allies; without them it reads the store,
+as before. A dash step of a gone caster does nothing (`DashEffect`), and `EntityStore.recordHits`
+ignores an unknown attacker. A live attacker's hit does not change. `attackInTicks` and
+`timeProblems` now live in `content/timesInTicks.ts` with `stepInTicks`, shared by the loaders of
+abilities, statuses, weapons and turret ammo.
+
+**Implementation status, 2026-11-23 (branch `refactor/query-injection`, DEC-344 (3), DEC-359).**
+The match builds one `AreaHitQuery`, one `ReachQuery` and one `TargetQuery` (`Simulation` and
+`DefaultSystemPipeline`) and injects them. No class builds its own. The pipeline builds new ones
+only when a caller (a test) leaves them out. Each user takes a narrow `Pick` of the methods it
+calls.
+
+**Implementation status, 2026-11-23 (branch `feat/tower-orbs`, DEC-342; arc shot and splash).**
+How the design text above is built:
+
+- **The arc shot.** `RangedProjectileAttackStrategy` cuts the shot's range (`ProjectileFlight`) to
+  the distance to its aim: `AttackAim.point`, else the target's place. `systems/ArcLanding` picks
+  the body under the landing point with `AreaHitQuery.stopsShot`: the shot's target if it is
+  under it, else the first in store order. The shot then lodges for its `endDuration`, and the
+  owner's hit record gets the bodies it landed on (`EntityStore.recordHits`). `LineOfFire` treats
+  an arc shot as always clear. The turret bolts and the tower orb are arc shots; arrows and the
+  Magus bolt stay straight. The client draws the arc and the shadow (`views/ProjectileView`) from
+  `EntitySnapshot.projectile` (`isArc`, `range`).
+- **The splash** (`ProjectileLaunch.splash`: `radius` and `edgeMultiplier`, validated by
+  `KnownProjectileRule`). A neutral unit counts as an enemy. The edge fall-off is on top of the
+  shot's own fall-off, and the on-hit steps run on each unit. `ProjectileImpact.land` returns the
+  ids it landed on, and `ProjectileHit.bodyId` can be `null`. A straight shot with a splash bursts
+  at its contact point. The client draws the blast from `EntitySnapshot.projectile.blastRadius`.
+- The tower-orb values (`content/projectiles/towerOrb.ts`, `content/structures/turretAmmo.ts`)
+  are the owner's answers (DEC-366); the footprint, the lead margin and the burst time stay `TUNE`.
+
+**Implementation status, 2026-11-26 (branch `feat/shots-over-lava`; HC-Q105, DEC-386 correction,
+HC-Q115).** The shot rule above names walk-on outlines. In the code, `AreaHitQuery.stopsShot` lets
+a shot not aimed at a body fly over more bodies than that: the rule is in the 2026-11-26
+correction note in 10 §7. So a forest camp no longer stops every shot, and the text above that
+names it as a body that takes no damage does not hold for it. The owner is asked to confirm the
+reading (`INBOX.md` HC-Q115). `LineOfFire` uses the same rule. 2026-11-27: he confirmed it
+(DEC-409 (1)).
+
+**Implementation status, 2026-11-26 (branch `feat/start-weapons`, lane A PR 3; DEC-387).** A Legend
+spawns with the weapon of its spec. `LegendSpecDefinition.primaryWeaponId` (`string | null`) is the
+start weapon; `null` falls back to the class's `defaultLoadout.primaryWeaponId`, as `kit: null`
+falls back to `defaultKit`. `content/legends/specs/primaryWeaponIdOf.ts` holds the rule (the sibling
+of `kitOf`) and `Legend.basicAttack` calls it. `KnownSpecWeaponRule` rejects a spec weapon id that
+names no weapon. `content/weapons/isWeaponAllowedFor.ts` is the one class-access rule
+(`allowedClasses`, `uniqueTo`): `SpecWeaponAllowedRule` applies it to a spec's start weapon and
+`DefaultWeaponAllowedRule` to a class's default weapon, and each skips an id that does not resolve.
+They check at content load what §12's `WeaponAllowedRule` checks in a loadout. This is the build of
+§12's `LoadoutTemplate.primaryWeaponId` at the spec, the one place that varies per Legend today; the
+class default stays as the fallback and the `defaultLoadout` of a class is unchanged. New weapons,
+each of class `sword` with a melee sweep: `long-sword` and `great-sword` (open to every class) and
+`dual-blades` (Warrior only). Raptor Talons and the Obsidian Bow have an attack `onHit` step: one
+stack of `bleed` and of the new `sundered` status (`damageTaken`, added per stack; its numbers live
+in `content/status-effects/sundered.ts`) on each hit. The Colossus' Bastions were not built here:
+reference 07 names no weapon class for them (DEC-387 (7), `INBOX.md` HC-Q118). 2026-11-27
+(DEC-407): they are built, of the new weapon class `shield`, Sentinel only, and the Colossus
+starts with them (`content/weapons/bastions.ts`). The table above
+records the dual blades (the id `dual-blades` and the class `sword`: DEC-57 "two swords", DEC-64,
+card W2), the long sword and the great sword (cards W1 and W4); the dual blades' throw is not built
+and stays MVP-if-time. One difference from the design text remains, and it is acceptable: the start
+weapon is on the spec, with the class's `defaultLoadout` as the fallback (§12 builds a loadout from
+the class, `autoBuildLoadout(classId, content)`; ADR 0026 decision 1 reads the spec only to choose
+the kit): DEC-57 sets the start weapon per Legend, recipe R2 applies the spec over the class
+definition, DEC-387 (6). Two design-text updates wait for the owner and are listed in the PR body:
+§12's `autoBuildLoadout` takes the spec (`primaryWeaponIdOf`), and ADR 0026's Status line gets an
+"extended by DEC-387" note.
 
 ## 11. Artifacts (gadgets Z and C)
 
@@ -1011,13 +1168,13 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
 - **Add a loadout slot**: one field on `Loadout`, one `LoadoutRule`, one DTO migration
   ([14](14-persistence-and-resources.md)), one `LoadoutScreen` row.
 
-| Item                                                                                                                                                                       | Status                                                                              |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| The framework (§2–§9), 3 abilities + ultimate per class, aether, charge rules, XP scaling, `Loadout` + validator + auto-build, `AbilityBar` glyphs                         | **MVP**                                                                             |
-| Veil, Blade Runner (both varieties), Rip & Tear, Slam, Imbue (both varieties), Shockwave; one ultimate per class (Fury; Berserk or Meteor Fall; Death Ray or Nova); Revive | **MVP** (third abilities and ultimate picks: INBOX; proposals in more-abilities.md) |
-| Raptor Talons, obsidian bow, A Fine Line, Magus staff; gadget slots Z/C                                                                                                    | **MVP**                                                                             |
-| Wuuthrad, Lightbringer, Short blades, Mortar, Soul Orb, secondary weapon, passive slot, in-match loadout changes, Ultimate Plus, combos, `summon`                          | **MVP-if-time**                                                                     |
-| Ability tree, class-switch penalty, Barricades, Eagle Eye, Firestorm, `reveal`, armour set, skins, weapon abilities (`WeaponDefinition.abilityIds` reuses `Ability`)       | **post-MVP**                                                                        |
+| Item                                                                                                                                                                                                                                            | Status                                                                              |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| The framework (§2–§9), 3 abilities + ultimate per class, aether, charge rules, XP scaling, `Loadout` + validator + auto-build, `AbilityBar` glyphs                                                                                              | **MVP**                                                                             |
+| Veil, Blade Runner (both varieties), Rip & Tear, Slam, Imbue (both varieties), Shockwave; one ultimate per class (Fury; Berserk or Meteor Fall; Death Ray or Nova); Revive                                                                      | **MVP** (third abilities and ultimate picks: INBOX; proposals in more-abilities.md) |
+| Raptor Talons, obsidian bow, A Fine Line, Magus staff, dual blades, long sword, great sword (DEC-387), Bastions (DEC-407); gadget slots Z/C                                                                                                     | **MVP**                                                                             |
+| Wuuthrad, Lightbringer, Dual blades (throw), Mortar, Soul Orb, secondary weapon, passive slot, in-match loadout changes, Ultimate Plus, combos, `summon`                                                                                        | **MVP-if-time**                                                                     |
+| Ability tree, class-switch penalty, the Bastions' movement lock, `mass` change, moving collider and knock-back absorption, Eagle Eye, Firestorm, `reveal`, armour set, skins, weapon abilities (`WeaponDefinition.abilityIds` reuses `Ability`) | **post-MVP**                                                                        |
 
 ## 18. Implementation status
 
@@ -1035,7 +1192,10 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   built for the capture point boss and the corner boss (DEC-237): a mob in `XP_SOURCES.teamKills` pays every Legend of
   its killer's playable team, not the killer alone, and each Legend gets at most the XP that lifts
   it `maxLevels` levels (`Progression.xpToReach`); `level-matches-xp` checks that the killer is on
-  the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
+  the recipient's team (`cause: 'team-kill'`). Destroyer-only structure XP is built for the wall
+  turret (DEC-341): a structure in `XP_SOURCES.destroyerOnly` pays its XP only to the Legend that
+  lands the killing hit, and its `structure-destroyed` pays no team-wide structure XP. A
+  non-Legend killer pays no one. It listens to `entity-died` itself, not 12's
   `xp-granted` reward path. Camp XP is built: `camp-cleared` pays the camp's entry in
   `XP_SOURCES.campCleared`, keyed by camp definition id (forest camps only; a corner camp's boss
   pays `teamKills` instead) (`cause: 'camp-cleared'`), one tick after the last mob's kill XP, and
@@ -1256,7 +1416,8 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **On-hit steps on a status.** A status has two optional fields §8 does not have: `onHit`
     (effect steps, loaded in ticks as an ability's are) and `grants` (an ability id).
     `abilities/HitEffects` runs the attacker's statuses' `onHit` steps where each basic attack
-    lands: the attack strategy calls it (`MeleeAttackStrategy` in the tick, after the damage, as
+    lands: the attack strategy calls it (`MeleeAttackStrategy` in the tick, after the damage, and
+    `MeleeSweepAttackStrategy` the same way for each body it hits (DEC-319), as
     §10 plans for a weapon's `onHit`; `CombatSystem` hands it over in the attack context), as one cast through the registry's strategies: credited to
     the attacker under the status's id, from the `default-action` slot, placed from the attacker
     to the struck body. The shape `hit` (`abilities/shapes/HitShape`) holds the struck body only

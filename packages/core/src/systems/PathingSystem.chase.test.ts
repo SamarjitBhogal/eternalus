@@ -15,6 +15,7 @@ import { LaneFlowFields } from '../map/LaneFlowFields';
 import { WorldMap } from '../map/WorldMap';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
+import { ReachQuery } from '../state/ReachQuery';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { PathingSystem } from './PathingSystem';
 import { FORMATIONS, logger, STRATEGIES } from './__fixtures__/pathingSystemSetup';
@@ -73,7 +74,12 @@ describe('PathingSystem', () => {
       progress: 40,
     });
     state.entities.setAttackTarget(minion.id, enemy.id);
-    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
+    const system = new PathingSystem(
+      STRATEGIES,
+      FORMATIONS,
+      HORDE_STEERING.slotArrivalRadius,
+      new ReachQuery(),
+    );
     const index = () => {
       space.begin(state.entities.size);
       state.entities.forEach((entity) => {
@@ -119,7 +125,12 @@ describe('PathingSystem', () => {
       progress: 40,
     });
     state.entities.setAttackTarget(minion.id, tower.id);
-    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
+    const system = new PathingSystem(
+      STRATEGIES,
+      FORMATIONS,
+      HORDE_STEERING.slotArrivalRadius,
+      new ReachQuery(),
+    );
     const update = () => {
       space.begin(state.entities.size);
       space.add(minion.id, minion.getComponent(Transform).position.x, 22);
@@ -134,7 +145,7 @@ describe('PathingSystem', () => {
     // 0.8 m from the wall: within the 0.4 m radius + 1.5 m reach, though 15.8 m from the centre.
     minion.getComponent(Transform).moveTo({ x: 83.2, y: 22 });
     update();
-    expect(state.entities.isInReach(minion.id, tower.id)).toBe(true);
+    expect(new ReachQuery().isInReach(state.entities, minion.id, tower.id)).toBe(true);
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 
@@ -163,7 +174,12 @@ describe('PathingSystem', () => {
       progress: 40,
     });
     state.entities.setAttackTarget(minion.id, house.id);
-    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
+    const system = new PathingSystem(
+      STRATEGIES,
+      FORMATIONS,
+      HORDE_STEERING.slotArrivalRadius,
+      new ReachQuery(),
+    );
     const update = () => {
       space.begin(state.entities.size);
       space.add(minion.id, minion.getComponent(Transform).position.x, 22);
@@ -179,7 +195,7 @@ describe('PathingSystem', () => {
     // outline), so it holds, where a chase of the centre would still close in.
     minion.getComponent(Transform).moveTo({ x: 83.2, y: 22 });
     update();
-    expect(state.entities.isInReach(minion.id, house.id)).toBe(true);
+    expect(new ReachQuery().isInReach(state.entities, minion.id, house.id)).toBe(true);
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 
@@ -213,12 +229,17 @@ describe('PathingSystem', () => {
     space.add(minion.id, 95, 22);
     space.commit();
 
-    new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius).update({
+    new PathingSystem(
+      STRATEGIES,
+      FORMATIONS,
+      HORDE_STEERING.slotArrivalRadius,
+      new ReachQuery(),
+    ).update({
       state,
       logger,
     });
 
-    expect(state.entities.isInReach(minion.id, house.id)).toBe(true);
+    expect(new ReachQuery().isInReach(state.entities, minion.id, house.id)).toBe(true);
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 
@@ -276,10 +297,16 @@ describe('PathingSystem', () => {
       space.add(enemy.id, 58, 20);
       space.commit();
 
-      new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, {
-        flowFields: fields,
-        forts,
-      }).update({
+      new PathingSystem(
+        STRATEGIES,
+        FORMATIONS,
+        HORDE_STEERING.slotArrivalRadius,
+        new ReachQuery(),
+        {
+          flowFields: fields,
+          forts,
+        },
+      ).update({
         state,
         logger,
       });
@@ -332,7 +359,7 @@ describe('PathingSystem', () => {
     });
     space.commit();
 
-    new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, {
+    new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, new ReachQuery(), {
       flowFields: fields,
     }).update({
       state,

@@ -77,6 +77,8 @@ export type GameEventMap = {
   readonly 'structure-destroyed': {
     readonly entityId: EntityId;
     readonly kind: string;
+    /** The destroyed structure's content definition id, so listeners need no store lookup. */
+    readonly definitionId: string;
     readonly team: Team;
     readonly lane: string | null;
   };

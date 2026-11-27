@@ -28,4 +28,12 @@ describe('ControllerBinding', () => {
     });
     expect(make('tuned').getComponent(ControllerBinding).profileId).toBe('lane-minion');
   });
+
+  it('names the binding of a definition: its profile, else the controller, and none without a controller', () => {
+    expect(
+      ControllerBinding.ofDefinition({ controller: 'turret', aiProfile: 'wall-turret' }),
+    ).toEqual(new ControllerBinding('turret', 'wall-turret'));
+    expect(ControllerBinding.ofDefinition({ controller: 'turret' })?.profileId).toBe('turret');
+    expect(ControllerBinding.ofDefinition({ aiProfile: 'wall-turret' })).toBeUndefined();
+  });
 });

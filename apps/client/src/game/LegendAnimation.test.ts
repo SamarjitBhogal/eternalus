@@ -19,6 +19,7 @@ const hero: EntitySnapshot = {
   gem: null,
   statuses: null,
   projectile: null,
+  swing: null,
   area: null,
 };
 const base = () =>

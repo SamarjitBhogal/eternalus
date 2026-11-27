@@ -8,8 +8,9 @@ import type { InvariantRunner } from '../diagnostics/InvariantRunner';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { MatchDirector } from '../match/MatchDirector';
 import type { SpaceIndex } from '../physics/SpaceIndex';
+import type { AreaHitQuery } from '../state/AreaHitQuery';
 import type { GameState } from '../state/GameState';
-import type { LineOfFireQuery } from '../state/LineOfFire.types';
+import type { ReachQuery } from '../state/ReachQuery';
 import type { SlotReadiness } from '../state/SlotReadiness.types';
 import type { ProgressionContent } from './ProgressionSystem.types';
 import type { PlayableTeam } from '../teams/teams.types';
@@ -30,8 +31,6 @@ export type DefaultSystemPipelineOptions = {
    * attacks fire and, with `hordes`, the units spawned on lanes.
    */
   readonly factory: EntityFactory;
-  /** The match's one line-of-fire query: `CombatSystem` fires a ranged attack only with it. */
-  readonly lineOfFire: LineOfFireQuery;
   /** The content kills are priced and levels applied with, injected. */
   readonly progression: ProgressionContent;
   /** The match's director, built and started by `Simulation`; it runs after `DeathSystem`. */
@@ -78,4 +77,15 @@ export type DefaultSystemPipelineOptions = {
    * `Simulation` loads once for the match.
    */
   readonly assistWindowTicks: number;
+  /**
+   * The match's one hit rule for areas, which the casts, the shots and the sweeps share;
+   * `Simulation` injects the one its bots' line of fire uses too. A new `AreaHitQuery` when
+   * omitted.
+   */
+  readonly areas?: AreaHitQuery;
+  /**
+   * The match's one aim rule, which chases, combat and stuck detection share; `Simulation`
+   * injects the one its bots use too. A new `ReachQuery` when omitted.
+   */
+  readonly reach?: ReachQuery;
 };

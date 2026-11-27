@@ -49,6 +49,11 @@ export type XpSourcesDefinition = {
    * definition id: `xp` each, but never more than lifts a Legend `maxLevels` levels (DEC-237).
    */
   readonly teamKills: Readonly<Record<string, TeamKillReward>>;
+  /**
+   * The structures whose destruction pays only the Legend that lands the killing hit, this much
+   * XP, by structure definition id; they pay no `structureDestroyed` to the team (DEC-341).
+   */
+  readonly destroyerOnly: Readonly<Record<string, number>>;
 };
 
 /** A team-wide kill reward (balancing.md boss table, DEC-237). */

@@ -63,6 +63,7 @@ const entity = (
   statuses: null,
   projectile: null,
   gem: null,
+  swing: null,
 });
 
 const PLAYER = entity('me', 'legend', 'light');

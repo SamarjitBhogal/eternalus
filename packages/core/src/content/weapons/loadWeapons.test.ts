@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { ContentValidationError } from '../ContentValidationError';
 import { loadWeapons } from './loadWeapons';
 import type { ProjectileLaunch } from '../units/units.types';
-import type { WeaponDefinition } from './weapons.types';
+import type { AuthoredWeaponDefinition } from './weapons.types';
 
 /** A stand-in melee weapon; the shipped catalogue has no numbers until the owner sets them. */
-const TEST_TALONS: WeaponDefinition = {
+const TEST_TALONS: AuthoredWeaponDefinition = {
   id: 'test-talons',
   displayName: 'Test talons',
   weaponClass: 'glove',
@@ -19,7 +19,7 @@ const TEST_TALONS: WeaponDefinition = {
 const shooting = (
   launch: Partial<ProjectileLaunch['falloff'] & object> | null,
   projectileId = 'arrow',
-): WeaponDefinition => ({
+): AuthoredWeaponDefinition => ({
   ...TEST_TALONS,
   weaponClass: 'bow',
   attacks: [
@@ -36,9 +36,20 @@ const shooting = (
   ],
 });
 
-const withAttack = (field: 'damage' | 'reach' | 'interval', value: number): WeaponDefinition => ({
+const withAttack = (
+  field: 'damage' | 'reach' | 'interval',
+  value: number,
+): AuthoredWeaponDefinition => ({
   ...TEST_TALONS,
   attacks: [{ strategy: 'melee', damage: 50, reach: 1.5, interval: 0.5, [field]: value }],
+});
+
+/** The stand-in melee weapon whose one attack runs `onHit` steps. */
+const withOnHit = (
+  onHit: NonNullable<AuthoredWeaponDefinition['attacks'][number]['onHit']>,
+): AuthoredWeaponDefinition => ({
+  ...TEST_TALONS,
+  attacks: [{ strategy: 'melee', damage: 50, reach: 1.5, interval: 0.5, onHit }],
 });
 
 describe('loadWeapons', () => {
@@ -49,19 +60,59 @@ describe('loadWeapons', () => {
     ).toBe(1);
   });
 
-  it('ships each class default weapon', () => {
+  it("converts an attack's onHit step times from seconds to ticks, and keeps none as none", () => {
+    const concussion = {
+      kind: 'debuff',
+      statusId: 'concussion',
+      durationSeconds: 1.5,
+      shape: { kind: 'hit' },
+    } as const;
+    const talons = withOnHit([concussion]);
+
+    expect(loadWeapons(30, [talons]).get('test-talons').attacks).toEqual([
+      {
+        strategy: 'melee',
+        damage: 50,
+        reach: 1.5,
+        interval: 15,
+        onHit: [
+          { kind: 'debuff', statusId: 'concussion', durationTicks: 45, shape: { kind: 'hit' } },
+        ],
+      },
+    ]);
+    expect(loadWeapons(30, [TEST_TALONS]).get('test-talons').attacks[0]?.onHit).toBeUndefined();
+  });
+
+  it("rejects an attack's onHit step with a negative time", () => {
+    const badTime = {
+      kind: 'debuff',
+      statusId: 'concussion',
+      durationSeconds: -1,
+      shape: { kind: 'hit' },
+    } as const;
+    const broken = () => loadWeapons(30, [withOnHit([badTime])]);
+
+    expect(broken).toThrow(ContentValidationError);
+    expect(broken).toThrow('Weapon "test-talons": debuff durationSeconds must not be negative.');
+  });
+
+  it('ships each class default weapon and the sword catalogue', () => {
     expect(loadWeapons(30).ids).toEqual([
       'raptor-talons',
       'wuuthrad',
       'magus-staff',
       'obsidian-bow',
+      'long-sword',
+      'great-sword',
+      'dual-blades',
+      'bastions',
     ]);
   });
 
   it('keeps the staff ranged attack first, the default, and its melee attack second (DEC-308)', () => {
     const { attacks } = loadWeapons(30).get('magus-staff');
 
-    expect(attacks.map(({ strategy }) => strategy)).toEqual(['ranged-projectile', 'melee']);
+    expect(attacks.map(({ strategy }) => strategy)).toEqual(['ranged-projectile', 'melee-sweep']);
   });
 
   it('rejects a weapon with no attacks', () => {
@@ -75,6 +126,48 @@ describe('loadWeapons', () => {
     expect(() => loadWeapons(30, [withAttack(field, 0)])).toThrow(
       `Weapon "test-talons": attack ${field} must be positive`,
     );
+  });
+
+  it('ships the DEC-304 arcs, the DEC-305 weapon reach parts and the DEC-387 sword intervals', () => {
+    const weapons = loadWeapons(30);
+    const sweep = (id: string, index = 0) => {
+      const attack = weapons.get(id).attacks[index];
+      return attack?.strategy === 'melee-sweep' ? [attack.arcDegrees, attack.reach] : undefined;
+    };
+
+    expect(sweep('raptor-talons')).toEqual([90, 1]);
+    expect(sweep('wuuthrad')).toEqual([160, 2]);
+    expect(sweep('magus-staff', 1)).toEqual([90, 1]);
+    expect(sweep('dual-blades')).toEqual([100, 1]);
+    expect(sweep('great-sword')).toEqual([140, 2]);
+    expect(sweep('long-sword')).toEqual([120, 2]);
+    expect(sweep('bastions')).toEqual([70, 1]);
+    // DEC-387: 0.45 s, 1.2 s, 0.9 s and 1.6 s at 30 ticks per second (GameConfig.tickRate)
+    expect(
+      ['dual-blades', 'great-sword', 'long-sword', 'bastions'].map(
+        (id) => weapons.get(id).attacks[0]?.interval,
+      ),
+    ).toEqual([14, 36, 27, 48]);
+  });
+
+  it.each([0, -10, 181, 360, Number.NaN])('rejects a sweep arc of %s degrees', (arcDegrees) => {
+    const sweepWeapon: AuthoredWeaponDefinition = {
+      ...TEST_TALONS,
+      attacks: [{ strategy: 'melee-sweep', damage: 50, reach: 1, interval: 0.5, arcDegrees }],
+    };
+
+    expect(() => loadWeapons(30, [sweepWeapon])).toThrow(
+      'Weapon "test-talons": sweep arcDegrees must be above 0 and at most 180',
+    );
+  });
+
+  it.each([1, 90, 180])('accepts a sweep arc of %s degrees', (arcDegrees) => {
+    const sweepWeapon: AuthoredWeaponDefinition = {
+      ...TEST_TALONS,
+      attacks: [{ strategy: 'melee-sweep', damage: 50, reach: 1, interval: 0.5, arcDegrees }],
+    };
+
+    expect(() => loadWeapons(30, [sweepWeapon])).not.toThrow();
   });
 
   it('rejects an id that is not kebab-case', () => {

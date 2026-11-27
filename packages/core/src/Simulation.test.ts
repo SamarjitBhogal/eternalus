@@ -123,6 +123,7 @@ describe('Simulation', () => {
         statuses: [],
         projectile: null,
         gem: null,
+        swing: null,
       },
     ]);
   });

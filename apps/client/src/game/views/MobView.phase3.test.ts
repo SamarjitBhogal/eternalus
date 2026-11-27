@@ -30,6 +30,7 @@ const MINION: EntitySnapshot = {
   gem: null,
   statuses: null,
   projectile: null,
+  swing: null,
 };
 
 const AT = { x: 0, y: 0 };
@@ -42,7 +43,10 @@ describe('MobView', () => {
   it('draws a dark outline and the facing chevron under the team disc (DEC-192)', () => {
     const renderer = new RecordingRenderer();
 
-    new MobView().draw({ entity: MINION, position: AT, facing: SOUTH, isFocused: false }, renderer);
+    new MobView().draw(
+      { entity: MINION, position: AT, facing: SOUTH, tick: 0, isFocused: false },
+      renderer,
+    );
 
     expect(renderer.calls).toEqual([
       {
@@ -65,6 +69,7 @@ describe('MobView', () => {
       entity: { ...MINION, team },
       position: AT,
       facing: SOUTH,
+      tick: 0,
       isFocused: false,
     });
 

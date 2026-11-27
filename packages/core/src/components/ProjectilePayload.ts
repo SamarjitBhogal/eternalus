@@ -8,8 +8,9 @@ import type {
 
 /**
  * What a projectile carries from the shot to the hit (architecture 05 §10): who fired it, for which
- * team and at whom, who the damage is credited to, what it does where it lands (its impact, by
- * kind) and where it was fired from. Fixed at firing; the flight reads it, nothing changes it.
+ * team, at what level and at whom, who the damage is credited to, what it does where it lands (its
+ * impact, by kind) and where it was fired from. Fixed at firing; the flight reads it, nothing
+ * changes it.
  */
 export class ProjectilePayload {
   /** The entity that fired it. */
@@ -17,6 +18,12 @@ export class ProjectilePayload {
 
   /** The owner's team at the moment of firing. */
   public readonly team: Team;
+
+  /**
+   * The owner's level at the moment of firing: the attack's `onHit` steps are cast at it when the
+   * owner is gone before the shot lands (`HitEffects`).
+   */
+  public readonly ownerLevel: number;
 
   /** Who the hit is credited to. */
   public readonly source: ProjectileSource;
@@ -34,9 +41,18 @@ export class ProjectilePayload {
   public constructor(data: ProjectilePayloadData) {
     this.ownerId = data.ownerId;
     this.team = data.team;
+    this.ownerLevel = data.ownerLevel;
     this.source = data.source;
     this.targetId = data.targetId;
     this.impact = data.impact;
     this.origin = { x: data.origin.x, y: data.origin.y };
+  }
+
+  /**
+   * The radius of the blast it bursts in where it lands (its attack's `projectile.splash`,
+   * DEC-342), or `null` for a shot with no blast.
+   */
+  public get blastRadius(): number | null {
+    return this.impact.attack.projectile.splash?.radius ?? null;
   }
 }

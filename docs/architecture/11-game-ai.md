@@ -89,7 +89,8 @@ export type Brain = {
 
 - `ControllerRegistry` (Registry pattern) maps `ControllerId` to the instance. `EntityFactory`
   attaches a `Brain` when the definition names a controller (`LegendDefinition.controller`,
-  `MobDefinition.controller`, `TurretDefinition.controller`, `BossDefinition.controller`).
+  `MobDefinition.controller`, `StructureDefinition.controller` for a turret (DEC-335),
+  `BossDefinition.controller`).
 - `AiProfileDefinition` in `content/ai/profiles/` carries every number a controller uses (aggro
   rules, cadence, difficulty). Controllers contain no numbers.
 - SOLID: `AiSystem` depends only on the `Controller` abstraction (DIP); each controller has one
@@ -137,7 +138,7 @@ The human's Legend has a brain too. The client's `InputMapper` turns device stat
 `InputIntent` (movement axes, aim point, edge-triggered actions) and enqueues it as one `intent`
 command per tick, only when it changes. `CommandApplySystem` stores it in the brain's memory;
 `PlayerController.decide` reads it and emits the same gameplay commands a bot would (`move`,
-`attack-target`, `cast-ability` (gadget slots included), `pick-up`, `throw`). Why: one place validates what a
+`attack-aim` (DEC-184; a player has no locked target, DEC-319 (6)), `cast-ability` (gadget slots included), `pick-up`, `throw`). Why: one place validates what a
 Legend may do (`applyCommand`), the replay log records device-agnostic intents, and sim mode is
 a one-line controller swap. The cost is one tick (33 ms at 30 Hz) between intent and effect.
 `Recommendation:` accept it for the top-down MVP; if playtests notice it, translate `intent`
@@ -188,9 +189,15 @@ attacking an allied Legend, (3) enemy minions attacking an allied minion, (4) en
 attacking an allied minion, (5) closest enemy minion, (6) closest enemy Legend; Dota's aggro
 cooldown 3 s (90 ticks). Dota's 2.3 s aggro duration is not used: the owner's leash rule,
 "distance, then time" (18 §6.1, DEC-144), replaces it. "Call for help": an enemy Legend that
-basic-attacks an allied Legend inside the radius becomes priority 1, and an enemy that attacks a
-horde-mate is in reach out to `callForHelpRadius` (DEC-144). The cooldown, after a leash break,
-leaves alone only the enemy that escaped (DEC-144 F).
+attacks (a basic attack or an ability, DEC-322 (2), DEC-344 (2)) an allied Legend inside the radius becomes priority 1, and an enemy that attacks a
+horde-mate is in reach out to `callForHelpRadius` (DEC-144). A unit "attacks" another while that
+is its locked target, and while that body was hit by its last attack (both count, not one or the
+other), for one attack interval, or the slowed cooldown when that is longer, so at least through
+the tick its next attack may land (DEC-322 (2), DEC-333 (1)): a player aims and has no lock, so
+its hits are what the AI sees
+(`EntityStore.victimsOf`, `isAttacking`). Only a mob that is not already fighting answers a call
+for help or turns to a better-ranked enemy: a busy mob finishes its own fight (DEC-326 (2),
+18 §6.1). The cooldown, after a leash break, leaves alone only the enemy that escaped (DEC-144 F).
 
 Each aggro profile names the one controller that reads it (`controller`), and a controller
 accepts only its own profiles. The shared fields are `AggroRuleDefinition`; a horde minion's
@@ -235,8 +242,9 @@ Owned by [18-minion-system](18-minion-system.md) §7.
 
 ### 4.5 TurretController (MVP; manual control MVP-if-time)
 
-Memory `{ targetId, ammo, nextShotTick, occupantId }`. Rules from the game doc and League's
-turret behaviour
+Memory `{ targetId }` (DEC-335): the loaded ammo is the turret's `TurretState` (07 §5), and its
+`Combat` cooldown is the one shot clock. `occupantId` joins with manual control. Rules from the
+game doc and League's turret behaviour
 [research §7](../research/game-architecture-and-performance-research.md#7-game-ai-for-bots):
 
 - First-in-range stickiness: keep the target until it dies or leaves range; on re-acquire use the
@@ -246,8 +254,10 @@ turret behaviour
 - Predictive aim: `aimPoint = targetPos + targetVel * (distance / projectileSpeed)`, one
   refinement iteration, vectors only (no `atan2`).
 - Ammo choice: `heavy` when the target kind is listed in `preferredAgainst` (Sentinel, HeavyMob),
-  else `default`; 1 bolt per 10 s heavy, 1 per 5 s default (`TUNE`, game doc). Ammo is content
-  (`content/weapons/turret-bolt-*.ts`), so "ammo specifics can change" is a data edit.
+  else `default`; 1 bolt per 10 s heavy, 1 per 5 s default (`TUNE`, game doc). Ammo is content:
+  each ammo is a `RangedAttack` plus `preferredAgainst` in the turret ammo table
+  (`content/structures/`, DEC-335), so "ammo specifics can change" is a data edit, and a bolt
+  flies and lands through the same path as any shot.
 - Manual control (**MVP-if-time**): when an Warrior Legend occupies the turret (`occupantId`), the
   controller yields; the occupant's `PlayerController` emits `fire-turret` and `switch-ammo`.
 
@@ -398,8 +408,50 @@ work named:
 - The stagger hashes the string id (`(tick + fnv1a(id)) % cadence`); a budget-deferred queue in
   `state.ai` replaces the round-robin cursor, with the same order (deferred first, then id order).
 - The registry holds `MinionController` (M2b), `GuardController` (M2c), `BotLegendController`
-  (M3) and `RoverController` (M8); the other controllers are absent until their phases, so it is
-  a partial map.
+  (M3), `RoverController` (M8) and `TurretController` (`feat/wall-turrets`); the other controllers
+  are absent until their phases, so it is a partial map.
+- `TurretController` (§4.5, `feat/wall-turrets`, 2026-11-22) drives a wall turret in auto mode. A
+  `Turret` structure whose definition names a controller gets a `ControllerBinding` from
+  `Structure`, as a unit does. Its brain keeps only the target (`TurretMemory`), so `StateHasher`
+  hashes it. The loaded ammo is the turret's `TurretState` and the aim point is on its `Combat`
+  (07 §13); the controller reads them through `TurretAmmoRule.ammoOf` and
+  `EntityStore.attackAimOf`. There is no `occupantId` and no `nextShotTick`: manual control is not
+  built, and `Combat`'s cooldown is the one shot clock. Its content is a turret profile
+  (`content/ai/turret.ts`, `wall-turret`) and the ammo table (`content/structures/turretAmmo.ts`),
+  loaded by `loadTurrets` and injected by `Simulation`. The controller ranks its candidates
+  (`rankTurretTargets`). The profile's `overrides` come first: an enemy Legend that damaged an
+  allied Legend within the defend-ally window becomes the target at once, also over a held target
+  (DEC-341, HC-Q94 A). The hits come from
+  `GameState.legendHits` (`LegendHitLog`), which keeps a hit after its victim dies, so the turret
+  still sees the Legend that killed its ally; the assist record (`ScoringState.recentHits`) forgets
+  them at the death. balancing.md's window ("a Legend that damaged an allied Legend in the last
+  3 s") replaces `defendAllyRange`: no number for that range exists, and only the hurter must be in
+  turret range, since the ally it hit is near it by its weapon's reach. Then the target is kept
+  while it lives and stays in range. Then the profile's `priority` list applies (heavy units, then
+  the nearest enemy). The turret takes the first candidate in that order that its shot can reach
+  (`LineOfFireQuery`, the match's one `LineOfFire`, the bots' rule of the DEC-317 addendum). It
+  picks the ammo for each candidate first and tests the line with that ammo's attack (DEC-335), so
+  the test uses the shot the turret will fire. It
+  tests the line only until one is clear, and a held target whose line closes is dropped as one
+  that leaves range. A wall turret's line starts inside its pylon and wall, which do not block it
+  (DEC-334). Range runs from the
+  turret's edge to a target's centre, so a target is also in the attack reach `Combat` will use.
+  Neutral units count as enemies, so the controller filters teams itself (no `Perception` filter
+  for that). Ammo is the first of the profile's ammo whose `preferredAgainst` fits the target's
+  kind. Predictive aim is `ai/predictiveAim.ts` (one refinement, vectors only). It reads a
+  structure's place and a target's velocity through `EntityStore.placeOf` and `velocityOf`. Each
+  decision with a target sends `switch-ammo` when the chosen ammo is not the loaded one, then
+  `attack-aim` at the predicted point, so the aim stays fresh (wall turrets part 2, 2026-11-22).
+  With no target and an aim still set, it sends `attack-aim { aim: null }` once. The bolts are arc
+  shots (DEC-341 (4), 05 §10): the shot lands at its aim point, so `predictiveAim` adds the ticks
+  between the decision and the shot's first move (`ai/TurretController.constants.ts`) to the
+  flight time, and a line of fire is always clear for an arc shot (`LineOfFire`).
+  The lane towers use this controller too (DEC-302, DEC-342; 07 §13). Their profile is
+  `lane-tower` (`content/ai/turret.ts`, `LANE_TOWER`): the defend-ally override and window of the
+  wall turret, then the nearest enemy, and one ammo, `tower-orb`. The controller measures range
+  from the footprint's edge, so the profile's `range` is `LANE_TOWER_REACH_FROM_CENTRE` (the reach
+  from the tower's centre, DEC-366) less the footprint radius, which comes from the map
+  feature definitions. The profile and the ammo numbers are the owner's answers (DEC-366).
 - `BotLegendController` (M3) plays the `laner` tree of §4.2 with the nodes it needs
   (`ai/bt/`: `Sequence`, `ActiveSelector`, `Condition`, `Action`; `Selector` and `Cooldown` join
   with their first use) and a `UtilityScorer` (`ai/utility/`) over two considerations, closeness
@@ -437,10 +489,11 @@ work named:
   (`EntityStore.detourWaypointOf`, DEC-193). A bot that already stands still sends no new halt
   (`isHalted` in its memory).
 - A bot with a ranged attack holds, in `fight` and in `siege`, only when it is in reach and its
-  shot would reach the target before a wall stops it (`state/LineOfFire` on
-  `GameState.collisions`; branch `feat/ranged-attacks`, 2026-11-20, DEC-317). Else it keeps
-  closing in. `CombatSystem` fires a ranged attack only with that clear line, so a bot closing in
-  does not shoot into the wall. `Simulation` builds the one `LineOfFire` from the projectile
+  shot would reach the target before something stops it: a wall (`GameState.collisions`) or a
+  body that stops a shot by the shot's own rule (`AreaHitQuery.stopsShot`, so a body that takes
+  no damage blocks too; `state/LineOfFire`, DEC-317 addendum). Else it drops its lock and keeps
+  closing in for a clear shot. `CombatSystem` itself fires without a line-of-fire check, for every
+  unit (DEC-317 addendum): the bot's own rule keeps it from shooting into a wall. `Simulation` builds the one `LineOfFire` from the projectile
   definitions and injects it (`BotLegendControllerContent.lineOfFire`, the `LineOfFireQuery` port,
   required), because `ai/` may not import content values.
 - A brain's `profileId` names the controller's own content directly: an aggro profile
@@ -457,6 +510,11 @@ work named:
   corner camps for Phase 3 instead. Until `BossController` (Phase 3 sprint 3.6), the corner boss
   (`corner-boss`) is a guard of the `corner-camp` guard plan held by `GuardController` (§4.4),
   with no moves or roaming; doc 07's implementation status lists the rest it lacks.
+
+**Implementation status, 2026-11-23 (branch `refactor/query-injection`, DEC-344 (3)).**
+`ai/BotLaneLeaves` holds the lane leaves (`findHorde`, `findLanePoint`). The laner tree and the
+Rover both use them. The bots' content bag also carries `reach`, the match's one `ReachQuery`,
+next to `lineOfFire`.
 
 ## Related
 

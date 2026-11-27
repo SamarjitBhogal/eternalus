@@ -704,6 +704,565 @@ Reply inline (`Decision: …`).
       content data (BTD-B), one shared intent rule for the client and the Duel server (BTD-E),
       one reusable "first source with the id" definition lookup for `Simulation` and about ten
       tests (BTD-H).
+  - Answered 2026-11-22 for (1) to (8) (Owner Calls v40, DEC-317 addendum): "C: leave shots going
+    into walls; schedule (4)", with a note on the weapon model ("I can shoot my bow or my staff at
+    a rock if i want"). (4) is replaced: every unit fires without a line-of-fire check, and a bot
+    whose shot is blocked drops its lock and moves for a clear shot (scheduled to PR 2 by the
+    coordinator under the standing rule). (5) is replaced: a body that takes no damage stops every
+    shot and takes no damage. Built in PR 2 (`feat/melee-sweeps`). The AI half of (4) is also
+    built there: a bot's line of fire uses the shot's own stop rule (`AreaHitQuery.stopsShot`),
+    so a body that takes no damage blocks it. Still open: BTD-B, BTD-E and BTD-H (they were not
+    on the card).
+
+- [x] **HC-B25 — A rule the design did not state, built under your standing rule (DEC-223),
+      sign-off asked: what a melee sweep passes over (`feat/melee-sweeps`, PR 2, 2026-11-21;
+      COMBAT-WEAPONS-ABILITIES-48 and -49).** Built and tested; recorded as DEC-319 (9). Nothing
+      waits on you. (A, built) A sweep passes over a walk-on floor (a palace floor, a gate's
+      passage) and over a body that takes no damage now (a wall or gate before its rule lets it
+      break), unless you lock onto it: the same rule as a shot (DEC-317 (5)). Without it, a
+      Legend inside the enemy palace hit the Stronghold on every swing, because the palace floor
+      is the Stronghold's outline, and a swing at an unbreakable gate ran Fury's knock-back on it.
+      (B) A sweep also hits those bodies: every swing inside an enemy palace damages the
+      Stronghold. **Answered 2026-11-21 in chat: "A".** Signed off as built; recorded in DEC-319
+      (9).
+  - Re-asked 2026-11-21 as HC-Q76: this question did not say that PR 2 removes the player's lock,
+    so the 'A' answer was given on incomplete facts. Not Sam's error.
+
+- [x] **HC-Q76 — Correction to HC-B25: with aimed attacks, a player's weapon cannot hit the
+      Stronghold, the palace or a gate (`feat/melee-sweeps`, PR 2).** Your "A" on HC-B25 said a
+      sweep passes over a walk-on floor or a no-damage body "unless you lock onto it". The
+      question did not say that PR 2 also removes the player's lock: the attack button aims, it
+      does not lock (DEC-319 (6)). So a player's weapon never damages the enemy Stronghold, the
+      palace or a gate, with sweeps or with shots (probe: lock 3-5 hits, aim 0 hits). This also
+      breaks DEC-185 (D). Abilities and bots still hit these bodies. Options: (A, recommended)
+      aim at it to hit it: a walk-on floor or a no-damage body counts as locked while the aim
+      point is on its outline and not on a unit; inside the enemy palace, aiming at a defender
+      hits the defender, aiming at bare floor hits the Stronghold too; (B) as A, but only while
+      the attacker stands outside that outline; (C) a press on a building locks it (client and
+      Duel server only; the attack then follows the building, not the cursor); (D) keep as
+      built: weapons never hit these bodies. Answer will be recorded as DEC-322. Asked on Owner
+      Calls v35, 2026-11-21, COMBAT-WEAPONS-ABILITIES-50.
+  - Answered 2026-11-22 (DEC-322 (1), Owner Calls v40): "A: aim at it to hit it". Reading, from
+    the HC-Q78 note ("if a character is standing in a room and sweeps their sword one time, it
+    shouldnt bring the roof down on them"): the aim counts only while the attacker stands outside
+    the outline (option B's condition). Built in PR 2.
+
+- [x] **HC-Q77 — What the AI counts as "attacking" when the player aims (`feat/melee-sweeps`,
+      PR 2).** Minions, tower guards and the leash help call read whom a unit attacks from its
+      lock. The player has no lock now, so for the AI the player attacks nobody: guards and
+      minions do not turn on a player who attacks their Legend, the leash help call never fires
+      for a player, and a player can lead a guard to its leash edge and hit it with no answer.
+      Bots still lock. Samarjit owns this AI and will be told. Options: (A, recommended) a unit
+      attacks its lock, or each body its last attack hit, until its next attack is due (one
+      attack interval; no new number); (B) the unit under the aim point counts as the target
+      while the button is held; (C) reuse the scoring record of Legend-on-Legend hits (DEC-132)
+      with a new short window (a new TUNE number); covers only Legend attacks on Legends; (D)
+      leave it and schedule the fix. Asked on Owner Calls v35, 2026-11-21,
+      COMBAT-WEAPONS-ABILITIES-50.
+  - Answered 2026-11-22 (DEC-322 (2), Owner Calls v40), note only: the owner's weapon model,
+    which ends "Player do attack and hit enemy. Enemy hurt. Enemy fight back. Nearby enemy help
+    attacking enemy do attack if nearby enemy not already defending self or attacking someone
+    else." Reading: option A (a unit attacks each body its last attack hit, until its next attack
+    is due). Built in PR 2. Samarjit: FYI below.
+
+- [x] **HC-Q78 — Better than the design: one hit rule for weapon areas and ability areas
+      (`feat/melee-sweeps`, PR 2).** Two pieces of code answer "which bodies does this area
+      touch": the weapon sweep and the ability target query. They already disagree: an ability
+      tests a tower's fort as a circle, not its outline, and hits a walk-on floor (an ability
+      cast inside the enemy palace hits the Stronghold). Lane B's Rip & Tear cone (PR 6) will use
+      the same wedge shape as a sweep but the ability rules, so the same wedge hits different
+      bodies. Architecture critic, PR 2 round 1. Lane B is changing the ability area code now
+      (`AreaShape`, `HitShape` on `feat/vanguard-hamstring`), so building the shared rule in PR 2
+      would conflict with that work. Options: (A) one rule, built in PR 2: one area-hit query in
+      core for abilities and weapons, with one outline test and the Q76 floor rule; abilities
+      change, and lane B must merge it; (B, recommended) the same design, built with the cone
+      (lane B PR 6; scheduled, so not deferred debt); (C) keep two rules. Asked on Owner Calls
+      v35, 2026-11-21, recommendation changed from A to B in v37, COMBAT-WEAPONS-ABILITIES-50.
+  - Answered 2026-11-22 (DEC-322 (3), Owner Calls v40): "A: one rule, build it in PR 2", note
+    "Whatever is best architecturally. Also "walk-on floors" shouldnt take damage." Built in PR 2;
+    lane B merges it.
+
+- [x] **Owner Calls card `attack-click-hold` — Clicking and holding the attack button
+      (`feat/melee-sweeps`, PR 2).** Asked on Owner Calls v40, 2026-11-22. Answered the same day
+      (DEC-326 (1)): "C (click during recovery is lost) but holding also keeps attacking ...
+      Basically disables the attack button while the attack is attacking and recovering but a
+      hold just attacks again if still held when the recovery is done." This is the behaviour
+      built in DEC-319 (5) and (6); no change.
+
+- [x] **Owner Calls card `busy-minion-help` — A busy minion and a call for help
+      (`feat/melee-sweeps`, PR 2).** Asked on Owner Calls v40, 2026-11-22. Answered the same day
+      (DEC-326 (2)): "A: a busy minion finishes its own fight; only minions that are not fighting
+      come to help". Built in PR 2 (`LeashBehaviour.engage`).
+
+- [x] **Owner Calls card `busy-minion-building` — Minions hitting a tower: do they come to help?
+      (`feat/melee-sweeps`, PR 2).** Asked on Owner Calls v54, 2026-11-22, by
+      COMBAT-WEAPONS-ABILITIES-55. Does a minion that hits an enemy tower or Stronghold count as
+      "fighting" under DEC-326 (2)? A (built now): no, it leaves the building and helps; only a
+      minion that fights a unit stays. B: yes, it keeps hitting the building. The rule also
+      reaches guards and forest-camp mobs (DEC-144 (C)). Recorded as a reading in DEC-326 (2).
+  - Answered 2026-11-23 (DEC-344 (1), Owner Calls v68): "Yes: hitting a building is not a fight.
+    The minion leaves the tower and helps. Only a minion that fights a unit (a minion, a Legend or
+    a mob) stays in its fight". This is A, as built; no change.
+
+- [x] **HC-B35 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: the hit record and the takes-no-damage rule move onto `EntityStore`
+      (`feat/melee-sweeps`, PR 2, pre-PR gate round 2, 2026-11-22; COMBAT-WEAPONS-ABILITIES-58).**
+      Built and tested; recorded as DEC-333. Nothing waits on you. (1) The record of whom a unit
+      hit sits on `EntityStore` beside the code that reads it (`recordHits`, `victimsOf`), and
+      one function reads a unit's attack speed. A hit counts for the larger of the attack
+      interval and the slowed cooldown, so a faster attack (Fury) no longer shortens it and a
+      slow does not leave the AI blind. (2) One rule, `EntityStore.takesNoDamage`, says a body
+      takes no damage now; the hit rule, shots, the bots' line of fire, the damage step and
+      one-target melee all use it. Say "no" to either and it goes back. Two critic items were
+      rejected: (R2-A8, rest) injecting `ReachQuery` and `AreaHitQuery` into six classes: they
+      are stateless rule objects with no port, the base holds such helpers the same way
+      (`BotLeaves.movement = new BotMovement()`), and `stopsShot` stays static; (R2-A10)
+      splitting `BotLeaves.ts` (328 lines): a split rewires the bot tree in the last critic
+      round, and the leaves are one cohesive set.
+  - Answered 2026-11-23 (DEC-344 (3), Owner Calls v68): "B: sign off, and build the two skipped
+    suggestions in a follow-up". (1) and (2) stay. Lane A builds R2-A8 and R2-A10 in its next PR
+    after PR 2.
+
+- [x] **HC-B39 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: two more code tidy-ups in the HC-B35 follow-up (`refactor/query-injection`,
+      pre-PR gate round 1, 2026-11-23; COMBAT-WEAPONS-ABILITIES-61).** Built and tested;
+      recorded as DEC-359. Nothing waits on you. No change for the player. (1) The match makes
+      one copy of the rule that finds what an ability hits (`TargetQuery`) and gives it to the
+      two places that use it (`HitEffects`, `AbilitySystem`). Before, each made its own copy.
+      (2) Each class that uses the shared reach rule or hit rule asks only for the one or two
+      functions it calls (`Pick<ReachQuery, ...>`, `Pick<AreaHitQuery, ...>`). Say "no" to
+      either and it goes back.
+  - Answered 2026-11-26 (Owner Calls v98): "A: sign off both (built) — if a critic agrees". An
+    independent critic agreed on both items (2026-11-26). Its should-fix and nits are built
+    (DEC-359 addendum 2026-11-26).
+
+- [x] **HC-Q87 — Inside the enemy palace, your weapon never hits the Stronghold
+      (`feat/melee-sweeps`, PR 2, critic R2-A2).** Confirm. Your answer to HC-Q76 was "A: aim at
+      it to hit it". Your HC-Q78 note says a swing inside a room should not bring the roof down
+      on the swinger. So the game does this: when you stand inside the enemy palace, your sword
+      and your arrows do not hit the Stronghold. Step outside and aim at the palace, and they
+      hit it. Defenders inside are still hit as normal. Options: (A, recommended) keep it as
+      built; (B) a weapon also hits the Stronghold from inside the palace when you aim at bare
+      floor (the text of option A of HC-Q76). Code names: `AreaHitQuery` rule 1,
+      `isOnOutlineFromOutside`; recorded in DEC-322 (1).
+  - Answered 2026-11-23 (DEC-344 (4), Owner Calls v68), "Other (note)": "Hitting the walls of the
+    stronghold damage hit. Attacking the throne does too. Floors do not count towards the health
+    pool, neither does furniture. However, it should be noted that the stronghold is not the
+    end-game target; the Emperor is. ... He is not built. Gurshaan or Aryan are supposed to
+    handle this." Not built yet: which walls count is asked as HC-Q104 (Owner Calls v71). Lane A
+    builds the answer in its own PR on PR 2. Tick this item when that PR is built.
+  - Built 2026-11-26 in `feat/palace-stronghold-pool` (DEC-386 (1) addendum and its correction of
+    2026-11-26): a hit on an outer wall or on the throne takes the Stronghold's health, also from
+    inside the palace. A hit on the palace floor never does, from inside or from outside: the
+    floor is the palace map object's, with its own health. The inner ring, the room walls and the
+    other furniture keep their own health.
+
+- [x] **HC-Q88 — An ability hit counts as attacking for the AI (`feat/melee-sweeps`, PR 2,
+      critic R2-A3).** Confirm. When a Legend hits an enemy with an ability, the AI treats it
+      like a basic attack: the enemy's guards and minions turn on that Legend, and a call for
+      help can fire. Your Veil note says "whether via basic attack casting or ability casting",
+      which supports this. Options: (A, recommended) keep it as built; (B) only a basic attack
+      counts. Code names: `CastInstance` records its targets as hits (`EntityStore.recordHits`);
+      recorded in DEC-322 (2), correction 2026-11-22.
+  - Answered 2026-11-23 (DEC-344 (2), Owner Calls v68): "A: keep it (built): ability hits count
+    as attacks". No change.
+
+- [x] **HC-Q104 — Do all the palace walls and the throne share the Stronghold's health?
+      (`feat/melee-sweeps` stack, follow-up to HC-Q87, DEC-344 (4)).** Asked on Owner Calls v71,
+      2026-11-23, by COMBAT-WEAPONS-ABILITIES-59. Your HC-Q87 note: a hit on the Stronghold's
+      walls or its throne damages the Stronghold; floors and furniture do not. Today each palace
+      wall has its own health (2,000) and breaks on its own, and the throne is furniture with 100
+      health. Options: (A, recommended) every palace wall (outer walls, inner ring, room walls)
+      and the throne become part of the Stronghold, as a tower's fort walls are part of the
+      tower: a hit on any of them takes the Stronghold's health, and they no longer break on
+      their own; (B) only the outer walls and the throne; room walls keep their own health;
+      (C) walls keep their own health and also pass the damage on. This changes DEC-217 (13)
+      and part of DEC-322 (1). Lane A builds the answer in its own PR on PR 2. Code names:
+      `Simulation.spawnStructures` (one body object per structure today), `WorldObjectStore`,
+      `AreaHitQuery` rule 1.
+  - Answered 2026-11-26 (DEC-386 (1), Owner Calls v98): "B: only the outer walls and the throne;
+    room walls keep their own health". The palace's inner ring keeps its own health too (DEC-386
+    (1) reading). Lane A builds it in `feat/palace-stronghold-pool`. Tick this item when that
+    branch is built.
+  - Built 2026-11-26 in `feat/palace-stronghold-pool` (DEC-386 (1) addendum): the outer walls
+    and the throne are part of the Stronghold's body (`MapObject.partOf`) and have no health of
+    their own; the inner ring and the room walls keep their own health and break on their own.
+
+- [x] **HC-Q122 — After the Stronghold falls, what happens to its outer walls and its throne?
+      (`feat/palace-stronghold-pool`, follow-up to HC-Q104, DEC-386 (1); critic r1 Q104-1).**
+      Card for Owner Calls v101, 2026-11-26, by COMBAT-WEAPONS-ABILITIES-70 (number from
+      PR-REVIEW-COORDINATION-49). The enemy Stronghold falls, and the match goes on: the
+      Stronghold is a container, not a win condition (ADR 0021, DEC-71), and the Emperor is the
+      target (your HC-Q87 note). Each Stronghold has 58 outer wall pieces and a throne. Built now:
+      they all stay standing as ruins for the rest of the match. They block units and shots, and
+      nothing can break them. Options: (A) keep that (built); (B) the rule for a lane tower's fort
+      (DEC-217 (12), built in PR #98): the piece that took the killing hit falls with the
+      Stronghold, and each other piece stands with health of its own and breaks on its own; (C)
+      they all fall with the Stronghold. Records: A follows the wall turret answer (DEC-341: the
+      pylon "stays as a ruin and blocks"). B follows your fort answer, and DEC-71 says the
+      Stronghold's walls "can be destroyed, one segment at a time". No record supports C. No
+      recommendation: the records support A and B. If you choose B, say in a note if each piece
+      gets half health, as fort walls do. The game keeps A until you answer. Code names:
+      `MapObject.partOf`, `WorldObjectStore.removed` (`isRuined`). PR #98's
+      `StructureRuins.fallen` reads `partOf` and gives each piece fort tuning, so the #98 merge
+      needs a rule per structure definition whatever the answer (DEC-341 merge note).
+  - Answered 2026-11-27 (DEC-408, Owner Calls v103): "B: the fort rule: the struck piece
+    falls, the others break on their own". It comes with the merge where PR #98
+    (`StructureRuins`) meets this branch; the second of the two to reach phase/3 proves it with
+    a test. Until then the pieces stay as ruins.
+
+- [ ] **FYI, and one better-than-design item: the Stronghold's fort box
+      (`feat/palace-stronghold-pool`, critic r1 Q104-3 and Q104-11, 2026-11-26;
+      COMBAT-WEAPONS-ABILITIES-70).** (1) FYI, nothing to decide: the chase rule's fort box of the
+      Stronghold (DEC-217 (16), "the Stronghold palace box") is now the box round its outer walls
+      and throne, as a lane tower's fort box is the box round its fort. Before HC-Q104 it was the
+      box round the palace floor. The box grew by 11 to 14 m on each side, so a unit in the court
+      between the palace and the outer walls now counts as inside the fort. A test pins the box
+      (`Simulation.strongholdBody.test.ts`). (2) Better than the design, not built: one box does
+      two jobs, the quick first test of the Stronghold's outline and its fort box. So the fort box
+      moved when the outline grew, and nobody chose it. A separate fort box, built from the
+      polygons that the structure's definition names, would keep the two jobs apart. Say "build
+      it" and lane A builds it; else nothing changes. Code names: `Footprint.bounds`,
+      `DefaultSystemPipeline.fortBoxesOf`, `HealingZones` `fort-box`.
+
+- [ ] **FYI for Samarjit (minion AI owner): three changes to minion AI in PR 2
+      (`feat/melee-sweeps`).** Nothing to decide. (1) DEC-326 (2): a minion that is already
+      fighting does not leave its fight for a call for help or a better-ranked enemy; only
+      minions that are not fighting come to help. (2) DEC-322 (2): a player who hits a unit counts
+      as attacking it until the player's next attack is due, so guards and minions answer a
+      player's hits (`EntityStore.victimsOf` and `isAttacking`; `attackTargetOf` still gives the
+      lock only, and `HordeSystem` keeps reading it). A unit attacks its lock and each other body
+      its last attack hit (a union, not "or else"), and an ability's hits count too (DEC-322 (2),
+      correction 2026-11-22). A hit counts through the tick the next attack may land (inclusive),
+      for the larger of the attack interval and the slowed cooldown (DEC-333 (1)). (3) Rule (1) is in `LeashBehaviour`, so it
+      also reaches tower and Stronghold guards, forest-camp mobs and the capture point guards
+      (guards follow the minion rules, DEC-144 (C)). A minion that hits its lane objective is not
+      "fighting" and still turns to help (Owner Calls card `busy-minion-building`, answered
+      2026-11-23: DEC-344 (1)).
+      Architecture 18 §6.1 changes to match. Tick this item when Samarjit has read it.
+
+- [x] **HC-Q89 — Shots over lakes and lava rivers (`feat/wall-turrets`, PR 4).** Asked on Owner
+      Calls v63, 2026-11-22, from the wall turret work. Can arrows and orbs fly over lakes and
+      lava rivers? Built then as option A (they stop there, as at any blocking shape).
+  - Answered 2026-11-23 (DEC-345, Owner Calls v68): "B: shots fly over lakes and lava rivers —
+    Arrows shot over lava/fire catch fire and apply burn." Built in `feat/shots-over-lava`.
+
+- [x] **HC-Q105 — Does an arrow fly over a camp fire and catch fire? (`feat/shots-over-lava`,
+      follow-up to HC-Q89, DEC-345 (3)).** Asked on Owner Calls v71, 2026-11-23, by
+      COMBAT-WEAPONS-ABILITIES-59. Your HC-Q89 note: "Arrows shot over lava/fire catch fire and
+      apply burn." The only fires on the map are the camp fires in the forest camps. A camp fire
+      sits in a ring of stones that blocks units and stops shots, so today an arrow catches fire
+      only over a lava river. Options: (A, recommended) shots fly over a camp fire, as over lava,
+      and an arrow that crosses one catches fire; units still cannot walk through it; (B) camp
+      fires stop shots as today; only lava lights an arrow. Code names: camp fire = furniture
+      object `<camp>-fire` (`MapSceneryBuilder`).
+  - Updated 2026-11-23 (Owner Calls v83, after pre-PR gate round 1): the burn is now the one in
+    the reference table of status effects (`docs/reference/suggestions/more-abilities.md` §7):
+    10 damage a second for 3 s. Please also confirm three readings of your HC-Q89 note (built
+    this way): (1) only the bow's arrows catch fire; magic orbs, turret bolts and thrown blades
+    fly over lava but do not light. (2) A lit arrow stays lit until it lands; flying over a lake
+    does not put it out. (3) A lit arrow burns units only; towers and walls take no burn. The
+    reference table says buildings take burn too, but buildings have no status effects yet.
+  - Answered 2026-11-26 (DEC-386 (2), Owner Calls v98): "A: yes, shots fly over camp fires and
+    arrows catch fire there". Built in `feat/shots-over-lava`. The three readings above got no
+    note, so they stay as built. The palace kitchen hearths are not camp fires and still stop
+    shots (DEC-386 (2)).
+  - Correction 2026-11-26 (critic Q105-C-1, C-2; DEC-386 correction): the first build set only the
+    flags, so the fire's own body and the forest camp's home still stopped shots; now a shot not
+    aimed at them flies over both (HC-Q115, HC-Q116).
+
+- [x] **HC-Q115 — Does an arrow fly over the middle of a camp fire too? (`feat/shots-over-lava`,
+      follow-up to HC-Q105, DEC-386 correction 2026-11-26).** Asked on Owner Calls v100,
+      2026-11-26, by COMBAT-WEAPONS-ABILITIES-67. Each forest camp has an unseen home at the middle
+      of its camp fire. It takes no damage, and a body that takes no damage stopped every shot
+      (DEC-317 addendum (5), HC-Q77). Options: (A, built in this rework) an arrow that is not aimed
+      at the camp flies over the whole fire, middle included, and catches fire; an arrow aimed at
+      the camp still stops there, with no damage; (B) the arrow stops in the middle of the fire, as
+      before. Code names: `canShotsFlyOver` on the `forest-camp-*` structure definitions
+      (`structureCatalogue.ts`), `Collider.canShotsFlyOver`, `AreaHitQuery.stopsShot`.
+  - Answered 2026-11-27 (DEC-409 (1), Owner Calls v103): "A: the arrow flies over the whole
+    fire (being built, recommended)". Built as A; nothing changes.
+
+- [x] **HC-Q116 — Do the fires in the palace kitchens also light arrows? (`feat/shots-over-lava`,
+      follow-up to HC-Q105).** Asked 2026-11-26 by COMBAT-WEAPONS-ABILITIES-67. Options: (A, today,
+      recommended) a kitchen hearth is furniture: it stops arrows and does not light them; (B) a
+      hearth works like a camp fire: shots fly over it, and an arrow catches fire there. Note: the
+      HC-Q105 card said that the camp fires were the only fires on the map. That was wrong: each
+      palace kitchen has a hearth. Not built either way; today's behaviour stays until you answer.
+      Code names: `<team>-palace-interior-kitchen-hearth` (`MapPalaceRoomsBuilder`).
+  - Answered 2026-11-27 (DEC-409 (2), Owner Calls v103): "if theres a visual "wall" in the
+    hearth, then the wall would stop it. if its a bare fire, it makes sense that it would also
+    light an arrow." The hearth is a stone block with its fire inside it, so the stone stops
+    the arrow. Nothing changes.
+
+- [ ] **HC-B53 — Better than the design, not built: one place describes a body to the shot rule
+      (`feat/shots-over-lava`, #169, critic finding R3-2, 2026-11-26; COMBAT-WEAPONS-ABILITIES-70).**
+      No change for the player. To decide if a shot stops at a body, the game first writes down
+      what the body is (its shape, its collider, its team). Five places write that the same way:
+      two in the game and three in tests. Better: one function writes it, and the five places
+      call it; it can also hand over only "can shots fly over this body", not the whole collider.
+      Not built in #169: it changes the code's structure, and #169 has had its three critic
+      rounds. Build it in a small follow-up PR after #169 (A, recommended), or leave it (B)?
+      Code names: `ShotStopBody`, `ProjectileSystem.gather`, `LineOfFire.isBlocked`, a factory
+      such as `AreaHitQuery.bodyOf`.
+
+- [x] **HC-B41 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: two code tidy-ups in the shots-over-lava work (`feat/shots-over-lava`, HC-Q89,
+      pre-PR gate round 1, 2026-11-23; COMBAT-WEAPONS-ABILITIES-62).** Built and tested;
+      recorded as DEC-360. Nothing waits on you. No change for the player. (1) Each map shape
+      says what it does to a shot: "shots fly over it" and "a shot that flies over it catches
+      fire". Before, the flags named the ground ("low ground", "fire"). So if you say yes to
+      camp fires in HC-Q105, the change is two flags in one place. (2) One rule decides whether
+      a map shape stops a shot, and both places that check it use that rule. Before, each had
+      its own copy, and the two copies disagreed over lakes (the critic found it). Code names:
+      `canShotsCross`, `canLightShots`, `CollisionQuery.lightsShot`, `doesShapeStopShot`. Say
+      "no" to either and it goes back.
+  - Added 2026-11-23 (pre-PR gate round 2, DEC-360 addendum): (3) a shot and a moving unit now
+    ask the map two different questions: "how far can this shot fly?" and "how far can this unit
+    move?". Before, one question with an optional extra part served both, so a later shot that
+    left out the extra part would be stopped by a lake. No change for the player. Code names:
+    `CollisionQuery.reach` (units, dashes) and `CollisionQuery.shotReach` (shots).
+  - Added 2026-11-23 (pre-PR gate round 3, DEC-360 addendum): (4) two checks now share one piece
+    of code for bridge decks: "where does this unit or shot first touch a map shape?" and "does
+    this shot touch lava?". Before, each check had its own copy. No change for the player. Code
+    names: `CollisionResolver.contactWith`, used by `firstContact` and `touches`.
+  - Signed off 2026-11-26 (DEC-360, Owner Calls v98): "A: sign off all four (built)".
+
+- [ ] **HC-Q92 — Does destroying a wall turret pay a reward? (`feat/wall-turrets`, PR 4,
+      Owner Calls card "WT destroyed reward").** Options: (A, built) yes: structure XP and points,
+      like the other structures; (B) no reward. Code names: `StructureDestroyedRule`,
+      `ProgressionSystem` (no turret-only code). FYI: a turret that kills a unit gives no kill
+      points, XP or ultimate charge to anyone, and assists still count (DEC-79: a non-Legend last
+      hit gives no kill).
+  - Answered 2026-11-23 (DEC-341): "Only the one who destroys it gets the XP. Its like killing 2
+    or 3 heavy minions." Built on `feat/wall-turrets`: 300 XP (`TUNE`) to the Legend that lands
+    the killing hit, no team-wide structure XP. Still open: your note names XP only, so the turret
+    still gives its team 5 points and counts as a destroyed structure (DEC-212). Say if a turret
+    should give no points.
+    The level question moved to HC-Q106.
+
+- [x] **HC-Q106 — Does one wall turret lift a Legend by 2 levels? (`feat/wall-turrets`, PR 4).**
+      One turret lifts a Legend by 2 levels at every level from 1 to 20. The old rule (DEC-190)
+      was at most 1 level. Options: (A, built) keep 2 levels; (B) cap it at 1 level, as the boss
+      reward is capped (DEC-237). Also: when a minion lands the last hit, no one gets the XP.
+  - Answered 2026-11-26 (DEC-389): "A: keep 2 levels (built)". Nothing changes on
+    `feat/wall-turrets`.
+
+- [x] **HC-Q118 — What type of weapon are the Colossus's Bastions? (`feat/start-weapons`, PR 3
+      W3, Owner Calls v100).** You said yes to the Bastions at 120 damage every 1.6 s (DEC-387).
+      They are not built yet, because each weapon has one weapon type and reference 07 gives the
+      Bastions none. Until you answer, the Colossus starts with the Wuuthrad battle axe. The type
+      does not change how a weapon hits. Options: (A, recommended) a new type, Shield, because the
+      Bastions are walls on the arms; (B) Glove, like the Raptor Talons. Either way the Bastions
+      are one weapon file and one line in the Colossus spec. Code names: `WeaponClass` in
+      `content/weapons/weapons.types.ts`; DEC-387 (7).
+  - Answered 2026-11-27 (DEC-407, Owner Calls v103): "A: a new weapon type, Shield" and the
+    Bastions are dual-wielded, like the dual blades. Built in `feat/shots-over-lava` (fold
+    unit U1): `content/weapons/bastions.ts`, and the Colossus starts with them.
+
+- [ ] **HC-B48 — Better than the design, sign-off asked: 3 code ideas from the critic
+      (`feat/start-weapons`, PR 3, critic rounds 1 to 3, 2026-11-26;
+      COMBAT-WEAPONS-ABILITIES-68 and -72).** Nothing changes in play.
+      (1) Read a Legend's sub-class once when it spawns. Not built yet. Today a Legend
+      that spawns reads its sub-class twice: once for its start weapon and once for its
+      abilities. Better: one step reads the sub-class once and gives the abilities, the start
+      weapon and, after PR #156, the second weapon. When: in PR #156's loadout code, after #156
+      merges. Say "no" and the two reads stay. Code names: `loadoutOf(spec, legend)` replaces
+      `kitOf`, `primaryWeaponIdOf` and #156's inline `spec?.secondaryWeaponId ?? null`, in the
+      `Loadout` construction of `Legend`; DEC-387.
+      (2) Built (critic round 2): one check now decides which Legend classes may hold a weapon.
+      It runs on each sub-class's start weapon and each class's default weapon (and, after #156
+      merges, the second weapon). Before, only the start weapon was checked, and that check had
+      its own copy of the rule. Every sub-class and class in the game today passes it. Say "no"
+      and the check goes back to the start weapon only. Code names:
+      `content/weapons/isWeaponAllowedFor.ts`, `SpecWeaponAllowedRule`,
+      `DefaultWeaponAllowedRule`, #156's `SecondaryWeaponRule`; DEC-387 (10).
+      (3) Not built (critic round 3, after the last critic loop): the check in (2) runs in two
+      content rules, one for sub-classes and one for classes. Better: one rule that first finds
+      the weapon to check for a class or a sub-class, as the abilities check already does. Then
+      #156's second weapon adds one field, not a third rule. The gain is small: the two rules
+      already share the check itself. Options: (A) do it in a follow-up PR; (B) leave it as it
+      is. Code names: one `WeaponAllowedRule` (the 05 §12 name) with a
+      `weaponSubjectOf(definition, legends)` resolver, as `KitInPoolRule` + `kitSubjectOf`.
+
+- [x] **HC-B38 — Better than the design, sign-off asked: 5 code ideas from the critic
+      (`feat/wall-turrets`, PR 4, critic rounds 4 and 5, 2026-11-23; PR-REVIEW-ASSIST-38/39).**
+      Nothing changes in play. Say "no" to a built item and it goes back.
+      (1) Built (coordinator ruling): the `structure-destroyed` event names the structure's
+      content id (`definitionId`), so the XP code does not look the structure up in the store.
+      (2) Not built yet: a setting per structure for what its body leaves (a ruin that blocks, or
+      open ground). Today every body leaves a ruin that blocks, so the setting has one value. It
+      goes in when the tower-ruins work (#98) merges (the merge note in DEC-341 (2)).
+      (3) Not built: one state field (standing, ruin, destroyed) on each map object in place of
+      `isDestroyed` and `isRuined`. It changes the golden replay hashes of every open PR.
+      (4) Not better: one table for the team-kill XP and the destroyer-only XP. They pay different
+      people on different events and share no data.
+      (5) Built (critic round 5): the map view picks one ruin look per fallen object (one ruin over
+      the whole box, or one ruin per wall piece) and uses it both to cull and to draw.
+  - Answered 2026-11-26 (DEC-389): "A: sign off (1) to (5) as above — build 3 if we can somehow
+    get it in cleaner." (1), (4) and (5) stay as built; (2) waits for #98. (3) is built on
+    `feat/wall-turrets`: `MapObjectSnapshot.condition` (standing, ruin, destroyed). No pinned
+    replay hash covers map objects, so no golden hash changed.
+
+- [x] **HC-B42 — Better than the design, sign-off asked: 4 code ideas from the tower-orb
+      critic, built (`feat/tower-orbs`, critic rounds 1 to 3, 2026-11-23; DEC-362;
+      PR-REVIEW-ASSIST-41 to -43).** Nothing changes in play. Say "no" to a built item and it goes
+      back. (1) The orb blast uses the one shared rule for "which bodies does an area hit"
+      (`AreaHitQuery`, with a family filter). So a unit that cannot take damage would not be
+      hit either. No unit is in that state today. (2) The game refuses bad turret and orb data
+      at load: a turret with no ammo, ammo on a structure that is not a turret, an arc shot
+      that slows down before its end. One shared check loop runs these rules, and the shot id
+      check uses the shared id rule (critic round 3). (3) The client picks how a shot looks in the air (streak or orb) from its own
+      table. (4) The blast size reaches the screen from the shot itself. (5) Not built: one
+      "flight" object for all arc-shot code (each place does a different job in a different
+      code layer, and the flight part needs code that two of those layers may not use); a
+      turret shot that names its target unit (it cannot aim at an enemy palace or gate, which
+      are too far away; when two units stand where a shot lands, the first in the game's list
+      takes the hit, because the shot lands on a point, not on a unit); two small code
+      clean-ups that save little (DEC-362 (7)).
+  - Answered 2026-11-26 (DEC-362): "A: sign off all four (built)" (Owner Calls version 98).
+
+- [x] **HC-Q93 — Where does a wall turret's bolt stop? (`feat/wall-turrets`, PR 4, Owner Calls
+      card "WT bolt stop").** A turret aims where its target will be. Options: (A, recommended,
+      not built yet) the bolt stops at that point and damages what is there; your HC-Q77 note
+      ("A tower shoots at where its target is or is about to be") and game design 03 ("fire at
+      destination") support it; (B, built now) the bolt flies on to its full range and hits the
+      first body it touches. A is a content flag and a few lines where the bolt is made. Code
+      names: `content/projectiles/turretBolt.ts`, `turretHeavyBolt.ts` (`range`, `TUNE`).
+  - Answered 2026-11-23 (DEC-341): an arc shot from above, with a ground shadow, that lands where
+    the target would be and lodges in the ground. Built in the tower-orb PR (DEC-342),
+    stacked on #163, for the turret bolts and the tower orbs.
+
+- [x] **HC-Q96 — How far does a lane tower shoot? (`feat/tower-orbs`, Owner Calls v70, card "ORB
+      range").** Both lane towers (production and buff) use the same range. All distances count
+      from the tower centre. Options: (A, built) 26 m, about 10 m outside the fort wall: the
+      tower covers its fort and the ground in front of it; (B) 22 m, a narrow strip; (C) 30 m,
+      a wide area that is hard to enter without minions. Built as option A, marked `TUNE`; the
+      orb PR waits for the answer. Code names: `LANE_TOWER_REACH_FROM_CENTRE` in
+      `content/ai/turret.ts`.
+  - Answered 2026-11-26 (DEC-366): "30 m: about 14 m outside the fort wall" (option C, not the
+    built option A). The code changed from 26 m to 30 m.
+
+- [x] **HC-Q97 — How hard and how fast does a lane tower hit? (`feat/tower-orbs`, card "ORB
+      damage").** This is the damage of one orb on the unit it aims at, and the time between two
+      orbs. Options: (A, built) 120 damage every 2 s: a light minion dies to 2 orbs, a level-1
+      Warrior alone under the tower dies in about 9 s; (B) 200 damage every 3 s: a light minion
+      dies to 1 orb, a level-1 Warrior in about 7 s; (C) 80 damage every 1.5 s: steady damage,
+      weaker on clumps. Built as option A, marked `TUNE`; the orb PR waits for the answer. Code
+      names: `damage` and `interval` of the `tower-orb` entry in
+      `content/structures/turretAmmo.ts`.
+  - Answered 2026-11-26 (DEC-366): "120 damage every 2 s" (A, built).
+
+- [x] **HC-Q98 — How big is the orb blast? (`feat/tower-orbs`, card "ORB splash").** Each enemy
+      unit in the blast takes damage. Your own team and buildings take none. Options: (A, built)
+      3 m blast, full damage at the centre and half at the edge; (B) 3 m blast, full damage
+      everywhere in it; (C) 2 m blast, full damage everywhere in it. Built as option A, marked
+      `TUNE`; the orb PR waits for the answer. Code names: `splash` (`radius`,
+      `edgeMultiplier`) of the `tower-orb` entry in `content/structures/turretAmmo.ts`.
+  - Answered 2026-11-26 (DEC-366): "3 m blast: full damage at the centre, half damage at the edge"
+    (A, built).
+
+- [x] **HC-Q99 — How does the orb fly? (`feat/tower-orbs`, card "ORB flight").** Options: (A,
+      built) like the wall turret bolt: from above in an arc, with a shadow on the ground; it
+      bursts where it lands; walls and units on the way do not stop it; speed 20 m/s. At 26 m it
+      flies about 1.3 s, so a Legend that turns can dodge it, and the tower can hit an enemy
+      inside its own fort court; (B) straight: it flies flat and bursts on the first unit or
+      wall it touches, so a minion in front of a Legend takes the orb and a fort wall can block
+      it. Built as option A, marked `TUNE`; the orb PR waits for the answer. A change to B
+      changes how the orb moves, not only a number. Code names: `isArc` and `maxSpeed` in
+      `content/projectiles/towerOrb.ts`.
+  - Card "ORB flight over cliffs" (Owner Calls v86, part of HC-Q99): do the bolts and orbs also
+    fly over cliffs, mountains and the map edge? (A, built) yes: nothing on the way stops an arc
+    shot; (B) a cliff or a mountain on the way stops the shot (a code change: the arc shot
+    checks the ground on its way). DEC-342 (2) marks the built behaviour as a reading.
+  - Answered 2026-11-26 (DEC-366): "Like the bolt: from above in an arc, with a shadow; it explodes
+    where it lands; walls and units on the way do not stop it. Speed 20 m/s" (A, built). Card
+    "ORB flight over cliffs": "Yes: nothing on the way stops an arc shot, also cliffs, mountains
+    and the map edge (built)" (A, built).
+
+- [x] **HC-Q100 — Which enemy does a lane tower shoot first? (`feat/tower-orbs`, card "ORB
+      targets").** The tower shoots enemy units only. Options: (A, built) as the wall turrets: if
+      an enemy Legend hit one of your Legends near the tower in the last 3 s, shoot it at once;
+      else the nearest enemy; (B) minions first: Legends only when no enemy minion is in range,
+      or when one hits your Legend; (C) Legends first: always an enemy Legend in range before
+      any minion. Built as option A, marked `TUNE`; the orb PR waits for the answer. Code
+      names: `priority` of `LANE_TOWER` in `content/ai/turret.ts`. Options B and C each need
+      one new priority entry (a `TurretTargetPriority` member and its line in
+      `ai/turretTarget.ts`), not only a content change.
+  - Answered 2026-11-26 (DEC-366): "As the wall turrets: if an enemy Legend hit one of your Legends
+    near the tower in the last 3 s, shoot it at once; else the nearest enemy" (A, built).
+
+- [x] **HC-Q114 — May a tower orb hit a Legend who runs out past 30 m? (`feat/tower-orbs`, card
+      "HC-Q114 orb lands past 30 m", tower-orb critic round 4 S3, 2026-11-26;
+      PR-REVIEW-ASSIST-46).** A lane tower picks targets only inside 30 m of its centre
+      (DEC-366). It aims an orb at the place where the target will be when the orb lands. When a
+      Legend at the edge runs straight away, that place is past 30 m, and the orb flies there, up
+      to its range cap (the reach plus the lead margin). Options: (A, built) the orb follows a
+      runner past 30 m, as the wall turret bolts do; (B) the orb never lands past 30 m, so a
+      Legend at the edge who runs straight away escapes the shot. The orb PR does not wait on the
+      answer: A needs no change, B changes one number. Code names: `range` of `TOWER_ORB` in
+      `content/projectiles/towerOrb.ts` (B sets it to the reach); `ai/predictiveAim.ts`.
+  - Answered 2026-11-27 (DEC-400): "A: the orb follows a runner past 30 m (built)" (Owner Calls
+    version 103). The code does not change.
+
+- [ ] **HC-B67 — Better than the design, sign-off asked: one shared search grid
+      (`fix/tower-orbs-windows-timeout`, the #168 speed fix, pre-PR critic, 2026-11-27;
+      PLAYER-STACK-FOLD-2; Owner Calls v109 card "HC-B67 one shared search grid").** Nothing
+      changes in play. The speed fix gave the map-object check its own search grid. The collision
+      code already has a grid built the same way (same cell size, same cell loop). The collision
+      grid also has no guard against a box at infinity, so one bad position can make a query
+      loop without end. Options: (A, recommended) after the demo, one follow-up PR moves both
+      grids onto one shared helper, so the grid code exists once and has the guard; (B) keep the
+      two grids. Not built tonight: it touches the collision code on demo night. Code names:
+      `WorldObjectStore.blockingAt` (`state/`), `physics/StaticCollisionIndex`, a new
+      `utils/BoxGrid.ts`; architecture 10 §5 and the 02 key-files list change.
+
+- [ ] **HC-B71 — Cathedral gem: a shot test to add and three code ideas from the player-stack
+      fold critics (fold U5, `chore/ranged-attacks-fold`, merge critics, 2026-11-27;
+      COMBAT-WEAPONS-ABILITIES-85, -86 and -87).** Finding only, not built: no new work on demo
+      night. (1) Not verified: an earlier critic read that a held-attack shot (a bow or staff
+      shot aimed at the gem) can stop on the stone under the gem, so the gem does not strike
+      back. A second reading says no: the stone is inside the gem's hit circle, and a shot that
+      meets a body and a wall at the same distance hits the body. A test decides. A weapon sweep,
+      a straight shot and a damaging ability area that touch the gem reach it (DEC-292). (2) The
+      old client gem pick (`findGemAt`) has no caller now, so it can go. (3) Code idea: the
+      Legend drawing code draws the swing wedge in two places; one base method can draw it once
+      and let the sprite look replace only the figure. (4) Code idea (also HC-B69 (1), lane B):
+      the check "the gem answers a hit" looks for the gem's own component; a flag on the
+      structure's content would let a second such body work without a code change. Code names:
+      (1) `ProjectileSystem.firstBody`, `isTouchedBeforeWall`, `CathedralInteriorBuilder`
+      (`gemPlinth`); (2) `findGemAt` (`state/`, exported from `index.ts`); (3) `LegendView.draw`,
+      `LegendSpriteView.draw`, `drawSwingWedge`; (4) `EntityStore.ignoresHits`,
+      `CathedralGemState`. Architecture 07 (the Cathedral gem status note) points here.
+
+- [ ] **HC-B36 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: one health pool for a wall turret, and the wall turret code layout
+      (`feat/wall-turrets`, PR 4, pre-PR gate round 1, 2026-11-22; PR-REVIEW-ASSIST-34).**
+      Built and tested. Nothing waits on you. Say "no" to an item and it goes back.
+      (1) DEC-332: a wall turret and the pylon under it have one health bar and die together,
+      like a lane tower and its fort. This changes your DEC-217 (13) text, "Only towers share one
+      health pool with their fort". (2) DEC-335: only the code layout changes, so the game plays
+      the same. A turret fires through the same attack code as Legends and mobs. Its target rules
+      are a list in its content file. It checks its line of fire with the ammo it will fire.
+      One critic item was rejected: keeping the launch shapes' ids
+      on each bolt gives the same result as the built rule (DEC-334) and adds saved state.
+      FYI for Samarjit (minion AI owner): a lane minion does not yet treat an enemy wall turret
+      that shoots an allied minion as a target (architecture 11 §4.3, priority (4)). The minion
+      aggro entry `turret-attacking-ally-minion` never matches, because `unitClassOf` does not map
+      the `turret` kind (`content/ai/unitClasses.ts`). Map `turret` there to turn it on. Tick
+      this part when Samarjit has read it.
+  - Answered 2026-11-26 (DEC-388): "B: give the pylon its own health bar". It replaces DEC-332
+    (1); DEC-335 (2) stays signed off. Built on `feat/wall-turrets`: the pylon and the turret
+    each have a health bar; the pylon's fall takes the turret with it, and the turret's fall
+    leaves the pylon. The pylon's health and the reward when it takes the turret are defaults on
+    a new card (DEC-388 (4)). Only the FYI for Samarjit stays open: tick this item when he has
+    read it.
+
+- [x] **HC-Q120 — Wall turret pylon defaults (DEC-388; `feat/wall-turrets`, PR 4).** Owner card
+      HC-Q120 on Owner Calls v101. (1) The pylon's health is 600, provisional. (2) The turret's
+      XP goes to the pylon's destroyer. (3) The pylon takes the turret's breakability rule.
+      Built as these defaults. Say "no" to an item and it goes back.
+  - Answered 2026-11-27 (DEC-396): (1) B, 2,000; (2) A; (3) A.
 
 - [ ] **Better than design: three items from the #136 phase/3 merge critic (2026-11-27). Not
       built; each has a planned place.** (1) After a Duel round and after a respawn, the code
@@ -1185,6 +1744,9 @@ Reply inline (`Decision: …`).
   - **(2) done by DEC-234** (#85, 2026-11-09): the inside test runs once, in `aimPointOf`, which
     returns an `AimedAt` tag; `isInReach` and `facingPointOf` read it. The tidy PR builds no
     helper for it.
+  - **(3) built by PR 2 (`state/ReachQuery`); `outlineOf` stays on `EntityStore`** (R2-A6,
+    2026-11-22).
+
 - [ ] **Server image and the connection cap behind a platform proxy (SCRUM-404, 2026-11-13) — owner
       decision before deploying.** `apps/server/Dockerfile` builds the Duel server image (tested:
       it runs, `HEALTHCHECK` is healthy and two bots finish a Duel against it). Open: (1)
@@ -3782,6 +4344,11 @@ Reply inline (`Decision: …`).
       `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
       rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
       (SCRUM-290).
+  - Answered for point (2) (DEC-57, 2026-10-28; built by DEC-387 on `feat/start-weapons`,
+    2026-11-26): each Legend spawns with the start weapon of its sub-class. The Zealot has the
+    Raptor Talons, the Templar the dual blades, the Paladin the great sword, the Bulwark Wuuthrad
+    and every Magus Legend the staff. The Colossus's Bastions wait for HC-Q118. This note does
+    not answer points (1) and (3), so the box stays open.
 - [x] **ObjectPool — pooled `GameEvents` payloads (SCRUM-427, branch `feat/object-pool`).** The
       `ObjectPool` base is built in `utils/` (phase 1 plan, sprint 1.2: "pool resets fields on
       acquire and nulls references on release"). The item's "done when" (high-frequency
@@ -4224,6 +4791,13 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   gem: four rules DEC-292 leaves open", "split the Cathedral interior builder" and "one shared
   'never damaged' structure entry". Decision: DEC-346. The Duel design (circle strike, laser) is a
   follow-up PR once the six "GEM duel" cards are answered; your camp question is a new item.
+
+- 2026-11-23 — **Your answers on the wall turret cards HC-Q90, HC-Q91 and HC-Q94** (PR 4, #163,
+  `feat/wall-turrets`): recorded as DEC-341. HC-Q90: a turret takes damage only after 2 of the 3
+  buff towers of its side are down, like its wall (as built). HC-Q91: a destroyed turret's pylon
+  stays as a ruin and blocks; a fallen tower's fort now also draws as ruins (one rule for every
+  structure body). HC-Q94: the turret switches at once to an enemy Legend that hits your Legend
+  (as built); FR-073 now says so. HC-Q92 and HC-Q93 stay open above with notes.
 
 - 2026-11-21 — **Your picks on the Cathedral gem (DEC-291, DEC-292)** (`feat/cathedral-gem-hittable`,
   PR #132, which now also carries PR #124): recorded as DEC-291 and DEC-292. The gem keeps its

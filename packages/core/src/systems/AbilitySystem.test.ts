@@ -8,6 +8,7 @@ import {
   testAbilityRegistry,
 } from '../abilities/__fixtures__/fakeAbilities';
 import { CastValidator } from '../abilities/CastValidator';
+import { TargetQuery } from '../abilities/TargetQuery';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { Abilities } from '../components/Abilities';
@@ -20,6 +21,7 @@ import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { NullLogger } from '../diagnostics/NullLogger';
 import type { GameState } from '../state/GameState';
 import { AbilitySystem } from './AbilitySystem';
+import { AreaHitQuery } from '../state/AreaHitQuery';
 
 const STATUSES = loadStatusEffects(30, 2);
 const AIM = { point: { x: 0, y: 5 }, targetId: null };
@@ -50,6 +52,7 @@ const setUp = () => {
     new CastValidator(registry),
     new DamagePipeline(),
     new StatusEffectApplier(STATUSES),
+    new TargetQuery(registry, new AreaHitQuery()),
   );
   const events: string[] = [];
   state.events.on('ability-cast', ({ casterId, abilityId, slot }) =>

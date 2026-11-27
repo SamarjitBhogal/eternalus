@@ -5,6 +5,7 @@ import type {
 } from '../components/ProjectilePayload.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 
 /** One shot landing on a body, as the impact of its kind sees it. */
@@ -13,13 +14,20 @@ export type ProjectileHit<K extends ProjectileImpactKind> = {
   readonly impact: ProjectileImpactData<K>;
   /** The entity that fired it. */
   readonly ownerId: EntityId;
+  /** The owner's team at the moment of firing. */
+  readonly team: Team;
+  /** The owner's level at the moment of firing. */
+  readonly ownerLevel: number;
   /** Who the hit is credited to. */
   readonly source: ProjectileSource;
   /** Where it was fired from. */
   readonly origin: Vec2;
-  /** The body it touched first (not always the one it was fired at). */
-  readonly bodyId: EntityId;
-  /** Where the shot's centre was when it touched the body. */
+  /**
+   * The body it touched first (not always the one it was fired at); `null` for an arc shot that
+   * landed on bare ground (`ProjectileSystem`, DEC-342).
+   */
+  readonly bodyId: EntityId | null;
+  /** Where the shot's centre was when it touched the body, or where an arc shot landed. */
   readonly point: Vec2;
 };
 
@@ -30,8 +38,13 @@ export type ProjectileHit<K extends ProjectileImpactKind> = {
  * one class and one line in the pipeline's `impacts`; the flight does not change.
  */
 export interface ProjectileImpact<K extends ProjectileImpactKind> {
-  /** Lands `hit` on its body. The shot is removed after this returns. */
-  land(state: GameState, hit: ProjectileHit<K>): void;
+  /**
+   * Lands `hit`. The shot is removed (a straight shot) or lodges (an arc shot) after this returns.
+   *
+   * @returns The ids of the bodies it landed on, for the owner's hit record
+   *   (`EntityStore.recordHits`); none for a hit on bare ground with no blast.
+   */
+  land(state: GameState, hit: ProjectileHit<K>): readonly EntityId[];
 }
 
 /** One impact per kind; a missing kind does not compile. */

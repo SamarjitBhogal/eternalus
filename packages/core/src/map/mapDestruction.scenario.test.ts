@@ -52,7 +52,7 @@ describe('map-object destruction scenario', () => {
       });
       for (let i = 0; i < 65; i++) sim.step();
       expect(sim.snapshot().mapObjects?.find((o) => o.id === house.id)).toMatchObject({
-        isDestroyed: true,
+        condition: 'destroyed',
         health: { current: 0, max: 100 },
       });
       expect(sim.snapshot().entities.some((e) => e.id === target.entityId)).toBe(false);

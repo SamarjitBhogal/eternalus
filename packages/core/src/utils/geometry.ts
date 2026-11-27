@@ -1,3 +1,4 @@
+import { CONTACT_EPSILON } from './circlePolygon.constants';
 import { cos, sin } from './deterministicMath';
 import type { Polygon, Rect, Vec2 } from './geometry.types';
 import type { MutableVec2 } from './vec2.types';
@@ -65,6 +66,41 @@ export const doRectsOverlap = (a: Rect, b: Rect): boolean =>
  */
 export const isPointInAnyPolygon = (point: Vec2, polygons: readonly Polygon[]): boolean =>
   polygons.some((polygon) => isPointInPolygon(point, polygon));
+
+/**
+ * Whether `point` lies in the blocking area of a shape: inside `polygon` or on its edge, and inside
+ * none of its `passages` (a bridge over a river), the area that blocks a mover. The launch-shape
+ * rule (DEC-334): a shape whose blocking area holds a shot's launch point does not stop that shot.
+ * The edge counts (within `CONTACT_EPSILON`, for roundoff) because a wall turret stands on the
+ * joint of two wall pieces, and `isPointInPolygon` gives a point on a shared edge to one of them
+ * at most.
+ */
+export const isPointInBlockingArea = (
+  point: Vec2,
+  polygon: Polygon,
+  passages: readonly Polygon[] = [],
+): boolean =>
+  (isPointInPolygon(point, polygon) ||
+    polygon.some(
+      (a, index) =>
+        distanceToSegment(point, a, polygon[(index + 1) % polygon.length] ?? a) <= CONTACT_EPSILON,
+    )) &&
+  !isPointInAnyPolygon(point, passages);
+
+/**
+ * Whether a blocking shape stops a shot launched at `launch`: the one shot stop rule, shared by the
+ * collision sweep (`CollisionResolver.shotReach`) and the overlap check (`WorldObjectStore.blockingAt`).
+ * `polygon` is one footprint of the shape; `shape` holds its passages and flags (a collision shape
+ * or a map object). It does not when shots can cross the shape (`canShotsCross`, which a map
+ * builder sets: DEC-345), or when the shape's blocking area holds `launch` (`isPointInBlockingArea`,
+ * the launch-shape rule of DEC-334: the shot can only leave that shape).
+ */
+export const doesShapeStopShot = (
+  polygon: Polygon,
+  shape: { readonly passages?: readonly Polygon[]; readonly canShotsCross?: true },
+  launch: Vec2,
+): boolean =>
+  shape.canShotsCross !== true && !isPointInBlockingArea(launch, polygon, shape.passages);
 
 /** The point of the segment from `a` to `b` nearest to `point`. */
 export const closestPointOnSegment = (point: Vec2, a: Vec2, b: Vec2): Vec2 => {

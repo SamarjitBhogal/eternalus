@@ -1,16 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
 import { Aether } from '../components/Aether';
+import { Combat } from '../components/Combat';
 import { Capturable } from '../components/Capturable';
 import { MapObjectBody } from '../components/MapObjectBody';
-import { Movement } from '../components/Movement';
 import { ProjectileFlight } from '../components/ProjectileFlight';
+import { ProjectilePayload } from '../components/ProjectilePayload';
 import { StatusEffects } from '../components/StatusEffects';
+import { Transform } from '../components/Transform';
 import { ZoneArea } from '../components/ZoneArea';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import type { RangedAttack } from '../content/units/units.types';
 import { Entity } from '../entities/Entity';
 import { Stronghold } from '../entities/structures/Stronghold';
 import { EntitySnapshotter } from './EntitySnapshotter';
@@ -33,6 +36,13 @@ const SQUARE = [
   { x: 4, y: 4 },
   { x: 0, y: 4 },
 ];
+const SHOT_ATTACK: RangedAttack = {
+  strategy: 'ranged-projectile',
+  damage: 45,
+  reach: 50,
+  interval: 21,
+  projectile: { projectileId: 'arrow', falloff: null },
+};
 
 describe('EntitySnapshotter', () => {
   it("snapshots a zone's area and capture state, with the checkpoint count it is given", () => {
@@ -126,23 +136,143 @@ describe('EntitySnapshotter', () => {
     expect(snapshotter.snapshotOf(new Bare('entity-3', 'bare')).statuses).toBeNull();
   });
 
-  it('snapshots a shot as its speed share and ending, and anything else as null', () => {
-    const snapshotter = new EntitySnapshotter(3, CURVES, 0);
-    const shot = new Bare('shot-1', 'magus-bolt');
-    const movement = new Movement({ maxSpeed: 4, acceleration: 1, mass: 1 });
-    const flight = new ProjectileFlight(100, 80, 4);
-    shot.addComponent(movement);
-    shot.addComponent(flight);
-    movement.accelerateToward({ x: 1, y: 0 });
-    movement.accelerateToward({ x: 1, y: 0 });
+  it('snapshots the latest sweep as plain data, and null when there is none (DEC-304)', () => {
+    const swinger = new Bare('entity-1', 'warrior');
+    const combat = new Combat({ basic: { strategy: 'melee', damage: 1, reach: 1, interval: 5 } });
+    swinger.addComponent(combat);
+    const snapshotter = new EntitySnapshotter(4, CURVES, 9);
+    expect(snapshotter.snapshotOf(swinger).swing).toBeNull();
+    expect(snapshotter.snapshotOf(new Bare('entity-2', 'bare')).swing).toBeNull();
 
+    combat.recordSwing({ atTick: 7, direction: { x: 0, y: 1 }, radius: 3.5, arcDegrees: 160 });
+    const { swing } = snapshotter.snapshotOf(swinger);
+
+    expect(swing).toEqual({
+      atTick: 7,
+      direction: { x: 0, y: 1 },
+      radius: 3.5,
+      arcDegrees: 160,
+    });
+    expect(structuredClone(swing)).toEqual(swing);
+  });
+
+  it('snapshots a fired shot as its flown share of the range and its ending, and anything else as null', () => {
+    const snapshotter = new EntitySnapshotter(3, CURVES, 0);
+    const shot = new Bare('shot-1', 'arrow');
+    const flight = new ProjectileFlight(100, 80, 4);
+    const at = new Transform({ x: 13, y: 4 }, 0.15);
+    shot.addComponent(at);
+    shot.addComponent(flight);
+    shot.addComponent(
+      new ProjectilePayload({
+        ownerId: 'owner',
+        team: 'light',
+        ownerLevel: 1,
+        source: { attackerId: 'owner', kind: 'weapon', definitionId: 'obsidian-bow' },
+        targetId: null,
+        impact: { kind: 'weapon', attack: SHOT_ATTACK },
+        origin: { x: 10, y: 0 },
+      }),
+    );
+    const unfired = new Bare('shot-2', 'arrow');
+    unfired.addComponent(new Transform({ x: 0, y: 0 }, 0.15));
+    unfired.addComponent(new ProjectileFlight(100, 80, 4));
+
+    // 5 m from its origin (a 3-4-5 triangle) of a 100 m range.
     const flying = snapshotter.snapshotOf(shot).projectile;
+    at.moveBy({ x: 60, y: 80 });
     flight.end();
     flight.tickEnding();
     const ending = snapshotter.snapshotOf(shot).projectile;
 
-    expect(flying).toEqual({ speedShare: 0.5, ending: null });
-    expect(ending).toEqual({ speedShare: 0.5, ending: 0.25 });
+    expect(flying).toEqual({
+      flownShare: 0.05,
+      isArc: false,
+      range: 100,
+      blastRadius: null,
+      ending: null,
+      isLit: false,
+    });
+    expect(ending).toEqual({
+      flownShare: 1,
+      isArc: false,
+      range: 100,
+      blastRadius: null,
+      ending: 0.25,
+      isLit: false,
+    });
+    expect(snapshotter.snapshotOf(unfired).projectile).toBeNull();
+    // An arc shot reports its flag and its shortened range, which the arc's height scales with.
+    flight.shortenTo(50);
+    const arc = new ProjectileFlight(100, 80, 4, true);
+    arc.shortenTo(50);
+    shot.addComponent(arc);
+    expect(snapshotter.snapshotOf(shot).projectile).toMatchObject({ isArc: true, range: 50 });
     expect(snapshotter.snapshotOf(new Bare('bare-1', 'x')).projectile).toBeNull();
+  });
+
+  it("snapshots a shot's blast radius from its launch, the same id with no blast as null (DEC-342)", () => {
+    const snapshotter = new EntitySnapshotter(3, CURVES, 0);
+    const shotWith = (attack: RangedAttack): Bare => {
+      const shot = new Bare('shot-1', 'tower-orb');
+      shot.addComponent(new Transform({ x: 0, y: 0 }, 0.2));
+      shot.addComponent(new ProjectileFlight(30, 30, 4, true));
+      shot.addComponent(
+        new ProjectilePayload({
+          ownerId: 'tower',
+          team: 'dark',
+          ownerLevel: 1,
+          source: { attackerId: 'tower', kind: 'weapon', definitionId: 'tower-orb' },
+          targetId: null,
+          impact: { kind: 'weapon', attack },
+          origin: { x: 0, y: 0 },
+        }),
+      );
+      return shot;
+    };
+    const splash = { radius: 3.5, edgeMultiplier: 0.5 };
+    const orb: RangedAttack = {
+      ...SHOT_ATTACK,
+      projectile: { projectileId: 'tower-orb', falloff: null, splash },
+    };
+    const plain: RangedAttack = {
+      ...SHOT_ATTACK,
+      projectile: { projectileId: 'tower-orb', falloff: null },
+    };
+
+    expect(snapshotter.snapshotOf(shotWith(orb)).projectile?.blastRadius).toBe(3.5);
+    expect(snapshotter.snapshotOf(shotWith(plain)).projectile?.blastRadius).toBeNull();
+  });
+
+  it('snapshots a lit shot as lit, and a shot that cannot catch fire as unlit (HC-Q89, DEC-345)', () => {
+    const snapshotter = new EntitySnapshotter(3, CURVES, 0);
+    const shotWith = (flight: ProjectileFlight) => {
+      const shot = new Bare('shot-1', 'arrow');
+      shot.addComponent(new Transform({ x: 13, y: 4 }, 0.15));
+      shot.addComponent(flight);
+      shot.addComponent(
+        new ProjectilePayload({
+          ownerId: 'owner',
+          team: 'light',
+          ownerLevel: 1,
+          source: { attackerId: 'owner', kind: 'weapon', definitionId: 'obsidian-bow' },
+          targetId: null,
+          impact: { kind: 'weapon', attack: SHOT_ATTACK },
+          origin: { x: 10, y: 0 },
+        }),
+      );
+      return shot;
+    };
+    const lit = new ProjectileFlight(100, 80, 4, false, [
+      { kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } },
+    ]);
+    const bolt = new ProjectileFlight(100, 80, 4);
+
+    expect(snapshotter.snapshotOf(shotWith(lit)).projectile?.isLit).toBe(false);
+    lit.light();
+    bolt.light();
+
+    expect(snapshotter.snapshotOf(shotWith(lit)).projectile?.isLit).toBe(true);
+    expect(snapshotter.snapshotOf(shotWith(bolt)).projectile?.isLit).toBe(false);
   });
 });

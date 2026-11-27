@@ -9,6 +9,7 @@ import { SeededRandom } from '../utils/SeededRandom';
 import { AiState } from './AiState';
 import { AllyDamageStore } from './AllyDamageStore';
 import { AllyDamageTally } from './AllyDamageTally';
+import { LegendHitLog } from './LegendHitLog';
 import { ChargeLedger } from './ChargeLedger';
 import { DefenderDamageStore } from './DefenderDamageStore';
 import { EntitySnapshotter } from './EntitySnapshotter';
@@ -76,6 +77,8 @@ export class GameState {
   public readonly allyDamage = new AllyDamageStore();
   /** The damage each Legend dealt to each checkpoint defender set (07 §7). */
   public readonly defenderDamage = new DefenderDamageStore();
+  /** When each Legend last hit a Legend of each other team: a turret's defend-ally rule (11 §4.5). */
+  public readonly legendHits: LegendHitLog;
   /** Hordes asked for this tick (developer menu), fulfilled by `SpawnSystem` in order. */
   public readonly hordeRequests: HordeRequest[] = [];
   private readonly teamCounters: Record<
@@ -163,6 +166,7 @@ export class GameState {
       this.phaseChanges.push(change);
     });
     new AllyDamageTally(this.events, this.entities, this.world, this.allyDamage);
+    this.legendHits = new LegendHitLog(this.events, this.entities, () => this.currentTick);
     this.charges = new ChargeLedger(this.events, this.respawns);
   }
 

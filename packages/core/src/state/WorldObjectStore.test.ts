@@ -5,8 +5,11 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import type { MapObject } from '../content/maps/mapObjects.types';
+import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import type { Vec2 } from '../utils/geometry.types';
+import { BLOCKING_CELL_SIZE } from './WorldObjectStore.constants';
+import type { WorldObjectRecord } from './WorldObjectStore.types';
 
 /** A factory over every map-object definition, as the match builds it. */
 const fixtureFactory = (): EntityFactory => {
@@ -84,12 +87,12 @@ describe('WorldObjectStore', () => {
     world.removed(entity.id);
     world.removed('unknown');
     expect(world.snapshot()[0]).toMatchObject({
-      isDestroyed: true,
+      condition: 'destroyed',
       health: { current: 0, max: 100 },
     });
   });
 
-  it("makes a structure's own map object (a lane tower's fort) share its health, and leaves it standing with none once the structure is gone (DEC-185 B)", () => {
+  it("makes a structure's own map object (a lane tower's fort) share its health, and leaves it standing with none, as a ruin, once the structure is gone (DEC-185 B, DEC-341)", () => {
     const factory = fixtureFactory();
     const entities = new EntityStore();
     const tower = factory.create('obstacle', MAP_OBJECT_DEFINITIONS.rock.id, {
@@ -123,7 +126,7 @@ describe('WorldObjectStore', () => {
       id: 'fort',
       entityId: tower.id,
       health: { current: 60, max: 100 },
-      isDestroyed: false,
+      condition: 'standing',
     });
     expect(world.objectFor(tower.id)).toBeUndefined();
     // The tower dies: until it is retired, and after, its fort still blocks.
@@ -131,14 +134,151 @@ describe('WorldObjectStore', () => {
     expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBe('fort');
     entities.remove(tower.id, 'died');
     world.removed(tower.id);
+    // It stands as a ruin that blocks (DEC-341, HC-Q91; DEC-219 (a)).
     expect(world.snapshot()[0]).toEqual({
       id: 'fort',
       entityId: null,
       health: null,
-      isDestroyed: false,
+      condition: 'ruin',
     });
     expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBe('fort');
     expect(world.destroyedIds.has('fort')).toBe(false);
+  });
+
+  it("gives an object a structure is mounted on (a wall turret's pylon) its own entity, health and the structure's breakability, and leaves it standing with them, as a ruin, once the structure is gone (DEC-388)", () => {
+    const factory = fixtureFactory();
+    const entities = new EntityStore();
+    const turret = factory.create('obstacle', MAP_OBJECT_DEFINITIONS.rock.id, {
+      position: { x: 5, y: 5 },
+    });
+    turret.getComponent(Collider).setUnbreakable(true);
+    entities.add(turret);
+    const pylon: MapObject = {
+      id: 'pylon',
+      kind: 'turret',
+      isBlocking: true,
+      footprints: [
+        [
+          { x: 0, y: 0 },
+          { x: 10, y: 0 },
+          { x: 10, y: 10 },
+        ],
+      ],
+    };
+    const world = new WorldObjectStore({
+      objects: [pylon],
+      factory,
+      entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+      mounted: new Map([['pylon', turret.id]]),
+    });
+    const pylonId = world.snapshot()[0]?.entityId ?? '';
+    const pylonHealth = entities.get(pylonId)?.getComponent(Health);
+
+    // Its own entity and pool; a hit on one pool leaves the other as it was.
+    expect(entities.size).toBe(2);
+    expect(pylonId).not.toBe(turret.id);
+    turret.getComponent(Health).applyDamage(40);
+    pylonHealth?.applyDamage(100);
+    expect(world.snapshot()[0]).toEqual({
+      id: 'pylon',
+      entityId: pylonId,
+      health: { current: 1900, max: 2000 },
+      condition: 'standing',
+      mountedHealth: { current: 60, max: 100 },
+    });
+    expect(world.mountOf(turret.id)).toBe(pylonId);
+    expect(world.contentsOf('pylon')).toEqual([turret.id]);
+    expect(entities.takesNoDamage(pylonId)).toBe(true);
+
+    // The turret goes: the pylon stands as a ruin that blocks, with its own health.
+    turret.getComponent(Health).applyDamage(60);
+    entities.remove(turret.id, 'died');
+    world.removed(turret.id);
+    expect(world.snapshot()[0]).toEqual({
+      id: 'pylon',
+      entityId: pylonId,
+      health: { current: 1900, max: 2000 },
+      condition: 'ruin',
+    });
+    expect(world.contentsOf('pylon')).toEqual([]);
+    expect(world.mountOf(turret.id)).toBeUndefined();
+    expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBe('pylon');
+
+    // The pylon falls later on its own: it is destroyed and blocks no more.
+    pylonHealth?.applyDamage(1900);
+    entities.remove(pylonId, 'died');
+    world.removed(pylonId);
+    // A ruin first, then destroyed: destroyed wins (DEC-389).
+    expect(world.snapshot()[0]).toMatchObject({ condition: 'destroyed' });
+    expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBeNull();
+  });
+
+  it("makes every body object of one structure share its health, keeps them out of a building's contents, and leaves each one a ruin once the structure is gone (DEC-386 (1))", () => {
+    const factory = fixtureFactory();
+    const entities = new EntityStore();
+    const stronghold = factory.create('obstacle', MAP_OBJECT_DEFINITIONS.rock.id, {
+      position: { x: 5, y: 5 },
+    });
+    entities.add(stronghold);
+    const square = (x: number): MapObject['footprints'] => [
+      [
+        { x, y: 0 },
+        { x: x + 2, y: 0 },
+        { x: x + 2, y: 2 },
+        { x, y: 2 },
+      ],
+    ];
+    const piece = (id: string, x: number, kind: MapObject['kind']): MapObject => ({
+      id,
+      kind,
+      isBlocking: true,
+      footprints: square(x),
+      buildingId: 'palace',
+    });
+    const world = new WorldObjectStore({
+      objects: [
+        piece('outer-wall', 0, 'wall'),
+        piece('throne', 10, 'furniture'),
+        piece('room-wall', 20, 'wall'),
+      ],
+      factory,
+      entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+      owners: new Map([
+        ['outer-wall', stronghold.id],
+        ['throne', stronghold.id],
+      ]),
+    });
+    const roomWall = world.snapshot()[2]?.entityId;
+
+    // One entity of its own: the room wall. The wall and the throne are the Stronghold's pool.
+    expect(entities.size).toBe(2);
+    stronghold.getComponent(Health).applyDamage(30);
+    expect(world.snapshot().slice(0, 2)).toEqual([
+      {
+        id: 'outer-wall',
+        entityId: stronghold.id,
+        health: { current: 70, max: 100 },
+        condition: 'standing',
+      },
+      {
+        id: 'throne',
+        entityId: stronghold.id,
+        health: { current: 70, max: 100 },
+        condition: 'standing',
+      },
+    ]);
+    // A collapse of the palace breaks the room wall, not the Stronghold's body.
+    expect(world.contentsOf('palace')).toEqual([roomWall]);
+    entities.remove(stronghold.id, 'died');
+    world.removed(stronghold.id);
+    expect(world.snapshot().slice(0, 2)).toEqual([
+      { id: 'outer-wall', entityId: null, health: null, condition: 'ruin' },
+      { id: 'throne', entityId: null, health: null, condition: 'ruin' },
+    ]);
+    expect(world.blockingAt({ x: 1, y: 1 }, 0.5)).toBe('outer-wall');
+    expect(world.blockingAt({ x: 11, y: 1 }, 0.5)).toBe('throne');
   });
 
   it('skips an object whose footprint box misses the circle, without testing its shape', () => {
@@ -173,5 +313,68 @@ describe('WorldObjectStore', () => {
     reads = 0;
     expect(world.blockingAt({ x: 50, y: 50 }, 1)).toBeNull();
     expect(reads).toBe(0);
+  });
+
+  describe('its search grid', () => {
+    const square = (id: string, x: number, y: number, side: number): MapObject => ({
+      id,
+      kind: 'terrain',
+      isBlocking: true,
+      footprints: [
+        [
+          { x, y },
+          { x: x + side, y },
+          { x: x + side, y: y + side },
+          { x, y: y + side },
+        ],
+      ],
+    });
+    const worldOf = (...objects: MapObject[]) =>
+      new WorldObjectStore({
+        objects,
+        factory: fixtureFactory(),
+        entities: new EntityStore(),
+        definitions: MAP_OBJECT_DEFINITIONS,
+      });
+    const edge = BLOCKING_CELL_SIZE;
+
+    it('returns the earliest-placed blocker, though a later one is in a cell it reads first', () => {
+      // The circle crosses the line between two cells. The later object is in the first cell.
+      const world = worldOf(square('earlier', edge, 0, 8), square('later', edge - 8, 0, 7.5));
+
+      expect(world.blockingAt({ x: edge - 0.2, y: 4 }, 1)).toBe('earlier');
+    });
+
+    it('finds an object from every cell its box touches, at negative coordinates too', () => {
+      const world = worldOf(square('wide', -3 * edge, -3 * edge, 6 * edge));
+
+      expect(world.blockingAt({ x: -2.5 * edge, y: -2.5 * edge }, 0.5)).toBe('wide');
+      expect(world.blockingAt({ x: 2.5 * edge, y: 2.5 * edge }, 0.5)).toBe('wide');
+      expect(world.blockingAt({ x: 4 * edge, y: 0 }, 0.5)).toBeNull();
+    });
+
+    it('checks every record for a circle wider than the grid or at a broken position', () => {
+      const world = worldOf(square('rock', 0, 0, 4));
+
+      expect(world.blockingAt({ x: 2, y: 2 }, 1e9)).toBe('rock');
+      expect(world.blockingAt({ x: Number.NaN, y: 2 }, 1)).toBeNull();
+      expect(world.blockingAt({ x: Number.POSITIVE_INFINITY, y: 2 }, 1)).toBeNull();
+      expect(world.blockingAt({ x: 2, y: 2 }, Number.POSITIVE_INFINITY)).toBe('rock');
+    });
+
+    it('indexes records again when the record count changes', () => {
+      const world = worldOf(square('rock', 0, 0, 4));
+      expect(world.blockingAt({ x: 2, y: 2 }, 1)).toBe('rock');
+      // A path that adds a record after the first search (such as `WorldObjectStore.add` for
+      // ability walls, PR #134) is covered.
+      (world as unknown as { records: WorldObjectRecord[] }).records.push({
+        object: square('late', 3 * edge, 0, 4),
+        entityId: null,
+        health: null,
+        bounds: { x: 3 * edge, y: 0, width: 4, height: 4 },
+      });
+
+      expect(world.blockingAt({ x: 3 * edge + 2, y: 2 }, 1)).toBe('late');
+    });
   });
 });

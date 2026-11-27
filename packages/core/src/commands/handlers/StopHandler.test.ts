@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Combat } from '../../components/Combat';
 import { Movement } from '../../components/Movement';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
@@ -40,6 +41,15 @@ const context = (): CommandContext => {
 };
 
 describe('StopHandler', () => {
+  it('drops the aim point of an aimed attack too', () => {
+    const ctx = context();
+    const combat = ctx.state.entities.get('entity-1')?.getComponent(Combat);
+    combat?.setAim({ x: 5, y: 5 });
+
+    expect(new StopHandler().handle({ type: 'stop', actorId: 'entity-1' }, ctx)).toBeNull();
+    expect(combat?.aimPoint).toBeNull();
+  });
+
   it('drops the heading so movement slows to a stop', () => {
     const ctx = context();
     const movement = ctx.state.entities.get('entity-1')?.getComponent(Movement);

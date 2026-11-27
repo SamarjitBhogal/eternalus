@@ -37,11 +37,17 @@ export type ProjectilePayloadData = {
   readonly ownerId: string;
   /** The owner's team at the moment of firing. */
   readonly team: Team;
+  /** The owner's level at the moment of firing; 1 for an owner with no `Progression`. */
+  readonly ownerLevel: number;
   /** Who the hit is credited to. */
   readonly source: ProjectileSource;
   /**
-   * The entity it was fired at, the only one whose walk-on outline it can hit; `null` for a shot
-   * fired in a direction, at no one.
+   * The entity it aims at, the only one whose walk-on and `Outline.shotsCross` polygons it can hit
+   * (a camp fire, HC-Q105), and the only body with no outline it can hit whose collider shots fly
+   * over (a forest camp's home, `Collider.canShotsFlyOver`): the locked target, or the body whose
+   * walk-on or `shotsCross` polygons the aim point was on (`AreaHitQuery.aimedBodyOf`, DEC-322
+   * (1)); `null` for a shot aimed at no body. The other solid polygons stop it whatever it aims at
+   * (`AreaHitQuery.shotPolygonsOf`, Q104-9).
    */
   readonly targetId: string | null;
   /** What it does where it lands. */

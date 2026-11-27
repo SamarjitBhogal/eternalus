@@ -5,6 +5,7 @@ import type { GameState } from '../state/GameState';
 import type { SlotReadiness } from '../state/SlotReadiness.types';
 import type { LaneObjective } from '../state/LaneStructures.types';
 import type { LineOfFireQuery } from '../state/LineOfFire.types';
+import type { ReachQuery } from '../state/ReachQuery';
 import type { PlayableTeam } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { SeededRandom } from '../utils/SeededRandom';
@@ -44,11 +45,14 @@ export type BotLegendControllerContent = {
   /** The cast rules a bot picks its ready abilities by (DEC-205). */
   readonly readiness: SlotReadiness;
   /**
-   * Whether the bot's shot would reach its enemy or objective now: a ranged bot holds to shoot only
-   * with a clear line (DEC-317). `Simulation` injects the match's one `LineOfFire`. Required, so a
-   * bot never holds behind a wall by omission.
+   * Whether the bot's shot would reach its enemy or objective now: a ranged bot holds a target
+   * and stands to shoot only with a clear line, and drops the target without one (DEC-317 and its
+   * addendum). `Simulation` injects the match's one `LineOfFire`. Required, so a bot never shoots
+   * into a wall by omission.
    */
   readonly lineOfFire: LineOfFireQuery;
+  /** The match's one aim rule (`Simulation`'s): whether the bot's attack is in reach. */
+  readonly reach: Pick<ReachQuery, 'isInReach'>;
 };
 
 /** One bot's decision in the making: what the tree reads, and what its nodes write. */

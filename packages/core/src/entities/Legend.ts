@@ -4,6 +4,7 @@ import { Progression } from '../components/Progression';
 import type { LegendDefinition } from '../content/legends/legends.types';
 import { attacksByMode } from '../content/units/attacksByMode';
 import { kitOf } from '../content/legends/specs/kitOf';
+import { primaryWeaponIdOf } from '../content/legends/specs/primaryWeaponIdOf';
 import type { LegendSpecDefinition } from '../content/legends/specs/legendSpecs.types';
 import { SpawnContextReader } from './SpawnContextReader';
 import { Unit } from './Unit';
@@ -77,20 +78,22 @@ export abstract class Legend extends Unit {
   }
 
   /**
-   * The default weapon's attack (05 §10, §12): a Legend's damage comes from its weapon.
+   * The start weapon's attack (05 §10, §12): a Legend's damage comes from its weapon. The weapon
+   * is its spec's (DEC-387), else its class's default.
    *
-   * @throws Error when the spawn context has no weapon source, or the weapon has no attacks.
+   * @throws Error when the spawn context has no weapon source, or the weapon has no attacks, or the
+   *   context names a spec that is not of this class (`specOf`).
    */
   protected override basicAttack(context: unknown): BasicAttack {
     const reader = new SpawnContextReader(this);
-    const weaponId =
-      reader.placed<LegendDefinition>(context).definition.defaultLoadout.primaryWeaponId;
+    const { definition } = reader.placed<LegendDefinition>(context);
+    const weaponId = primaryWeaponIdOf(this.specOf(definition, reader, context), definition);
     const weapons = reader.weapons(context);
     if (weapons === null) {
       throw new Error(`Legend "${this.id}" needs a weapon source to equip "${weaponId}".`);
     }
     const weapon = weapons.get(weaponId);
-    const attacks = attacksByMode(weapon.attacks);
+    const attacks = attacksByMode(weapon.attacks, definition.meleeReach);
     if (attacks === undefined) {
       throw new Error(`Legend "${this.id}": weapon "${weapon.id}" has no attacks.`);
     }

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { loadTurrets } from '../content/structures/loadTurrets';
 import { loadAbilities } from '../content/abilities/loadAbilities';
 import { CastValidator } from '../abilities/CastValidator';
 import { createDefaultAbilityRegistry } from '../abilities/defaultAbilityRegistry';
@@ -38,7 +39,6 @@ import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import type { MapObject } from '../content/maps/mapObjects.types';
 import type { MapFeature } from '../content/maps/maps.types';
 import { WorldObjectStore } from '../state/WorldObjectStore';
-import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
 
 /** The match's assist window, as `Simulation` passes it (DEC-346). */
 const ASSIST_WINDOW_TICKS = loadScoring(createDefaultGameConfig().tickRate).assistWindowTicks;
@@ -77,7 +77,6 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
-      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
@@ -122,7 +121,6 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory: newFactory(),
-      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
       assistWindowTicks: ASSIST_WINDOW_TICKS,
@@ -171,7 +169,6 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
-      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
       hordes: {
@@ -230,7 +227,6 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
-      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
@@ -270,7 +266,6 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
-      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
@@ -310,7 +305,6 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
-      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
@@ -351,7 +345,6 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
-      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
@@ -422,7 +415,6 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
-      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: {
         update: (directed) => {
@@ -451,6 +443,8 @@ describe('DefaultSystemPipeline', () => {
       },
       undefined,
       loadWeapons(createDefaultGameConfig().tickRate),
+      null,
+      loadTurrets(30).ammo,
     );
     const pipeline = new DefaultSystemPipeline({
       assistWindowTicks: ASSIST_WINDOW_TICKS,
@@ -464,7 +458,6 @@ describe('DefaultSystemPipeline', () => {
       }),
       state,
       factory,
-      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
     });
@@ -563,7 +556,6 @@ describe('DefaultSystemPipeline', () => {
         }),
         state,
         factory,
-        lineOfFire: SHIPPED_LINE_OF_FIRE,
         progression: PROGRESSION,
         director: IDLE_DIRECTOR,
         ...(hasLanes ? { hordes: { space: null, decide: [] } } : {}),
@@ -631,7 +623,6 @@ describe('DefaultSystemPipeline', () => {
         }),
         state,
         factory,
-        lineOfFire: SHIPPED_LINE_OF_FIRE,
         progression: PROGRESSION,
         director: IDLE_DIRECTOR,
         hordes: { space, decide: [] },
@@ -690,7 +681,6 @@ describe('DefaultSystemPipeline', () => {
         }),
         state: new GameState(createDefaultGameConfig(), 1),
         factory: newFactory(),
-        lineOfFire: SHIPPED_LINE_OF_FIRE,
         progression: PROGRESSION,
         director: IDLE_DIRECTOR,
         abilities: testAbilityRegistry([]), // no effect strategies, so no knock-back

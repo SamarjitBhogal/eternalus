@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
+import { applyCommand } from '../commands/applyCommand';
+import { createDefaultCommandHandlers } from '../commands/defaultCommandHandlers';
 import { Combat } from '../components/Combat';
+import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { RETREAT_STRUCTURES } from '../content/ai/botLaner';
 import { NORMAL_BOT } from '../content/ai/difficulties/normal';
+import { loadDefaultContent } from '../content/loadDefaultContent';
 import type { UnitAttack } from '../content/units/units.types';
+import { loadWeapons } from '../content/weapons/loadWeapons';
+import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { Entity } from '../entities/Entity';
+import { EntityFactory } from '../entities/EntityFactory';
 import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import type { CollisionQuery } from '../state/CollisionQuery.types';
@@ -18,7 +25,7 @@ import type { BotTurn } from './BotLegendController.types';
 import { BotLeaves } from './BotLeaves';
 import { NO_PATH } from './BotMovement.constants';
 import { Perception } from './perception/Perception';
-import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
+import { SHIPPED_LINE_OF_FIRE, SHIPPED_REACH } from '../state/__fixtures__/shippedLineOfFire';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
 
 const leaves = new BotLeaves({
@@ -26,6 +33,7 @@ const leaves = new BotLeaves({
   retreatTo: RETREAT_STRUCTURES,
   readiness: allReady,
   lineOfFire: SHIPPED_LINE_OF_FIRE,
+  reach: SHIPPED_REACH,
 });
 
 const RANGED: UnitAttack = {
@@ -100,19 +108,52 @@ const fightTurn = (attack: UnitAttack, collisions: CollisionQuery | null): BotTu
   };
 };
 
-const WALLED: CollisionQuery = { reach: () => 4 };
-const OPEN: CollisionQuery = { reach: (_from, _direction, distance) => distance };
+const WALLED: CollisionQuery = { reach: () => 4, shotReach: () => 4, lightsShot: () => false };
+const OPEN: CollisionQuery = {
+  reach: (_from, _direction, distance) => distance,
+  shotReach: (_from, _direction, distance) => distance,
+  lightsShot: () => false,
+};
 
 /** The headings the turn commanded; `(0, 0)` is a halt, which is how a bot holds. */
 const headings = (turn: BotTurn) =>
   turn.commands.flatMap((command) => (command.type === 'move' ? [command.direction] : []));
 
+/** The types of the commands the turn sent, in order. */
+const commandTypes = (turn: BotTurn) => turn.commands.map(({ type }) => type);
+
+/** The turn of a bot that already holds a lock on `targetId` (its memory says so). */
+const holdingLock = (turn: BotTurn, targetId: string): BotTurn => {
+  const memory = { ...turn.memory, targetId };
+  return { ...turn, memory, next: memory };
+};
+
 describe('BotLeaves.fight: line of fire for a ranged attack', () => {
-  it('moves toward the enemy instead of holding when a wall blocks the shot', () => {
+  it('moves toward the enemy instead of holding when a wall blocks the shot, and takes no lock', () => {
     const turn = fightTurn(RANGED, WALLED);
 
     expect(leaves.fight(turn)).toBe('running');
     expect(headings(turn)).toEqual([{ x: 5, y: 0 }]);
+    expect(commandTypes(turn)).toEqual(['move']);
+    expect(turn.next.targetId).toBeNull();
+  });
+
+  it('drops a lock it holds when a wall blocks the shot: a stop, then a move on (DEC-317 addendum)', () => {
+    const turn = holdingLock(fightTurn(RANGED, WALLED), 'enemy');
+
+    expect(leaves.fight(turn)).toBe('running');
+    expect(commandTypes(turn)).toEqual(['stop', 'move']);
+    expect(headings(turn)).toEqual([{ x: 5, y: 0 }]);
+    expect(turn.next.targetId).toBeNull();
+  });
+
+  it('keeps a lock it holds and holds still when the line is clear', () => {
+    const turn = holdingLock(fightTurn(RANGED, OPEN), 'enemy');
+
+    expect(leaves.fight(turn)).toBe('running');
+    expect(commandTypes(turn)).toEqual(['move']);
+    expect(headings(turn)).toEqual([{ x: 0, y: 0 }]);
+    expect(turn.next.targetId).toBe('enemy');
   });
 
   it('holds when the line is clear', () => {
@@ -125,7 +166,9 @@ describe('BotLeaves.fight: line of fire for a ranged attack', () => {
   it('holds when a wall touches the near edge of the enemy (the shot touches the enemy first)', () => {
     // The resolver stops CONTACT_EPSILON short of a wall at the shot's contact with the enemy.
     const touching: CollisionQuery = {
+      lightsShot: () => false,
       reach: (_from, _direction, distance) => distance - CONTACT_EPSILON,
+      shotReach: (_from, _direction, distance) => distance - CONTACT_EPSILON,
     };
     const turn = fightTurn(RANGED, touching);
 
@@ -173,6 +216,16 @@ describe('BotLeaves.siege: line of fire for a ranged attack (DEC-317)', () => {
 
     expect(leaves.siege(turn)).toBe('running');
     expect(headings(turn)).toEqual([{ x: 9, y: 0 }]);
+    expect(commandTypes(turn)).toEqual(['move']);
+  });
+
+  it('drops a lock it holds on the objective when a wall blocks the shot, and closes in (DEC-317 addendum)', () => {
+    const turn = holdingLock(siegeTurn(RANGED, WALLED), 'enemy');
+
+    expect(leaves.siege(turn)).toBe('running');
+    expect(commandTypes(turn)).toEqual(['stop', 'move']);
+    expect(headings(turn)).toEqual([{ x: 9, y: 0 }]);
+    expect(turn.next.targetId).toBeNull();
   });
 
   it('holds when the line is clear', () => {
@@ -180,5 +233,83 @@ describe('BotLeaves.siege: line of fire for a ranged attack (DEC-317)', () => {
 
     expect(leaves.siege(turn)).toBe('running');
     expect(headings(turn)).toEqual([{ x: 0, y: 0 }]);
+  });
+});
+
+/**
+ * A staff Magus bot at (40, 20) holding a lock on a training dummy 10 m east, in reach, with
+ * `collisions` between them. Its `fight` turn's commands go through the match's command handlers,
+ * as on the next tick of a match.
+ */
+const fightThroughHandlers = (collisions: CollisionQuery) => {
+  const units = loadDefaultContent(30);
+  const factory = new EntityFactory(
+    createDefaultEntityRegistry(),
+    units,
+    undefined,
+    loadWeapons(30),
+  );
+  const bot = factory.create('magus', 'magus', { position: { x: 40, y: 20 }, team: 'light' });
+  const enemy = factory.create('light-mob', 'training-dummy', {
+    position: { x: 50, y: 20 },
+    team: 'dark',
+  });
+  const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
+  space.begin(2);
+  space.add(bot.id, 40, 20);
+  space.add(enemy.id, 50, 20);
+  space.commit();
+  const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(BLOCKED_LANE_MAP), {
+    space,
+    paths: null,
+    collisions,
+  });
+  state.entities.add(bot);
+  state.entities.add(enemy);
+  expect(state.entities.setAttackTarget(bot.id, enemy.id)).toBe(true);
+  // No cast is due, so the turn holds only its attack and movement commands.
+  const memory = {
+    lane: 'lane-0',
+    isRetreating: false,
+    targetId: enemy.id,
+    nextCastTick: Number.POSITIVE_INFINITY,
+    isHalted: false,
+    ...NO_PATH,
+  };
+  const turn: BotTurn = {
+    ...fightTurn(RANGED, collisions),
+    state,
+    id: bot.id,
+    perception: new Perception(state),
+    memory,
+    next: memory,
+    enemy: enemy.id,
+  };
+  leaves.fight(turn);
+  const handlers = createDefaultCommandHandlers({
+    rover: { controllerId: 'rover', profileId: 'rover', memory: {} },
+    cast: allReady,
+  });
+  for (const command of turn.commands) {
+    applyCommand(command, handlers, { state, factory });
+  }
+  return { state, bot, enemy };
+};
+
+describe('BotLeaves.fight through the command handlers (DEC-317 addendum)', () => {
+  it('a bot whose enemy is behind a wall drops its lock and keeps moving, so it fires at nothing', () => {
+    const { state, bot } = fightThroughHandlers(WALLED);
+
+    // `CombatSystem` attacks only a unit with a target or an aim point: this bot has neither.
+    expect(state.entities.attackTargetOf(bot.id)).toBeNull();
+    expect(bot.getComponent(Combat).aimPoint).toBeNull();
+    expect(bot.getComponent(Movement).heading.x).toBeGreaterThan(0);
+  });
+
+  it('with a clear line it keeps its lock and stands to shoot', () => {
+    const { state, bot, enemy } = fightThroughHandlers(OPEN);
+
+    expect(state.entities.attackTargetOf(bot.id)).toBe(enemy.id);
+    expect(bot.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 });

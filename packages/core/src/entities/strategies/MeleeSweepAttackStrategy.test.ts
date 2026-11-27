@@ -1,0 +1,398 @@
+import { describe, expect, it } from 'vitest';
+
+import { Collider } from '../../components/Collider';
+import { Combat } from '../../components/Combat';
+import { Footprint } from '../../components/Footprint';
+import { Health } from '../../components/Health';
+import { MapObjectBody } from '../../components/MapObjectBody';
+import { Transform } from '../../components/Transform';
+import { createDefaultGameConfig } from '../../config/defaultGameConfig';
+import { loadDefaultContent } from '../../content/loadDefaultContent';
+import { MAP_OBJECT_DEFINITIONS } from '../../content/maps/mapObjectDefinitions';
+import type { SweepAttack } from '../../content/units/units.types';
+import { loadWeapons } from '../../content/weapons/loadWeapons';
+import type { DamageSource } from '../../state/GameEvents.types';
+import { AreaHitQuery } from '../../state/AreaHitQuery';
+import { GameState } from '../../state/GameState';
+import type { Team } from '../../teams/teams.types';
+import { IdGenerator } from '../../utils/IdGenerator';
+import { createDefaultEntityRegistry } from '../defaultEntityRegistry';
+import type { Entity } from '../Entity';
+import { EntityFactory } from '../EntityFactory';
+import type { AttackAim } from './AttackStrategy.types';
+import { MeleeSweepAttackStrategy } from './MeleeSweepAttackStrategy';
+
+const CONFIG = createDefaultGameConfig();
+const UNITS = loadDefaultContent(CONFIG.tickRate);
+const WEAPONS = loadWeapons(CONFIG.tickRate);
+/** Reach 3 m from the Warrior's body edge (radius 0.5): the sector reaches 3.5 m. */
+const SWEEP: SweepAttack = {
+  strategy: 'melee-sweep',
+  damage: 40,
+  reach: 3,
+  interval: 21,
+  arcDegrees: 90,
+};
+const EAST = { x: 1, y: 0 };
+
+/** A Warrior (light) at the origin; `spawn` adds dummies, `swing` sweeps along `direction`. */
+const setUp = () => {
+  const state = new GameState(CONFIG, 1);
+  const factory = new EntityFactory(
+    createDefaultEntityRegistry(),
+    {
+      has: (id) => id === MAP_OBJECT_DEFINITIONS.house.id || UNITS.has(id),
+      get: (id) =>
+        id === MAP_OBJECT_DEFINITIONS.house.id ? MAP_OBJECT_DEFINITIONS.house : UNITS.get(id),
+    },
+    new IdGenerator(0),
+    WEAPONS,
+  );
+  const attacker = factory.create('warrior', 'warrior', {
+    position: { x: 0, y: 0 },
+    team: 'light',
+  });
+  state.entities.add(attacker);
+  const spawn = (x: number, y: number, team: Team): Entity => {
+    const entity = factory.create('light-mob', 'training-dummy', { position: { x, y }, team });
+    state.entities.add(entity);
+    return entity;
+  };
+  const calls: string[][] = [];
+  const sources: DamageSource[] = [];
+  /** Swings with no target and no aim point along east, unless `aim` says otherwise. */
+  const swing = (aim: Partial<AttackAim> = {}) => {
+    new MeleeSweepAttackStrategy().attack(
+      attacker,
+      { targetId: null, point: null, direction: EAST, ...aim },
+      SWEEP,
+      {
+        state,
+        damage: {
+          apply: (_state, targetId, amount, source) => {
+            calls.push(['damage', targetId, String(amount)]);
+            sources.push(source);
+          },
+        },
+        hits: {
+          afterHit: (_state, attackerId, targetId, attack) =>
+            calls.push([
+              'after-hit',
+              attackerId,
+              targetId,
+              attack === SWEEP ? 'its attack' : 'other',
+            ]),
+        },
+        factory,
+        areas: new AreaHitQuery(),
+      },
+    );
+  };
+  return { state, factory, attacker, spawn, swing, calls, sources };
+};
+
+const damaged = (calls: string[][]): string[] =>
+  calls.filter(([kind]) => kind === 'damage').map(([, id]) => id ?? '');
+
+describe('MeleeSweepAttackStrategy', () => {
+  it('hits every enemy in front inside the reach, and nothing behind, beside, beyond or allied', () => {
+    const { spawn, swing, calls } = setUp();
+    const front = spawn(2, 0, 'dark');
+    const frontFar = spawn(3.8, 0, 'dark'); // 3.8 - 0.4 = 3.4 <= 3.5: its edge is inside
+    const beyond = spawn(4.2, 0, 'dark'); // 4.2 - 0.4 = 3.8 > 3.5
+    const behind = spawn(-2, 0, 'dark');
+    const beside = spawn(0, 2.5, 'dark');
+    const ally = spawn(2, 0.1, 'light');
+
+    swing();
+
+    expect(damaged(calls)).toEqual([front.id, frontFar.id]);
+    for (const left of [beyond, behind, beside, ally]) {
+      expect(damaged(calls)).not.toContain(left.id);
+    }
+  });
+
+  it('hits in id order, whatever order the bodies were added to the store in', () => {
+    const { state, factory, swing, calls } = setUp();
+    const make = (x: number) =>
+      factory.create('light-mob', 'training-dummy', { position: { x, y: 0 }, team: 'dark' });
+    const first = make(1.5);
+    const second = make(2.5);
+    state.entities.add(second);
+    state.entities.add(first);
+
+    swing();
+
+    expect(damaged(calls)).toEqual([first.id, second.id]);
+  });
+
+  it('hits a body just outside the arc whose circle touches the edge of the wedge', () => {
+    const { spawn, swing, calls } = setUp();
+    // The upper edge is the line y = x; (2, 2.4) is outside the angle, 0.28 m from the edge line.
+    const touching = spawn(2, 2.4, 'dark');
+    const clear = spawn(2, 3, 'dark');
+
+    swing();
+
+    expect(damaged(calls)).toEqual([touching.id]);
+    expect(damaged(calls)).not.toContain(clear.id);
+  });
+
+  it('hits a minion and a map object in one swing, damage first then on-hit for each, in id order', () => {
+    const { state, factory, attacker, spawn, swing, calls, sources } = setUp();
+    const minion = spawn(2, 0, 'dark');
+    const house = factory.create('obstacle', MAP_OBJECT_DEFINITIONS.house.id, {
+      position: { x: 20, y: 20 },
+    });
+    house.addComponent(
+      new MapObjectBody({
+        id: 'house',
+        kind: 'house',
+        isBlocking: true,
+        footprints: [
+          [
+            { x: 1, y: -1 },
+            { x: 3, y: -1 },
+            { x: 3, y: -3 },
+            { x: 1, y: -3 },
+          ],
+        ],
+      }),
+    );
+    state.entities.add(house);
+
+    swing();
+
+    // The house corner (1, -1) lies on the wedge's lower edge, 1.4 m away: inside.
+    expect(damaged(calls).sort()).toEqual([house.id, minion.id].sort());
+    expect(calls.filter(([kind]) => kind === 'after-hit').map(([, , id]) => id)).toEqual(
+      damaged(calls),
+    );
+    expect(calls.map(([kind]) => kind)).toEqual(['damage', 'after-hit', 'damage', 'after-hit']);
+    expect(calls.filter(([kind]) => kind === 'after-hit').map(([, , , attack]) => attack)).toEqual([
+      'its attack',
+      'its attack',
+    ]);
+    expect(sources[0]).toEqual({
+      attackerId: attacker.id,
+      kind: 'weapon',
+      definitionId: attacker.getComponent(Combat).weaponId,
+    });
+  });
+
+  it('hits a body with an outline when the attacker stands inside it, and not one whose outline is out of reach', () => {
+    const { spawn, swing, calls } = setUp();
+    const around = spawn(30, 30, 'dark'); // centre far away; its outline surrounds the attacker
+    around.addComponent(
+      new Footprint([
+        [
+          { x: -10, y: -10 },
+          { x: -5, y: -10 },
+          { x: -5, y: 10 },
+          { x: -10, y: 10 },
+        ],
+      ]),
+    );
+    const enclosing = spawn(0, 0, 'dark');
+    enclosing.addComponent(
+      new Footprint([
+        [
+          { x: -4, y: -4 },
+          { x: 4, y: -4 },
+          { x: 4, y: 4 },
+          { x: -4, y: 4 },
+        ],
+      ]),
+    );
+
+    swing({ targetId: null, direction: { x: -1, y: 0 } });
+
+    // The attacker stands inside `enclosing`; `around` lies behind a 5 m gap, beyond the 3.5 m reach.
+    expect(damaged(calls)).toEqual([enclosing.id]);
+  });
+
+  it('hits a wall whose edge crosses the wedge with no corner inside it', () => {
+    const { spawn, swing, calls } = setUp();
+    const wall = spawn(30, 30, 'dark');
+    wall.addComponent(
+      new Footprint([
+        [
+          { x: 2, y: -50 },
+          { x: 2.5, y: -50 },
+          { x: 2.5, y: 50 },
+          { x: 2, y: 50 },
+        ],
+      ]),
+    );
+
+    swing();
+
+    expect(damaged(calls)).toEqual([wall.id]);
+  });
+
+  it('passes over a walk-on outline it stands in (a palace floor) unless it is the locked target (DEC-322 (1))', () => {
+    const { spawn, swing, calls } = setUp();
+    const floor = spawn(30, 30, 'dark');
+    floor.addComponent(
+      new Footprint(
+        [
+          [
+            { x: -4, y: -4 },
+            { x: 4, y: -4 },
+            { x: 4, y: 4 },
+            { x: -4, y: 4 },
+          ],
+        ],
+        { isWalkOn: true },
+      ),
+    );
+
+    swing();
+    expect(calls).toEqual([]);
+
+    swing({ targetId: floor.id, direction: EAST });
+    expect(damaged(calls)).toEqual([floor.id]);
+  });
+
+  it('never hits a body that takes no damage now (an unbreakable gate), not even the locked target (DEC-317 addendum)', () => {
+    const { spawn, swing, calls } = setUp();
+    const gate = spawn(2, 0, 'dark');
+    gate.getComponent(Collider).setUnbreakable(true);
+
+    swing();
+    swing({ targetId: gate.id });
+    // No damage and no on-hit step (no knock-back on a gate it cannot hurt).
+    expect(calls).toEqual([]);
+
+    gate.getComponent(Collider).setUnbreakable(false);
+    swing();
+    expect(damaged(calls)).toEqual([gate.id]);
+  });
+
+  it('hits a walk-on outline it aims at from outside, not from inside it or with an enemy unit on the aim point (DEC-322 (1))', () => {
+    const { attacker, spawn, swing, calls } = setUp();
+    const floor = spawn(30, 30, 'dark');
+    floor.addComponent(
+      new Footprint(
+        [
+          [
+            { x: 2, y: -4 },
+            { x: 10, y: -4 },
+            { x: 10, y: 4 },
+            { x: 2, y: 4 },
+          ],
+        ],
+        { isWalkOn: true },
+      ),
+    );
+
+    swing({ point: { x: 6, y: 0 } });
+    expect(damaged(calls)).toEqual([floor.id]);
+
+    // A defender on the aim point takes the aim; it stands beyond the reach, so nothing is hit.
+    const defender = spawn(6, 0, 'dark');
+    swing({ point: { x: 6, y: 0 } });
+    expect(damaged(calls)).toEqual([floor.id]);
+    defender.getComponent(Health).applyDamage(1_000_000);
+
+    // Inside the floor a swing does not bring the roof down.
+    attacker.getComponent(Transform).moveTo({ x: 3, y: 0 });
+    swing({ point: { x: 6, y: 0 } });
+    expect(damaged(calls)).toEqual([floor.id]);
+  });
+
+  it('always hits the locked target, even one the wedge does not reach', () => {
+    const { spawn, swing, calls } = setUp();
+    const locked = spawn(0, 3, 'dark');
+    const wall = spawn(30, 30, 'dark');
+    wall.addComponent(
+      new Footprint([
+        [
+          { x: -3, y: -1 },
+          { x: -2, y: -1 },
+          { x: -2, y: 1 },
+          { x: -3, y: 1 },
+        ],
+      ]),
+    );
+
+    swing({ targetId: locked.id, direction: EAST });
+    expect(damaged(calls)).toEqual([locked.id]);
+
+    // A locked wall behind the attacker, by its outline.
+    swing({ targetId: wall.id, direction: EAST });
+    expect(damaged(calls)).toEqual([locked.id, wall.id]);
+  });
+
+  it('skips a dead body', () => {
+    const { spawn, swing, calls } = setUp();
+    const dead = spawn(2, 0, 'dark');
+    dead.getComponent(Health).applyDamage(1_000_000);
+
+    swing();
+
+    expect(calls).toEqual([]);
+  });
+
+  it('records the swing on the attacker for the swing visual', () => {
+    const { state, attacker, swing } = setUp();
+    state.advanceTick();
+
+    swing({ targetId: null, direction: { x: 0, y: 1 } });
+
+    expect(attacker.getComponent(Combat).lastSwing).toEqual({
+      atTick: 1,
+      direction: { x: 0, y: 1 },
+      radius: 3.5,
+      arcDegrees: 90,
+    });
+  });
+
+  it("records the bodies it hit as the attack's hits at the swing tick, so the AI sees whom it attacks (DEC-322 (2), DEC-333 (1))", () => {
+    const { state, attacker, spawn, swing } = setUp();
+    const front = spawn(2, 0, 'dark');
+    const frontFar = spawn(3.8, 0, 'dark');
+    spawn(-2, 0, 'dark');
+    const combat = attacker.getComponent(Combat);
+
+    swing({ direction: { x: 0, y: 1 } });
+    expect(combat.hitIds).toEqual([]);
+    for (let tick = 0; tick <= combat.attack.interval; tick += 1) state.advanceTick();
+    swing();
+
+    expect(combat.hitsAt(state.tick)).toEqual([front.id, frontFar.id]);
+    expect(combat.hitsUntilTick).toBe(state.tick + combat.attack.interval);
+    expect(state.entities.isAttacking(attacker.id, frontFar.id, state.tick)).toBe(true);
+  });
+
+  it('makes each body a locked sweep hit an attacked one, beside the lock, so the AI sees the whole sweep (DEC-322 (2))', () => {
+    const { state, attacker, spawn, swing } = setUp();
+    const locked = spawn(2, 0, 'dark');
+    const beside = spawn(2, 1, 'dark');
+    state.entities.setAttackTarget(attacker.id, locked.id);
+
+    swing({ targetId: locked.id });
+
+    expect(state.entities.victimsOf(attacker.id, state.tick)).toEqual([locked.id, beside.id]);
+    expect(state.entities.isAttacking(attacker.id, beside.id, state.tick)).toBe(true);
+  });
+
+  it('throws when handed an attack that is not a sweep, which a miswired registry would do', () => {
+    const { attacker, state, factory } = setUp();
+
+    expect(() => {
+      new MeleeSweepAttackStrategy().attack(
+        attacker,
+        { targetId: null, point: null, direction: EAST },
+        { strategy: 'melee', damage: 1, reach: 1, interval: 1 },
+        {
+          state,
+          damage: { apply: () => undefined },
+          hits: null,
+          factory,
+          areas: new AreaHitQuery(),
+        },
+      );
+    }).toThrow('cannot swing a "melee" attack');
+  });
+});

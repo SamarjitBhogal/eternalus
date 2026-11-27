@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { loadTurrets } from '../content/structures/loadTurrets';
+import { Collider } from '../components/Collider';
+import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { EffectShape } from '../content/abilities/AbilityDefinition.types';
@@ -8,16 +11,25 @@ import type { MapObject } from '../content/maps/mapObjects.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
+import type { AreaAim } from '../state/AreaHitQuery.types';
 import { GameState } from '../state/GameState';
 import { WorldObjectStore } from '../state/WorldObjectStore';
 import type { Team } from '../teams/teams.types';
-import type { Vec2 } from '../utils/geometry.types';
+import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { casterState, unitsWithWarriorKit } from './__fixtures__/casterState';
 import { testAbilityRegistry } from './__fixtures__/fakeAbilities';
 import { TargetQuery } from './TargetQuery';
+import { AreaHitQuery } from '../state/AreaHitQuery';
 
 const DISC = { kind: 'circle', radius: 5 } as const;
 const ON_CASTER = { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } };
+
+const square = (x: number, y: number, size: number): Polygon => [
+  { x, y },
+  { x: x + size, y },
+  { x: x + size, y: y + size },
+  { x, y: y + size },
+];
 
 const setUp = () => {
   const { state, factory, caster } = casterState();
@@ -26,7 +38,7 @@ const setUp = () => {
     state.entities.add(entity);
     return entity;
   };
-  const query = new TargetQuery(testAbilityRegistry([]));
+  const query = new TargetQuery(testAbilityRegistry([]), new AreaHitQuery());
   return { state, caster, add, query };
 };
 
@@ -60,6 +72,8 @@ const withHouse = (house: MapObject) => {
     },
     undefined,
     loadWeapons(30),
+    null,
+    loadTurrets(30).ammo,
   );
   const state = new GameState(createDefaultGameConfig(), 1);
   const caster = factory.create('warrior', 'warrior', { position: { x: 0, y: 0 }, team: 'light' });
@@ -71,7 +85,7 @@ const withHouse = (house: MapObject) => {
     definitions: MAP_OBJECT_DEFINITIONS,
   });
   const houseId = world.snapshot()[0]?.entityId;
-  const query = new TargetQuery(testAbilityRegistry([]));
+  const query = new TargetQuery(testAbilityRegistry([]), new AreaHitQuery());
   const hits = (shape: EffectShape, from: Vec2, to: Vec2) =>
     query.find(state, caster.id, shape, { from, to }, { team: 'enemies' });
   return { houseId, hits };
@@ -133,5 +147,28 @@ describe('TargetQuery', () => {
     expect(hits(path(3), { x: 0, y: -11 }, { x: 20, y: -11 })).toEqual([]);
     // Straight through the house, both ends and every corner far from the line.
     expect(hits(path(1), { x: 5, y: -30 }, { x: 5, y: 30 })).toEqual([houseId]);
+  });
+
+  it('tests a structure footprint by its outline, not its circle (one outline rule, DEC-322 (3))', () => {
+    const { state, caster, add, query } = setUp();
+    const fort = add('light-mob', 'training-dummy', 'dark', { x: 30, y: 30 });
+    fort.addComponent(new Footprint([square(3, -1, 2)]));
+
+    expect(query.find(state, caster.id, DISC, ON_CASTER, { team: 'enemies' })).toEqual([fort.id]);
+  });
+
+  it('hits a walk-on floor only when the cast aims at it, and never a body that takes no damage now (DEC-322)', () => {
+    const { state, caster, add, query } = setUp();
+    const floor = add('light-mob', 'training-dummy', 'dark', { x: 30, y: 30 });
+    floor.addComponent(new Footprint([square(2, -4, 8)], { isWalkOn: true }));
+    const gate = add('light-mob', 'training-dummy', 'dark', { x: -1, y: 0 });
+    gate.getComponent(Collider).setUnbreakable(true);
+    const find = (aim?: AreaAim) =>
+      query.find(state, caster.id, DISC, ON_CASTER, { team: 'enemies' }, aim);
+
+    expect(find()).toEqual([]);
+    expect(find({ targetId: null, point: { x: 6, y: 0 } })).toEqual([floor.id]);
+    expect(find({ targetId: floor.id, point: null })).toEqual([floor.id]);
+    expect(find({ targetId: gate.id, point: null })).toEqual([]);
   });
 });

@@ -19,7 +19,6 @@ import { SpaceIndex } from '../physics/SpaceIndex';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { GameState } from '../state/GameState';
-import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
 import { DefaultSystemPipeline } from './DefaultSystemPipeline';
 
 vi.mock('../combat/defaultDamageSteps', async (importOriginal) => {
@@ -48,7 +47,6 @@ describe('DefaultSystemPipeline minion strength wiring', () => {
       }),
       state,
       factory: new EntityFactory(createDefaultEntityRegistry(), units),
-      lineOfFire: SHIPPED_LINE_OF_FIRE,
       progression: { units, curves, xpSources: XP_SOURCES, ultimateCharge: ULTIMATE_CHARGE },
       // Strength wiring is the subject here, not the match: no director moves the phase.
       director: { update: () => undefined },

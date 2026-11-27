@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { abilityMatch } from './abilities/__fixtures__/abilityMatch';
 import { TEST_KIT, unitsWithWarriorKit } from './abilities/__fixtures__/casterState';
-import { statusOnHitEffects, testAbilityRegistry } from './abilities/__fixtures__/fakeAbilities';
+import { shippedOnHitEffects, testAbilityRegistry } from './abilities/__fixtures__/fakeAbilities';
 import { RecordingEffect } from './abilities/__fixtures__/RecordingEffect';
 import { stepPastCountdown } from './abilities/__fixtures__/stepPastCountdown';
 import type { Command } from './commands/Command.types';
@@ -49,7 +49,7 @@ const castingMatch = (seed = 3) => {
     seed,
     logger: new NullLogger(),
     content: unitsWithWarriorKit(TEST_KIT),
-    abilities: testAbilityRegistry([new RecordingEffect('fake-strike'), ...statusOnHitEffects()]),
+    abilities: testAbilityRegistry([new RecordingEffect('fake-strike'), ...shippedOnHitEffects()]),
   });
   const events: string[] = [];
   sim.on('ability-cast', ({ casterId, abilityId }) => events.push(`cast ${casterId} ${abilityId}`));

@@ -8,12 +8,14 @@ import type { DuelArenaRules, DuelProgressionRules } from './duelRules.types';
 const DUEL_ARENA: DuelArenaRules = {
   spawnsMobs: false,
   hasCaptureObjectives: false,
-  // DEC-348: "no towers, gates, camps or Strongholds". Not `cathedral`: the gem stays.
+  // DEC-348: "no towers, gates, camps or Strongholds"; wall turrets go with their tower (DEC-348
+  // (1)). Not `cathedral`: the gem stays.
   omittedStructureIds: [
     'stronghold',
     'spawner-tower',
     'buff-tower',
     'gate',
+    'turret',
     'forest-camp-light',
     'forest-camp-medium',
     'forest-camp-heavy',

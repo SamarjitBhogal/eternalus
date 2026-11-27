@@ -59,7 +59,12 @@ const HOUSE: MapObject = {
   ],
 };
 const HOUSE_STATES: readonly MapObjectSnapshot[] = [
-  { id: 'house', entityId: HOUSE_ENTITY, health: { current: 100, max: 100 }, isDestroyed: false },
+  {
+    id: 'house',
+    entityId: HOUSE_ENTITY,
+    health: { current: 100, max: 100 },
+    condition: 'standing',
+  },
 ];
 
 /** A living mob of `team` at `at`, as a snapshot shows it. */
@@ -78,6 +83,7 @@ const unit = (id: string, team: 'light' | 'dark', at: Vec2): EntitySnapshot => (
   statuses: null,
   projectile: null,
   gem: null,
+  swing: null,
 });
 /** The player's Legend, away from the point the camera looks at. */
 const PLAYER: EntitySnapshot = { ...unit(ACTOR, 'light', OPEN_GROUND), family: 'legend' };
@@ -307,6 +313,6 @@ describe('MatchViewControls', () => {
 
     controls.setPointerClaimed(false);
     commands.apply(ACTOR, { entities: [], mapObjects: HOUSE_STATES });
-    expect(sent()).toEqual([{ type: 'attack-target', actorId: ACTOR, targetId: HOUSE_ENTITY }]);
+    expect(sent()).toEqual([{ type: 'attack-aim', actorId: ACTOR, aim: IN_CATHEDRAL }]);
   });
 });

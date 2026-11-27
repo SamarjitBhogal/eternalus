@@ -18,6 +18,7 @@ const entity = (id: string, x: number, isGem: boolean): EntitySnapshot => ({
   statuses: null,
   projectile: null,
   gem: isGem ? { holder: 'neutral', glowTicksLeft: 0, glowHits: 0, ticksSinceHit: null } : null,
+  swing: null,
 });
 
 describe('findGemAt', () => {

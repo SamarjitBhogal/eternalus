@@ -1,5 +1,6 @@
 import type { AiMemory, ControllerId } from '../content/ai/ai.types';
 import type { LegendSpecDefinition } from '../content/legends/specs/legendSpecs.types';
+import type { TurretAmmoDefinition } from '../content/structures/turrets.types';
 import type { WeaponDefinition } from '../content/weapons/weapons.types';
 import type { EntityDefinitionBase } from '../content/EntityDefinition.types';
 import type { Team } from '../teams/teams.types';
@@ -44,7 +45,10 @@ export type Placement = {
   readonly facing?: Vec2;
   /** The ground a zone covers, as polygons in world units (zones only, `ZoneArea`). */
   readonly area?: readonly Polygon[];
-  /** The Legend spec whose kit a Legend equips (`RosterSlot.specId`); absent = its class's kit. */
+  /**
+   * The Legend spec whose kit and start weapon a Legend equips (`RosterSlot.specId`); absent = its
+   * class's.
+   */
   readonly specId?: string;
 };
 
@@ -60,7 +64,8 @@ export interface WeaponSource {
 }
 
 /**
- * Where a Legend finds the spec a `Placement.specId` names, for its kit (ADR 0026 decision 1).
+ * Where a Legend finds the spec a `Placement.specId` names, for its kit and start weapon (ADR 0026
+ * decision 1; DEC-387).
  * A `ContentCatalogue<LegendSpecDefinition>` satisfies it.
  */
 export interface LegendSpecSource {
@@ -68,4 +73,15 @@ export interface LegendSpecSource {
   has(id: string): boolean;
   /** The spec with the id `id`. */
   get(id: string): LegendSpecDefinition;
+}
+
+/**
+ * Where a turret finds the ammo its definition names (architecture 07 §5). A
+ * `ContentCatalogue<TurretAmmoDefinition>` (`loadTurrets().ammo`) satisfies it.
+ */
+export interface TurretAmmoSource {
+  /** Whether an ammo has the id `id`. */
+  has(id: string): boolean;
+  /** The ammo with the id `id`. */
+  get(id: string): TurretAmmoDefinition;
 }

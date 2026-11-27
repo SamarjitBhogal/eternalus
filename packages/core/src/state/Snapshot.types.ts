@@ -58,14 +58,55 @@ export type EntitySnapshot = {
   readonly projectile: ProjectileSnapshot | null;
   /** The Cathedral gem's state (`CathedralGemState`, DEC-291, DEC-292); `null` for the rest. */
   readonly gem: GemSnapshot | null;
+  /**
+   * The unit's latest melee sweep (`Combat.lastSwing`, DEC-304), so the client can draw a fading
+   * wedge for a few frames; `null` when it has made none. Display only.
+   */
+  readonly swing: SwingSnapshot | null;
+};
+
+/** A melee sweep as the client sees it. */
+export type SwingSnapshot = {
+  /** The tick the swing was made. */
+  readonly atTick: number;
+  /** Unit vector the wedge points along. */
+  readonly direction: { readonly x: number; readonly y: number };
+  /** How far the wedge reaches from the attacker's centre, metres. */
+  readonly radius: number;
+  /** The wedge's angle in degrees. */
+  readonly arcDegrees: number;
 };
 
 /** A projectile's flight as the client sees it. */
 export type ProjectileSnapshot = {
-  /** `Movement.speed` over `Movement.maxSpeed`: 1 at full speed, 0 when stopped. */
-  readonly speedShare: number;
+  /**
+   * How far it has flown, as a share of its `range`: 0 at its origin, 1 at its end (an ended
+   * shot). The client draws an arrow's arc along it (DEC-322 (2)).
+   */
+  readonly flownShare: number;
+  /**
+   * Whether it is an arc shot (`ProjectileFlight.isArc`, DEC-342): the client draws it coming from
+   * above, with a shadow on its mark.
+   */
+  readonly isArc: boolean;
+  /**
+   * Metres from its origin to where it stops: the definition's range, or the distance to its aim
+   * point for an arc shot (`ProjectileFlight.range`). The arc's height scales with it.
+   */
+  readonly range: number;
+  /**
+   * The radius in metres of the blast where it lands (`ProjectileLaunch.splash`, DEC-342); `null`
+   * for a shot with no blast. The client draws its burst this wide.
+   */
+  readonly blastRadius: number | null;
   /** How far through its ending it is, 0 to 1 (`ProjectileFlight.endingShare`); `null` while it flies. */
   readonly ending: number | null;
+  /**
+   * Whether the shot is lit: it flew over a shape flagged `canLightShots` (a lava river, a camp
+   * fire) and burns what it lands on (`ProjectileFlight.isLit`, HC-Q89, DEC-345). The client draws
+   * it in a fire colour.
+   */
+  readonly isLit: boolean;
 };
 
 /** One active status as the client sees it: its id and how far through its time it is. */

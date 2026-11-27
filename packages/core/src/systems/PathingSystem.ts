@@ -15,6 +15,7 @@ import type { LaneFlowFields } from '../map/LaneFlowFields';
 import type { WorldMap } from '../map/WorldMap';
 import { formationSlot } from '../state/formationSlot';
 import { guardOutward } from '../state/guardOutward';
+import type { ReachQuery } from '../state/ReachQuery';
 import type { SpaceQuery } from '../state/SpaceQuery.types';
 import { isPointInRect } from '../utils/geometry';
 import type { Rect, Vec2 } from '../utils/geometry.types';
@@ -57,6 +58,7 @@ export class PathingSystem implements System {
    * @param strategies - Every movement strategy by id; a mob's `Movement.strategyId` picks one.
    * @param formations - Every formation, by id.
    * @param slotArrivalRadius - A mob this close to its formation slot is there.
+   * @param reach - The match's one aim rule (`Simulation`'s): the point a chase heads for.
    * @param world - The lane flow fields and the fort boxes (`PathingWorld`); none of either by
    *   default.
    */
@@ -64,6 +66,7 @@ export class PathingSystem implements System {
     private readonly strategies: StrategyRegistry['movement'],
     private readonly formations: Readonly<Record<string, FormationDefinition>>,
     private readonly slotArrivalRadius: number,
+    private readonly reach: Pick<ReachQuery, 'aimPointOf'>,
     { flowFields = null, forts = [] }: PathingWorld = {},
   ) {
     this.flowFields = flowFields;
@@ -73,14 +76,14 @@ export class PathingSystem implements System {
   /**
    * Points `target` at the unit `memberId` attacks (18 §5.2, engaging) and returns the distance
    * from it at which the target is in reach; `undefined` when it attacks nothing. The target point
-   * is `EntityStore.aimPointOf`'s, the one `isInReach` measures to: on the outline of a target that
-   * has one (a map object; a lane tower's fort or the Stronghold's palace, DEC-185), or the unit's
-   * own position when it stands inside that outline, so it holds there (DEC-234), else its
-   * centre. For an outline, and for a unit standing inside a fort's box, `depth` is how far the
-   * blocked nav ground under the target reaches back toward the attacker: the grid blocks a fort's
-   * whole court, but its walls stop no one at the doorways (owner 2026-11-04: units may enter
-   * towers). Otherwise `depth` is 0. A stuck chase's detour waypoint (DEC-193) replaces the
-   * target, reached like a slot.
+   * is `ReachQuery.aimPointOf`'s, the one `isInReach` measures to: on the outline of a target that
+   * has one (a map object; a lane tower's fort or the Stronghold's outer walls and throne,
+   * DEC-185), or the unit's own position when it stands inside that outline, so it holds there
+   * (DEC-234), else its centre. For an outline, and for a unit standing inside a fort's box,
+   * `depth` is how far the blocked nav ground under the target reaches back toward the attacker:
+   * the grid blocks a fort's whole court, but its walls stop no one at the doorways (owner
+   * 2026-11-04: units may enter towers). Otherwise `depth` is 0. A stuck chase's detour waypoint
+   * (DEC-193) replaces the target, reached like a slot.
    */
   private chase(state: SystemContext['state'], memberId: string): number | undefined {
     const attacker = state.entities.get(memberId);
@@ -99,7 +102,7 @@ export class PathingSystem implements System {
       this.target.y = way.y;
       return this.slotArrivalRadius;
     }
-    const aimed = state.entities.aimPointOf(targetId, self.position, this.target);
+    const aimed = this.reach.aimPointOf(state.entities, targetId, self.position, this.target);
     if (aimed === null) {
       return undefined;
     }
@@ -116,8 +119,8 @@ export class PathingSystem implements System {
   }
 
   /**
-   * Whether `point` lies in a fort box (`PathingWorld.forts`: a lane tower's fort, the palace,
-   * DEC-217 (16)).
+   * Whether `point` lies in a fort box (`PathingWorld.forts`: a lane tower's fort, the box round
+   * the Stronghold's outer walls and throne, DEC-217 (16)).
    */
   private isInsideFort(point: Vec2): boolean {
     return this.forts.some((box) => isPointInRect(point, box));
