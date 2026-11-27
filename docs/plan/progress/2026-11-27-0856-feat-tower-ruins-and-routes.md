@@ -24,4 +24,9 @@ the name order stays the time order.
   passed (2269)", server "Tests 163 passed (163)", "Documentation check passed."
   (`eternalus-agent-work/map-stack-2026-11-27/check-98-merge-f801af9a.log`). Then
   `prettier --check` and `npm run docs:check` with this entry.
+  Then merged phase/3 at `79a60dae` (#149, rule 7 frame latency; docs only). Only the owner
+  decisions log conflicted: both 2026-11-22 batches are kept, the higher number first (DEC-328,
+  then DEC-325). #149 alone changed the DEC-299 row, so the merge takes its version. No code
+  changed, so the full check above still covers the code; `prettier --check` and
+  `npm run docs:check` passed on the merged docs.
 - Next step: push; then merge this head into #122, #152 and #154.

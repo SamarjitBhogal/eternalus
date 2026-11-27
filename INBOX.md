@@ -3339,22 +3339,6 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       `CaptureHoldRule` takes it instead of the whole `GameState`, and the capture-point lookups
       of `CaptureHoldRule`, `CaptureProgressBoundsInvariant` and `CaptureSystem` move to it. Close
       this item when its PR merges.
-- [ ] **Rule 7 frame latency (DEC-299 (3))** — Owner: sholtzman, after PR #138 is pushed; it does
-      not block that merge. The match-start overlay's performance runs (ui-enhancements-plan §2
-      rule 7) read a frame-interval p95 of 16.7 to 16.8 ms and a maximum of 16.8 ms in every
-      condition, the controls with every enhancement off included, with no frame over 33 ms; the
-      12 rule-7 re-runs on the DEC-299 (2) tree read the same. One diagnostic re-run on that tree
-      (the ui-off control at CPU ×4, `perf-lt.mjs`) read one 33.3 ms interval, one dropped frame
-      (`over33` counts only intervals over 33.4 ms). The owner passed rule 7 and asked: "we
-      should find out why theres latency whenever we have time". Find why the intervals read
-      16.8 ms and not 16.7 (the browser's frame clock, the headless display, the measuring script
-      or the game) and record the answer in `docs/plan/PROGRESS.md` and here. With it: at CPU ×4
-      the re-runs count three long tasks of about 58 ms per run, all during page load before the
-      measured frames, on the commit before DEC-299 too and with every enhancement off, where the
-      first runs counted none with the same script; find what differs. The runs:
-      `eternalus-agent-work/game-loop-plan/ue-shots-2026-11-20/` (`run.sh` perf_run, `perf.mjs`,
-      `report.py`; the re-run: `perf-dec299.sh`, `perf-lt.mjs`, `perf-dec299/NOTE.md`; the
-      diagnostic runs: `perf-dec299-lt/`, `perf-33bcdcf6-lt/`).
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
@@ -3610,6 +3594,37 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   PR #84): you chose (a), accept as built. The cache holds no grid version; a way that opens while
   a bot walks a cached leg is found at most one leg late. Doc 11 §6 states it. Decision: DEC-373.
 
+- 2026-11-26 — **Your answers on HC-B44, the three follow-ups to the frame checks**
+  (`docs/rule7-frame-latency`, PR #149): recorded as DEC-368. (1) "None, but do not count the
+  first frame after a start or a pause, and allow one frame of up to 50 ms when the terrain
+  changes". (2) "Yes, round first and pick the limit from the page". (3) "Write "two 60 Hz
+  frames"". `PerfMonitor` is not built, so the change is docs only. These are your design docs:
+  architecture 08 §9 (new "Two 60 Hz frames" and "Missed-frame count" terms; `PerfMonitor` does
+  not record the skipped interval, rounds each interval and takes the first edge from
+  `crossOriginIsolated`); phase 6 sprint 6.1 (the oldest-laptop gate, the bridge test); phase 3
+  sprint 3.2 (terrain gates: at most one missed frame); and pointers to the count in the plan
+  README, phase 1 and phase 6. Five points are not your words, so DEC-368 records them as
+  readings: the zero limit is now yours, not a `Recommendation:` number; a pause also covers a
+  hidden tab; a terrain change is a destruction (a structure, an obstacle or a felled tree), not
+  a gate that opens or closes, because gates open many times a minute; the 50 ms allowance is one
+  frame for each terrain change; "two 60 Hz frames" is 33.6 ms in the game.
+
+- 2026-11-25 — **Your pick on HC-B28, frame checks** (`docs/rule7-frame-latency`, PR #149):
+  recorded as DEC-336. "Fix all three: bucket edges at one frame, 25 ms (missed) and 50 ms; one
+  definition in 08 §9; the gates count missed frames". `PerfMonitor` is not built, so the change
+  is docs only. These are your design docs: architecture 08 §9 (the two definitions, the new
+  histogram edges, the frame-time budget row), architecture 15 §6 (points to the new edges), the
+  plan README §5 "Render frame rate" row, phase 1 (sprint 1.4: the success metric and the
+  `PerfOverlay` task; the phase table), phase 6 (sprint 6.1 success metric and the phase table)
+  and rule 7 of the UI enhancements plan (a pointer to 08 §9). Seven points are not your words,
+  so DEC-336 records them as defaults: the gates keep the median and add "no missed frame"; the
+  limit is zero missed frames in the 60 s segment (a `Recommendation:` number); in the game "one
+  60 Hz frame" means at most 16.8 ms as Chrome reads it, because the game page is not
+  cross-origin isolated; the tick and render histograms of architecture 15 keep their buckets;
+  rule 7 points to 08 §9; a bucket holds the frames up to and including its edge; the overlay
+  reads the median from the first bucket. The critic's three follow-ups are card HC-B44 (open,
+  above) (answered 2026-11-26: DEC-368).
+
 - 2026-11-23 — **Your answers on the five Cathedral gem cards (DEC-346)** (`feat/cathedral-gem-hittable`,
   PR #132): recorded as DEC-346. The gem blocks movement (an unbreakable plinth under it) and a
   touch no longer strikes; a death by the gem counts for the victim's last enemy damager within the
@@ -3618,6 +3633,32 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   gem: four rules DEC-292 leaves open", "split the Cathedral interior builder" and "one shared
   'never damaged' structure entry". Decision: DEC-346. The Duel design (circle strike, laser) is a
   follow-up PR once the six "GEM duel" cards are answered; your camp question is a new item.
+
+- 2026-11-22 — **Your pick on HC-B22, how rule 7 measures performance** (`docs/rule7-frame-latency`):
+  recorded as DEC-328. Option A: rule 7 is now "p95 within one 60 Hz frame, and no more missed
+  frames (intervals over 25 ms) with the enhancements on than in the control with them off". The
+  test page is served cross-origin isolated, so the 16.8 ms pass of DEC-299 (3) ends. The other
+  frame-time targets now read "one 60 Hz frame": architecture 08 §9, the plan README §5, phase 1
+  and phase 6. These are your design docs. Three points are not your words, so DEC-328 records
+  them as defaults: missed frames are compared at the same CPU speed, over the same number of runs
+  for each condition, with on and off runs alternating; "one 60 Hz frame" means ≤ 16.67 ms; the
+  page is isolated with the COOP and COEP headers.
+
+- 2026-11-21 — **Rule 7 frame latency, your question on DEC-299 (3)** (`docs/rule7-frame-latency`):
+  the 16.8 ms readings are not latency. Chrome rounds the timestamps of a page that is not
+  cross-origin isolated to 0.1 ms, with jitter, so a 60 Hz frame (16.67 ms) reads 16.5 to 16.8 ms.
+  A blank page with no game code reads the same spread as the HUD test page, and the mean interval
+  is 16.666 ms on both (one HUD run 16.71: one missed frame); a cross-origin-isolated blank page
+  (0.005 ms steps) reads 16.66 to 16.67 ms. Two of 40 runs at CPU ×4 missed one frame (33 ms), one
+  of them on the quiet machine in the control with every enhancement off: not explained. The three
+  long tasks at CPU ×4 are the test page loading, before any measured frame, so they do not touch
+  rule 7. Each is 11 to 14 ms at full speed and about 50 ms at ×4, the long-task limit, so a run
+  counts 2 or 3 of them (49.2 and 49.9 ms were not counted). Why the first runs counted none is not
+  found: replayed today in their order (warm-up on the HUD soak scene first), runs count 0, 1 or 2
+  (9 runs, one 0), against 2 or 3 when warmed up on the countdown scene, so the order changes the
+  count; how is not known. In the UI enhancements plan, rule 7 (your text) now gives the reason in place
+  of the pointer to this request. HC-B22 asks whether rule 7 should count missed frames. Details:
+  `docs/plan/PROGRESS.md`, 2026-11-21.
 
 - 2026-11-21 — **Your picks on the Cathedral gem (DEC-291, DEC-292)** (`feat/cathedral-gem-hittable`,
   PR #132, which now also carries PR #124): recorded as DEC-291 and DEC-292. The gem keeps its
