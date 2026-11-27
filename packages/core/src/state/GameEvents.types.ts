@@ -55,6 +55,11 @@ export type GameEventMap = {
     readonly absorbed: number;
     readonly source: DamageSource;
   };
+  /**
+   * A hit that a damage step took to 0 (an unbreakable structure, friendly fire): nothing reached
+   * `Health`. The Cathedral gem answers it (DEC-292).
+   */
+  readonly 'damage-blocked': { readonly targetId: EntityId; readonly source: DamageSource };
   readonly 'entity-died': { readonly entityId: EntityId; readonly killer: DamageSource };
   readonly 'structure-destroyed': {
     readonly entityId: EntityId;
@@ -71,7 +76,8 @@ export type GameEventMap = {
   /**
    * A camp's whole group is dead (18 §7.1); the group comes back after its respawn time.
    * `killerId` dealt the last mob's lethal hit and `team` is its team; both `null` when no killer
-   * is known (a death outside the damage pipeline, or a killer that left the store).
+   * is known (a death outside the damage pipeline, or a killer that left the store and is not a
+   * Legend waiting to respawn).
    */
   readonly 'camp-cleared': {
     readonly entityId: EntityId;

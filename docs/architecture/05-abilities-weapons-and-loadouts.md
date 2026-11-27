@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-24
+last-reviewed: 2026-11-26
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -570,9 +570,13 @@ strength-by-distance curve), target statuses (`sundered`, `marked`, `hexed`), th
 `damageMultipliers` keyed by the attacker's `damageClass`
 ([07 §4](07-structures-obstacles-and-destructibles.md#4-gates)), `Collider.isUnbreakable`
 (rejects), then `Health.applyDamage`. `DeathResolver` turns an overflow into `entity-died {
-entityId, killer: DamageSource }` and records the cause for `DeathSystem` (rule B). That is why
-every ability, weapon, status tick and gate fire names a `DamageSource`: "extra effective against
-Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `CombatSystem`.
+entityId, killer: DamageSource }` and records the cause for `DeathSystem` (rule B). A death by
+attacker-less damage that credits a killer (the Cathedral gem's statuses, DEC-346) names the
+victim's last enemy damager inside the assist window as the attacker, keeping the gem's source kind
+and id; it is decided there, once, so every reader of `entity-died` sees the same killer. Only a
+hit in the victim's current life counts: a respawn or a Duel round reset forgets the last one.
+That is why every ability, weapon, status tick and gate fire names a `DamageSource`: "extra
+effective against Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `CombatSystem`.
 
 **Implementation status (sprint 2.2, PR #34).** `DamagePipeline.apply(state, targetId, amount,
 source)` is built and is the only caller of `Health.applyDamage`. Each modifier above is a
@@ -582,12 +586,15 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 which gives the same result as §9's late check; 07 §3), `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
 `INBOX.md`), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8), `MinionStrengthStep`
 (the minion strength-by-distance curve, its base-stat point moved toward the enemy for each lane
-tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16) and
+tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16; `createDefaultDamageSteps(progressOf)`
+injects the lane flow fields' progress, gate to gate by path cost, DEC-280, see 18's status note) and
 `BossMinionDamageStep` (a boss takes only its share of a lane minion's hit, balancing.md; the
 shares are `BOSS_MINION_DAMAGE_TAKEN` in `content/mobs/minionModifiers.ts`). Interim differences:
 no `DamageType` yet (nothing reads it; it joins `DamageHit` and
 `apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
-`DeathResolver` is not a separate class yet. `BossMinionDamageStep` stands in for the target's
+`DeathResolver` is not a separate class yet. The gem's kill credit is `KillCredit`, which the
+pipeline asks on each landed hit (it keeps the `LastEnemyHit` component) and before
+`entity-died`. `BossMinionDamageStep` stands in for the target's
 `damageMultipliers` keyed by the attacker's `damageClass` above: mobs have neither field yet, so
 the step keys its own table by boss id and finds a lane minion by horde membership; a
 `damageClass` on lane minions and `damageMultipliers` on the boss replace it. `GameState.killerOf` keeps this tick's killers, so
@@ -943,8 +950,8 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   pays `teamKills` instead) (`cause: 'camp-cleared'`), one tick after the last mob's kill XP, and
   is owed like a kill when its Legend waits to respawn; `level-matches-xp` checks that the camp is
   a guard home with none of its own posts holding a guard (checkpoint-defender posts on the same
-  home do not count). Interim: the bonus goes only to the Legend that killed the camp's last mob,
-  until the owner says who "the clearing Legends" are (`INBOX.md` "Camp rewards"). Not built yet:
+  home do not count). The bonus goes only to the Legend that killed the camp's last mob, and to
+  nobody when a minion or turret lands that hit (DEC-375). Not built yet:
   the share radius and damage bias, assists, checkpoint XP, the Eternal's flat 5 levels (DEC-237)
   (their systems do not exist), basic-attack and ability potency per level, `upgradeIds` and the
   ultimate charge rules. Numbers are

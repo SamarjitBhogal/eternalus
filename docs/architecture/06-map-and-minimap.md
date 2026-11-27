@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-07
+last-reviewed: 2026-11-25
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -250,6 +250,12 @@ lanes cross. Shapes are fractions of the world size, so a preset scales with the
 lengths stay absolute, so a world too small for them is rejected. Ground that would block a
 configured lane fails validation naming the lane and the terrain instead of drawing the wrong map.
 
+Biome ground and tree styles are selected through `BIOME_PROFILES` and keyed painters. Geometry
+tables in `content/maps/biomeGroundArt.ts` and `biomeVegetationArt.ts` own their cosmetic
+coordinates and dimensions; biome-keyed palettes own materials. Reusing a style for another
+biome must not require new biome-kind branches. Refactoring presentation preserves polygon
+order, object ownership and the pinned tower/camp footprints (DEC-238).
+
 ## 6. `WorldMap` runtime
 
 `WorldMap` is the mutable per-match view of the map that systems read. It is built once from the
@@ -278,6 +284,10 @@ export type FlowField = { readonly integration: Uint16Array; readonly direction:
   ([research §3](../research/game-architecture-and-performance-research.md#3-pathfinding-and-movement-for-lane-minions-and-large-unit-counts)).
 - One flow field per (lane, team), flood-filled from the enemy gate inside the lane corridor;
   `PathingSystem` follows it, Legends use A* on the same grid (`10-physics.md` §9).
+- A field also answers how far a point lies along its lane by path cost, from the team's own
+  gate (0) to the enemy gate (1) (DEC-280). Minion strength by distance reads it through the
+  `LaneProgressOf` port of `combat/` (`05-abilities-weapons-and-loadouts.md` §9, `18-minion-system.md`),
+  which falls back to the lane polyline where the field cannot say.
 - Destructible terrain events (`07-structures-obstacles-and-destructibles.md` §10) re-flag cells
   through `stampFootprint`/`clearFootprint`; affected fields are marked dirty and rebuilt over
   several ticks with a cell budget (Dirty Flag; time slicing as in Supreme Commander 2).
@@ -420,7 +430,7 @@ Still interim:
 | Minimap (§8)              | `MiniMapView` draws a local view (DEC-182) into the main canvas every frame, clipped to the HUD's ring by `Renderer.clipToEllipse`, with the ring from `bridge/minimapRing.ts` passed in by `Match`; `MapView` draws every feature's `minimapGlyph` and `EntityLayer` draws Legends and mobs through their views (DEC-187)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | The `'minimap'` renderer layer and the lower redraw cadence (§8)                                                        |
 | Kernel stand-ins (§1, §2) | `MapRandom`, a local `MapConfig` and `DEFAULT_MAP_CONFIG`, `validateMapConfig`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Session A's swap to session B's `SeededRandom`, `GameConfig` and `validateGameConfig` (`INBOX.md`)                      |
 | Grid resolution (§6)      | `MapLayout.navCellSize` (content)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Session A's swap to `config.map.navCellSize`                                                                            |
-| `WorldMap` (§6)           | Walkability grid with stamping, no cost grid. The flow fields (minion plan M4) sit beside it, not on it: `map/LaneFlowFields` holds a `FlowField` per (lane id, team) and rebuilds dirty ones through `FlowFieldBuilder`; `DefaultSystemPipeline` builds both and `PathingSystem` calls `rebuildDirty` each tick. Nothing marks a field dirty yet: no terrain event exists                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Cost grid (Phase 3); the dirty trigger with gate and structure changes (07 §10)                                         |
+| `WorldMap` (§6)           | Walkability grid with stamping, no cost grid. The flow fields (minion plan M4) sit beside it, not on it: `map/LaneFlowFields` holds a `FlowField` per (lane id, team) and rebuilds dirty ones through `FlowFieldBuilder`; `DefaultSystemPipeline` builds both and `PathingSystem` calls `rebuildDirty` each tick. `FlowField.progressAt` gives a point's lane progress by path cost, which the minion strength curve reads ([18](18-minion-system.md) status note). Nothing marks a field dirty yet: no terrain event exists                                                                                                                                                                                                                                                                                                         | Cost grid (Phase 3); the dirty trigger with gate and structure changes (07 §10)                                         |
 | Renderer port (08 §4)     | The `feat/map-view` method set plus glyph drawing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Session H's layers and sprites                                                                                          |
 | Map scenery (08 §4)       | `MapSceneryBuilder` dresses the generated map with presentation-only polygons authored in map-1's 1600 × 900 sketch (`content/maps/map1Scenery.ts`, `map1Landforms.ts`) and stretched to the world size; `MapView` draws the `ground` layer, `SceneryView` the `detail` layer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Per-preset scenery and sprite assets                                                                                    |
 | Free view and interior    | The developer explorer (`MapExplorer` in `MatchCamera`, gestures in `CanvasPointerControls`): drag pan, wheel zoom, the overview, the toolbar and legend, and a click that cuts a building's roof away ("Restore roofs & overview" puts those roofs back; hiding the explorer also returns to the following camera); shown at the start with `?dev=1` and shown or hidden by Cmd/Ctrl+Shift+F3 in any build (DEC-105, DEC-117, DEC-118). In normal play `BuildingRoofs` cuts away the roof of the building the player's Legend stands in (its `MapPresentation.buildings` footprint) and puts it back when the Legend walks out or dies (DEC-143); developer roofs and that roof add up, neither closes the other. The minimap is player HUD, drawn every frame whatever the flag (DEC-143). Walking returns to the following camera | The Structure family's walls, gates and doors decide who can enter (Phase 2 sprints 2.1 and 2.4); roofs stay view state |
@@ -479,7 +489,11 @@ approved them, `INBOX.md` HC-T1), and this note gives the detail:
   DEC-183): a living enemy unit there is attacked; else a click that toggles a roof is a roof
   click; else the click attacks the map object there. A drag does neither. When units overlap, the
   one drawn on top wins (DEC-183). The held attack button aims the same way: a unit first, else a
-  map object (`PlayerCommands`). A click on the building the player's Legend stands in toggles
+  map object (`PlayerCommands`). In local matches, both inputs pick Legends and mobs by the
+  hit radius reported by their registered view. Health bars use the same display extent.
+  Movement collision and attack reach still use simulation geometry. When Duel intent moves into
+  core, its targeting needs the shared drawn-size rule as well.
+  A click on the building the player's Legend stands in toggles
   nothing (its roof is already cut away), so it attacks (DEC-153). The owner selected "Allow attack"
   (option text: "A plain click on the world attacks even with the explorer shown; only drags and
   roof clicks are claimed."), DEC-150. This is the attack and roof input arbitration the
@@ -619,6 +633,70 @@ seams, runes and emitter artwork for the existing turret features. `MapDecoratio
 suppresses the main view's plain feature marker; explicit object ownership removes the correct
 panel artwork when its wall segment dies. The minimap retains its generated feature markers.
 All decoration stays in the existing render layers and adds no new shield-immunity mechanic.
+
+**2026-11-11 — DEC-238 visual stand-ins.**
+
+[DEC-238](../reference/game-design/13-owner-decisions-log.md#batch-2026-11-10-pr-90-review-visuals) approves these provisional visuals.
+
+### 2026-11-07 — Camp presentation
+
+The DEC-238 corner-camp stand-in uses worn stone stairs, carved
+pillars, a pointed arch and a suspended orange crystal. Lane towers retain their original forts and exact collision footprints, with decorative shrine artwork. They share that architectural
+language, with troop equipment identifying their visual rank by distance from their team's
+Stronghold: nearest heavy, second medium, any additional farther structures light. With the
+current two structures per lane per side, heavy and medium appear; the light design is available
+when map content includes a third. Counts, feature definitions, teams, positions, minion weights
+and spawning rules retain their existing sources of truth. Camp dressing changes collision:
+each camp uses one blocking footprint in place of the two blocking tents and two blocking
+furniture pieces in the previous layout.
+
+Forest camps have a separate woodland design: mossy standing stones, a broken dolmen, roots,
+offerings and lanterns. `campScenery.ts` owns the materials and lane-theme order; dedicated
+builders produce deterministic mirrored artwork. Solid feet and plinths retain explicit object
+ownership for health and destruction; steps, shadows, light and suspended ornaments do not
+become walls. Authored `replacesFeature` metadata suppresses only the main-view placeholder;
+the feature's minimap marker and the core-sized corner camp ring remain visible alongside the
+authored dressing.
+
+### 2026-11-08 — Camp colors and expanded biomes
+
+Lane-shrine crystals identify their faction: blue on the west/Light side and purple on the
+east/Dark side. Corner shrines use orange crystals. `campScenery.ts` owns these palettes
+independently of troop-equipment themes; the neutral woodland-camp design remains distinct.
+
+`biomeScenery.ts` defines the alpine and volcanic presentation regions. Layered soils, terraces,
+ice seams, drifts, ash, dead shrubs and crusted lava blend into the existing foothills. Mountains
+inside each region use ice/snow or scorched-basalt materials, with volcanic fissures in the
+southern range. Existing forest samples become snowy firs or charred trees, retaining their
+original object IDs and trunk footprints. Region ground, small shrubs and weather marks are
+cosmetic; lava channels, bridges, lanes and capture rules keep their existing geometry.
+
+Explicit `ambientBiome` polygons and `sceneryAnimation` surfaces in `MapDecoration` supply the
+client's atmospheric view. Metadata scales with the authored world geometry and is separate
+from simulation state. Snow, ash, heat haze and molten shimmer never apply damage or statuses.
+
+### Faction tower artwork
+
+Lane tower dressing can use a top-down crystal sanctum: stepped plinths, carved pillars,
+metal inlays and wing reliefs. `TowerSanctumBuilder` owns that cosmetic silhouette, with
+faction crystal colours from `campScenery.ts`; troop equipment remains the lane-rank cue.
+The existing fort builder remains the sole source of solid tower footprints. Decorative
+pieces belong to the same destructible tower and never introduce additional collision.
+Corner shrines and neutral woodland camps retain their distinct architectural language.
+
+**2026-11-20 (`feat/duel-arena-only-legends`, SCRUM-450).** The Cathedral's four entrances are
+Duel barriers: `MapBuildingInteriorBuilder` marks each doorway piece `MapDecoration.isDuelBarrier`,
+and `MapObjectBuilder` makes each an indestructible `cathedral`-kind `MapObject` with
+`isDuelBarrier` and `isBlocking: false`, so a normal match walks through as before. A Duel whose
+rules close the Cathedral (`DUEL_RULES.arena.isCathedralClosed`) makes them block
+(`match/duelArena.ts`) before `Simulation` builds the walk grid, the collision index and the world
+objects, so both Legends stay inside. The doorways look the same either way; the closed-door
+drawing is not built, and is requested in `INBOX.md` ("Duel closed-door drawing").
+
+**2026-11-25 (`feat/duel-arena-only-legends`, DEC-348).** A Duel also drops every structure's map
+object and everything a side built (`DUEL_RULES.arena.omittedObjectKinds`, `omitsSideObjects`), and
+marks the Cathedral's walls `MapObject.isUnbreakable`, all in `match/duelArena.ts` before the walk
+grid is built; trees, houses and rocks stay. The dropped objects' art is still drawn.
 
 ## Related
 

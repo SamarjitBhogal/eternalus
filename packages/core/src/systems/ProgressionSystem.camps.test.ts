@@ -16,10 +16,12 @@ import { LevelMatchesXpInvariant } from '../diagnostics/invariants/LevelMatchesX
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
+import { Legend } from '../entities/Legend';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
+import type { OwedXp } from '../state/RespawnQueue.types';
 import { GuardRoster } from './GuardRoster';
 import { ProgressionSystem } from './ProgressionSystem';
 
@@ -123,9 +125,49 @@ describe('ProgressionSystem camp reward through the guard roster (balancing.md "
     expect(legend.getComponent(Progression).xp).toBe(mobXp);
 
     step();
-    expect(legend.getComponent(Progression).xp).toBe(
-      mobXp + (XP_SOURCES.campCleared['forest-camp-light'] ?? 0),
-    );
+    // A missing content entry must fail here, not turn the bonus into 0 (ADR 0023).
+    const bonus = XP_SOURCES.campCleared['forest-camp-light'] ?? 0;
+    expect(bonus).toBeGreaterThan(0);
+    expect(legend.getComponent(Progression).xp).toBe(mobXp + bonus);
+    expect(violations).toEqual([]);
+  });
+
+  it('owes the bonus to a Legend whose hit kills the last mob while it waits to respawn (O4)', () => {
+    const { state, step, campMobIds, legend, violations } = campMatch();
+    step(TICK_RATE + 1);
+    const mobs = campMobIds();
+    expect(mobs.length).toBeGreaterThan(0);
+    if (!(legend instanceof Legend)) {
+      throw new Error('the clearing Legend is not a Legend');
+    }
+    let campId = '';
+    state.guards.forEach(({ team, homeId }) => {
+      campId = team === 'neutral' ? homeId : campId;
+    });
+    // The Legend died before its projectile or damage over time landed (DEC-295).
+    state.respawns.add(legend, 'light', state.tick + 10 * TICK_RATE);
+    state.entities.withdraw(legend.id, 'died');
+
+    for (const id of mobs) {
+      new DamagePipeline().apply(state, id, 1e6, {
+        attackerId: legend.id,
+        kind: 'weapon',
+        definitionId: 'test',
+      });
+    }
+    step(2);
+
+    const owed: OwedXp[] = [];
+    state.respawns.forEach(({ owedXp }) => owed.push(...owedXp));
+    expect(owed.filter(({ cause }) => cause === 'kill')).toHaveLength(mobs.length);
+    expect(owed.filter(({ cause }) => cause === 'camp-cleared')).toEqual([
+      {
+        cause: 'camp-cleared',
+        victimId: campId,
+        victimTeam: 'neutral',
+        xp: XP_SOURCES.campCleared['forest-camp-light'],
+      },
+    ]);
     expect(violations).toEqual([]);
   });
 

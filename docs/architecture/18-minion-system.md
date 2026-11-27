@@ -104,7 +104,9 @@ spawn's own controller and starting memory (`Placement.controller`, holding the 
 11 §10).
 Pull request M5a adds the MVP minion modifiers (MS-16): `MinionStrengthStep` in the damage steps
 (strength by distance, floored at base stats per DISC-24, its base-stat point moving toward the
-enemy for each lane tower the enemy has lost there) and `EnragedSystem`, its own system right after
+enemy for each lane tower the enemy has lost there; lane progress is the path cost on the lane's
+flow field, gate to gate as the polyline measured it (DEC-280), through `LaneFlowFields.progress` injected as the `LaneProgressOf` port, with the
+lane polyline as the fallback off the corridor) and `EnragedSystem`, its own system right after
 `SpawnSystem` (one `enraged` stack per lost SpawnerTower or BuffTower on the lane; the losses are
 kept per team and lane in `TeamState.towersLostByLane`, which the strength step reads too). The
 damage pipeline (`combat/DamagePipeline`) is built. Pull request `feat/minion-structures` adds the
@@ -274,7 +276,7 @@ mob ever exists without its horde (MS-25).
 `EnragedSystem` (MS-16) → `OutOfCombatHealingSystem` (DEC-188) → `RespawnSystem` (FR-051,
 DEC-295: in every match, after the Duel round, so a fallen Duel Legend is never queued) →
 `DeathSystem` →
-`CaptureSystem` (07 §7) → `ZoneLevelUpSystem` (07 §7, DEC-258) → `MinionLevelSystem` (every minion level change, DEC-353) → `MatchDirectorSystem` (12 §1) → `InvariantSystem` → `SnapshotSystem`.
+`CaptureSystem` (07 §7) → `CathedralGemSystem` (07 §1) → `ZoneLevelUpSystem` (07 §7, DEC-258) → `MinionLevelSystem` (every minion level change, DEC-353) → `MatchDirectorSystem` (12 §1) → `InvariantSystem` → `SnapshotSystem`.
 A horde spawned on tick N has its members and record when the invariants and the snapshot of tick
 N run, and its first decisions in tick N+1.
 

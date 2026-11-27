@@ -10,10 +10,11 @@ export type StructureKind =
   | 'gate'
   | 'turret'
   | 'camp'
-  | 'cathedral';
+  | 'cathedral'
+  | 'cathedral-gem';
 
 /**
- * A static thing with health: a building, wall, gate, turret, camp or the Cathedral.
+ * A static thing with health: a building, wall, gate, turret, camp or the Cathedral gem.
  * Shield fractions, breakability, spawn tables and auras are added with the structures in Phase 2.
  */
 export type StructureDefinition = EntityDefinitionBase & {
@@ -164,3 +165,14 @@ type AuthoredGuardRespawn =
 /** `AuthoredGuardRespawn` as loaded: the respawn time in ticks. */
 type GuardRespawn =
   { readonly kind: 'each' | 'group'; readonly ticks: number } | { readonly kind: 'never' };
+
+/**
+ * What the Cathedral gem does to whoever hits it (DEC-292, DEC-346), by status id: the statuses
+ * it lands on them (from the environment: the gem is no team's), and how long it glows after.
+ */
+export type CathedralGemDefinition = {
+  /** Landed on a hitter, in order (a stun and its tick damage). */
+  readonly statusIds: readonly string[];
+  /** The gem glows for this status's duration plus `extraTicks` after each hit. */
+  readonly glow: { readonly statusId: string; readonly extraTicks: number };
+};

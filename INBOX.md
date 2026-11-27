@@ -13,28 +13,69 @@ review comments under "Feedback". Answered decisions are recorded in
 
 ## Decisions needed from Sam
 
+- [ ] **Minion strength port (PR #82, 2026-11-25): sign off `LaneProgressOf`.** Built: `combat/`
+      reads lane progress through a new port, `LaneProgressOf = (laneId, team, position) => number
+| null` (`MinionStrengthStep.types.ts`), which `LaneFlowFields.progress` implements and
+      `DefaultSystemPipeline` injects. It keeps `combat/` from importing `map/` (core folder
+      rules); DEC-280 fixes what it returns (`t` from the home gate, 0, to the enemy gate, 1). No DEC
+      names the port itself (CodeRabbit, PR #82). Approve as built, or say what to change. HC-B45
+      below asks whether the polyline fallback should become a second implementation of it.
+
+- [ ] **HC-B45 — Better than the design, not built, sign-off asked: minion strength depends only
+      on its lane-progress port** (PR #82 critic, 2026-11-22). Today `MinionStrengthStep` knows two
+      ways to measure `t`: the injected `LaneProgressOf` (the lane flow field, DEC-280) and a
+      built-in fallback to the `LaneRoutes` polyline; `createDefaultDamageSteps`, `DamagePipeline`
+      and the step default the port to `null`, so a composition root that forgets to inject falls
+      back to the polyline without a sign. Proposal: make the polyline a `LaneProgressOf` too, let
+      `DefaultSystemPipeline` compose "field, else polyline", make the parameter required, and test
+      the wiring by injection instead of the `vi.mock` in `DefaultSystemPipeline.strength.test.ts`
+      (the only `vi.mock` in core). No gameplay number or behaviour changes. Approve (built in its
+      own PR) or drop.
+
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **`feat/camp-rewards` critic (2026-11-22), better than the design: three items, sign-off
-      per item.** Not built: the branch stays small. (B1) `ProgressionSystem`'s awards are split
-      by kind (`kill`, `camp-cleared`, `structure-destroyed`, `team-kill`), and `update` and
-      `grant` branch on kind; each new source (checkpoints, assists, the Eternal) adds a branch.
-      Split them by recipient instead: one recipient (`scope: 'one'`) or a whole team
-      (`scope: 'team'`, with `maxLevels`), with a separate `cause` copied into `xp-gained`. (B2) `LevelMatchesXpInvariant`
-      checks each `xp-gained` cause in an if/else chain; a `Record<XpCause, rule>` with an exported
-      `XpCause` type makes the compiler ask each new cause for its rule. (B3) "does this guard home
-      still hold a guard" is counted in `GroupGuardRespawn.release` and again in the invariant; one
-      `GuardStore` query would serve both.
+- [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
+      You asked "what about the forest camps? why can they never break?". Today a camp's body is only
+      its group's home (`CAMP_BODY`: "a camp is only its group's home"): the camp's mobs are what
+      players fight, and no reference doc gives the camp body health of its own. Should a camp
+      become breakable (and if so, what happens to its mobs and respawns)? A breakable camp leaves
+      the shared `NEVER_DAMAGED` spread with a one-line change.
 
-- [ ] **Camp rewards (`feat/camp-rewards`, 2026-11-22): who are "the clearing Legends"?
-      Sign-off needed.** Built: clearing a forest camp pays a 50 XP bonus (balancing.md "Camps"
-      `Recommendation:`, `XP_SOURCES.campCleared`, `TUNE`) on top of the mob XP each camp mob
-      already pays its killer. As built, "the clearing Legends" is the one Legend that killed the
-      camp's last mob; when a minion or a turret lands that hit, nobody gets the bonus.
-      Alternatives: (a) every Legend of the last killer's team; (b) every Legend of that team near
-      the camp (needs a radius); (c) every Legend that damaged a camp mob since the camp woke. Say
-      which, or approve as built.
+- [ ] **Better than design: four Cathedral gem items (#132 pre-PR critic, 2026-11-25).** Not
+      built in #132; each would be a small follow-up PR if you agree. (BTD3) One body: the gem's
+      movement block is a separate map-object plinth that copies the gem's radius; a static
+      blocking collider on `CathedralGem` itself would keep one shape. (BTD4) A flag on the status:
+      the credited sources are the list `CATHEDRAL_GEM.statusIds`; a per-status flag (for example
+      `creditsLastEnemyHitter`) would let a future hazard opt in with no pipeline edit. (BTD5)
+      Legends only: `LastEnemyHit` is kept on every unit an enemy hits, while your words were
+      "the dying legend"; should a minion or mob killed by the gem also count for its last enemy
+      damager (and pay XP), or only a Legend? (BTD6) Enemy status damage: an enemy's bleed tick
+      has no attacker, so it never counts as the last enemy hit; carrying the applier's id on
+      status damage would count it. Decision: …
+
+- [ ] **Better than design: two Cathedral gem items (#132 re-review, swholtzman, 2026-11-22).**
+      (BTD1) The holder is stored twice: `CathedralGemState.holder` copies the capture zone's owner
+      from `capture-point-owner-changed`, while the zone's `Capturable.owner` already holds it.
+      Keeping the zone's id and reading its owner when the snapshot is made gives one source of
+      truth, and the hash needs no holder field. (BTD2) One finder per targetable kind:
+      `PlayerCommands.targetAt` gains `findGemAt` beside `findUnitAt` and `findMapObjectAt`, so
+      each new targetable structure adds a finder and an edit there. One "targetable" snapshot
+      flag and one finder would keep it closed to change. Not built in #132. OK to do each in a
+      small follow-up PR?
+
+- [ ] **`feat/duel-arena-only-legends` (PR #145, SCRUM-445, SCRUM-446, SCRUM-447, SCRUM-450):
+      one owner item left.** Q1 and Q2 are answered and built: DEC-348 (2026-11-23: no
+      structures, no minions or host units, trees, houses and rocks stay, the gem stays; the
+      Cathedral's walls cannot break in a Duel). (Q3) The decisions-log row for
+      SCRUM-449 (modifying DEC-78: a Duel result shows both players' final kill score and no
+      countdown), and whether `DUEL_RULES.arena` and `startOffset` belong in the replay setup
+      so a content change cannot alter an old Duel's replay. Decision: …
+
+- [ ] **Duel closed-door drawing (request, from PR #145, SCRUM-450).** The four Cathedral
+      doorways block in a Duel but look open. Draw them closed in a Duel or confirm the look is
+      fine. Also: PR #118 adds `bridge/selectors/selectIsDuel.ts`; PR #145 carries the same file
+      byte for byte, so one selector remains whichever merges first.
 
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-legends`) — developer menu, slice 2
       (add/remove Legends, FR-097) built; decisions for the owner.** (a) `dev-spawn-legend` takes
@@ -57,6 +98,7 @@ Reply inline (`Decision: …`).
       outside sim mode (`human-legend`). DEC-355 (2026-11-23, Owner Calls page) closes (c), (d)
       and (e): "Keep all three as built" (`dev-removed` stays, the character-select class list,
       one Team control). (f) and (g) stay open.
+
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu`) — developer menu, slice 1 built;
       the rest needs owner and core work.** Built: `?dev=1` enables the menu, F1
       (`toggle-developer-menu`) opens it, and it spawns a horde of lane minions at a map structure
@@ -283,6 +325,15 @@ Reply inline (`Decision: …`).
       **Done in PR #130 (2026-11-22):** defender posts carry `GuardSlot.checkpoint` and sit beside
       the zone's plan; mates need the same home and team (`GuardController`), and a `group` plan's
       group is the home's own posts only (`GroupGuardRespawn`).
+
+- [x] **PR #90 stand-in confirmation (2026-11-16).** The owner confirmed DEC-238 on
+      2026-11-20 (Owner Calls page), reaffirming their
+      [PR #90 review](https://github.com/SamarjitBhogal/eternalus/pull/90#pullrequestreview-5852980286).
+      The confirmation covers retained code-drawn map, camp and minion art, unit display sizes,
+      the follow camera and weather.
+      The confirmation excludes disputed image assets, asset provenance ADRs, and the
+      parallel ability stack.
+
 - [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
       but unhandled actions: `toggle-developer-menu` (handled since #107), `sprint`, `interact`,
       `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
@@ -618,24 +669,7 @@ Reply inline (`Decision: …`).
       **Update 2026-11-25 (M6c, `feat/minion-m6c-defender-followups`):** (1), (4), (6) and (7)
       are built: `checkpoint-cleared` and its XP, DEC-260 levelling (with DEC-350's boss group)
       and DEC-350's limit and cancelling. The calls M6c made where the sources are silent are
-      under "Minion M6c interpretations" below. (2), (3)(b), (5) and (9) still wait.
-
-- [ ] **Minion M6c interpretations (`feat/minion-m6c-defender-followups`, 2026-11-25) — sign-off
-      per item.** Built so, each changeable in content or one rule: (a) balancing.md's
-      checkpoint share takes "allies within 10 m" as the clearing team's living Legends within
-      10 m of where the set's **last defender fell**. (b) `totalDamage` is the damage those
-      Legends dealt to the set, so the shares always add up to the checkpoint's XP; when they
-      dealt none (minions or turrets cleared it), an even split. Nobody is paid when no Legend is
-      in range or the killer is unknown. (c) The clearing team is the team of whoever killed the
-      last defender. (d) DEC-260 names forest-camp mobs, so the **corner boss does not level**
-      (`canLevel: false` on `corner-camp`). (e) A guard that levels also gets and gives the
-      `rallied` aura, as DEC-165 tied the two: forest-camp mobs and defenders now rally their own
-      side's levellers nearby. (f) A set whose last waiting defenders are cancelled (DEC-350)
-      after its last living one died is never announced cleared, so it pays no checkpoint XP
-      (its damage tally is dropped). (g) For DEC-350 (6), a set reached on the pass that changes
-      the owner is the old owner's (DEC-257): its defenders that find room appear, and the ones
-      the unit cap blocks are cancelled at once.
-      `Recommendation:` approve (a) to (f) as built.
+      approved as built in DEC-376 (2026-11-26). (2), (3)(b), (5) and (9) still wait.
 
 - [x] **Minion M10 better-than-design items (`feat/minion-m10-zone-level-up`, 2026-11-15,
       critic; DEC-139) — sign-off per item.** (a) A `MinionLevelSystem` after
@@ -843,7 +877,8 @@ Reply inline (`Decision: …`).
     snapshot); a snapshot every tick, no interpolation or prediction. (3) Core's `intent` command
     is still a stub (sprint 1.5 PlayerController), so the server translates intents into
     `move`/`stop`/`attack-target` (`SeatCommands`, ported from the client's `PlayerCommands`);
-    once `intent` is applied in core, `SeatCommands` goes. (4) Map desync risk: the client
+    once `intent` is applied in core, `SeatCommands` goes. Apply the shared drawn-size hit test
+    at that point so local and Duel input select the same targets. (4) Map desync risk: the client
     regenerates the map from `match-found.seed` with its own default `GameConfig`; a config drift
     between the two builds, or an engine-level Math difference (03 §8), would draw a world that is
     not the server's. Send the map (or a config hash) on the wire, or accept the risk while both
@@ -1063,6 +1098,8 @@ Reply inline (`Decision: …`).
   - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
     line say A\* is a `PathQuery` (PR #47). (1) Numbers from the design docs, else the agent's
     judgement, which the owner may correct later, so they stay as built.
+  - Update 2026-11-20 (PR #84): a blocked decision no longer always searches again; the brain
+    caches one waypoint and reuses it while it serves the destination (doc 11 §6).
 - [ ] **Minion M8 — exact line checks wait for wall avoidance (FYI, CodeRabbit on PR #47).**
       `WorldMap.isLineClear` samples a quarter cell apart, so a line can clip a blocked cell's
       corner unseen. An exact cell walk (DDA) catches it, but then minions hold at rift corners
@@ -3431,6 +3468,40 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Done
 
+- 2026-11-26 — **Minion M6c interpretations approved as built (DEC-376)**
+  (`feat/minion-m6c-defender-followups`, PR #173): you approved (a) to (g) as built (the 10 m from
+  where the last defender fell, the damage-biased share with an even split when Legends dealt
+  none, the clearing team by the last killer, no corner-boss levelling, `rallied` for levelling
+  guards, no XP for a set emptied by cancels, and the owner-change pass rule). Decision: DEC-376.
+
+- 2026-11-26 — **Camp rewards: the clearing Legend is the last killer; the three critic refactors
+  are dropped (DEC-375)** (`feat/camp-rewards`, PR #153): you chose "as built" for who gets the
+  camp clear bonus (the Legend that killed the camp's last mob; nobody when a minion or turret
+  does) and dropped B1 to B3. Closes "Camp rewards" and "`feat/camp-rewards` critic (2026-11-22),
+  better than the design". Decision: DEC-375.
+
+- 2026-11-26 — **Bot path cache: "one leg late" accepted (DEC-373)** (`feat/minion-bot-path-cache`,
+  PR #84): you chose (a), accept as built. The cache holds no grid version; a way that opens while
+  a bot walks a cached leg is found at most one leg late. Doc 11 §6 states it. Decision: DEC-373.
+
+- 2026-11-23 — **Your answers on the five Cathedral gem cards (DEC-346)** (`feat/cathedral-gem-hittable`,
+  PR #132): recorded as DEC-346. The gem blocks movement (an unbreakable plinth under it) and a
+  touch no longer strikes; a death by the gem counts for the victim's last enemy damager within the
+  30 s assist window, else nobody's kill or XP; both "tick" readings stay; the Cathedral interior
+  builder is split and camps and the gem share one "never damaged" entry. Closes "The Cathedral
+  gem: four rules DEC-292 leaves open", "split the Cathedral interior builder" and "one shared
+  'never damaged' structure entry". Decision: DEC-346. The Duel design (circle strike, laser) is a
+  follow-up PR once the six "GEM duel" cards are answered; your camp question is a new item.
+
+- 2026-11-21 — **Your picks on the Cathedral gem (DEC-291, DEC-292)** (`feat/cathedral-gem-hittable`,
+  PR #132, which now also carries PR #124): recorded as DEC-291 and DEC-292. The gem keeps its
+  10 × 16 diamond and shows the holder's colour (blue Light, blood-red-purple Dark, purple-violet
+  neutral); it is its own unbreakable body; a hit or a touch stuns and burns the hitter, and the gem
+  pulses and glows purple, brighter and wider with more hits. Closes "The Cathedral gem's look",
+  "The gem's lightning on attackers: 11 open rules" and "a general retaliation rule vs a gem-only
+  one" (built gem-only, with its statuses and glow as content: `CATHEDRAL_GEM`). Three rules the
+  ruling leaves open are a new item under Decisions.
+
 - 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
   recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a
   baseline, plus newer CSS behind `@supports` with a fallback, as DEC-312 does. You named no
@@ -3767,3 +3838,5 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   `docs/inbox-decisions-2026-10-03`.
 - 2026-09-30 — Phase 0 documentation + harness written on `docs/phase-0-foundation`
   (merged as PR #3; see `docs/changelog/2026-09-30-phase-0-foundation.md`).
+
+- [ ] DEC-298 (5), (7) — Selected-subclass portrait follow-up. Carry the credited Juggernaut portrait with its notice intact for the class-project MVP and replace it after delivery. Build the selected, forward-facing character cutouts using the Oracle reference and propose their actual encoded bytes for review.
