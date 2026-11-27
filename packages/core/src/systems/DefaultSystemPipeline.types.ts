@@ -1,4 +1,5 @@
 import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { ObstacleDefinition } from '../content/obstacles/obstacles.types';
 import type {
   AuthoredGuardPlan,
   StructureDefinition,
@@ -48,11 +49,17 @@ export type DefaultSystemPipelineOptions = {
     readonly guards?: Readonly<Record<string, AuthoredGuardPlan>>;
   };
   /**
-   * Where each structure's definition, and so its breakability rule, is looked up;
+   * Where each structure's definition, and so its breakability rule and aura, is looked up;
    * `STRUCTURE_DEFINITIONS` when omitted. `Simulation` injects the one set it builds the
    * structures from.
    */
-  readonly structures?: Pick<ContentCatalogue<StructureDefinition>, 'get'>;
+  readonly structures?: Pick<ContentCatalogue<StructureDefinition>, 'get' | 'all'>;
+  /**
+   * What a standing wall of a lane tower's fort becomes when its tower falls (DEC-219 (a)).
+   * `Simulation` passes the definition it registers with the entity factory. Required, so a
+   * match with map objects (`state.worldObjects`) can never lack it; a match without them ignores it.
+   */
+  readonly ruinWall: ObstacleDefinition;
   /**
    * How long an enemy hit still earns a gem kill (DEC-346): the assist window, from the scoring
    * `Simulation` loads once for the match.

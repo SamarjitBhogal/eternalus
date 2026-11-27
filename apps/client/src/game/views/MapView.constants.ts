@@ -49,8 +49,8 @@ export const NEUTRAL_FEATURE_COLORS: Readonly<Record<MapFeatureKind, string>> = 
  */
 export const FEATURE_STYLES: Readonly<Record<MapFeatureKind, FeatureStyle>> = {
   stronghold: { shape: 'square', size: 50 },
-  'spawner-tower': { shape: 'square', size: 28 },
-  'buff-tower': { shape: 'diamond', size: 28 },
+  'spawner-tower': { shape: 'entity', size: 0 },
+  'buff-tower': { shape: 'entity', size: 0 },
   'wall-segment': { shape: 'footprint', size: 0 },
   gate: { shape: 'footprint', size: 0 },
   turret: { shape: 'dot', size: 14 },

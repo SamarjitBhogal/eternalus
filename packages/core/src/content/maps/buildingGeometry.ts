@@ -30,10 +30,25 @@ export const BUILDING_GEOMETRY = {
     throne: { x: 0, y: 385, room: { x: -32, y: 360, width: 64, height: 48 } },
   },
   /**
-   * A fort: an outer capture point's square side, walls included (sketch units), what every
-   * fort's side is divided by to give its wall thickness, and its central keep's width and height.
+   * A fort: an outer capture point's square side and a lane tower's, walls included (sketch
+   * units), how far inside its side a lane tower's circle stops (`LANE_TOWER_FOOTPRINT_RADIUS`) and
+   * how much open ground other buildings leave round it (`laneFortKeepOuts`),
+   * what every fort's side is divided by to give its wall thickness, and its central keep's width
+   * and height.
    */
-  fort: { capturePointSize: 88, wallDivisor: 10, keepWidthDivisor: 3, keepHeightDivisor: 2.5 },
+  fort: {
+    capturePointSize: 88,
+    // DEC-315 (DEC-185 (A) option (b), "bigger forts"): 56 m, so every passage through the court
+    // (doorway, round the keep) is at least 2 nav cells wide at `config.map.navCellSize` 2.5 m.
+    laneTowerSize: 56,
+    laneTowerInset: 2, // TUNE: a tower's circle stops 2 m inside its fort's side, as at 32 m (DEC-185)
+    // TUNE: open ground no other building's blocking object takes round a lane tower fort: two
+    // 2.5 m nav cells, so its walls and doorways stay reachable (DEC-315).
+    laneTowerClearance: 5,
+    wallDivisor: 10,
+    keepWidthDivisor: 3,
+    keepHeightDivisor: 2.5,
+  },
   northDoor: { x: 788, y: 320, width: 24, height: 12 },
   southDoor: { x: 785, y: 541, width: 30, height: 12 },
   westDoor: { x: 700, y: 437.5, width: 9, height: 30 },
@@ -47,3 +62,13 @@ export const BUILDING_GEOMETRY = {
       ) + STRONGHOLD_GEOMETRY.extentPadding,
   },
 } as const;
+
+/**
+ * A lane tower's footprint radius, in world units at the default world (1 sketch unit = 1 m): half
+ * its fort's side less `fort.laneTowerInset`. At the default world the tower's circle follows its
+ * fort (DEC-315): its map feature's footprint (the court it stamps, `WorldMap.stampCourt`), its
+ * structure's radius and so its guard ring (`GuardRoster`) and where a horde gathers before it
+ * (`LaneStructures`). A larger world stretches the fort (`fortInWorld`) but not this radius.
+ */
+export const LANE_TOWER_FOOTPRINT_RADIUS =
+  BUILDING_GEOMETRY.fort.laneTowerSize / 2 - BUILDING_GEOMETRY.fort.laneTowerInset;

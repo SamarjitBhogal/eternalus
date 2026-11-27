@@ -15,6 +15,7 @@ const hero: EntitySnapshot = {
   elevation: null,
   progression: null,
   capture: null,
+  aura: null,
   area: null,
   gem: null,
 };

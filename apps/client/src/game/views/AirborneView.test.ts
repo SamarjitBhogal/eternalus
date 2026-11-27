@@ -20,6 +20,7 @@ const legend = (height: number | null): EntitySnapshot => ({
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 });
 
@@ -31,6 +32,7 @@ const stateOf = (entity: EntitySnapshot): EntityDrawState => ({
   height: entity.elevation?.height ?? 0,
   isFocused: false,
   frameTick: 0,
+  time: 0,
 });
 
 /** Records where it was asked to draw; gives `top` as its artwork top, or no top. */

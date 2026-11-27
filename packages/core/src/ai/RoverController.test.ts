@@ -150,9 +150,9 @@ describe('RoverController (11 §4.7)', () => {
   });
 
   it('treats a Legend a controller drives as a bot, not the human', () => {
-    // 18 m away: inside the hunt radius, outside the engage radius.
+    // 27 m away: inside the 30 m hunt radius, outside the 24 m engage radius (DEC-323 (2)).
     const human = setUp();
-    const target = human.add('light', 118, 30);
+    const target = human.add('light', 127, 30);
     human.hurt(target, 0.5);
     expect(human.decide().commands).toContainEqual({
       type: 'attack-target',
@@ -161,7 +161,7 @@ describe('RoverController (11 §4.7)', () => {
     });
 
     const bot = setUp();
-    const driven = bot.add('light', 118, 30);
+    const driven = bot.add('light', 127, 30);
     bot.hurt(driven, 0.5);
     bot.state.ai.set(driven, {
       controllerId: 'bot-legend',

@@ -153,13 +153,20 @@ apart from the levels a zone granted. The minion-stack follow-ups (`fix/minion-s
 `StuckSystem` with its `ChaseWatch` component (§5.2, DEC-193). A unit that chases a lane tower,
 the Stronghold or a gate aims at its `Footprint` (07 §13), so minions that target a tower now
 reach its fort wall and hit it (DEC-185), and reach to a gate is measured to its polygon (DEC-217
-(17)). The nav grid still blocks a tower's whole court: hordes never path
-through a court, and an A\* way to a unit inside one ends on the open ground nearest it (DEC-185
-(A)). Pull request A1 (`feat/zone-guard-homes`) lets a zone be a guard home (§7.1) and adds the
-`never` respawn (`systems/NeverGuardRespawn.ts`, a third respawn rule) and an activation
-`delaySeconds` after the countdown. Pull request A2 (`feat/capture-point-boss`) gives each outer
-capture point its mini-boss as a zone guard plan, and `feat/capture-point-boss-guards` adds its
-support mobs to that plan.
+(17)). A standing tower's court is court ground in the nav grid (06 §6): routable, so a lane's flow
+field runs through it from the fort's west doorway to its east one and hordes march through the
+court round the keep (DEC-315, amending DEC-185 (A)), and an A\* route to a unit inside a court
+goes in by a doorway. A marching horde member in a court follows its field; any other mob in a
+court that does not chase a target inside the same fort leaves by the nearest doorway (DEC-217
+(15), 10 §9). At the default world a tower's radius, and so its guard ring and where a horde
+gathers before it, follows its fort's side (`LANE_TOWER_FOOTPRINT_RADIUS`, DEC-315; a larger
+world stretches the fort, not the radius). A fallen
+tower's court opens; every wall except the one that took the killing hit stands until it is
+destroyed (DEC-217 (12), 07 §13). Pull request A1 (`feat/zone-guard-homes`) lets a zone be a
+guard home (§7.1) and adds the `never` respawn (`systems/NeverGuardRespawn.ts`, a third respawn
+rule) and an activation `delaySeconds` after the countdown. Pull request A2
+(`feat/capture-point-boss`) gives each outer capture point its mini-boss as a zone guard plan,
+and `feat/capture-point-boss-guards` adds its support mobs to that plan.
 Interim, against "the minion system never controls a boss" above: until Phase 3 sprint 3.6 builds
 `MiniBoss` and `BossController` (11 §4.6, 04), the boss is a `heavy-mob` (`capture-point-boss`)
 held by `GuardController`, with one melee hit and no moves, roaming or damage-dealer bias, and its

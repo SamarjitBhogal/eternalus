@@ -483,6 +483,21 @@ Reply inline (`Decision: …`).
       (online Duel) match must always keep the menu disabled (`Match.isDeveloperMenuEnabled` is
       optional and off by default, and the online match factory must not pass it), otherwise dev
       commands would be a cheat path.
+
+- [x] **HC-B32 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: one queue rule for both path searches (`chore/horde-test-speed`, into PR #152,
+      critic round 1, 2026-11-22; MEMORY-CLEANUP-7); no decision blocks the PR.** Recorded as
+      DEC-357 (owner decisions log). The player sees
+      no difference: bots and hordes take the same paths as before. Two path searches (bot
+      Legends and the lane flow fields) keep a queue of map cells. Each search takes the cell
+      with the lowest sort value first; on a tie, the lower cell index goes first (11 §5). For a
+      bot, the sort value is the cost so far plus the estimate to the goal. Each search had its
+      own copy of that rule. Now the queue (`CellHeap`) keeps each queued cell's sort value and
+      owns the rule, so the rule is in one place. Proof: the match state hashes and the flow
+      fields are the same before and after. No design doc names the queue, so no doc changes.
+      Options: (A) keep it (recommended, built); (B) undo it; (C) other (note). A, B or C?
+  - **Answered 2026-11-23 by DEC-357** (Owner Calls page): "Keep it (built)".
+
 - [ ] **Dependency audit (re-run 2026-11-20): approve one upgrade PR for the `eslint` family and
       `zod`, and say whether to turn on Dependabot alerts.** PR #113 already moved `vite` to 8.3.8
       and `vitest` to 5.1.0. `npm audit` on `phase/3-sprint-3-work` (`5a7cc8dc`) now reports 10
@@ -534,6 +549,12 @@ Reply inline (`Decision: …`).
       `StructureHitRule`) tests only the `structure` family. So a hit on a wall or turret map
       object scores no structure damage today. Proposal: one shared "is a structure target"
       predicate for both. A later `refactor(core)` PR; (2) changes the scores. Decision: …
+- [ ] **`refactor/tower-ruins-followups` critic (2026-11-14), better than the design — one item
+      for the tidy PR (DEC-218), sign-off.** Not built: this branch stays small. (BT2) One `Band`
+      type in `content/maps/maps.types.ts` (`readonly [number, number]`, a stretch of a lane as
+      fractions) serves `MapLayout.laneBands` and `camps.band`, instead of `LaneBand` in
+      `map/laneBandRules.ts` and the repeated tuple types.
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
@@ -807,6 +828,94 @@ Reply inline (`Decision: …`).
     better-than-design items (DEC-287): the loader also turns the held minute into ticks, so
     `createDefaultScoringRules` takes no tick rate, and the authored and loaded scoring types
     share one `weights` base.
+
+- [ ] **HC-B37 — Better than the design, built under your standing rule, sign-off asked: HC-Q95
+      critic (`feat/map-work-forts-towers`, 2026-11-23); no decision blocks the PR.**
+      Recorded as DEC-358 (owner decisions log). The map scenery is drawn on a 1600 × 900 sketch
+      and then stretched to the world. The scenery builder keeps a sketch copy of the map. In that
+      copy, the building positions were in sketch units, but the building outlines stayed in world
+      units. The outlines are now in sketch units too, so the copy uses one unit everywhere. No
+      scenery moves. The mountains that must stay off the Stronghold wall (HC-Q95) read the wall
+      outlines from that copy. A test on a stretched 2000 × 900 world fails when the outlines stay
+      in world units (deliberate break, recorded). Approve, or say to undo it. _Code:
+      `map/MapSceneryBuilder.ts` (constructor, `wallFootprints`)._
+
+- [x] **HC-Q95 — A corner mountain covers the end of the Stronghold wall
+      (`feat/map-work-forts-towers`, 2026-11-23; found by PR-REVIEW-ASSIST-34 in PR 4 (wall
+      turrets); card by PR-38-HELPER-51; Owner Calls card "HC-Q95 corner mountain on wall").**
+      At each end of the Stronghold wall, one corner mountain can grow over the wall. On every
+      test map (seeds 1 to 8), the north mountain covers the end turret; on 3 of 8 it also
+      covers the centre of the next turret. On some test maps the south mountain touches the
+      other end turret, and on 5 of 8 the north mountain also covers part of the lane 0 gate. The mountain blocks units and shots, so a turret inside it shoots
+      through rock and the lane 0 gate is narrower. Both sides are the same (mirrored). With PR 4,
+      every bolt of a turret that the mountain touches logs one error (seed 2: about one each
+      second for the whole match). In every option the cliffs behind the Stronghold stay, so the
+      back of the base stays closed. Options: (A) leave that mountain out: if a corner mountain
+      would touch the wall, a turret or a gate, the map does not draw it; the cliff behind is
+      still there (recommended; camps use a similar rule: a camp piece that cannot move clear of
+      a fort is left out); (B) make that mountain smaller until it is clear of the wall; (C) cut
+      the mountain in a straight line along the wall (new shape-cutting code, the largest
+      change). A, B or C? _Code: `map/MapMountainBuilder.ts` (`mountain-corner-nw-93-278` and
+      `mountain-corner-sw-93-278` and their mirrors); `MapSceneryBuilder.build` moves art under
+      the wall to the ground layer but keeps its block; the seal is `map/strongholdCliffs.ts`.
+      The bug is also on `phase/3-sprint-3-work`._
+  - **Answered 2026-11-23 by DEC-340** (Owner Calls page): "B: make that mountain smaller".
+    **Built** on `feat/map-work-forts-towers`: a mountain whose blocking mass touches the wall, a
+    turret or a gate is drawn a tenth smaller each time until it is clear. On the test maps (seeds
+    1 to 8, 3 and 5 lanes) a shrunk mountain keeps 40 % to 80 % of its width. A mountain that is
+    still not clear at a tenth of its size is left out; no test map needs this step.
+
+- [ ] **Lane minion acquisition radius raised to the leash (`feat/map-work-forts-towers`,
+      DEC-323 (2), 2026-11-21) — FYI for SamarjitBhogal (minion owner); no decision needed.**
+      Sam's answer on the Owner Calls page asked to raise the bot and minion engage radii ("your
+      decision on exact amount, but current is too restrictive"). `LANE_MINION_AGGRO`
+      `acquisitionRadius` (`content/ai/aggro/laneMinion.ts`) goes from 5.4 to the leash radius
+      (8.625): `LeashBehaviour` takes a target only inside a leash anchored where the minion
+      stands, so a radius larger than the leash takes no unit target from farther out. Effects: the call for help
+      (`callForHelpRadius`, also the leash) no longer reaches farther than the minion's own
+      acquisition; `MinionController` takes the next lane objective when its edge, or the horde's
+      gathering line, is within 8.625 m instead of 5.4 m. Architecture 18 copies no value, so it
+      is unchanged. Tests: `LeashBehaviour.test.ts` "takes an enemy anywhere inside its leash, and
+      none beyond it"; the call-for-help test now runs on a fixture profile that keeps the old
+      5.4 m reach (`short-reach`). Say if you want another number.
+
+- [x] **HC-B24 — Better than the design, built under your standing rule, sign-off asked: map-work
+      critic round 3 (`feat/map-work-forts-towers`, 2026-11-21); no decision blocks the PR.**
+      Recorded as DEC-321 (owner decisions log). Built after the last critic loop, so no critic
+      has reviewed them; each has a test that a deliberate break turned red. (1) A camp's art
+      sizes (clearing, tents, fire, supplies) live in one place in the building geometry content;
+      the camp art and the ground the generator keeps clear for a camp both read it, so they
+      cannot drift apart. No camp moves. (2) The map generator checks every obstacle choice
+      against the map feature definitions before it builds, so a wrong id fails for every seed,
+      not only for a seed that happens to pick it. Approve, or say which to undo.
+  - **Answered 2026-11-22 by DEC-324** (Owner Calls page): "A: sign off (1) and (2) as built".
+    His note asks for a quick mini critic run if nothing waits; it runs with the DEC-324 critic.
+
+- [x] **HC-B23 — Better than the design, built under your standing rule, sign-off asked: map-work
+      critic round 2 (`feat/map-work-forts-towers`, 2026-11-21); no decision blocks the PR.**
+      Recorded as DEC-320 (owner decisions log). (1) A fallen lane tower's banner goes with its
+      own fort object, which is destroyed when the tower falls, so one rule hides all of a fallen
+      tower's art; the separate banner flag and its 2 tests are removed with that code. (2) `Match`
+      feeds each snapshot to the one fallen-structure rule (`RetiredFeatures`); the HUD bridge only
+      reads it. (3) Each fort wall carries a typed role, and the lane corridors pick a fort's wall
+      bands by that role, not by reading wall ids. Approve, or say which to undo.
+  - **Answered 2026-11-22 by DEC-324** (Owner Calls page): "A: sign off (1)-(3) as built".
+
+- [x] **HC-B21 — Better than the design, built under your standing rule, sign-off asked: map-work
+      critic round 1 (`feat/map-work-forts-towers`, 2026-11-21); no decision blocks the PR.**
+      Recorded as DEC-318 (owner decisions log). (1) One `Aura` component holds a structure's
+      whole aura; the aura system and the snapshot (`EntitySnapshot.aura`) read only it.
+      (2) The aura system keeps no state: each pass ends the aura statuses that no living tower
+      covers now, unit by unit in store order. (3) One client rule finds a fallen structure
+      (`RetiredFeatures`, fed by `MatchBridge`). (4) Map generation moves camps clear of the lane
+      forts, so a camp keeps all its pieces. A camp that moves can change its weight class (its
+      class follows its new depth, DISC-42): 6 of 256 camps in 8 seeds on 3 and 5 lanes, all on
+      5-lane maps; card `camp-class-after-move` asks which position the class follows. (5) A
+      building's interior is built once, and the lane
+      corridors read a fort's wall bands from its wall objects. (6) The tower-exit test checks the
+      first tick at which every horde member is out. Approve, or say which to undo.
+  - **Answered 2026-11-22 by DEC-324** (Owner Calls page): "A: sign off (1)-(6) as built".
+    Card `camp-class-after-move` (4): "A: the class of its new position (as built)".
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
@@ -1136,13 +1245,80 @@ Reply inline (`Decision: …`).
       `eternalus-agent-work/playtest-2026-11-04/critic-chevron-r3.md` and
       `eternalus-agent-work/playtest-2026-11-04/session-2383bba1-reports.md`. Approve all,
       approve some, or say no.
-- [ ] **Generated forts overlap when a lane has two or more towers of one kind (map generator).**
+- [x] **Generated forts overlap when a lane has two or more towers of one kind (map generator).**
       Found on `feat/out-of-combat-heal` (2026-11-05). With `spawnTowersPerLane` or
       `buffTowersPerLane` at 2 or more, the generator puts towers of one kind 28 to 38 m apart,
       but a fort box is 32 m wide. The forts and their heal zones then overlap, and DEC-215 (1)
       says an overlap is a bug. The default (one tower of each kind per lane) has no overlap, and
       the heal-zone overlap test covers only the default. Fix the generator now (towers of one
       kind at least one fort box apart), or with the map work? Decision: …
+  - **Answered 2026-11-09 by DEC-227** (question dialog, "Tower-ruins map PR"): fixed on
+    `feat/tower-ruins-and-routes`. `laneStructures.ts` keeps towers of one kind at least a fort
+    box's diagonal apart along the lane (a band too narrow widens round its middle), so two forts
+    never overlap on any lane heading. The fort box is measured in world units (the sketch fort,
+    `BUILDING_GEOMETRY.fort.laneTowerSize`, stretched by the larger world/sketch scale). The
+    generator refuses (`MapGenerationError`) a config whose lane towers of different kinds would
+    come closer than that.
+    `MapGenerator.test.ts` checks every lane tower fort pair at 2 and 3 towers per kind.
+    Correction (critic r2, DEC-239): spacing along the lane does not keep forts apart on a bend or
+    on neighbouring lanes near the gates (critic probe: 3200x900, 7 lanes, 1 + 9 towers, four
+    overlapping pairs). The generator now checks every pair of lane tower forts on the map in
+    world units after placement (`assertLaneFortsApart` in `laneStructures.ts`).
+    Correction (DEC-239 rules critique, 2026-11-13): towers of different kinds only must not
+    overlap (no diagonal gap), and the fort box is stretched per axis (`fortInWorld`), not by the
+    larger scale. Towers of one kind are spaced by the box's diagonal, `hypot(width, height)`;
+    until 2026-11-13 the code used the larger side times root 2, which over-spaced a non-square
+    box (3200x900: 90.5 m for 71.6 m). The neighbouring-lanes probe is now 1 + 11 towers.
+- [x] **Tower-ruins critic round 1 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
+      design — five items.** (B1) one way-out search per court cell instead of one per court mob
+      per tick; (B2) move the ruin rule out of `WorldObjectStore`; (B3) one owner of the
+      court-or-footprint stamping rule; (B4) one A\* search loop; (B5) one "lane tower fort in
+      world units" helper, with a check that nav cells stay thinner than the fort walls. Full
+      findings: `eternalus-agent-work/tower-ruins-and-routes/critic-r1.md`. Decision: …
+  - **Answered 2026-11-10 by DEC-235** (question dialog for B1 and B2; B3 to B5 under the standing
+    no-tech-debt rule): all five built on `feat/tower-ruins-and-routes`. B1 is an exit field in
+    `AStarPathfinder`, filled on demand and reset when `WorldMap.version` changes; B2 is
+    `state/StructureRuins.ts`, run by `MapDestructionSystem`; B3 is `MatchWorld.build` and
+    `MatchWorld.reopen`; B5 is `map/fortInWorld.ts`. Docs 06 §3 and §6, 07 and 10 §9 updated.
+    Later (critic r2, DEC-239): the B3 stamping rule moved to `map/MatchGrid.ts` and the B1 exit
+    field to `map/CourtExitField.ts`.
+- [x] **Tower-ruins critic round 2 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
+      design — four items.** (D1) check lane tower forts on the whole map in world units, not
+      per lane in lane fractions; (D2) the stamping rule in a `map/` class, since `state/` may
+      import `map/` as types only; (D3) the court exit field in its own class; (D4) one
+      point-in-rectangle helper. Full findings:
+      `eternalus-agent-work/tower-ruins-and-routes/critic-r2.md`. Decision: …
+  - **Answered 2026-11-10 by DEC-239** (standing no-tech-debt rule, not asked): all four built on
+    `feat/tower-ruins-and-routes`. D1 is `assertLaneFortsApart` in `map/laneStructures.ts`; D2 is
+    `map/MatchGrid.ts`; D3 is `map/CourtExitField.ts`; D4 is `utils/geometry.isPointInRect`.
+    Confirmed by the owner 2026-11-14 (**DEC-246**, "Confirm"), after a critique found the four
+    generator rules within the design.
+    Docs 03, 06 §3, 07 and 10 §9 updated.
+- [x] **Bot A\* search cap on 2.5 m cells (`feat/tower-ruins-and-routes`, 2026-11-10).** With a
+      horde at every lane tower, bot Legends' A\* failed 190 to 273 times in 300 ticks:
+      `map.pathMaxExpansions` 6000 settles too few 2.5 m cells (DEC-227 (Q-A)) for routes of
+      about 470 m, and a failed search stops the bot. (A) raise the cap to 24000; (B) 12000;
+      (C) keep it and add a bot path cache later. Evidence:
+      `eternalus-agent-work/tower-ruins-and-routes/astar-finding-2026-11-10.md`. Decision: …
+  - **Answered 2026-11-10 by DEC-240** (question dialog): A, plus a request for a bot path cache
+    ("Requests for the agent" below). Built on `feat/tower-ruins-and-routes`:
+    `config/defaultGameConfig.ts`, test in `map/AStarPathfinder.test.ts`.
+- [x] **Tower-ruins critic round 3 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
+      design — four follow-ups, no decision blocks the PR.** (BTD1) Set the A\* cap as a search
+      area in world units (m², divided by `navCellSize`²), or validate the two together, so the
+      next cell-size change cannot shrink the search again (DEC-240 was needed for this reason).
+      (BTD3) Make `DefaultSystemPipelineOptions.ruinWall` required, as the round-1 ruling said:
+      about 12 test call sites add one line, and the type check replaces the run-time throw.
+      (BTD4) One `doRectsOverlap` in `utils/geometry` for `assertLaneFortsApart`,
+      `MapSceneryBuilder`, `StaticCollisionIndex` and two copies in `MapGenerator.test.ts`.
+      (BTD5) `MatchWorld` takes the definition and a `MatchGrid` that another definition could
+      have built: let `MatchGrid` keep its definition and `MatchWorld` take only the grid.
+      Full findings: `eternalus-agent-work/tower-ruins-and-routes/critic-r3.md`. Approve: one
+      follow-up branch builds all four. Decision: …
+  - **Answered 2026-11-14** (question dialog, 2026-11-13 answer 3: "A: follow-up branch now"):
+    BTD3 and BTD5 built on `refactor/tower-ruins-followups` (**DEC-245**), with the layout band
+    rules on the placed towers ("Build now"). BTD1 = DEC-243 on `refactor/astar-search-area`;
+    BTD4 = DEC-244 on `refactor/fort-geometry-helpers`.
 - [x] **Map work has no plan entry (2026-11-20, DEC-311).** Owner rulings send items to "the map
       work": bigger forts (DEC-185 (A), "bigger forts (b) come when map work resumes") and a
       walkable inside for houses (DEC-311); the item "Generated forts overlap when a lane has two
@@ -3727,16 +3903,31 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       owner has not ruled on that. Done when the three are built with tests and the PRs are in
       phase/3.
 
-- [ ] **Make the tower horde test faster (DEC-289, 2026-11-20).** Owner: to be assigned.
+- [ ] **Make the tower horde test and the Duel kill-target test faster (DEC-289, 2026-11-20;
+      widened to both slow whole-match tests by DEC-325, 2026-11-22).** Owner: to be assigned.
+      Both core tests build a whole map and match, then play for many ticks.
       `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its
-      lane within 10 seconds (DEC-133, seed %i)", builds a whole map and match for each of its
-      three seeds (1, 2, 10), steps the countdown, then 10 s of play. One seed takes about 3 s
-      locally without coverage, but up to 65 s under coverage on the windows-latest CI runner
-      (PR #122, run 44714237495, 2026-11-20). DEC-289 gave this test its own 120 s time limit
-      (`HORDE_WALK_TIMEOUT_MS`) until it is faster. Where the time goes is not measured yet. Done
-      when the test runs well under 60 s on windows-latest CI and `HORDE_WALK_TIMEOUT_MS` is
-      removed, with every assertion and all three seeds kept (seed 10 covers critic round 3,
-      M-A).
+      lane within 12 seconds (DEC-133, seed %i)", does this for each of its three seeds (1, 2,
+      10): the countdown, then up to 12 s of play. One seed takes about 3 s locally without coverage,
+      but up to 65 s under coverage on the windows-latest CI runner (PR #122, run 44714237495,
+      2026-11-20). `Simulation.duel.test.ts`, "ends the match for the first team to reach the
+      kill target", fights a Duel to two kills; it took up to 61.7 s under coverage on the
+      ubuntu-latest runner (PR #122, run 44872612846, 2026-11-21). DEC-289 and DEC-325 gave the
+      two tests their own 120 s time limits (`HORDE_WALK_TIMEOUT_MS`, `KILL_TARGET_TIMEOUT_MS`)
+      until they are faster. A CPU profile of the slow Duel tests (2026-11-21) puts most of the
+      time in building the map: `WorldMap.stampFootprint` and `cellsInside`, and
+      `LaneFlowFields`; DEC-227's 2.5 m nav cells made that build about 3 times slower. Done when
+      both tests run well under 60 s on both CI runners and both constants are removed, with every
+      assertion kept, all three horde seeds kept (seed 10 covers critic round 3, M-A) and the Duel
+      still fought to its kill target.
+  - **2026-11-22, horde test step 1 done (`chore/horde-test-speed`, into PR #152):** the A\*
+    queue keeps each queued cell's estimate, so a queue compare no longer computes the heuristic
+    again (HC-B32 moved that key into the shared queue); state hashes do not change. Horde test,
+    local, with coverage, per seed: 12.2-12.6 s before, 8.6-9.0 s after. The rest of the cost:
+    after the tower hordes spawn, no straight line is clear, so every bot Legend decision runs an
+    A\* search to its goal. Next step: remove `HORDE_WALK_TIMEOUT_MS` after PR #84 (bot A\*
+    waypoint cache) reaches PR #152's line (both together: 5.0-5.1 s locally), with CI times on
+    both runners as the proof. The Duel test part is not started.
 - [ ] **PR #30 renderer follow-up** — Owner: Gurshaan. Separate caching/batching and close-view
       material detail from the map PR; retain all renderer-specific tests with that change.
       Keep draw order inside SceneView, address renderer file length and the capture layer,
@@ -3979,6 +4170,18 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       other than `README.md` whose name does not match the entry pattern (critic round 2, owner
       sign-off pending). Update the docs check row in `docs/process/guardrails.md`. Close this
       item when its PR merges.
+
+- [ ] **Bot path cache (DEC-240, 2026-11-10)** — Owner: unassigned, own branch. A bot searches
+      A\* again on each blocked decision. On 2.5 m cells (DEC-227 (Q-A)) a search costs about 4
+      times what it cost on 5 m cells: with a horde at every lane tower, 13.6 ms a tick against
+      5.2 ms (a full normal match shows no change). Keep each bot's path and re-plan only when its
+      goal moves or `WorldMap.version` changes (architecture 11 §6 names this as the next step).
+      Note: on seed 1, nine routes of 650 to 810 m between tower forts on opposite sides of the map
+      still settle more than 24000 cells; no bot took such a route in the test. Also (critic r3
+      BTD2): one A\* work budget a tick, counted in searched cells and shared by bot searches and
+      `StuckSystem` plans; `maxDecisionsPerTick` and `STUCK_DETECTION.maxPlansPerTick` count
+      searches, and DEC-240 makes one failed search up to 4 times dearer. Evidence:
+      `eternalus-agent-work/tower-ruins-and-routes/astar-finding-2026-11-10.md`.
 
 ## Feedback
 

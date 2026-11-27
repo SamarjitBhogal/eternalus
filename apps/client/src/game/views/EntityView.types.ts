@@ -25,6 +25,12 @@ export type EntityDrawState = {
    * animates picks its frame by it (DEC-398, card PR170 (12)).
    */
   readonly frameTick: number;
+  /**
+   * The moment this frame shows, in ticks: the previous snapshot's tick plus the interpolation
+   * (`EntityLayer.show`), so it rises smoothly from frame to frame and replays the same. For
+   * motion the snapshot does not hold, such as an aura's particles (DEC-323 (3)).
+   */
+  readonly time: number;
 };
 
 /**
@@ -32,6 +38,12 @@ export type EntityDrawState = {
  * snapshots and draw through the `Renderer` port (architecture 08 §8; 06 §8).
  */
 export interface EntityView {
+  /**
+   * Draws what lies on the ground under every entity, such as an aura field (DEC-323 (3)), in the
+   * main view: `EntityLayer` draws this for every entity before any `draw`, so no unit is tinted
+   * by a ground fill drawn after it. A view without it draws nothing there.
+   */
+  drawGround?(state: EntityDrawState, renderer: Renderer): void;
   /** Draws the entity in the main view, sized in world units. */
   draw(state: EntityDrawState, renderer: Renderer): void;
   /** Draws the entity's mini map marker, sized in CSS pixels, or nothing. */

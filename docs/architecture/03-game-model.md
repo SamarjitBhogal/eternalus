@@ -546,11 +546,13 @@ each closed by the session or phase named:
   `height` above the ground, DEC-390; named for what the view draws, DEC-420), `progression` (a Legend's `level`,
   the `xp` inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the
   level curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
-  `area` (a zone's polygons), `capture` (a capture point's state and presence) and `gem` (the
-  Cathedral gem's holder and glow) groups only.
+  `area` (a zone's polygons), `capture` (a capture point's state and presence), `aura` (a
+  structure's aura `radius` and the outline `box` it is measured beyond, `null` without an `Aura`,
+  DEC-315 (4), DEC-323 (3)) and `gem` (the Cathedral gem's holder and glow) groups only.
   `MatchPhase` lives in `config/matchPhases.ts`; the match director is built (12 §13).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
-  `WorldMap` grid) with no structures index yet (minion plan M2c), and the grid keeps no flow
+  `WorldMap` grid, stamped and reopened by `map/MatchGrid`, which the composition root builds, so
+  `state/` imports `map/` types only) with no structures index yet (minion plan M2c), and the grid keeps no flow
   fields (`PathingSystem` caches them); `GameState` has `hordes` and `teams` (the spawn counters
   only) since minion plan M1, and `ai`, `space` and `hordeRequests` since M2a (11, 18); `EntityFactory` keeps its
   own id counter until session C switches it to `IdGenerator`. `MatchConfig` has no

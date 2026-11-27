@@ -62,7 +62,7 @@ export abstract class Structure extends Entity {
 | -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------ | ----------------------------------- |
 | `Stronghold`   | `Spawner`, `Aura`                    | Capital; its death ends the match; spawns initial hordes and later waves                   | MVP                                 |
 | `SpawnerTower` | `Spawner`, `Combat` (self-defence)   | Front line; spawns light hordes every 60 s after the countdown; guards                     | MVP                                 |
-| `BuffTower`    | `Spawner`, `Aura`, `Combat`          | Second line; team buffs, enemy debuff aura (10% health/damage, TUNE); shield source        | MVP                                 |
+| `BuffTower`    | `Spawner`, `Aura`, `Combat`          | Second line; damage aura for allies and against enemies (DEC-315 (4)); shield source       | MVP                                 |
 | `WallSegment`  | none                                 | Ring collider; unbreakable until the rule in §3 passes                                     | MVP                                 |
 | `Gate`         | `GateState`, `Combat` (fire defence) | Opens for allies/hordes, closes otherwise; burns enemies passing through                   | MVP (fire: MVP-if-time)             |
 | `Turret`       | `TurretState`, `Combat`              | Auto-fires bolts; Warrior Legends may take manual control                                  | MVP (manual: MVP-if-time)           |
@@ -445,26 +445,74 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   from BuffTowers, the `all-of` rule, the §11 invariants (`BreakabilityMatchesRuleInvariant`,
   `NoPassThroughUnbreakableInvariant`), the gate state machine, damage multipliers, walls,
   turrets and the Cathedral as entities, and clearing a destroyed structure's footprint from
-  `WorldMap`; the main view draws structures from the map layer (`StructureView` draws nothing).
+  `WorldMap`; the main view draws a lane tower's kind marker through `StructureView` (DEC-315) and the other structures from the map layer.
   Minion plan M6 adds `Camp` (forest camps, rule `never`, circle radius 1 `TUNE`, since camp
   features have no footprint); its group is a guard plan (18 §7.1), not a `Spawner` component yet.
+- **BuffTower aura (`feat/map-work-forts-towers`, DEC-315 (4), DEC-318, DEC-323 (3), 2026-11-21).** A
+  `StructureDefinition` may carry `aura` (`radius`, `allyStatusId`, `enemyStatusId`); only
+  `buff-tower` has one (`content/structures/structureCatalogue.ts`). `Structure` adds an `Aura`
+  component that holds the whole definition. `StructureAuraSystem` (after `VeterancySystem`) runs
+  every `STRUCTURE_AURA_CADENCE.everySeconds` (loaded to ticks by `loadStructureAuraCadence`):
+  each living entity with an `Aura` on a playable team gives its ally status
+  (`content/status-effects/towerAuraBuff.ts`) to units of its team and its enemy status
+  (`towerAuraDebuff.ts`) to units of the other playable team inside the radius, measured beyond
+  its outline box (`state/outlineBoxOf`: its `Footprint` box, so the court, the doorways and the walls
+  are at distance 0; a source without a `Footprint` measures from its centre), through the match's
+  one `StatusEffectApplier`. Neutral camp mobs and bosses are neither
+  side and get nothing. The system keeps no state: each pass ends, unit by unit in store order,
+  every aura status that no living source covers now (`remove`; the status's short duration is
+  the backstop). Not built: a max-health change and a Stronghold aura (DEC-315 (4)). The snapshot
+  carries `EntitySnapshot.aura` (`radius` and that `box`; `null` without an `Aura`), and
+  `StructureView.drawGround` draws the field the aura covers while the tower stands: the box grown
+  by the radius with rounded corners, faintly filled and ringed in the team colour, with a few
+  light particles drifting along the ring, under every unit (08 §8).
 - **Minion follow-ups (`fix/minion-stack-followups`, 2026-11-05).** Lane towers and the
   Stronghold also carry a `Footprint` component: the polygons of their map object of the same id
   (a tower's fort, the Stronghold's palace outline), which `Simulation` copies for a definition
   with `hasMapFootprint`. Attack reach to the structure is measured to those outlines, and a chase
   aims at their nearest point, or holds inside them (DEC-234), so a hit on a fort wall is a hit on the tower and melee at the
   palace wall reaches the Stronghold (DEC-185, DEC-185 (D)). The circle `Collider` stays. A lane
-  tower's fort map object, which blocks, is the tower's body: it has no health of its own, so
-  damage to the fort goes to the tower (one pool, DEC-185 (B)). After the tower falls, its fort
-  stays standing as scenery with no health on this branch: the ruins with half-health walls
-  (DEC-217 (12), DEC-219 (a)) are built on a later branch (DEC-219 (d)). Only towers share one pool with their fort
-  (DEC-217 (13)): the Stronghold's palace map object and a gate's map object do not block, so
-  both keep their own health. `Simulation` takes the structure
+  tower's fort map objects, which block, are the tower's body: they have no health of their own,
+  so damage to the fort goes to the tower (one pool, DEC-185 (B)). Only towers share one pool
+  with their fort (DEC-217 (13)): the Stronghold's palace map object and a gate's map object do
+  not block, so both keep their own health. `Simulation` takes the structure
   definitions from one injected source (`SimulationOptions.structures`, default
   `STRUCTURE_DEFINITIONS`) for the structures it builds and for `StructureSystem` (DEC-168 B8).
 - **Gate reach (`feat/gate-reach`, 2026-11-13).** A gate's definition has `hasMapFootprint` too, so
   reach to a gate is measured to its polygon (DEC-217 (17)); `hasFortBox` keeps a gate's box out of
   the chase rule's fort boxes, which the towers and the palace keep (DEC-217 (16)).
+- **Tower ruins (`feat/tower-ruins-and-routes`, 2026-11-05).** Each of a lane
+  tower's 11 fort wall pieces, its 7 walls and its 4 corner towers (DEC-227 (Q-C), 2026-11-09), is
+  its own `wall` map object, `partOf` the tower (`MapObject.partOf`); the tower's own object of the
+  same id holds its keep, and the tower's `Footprint` is all of them. When the tower dies, its fort
+  becomes ruins (DEC-217 (12), DEC-219 (a)). `StructureRuins` holds that rule, and
+  `MapDestructionSystem` runs it from its `entity-died` and `entity-removed` listeners;
+  `WorldObjectStore` keeps only object identity and destroyed state. The tower's own object and
+  the wall piece that took the killing hit are destroyed (the piece nearest the killer when the
+  hit lands; none when the keep is nearer, or the killer has no position). The system reopens
+  their cells and the court's through `MatchWorld.reopen`; `MatchGrid` (`map/`) holds the rule
+  that stamps the grid and undoes it. Each other piece stands as teamless scenery with half a wall's own health
+  (`RUINED_FORT_WALL_DEFINITION` in `content/maps/mapObjectDefinitions.ts`) and blocks until it is
+  destroyed on its own.
+- **Court routes and fort spacing (`feat/tower-ruins-and-routes`, 2026-11-09).** Routes into and
+  out of a standing tower's court are built (DEC-217 (15)): the court is court ground in the nav
+  grid (06 §6), which lane flow fields treat as blocked and A\* walks, so every route through a
+  court uses its doorways, and a mob in a court leaves by the nearest doorway (10 §9). Court
+  ground needs nav cells thinner than every fort wall piece, so the cells are 2.5 m, down from
+  5 m (DEC-227 (Q-A); the value is `config.map.navCellSize`). Lane towers of one kind stand at
+  least a fort box's diagonal apart along their lane, so their forts do not overlap (DEC-227,
+  06 §3).
+- **Bigger forts, lane through the court (`feat/map-work-forts-towers`, 2026-11-20).** Lane tower
+  forts grow so every way through a court is at least 2 nav cells wide (DEC-315, DEC-185 (A)
+  option (b)), and the lane runs through each fort by its west and east doorways: court ground is
+  routable for the lane flow fields as for A\*, and no lane corridor holds a fort's north or
+  south wall band, so hordes march through the court round the keep (DEC-315, amending DEC-185
+  (A); 06 §6). At the default world a tower's footprint radius follows its fort
+  (`LANE_TOWER_FOOTPRINT_RADIUS`; a larger world stretches the fort, not the radius), and no
+  blocking object of another building (a house, a camp's stones, a lake, a scattered rock or tree)
+  stands in a lane fort's box or its clearance (`laneFortKeepOuts` in `map/fortInWorld.ts`).
+  Generation moves a camp clear of those boxes (`clearCampOfForts`, DEC-318 (BTD4)); the scenery
+  builder still drops a piece that overlaps one, for the one tested layout whose camp cannot move.
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 

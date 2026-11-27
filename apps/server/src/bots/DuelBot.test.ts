@@ -25,6 +25,7 @@ const entity = (id: string, x: number, y: number, health: number, team: 'light' 
   progression: null,
   area: null,
   capture: null,
+  aura: null,
 });
 
 const state = (tick: number, own: [number, number, number], enemy?: [number, number, number]) =>

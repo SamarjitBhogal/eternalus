@@ -72,6 +72,7 @@ const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => (
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 });
 const PLAYER: EntitySnapshot = { ...unit(ACTOR, 'light', 20, 20), family: 'legend' };

@@ -22,6 +22,7 @@ const gemEntity = (gem: GemSnapshot | null): EntitySnapshot => ({
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem,
 });
 
@@ -34,6 +35,7 @@ const draw = (gem: GemSnapshot | null) => {
       facing: { x: 1, y: 0 },
       isFocused: false,
       frameTick: 0,
+      time: 0,
     },
     renderer,
   );
@@ -86,6 +88,7 @@ describe('CathedralGemView (DEC-291, DEC-292)', () => {
         facing: { x: 1, y: 0 },
         isFocused: false,
         frameTick: 0,
+        time: 0,
       },
       renderer,
     );

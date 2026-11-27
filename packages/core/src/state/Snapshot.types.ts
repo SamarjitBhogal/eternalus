@@ -6,12 +6,12 @@ import type { TeamState } from './GameState.types';
 import type { Horde } from './Horde.types';
 import type { DuelScore, ScheduledMark } from './MatchState.types';
 import type { MapObjectSnapshot } from '../content/maps/mapObjects.types';
-import type { Polygon } from '../utils/geometry.types';
+import type { Polygon, Rect } from '../utils/geometry.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
  * (no `Transform`, `Jump`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`,
- * `Capturable` or `CathedralGemState`), never a made-up default.
+ * `Capturable`, `Aura` or `CathedralGemState`), never a made-up default.
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
@@ -61,6 +61,13 @@ export type EntitySnapshot = {
   readonly area: readonly Polygon[] | null;
   /** A capture point's state (`Capturable`, architecture 07 §7); `null` for every other entity. */
   readonly capture: CaptureSnapshot | null;
+  /**
+   * The entity's aura (`Aura`, DEC-315 (4)) in world units: its `radius`, measured beyond the
+   * outline box (DEC-323 (3)), and that `box` (`outlineBoxOf`: the `Footprint` box, or a box of no
+   * size at the centre). `null` for every entity without an aura, or without a box to measure
+   * from. The client draws the field from it, so no radius lives in the client.
+   */
+  readonly aura: { readonly radius: number; readonly box: Rect } | null;
   /** The Cathedral gem's state (`CathedralGemState`, DEC-291, DEC-292); `null` for the rest. */
   readonly gem: GemSnapshot | null;
 };

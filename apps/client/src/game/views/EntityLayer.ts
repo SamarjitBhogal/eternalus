@@ -12,10 +12,11 @@ import type { ViewRegistry } from './ViewRegistry';
 /**
  * The scene layer that draws every entity of the latest snapshot through the `ViewRegistry`
  * (architecture 08 §8), in the main view and on the mini map (06 §8). Each view gets the frame
- * time with the other draw data (`EntityDrawState.frameTick`). In the main view positions,
- * facings and jump heights (DEC-390) are interpolated between the previous and current snapshot by
- * `alpha`; an entity that appeared this tick draws where it is (no ghost from the origin). It draws
- * back to front by `y`. A mini map dot sits at the snapshot position (DEC-187 (C)).
+ * time with the other draw data (`EntityDrawState.frameTick` and `time`). In the main view
+ * positions, facings and jump heights (DEC-390) are interpolated between the previous and current
+ * snapshot by `alpha`; an entity that appeared this tick draws where it is (no ghost from the
+ * origin). It draws back to front by `y`. A mini map dot sits at the snapshot position (DEC-187
+ * (C)).
  */
 export class EntityLayer implements WorldLayer {
   private states: readonly EntityDrawState[] = [];
@@ -49,6 +50,8 @@ export class EntityLayer implements WorldLayer {
   ): void {
     const before = new Map(previous?.entities.map((entity) => [entity.id, entity]) ?? []);
     const frameTick = current.tick + alpha;
+    const time =
+      previous === null ? current.tick : previous.tick + (current.tick - previous.tick) * alpha;
     this.states = current.entities.flatMap((entity) => {
       const now = entity.transform;
       if (entity.mapObjectId !== undefined || now === null) return [];
@@ -61,16 +64,23 @@ export class EntityLayer implements WorldLayer {
         EntityLayer.heightOf(entity),
         alpha,
       );
-      return [{ entity, position, facing, height, isFocused: entity.id === focusId, frameTick }];
+      return [
+        { entity, position, facing, height, isFocused: entity.id === focusId, frameTick, time },
+      ];
     });
   }
 
   /**
-   * Draws every entity, back to front by `y`, so lower entities overlap higher ones. The health
-   * bars (`HealthBarView`) come after every entity of this layer, so no entity hides a bar.
+   * Draws every entity, back to front by `y`, so lower entities overlap higher ones. What lies on
+   * the ground (`EntityView.drawGround`, an aura field) comes before every entity, so no unit is
+   * tinted by it. The health bars (`HealthBarView`) come after every entity of this layer, so no
+   * entity hides a bar.
    */
   public draw(renderer: Renderer): void {
     const ordered = [...this.states].sort((a, b) => a.position.y - b.position.y);
+    for (const state of ordered) {
+      this.views.viewFor(state.entity).drawGround?.(state, renderer);
+    }
     for (const state of ordered) {
       this.views.viewFor(state.entity).draw(state, renderer);
     }

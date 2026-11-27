@@ -601,7 +601,12 @@ tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16; `creat
 injects the lane progress, the flow fields' path cost gate to gate (DEC-280), else the lane polyline
 (DEC-384); see 18's status note),
 `BossMinionDamageStep` (a boss takes only its share of a lane minion's hit, balancing.md; the
-shares are `BOSS_MINION_DAMAGE_TAKEN` in `content/mobs/minionModifiers.ts`) and
+shares are `BOSS_MINION_DAMAGE_TAKEN` in `content/mobs/minionModifiers.ts`),
+`InteriorAttackStep` (an attacker standing inside a building deals
+`INTERIOR_ATTACK_DAMAGE_MULTIPLIER` to that building: the Stronghold's and the Cathedral's
+`'wall'` objects, and every hit on a lane tower from its court, the ground inside the fort's wall
+band, so not from a doorway; DEC-247 (2), DEC-288, DEC-315, DEC-324;
+[07](07-structures-obstacles-and-destructibles.md)) and
 `BodyPartBonusStep` (DEC-381: the back-hit and head-shot bonuses on a unit with a `CombatHitbox`;
 the multipliers are `BODY_PART_BONUS` in `content/mobs/bodyPartBonus.ts`). `DamageHit` and
 `apply` carry an optional `HitPath`: `origin`, where the hit came from, and `impactPoint`, where a
@@ -951,6 +956,11 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
 
 ## 18. Implementation status
 
+- **BuffTower aura statuses (`feat/map-work-forts-towers`, DEC-315 (4), 2026-11-21).**
+  `tower-aura-buff` and `tower-aura-debuff` are ordinary statuses
+  (`content/status-effects/towerAuraBuff.ts`, `towerAuraDebuff.ts` hold their modifiers and
+  duration), applied and ended through the match's one applier by `StructureAuraSystem`
+  (07 §13). `StatusModifierStep` reads them like any other status, so no damage step was added.
 - **Progression (PR #31, SCRUM-426).** Legends install `Aether` (own component, O1) and
   `Progression` (`xp`, `level`, `curveId`). Level curves are a catalogue
   (`content/progression/levelCurveCatalogue.ts`), shape-checked at load (`loadLevelCurves`) and

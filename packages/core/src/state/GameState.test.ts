@@ -166,6 +166,7 @@ describe('GameState', () => {
           aether: null,
           area: null,
           capture: null,
+          aura: null,
           gem: null,
         },
         {
@@ -181,6 +182,7 @@ describe('GameState', () => {
           aether: null,
           area: null,
           capture: null,
+          aura: null,
           gem: null,
         },
       ],

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { BUILDING_GEOMETRY } from '../content/maps/buildingGeometry';
 import { DEFAULT_MAP_CONFIG } from '../content/maps/defaultMapConfig';
 import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
 import type {
@@ -20,14 +21,18 @@ import {
 import type { LaneShape } from './LaneShape.types';
 import { MapGenerationError } from './MapGenerationError';
 import { MapGenerator } from './MapGenerator';
+import { fortInWorld } from './fortInWorld';
 import { findAsymmetries } from './mapSymmetry';
 import type { MapConfig } from './MapGenerator.types';
 
 const SEED = 1234;
 /** FNV-1a of the default map's JSON at SEED; see the golden-hash test. */
 // Includes the approved front shield and joined mountain bounds, retaining lane anchors (2026-11-03);
-// Strongholds carry only the wall radius and thickness, not frontArc (PR #69 review S3, 2026-11-04).
-const GOLDEN_HASH = 4_128_499_639;
+// Strongholds carry only the wall radius and thickness, not frontArc (PR #69 review S3, 2026-11-04);
+// lane tower footprints follow their 56 m forts (DEC-315, 2026-11-20);
+// camps and scattered obstacles keep clear of the lane tower forts' keep-outs (DEC-315, 2026-11-21);
+// each camp clears them by its own art's box (`campHalfExtent`), not a tent box (merge of #122, 2026-11-27).
+const GOLDEN_HASH = 2_721_654_941;
 const EPSILON = 1e-6;
 
 type Ground = 'map-1' | 'generated';
@@ -201,6 +206,151 @@ describe('MapGenerator', () => {
     }
   });
 
+  // The default world holds 2 of each kind; 3 of each needs a 2400-wide world (DEC-323 (1)).
+  it.each([
+    [2, DEFAULT_MAP_CONFIG.worldWidth],
+    [3, 2400],
+  ])(
+    'keeps every lane tower fort apart with %i towers of each kind per lane in a %i-wide world (DEC-227, DEC-215 (1), DEC-323 (1))',
+    (count, worldWidth) => {
+      // A fort stretches with the world (DEC-227): 84 m wide in the 2400-wide world.
+      const fort = fortInWorld(BUILDING_GEOMETRY.fort.laneTowerSize, {
+        width: worldWidth,
+        height: DEFAULT_MAP_CONFIG.worldHeight,
+      });
+      const overlaps: string[] = [];
+      for (const ground of GROUNDS) {
+        for (const numLanes of [3, 5]) {
+          const map = generate(
+            { numLanes, worldWidth, spawnTowersPerLane: count, buffTowersPerLane: count },
+            SEED,
+            ground,
+          );
+          const towers = [...ofKind(map, 'spawner-tower'), ...ofKind(map, 'buff-tower')];
+          towers.forEach((a, index) => {
+            for (const b of towers.slice(index + 1)) {
+              // Two upright fort boxes overlap when both axes are closer than the fort's size.
+              const dx = Math.abs(a.position.x - b.position.x);
+              const dy = Math.abs(a.position.y - b.position.y);
+              if (dx < fort.width && dy < fort.height)
+                overlaps.push(`${ground} ${String(numLanes)}: ${a.id} ${b.id}`);
+            }
+          });
+        }
+      }
+
+      expect(overlaps).toEqual([]);
+    },
+  );
+
+  it.each([
+    [3200, 1800],
+    [3200, 900],
+  ])(
+    'keeps every lane tower fort apart in a stretched %ix%i world with 3 towers of each kind (DEC-227)',
+    (worldWidth, worldHeight) => {
+      const fort = fortInWorld(BUILDING_GEOMETRY.fort.laneTowerSize, {
+        width: worldWidth,
+        height: worldHeight,
+      });
+      const overlaps: string[] = [];
+      for (const ground of GROUNDS) {
+        const map = generate(
+          { worldWidth, worldHeight, spawnTowersPerLane: 3, buffTowersPerLane: 3 },
+          SEED,
+          ground,
+        );
+        const towers = [...ofKind(map, 'spawner-tower'), ...ofKind(map, 'buff-tower')];
+        expect(towers).toHaveLength(2 * 3 * 3 * 2);
+        towers.forEach((a, index) => {
+          for (const b of towers.slice(index + 1)) {
+            const dx = Math.abs(a.position.x - b.position.x);
+            const dy = Math.abs(a.position.y - b.position.y);
+            if (dx < fort.width && dy < fort.height) {
+              overlaps.push(`${ground}: ${a.id} ${b.id}`);
+            }
+          }
+        });
+      }
+
+      expect(overlaps).toEqual([]);
+    },
+  );
+
+  it('spaces a widened band by the fort box diagonal, not its larger side times root 2 (DEC-227)', () => {
+    // In a 3200x900 world the fort box is not square, so the two measures differ.
+    const fort = fortInWorld(BUILDING_GEOMETRY.fort.laneTowerSize, { width: 3200, height: 900 });
+    const map = generate({ worldWidth: 3200, worldHeight: 900, spawnTowersPerLane: 3 });
+    const [first, second] = ofKind(map, 'spawner-tower').filter(({ id }) =>
+      id.startsWith('light-spawner-tower-lane-1-'),
+    );
+
+    expect(fort.width).not.toBeCloseTo(fort.height);
+    expect(
+      Math.hypot(
+        (second?.position.x ?? 0) - (first?.position.x ?? 0),
+        (second?.position.y ?? 0) - (first?.position.y ?? 0),
+      ),
+    ).toBeCloseTo(Math.hypot(fort.width, fort.height), 6);
+  });
+
+  it.each([3, 5, 7])(
+    'refuses 5 towers of each kind on %i lanes, whose forts would overlap (DEC-215 (1))',
+    (numLanes) => {
+      expect(() => generate({ numLanes, spawnTowersPerLane: 5, buffTowersPerLane: 5 })).toThrow(
+        /map\.spawnTowersPerLane = 5.*map\.buffTowersPerLane = 5.*lane-\d/,
+      );
+    },
+  );
+
+  it('refuses forts on neighbouring lanes that would overlap near the gates (DEC-215 (1))', () => {
+    // Critic r2 probe: each lane keeps its own towers apart, but lanes 0 and 1 fan out from
+    // the Light gates close enough that their first BuffTower forts overlap in a 3200x900 world.
+    // With 56 m forts (DEC-315) 2 BuffTowers do it; 11 (the count for 32 m forts) now widen
+    // their band past its lane first, which refuses the map for another cause.
+    expect(() =>
+      generate({
+        worldWidth: 3200,
+        worldHeight: 900,
+        numLanes: 7,
+        spawnTowersPerLane: 1,
+        buffTowersPerLane: 2,
+      }),
+    ).toThrow(/forts of light-buff-tower-lane-0-0 and light-buff-tower-lane-1-0 over each other/);
+  });
+
+  it('refuses a tower band widened past the end of its lane', () => {
+    expect(() => generate({ numLanes: 3, spawnTowersPerLane: 1, buffTowersPerLane: 16 })).toThrow(
+      /map\.buffTowersPerLane = 16 put the towers of lane-0 where a lane band rule breaks: .*laneBands\.buff must be a band inside \[0, 1\]/,
+    );
+  });
+
+  // With 56 m forts (DEC-315) 4 is the most BuffTowers behind one SpawnerTower in the default
+  // world: their band widens from 0.14..0.22 to about 0.08..0.28 of the lane, the SpawnerTower
+  // stands at 0.35, and a fifth BuffTower's fort overlaps the SpawnerTower's.
+  it('generates 1 SpawnerTower and 4 BuffTowers on 3 lanes: the buff band widens but no tower passes the spawner (DEC-246 (2))', () => {
+    expect(() =>
+      generate({ numLanes: 3, spawnTowersPerLane: 1, buffTowersPerLane: 4 }),
+    ).not.toThrow();
+  });
+
+  it('generates a lane with no SpawnerTower: the order rule needs a tower of each kind', () => {
+    // 6 BuffTowers behind a SpawnerTower break the order rule (the test below); with no
+    // SpawnerTower there is no order to break.
+    expect(() =>
+      generate({ numLanes: 3, spawnTowersPerLane: 0, buffTowersPerLane: 6 }),
+    ).not.toThrow();
+  });
+
+  it('refuses a last BuffTower that is not behind the first SpawnerTower, naming the cause', () => {
+    // 6 BuffTowers widen their band until the last one stands past the SpawnerTower (with 56 m
+    // forts, DEC-315; 10 at 32 m, which now also widen the band past its lane). The map was refused
+    // before too, but as forts over each other, which does not name the cause.
+    expect(() => generate({ numLanes: 3, spawnTowersPerLane: 1, buffTowersPerLane: 6 })).toThrow(
+      /map\.spawnTowersPerLane = 1 and map\.buffTowersPerLane = 6 put the towers of lane-\d where a lane band rule breaks: laneBands\.spawner must lie ahead of laneBands\.buff \(map\.worldWidth = 1600, map\.worldHeight = 900\)/,
+    );
+  });
+
   it('starts every lane at its Light gate and ends it at its Dark gate', () => {
     const map = generate();
 
@@ -297,6 +447,38 @@ describe('MapGenerator', () => {
         );
       }
     }
+  });
+
+  it('rejects an obstacle choice that is not a map feature definition, naming it', () => {
+    const layout: MapLayout = {
+      ...DEFAULT_MAP_LAYOUT,
+      obstacles: {
+        ...DEFAULT_MAP_LAYOUT.obstacles,
+        choices: [{ definitionId: 'no-such-obstacle', weight: 1 }],
+      },
+    };
+
+    expect(() => new MapGenerator({ layout }).generate({ map: DEFAULT_MAP_CONFIG }, SEED)).toThrow(
+      /obstacles\.choices names "no-such-obstacle"/,
+    );
+  });
+
+  it('rejects an unknown obstacle choice that no seed samples, before generating', () => {
+    const layout: MapLayout = {
+      ...DEFAULT_MAP_LAYOUT,
+      obstacles: {
+        ...DEFAULT_MAP_LAYOUT.obstacles,
+        // So light a weight that no roll ever picks it: only an up-front check can see it.
+        choices: [
+          ...DEFAULT_MAP_LAYOUT.obstacles.choices,
+          { definitionId: 'never-sampled-obstacle', weight: Number.MIN_VALUE },
+        ],
+      },
+    };
+
+    expect(() => new MapGenerator({ layout }).generate({ map: DEFAULT_MAP_CONFIG }, SEED)).toThrow(
+      /obstacles\.choices names "never-sampled-obstacle"/,
+    );
   });
 
   it('gives each feature its definition id and minimap glyph', () => {
@@ -496,7 +678,11 @@ describe('MapGenerator', () => {
   });
 
   it('refuses to build a gate its turrets would close (too many lanes for the ring)', () => {
-    expect(() => generate({ numLanes: 9 })).toThrow(/minGateOpening/);
+    // No lane towers: the generator places them before it raises the walls, and with 56 m forts
+    // (DEC-315) 9 lanes' forts overlap first (DEC-246 (1)).
+    expect(() => generate({ numLanes: 9, spawnTowersPerLane: 0, buffTowersPerLane: 0 })).toThrow(
+      /minGateOpening/,
+    );
     const narrowArc = new MapGenerator({
       layout: {
         ...DEFAULT_MAP_LAYOUT,
@@ -508,11 +694,22 @@ describe('MapGenerator', () => {
     );
   });
 
-  it.each([1, 3, 5, 7])(
-    'is mirror-symmetric in every feature, terrain shape and lane (%i lanes)',
-    (numLanes) => {
+  // 56 m lane tower forts (DEC-315) on 7 lanes of map-1 ground overlap in the default 1600-wide
+  // world, which the generator refuses (DEC-246 (1)); they fit 2400 wide.
+  it.each([
+    [1, 1600],
+    [3, 1600],
+    [5, 1600],
+    [7, 2400],
+  ])(
+    'is mirror-symmetric in every feature, terrain shape and lane (%i lanes, %i wide)',
+    (numLanes, worldWidth) => {
       for (const ground of GROUNDS) {
-        const map = generate({ numLanes, campsPerSide: numLanes > 1 ? 6 : 0 }, SEED, ground);
+        const map = generate(
+          { numLanes, campsPerSide: numLanes > 1 ? 6 : 0, worldWidth },
+          SEED,
+          ground,
+        );
         expect(findAsymmetries(map)).toEqual([]);
       }
     },
@@ -536,15 +733,27 @@ describe('MapGenerator', () => {
     expect(findAsymmetries(map)).toEqual([]);
   });
 
+  // The lanes are laid before the towers, so towers do not shape them. 7 lanes' 56 m forts
+  // (DEC-315) overlap on map-1 ground in a 1600x1400 world (DEC-246 (1)), so that case has none.
   it.each([
-    [1600, 1800, 5],
-    [1600, 1400, 7],
-    [2400, 900, 3],
+    [1600, 1800, 5, 1],
+    [1600, 1400, 7, 0],
+    [2400, 900, 3, 1],
   ])(
-    'keeps lanes out of their own walls in a %ix%i world with %i lanes',
-    (worldWidth, worldHeight, numLanes) => {
+    'keeps lanes out of their own walls in a %ix%i world with %i lanes (towers of each kind per lane: %i)',
+    (worldWidth, worldHeight, numLanes, towers) => {
       for (const ground of GROUNDS) {
-        const map = generate({ worldWidth, worldHeight, numLanes }, SEED, ground);
+        const map = generate(
+          {
+            worldWidth,
+            worldHeight,
+            numLanes,
+            spawnTowersPerLane: towers,
+            buffTowersPerLane: towers,
+          },
+          SEED,
+          ground,
+        );
         expect(map.lanes).toHaveLength(numLanes);
         for (const lane of map.lanes) {
           expect(
@@ -600,7 +809,12 @@ describe('MapGenerator', () => {
   });
 
   it('rejects a feature that names an unknown definition', () => {
-    const generator = new MapGenerator({ definitions: {} });
+    // Only the Stronghold's definition is missing, so the obstacle choices pass the up-front check
+    // and the feature itself is rejected (`createMapFeature`).
+    const definitions = Object.fromEntries(
+      Object.entries(MAP_FEATURE_DEFINITIONS).filter(([id]) => id !== 'stronghold'),
+    );
+    const generator = new MapGenerator({ definitions });
 
     expect(() => generator.generate({ map: DEFAULT_MAP_CONFIG }, SEED)).toThrow(
       /unknown definition/,

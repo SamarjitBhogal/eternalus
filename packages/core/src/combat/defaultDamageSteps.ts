@@ -1,5 +1,6 @@
 import type { DamageStep } from './DamageStep.types';
 import { BasicAttackLevelStep } from './BasicAttackLevelStep';
+import { INTERIOR_ATTACK_DAMAGE_MULTIPLIER } from '../content/structures/interiorAttack';
 import { BreakabilityStep } from './BreakabilityStep';
 import { LEGEND_CLASSES } from '../content/legends/legendCatalogue';
 import { STRUCTURE_MAP_OBJECT_KINDS } from '../content/maps/mapObjectDefinitions';
@@ -11,6 +12,7 @@ import { MOB_DEFINITIONS } from '../content/mobs/mobCatalogue';
 import { BodyPartBonusStep } from './BodyPartBonusStep';
 import { BossMinionDamageStep } from './BossMinionDamageStep';
 import { FriendlyFireStep } from './FriendlyFireStep';
+import { InteriorAttackStep } from './InteriorAttackStep';
 import { MinionStrengthStep } from './MinionStrengthStep';
 import type { LaneProgressOf } from './MinionStrengthStep.types';
 import { StatusModifierStep } from './StatusModifierStep';
@@ -33,5 +35,6 @@ export const createDefaultDamageSteps = (
   new StatusModifierStep(),
   new MinionStrengthStep(MINION_STRENGTH, progressOf),
   new BossMinionDamageStep(BOSS_MINION_DAMAGE_TAKEN, MOB_DEFINITIONS.ids),
+  new InteriorAttackStep(INTERIOR_ATTACK_DAMAGE_MULTIPLIER),
   new BodyPartBonusStep(BODY_PART_BONUS),
 ];

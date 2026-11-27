@@ -47,6 +47,7 @@ const PLAIN: EntitySnapshot = {
   progression: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 };
 
@@ -93,6 +94,7 @@ function stateOf(entity: EntitySnapshot, frameTick = 0): EntityDrawState {
     facing: { x: 0, y: 1 },
     isFocused: false,
     frameTick,
+    time: 0,
   };
 }
 
@@ -163,6 +165,7 @@ describe('LegendSprites', () => {
         facing: { x: 0, y: 1 },
         isFocused: false,
         frameTick: 0,
+        time: 0,
       },
       renderer,
     );
@@ -246,6 +249,7 @@ describe('LegendSprites', () => {
           facing: { x: 0, y: 1 },
           isFocused: false,
           frameTick: 0,
+          time: 0,
         },
         renderer,
       );
@@ -286,8 +290,8 @@ describe('LegendSprites', () => {
     const state = { entity: BOT, position: { x: 30, y: 20 }, facing: { x: 0, y: 1 } };
     const bot = new RecordingRenderer();
     const disc = new RecordingRenderer();
-    sprites.view?.draw({ ...state, isFocused: false, frameTick: 0 }, bot);
-    new LegendView().draw({ ...state, isFocused: false, frameTick: 0 }, disc);
+    sprites.view?.draw({ ...state, isFocused: false, frameTick: 0, time: 0 }, bot);
+    new LegendView().draw({ ...state, isFocused: false, frameTick: 0, time: 0 }, disc);
 
     expect(drawnFrame(sprites, HERO)).toEqual({ atlasId: 'knight-sprites', frame: 0 });
     expect(bot.calls).toEqual(disc.calls);

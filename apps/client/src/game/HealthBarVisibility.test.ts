@@ -30,6 +30,7 @@ const entity = (
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 });
 

@@ -249,6 +249,18 @@ Order in `SystemPipeline`: `MovementSystem` → `CollisionSystem` → `SpaceSyst
 - A lane's field also covers the blocked cells of its corridor: every one reachable from open
   ground points the shortest way out, so a horde spawned inside its structure's footprint
   ([18](18-minion-system.md) §3.2) or a unit pushed into a wall is led back to open ground (MS-31).
+- A lane tower's court is court ground (`06-map-and-minimap.md` §6): routable, so A\* and its
+  string pulling and the lane fields walk it, and a route into, out of or through a court goes
+  through a doorway. A lane's field runs through the court from the west doorway to the east one
+  (DEC-315, amending DEC-185 (A)), so a marching horde member in a court follows its field. Any
+  other mob that stands in a court (on court ground, or on a wall cell beside it; other blocked
+  ground in a fort box, such as the palace's, is no court), and does not chase a target inside
+  the same fort, steers by no lane field. It heads for its stuck-chase waypoint, else for
+  `AStarPathfinder.exitWaypoint`, the way out by the nearest doorway (DEC-217 (15)). The way out of each blocked cell is searched
+  once and kept until the grid next changes (`CourtExitField`, reset by `WorldMap.version`), so a crowd in a court costs one
+  search per cell, not one per unit per tick. String pulling never heads for the centre of the
+  walker's own cell: from court ground no straight line is clear, so that centre would hold the
+  walker in place.
 - Flow fields rebuild time-sliced after terrain changes (`06-map-and-minimap.md` §6); ORCA is
   an optional `AvoidanceStrategy` if playtests show shuffling, not an MVP item.
 

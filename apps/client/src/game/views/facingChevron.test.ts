@@ -28,6 +28,7 @@ const UNIT: EntitySnapshot = {
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 };
 
@@ -35,7 +36,7 @@ const UNIT: EntitySnapshot = {
 const chevron = (facing: WorldPoint): readonly WorldPoint[] => {
   const renderer = new RecordingRenderer();
   drawFacingChevron(
-    { entity: UNIT, position: AT, facing, isFocused: false, frameTick: 0 },
+    { entity: UNIT, position: AT, facing, isFocused: false, frameTick: 0, time: 0 },
     renderer,
   );
   const [call, ...rest] = renderer.calls;
@@ -105,6 +106,7 @@ describe('drawFacingChevron (DEC-192)', () => {
         facing: { x: 1, y: 0 },
         isFocused: false,
         frameTick: 0,
+        time: 0,
       },
       renderer,
     );

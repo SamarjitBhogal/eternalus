@@ -21,7 +21,7 @@ import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { Legend } from '../entities/Legend';
 import { Unit } from '../entities/Unit';
-import { WorldMap } from '../map/WorldMap';
+import { MatchGrid } from '../map/MatchGrid';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
 import { MatchWorld } from '../state/MatchWorld';
@@ -42,10 +42,7 @@ const BOT = {
 
 const setUp = (isWithMap = true) => {
   const world = isWithMap
-    ? new MatchWorld(
-        TWO_LANE_MAP,
-        WorldMap.fromDefinition(TWO_LANE_MAP, 2, () => false),
-      )
+    ? new MatchWorld(MatchGrid.build(TWO_LANE_MAP, [], { cellSize: 2, features: {} }))
     : null;
   const state = new GameState(CONFIG, 1, world);
   const weapons = loadWeapons(CONFIG.tickRate);

@@ -22,6 +22,7 @@ const entity: EntitySnapshot = {
   progression: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 };
 const state = {
@@ -29,6 +30,7 @@ const state = {
   position: { x: 1, y: 2 },
   isFocused: true,
   frameTick: 0,
+  time: 0,
   facing: { x: 0, y: 1 },
 };
 const FRAME = { atlasId: 'oracle-sprites', frame: 3 } as const;

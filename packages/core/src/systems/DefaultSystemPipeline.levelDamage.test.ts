@@ -6,7 +6,10 @@ import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { WARRIOR } from '../content/legends/warrior';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { loadDefaultContent } from '../content/loadDefaultContent';
-import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
+import {
+  MAP_OBJECT_DEFINITIONS,
+  RUINED_FORT_WALL_DEFINITION,
+} from '../content/maps/mapObjectDefinitions';
 import { loadScoring } from '../content/match/loadScoring';
 import { LEGEND_LEVEL_CURVE } from '../content/progression/levelCurves';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
@@ -93,6 +96,7 @@ const firstHit = (
     state,
     progression: { units, curves, xpSources: XP_SOURCES },
     director: { update: () => undefined },
+    ruinWall: RUINED_FORT_WALL_DEFINITION,
   });
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),

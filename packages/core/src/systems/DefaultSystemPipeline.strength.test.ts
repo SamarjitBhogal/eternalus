@@ -4,6 +4,7 @@ import type { LaneProgressOf } from '../combat/MinionStrengthStep.types';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { RUINED_FORT_WALL_DEFINITION } from '../content/maps/mapObjectDefinitions';
 import { loadScoring } from '../content/match/loadScoring';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../content/progression/xpSources';
@@ -63,6 +64,7 @@ describe('DefaultSystemPipeline.laneProgressOf, the minion strength wiring (05 Â
       progression: { units, curves, xpSources: XP_SOURCES },
       // Strength wiring is the subject here, not the match: no director moves the phase.
       director: { update: () => undefined },
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
       hordes: {
         factory: new EntityFactory(createDefaultEntityRegistry(), units),
         space: null,

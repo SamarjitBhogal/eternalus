@@ -1,4 +1,4 @@
-import type { MapDecoration, MapDefinition } from '../content/maps/maps.types';
+import type { MapDecoration, MapDefinition, MapFeature } from '../content/maps/maps.types';
 import {
   MAP_PALETTE as P,
   SCENERY_SETTINGS as S,
@@ -8,11 +8,11 @@ import {
 import { boundsOf, doRectsOverlap } from '../utils/geometry';
 import { strongholdRing } from './strongholdRing';
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
-import { CAMP_KINDS, FORTIFIED_KINDS } from './MapSceneryBuilder.constants';
+import { FORTIFIED_KINDS, WALL_RING_KINDS } from './MapSceneryBuilder.constants';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 import { MapFortificationBuilder } from './MapFortificationBuilder';
 import { MapCampBuilder } from './MapCampBuilder';
-import { NeutralCampBuilder } from './NeutralCampBuilder';
+import { CAMP_ART, isCampArtKind } from './campArtByKind';
 import { laneCampThemes } from './campThemes';
 import { MapBiomeBuilder } from './MapBiomeBuilder';
 import { MapBiomeVegetationBuilder } from './MapBiomeVegetationBuilder';
@@ -28,7 +28,8 @@ import { LAVA_RIVERS } from '../content/maps/map1Landforms';
 import { distance, distanceToPath, isPointInPolygon } from '../utils/geometry';
 import { SeededRandom } from '../utils/SeededRandom';
 import { mirrorMovableScenery, placeSceneryLakes } from './sceneryPlacement';
-import type { Vec2 } from '../utils/geometry.types';
+import { isInLaneFortKeepOut, laneFortKeepOuts } from './fortInWorld';
+import type { Polygon, Rect, Vec2 } from '../utils/geometry.types';
 
 /**
  * Builds repeatable visual scenery for a generated map, with seeded placement and without collision or
@@ -36,12 +37,14 @@ import type { Vec2 } from '../utils/geometry.types';
  * so the map is mapped into the sketch, dressed, and the result stretched back to world units.
  */
 export class MapSceneryBuilder extends MapDecorationBuilder {
-  /** The generated map, in sketch coordinates. */
+  /** The generated map, in sketch coordinates: lanes, terrain, feature positions and footprints. */
   private readonly map: MapDefinition;
   private readonly world: MapDefinition;
   private readonly scaleX: number;
   private readonly scaleY: number;
   private readonly lakes: ReturnType<typeof placeSceneryLakes>;
+  /** The ground round each lane tower fort that no camp piece may take (DEC-315), in sketch units. */
+  private readonly keepOuts: readonly Rect[];
 
   /** Creates a builder for one generated map. */
   public constructor(world: MapDefinition) {
@@ -49,10 +52,7 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
     this.world = world;
     this.scaleX = world.width / SKETCH_WIDTH;
     this.scaleY = world.height / SKETCH_HEIGHT;
-    const toSketch = (point: Vec2): Vec2 => ({
-      x: point.x / this.scaleX,
-      y: point.y / this.scaleY,
-    });
+    const toSketch = (point: Vec2): Vec2 => this.toSketch(point);
     this.map = {
       ...world,
       width: SKETCH_WIDTH,
@@ -62,9 +62,11 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
       features: world.features.map((feature) => ({
         ...feature,
         position: toSketch(feature.position),
+        ...(feature.footprint === undefined ? {} : { footprint: feature.footprint.map(toSketch) }),
       })),
     };
     this.lakes = placeSceneryLakes(this.map);
+    this.keepOuts = laneFortKeepOuts(this.map.features);
   }
 
   /** Returns the landscape, forests, settlement, camps and dressed features, in world units. */
@@ -74,19 +76,16 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
       ...piece,
       shape: piece.shape.map((point) => ({ x: point.x * this.scaleX, y: point.y * this.scaleY })),
     }));
-    const ring = this.world.features
-      .filter((f) => f.kind === 'gate' || f.kind === 'wall-segment' || f.kind === 'turret')
-      .map((feature) => {
-        const footprint = feature.footprint ?? [feature.position];
-        const xs = footprint.map((p) => p.x);
-        const ys = footprint.map((p) => p.y);
-        return {
-          x: Math.min(...xs) - 5,
-          y: Math.min(...ys) - 5,
-          width: Math.max(...xs) - Math.min(...xs) + 10,
-          height: Math.max(...ys) - Math.min(...ys) + 10,
-        };
-      });
+    const ring = MapSceneryBuilder.wallFootprints(this.world.features).map((footprint) => {
+      const xs = footprint.map((p) => p.x);
+      const ys = footprint.map((p) => p.y);
+      return {
+        x: Math.min(...xs) - 5,
+        y: Math.min(...ys) - 5,
+        width: Math.max(...xs) - Math.min(...xs) + 10,
+        height: Math.max(...ys) - Math.min(...ys) + 10,
+      };
+    });
     const underRing = scenery.map((piece) => {
       const pieceBounds = boundsOf(piece.shape);
       const overlaps = ring.some((bounds) => doRectsOverlap(pieceBounds, bounds));
@@ -113,7 +112,8 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
     this.isMirrored = true;
     this.forest();
     this.isMirrored = undefined;
-    this.pieces.push(...new MapMountainBuilder().build(this.map));
+    const wall = MapSceneryBuilder.wallFootprints(this.map.features);
+    this.pieces.push(...new MapMountainBuilder(wall).build(this.map));
     this.pieces.push(...new MapVillageBuilder(this.map).build());
     const themes = laneCampThemes(this.map);
     this.map.features.forEach((feature) => {
@@ -128,15 +128,41 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
               object: { id: feature.id, kind: 'fort' as const, isFootprint: false },
             })),
           );
-      } else if (feature.kind === 'corner-camp') {
-        this.pieces.push(...new MapCampBuilder().build(feature, theme ?? 'corner', mirrorWidth));
-      } else if (CAMP_KINDS.has(feature.kind)) {
-        this.pieces.push(...new NeutralCampBuilder().build(feature, mirrorWidth));
+      } else if (isCampArtKind(feature.kind)) {
+        this.pieces.push(...this.clearOfForts(CAMP_ART[feature.kind](feature, mirrorWidth)));
       }
     });
     const cathedral = this.map.features.find((f) => f.kind === 'cathedral');
     if (cathedral !== undefined)
       this.pieces.push(...new CathedralExteriorBuilder().build(cathedral.id));
+  }
+
+  /**
+   * A camp's art without the pieces that stand in a lane tower fort or its clearance
+   * (`laneFortKeepOuts`, DEC-315, DEC-318 (BTD4)). The generator moves each camp clear of them
+   * (`clearCampOfForts`), so a camp keeps every piece. Only a camp it could not move (a corridor
+   * crowded with forts) loses the pieces there; its ground stays.
+   */
+  private clearOfForts(pieces: readonly MapDecoration[]): readonly MapDecoration[] {
+    // ponytail: drops piece by piece, so in a camp that cannot move a stone can lose its blocking
+    // foot and keep its face. Only the 5-lane, 2 + 3 tower layout has such a camp. Upgrade path:
+    // tag each part (stone, dolmen) in the camp builders and drop a part as one unit.
+    return pieces.filter(
+      (piece) =>
+        piece.layer === 'ground' || !isInLaneFortKeepOut(boundsOf(piece.shape), this.keepOuts),
+    );
+  }
+
+  /** A world point in sketch units. */
+  private toSketch({ x, y }: Vec2): Vec2 {
+    return { x: x / this.scaleX, y: y / this.scaleY };
+  }
+
+  /** The wall's footprints (gates, wall segments, turrets), in the units of `features` (HC-Q95). */
+  private static wallFootprints(features: readonly MapFeature[]): readonly Polygon[] {
+    return features
+      .filter(({ kind }) => WALL_RING_KINDS.has(kind))
+      .map(({ footprint, position }) => footprint ?? [position]);
   }
 
   private isClear(point: Vec2): boolean {

@@ -28,6 +28,7 @@ const MINION: EntitySnapshot = {
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 };
 
@@ -42,7 +43,7 @@ describe('MobView', () => {
     const renderer = new RecordingRenderer();
 
     new MobView().draw(
-      { entity: MINION, position: AT, facing: SOUTH, isFocused: false, frameTick: 0 },
+      { entity: MINION, position: AT, facing: SOUTH, isFocused: false, frameTick: 0, time: 0 },
       renderer,
     );
 
@@ -69,6 +70,7 @@ describe('MobView', () => {
       facing: SOUTH,
       isFocused: false,
       frameTick: 0,
+      time: 0,
     });
 
     view.drawMinimap(at('light'), renderer);

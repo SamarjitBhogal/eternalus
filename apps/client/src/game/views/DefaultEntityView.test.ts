@@ -19,6 +19,7 @@ const dummy = (team: EntitySnapshot['team']): EntitySnapshot => ({
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 });
 
@@ -31,7 +32,14 @@ describe('DefaultEntityView', () => {
     const renderer = new RecordingRenderer();
 
     new DefaultEntityView().draw(
-      { entity: dummy('dark'), position: AT, facing: EAST, isFocused: false, frameTick: 0 },
+      {
+        entity: dummy('dark'),
+        position: AT,
+        facing: EAST,
+        isFocused: false,
+        frameTick: 0,
+        time: 0,
+      },
       renderer,
     );
 
@@ -44,7 +52,14 @@ describe('DefaultEntityView', () => {
     const renderer = new RecordingRenderer();
 
     new DefaultEntityView().draw(
-      { entity: dummy('light'), position: AT, facing: EAST, isFocused: true, frameTick: 0 },
+      {
+        entity: dummy('light'),
+        position: AT,
+        facing: EAST,
+        isFocused: true,
+        frameTick: 0,
+        time: 0,
+      },
       renderer,
     );
 
@@ -57,11 +72,18 @@ describe('DefaultEntityView', () => {
     const view = new DefaultEntityView();
 
     view.draw(
-      { entity: dummy('neutral'), position: AT, facing: EAST, isFocused: false, frameTick: 0 },
+      {
+        entity: dummy('neutral'),
+        position: AT,
+        facing: EAST,
+        isFocused: false,
+        frameTick: 0,
+        time: 0,
+      },
       renderer,
     );
     view.draw(
-      { entity: dummy(null), position: AT, facing: EAST, isFocused: false, frameTick: 0 },
+      { entity: dummy(null), position: AT, facing: EAST, isFocused: false, frameTick: 0, time: 0 },
       renderer,
     );
 
@@ -75,7 +97,14 @@ describe('DefaultEntityView', () => {
     const renderer = new RecordingRenderer();
 
     new DefaultEntityView().drawMinimap(
-      { entity: dummy('dark'), position: AT, facing: EAST, isFocused: false, frameTick: 0 },
+      {
+        entity: dummy('dark'),
+        position: AT,
+        facing: EAST,
+        isFocused: false,
+        frameTick: 0,
+        time: 0,
+      },
       renderer,
     );
 

@@ -19,11 +19,13 @@ describe('withVisualRadius', () => {
         aether: null,
         area: null,
         capture: null,
+        aura: null,
         gem: null,
       },
       position: { x: 1, y: 2 },
       isFocused: true,
       frameTick: 0,
+      time: 0,
     };
     const visual = withVisualRadius(state, 3);
     expect(visual.entity.transform).toEqual({ facing: { x: 1, y: 0 }, x: 1, y: 2, radius: 3 });

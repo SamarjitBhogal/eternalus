@@ -159,9 +159,14 @@ tree (root `ActiveSelector`):
    A neutral camp mob counts only while it attacks the bot; bot camp farming comes later
    (DEC-166). An enemy that stands inside a tower is chased in, not waited for at the edge
    (DEC-189).
-3. `Push`: advance with the lane's horde toward the next enemy structure; attack structures when
+3. `Defend`: a hostile unit attacks one of the bot's own towers or its gate on its lane → the bot
+   fights the enemies within `engageRadius` of that structure's box (`LaneStructureEntry.box`: a
+   tower's whole fort), picked as in `Fight`, wherever on the lane it stands (DEC-323 (2)). `Fight` comes first, so a near enemy is fought
+   before a far structure is defended. The Stronghold, which has no lane, is not defended by this
+   step.
+4. `Push`: advance with the lane's horde toward the next enemy structure; attack structures when
    no units are in range. The bot approaches a structure from the side that faces it (DEC-189).
-4. `Regroup`: return to the lane corridor.
+5. `Regroup`: return to the lane corridor.
 
 A bot whose chase of its target is stuck goes round on the A\* waypoint that stuck detection gives
 it (18 §5.2, DEC-193).

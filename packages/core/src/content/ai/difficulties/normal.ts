@@ -8,7 +8,7 @@ export const NORMAL_BOT = {
   id: 'normal',
   retreatHealthFraction: 0.3, // TUNE: no reference value
   rejoinHealthFraction: 0.8, // TUNE: no reference value
-  engageRadius: 12, // TUNE: no reference value; about half a Legend's 25 m vision
+  engageRadius: 18, // TUNE: DEC-323 (2) raised from 12; 3/4 of a Legend's 25 m vision
   arrivalDistance: 2, // TUNE: no reference value; one formation slot
   utilityWeights: { closeness: 1, weakness: 1 }, // TUNE: no reference value
   abilityUseChance: 0.3, // TUNE: no reference value

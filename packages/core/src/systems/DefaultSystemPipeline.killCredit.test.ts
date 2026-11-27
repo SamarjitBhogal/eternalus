@@ -7,6 +7,7 @@ import { LastLegendHits } from '../components/LastLegendHits';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { RUINED_FORT_WALL_DEFINITION } from '../content/maps/mapObjectDefinitions';
 import { loadScoring } from '../content/match/loadScoring';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../content/progression/xpSources';
@@ -40,6 +41,7 @@ const setUp = (assistWindowTicks = loadScoring(config.tickRate).assistWindowTick
     state,
     progression: { units: UNITS, curves: loadLevelCurves(), xpSources: XP_SOURCES },
     director: { update: () => undefined },
+    ruinWall: RUINED_FORT_WALL_DEFINITION,
     assistWindowTicks,
   });
   const registry = createDefaultEntityRegistry();

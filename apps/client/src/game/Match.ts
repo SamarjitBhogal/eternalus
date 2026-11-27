@@ -27,6 +27,7 @@ import {
 } from './Match.constants';
 import type { MatchDeps } from './Match.types';
 import { MatchBridge } from './MatchBridge';
+import { RetiredFeatures } from './RetiredFeatures';
 import { MatchCamera } from './MatchCamera';
 import { MatchViewControls } from './MatchViewControls';
 import type { PlayerActions } from './PlayerActions';
@@ -75,6 +76,8 @@ export class Match implements LoopTarget {
 
   /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */
   private readonly objects: WorldObjectsView;
+  /** Which structures have fallen; `Match` observes every snapshot into it. */
+  private readonly retired = new RetiredFeatures();
   private readonly atmosphere: BiomeAtmosphereView;
 
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
@@ -146,10 +149,20 @@ export class Match implements LoopTarget {
     const shown = (): WorldRect => this.camera.visibleArea();
     this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
     const { isDestroyed } = this.objects;
+    const { isRetired } = this.retired;
     this.atmosphere = new BiomeAtmosphereView(scenery, shown);
     const featureSizes = { 'corner-camp': 2 * CORNER_CAMP_RING.radius } as const;
     const scene = new SceneView([
-      new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed, featureSizes),
+      new MapView(
+        map,
+        scenery,
+        hiddenRoofs,
+        shown,
+        buildings,
+        isDestroyed,
+        isRetired,
+        featureSizes,
+      ),
       new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
       this.objects,
       new LegendBodyLayer(this.bodies.bodies),
@@ -177,6 +190,7 @@ export class Match implements LoopTarget {
     });
     this.healthBars.observe(this.current, this.playerId);
     this.damageBadges.observe(this.current, this.playerId);
+    this.retired.observe(this.current);
     this.bodies.observe(this.current);
     this.bridge = new MatchBridge({
       ...bridge,
@@ -184,6 +198,7 @@ export class Match implements LoopTarget {
       map,
       events: simulation,
       firstSnapshot: this.current,
+      retired: this.retired,
     });
     this.controls = this.createControls();
     camera.lookAt(this.playerEntity()?.transform ?? { x: map.width / 2, y: map.height / 2 });
@@ -279,6 +294,7 @@ export class Match implements LoopTarget {
     this.legendSprites.observe(this.current);
     this.healthBars.observe(this.current, this.playerId);
     this.damageBadges.observe(this.current, this.playerId);
+    this.retired.observe(this.current);
     this.bodies.observe(this.current);
     this.cutscene.observe(this.current, isMoving, this.livingPlayerAt());
     this.roofs.playerAt(this.livingPlayerAt());

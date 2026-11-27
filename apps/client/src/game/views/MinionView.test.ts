@@ -25,6 +25,7 @@ const unit = (weight: MinionWeight, team: EntitySnapshot['team'] = 'light'): Ent
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 });
 const draw = (entity: EntitySnapshot, isFocused = false): RecordingRenderer => {
@@ -32,7 +33,14 @@ const draw = (entity: EntitySnapshot, isFocused = false): RecordingRenderer => {
   createDefaultViewRegistry()
     .viewFor(entity)
     .draw(
-      { facing: { x: 1, y: 0 }, entity, position: { x: 30, y: 40 }, isFocused, frameTick: 0 },
+      {
+        facing: { x: 1, y: 0 },
+        entity,
+        position: { x: 30, y: 40 },
+        isFocused,
+        frameTick: 0,
+        time: 0,
+      },
       renderer,
     );
   return renderer;

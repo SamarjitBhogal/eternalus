@@ -32,6 +32,8 @@ export class MapObjectBuilder {
         isBlocking: true,
         ...(piece.buildingId === undefined ? {} : { buildingId: piece.buildingId }),
         ...(piece.visibility === 'interior' ? { isInterior: true as const } : {}),
+        ...(art.partOf === undefined ? {} : { partOf: art.partOf }),
+        ...(art.fortWall === undefined ? {} : { fortWall: art.fortWall }),
       });
     }
     for (const piece of presentation.scenery) {

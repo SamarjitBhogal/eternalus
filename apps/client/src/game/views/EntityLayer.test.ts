@@ -37,6 +37,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 });
 
@@ -142,6 +143,46 @@ describe('EntityLayer', () => {
     layer.draw(new RecordingRenderer());
 
     expect(spy.drawn.map((state) => state.position)).toEqual([{ x: 2.5, y: 1 }]);
+  });
+
+  it('gives every entity the moment the frame shows, in ticks: the previous tick plus alpha (DEC-323 (3))', () => {
+    const spy = new SpyView();
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      () => false,
+      () => null,
+    );
+    const times = (previous: Snapshot | null, current: Snapshot, alpha: number): number[] => {
+      spy.drawn.length = 0;
+      layer.show(previous, current, alpha, null);
+      layer.draw(new RecordingRenderer());
+      return spy.drawn.map(({ time }) => time);
+    };
+    const units = [unit('a', 0, 0), unit('b', 0, 1)];
+
+    expect(times(null, snapshot(0, units), 0.75)).toEqual([0, 0]);
+    expect(times(snapshot(6, units), snapshot(7, units), 0.25)).toEqual([6.25, 6.25]);
+    expect(times(snapshot(6, units), snapshot(7, units), 0.999)[0]).toBeCloseTo(7, 2);
+    expect(times(snapshot(7, units), snapshot(8, units), 0)).toEqual([7, 7]);
+  });
+
+  it('draws what lies on the ground for every entity before any entity, so no unit is tinted (DEC-323 (3))', () => {
+    const order: string[] = [];
+    const grounded: EntityView = {
+      drawGround: ({ entity }) => order.push(`ground ${entity.id}`),
+      draw: ({ entity }) => order.push(`draw ${entity.id}`),
+      drawMinimap: () => undefined,
+    };
+    const layer = new EntityLayer(
+      new ViewRegistry(grounded),
+      () => false,
+      () => null,
+    );
+
+    layer.show(null, snapshot(1, [unit('tower', 0, 5), unit('north', 0, 1)]), 0, null);
+    layer.draw(new RecordingRenderer());
+
+    expect(order).toEqual(['ground north', 'ground tower', 'draw north', 'draw tower']);
   });
 
   it('interpolates a jump height like the position; a new entity starts at its height (DEC-390)', () => {

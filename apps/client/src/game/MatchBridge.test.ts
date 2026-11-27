@@ -19,6 +19,7 @@ import { TypedEventBus } from '../bridge/TypedEventBus';
 import { MatchBridge } from './MatchBridge';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
+import { RetiredFeatures } from './RetiredFeatures';
 
 const CAPTURE_KINDS: readonly MapFeatureKind[] = ['capture-point', 'cathedral'];
 const PLAYER: EntitySnapshot = {
@@ -34,6 +35,7 @@ const PLAYER: EntitySnapshot = {
   aether: { current: 95, max: 160 },
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 };
 
@@ -108,6 +110,7 @@ const zoneSnapshot = (
     lockedBy: null,
     presence: { light: 0, dark: 0, neutral: 0 },
   },
+  aura: null,
   gem: null,
   ...(mapFeatureId !== undefined && { mapFeatureId }),
 });
@@ -126,6 +129,7 @@ const structureOf = (feature: MapFeature, current: number, max: number): EntityS
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
   mapFeatureId: feature.id,
 });
@@ -174,6 +178,9 @@ function setUp(
     endings.push(event);
   });
   const simulation = new FakeSimulationEvents();
+  // `Match` observes the first snapshot into the retired set before it builds the bridge.
+  const retired = new RetiredFeatures();
+  retired.observe(firstSnapshot);
   const bridge = new MatchBridge({
     bus,
     publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
@@ -182,8 +189,21 @@ function setUp(
     captureKinds: CAPTURE_KINDS,
     events: simulation,
     firstSnapshot,
+    retired,
   });
-  return { map, bridge, bus, order, clocks, huds, structures, captures, endings, simulation };
+  return {
+    map,
+    bridge,
+    retired,
+    bus,
+    order,
+    clocks,
+    huds,
+    structures,
+    captures,
+    endings,
+    simulation,
+  };
 }
 
 describe('MatchBridge', () => {
@@ -438,8 +458,11 @@ describe('MatchBridge', () => {
   it('shows a structure at 0 once it is destroyed and gone from the snapshot (DEC-69)', () => {
     const tower = lightFeature('buff-tower');
     const start = snapshotAt(0, [structureOf(tower, 2_500, 2_500)]);
-    const { bridge, structures: published } = setUp(undefined, start);
-    bridge.afterTick(snapshotAt(30), null);
+    const { bridge, retired, structures: published } = setUp(undefined, start);
+    const later = snapshotAt(30);
+    // `Match` observes each snapshot before the bridge reads which structures have fallen.
+    retired.observe(later);
+    bridge.afterTick(later, null);
 
     expect(
       published[0]?.structures.find(({ structureId }) => structureId === tower.id)?.health,
@@ -463,6 +486,7 @@ describe('MatchBridge', () => {
       aether: null,
       area: null,
       capture: null,
+      aura: null,
       gem: null,
     };
     const start = snapshotAt(0, [bystander]);

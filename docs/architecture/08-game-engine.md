@@ -269,6 +269,11 @@ flowchart LR
   same blend, scaled back to length 1 (`EntityLayer.turn`), and snaps at the midpoint when the two
   facings are opposite (a zero blend takes `current`). Entities that appeared this tick draw at `current` (no ghost from the
   origin).
+- Ground pass: before the `y`-sorted draws, `EntityLayer` has each view's optional `drawGround`
+  paint what lies on the ground, such as a structure's aura field (DEC-323 (3), 06 §8), so no unit
+  is tinted by a ground fill drawn after it. `EntityDrawState.time` is the moment the frame shows,
+  in ticks (the previous snapshot's tick plus the interpolation), for motion the snapshot does not
+  hold, such as the aura's particles; the same tick draws the same.
 - World health bars: `EntityLayer` has `HealthBarView` draw a unit's bar after every entity of
   its layer, so no entity hides it. Which units show one, and on which side, is decided in `game/`
   by `HealthBarVisibility` (DEC-195), which reads `damage-applied` and `entity-removed` through

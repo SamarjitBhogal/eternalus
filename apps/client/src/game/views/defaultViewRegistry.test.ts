@@ -26,6 +26,7 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 });
 
@@ -62,6 +63,7 @@ describe('createDefaultViewRegistry', () => {
       height: 1.5,
       isFocused: false,
       frameTick: 0,
+      time: 0,
     };
 
     view.draw(state, renderer);

@@ -4,10 +4,10 @@ exports[`Map scenery and collision preservation > pins scenery and all collision
 {
   "campCount": 16,
   "camps": 1046433,
-  "collision": 960099794,
-  "scenery": 1606014308,
+  "collision": 2265407344,
+  "scenery": 2361266260,
   "towerCount": 12,
-  "towers": 4007111981,
+  "towers": 3378114263,
 }
 `;
 
@@ -15,10 +15,10 @@ exports[`Map scenery and collision preservation > pins scenery and all collision
 {
   "campCount": 16,
   "camps": 1526505567,
-  "collision": 3780418382,
-  "scenery": 1640479088,
+  "collision": 725224189,
+  "scenery": 306916561,
   "towerCount": 12,
-  "towers": 4007111981,
+  "towers": 3378114263,
 }
 `;
 
@@ -26,9 +26,9 @@ exports[`Map scenery and collision preservation > pins scenery and all collision
 {
   "campCount": 16,
   "camps": 3798105403,
-  "collision": 3154797479,
-  "scenery": 1034331062,
+  "collision": 3186574252,
+  "scenery": 4195429795,
   "towerCount": 12,
-  "towers": 4007111981,
+  "towers": 3378114263,
 }
 `;

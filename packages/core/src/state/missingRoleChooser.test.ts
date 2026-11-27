@@ -5,7 +5,7 @@ import { TeamMembership } from '../components/TeamMembership';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { AiMemory } from '../content/ai/ai.types';
 import { Legend } from '../entities/Legend';
-import { WorldMap } from '../map/WorldMap';
+import { MatchGrid } from '../map/MatchGrid';
 import type { PlayableTeam } from '../teams/teams.types';
 import { TWO_LANE_MAP } from './__fixtures__/twoLaneMap';
 import { GameState } from './GameState';
@@ -32,10 +32,7 @@ const stateWith = (hasMap = true): GameState =>
     createDefaultGameConfig({ match: { legendsPerLane: 1 } }),
     1,
     hasMap
-      ? new MatchWorld(
-          TWO_LANE_MAP,
-          WorldMap.fromDefinition(TWO_LANE_MAP, 2, () => false),
-        )
+      ? new MatchWorld(MatchGrid.build(TWO_LANE_MAP, [], { cellSize: 2, features: {} }))
       : null,
   );
 

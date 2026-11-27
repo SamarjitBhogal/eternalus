@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Deploying } from './components/Deploying';
 import { Footprint } from './components/Footprint';
+import { Transform } from './components/Transform';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DEFAULT_MAP_LAYOUT } from './content/maps/defaultMapLayout';
 import type { MapObject } from './content/maps/mapObjects.types';
@@ -10,9 +11,12 @@ import { CORNER_CAMP_RING } from './content/structures/cornerCampRing';
 import { SPAWN_WAVES } from './content/structures/spawnWaves';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { NullLogger } from './diagnostics/NullLogger';
+import { bodyOf, wallBox } from './map/__fixtures__/fortBody';
 import { MapGenerator } from './map/MapGenerator';
 import { MapObjectBuilder } from './map/MapObjectBuilder';
 import { MapPresentationBuilder } from './map/MapPresentationBuilder';
+import { DamagePipeline } from './combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from './combat/__fixtures__/damageSteps';
 import { Simulation } from './Simulation';
 import type { RosterSlot } from './Simulation.types';
 import type { GameState } from './state/GameState';
@@ -56,19 +60,6 @@ const laneTowers = (map: MapDefinition): LaneTower[] =>
       feature.laneId !== undefined,
   );
 
-/** A tower's walls, as the box around its collider polygons: its hollow core and doorways. */
-const wallBox = (mapObjects: readonly MapObject[], id: string) => {
-  const points = mapObjects.find((object) => object.id === id)?.footprints.flat() ?? [];
-  const xs = points.map(({ x }) => x);
-  const ys = points.map(({ y }) => y);
-  return {
-    left: Math.min(...xs),
-    right: Math.max(...xs),
-    top: Math.min(...ys),
-    bottom: Math.max(...ys),
-  };
-};
-
 /** The unit direction the tower's team marches its lane at the tower. */
 const marchDirection = (routes: LaneRoutes, { laneId, team, position }: LaneTower): Vec2 => {
   const forward = { x: 0, y: 0 };
@@ -82,6 +73,20 @@ const marchDirection = (routes: LaneRoutes, { laneId, team, position }: LaneTowe
  * `INBOX.md` asks for the test to be made faster.
  */
 const HORDE_WALK_TIMEOUT_MS = 120_000;
+
+/**
+ * How long a tower horde may take to walk out of its fort and on up its lane: a test budget
+ * (DEC-133 states no time). A horde spawns at its tower, in its fort's middle, and its last rank
+ * is out once the anchor has walked half the fort plus the formation's depth at 0.9 × its slowest
+ * member's speed (`marchSpeedFactor`). The 56 m fort (DEC-315) adds 12 m to that walk: about 4 s
+ * for the BuffTower's medium minions (12 m at 2.9 to 3.2 m/s). The test records the first tick at
+ * which every member is out and asserts it comes within the budget. Measured on seeds 1, 2 and 10
+ * (the same on all three): that tick is 11.2 s (7.2 s with 32 m forts). Known gap, not asserted
+ * here: members of the dark lane-2 SpawnerTower horde stand outside the fort on ground the grid
+ * calls unwalkable from 9.30 to 11.17 s and again from 13.60 to 15.77 s (it brushes the lava
+ * bridge rail west of its fort).
+ */
+const HORDE_WALK_SECONDS = 12;
 
 describe('Simulation with a roster and map objects (as the client builds a match)', () => {
   it.each([1, 2])(
@@ -123,7 +128,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
 
   // Seed 10 sets a buff tower's march direction diagonal beside a lake (critic round 3, M-A).
   it.each([1, 2, 10])(
-    'walks every tower horde out of its tower and on up its lane within 10 seconds (DEC-133, seed %i)',
+    `walks every tower horde out of its tower and on up its lane within ${String(HORDE_WALK_SECONDS)} seconds (DEC-133, seed %i)`,
     (seed) => {
       const config = createDefaultGameConfig();
       const map = new MapGenerator().generate(config, seed);
@@ -159,32 +164,39 @@ describe('Simulation with a roster and map objects (as the client builds a match
           origin: { kind: 'structure', structureId: tower.id },
         });
       }
-      for (let tick = 0; tick < 10 * config.tickRate; tick += 1) {
+      const { entities, world } = (simulation as unknown as { readonly state: GameState }).state;
+      // The members still in or at their fort, not yet walking their lane, or on unwalkable ground.
+      const notOutNow = (): readonly string[] => {
+        return sent.flatMap(({ tower, memberIds }) => {
+          const { left, right, top, bottom } = wallBox(mapObjects, tower.id);
+          const forward = marchDirection(routes, tower);
+          return memberIds.flatMap((id) => {
+            const { x, y } = entities.get(id)?.getComponent(Transform).position ?? tower.position;
+            const isInside = x > left && x < right && y > top && y < bottom;
+            const ahead = (x - tower.position.x) * forward.x + (y - tower.position.y) * forward.y;
+            return entities.get(id)?.hasComponent(Deploying) === true ||
+              isInside ||
+              ahead <= 0 ||
+              world?.grid.isWalkableAt(x, y) !== true
+              ? [`${id} of ${tower.id} at ${x.toFixed(0)},${y.toFixed(0)}`]
+              : [];
+          });
+        });
+      };
+      // The first tick at which every member of every horde is out, so a late sample tick cannot
+      // hide or show a delay by chance (S10).
+      const budgetTicks = HORDE_WALK_SECONDS * config.tickRate;
+      let firstAllOut: number | null = null;
+      let notOut: readonly string[] = ['no horde has spawned'];
+      for (let tick = 1; tick <= budgetTicks && firstAllOut === null; tick += 1) {
         simulation.step();
+        notOut = sent.length === towers.length ? notOutNow() : notOut;
+        if (sent.length === towers.length && notOut.length === 0) firstAllOut = tick;
       }
 
-      const { entities, world } = (simulation as unknown as { readonly state: GameState }).state;
-      const stillDeploying = sent.flatMap(({ memberIds }) =>
-        memberIds.filter((id) => entities.get(id)?.hasComponent(Deploying) === true),
-      );
-      const at = new Map(
-        simulation.snapshot().entities.map(({ id, transform }) => [id, transform]),
-      );
-      const notOut = sent.flatMap(({ tower, memberIds }) => {
-        const { left, right, top, bottom } = wallBox(mapObjects, tower.id);
-        const forward = marchDirection(routes, tower);
-        return memberIds.flatMap((id) => {
-          const { x, y } = at.get(id) ?? tower.position;
-          const isInside = x > left && x < right && y > top && y < bottom;
-          const ahead = (x - tower.position.x) * forward.x + (y - tower.position.y) * forward.y;
-          return isInside || ahead <= 0 || world?.grid.isWalkableAt(x, y) !== true
-            ? [`${id} of ${tower.id} at ${x.toFixed(0)},${y.toFixed(0)}`]
-            : [];
-        });
-      });
       expect(sent).toHaveLength(towers.length);
-      expect(stillDeploying).toEqual([]);
       expect(notOut).toEqual([]);
+      expect(firstAllOut ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(budgetTicks);
     },
     HORDE_WALK_TIMEOUT_MS,
   );
@@ -209,8 +221,12 @@ describe('Simulation with a roster and map objects (as the client builds a match
       }
     });
 
-    // A fort is 12 blocks: 4 walls cut by doorways into 6, 4 corner towers and the keep.
-    const fort = mapObjects.find(({ kind }) => kind === 'spawner-tower')?.footprints.length;
+    // A fort is 12 blocks: 4 walls cut by doorways into 7 wall objects and 4 corner towers (also
+    // wall objects, DEC-227 (Q-C)), then the tower's own object, the keep (DEC-217 (12)).
+    const tower = mapObjects.find(({ kind }) => kind === 'spawner-tower');
+    const fort = mapObjects
+      .filter(({ id, partOf }) => id === tower?.id || partOf === tower?.id)
+      .flatMap(({ footprints }) => footprints).length;
     expect(fort).toBe(12);
     expect(shapes.get('spawner-tower')).toBe(fort);
     expect(shapes.get('buff-tower')).toBe(fort);
@@ -340,6 +356,173 @@ describe('Simulation with a roster and map objects (as the client builds a match
     ).toEqual([]);
   });
 
+  it("turns a dead tower's fort into ruins: the wall that took the killing hit falls and opens its cells, the others keep theirs blocked at half health (DEC-217 (12), DEC-219 (a))", () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const simulation = new Simulation({
+      config,
+      seed: 1,
+      logger: new NullLogger(),
+      map,
+      mapObjects,
+    });
+    const { state } = simulation as unknown as { readonly state: GameState };
+    const tower = laneTowers(map).find(({ team }) => team === 'light');
+    const id = tower?.id ?? '';
+    const centre = tower?.position ?? { x: 0, y: 0 };
+    const middle = (objectId: string): Vec2 => {
+      const points = mapObjects.find((object) => object.id === objectId)?.footprints[0] ?? [];
+      return {
+        x: points.reduce((sum, { x }) => sum + x, 0) / points.length,
+        y: points.reduce((sum, { y }) => sum + y, 0) / points.length,
+      };
+    };
+    const grid = state.world?.grid;
+    const top = middle(`${id}-fort-wall-top`);
+    const standing = [
+      `${id}-fort-wall-left`,
+      `${id}-fort-wall-right-lower`,
+      `${id}-fort-wall-bottom-left`,
+    ];
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'dark',
+      at: { x: centre.x, y: top.y - 3 },
+      count: 1,
+    });
+    simulation.step();
+    const towerId =
+      simulation
+        .snapshot()
+        .entities.find(
+          ({ family, transform }) =>
+            family === 'structure' && transform?.x === centre.x && transform.y === centre.y,
+        )?.id ?? '';
+    const warrior =
+      simulation.snapshot().entities.find(({ definitionId }) => definitionId === 'warrior')?.id ??
+      null;
+    // The warrior stands north of the top wall, nearer it than any other part of the fort.
+    expect(top.y).toBeLessThan(centre.y);
+    expect(grid?.isWalkableAt(top.x, top.y)).toBe(false);
+    expect(grid?.isWalkableAt(centre.x, centre.y)).toBe(false);
+
+    new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, towerId, 1_000_000, {
+      attackerId: warrior,
+      kind: 'weapon',
+      definitionId: 'warrior',
+    });
+    simulation.step();
+
+    const objects = new Map(simulation.snapshot().mapObjects?.map((object) => [object.id, object]));
+    expect(state.entities.has(towerId)).toBe(false);
+    // The wall the warrior hit falls with the tower, and so does the keep: their ground opens.
+    expect(objects.get(`${id}-fort-wall-top`)?.isDestroyed).toBe(true);
+    expect(objects.get(id)?.isDestroyed).toBe(true);
+    expect(grid?.isWalkableAt(top.x, top.y)).toBe(true);
+    expect(grid?.isWalkableAt(centre.x, centre.y)).toBe(true);
+    expect(state.worldObjects?.blockingAt(top, 0.5)).toBeNull();
+    // Every other wall stands, blocks the grid and collision, and has half a wall's health.
+    for (const wall of standing) {
+      const at = middle(wall);
+      expect(objects.get(wall)).toMatchObject({
+        isDestroyed: false,
+        health: { current: 1000, max: 1000 },
+      });
+      expect(grid?.isWalkableAt(at.x, at.y)).toBe(false);
+      expect(state.worldObjects?.blockingAt(at, 0.5)).toBe(wall);
+    }
+  });
+
+  it.each([1, 2])(
+    "routes a unit inside a lane tower's court out through a doorway, never through a wall (DEC-217 (15), seed %i)",
+    (seed) => {
+      const config = createDefaultGameConfig();
+      const map = new MapGenerator().generate(config, seed);
+      const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+      const simulation = new Simulation({
+        config,
+        seed,
+        logger: new NullLogger(),
+        map,
+        mapObjects,
+      });
+      const { state } = simulation as unknown as { readonly state: GameState };
+      const crossings: string[] = [];
+      for (const tower of laneTowers(map)) {
+        const parts = new Set(
+          mapObjects
+            .filter(({ id, partOf }) => id === tower.id || partOf === tower.id)
+            .map(({ id }) => id),
+        );
+        const { left, right, top } = wallBox(mapObjects, tower.id);
+        // A court point: 4 m in from the walls' outside (they are 3.2 m thick), 1 m clear of the
+        // fort. The goal is open ground 10 m north of the top wall, which has no doorway: above
+        // the tower, or else above one of its west and east corners.
+        let at: Vec2 | undefined;
+        for (let y = top + 4; y <= tower.position.y && at === undefined; y += 1) {
+          for (let x = left + 4; x <= right - 4 && at === undefined; x += 1) {
+            if (state.worldObjects?.blockingAt({ x, y }, 1) === null) at = { x, y };
+          }
+        }
+        const goal = [tower.position.x, left, right]
+          .map((x) => ({ x, y: top - 10 }))
+          .find(({ x, y }) => state.world?.grid.isWalkableAt(x, y) === true) ?? {
+          x: tower.position.x,
+          y: top - 10,
+        };
+        const out = { x: 0, y: 0 };
+        let isThere = false;
+        for (let leg = 0; leg < 40 && at !== undefined && !isThere; leg += 1) {
+          if (state.paths?.waypoint(at, goal, out) !== true) break;
+          // Walk the leg in 0.25 m steps: no step may touch a part of the fort. Radius 0: the grid
+          // guarantees no contact, not a margin (a cell step past a wall's end may pass a few tenths
+          // of a metre from it); keeping a body clear of walls is collision's work.
+          const from: Vec2 = at;
+          const span = Math.hypot(out.x - from.x, out.y - from.y);
+          for (let walked = 0; walked <= span; walked += 0.25) {
+            const t = span === 0 ? 0 : walked / span;
+            const step = { x: from.x + (out.x - from.x) * t, y: from.y + (out.y - from.y) * t };
+            const hit = state.worldObjects?.blockingAt(step, 0) ?? null;
+            if (hit !== null && parts.has(hit)) {
+              crossings.push(`${tower.id} leg ${String(leg)} through ${hit}`);
+              break;
+            }
+          }
+          isThere = out.x === goal.x && out.y === goal.y;
+          at = { x: out.x, y: out.y };
+        }
+        if (!isThere) crossings.push(`${tower.id} never reached the goal`);
+      }
+      expect(crossings).toEqual([]);
+    },
+  );
+
+  it('builds every lane tower fort piece as an upright box thicker than a nav cell, as court cells need (DEC-227 (Q-A))', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const pieces = laneTowers(map).flatMap((tower) => bodyOf(mapObjects, tower.id));
+    const sides = pieces.map((shape) => {
+      const xs = new Set(shape.map(({ x }) => x));
+      const ys = new Set(shape.map(({ y }) => y));
+      return { isUpright: shape.length === 4 && xs.size === 2 && ys.size === 2, xs, ys };
+    });
+
+    // `WorldMap.isCourt` opens a cell no footprint holds the centre of; a step between cells can
+    // only cross a piece that misses every centre, which an upright box thicker than a cell cannot.
+    expect(pieces.length).toBeGreaterThan(0);
+    expect(sides.every(({ isUpright }) => isUpright)).toBe(true);
+    const thinnest = Math.min(
+      ...sides.map(({ xs, ys }) =>
+        Math.min(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)),
+      ),
+    );
+    expect(thinnest).toBeGreaterThan(config.map.navCellSize);
+  });
+
   it('lets a light horde sent at an enemy spawner tower on the generated map hit it within a minute (DEC-185, playtest 2026-11-04)', () => {
     const config = createDefaultGameConfig();
     const map = new MapGenerator().generate(config, 1);
@@ -443,7 +626,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
       const ax = isAlongX ? Math.sign(forward.x) : 0;
       const ay = isAlongX ? 0 : Math.sign(forward.y);
       const half = (right - left) / 2;
-      const footprints = mapObjects.find(({ id }) => id === tower.id)?.footprints ?? [];
+      const footprints = bodyOf(mapObjects, tower.id);
       return Array.from({ length: 21 }, (_, step) => half * (0.6 + step * 0.03)).some((along) =>
         footprints.some((footprint) =>
           isPointInPolygon(

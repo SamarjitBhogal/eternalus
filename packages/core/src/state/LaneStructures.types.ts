@@ -1,4 +1,5 @@
 import type { PlayableTeam } from '../teams/teams.types';
+import type { Rect } from '../utils/geometry.types';
 import type { EntityId } from './EntityStore.types';
 
 /** One structure as the lane index records it at match start (architecture 18 §6.2). */
@@ -11,6 +12,12 @@ export type LaneStructureEntry = {
   readonly x: number;
   readonly y: number;
   readonly radius: number;
+  /**
+   * The box its area is measured beyond (`outlineBoxOf`: its `Footprint` box, so a lane tower's
+   * whole fort, else a box of no size at its centre): a bot's `Defend` reaches `engageRadius`
+   * beyond it (DEC-323 (2)).
+   */
+  readonly box: Rect;
   /** Base health plus shield bars at match start: the 100 % of `structureDamageTaken` (18 §3.3). */
   readonly startingHealth: number;
 };

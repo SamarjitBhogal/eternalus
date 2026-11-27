@@ -17,6 +17,7 @@ export const mobAt = (id: string, x: number, y = 0, hasHealth = true): EntitySna
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
   elevation: null,
 });

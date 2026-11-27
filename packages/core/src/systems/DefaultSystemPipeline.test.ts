@@ -29,7 +29,10 @@ import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
 import { SystemPipeline } from './SystemPipeline';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { loadWeapons } from '../content/weapons/loadWeapons';
-import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
+import {
+  MAP_OBJECT_DEFINITIONS,
+  RUINED_FORT_WALL_DEFINITION,
+} from '../content/maps/mapObjectDefinitions';
 import type { MapObject } from '../content/maps/mapObjects.types';
 import type { MapFeature } from '../content/maps/maps.types';
 import { WorldObjectStore } from '../state/WorldObjectStore';
@@ -65,6 +68,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
     const factory = newFactory();
     const runner = factory.create('warrior', 'warrior', {
@@ -118,6 +122,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
       hordes: {
         factory,
         space,
@@ -145,6 +150,7 @@ describe('DefaultSystemPipeline', () => {
       'gem-eruption',
       'progression',
       'veterancy',
+      'structure-aura',
       'structure',
       'spawn',
       'enraged',
@@ -175,6 +181,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
     const factory = newFactory();
     const warrior = factory.create('warrior', 'warrior', {
@@ -212,6 +219,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
     const factory = newFactory();
     const warrior = factory.create('warrior', 'warrior', {
@@ -249,6 +257,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
     const factory = newFactory();
     const warrior = factory.create('warrior', 'warrior', {
@@ -287,6 +296,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
     const factory = newFactory();
     const warrior = factory.create('warrior', 'warrior', {
@@ -362,6 +372,7 @@ describe('DefaultSystemPipeline', () => {
           directed.match.setPhase('countdown');
         },
       },
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
 
     expect(() => {
@@ -385,6 +396,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
+      ruinWall: RUINED_FORT_WALL_DEFINITION,
     });
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),
@@ -492,6 +504,7 @@ describe('DefaultSystemPipeline', () => {
         progression: PROGRESSION,
         director: IDLE_DIRECTOR,
         ...(hasLanes ? { hordes: { factory, space: null, decide: [] } } : {}),
+        ruinWall: RUINED_FORT_WALL_DEFINITION,
       });
       const entityId = state.worldObjects.snapshot()[0]?.entityId ?? '';
       expect(world?.isWalkable(9, 5)).toBe(false);
@@ -556,6 +569,7 @@ describe('DefaultSystemPipeline', () => {
         state,
         progression: PROGRESSION,
         director: IDLE_DIRECTOR,
+        ruinWall: RUINED_FORT_WALL_DEFINITION,
         hordes: { factory, space, decide: [] },
       });
       // The tower falls before any chase; the grid still blocks the court (the rift, x 50..70).
