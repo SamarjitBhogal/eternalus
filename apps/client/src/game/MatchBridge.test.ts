@@ -29,10 +29,12 @@ const PLAYER: EntitySnapshot = {
   team: 'light',
   transform: { x: 1, y: 2, radius: 0.5, facing: { x: 1, y: 0 } },
   health: { current: 600, max: 600 },
+  elevation: null,
   progression: { level: 3, xp: 40, xpToNext: 114 },
   aether: { current: 95, max: 160 },
   area: null,
   capture: null,
+  gem: null,
 };
 
 /** The simulation's side of the bridge's listener table: who listens to what, and a way to emit. */
@@ -80,6 +82,36 @@ const snapshotAt = (tick: number, entities: readonly EntitySnapshot[] = []): Sna
   },
 });
 
+/** A capture zone standing at `at`, naming `mapFeatureId` when given, held by `owner`. */
+const zoneSnapshot = (
+  at: { readonly x: number; readonly y: number },
+  owner: Team,
+  progress: number,
+  mapFeatureId?: string,
+): EntitySnapshot => ({
+  id: 'zone-1',
+  kind: 'capture-point',
+  family: 'zone',
+  definitionId: 'capture-point',
+  team: 'neutral',
+  transform: { ...at, radius: 0, facing: { x: 1, y: 0 } },
+  health: null,
+  elevation: null,
+  progression: null,
+  aether: null,
+  area: [],
+  capture: {
+    owner,
+    progress,
+    checkpoint: 0,
+    checkpoints: 3,
+    lockedBy: null,
+    presence: { light: 0, dark: 0, neutral: 0 },
+  },
+  gem: null,
+  ...(mapFeatureId !== undefined && { mapFeatureId }),
+});
+
 /** The structure core built from `feature`, with `current` of `max` health. */
 const structureOf = (feature: MapFeature, current: number, max: number): EntitySnapshot => ({
   id: `structure-${feature.id}`,
@@ -89,10 +121,12 @@ const structureOf = (feature: MapFeature, current: number, max: number): EntityS
   team: feature.team,
   transform: { ...feature.position, radius: 3, facing: { x: 1, y: 0 } },
   health: { current, max },
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
   capture: null,
+  gem: null,
   mapFeatureId: feature.id,
 });
 
@@ -256,31 +290,14 @@ describe('MatchBridge', () => {
     }
   });
 
-  it("publishes each capture point's owner and progress from the zone on its feature, or none without one", () => {
+  it("publishes each capture point's owner and progress from the zone of its feature, or none without one", () => {
     const { map, bridge, captures } = setUp();
     const [first, second] = map.features.filter((feature) => CAPTURE_KINDS.includes(feature.kind));
     if (first === undefined || second === undefined) {
       throw new Error('The map needs two capture features.');
     }
-    const zoneOn = (owner: Team, progress: number): EntitySnapshot => ({
-      ...PLAYER,
-      id: 'zone-1',
-      kind: 'capture-point',
-      family: 'zone',
-      definitionId: 'capture-point',
-      team: 'neutral',
-      transform: { ...first.position, radius: 0, facing: { x: 1, y: 0 } },
-      health: null,
-      area: [],
-      capture: {
-        owner,
-        progress,
-        checkpoint: 0,
-        checkpoints: 3,
-        lockedBy: null,
-        presence: { light: 0, dark: 0, neutral: 0 },
-      },
-    });
+    const zoneOn = (owner: Team, progress: number): EntitySnapshot =>
+      zoneSnapshot(first.position, owner, progress, first.id);
     bridge.publishAll(snapshotAt(0, [PLAYER, zoneOn('light', 0.5)]), null);
     bridge.afterTick(snapshotAt(30, [PLAYER, zoneOn('light', 0.5)]), null);
     bridge.afterTick(snapshotAt(60, [PLAYER, zoneOn('dark', -1)]), null);
@@ -301,6 +318,42 @@ describe('MatchBridge', () => {
       pointId: first.id,
       ownerTeam: 'neutral',
       progress: null,
+    });
+  });
+
+  it('binds a capture point to the zone that names its feature, never to one on its position (DEC-231)', () => {
+    const { map, bridge, captures } = setUp();
+    const [first, second] = map.features.filter((feature) => CAPTURE_KINDS.includes(feature.kind));
+    if (first === undefined || second === undefined) {
+      throw new Error('The map needs two capture features.');
+    }
+    // The first point's zone stands on the second point's spot; nothing names the second.
+    const moved = zoneSnapshot(second.position, 'dark', -0.25, first.id);
+    const unnamed = { ...zoneSnapshot(second.position, 'light', 1), id: 'zone-2' };
+    bridge.publishAll(snapshotAt(0, [moved, unnamed]), null);
+    const points = captures[0]?.points ?? [];
+
+    expect(points.find(({ pointId }) => pointId === first.id)).toMatchObject({
+      ownerTeam: 'dark',
+      progress: -0.25,
+    });
+    expect(points.find(({ pointId }) => pointId === second.id)).toMatchObject({
+      ownerTeam: 'neutral',
+      progress: null,
+    });
+  });
+
+  it('reads a capture point from its zone when a structure names the same feature (DEC-233)', () => {
+    const { map, bridge, captures } = setUp();
+    const cathedral = map.features.find((feature) => feature.kind === 'cathedral');
+    if (cathedral === undefined) throw new Error('The map has no cathedral.');
+    // A Cathedral structure (the gem today) and the Cathedral zone are built from one feature.
+    const zone = zoneSnapshot(cathedral.position, 'light', 0.75, cathedral.id);
+    bridge.publishAll(snapshotAt(0, [zone, structureOf(cathedral, 5_000, 5_000)]), null);
+
+    expect(captures[0]?.points.find(({ pointId }) => pointId === cathedral.id)).toMatchObject({
+      ownerTeam: 'light',
+      progress: 0.75,
     });
   });
 
@@ -405,10 +458,12 @@ describe('MatchBridge', () => {
       team: tower.team,
       transform: { ...tower.position, radius: 3, facing: { x: 1, y: 0 } },
       health: { current: 1, max: 3_000 },
+      elevation: null,
       progression: null,
       aether: null,
       area: null,
       capture: null,
+      gem: null,
     };
     const start = snapshotAt(0, [bystander]);
     const { bridge, structures: published } = setUp(undefined, start);

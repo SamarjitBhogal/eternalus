@@ -32,10 +32,12 @@ const zone = (
   team: 'neutral',
   transform: { x: AT.x, y: AT.y, radius: 28, facing: { x: 1, y: 0 } },
   health: null,
+  elevation: null,
   progression: null,
   aether: null,
   area,
   capture,
+  gem: null,
 });
 
 const capture = (overrides: Partial<CaptureSnapshot> = {}): CaptureSnapshot => ({

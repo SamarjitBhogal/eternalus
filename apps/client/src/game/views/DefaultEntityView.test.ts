@@ -14,10 +14,12 @@ const dummy = (team: EntitySnapshot['team']): EntitySnapshot => ({
   team,
   transform: { x: 10, y: 20, radius: 0.4, facing: { x: 1, y: 0 } },
   health: { current: 100, max: 100 },
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
   capture: null,
+  gem: null,
 });
 
 const AT = { x: 10, y: 20 };

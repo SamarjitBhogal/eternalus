@@ -8,7 +8,8 @@ import type { EntityId } from './EntityStore.types';
  * time landed after it died. `cause` and `maxLevels` are the award's own.
  */
 export type OwedXp = {
-  readonly cause: 'kill' | 'structure-destroyed' | 'team-kill';
+  readonly cause:
+    'kill' | 'structure-destroyed' | 'team-kill' | 'camp-cleared' | 'checkpoint-cleared';
   readonly victimId: EntityId;
   readonly victimTeam: Team;
   readonly xp: number;

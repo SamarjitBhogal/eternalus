@@ -11,6 +11,7 @@ import {
   type Vec2,
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
+import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 
 import { Camera } from './engine/Camera';
 import { BASE_ZOOM } from './engine/Camera.constants';
@@ -69,10 +70,12 @@ const unit = (id: string, team: 'light' | 'dark', at: Vec2): EntitySnapshot => (
   team,
   transform: { ...at, radius: 1, facing: { x: 1, y: 0 } },
   health: { current: 10, max: 10 },
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
   capture: null,
+  gem: null,
 });
 /** The player's Legend, away from the point the camera looks at. */
 const PLAYER: EntitySnapshot = { ...unit(ACTOR, 'light', OPEN_GROUND), family: 'legend' };
@@ -112,7 +115,13 @@ const setUp = (
   const roofs = new BuildingRoofs(roofed);
   const input = new ScriptedIntent();
   const enqueueCommand = vi.fn<Simulation['enqueueCommand']>();
-  const commands = new PlayerCommands(input, { enqueueCommand }, view, [HOUSE]);
+  const commands = new PlayerCommands(
+    input,
+    { enqueueCommand },
+    view,
+    [HOUSE],
+    createDefaultViewRegistry(),
+  );
   // No living Legend here, so the minimap centres on the camera's focus (DEC-182).
   const miniMap = new MiniMapView(MAP, new MapView(MAP), RING, () => look);
   const onMiniMapShownChanged = vi.fn<(isShown: boolean) => void>();

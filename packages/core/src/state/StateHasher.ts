@@ -1,10 +1,13 @@
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
+import { CathedralGemState } from '../components/CathedralGemState';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { CombatClock } from '../components/CombatClock';
+import { LastEnemyHit } from '../components/LastEnemyHit';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
 import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
 import { Veterancy } from '../components/Veterancy';
@@ -87,6 +90,10 @@ export class StateHasher {
       });
       parts.push(['guards', ...posts]);
     }
+    // Cleared checkpoint defender sets (07 §7) are appended only once one exists.
+    if (state.guards.cleared.length > 0) {
+      parts.push(['clearedSets', ...state.guards.cleared]);
+    }
     // Dead Legends waiting to respawn (DEC-295) are appended only while some wait, for the same
     // reason: each one's team, return tick and owed XP, then the waiting Legend's own fields, as
     // an entity in the store hashes them, since it is out of the store meanwhile.
@@ -115,6 +122,14 @@ export class StateHasher {
         tallies.push([team, lane, amount]);
       });
       parts.push(['allyDamage', ...tallies]);
+    }
+    // Defender damage (07 §7) is appended only while some is counted, for the same reason.
+    if (state.defenderDamage.size > 0) {
+      const tallies: unknown[] = [];
+      state.defenderDamage.forEach((defenceId, legendId, amount) => {
+        tallies.push([defenceId, legendId, amount]);
+      });
+      parts.push(['defenderDamage', ...tallies]);
     }
     // Lost towers are appended only once a lane has one, for the same reason.
     const lost = PLAYABLE_TEAMS.flatMap((team) =>
@@ -221,6 +236,10 @@ export class StateHasher {
         capture.ownedSinceTick,
       ]);
     }
+    const gem = entity.findComponent(CathedralGemState);
+    if (gem !== undefined) {
+      fields.push(['gem', ...gem.fields]);
+    }
     const veterancy = entity.findComponent(Veterancy);
     if (veterancy !== undefined) {
       fields.push([
@@ -243,6 +262,17 @@ export class StateHasher {
     const clock = entity.findComponent(CombatClock);
     if (clock !== undefined) {
       fields.push(['combat-clock', ...clock.fields]);
+    }
+    // Names the killer of a death by the gem (DEC-346), so it changes the match's future.
+    const lastEnemyHit = entity.findComponent(LastEnemyHit);
+    if (lastEnemyHit !== undefined) {
+      fields.push(['last-enemy-hit', ...lastEnemyHit.fields]);
+    }
+    // Only a held key or a jump in the air adds a field (DEC-390), so a Legend that never jumps
+    // hashes as before.
+    const jump = entity.findComponent(Jump);
+    if (jump !== undefined && (jump.isHeld || jump.isAirborne)) {
+      fields.push(['jump', ...jump.fields]);
     }
     return fields;
   }

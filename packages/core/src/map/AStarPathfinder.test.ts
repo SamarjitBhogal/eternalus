@@ -56,6 +56,12 @@ describe('AStarPathfinder (A* for Legends, 10 §9)', () => {
     expect(out).toEqual({ x: 40, y: 20 });
   });
 
+  it('sees a straight line across open ground but not across the rift', () => {
+    const finder = new AStarPathfinder(riftGrid(), LIMITS);
+    expect(finder.isLineClear({ x: 10, y: 20 }, { x: 40, y: 20 })).toBe(true);
+    expect(finder.isLineClear({ x: 40, y: 20 }, { x: 80, y: 20 })).toBe(false);
+  });
+
   it('takes the shorter side of a stamped footprint, and goes straight again once it is cleared', () => {
     const grid = openGrid();
     grid.stampFootprint(OFF_CENTRE_WALL);
@@ -70,6 +76,17 @@ describe('AStarPathfinder (A* for Legends, 10 §9)', () => {
     grid.clearFootprint(OFF_CENTRE_WALL);
     expect(finder.waypoint({ x: 30, y: 20 }, { x: 74, y: 20 }, out)).toBe(true);
     expect(out).toEqual({ x: 74, y: 20 });
+  });
+
+  it('reports its grid’s version, which changes when a footprint is stamped (DEC-379)', () => {
+    const grid = openGrid();
+    const finder = new AStarPathfinder(grid, LIMITS);
+    const before = finder.version;
+
+    grid.stampFootprint(OFF_CENTRE_WALL);
+
+    expect(before).toBe(grid.version - 1);
+    expect(finder.version).toBe(grid.version);
   });
 
   it('finds the optimal octile path: its cost is the hand-computed shortest', () => {

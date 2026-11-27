@@ -36,6 +36,7 @@ export class MapView implements WorldLayer {
   /**
    * Creates a view for one map; `scenery` supplies its ground-layer decorations, and
    * `featureSizes` the sizes core owns, which replace `FEATURE_STYLES`' by kind.
+   * An explicitly sized gameplay ring also draws around authored dressing.
    */
   public constructor(
     map: MapDefinition,
@@ -61,15 +62,20 @@ export class MapView implements WorldLayer {
     this.drawGround(renderer);
     for (const feature of this.map.features) {
       if (this.isDestroyed(feature.id)) continue;
-      if (this.dressedFeatures.has(feature.id)) continue;
+      const style = FEATURE_STYLES[feature.kind];
+      const featureSize = this.featureSizes[feature.kind];
+      if (
+        this.dressedFeatures.has(feature.id) &&
+        !(style.shape === 'ring' && featureSize !== undefined)
+      )
+        continue;
       if (this.hiddenRoofs.has(feature.id)) continue;
       if (this.buildings.some((building) => building.id === feature.id)) continue;
-      const style = FEATURE_STYLES[feature.kind];
       const color = MapView.featureColor(feature);
       if (style.shape === 'footprint') {
         renderer.fillPolygon(feature.footprint ?? [], color);
       } else {
-        const size = this.featureSizes[feature.kind] ?? style.size;
+        const size = featureSize ?? style.size;
         renderer.drawWorldGlyph({ shape: style.shape, size }, feature.position, color);
       }
     }

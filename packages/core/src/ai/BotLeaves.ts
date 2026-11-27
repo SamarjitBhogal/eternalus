@@ -289,6 +289,11 @@ export class BotLeaves {
       targetId: typeof memory.targetId === 'string' ? memory.targetId : null,
       nextCastTick: typeof memory.nextCastTick === 'number' ? memory.nextCastTick : 0,
       isHalted: memory.isHalted === true,
+      pathGoalX: typeof memory.pathGoalX === 'number' ? memory.pathGoalX : null,
+      pathGoalY: typeof memory.pathGoalY === 'number' ? memory.pathGoalY : null,
+      pathStepX: typeof memory.pathStepX === 'number' ? memory.pathStepX : null,
+      pathStepY: typeof memory.pathStepY === 'number' ? memory.pathStepY : null,
+      pathVersion: typeof memory.pathVersion === 'number' ? memory.pathVersion : null,
     };
   }
 }

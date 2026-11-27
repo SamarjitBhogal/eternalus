@@ -6,6 +6,7 @@ import { DevRemoveLegendHandler } from './handlers/DevRemoveLegendHandler';
 import { DevSpawnHandler } from './handlers/DevSpawnHandler';
 import { DevSpawnLegendHandler } from './handlers/DevSpawnLegendHandler';
 import { DevSpawnMobsHandler } from './handlers/DevSpawnMobsHandler';
+import { JumpHandler } from './handlers/JumpHandler';
 import { MoveHandler } from './handlers/MoveHandler';
 import { StopHandler } from './handlers/StopHandler';
 import { UnsupportedCommandHandler } from './handlers/UnsupportedCommandHandler';
@@ -24,6 +25,7 @@ export const createDefaultCommandHandlers = ({
   return {
     move: new MoveHandler(),
     stop: new StopHandler(),
+    jump: new JumpHandler(),
     'attack-target': new AttackTargetHandler(),
     'cast-ability': unsupported, // TODO(sholtzman): with phase 2 abilities
     intent: unsupported, // TODO(sholtzman): with sprint 1.5 PlayerController

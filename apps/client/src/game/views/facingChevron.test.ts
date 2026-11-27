@@ -23,10 +23,12 @@ const UNIT: EntitySnapshot = {
   team: 'dark',
   transform: { x: AT.x, y: AT.y, radius: RADIUS, facing: { x: 1, y: 0 } },
   health: null,
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
   capture: null,
+  gem: null,
 };
 
 /** The points of the one path the chevron draws for `facing`. */

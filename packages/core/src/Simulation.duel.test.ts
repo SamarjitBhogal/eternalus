@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { DamagePipeline } from './combat/DamagePipeline';
 import { Health } from './components/Health';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
-import { ContentCatalogue } from './content/ContentCatalogue';
 import { DUEL_RULES } from './content/duel/duelRules';
 import { LEGEND_LEVEL_CURVE } from './content/progression/levelCurves';
 import { LEGEND_RESPAWN_SECONDS } from './content/progression/legendRespawn';
@@ -57,18 +56,31 @@ const legendOf = (sim: Simulation, snapshot: Snapshot, team: PlayableTeam) => {
   return { id, legend };
 };
 
-/** Steps until `done` holds (at most `limit` ticks), the light Legend walking at the dark one and hitting it. */
+/** How far either side of the gem the walker below steps south to go round it (DEC-346). */
+const ROUND_THE_GEM = 15;
+
+/**
+ * Steps until `done` holds (at most `limit` ticks), the light Legend walking at the dark one and
+ * hitting it. The gem between the start points blocks movement (DEC-346), so near it the walker
+ * also steps south and slides round it.
+ */
 const fightUntil = (sim: Simulation, done: (snapshot: Snapshot) => boolean, limit = 6000) => {
-  for (let i = 0; i < limit && !done(sim.snapshot()); i += 1) {
-    const snapshot = sim.snapshot();
+  let snapshot = sim.snapshot();
+  for (let i = 0; i < limit && !done(snapshot); i += 1) {
     const { id: light, legend: from } = legendOf(sim, snapshot, 'light');
     const { id: dark, legend: to } = legendOf(sim, snapshot, 'dark');
-    const direction = { x: Math.sign((to.transform?.x ?? 0) - (from.transform?.x ?? 0)), y: 0 };
+    const at = { x: from.transform?.x ?? 0, y: from.transform?.y ?? 0 };
+    const isByTheGem = Math.abs(at.x - (cathedral?.x ?? 0)) < ROUND_THE_GEM;
+    const direction = {
+      x: Math.sign((to.transform?.x ?? 0) - at.x),
+      y: isByTheGem ? 1 : Math.sign((to.transform?.y ?? 0) - at.y),
+    };
     sim.enqueueCommand({ type: 'move', actorId: light, direction });
     sim.enqueueCommand({ type: 'attack-target', actorId: light, targetId: dark });
     sim.step();
+    snapshot = sim.snapshot();
   }
-  return sim.snapshot();
+  return snapshot;
 };
 
 describe('Simulation: a Duel', () => {
@@ -215,17 +227,7 @@ describe('Simulation: a Duel', () => {
   });
 
   it('keeps the Cathedral gem, while building no tower, gate, camp or Stronghold (DEC-348)', () => {
-    const structures = new ContentCatalogue([
-      ...STRUCTURE_DEFINITIONS.all(),
-      {
-        id: 'cathedral',
-        kind: 'camp', // a registered kind: the gem's own kind (#132) is not on this branch
-        displayName: 'Cathedral',
-        baseHealth: 1, // TUNE: test double
-        footprintRadius: 1,
-        breakability: { kind: 'never' },
-      },
-    ] as const);
+    const structures = STRUCTURE_DEFINITIONS;
     const builtIds = (sim: Simulation) =>
       new Set(
         sim
@@ -238,9 +240,8 @@ describe('Simulation: a Duel', () => {
     const duel = builtIds(new Simulation({ ...options, roster: ROSTER, duel: { killTarget: 2 } }));
 
     expect(DUEL_RULES.arena.omittedStructureIds).not.toContain('cathedral');
-    expect(ordinary).toEqual(
-      new Set([...STRUCTURE_DEFINITIONS.all().map(({ id }) => id), 'cathedral']),
-    );
+    expect(ordinary).toEqual(new Set(STRUCTURE_DEFINITIONS.all().map(({ id }) => id)));
+    expect(ordinary).toContain('cathedral');
     expect(duel).toEqual(new Set(['cathedral']));
   });
 

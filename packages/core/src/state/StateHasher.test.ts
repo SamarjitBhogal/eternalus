@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest';
 
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
+import { CathedralGemState } from '../components/CathedralGemState';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
+import { MapFeatureLink } from '../components/MapFeatureLink';
 import { Movement } from '../components/Movement';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { CombatClock } from '../components/CombatClock';
+import { LastEnemyHit } from '../components/LastEnemyHit';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -134,6 +138,14 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(before);
   });
 
+  it('hashes an entity the same with or without a map-feature link: setup the replay carries (DEC-231)', () => {
+    const { state: plain } = stateWithSoldier();
+    const { state: linked, soldier } = stateWithSoldier();
+    soldier.addComponent(new MapFeatureLink('light-stronghold'));
+
+    expect(hasher.hash(linked)).toBe(hasher.hash(plain));
+  });
+
   it('changes when only a granted minion level differs, the level capped (DEC-258)', () => {
     const { state, soldier } = stateWithSoldier();
     const veterancy = new Veterancy();
@@ -180,7 +192,7 @@ describe('StateHasher', () => {
     soldier.addComponent(watch);
     const watched = hasher.hash(state);
 
-    watch.headFor(5, 6, 2, 0);
+    watch.headFor(5, 6, 2, 0, 0);
 
     expect(watched).not.toBe(bare);
     expect(hasher.hash(state)).not.toBe(watched);
@@ -200,6 +212,44 @@ describe('StateHasher', () => {
     expect(clocked).not.toBe(bare);
     expect(dealt).not.toBe(clocked);
     expect(hasher.hash(state)).not.toBe(dealt);
+  });
+
+  it('changes with a last enemy hit and with each of its fields (DEC-346)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const bare = hasher.hash(state);
+    const last = new LastEnemyHit('entity-7', 5);
+    soldier.addComponent(last);
+    const hit = hasher.hash(state);
+    last.record('entity-8', 5);
+    const byAnother = hasher.hash(state);
+
+    last.record('entity-8', 6);
+
+    expect(hit).not.toBe(bare);
+    expect(byAnother).not.toBe(hit);
+    expect(hasher.hash(state)).not.toBe(byAnother);
+  });
+
+  it('hashes a jump only while its key is held or it flies, then with each field (DEC-390)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const bare = hasher.hash(state);
+    const jump = new Jump();
+    soldier.addComponent(jump);
+    const grounded = hasher.hash(state);
+    jump.hold(true);
+    const held = hasher.hash(state);
+    jump.takeOff({ x: 1, y: 0 });
+    const flying = hasher.hash(state);
+    jump.advance({ airTicks: 5, peakHeight: 1 });
+    const higher = hasher.hash(state);
+
+    jump.reset();
+
+    expect(grounded).toBe(bare);
+    expect(held).not.toBe(grounded);
+    expect(flying).not.toBe(held);
+    expect(higher).not.toBe(flying);
+    expect(hasher.hash(state)).toBe(bare);
   });
 
   it('differs between seeds', () => {
@@ -563,6 +613,44 @@ describe('StateHasher', () => {
     );
   });
 
+  it('hashes the Cathedral gem: holder, glow ticks left, glow hits and ticks since hit each change the hash', () => {
+    const stateWithGem = (): { state: GameState; gem: CathedralGemState } => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+      const holder = new Bare('entity-1', 'bare');
+      holder.spawn({});
+      state.entities.add(holder);
+      const gem = new CathedralGemState();
+      holder.addComponent(gem);
+      return { state, gem };
+    };
+    const { state, gem } = stateWithGem();
+    const untouched = hasher.hash(state);
+
+    gem.hold('light');
+    const held = hasher.hash(state);
+    gem.struck(3);
+    const struck = hasher.hash(state);
+    gem.struck(3);
+    const struckTwice = hasher.hash(state);
+    gem.age();
+    const aged = hasher.hash(state);
+    gem.age();
+    gem.age();
+    const dark = hasher.hash(state);
+    gem.age(); // the glow is dark: only the ticks since the hit move
+    const later = hasher.hash(state);
+
+    expect(new Set([untouched, held, struck, struckTwice, aged, dark, later]).size).toBe(7);
+
+    // Each step above moves more than one field; these two gems differ in glow ticks left alone.
+    const struckFor = (glowTicks: number): number => {
+      const fresh = stateWithGem();
+      fresh.gem.struck(glowTicks);
+      return hasher.hash(fresh.state);
+    };
+    expect(struckFor(3)).not.toBe(struckFor(4));
+  });
+
   it('hashes a capture point: owner, progress, checkpoint and reached marks each change the hash', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     const point = new CapturePoint('entity-1', CAPTURE_POINT.id);
@@ -646,6 +734,42 @@ describe('StateHasher', () => {
         withTally(['light', 'lane-0', 6]),
       ];
 
+      expect(new Set(hashes).size).toBe(5);
+    });
+  });
+
+  it('changes when a checkpoint defender set is cleared, and with which set (07 §7)', () => {
+    const withCleared = (...sets: readonly string[]): number => {
+      const { state } = stateWithSoldier();
+      for (const set of sets) state.guards.markCleared(set);
+      return hasher.hash(state);
+    };
+
+    expect(new Set([withCleared(), withCleared('set-1'), withCleared('set-2')]).size).toBe(3);
+    expect(withCleared('set-1')).toBe(withCleared('set-1'));
+  });
+
+  describe('defender damage (07 §7)', () => {
+    const withTally = (set: string, legend: string, amount: number): number => {
+      const { state } = stateWithSoldier();
+      state.defenderDamage.add(set, legend, amount);
+      return hasher.hash(state);
+    };
+
+    it('hashes a taken tally as none, and changes with the set, the Legend and the amount', () => {
+      const { state } = stateWithSoldier();
+      const none = hasher.hash(state);
+      state.defenderDamage.add('set-1', 'legend-a', 9);
+      state.defenderDamage.take('set-1');
+      const hashes = [
+        none,
+        withTally('set-1', 'legend-a', 5),
+        withTally('set-2', 'legend-a', 5),
+        withTally('set-1', 'legend-b', 5),
+        withTally('set-1', 'legend-a', 6),
+      ];
+
+      expect(hasher.hash(state)).toBe(none);
       expect(new Set(hashes).size).toBe(5);
     });
   });

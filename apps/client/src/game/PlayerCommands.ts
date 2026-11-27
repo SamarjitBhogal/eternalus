@@ -1,5 +1,7 @@
 import {
   type EntityId,
+  type EntitySnapshot,
+  findGemAt,
   findMapObjectAt,
   findUnitAt,
   type MapObject,
@@ -11,25 +13,30 @@ import {
 import type { Projection } from './engine/input/Projection.types';
 import type { IntentSource } from './Match.types';
 import type { PlayerActions } from './PlayerActions';
+import type { ViewRegistry } from './views/ViewRegistry';
 
 /** The parts of a snapshot an attack target is picked from: its units and map objects. */
 type TargetSnapshot = Pick<Snapshot, 'entities' | 'mapObjects'>;
 
 /**
  * Turns the player's intent into commands for the player's Legend, once a tick (`Match.tick`):
- * `move` or `stop` only when the movement axes change, and `attack-target` once per target the
- * held attack button aims at (a living enemy unit under the cursor first, else a map object). A
- * press the canvas gestures own is no held attack (`setPointerClaimed`; 06 §10, attack and roof
- * input arbitration): with the developer explorer shown that is every press, and a plain click
- * attacks once on its release instead (`MatchViewControls.clickAt`, DEC-150). It only turns input
- * into commands: `apply` tells `Match` whether the player moves, and `Match` tells the camera
- * (DEC-151).
+ * `move` or `stop` only when the movement axes change, `jump` only when the jump key's held state
+ * changes (DEC-390: core jumps again on each landing while it is held), and `attack-target` once
+ * per target the held attack button aims at (a living enemy unit under the cursor first, else a
+ * map object). A press the canvas gestures own is no held attack (`setPointerClaimed`; 06 §10,
+ * attack and roof input arbitration): with the developer explorer shown that is every press, and a
+ * plain click attacks once on its release instead (`MatchViewControls.clickAt`, DEC-150). It only
+ * turns input into commands: `apply` tells `Match` whether the player moves, and `Match` tells the
+ * camera (DEC-151).
  */
 export class PlayerCommands implements PlayerActions {
   private lastMove: Vec2 = { x: 0, y: 0 };
 
   /** The unit or map object the held attack targeted last; `null` once released or stopped. */
   private attackTargetId: EntityId | null = null;
+
+  /** The held state the last `jump` sent; `false` for a Legend back from a respawn. */
+  private wasJumpHeld = false;
 
   /** Whether the Legend was in the last snapshot: a Legend back from a respawn returns stopped. */
   private wasPlayerPresent = false;
@@ -45,6 +52,7 @@ export class PlayerCommands implements PlayerActions {
     private readonly simulation: Pick<Simulation, 'enqueueCommand'>,
     private readonly camera: Projection,
     private readonly mapObjects: readonly MapObject[],
+    private readonly views: ViewRegistry,
   ) {}
 
   /**
@@ -64,16 +72,18 @@ export class PlayerCommands implements PlayerActions {
    * @returns Whether the player's movement input is non-zero this tick.
    */
   public apply(actorId: EntityId, snapshot: TargetSnapshot): boolean {
-    const { move, isAttacking, aim } = this.input.read(this.camera);
+    const { move, isAttacking, isJumping, aim } = this.input.read(this.camera);
     const isPlayerPresent = snapshot.entities.some((entity) => entity.id === actorId);
     if (isPlayerPresent && !this.wasPlayerPresent) {
       // A Legend back from a respawn has no movement and no target: send the held input again.
       this.lastMove = { x: 0, y: 0 };
       this.attackTargetId = null;
+      this.wasJumpHeld = false;
     }
     this.wasPlayerPresent = isPlayerPresent;
     const attackAim = isAttacking === true && !this.isPointerClaimed ? aim : null;
     this.applyAttack(actorId, attackAim, snapshot);
+    this.applyJump(actorId, isJumping === true);
     const isMoving = move.x !== 0 || move.y !== 0;
     if (move.x === this.lastMove.x && move.y === this.lastMove.y) {
       return isMoving;
@@ -97,7 +107,7 @@ export class PlayerCommands implements PlayerActions {
    * @returns Whether a unit was under the point; it wins over a roof (`MatchViewControls.clickAt`).
    */
   public attackUnitAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): boolean {
-    const targetId = findUnitAt(snapshot.entities, actorId, point);
+    const targetId = findUnitAt(snapshot.entities, actorId, point, this.visualRadiusFor);
     if (targetId === null) {
       return false;
     }
@@ -129,10 +139,25 @@ export class PlayerCommands implements PlayerActions {
     this.attackTargetId = targetId;
   }
 
-  /** The unit under `point`, else the map object there: a unit is drawn on top of a building. */
+  /** Queues `jump` when the held state of the jump key changes (DEC-390). */
+  private applyJump(actorId: EntityId, isHeld: boolean): void {
+    if (isHeld !== this.wasJumpHeld) {
+      this.simulation.enqueueCommand({ type: 'jump', actorId, isHeld });
+      this.wasJumpHeld = isHeld;
+    }
+  }
+
+  private readonly visualRadiusFor = (entity: EntitySnapshot): number =>
+    this.views.viewFor(entity).visualRadiusOf?.(entity) ?? entity.transform?.radius ?? 0;
+
+  /**
+   * The unit under `point`, else the Cathedral gem there (DEC-292), else the map object there: a
+   * unit is drawn on top of the gem, and the gem on top of the building.
+   */
   private targetAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): EntityId | null {
     return (
-      findUnitAt(snapshot.entities, actorId, point) ??
+      findUnitAt(snapshot.entities, actorId, point, this.visualRadiusFor) ??
+      findGemAt(snapshot.entities, point) ??
       findMapObjectAt(this.mapObjects, snapshot.mapObjects ?? [], point)
     );
   }

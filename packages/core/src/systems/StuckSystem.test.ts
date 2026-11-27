@@ -137,6 +137,7 @@ describe('StuckSystem', () => {
         leashRadius,
         leashTolerance: 2,
         respawnTicks: 1,
+        canLevel: false,
       });
       chase.state.guards.fill(0, chase.chaser.id);
       const system = new StuckSystem(RULE);
@@ -194,6 +195,43 @@ describe('StuckSystem', () => {
 
     // Closing in is progress: it never counts as stuck, so it plans nothing.
     expect(plans).not.toHaveBeenCalled();
+  });
+
+  it('plans a detour again at once when the map changes, so a unit turns as soon as a wall opens (owner, DEC-392)', () => {
+    const chase = riftChase(() => []);
+    const grid = chase.state.world?.grid;
+    if (grid === undefined) throw new Error('The rift chase has no nav grid.');
+    // A wall across the open lane between the chaser (moved to (12, 20)) and its target (moved to
+    // (40, 20)), west of the rift. It blocks nav rows y 10..30, so the 5 m grid keeps two open rows
+    // above it and two below it (a footprint blocks every cell it overlaps).
+    const wall = [
+      { x: 24, y: 10 },
+      { x: 28, y: 10 },
+      { x: 28, y: 30 },
+      { x: 24, y: 30 },
+    ];
+    grid.stampFootprint(wall);
+    chase.chaser.getComponent(Transform).moveBy({ x: -28, y: 0 });
+    chase.target.getComponent(Transform).moveBy({ x: -40, y: 0 });
+    const system = new StuckSystem(RULE);
+    const window = STUCK_DETECTION.windowSeconds * config.tickRate;
+    const tick = () => {
+      system.update({ state: chase.state, logger });
+      chase.state.advanceTick();
+    };
+    // It stands still in front of the wall: stuck, so it detours round it.
+    for (let step = 0; step <= window; step += 1) tick();
+    const watch = chase.chaser.getComponent(ChaseWatch);
+    expect(watch.waypoint).not.toBeNull();
+    // Nothing changed: it keeps its detour.
+    tick();
+    expect(watch.waypoint).not.toBeNull();
+
+    grid.clearFootprint(wall);
+    tick();
+
+    // The wall is open: the next plan finds the straight line clear, so it chases straight now.
+    expect(watch.waypoint).toBeNull();
   });
 
   it('is deterministic: the same chase hashes the same at every second, detours included', () => {
