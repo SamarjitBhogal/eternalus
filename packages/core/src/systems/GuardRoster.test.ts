@@ -10,6 +10,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { DeepPartial, GameConfig } from '../config/GameConfig.types';
 import { timelineFrameOf } from '../config/timelineFrameOf';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { CHECKPOINT_DEFENDER_LIMIT } from '../content/structures/guardPlans';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
@@ -43,7 +44,13 @@ describe('GuardRoster', () => {
     const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP), {}, timingOf(config));
     spawnMapStructures(state);
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
-    const roster = new GuardRoster(factory, factory.definitions, GUARD_PLANS, {});
+    const roster = new GuardRoster(
+      factory,
+      factory.definitions,
+      GUARD_PLANS,
+      {},
+      CHECKPOINT_DEFENDER_LIMIT,
+    );
     roster.layOut(state);
     const step = () => {
       roster.update(state);
@@ -269,7 +276,13 @@ describe('GuardRoster', () => {
         createDefaultEntityRegistry(),
         loadDefaultContent(TICK_RATE),
       );
-      const roster = new GuardRoster(factory, factory.definitions, GUARD_PLANS, {});
+      const roster = new GuardRoster(
+        factory,
+        factory.definitions,
+        GUARD_PLANS,
+        {},
+        CHECKPOINT_DEFENDER_LIMIT,
+      );
       roster.layOut(state);
       const cleared: string[] = [];
       state.events.on('camp-cleared', ({ entityId }) => cleared.push(entityId));
@@ -499,7 +512,13 @@ describe('GuardRoster', () => {
       throw new Error('no spawner-tower guard plan');
     }
     const plan = { ...base, postGap: 2, leashRadius: 5 };
-    new GuardRoster(factory, factory.definitions, { 'spawner-tower': plan }, {}).layOut(state);
+    new GuardRoster(
+      factory,
+      factory.definitions,
+      { 'spawner-tower': plan },
+      {},
+      CHECKPOINT_DEFENDER_LIMIT,
+    ).layOut(state);
 
     let posts = 0;
     state.guards.forEach((post) => {
@@ -552,7 +571,13 @@ describe('GuardRoster', () => {
     if (base === undefined) {
       throw new Error('no spawner-tower guard plan');
     }
-    new GuardRoster(factory, factory.definitions, { 'spawner-tower': base }, {}).layOut(state);
+    new GuardRoster(
+      factory,
+      factory.definitions,
+      { 'spawner-tower': base },
+      {},
+      CHECKPOINT_DEFENDER_LIMIT,
+    ).layOut(state);
 
     let posts = 0;
     state.guards.forEach((post) => {
@@ -580,6 +605,7 @@ describe('GuardRoster', () => {
       leashTolerance: 5,
       activation: { at: 'match-start' },
       respawn: { kind: 'each', seconds: 5 },
+      canLevel: false,
     };
 
     /**
@@ -613,7 +639,15 @@ describe('GuardRoster', () => {
         factory,
         factory.definitions,
         loadGuardPlans(TICK_RATE, { 'capture-point': { ...ZONE_PLAN, ...plan } }),
-        { 1: { table: [{ mobId: 'light-assist-mob', count: 2 }], postGap: 2, leashTolerance: 5 } },
+        {
+          1: {
+            table: [{ mobId: 'light-assist-mob', count: 2 }],
+            postGap: 2,
+            leashTolerance: 5,
+            canLevel: true,
+          },
+        },
+        CHECKPOINT_DEFENDER_LIMIT,
       );
       roster.layOut(state);
       const cleared: string[] = [];
