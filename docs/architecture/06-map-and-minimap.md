@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -295,6 +295,10 @@ export type FlowField = { readonly integration: Uint16Array; readonly direction:
 - Footprint stamps are reference-counted over a separate terrain layer, so clearing one
   footprint never re-opens a cell that another footprint or terrain still covers; every cell a
   shape touches is blocked, so a wall thinner than a cell leaves no gap (DEC-14).
+- `WorldMap.version` changes at every `stampFootprint` and `clearFootprint` call, even one that
+  changes no cell. A cache of searches over the grid (a bot's path cache and a stuck unit's
+  detour, 11 §6) stores the version it searched on and searches again when it differs (DEC-379,
+  DEC-392).
 - Typed arrays keep the hot data allocation-free and transferable (D8).
 
 ## 7. Generator tests (`packages/core/src/map/MapGenerator.test.ts`)

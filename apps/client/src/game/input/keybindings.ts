@@ -14,6 +14,7 @@ export const DEFAULT_CHORDS: Readonly<Record<InputAction, readonly InputChord[]>
   'move-down': [key('KeyS', 'S')],
   'move-left': [key('KeyA', 'A')],
   'move-right': [key('KeyD', 'D')],
+  jump: [key('Space', 'Space')], // DEC-390
   attack: [{ device: 'mouse', code: '0', label: 'LMB' }],
   'ability-1': [key('Digit1', '1')],
   'ability-2': [key('Digit2', '2')],

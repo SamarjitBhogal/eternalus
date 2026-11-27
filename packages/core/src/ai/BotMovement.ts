@@ -59,6 +59,7 @@ export class BotMovement {
           pathGoalY: destination.y,
           pathStepX: this.step.x,
           pathStepY: this.step.y,
+          pathVersion: paths.version,
         };
       } else {
         BotMovement.forgetPath(turn);
@@ -77,14 +78,18 @@ export class BotMovement {
 
   /**
    * Copies the cached waypoint into `step` and returns `true` when it still serves `destination`:
-   * the destination is within `arrivalDistance` of the cached one, the straight line to the
-   * destination is still blocked, the waypoint is farther than `arrivalDistance` from the bot but
-   * nearer than the destination (still on the way, even after a shove), and the straight line to
-   * it is clear. Leaves `step` alone otherwise.
+   * the map has not changed since that search (`PathQuery.version`), the destination is within
+   * `arrivalDistance` of the cached one, the straight line to the destination is still blocked, the
+   * waypoint is farther than `arrivalDistance` from the bot but nearer than the destination (still
+   * on the way, even after a shove), and the straight line to it is clear. Leaves `step` alone
+   * otherwise.
    */
   private reuseStep(turn: BotTurn, destination: Vec2, paths: PathQuery): boolean {
-    const { pathGoalX, pathGoalY, pathStepX, pathStepY } = turn.memory;
+    const { pathGoalX, pathGoalY, pathStepX, pathStepY, pathVersion } = turn.memory;
     if (pathGoalX === null || pathGoalY === null || pathStepX === null || pathStepY === null) {
+      return false;
+    }
+    if (pathVersion !== paths.version) {
       return false;
     }
     const { x, y } = turn.position;

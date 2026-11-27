@@ -7,6 +7,7 @@ import { Combat } from '../components/Combat';
 import { CombatClock } from '../components/CombatClock';
 import { LastEnemyHit } from '../components/LastEnemyHit';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
 import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
 import { Veterancy } from '../components/Veterancy';
@@ -266,6 +267,12 @@ export class StateHasher {
     const lastEnemyHit = entity.findComponent(LastEnemyHit);
     if (lastEnemyHit !== undefined) {
       fields.push(['last-enemy-hit', ...lastEnemyHit.fields]);
+    }
+    // Only a held key or a jump in the air adds a field (DEC-390), so a Legend that never jumps
+    // hashes as before.
+    const jump = entity.findComponent(Jump);
+    if (jump !== undefined && (jump.isHeld || jump.isAirborne)) {
+      fields.push(['jump', ...jump.fields]);
     }
     return fields;
   }
