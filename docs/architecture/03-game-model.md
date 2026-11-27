@@ -261,7 +261,7 @@ export type EntitySnapshot = {
   readonly family: EntityFamily;
   readonly definitionId: string;
   readonly mapFeatureId?: string; // a structure's or zone's map feature (MapFeatureLink; DEC-212, DEC-231)
-  readonly specId?: string; // a Legend's sub-class from its roster slot, so the client draws its sprite (DEC-378 (2))
+  readonly specId?: string; // a Legend's sub-class from its roster slot, so the client draws its sprite (DEC-378 (2), DEC-397)
   readonly team: Team | null;
   readonly transform: {
     readonly x: number;

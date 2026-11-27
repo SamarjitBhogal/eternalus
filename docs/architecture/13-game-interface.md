@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -720,8 +720,8 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   IN filled); the session countdowns are one record by kind in `matchSetupSlice`, with one
   action (`countdownChanged`) and one selector (`selectCountdownSeconds(kind)`; DEC-213); §5's
   `capture-state` is now
-  published; `loading-progress` names the seven shared asset groups and the eight Legend sprite
-  sheet groups (`atlas-<sub-class>`; [14](14-persistence-and-resources.md) §14); `hud-state` is `{ player }` with no
+  published; `loading-progress` names the seven shared asset groups and the sprite sheet group
+  family (`sprite-atlas:<asset id>`, one group per sheet; [14](14-persistence-and-resources.md) §14); `hud-state` is `{ player }` with no
   `spectatedLegendId` (no spectate producer yet). The display types live in
   `bridge/catalogue.types.ts` and `bridge/hud.types.ts`; `bridge/` also gains `selectionRules.ts`,
   `matchSetupRules.ts`, `minimapRing.ts`, `legendNames.ts` and `opponentOf.ts`, and `assetsSlice`. The HUD data is in

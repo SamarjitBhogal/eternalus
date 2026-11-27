@@ -17,6 +17,8 @@ paths:
     'apps/client/src/game/LegendSprites*',
     'apps/client/src/game/legendSpriteSheets*',
     'apps/client/src/game/matchLegendSheets*',
+    'apps/client/src/game/followViewFor*',
+    'apps/client/src/game/legendSpriteWidthsOf*',
   ]
 related:
   [
@@ -149,8 +151,15 @@ export interface Renderer {
   all game code stays in CSS pixels; `resize` is driven by a `ResizeObserver` in `GameCanvas.tsx`.
 - **Integer coordinates**: positions are interpolated in world space and rounded once at draw
   time (`(0.5 + n) | 0`), so sub-pixel anti-aliasing never runs.
-- **Sprite atlas, no scaling at draw time**: `SpriteRef` is `{ atlasId, frame }`; frames are
-  pre-scaled per DPR when the atlas loads, so `drawImage` copies 1:1.
+- **Sprite atlas, scaled at draw time**: `SpriteRef` is `{ atlasId, frame }`. One `drawImage`
+  scales the frame's cell to the current zoom with smoothing off (nearest neighbour), so pixel
+  art stays sharp at every zoom, and the screen box is rounded to whole pixels. The renderer keeps
+  no pre-scaled frames (DEC-398, card PR170 (11)).
+- **A sprite stands on its feet**: a view passes the unit's position and the sprite's width. The
+  renderer puts the feet of the cell on that position; the sheet's own data says where the feet
+  stand (`groundOffset` in its manifest entry, [14](14-persistence-and-resources.md) §11), and
+  `spriteTop` gives the height of the top above the feet. A new sheet needs no number in the code
+  (DEC-398, card PR170 (8)).
 - **Viewport culling**: `SceneView` asks the snapshot's spatial index (`SnapshotSpatialIndex`, a
   copy of the `SpatialHash` tables, `10-physics.md` §5) for entities inside the camera rectangle
   plus a margin; terrain chunks outside the view are skipped.
@@ -251,6 +260,10 @@ flowchart LR
 - `ViewRegistry` (Registry pattern) maps entity `kind` → `EntityView`; `DefaultEntityView` draws
   a definition sprite for kinds without a bespoke view. Views read snapshots through `import type`
   only and never mutate state (rule 6).
+- Each view gets one `EntityDrawState` per entity: the snapshot, the interpolated position and
+  facing, whether the player controls it, and the frame time (`frameTick`: the snapshot's tick
+  plus `alpha`). A view that animates picks its frame by the frame time, so no view reads time
+  from `Match` (DEC-398, card PR170 (12)).
 - Interpolation: views draw `prev + (current - prev) × alpha` for position. The facing uses the
   same blend, scaled back to length 1 (`EntityLayer.turn`), and snaps at the midpoint when the two
   facings are opposite (a zero blend takes `current`). Entities that appeared this tick draw at `current` (no ghost from the
@@ -347,35 +360,39 @@ The design keeps the move cheap:
 
 Legend sprites (PR #170, `feat/character-sprites-phase3`, 2026-11-25):
 
-- The port has `drawSprite(sprite, anchor, width): void` (the frame's bottom centre at `anchor`,
-  `width` world units wide, the height from the atlas cell) and the query `hasSprite(sprite)`.
-  `RecordingRenderer` answers `hasSprite` by the same rule (`atlasWithFrame`). §4's sketch takes
-  `x, y` and `options`; the built port takes a `WorldPoint`, as its other methods do. The first
-  PR that needs `SpriteOptions` (§4) adds it.
+- The port has `drawSprite(sprite, feet, width): void` (the frame `width` world units wide, the
+  feet of its cell on `feet`, the height from the atlas cell) and the queries `hasSprite(sprite)`
+  and `spriteTop(sprite, width)`. `RecordingRenderer` answers both by the same rules
+  (`atlasWithFrame`, `spriteMeasures.ts`). §4's sketch takes `x, y` and `options`; the built port
+  takes a `WorldPoint`, as its other methods do. The first PR that needs `SpriteOptions` (§4)
+  adds it.
 - Every Legend in the match gets its sprite (DEC-378 (2), 2026-11-26). `match-loading` loads the
-  sheet group of every Legend in the filled rosters after `match`
+  sheet of every Legend in the filled rosters by its id (its `sprite-atlas:<id>` group) after
+  `match`
   ([13](13-game-interface.md) §2, `matchAssetGroups` over `matchLegendSheets`), and
   `createBrowserMatch` gives their atlases to `Canvas2dRenderer.fromCanvas` (§6: constructor
   injection). Each Legend's snapshot names its sub-class (`EntitySnapshot.specId`), which picks
   its sheet. A Legend without a sheet, or whose atlas did not load, stays a disc on its own; the
   other Legends keep their sprites. Each sheet whose atlas did not load logs one WARN; the match
   still starts.
-- Not as §4 says: one `drawImage` scales the source cell at draw time, with smoothing off
-  (nearest neighbour). §4 pre-scales the frames when the atlas loads, but zoom changes the screen
-  size too. `INBOX.md` asks the owner to sign this off (#170 better-than-design items).
-- PR #90 is merged. `LEGEND_VISUAL_DIAMETER` (`entityViews.constants.ts`) is DEC-238's Legend
-  display diameter, 5.2 m, and the sprite's width. Owner Calls card PR170 (6) asks whether the
-  sprite keeps it.
+- Each class has its own sprite width: core content `LegendDefinition.spriteWidth` (DEC-424, the
+  body ratio of DEC-06), which `main.tsx` passes to the match factory. The player's following
+  camera zooms out by the player's own width over `LEGEND_VISUAL_DIAMETER`
+  (`entityViews.constants.ts`: DEC-238's Legend size, approved with the follow view
+  `FOLLOW_VIEW_WIDTH` x `FOLLOW_VIEW_HEIGHT` in `Match.constants.ts`), so the player's
+  Legend looks the same size on screen for every class (`followViewFor`). A Legend drawn as a
+  disc keeps `LEGEND_VISUAL_DIAMETER`.
 - `EntityView` has two optional sizes. `visualRadiusOf?` (PR #90) is the click area
   (`PlayerCommands`). `visualTopOf?` is how far the top of the art stands above the position: the
   health bar (`EntityLayer`). The bar uses `visualTopOf`, else `visualRadiusOf`, else the
-  footprint radius. `LegendSpriteView` gives the sprite top from `visualTopOf` and keeps
-  `LegendView`'s `visualRadiusOf` (half of `LEGEND_VISUAL_DIAMETER`), so a click picks a Legend
-  only inside its DEC-238 circle. `draw` returns `void`. This split is built ahead of card
-  PR170 (13), option A; an owner answer B or C changes it.
+  footprint radius. `LegendSpriteView` gives the sprite top from `visualTopOf` and half the
+  sprite's width from `visualRadiusOf` (DEC-424), so a click picks a Legend only inside that
+  circle; a Warrior keeps DEC-238's 2.6 m. `draw` returns `void`. Card PR170 (13), option A
+  (DEC-424), keeps the two sizes.
 - `game/LegendSprites.ts` holds the sprite wiring of every Legend: one `LegendAnimation` per
-  Legend (by entity id), one `damage-applied` listener for all of them, the frame tick and the
-  `LegendSpriteView`. Each `LegendAnimation` keeps its Legend's last place and tick, so a Legend
+  Legend (by entity id), one `damage-applied` listener for all of them, and the
+  `LegendSpriteView`, to which it answers each Legend's sprite size and frame. The view gets the
+  frame time from its `EntityDrawState` (§8). Each `LegendAnimation` keeps its Legend's last place and tick, so a Legend
   that was not in the last snapshot (after a respawn) does not walk. `Match` builds it from
   `MatchDeps.legendSheets`, which the match factory gets from `matchLegendSheets`. An online Duel
   passes none, so its Legends are discs: the Duel server's roster names no sub-class.

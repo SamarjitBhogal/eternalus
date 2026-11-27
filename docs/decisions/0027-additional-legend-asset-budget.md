@@ -79,3 +79,12 @@ or more (option C).
   Architecture 08 §11 names it.
 - A new Legend sheet adds one group, one manifest entry and one budget row (see the
   better-than-design item on one atlas group family in `INBOX.md`).
+
+## Note 2026-11-27 (DEC-398, card PR170 (9))
+
+The owner's answer on card PR170 (9) makes the Legend sheets one asset group family,
+`sprite-atlas:<asset id>` (architecture 14 §11). Each sheet is its own group, named by its id, and
+the whole family is one manifest file and one folder. So two statements above are out of date. In the
+Context, a sheet's group is `sprite-atlas:<asset id>`, not `atlas-<sub-class>`. In the
+Consequences, a new Legend sheet adds one manifest entry, one `LEGEND_SPRITE_SHEETS` row and one
+budget row. It adds no group name. The `INBOX.md` item on the group family is answered.
