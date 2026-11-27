@@ -13,15 +13,17 @@ review comments under "Feedback". Answered decisions are recorded in
 
 ## Decisions needed from Sam
 
-- [ ] **Minion strength port (PR #82, 2026-11-25): sign off `LaneProgressOf`.** Built: `combat/`
+- [x] **Minion strength port (PR #82, 2026-11-25): sign off `LaneProgressOf`.** Built: `combat/`
       reads lane progress through a new port, `LaneProgressOf = (laneId, team, position) => number
 | null` (`MinionStrengthStep.types.ts`), which `LaneFlowFields.progress` implements and
       `DefaultSystemPipeline` injects. It keeps `combat/` from importing `map/` (core folder
       rules); DEC-280 fixes what it returns (`t` from the home gate, 0, to the enemy gate, 1). No DEC
       names the port itself (CodeRabbit, PR #82). Approve as built, or say what to change. HC-B45
       below asks whether the polyline fallback should become a second implementation of it.
+  - **Answered 2026-11-26 by DEC-384** (Owner Calls page v98, with HC-B45 below): "B: accept it,
+    and also build the critic's clean-up in this PR". The port is signed off as built.
 
-- [ ] **HC-B45 — Better than the design, not built, sign-off asked: minion strength depends only
+- [x] **HC-B45 — Better than the design, not built, sign-off asked: minion strength depends only
       on its lane-progress port** (PR #82 critic, 2026-11-22). Today `MinionStrengthStep` knows two
       ways to measure `t`: the injected `LaneProgressOf` (the lane flow field, DEC-280) and a
       built-in fallback to the `LaneRoutes` polyline; `createDefaultDamageSteps`, `DamagePipeline`
@@ -31,6 +33,11 @@ review comments under "Feedback". Answered decisions are recorded in
       the wiring by injection instead of the `vi.mock` in `DefaultSystemPipeline.strength.test.ts`
       (the only `vi.mock` in core). No gameplay number or behaviour changes. Approve (built in its
       own PR) or drop.
+  - **Answered 2026-11-26 by DEC-384** (Owner Calls page v98): "B: accept it, and also build the
+    critic's clean-up in this PR". PR #82 merged before the build was pushed, so it is built in
+    the follow-up PR from `refactor/lane-progress-port`: `LaneRoutes.progress`,
+    `DefaultSystemPipeline.laneProgressOf` composes "field, else polyline", the port is required
+    (`DamagePipeline` has no default steps), and the wiring test injects fake sources.
 
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).

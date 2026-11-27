@@ -287,7 +287,8 @@ export type FlowField = { readonly integration: Uint16Array; readonly direction:
 - A field also answers how far a point lies along its lane by path cost, from the team's own
   gate (0) to the enemy gate (1) (DEC-280). Minion strength by distance reads it through the
   `LaneProgressOf` port of `combat/` (`05-abilities-weapons-and-loadouts.md` §9, `18-minion-system.md`),
-  which falls back to the lane polyline where the field cannot say.
+  and the lane polyline is a second implementation of that port where the field cannot say; the
+  composition root composes the two (DEC-384).
 - Destructible terrain events (`07-structures-obstacles-and-destructibles.md` §10) re-flag cells
   through `stampFootprint`/`clearFootprint`; affected fields are marked dirty and rebuilt over
   several ticks with a cell budget (Dirty Flag; time slicing as in Supreme Commander 2).

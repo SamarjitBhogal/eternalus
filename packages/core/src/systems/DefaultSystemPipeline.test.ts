@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TEST_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
@@ -77,7 +78,7 @@ describe('DefaultSystemPipeline', () => {
     state.entities.add(runner);
     state.entities.add(victim);
     runner.getComponent(Movement).steer({ x: 1, y: 0 });
-    new DamagePipeline().apply(state, victim.id, 1000, {
+    new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, victim.id, 1000, {
       attackerId: runner.id,
       kind: 'weapon',
       definitionId: 'warrior',
@@ -295,7 +296,7 @@ describe('DefaultSystemPipeline', () => {
     });
     state.entities.add(warrior);
     state.entities.add(minion);
-    const damage = new DamagePipeline();
+    const damage = new DamagePipeline(damageStepsWithoutLaneProgress());
     damage.apply(state, minion.id, 1_000_000, {
       attackerId: warrior.id,
       kind: 'weapon',
@@ -334,7 +335,7 @@ describe('DefaultSystemPipeline', () => {
       team: 'dark',
     });
     state.entities.add(victim);
-    new DamagePipeline().apply(state, victim.id, 1000, {
+    new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, victim.id, 1000, {
       attackerId: null,
       kind: 'environment',
       definitionId: 'test',
@@ -400,7 +401,7 @@ describe('DefaultSystemPipeline', () => {
     const lights = [add('warrior', 'warrior', 'light'), add('magus', 'magus', 'light')];
     const dark = add('warrior', 'warrior', 'dark');
     const tower = add('spawner-tower', 'spawner-tower', 'dark');
-    new DamagePipeline().apply(state, tower.id, 1_000_000, {
+    new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, tower.id, 1_000_000, {
       attackerId: lights[0]?.id ?? '',
       kind: 'weapon',
       definitionId: 'warrior',
@@ -492,7 +493,7 @@ describe('DefaultSystemPipeline', () => {
       const entityId = state.worldObjects.snapshot()[0]?.entityId ?? '';
       expect(world?.isWalkable(9, 5)).toBe(false);
 
-      new DamagePipeline().apply(state, entityId, 1_000_000, {
+      new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, entityId, 1_000_000, {
         attackerId: 'nobody',
         kind: 'weapon',
         definitionId: 'warrior',

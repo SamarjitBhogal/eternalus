@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { DamagePipeline } from '../../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../../combat/__fixtures__/damageSteps';
 import type { DamageResult } from '../../combat/DamagePipeline.types';
 import { Collider } from '../../components/Collider';
 import { Health } from '../../components/Health';
@@ -81,7 +82,9 @@ describe('CathedralGem (07 §1, DISC-11, DEC-292)', () => {
     state.entities.add(gem);
 
     expect(gem.getComponent(Collider).isUnbreakable).toBe(true);
-    expect(new DamagePipeline().apply(state, gem.id, 10_000, SWORD)).toEqual({
+    expect(
+      new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, gem.id, 10_000, SWORD),
+    ).toEqual({
       applied: false,
       reason: 'blocked',
     });

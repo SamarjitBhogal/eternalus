@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
@@ -77,7 +78,7 @@ describe('DefaultSystemPipeline kill credit (DEC-346)', () => {
     expect(deaths).toEqual([]);
     // Too little health left to live through the burn; this damage has no attacker to credit.
     const left = victim.getComponent(Health).current - 30;
-    new DamagePipeline().apply(state, victim.id, left, {
+    new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, victim.id, left, {
       attackerId: null,
       kind: 'status',
       definitionId: 'bleed',

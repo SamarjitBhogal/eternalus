@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { Health } from '../components/Health';
 import { CathedralGemState } from '../components/CathedralGemState';
@@ -48,7 +49,10 @@ const setUp = () => {
   const loaded = loadStatusEffects(TICK_RATE, 2);
   const applier = new StatusEffectApplier(loaded);
   const system = new CathedralGemSystem(state, applier, loaded, CATHEDRAL_GEM);
-  const statusSystem = new StatusEffectSystem(new DamagePipeline(), applier);
+  const statusSystem = new StatusEffectSystem(
+    new DamagePipeline(damageStepsWithoutLaneProgress()),
+    applier,
+  );
   const add = (entity: Entity): Entity => {
     state.entities.add(entity);
     return entity;
@@ -84,7 +88,7 @@ describe('CathedralGemSystem (DEC-291, DEC-292)', () => {
     const { state, gem, warrior, tick, statusIdsOf } = setUp();
     const hitter = warrior(FAR);
 
-    const result = new DamagePipeline().apply(state, gem.id, 45, {
+    const result = new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, gem.id, 45, {
       ...SWORD,
       attackerId: hitter.id,
     });
@@ -106,7 +110,10 @@ describe('CathedralGemSystem (DEC-291, DEC-292)', () => {
     const { state, gem, warrior, tick } = setUp();
     const hitter = warrior(FAR);
     const hit = () =>
-      new DamagePipeline().apply(state, gem.id, 45, { ...SWORD, attackerId: hitter.id });
+      new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, gem.id, 45, {
+        ...SWORD,
+        attackerId: hitter.id,
+      });
     const glow = gem.getComponent(CathedralGemState);
 
     hit();
@@ -121,8 +128,14 @@ describe('CathedralGemSystem (DEC-291, DEC-292)', () => {
 
   it('ignores a blocked hit with no attacker and one the gem itself made', () => {
     const { state, gem, tick } = setUp();
-    new DamagePipeline().apply(state, gem.id, 10, { ...SWORD, attackerId: null });
-    new DamagePipeline().apply(state, gem.id, 10, { ...SWORD, attackerId: gem.id });
+    new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, gem.id, 10, {
+      ...SWORD,
+      attackerId: null,
+    });
+    new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, gem.id, 10, {
+      ...SWORD,
+      attackerId: gem.id,
+    });
     tick();
 
     expect(gem.getComponent(CathedralGemState).ticksSinceHit).toBeNull();
@@ -187,7 +200,10 @@ describe('CathedralGemSystem (DEC-291, DEC-292)', () => {
     const health = neutral.getComponent(Health);
     const full = health.current;
 
-    new DamagePipeline().apply(state, gem.id, 45, { ...SWORD, attackerId: neutral.id });
+    new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, gem.id, 45, {
+      ...SWORD,
+      attackerId: neutral.id,
+    });
     for (let at = 0; at < 2 * TICK_RATE; at += 1) fullTick();
 
     expect(health.current).toBe(full - 72);

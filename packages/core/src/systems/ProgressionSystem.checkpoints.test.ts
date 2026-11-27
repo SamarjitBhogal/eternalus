@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Capturable } from '../components/Capturable';
 import { Progression } from '../components/Progression';
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { LEVEL_CURVE_CATALOGUE } from '../content/progression/levelCurveCatalogue';
@@ -97,7 +98,7 @@ const setUp = () => {
     return ids;
   };
   const hit = (attacker: Entity, targetId: string) => {
-    new DamagePipeline().apply(state, targetId, 1e6, {
+    new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, targetId, 1e6, {
       attackerId: attacker.id,
       kind: 'weapon',
       definitionId: 'test',
@@ -163,7 +164,7 @@ describe('ProgressionSystem checkpoint XP through the guard roster (07 §7)', ()
 
     legend(CENTER.x);
     for (const id of defend(2)) {
-      new DamagePipeline().apply(state, id, 1e6, {
+      new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, id, 1e6, {
         attackerId: null,
         kind: 'environment',
         definitionId: 'lava',

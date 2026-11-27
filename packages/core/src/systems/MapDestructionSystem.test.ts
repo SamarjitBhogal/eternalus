@@ -6,6 +6,7 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
 import { NullLogger } from '../diagnostics/NullLogger';
@@ -47,7 +48,7 @@ describe('MapDestructionSystem', () => {
       definitions: MAP_OBJECT_DEFINITIONS,
     });
     state.events.on('entity-removed', ({ entityId }) => state.worldObjects?.removed(entityId));
-    const damage = new DamagePipeline();
+    const damage = new DamagePipeline(damageStepsWithoutLaneProgress());
     const collapse = new MapDestructionSystem(state, damage);
     const hits: string[] = [];
     state.events.on('entity-died', ({ entityId }) => hits.push(entityId));

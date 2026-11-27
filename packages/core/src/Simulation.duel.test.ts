@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from './combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from './combat/__fixtures__/damageSteps';
 import { Health } from './components/Health';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DUEL_RULES } from './content/duel/duelRules';
@@ -270,7 +271,7 @@ describe('Simulation: a Duel', () => {
       const wallId = (sim.snapshot().mapObjects ?? []).find(({ id }) => id === wall?.id)?.entityId;
       if (wallId === undefined || wallId === null) throw new Error('No Cathedral wall');
       const before = state.entities.get(wallId)?.findComponent(Health)?.current;
-      new DamagePipeline().apply(state, wallId, 100, {
+      new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, wallId, 100, {
         attackerId: 'entity-9',
         kind: 'weapon',
         definitionId: 'sword',
