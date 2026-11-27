@@ -101,6 +101,11 @@ Coverage thresholds live in each package's `vitest.config.ts`. **They may only g
 5. Loosening a rule needs a stronger justification than tightening one. Coverage thresholds only
    go up.
 
+A repair is not a change (DEC-352). A repair makes a guardrail do again what the docs already
+say it does. It needs only a row in the decisions log
+(`docs/reference/game-design/13-owner-decisions-log.md`), not an ADR. A change to what a
+guardrail does still follows steps 1 to 5.
+
 Agents never do this on their own. If a guardrail blocks a task, the agent stops, explains why,
 and a human decides.
 

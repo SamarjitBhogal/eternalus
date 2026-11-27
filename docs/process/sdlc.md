@@ -4,7 +4,7 @@ description: How Eternalus is delivered - phases, one-week sprints, task briefs,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-23
 tags: [process, sdlc, sprints, reviews]
 related:
   [
@@ -92,7 +92,9 @@ docs + frontmatter + progress entry updated, PR opened against the phase branch.
 ## 6. Change control
 
 - Guardrails (lint rules, thresholds, hooks, CI, tsconfig, `.claude/settings.json`) change
-  only through an ADR and a PR that updates `guardrails.md` in the same change.
+  only through an ADR and a PR that updates `guardrails.md` in the same change. A repair that
+  makes a guardrail do again what the docs say needs only a row in the decisions log
+  (DEC-352, `guardrails.md` §4).
 - Requirements change through the product owner: a new or edited FR row, then the phase
   doc, then tasks. Agents never change requirements or make product decisions.
 - Dependencies: none added unless a person other than the author approves each one in their

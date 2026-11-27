@@ -10,8 +10,10 @@
  * else = non-blocking error. See docs/agents/tool-setup.md.
  */
 import { spawn, spawnSync } from 'node:child_process';
+import { realpathSync } from 'node:fs';
 import { clearTimeout, setTimeout } from 'node:timers';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /** Reads all of stdin and parses it as JSON. Returns `{}` on empty or invalid input. */
 export async function readHookInput() {
@@ -38,20 +40,63 @@ export async function readHookInput() {
   }
 }
 
-/** The repository root: the hook's cwd (Claude Code runs hooks from the project directory). */
-export function repoRoot(input) {
-  const cwd = typeof input.cwd === 'string' && input.cwd.length > 0 ? input.cwd : process.cwd();
-  return path.resolve(cwd);
+/** The checkout that holds these scripts. */
+const SCRIPTS_ROOT = path.resolve(fileURLToPath(new URL('../..', import.meta.url)));
+
+/**
+ * `[topLevel, commonDir]` of the git repository that holds `folder`, or `null` outside one.
+ * Reads stdout only, so git messages on stderr (`GIT_TRACE`, warnings) cannot change the answer.
+ */
+function gitRepository(folder) {
+  const result = spawnSync(
+    'git',
+    ['rev-parse', '--path-format=absolute', '--show-toplevel', '--git-common-dir'],
+    { cwd: folder, encoding: 'utf8', timeout: 30_000, windowsHide: true },
+  );
+  const lines = (result.stdout ?? '').trim().split(/\r?\n/);
+  return result.status === 0 && lines.length === 2 ? lines.map((line) => path.resolve(line)) : null;
 }
 
-/** The file a tool call touched, or `null` when the event carries no file path. */
+/** The session's current folder: Claude Code runs a hook there. */
+export function sessionFolder(input) {
+  return typeof input.cwd === 'string' && input.cwd.length > 0 ? input.cwd : process.cwd();
+}
+
+/**
+ * The checkout a hook acts on (DEC-331), found from `folder`: the session's folder or, for
+ * `post-edit.mjs`, the edited file's folder. A folder in the same repository as `scriptsRoot`
+ * (any worktree) gives its own top level, so a session in a worktree checks that worktree. Any
+ * other folder gives `scriptsRoot`.
+ */
+export function projectRoot(folder, scriptsRoot = SCRIPTS_ROOT) {
+  const start = gitRepository(path.resolve(folder));
+  const scripts = gitRepository(scriptsRoot);
+  // `path.relative` ignores case on Windows, where git can print a drive letter in either case.
+  if (start !== null && scripts !== null && path.relative(start[1], scripts[1]) === '') {
+    return start[0];
+  }
+  return scripts?.[0] ?? scriptsRoot;
+}
+
+/**
+ * The real absolute path of the file a tool call touched, or `null` when the event carries no
+ * file path or the file does not exist. A relative path is taken from the session's folder. The
+ * native real path resolves symlinks and letter case like the top level that git prints.
+ */
 export function editedFile(input) {
   const toolInput = input.tool_input;
   if (typeof toolInput !== 'object' || toolInput === null) {
     return null;
   }
   const filePath = toolInput.file_path ?? toolInput.path ?? toolInput.notebook_path;
-  return typeof filePath === 'string' && filePath.length > 0 ? filePath : null;
+  if (typeof filePath !== 'string' || filePath.length === 0) {
+    return null;
+  }
+  try {
+    return realpathSync.native(path.resolve(sessionFolder(input), filePath));
+  } catch {
+    return null;
+  }
 }
 
 /** True when `filePath` is inside `root` (prevents running tools on files outside the repo). */
