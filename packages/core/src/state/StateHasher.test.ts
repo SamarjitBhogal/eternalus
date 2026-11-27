@@ -192,7 +192,7 @@ describe('StateHasher', () => {
     soldier.addComponent(watch);
     const watched = hasher.hash(state);
 
-    watch.headFor(5, 6, 2, 0);
+    watch.headFor(5, 6, 2, 0, 0);
 
     expect(watched).not.toBe(bare);
     expect(hasher.hash(state)).not.toBe(watched);
