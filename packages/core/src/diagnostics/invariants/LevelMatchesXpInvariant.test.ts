@@ -158,6 +158,138 @@ describe('LevelMatchesXpInvariant', () => {
     ]);
   });
 
+  describe('camp award', () => {
+    /**
+     * Camp `entity-5` with two guard posts; `held` posts are filled by `entity-6`, `entity-7`. With
+     * `hasDefender`, a third post on the same home is a checkpoint defender's, held by `entity-8`.
+     */
+    const campWith = (held: number, hasDefender = false) => {
+      const fixture = setUp();
+      const camp = fixture.spawn('entity-5', 'neutral');
+      for (let post = 0; post < (hasDefender ? 3 : 2); post += 1) {
+        const isDefender = post === 2;
+        fixture.state.guards.add({
+          ...(isDefender ? { checkpoint: 1 } : {}),
+          id: `post-${String(post)}`,
+          homeId: camp.id,
+          team: 'neutral',
+          mobId: 'light-camp-mob',
+          row: 0,
+          indexInRow: post,
+          postX: 0,
+          postY: 0,
+          homeX: 0,
+          homeY: 0,
+          homeRadius: 1,
+          leashRadius: 6,
+          leashTolerance: 0,
+          respawnTicks: 3600,
+          canLevel: false,
+        });
+        if (post < held || isDefender) {
+          fixture.state.guards.fill(post, `entity-${String(6 + post)}`);
+        }
+      }
+      fixture.state.events.emit('xp-gained', {
+        entityId: fixture.hero.id,
+        amount: 50,
+        victimId: camp.id,
+        victimTeam: 'neutral',
+        cause: 'camp-cleared',
+      });
+      return fixture;
+    };
+
+    it('rule 2: passes a camp award for a camp with no guard left', () => {
+      expect(campWith(0).check()).toEqual([]);
+    });
+
+    it('rule 2: passes a camp award while a checkpoint defender on the same home stands', () => {
+      expect(campWith(0, true).check()).toEqual([]);
+    });
+
+    it('rule 2: flags a camp award for a camp that still has a guard', () => {
+      expect(campWith(1).check()).toEqual([
+        'Entity "entity-1" gained camp XP for "entity-5", which is no cleared camp.',
+      ]);
+    });
+
+    it('rule 2: flags a camp award for an entity with no guard posts', () => {
+      const { hero, enemy, state, check } = setUp();
+      state.events.emit('xp-gained', {
+        entityId: hero.id,
+        amount: 50,
+        victimId: enemy.id,
+        victimTeam: 'dark',
+        cause: 'camp-cleared',
+      });
+
+      expect(check()).toEqual([
+        'Entity "entity-1" gained camp XP for "entity-2", which is no cleared camp.',
+      ]);
+    });
+  });
+
+  describe('checkpoint award (07 §7)', () => {
+    /**
+     * Point `entity-5` with one checkpoint-1 defender post: held by `entity-6`, emptied by a clear
+     * (`cleared`), or emptied by a cancel (DEC-350), which clears no set.
+     */
+    const pointWith = (post: 'held' | 'cleared' | 'cancelled') => {
+      const fixture = setUp();
+      const point = fixture.spawn('entity-5', 'neutral');
+      fixture.state.guards.add(
+        {
+          checkpoint: 1,
+          defenceId: 'set-1',
+          id: 'post-0',
+          homeId: point.id,
+          team: 'neutral',
+          mobId: 'medium-assist-mob',
+          row: 0,
+          indexInRow: 0,
+          postX: 0,
+          postY: 0,
+          homeX: 0,
+          homeY: 0,
+          homeRadius: 0,
+          leashRadius: 6,
+          leashTolerance: 0,
+          respawnTicks: 0,
+          canLevel: true,
+        },
+        0,
+      );
+      fixture.state.guards.fill(0, 'entity-6');
+      if (post !== 'held') {
+        fixture.state.guards.vacate(0, null);
+      }
+      if (post === 'cleared') {
+        fixture.state.guards.markCleared('set-1');
+      }
+      fixture.state.events.emit('xp-gained', {
+        entityId: fixture.hero.id,
+        amount: 36,
+        victimId: point.id,
+        victimTeam: 'neutral',
+        cause: 'checkpoint-cleared',
+      });
+      return fixture;
+    };
+
+    it('rule 2: passes a checkpoint award for a point with a cleared defender set', () => {
+      expect(pointWith('cleared').check()).toEqual([]);
+    });
+
+    it('rule 2: flags a checkpoint award for a point whose defenders stand, or were only cancelled', () => {
+      for (const post of ['held', 'cancelled'] as const) {
+        expect(pointWith(post).check()).toEqual([
+          'Entity "entity-1" gained checkpoint XP for "entity-5", which has no cleared defender set.',
+        ]);
+      }
+    });
+  });
+
   it('rule 2: passes owed XP paid to a Legend that is back, and flags one still waiting (DEC-186)', () => {
     const { state, hero, check } = setUp();
     const owed = (entityId: string) => {

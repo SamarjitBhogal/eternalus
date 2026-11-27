@@ -4,7 +4,7 @@ description: Proposed tuning values, formulas and balance knobs for the MVP (hor
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-20
 tags: [reference, suggestions, balancing, content, testing]
 paths: ['packages/core/src/content/**', 'packages/core/src/config/**']
 related:
@@ -73,15 +73,15 @@ Camps (neutral): `TUNE` 6 forest camps per side between the lanes, inactive unti
 
 ## Minion strength-by-distance curve — MVP
 
-Source: "the closer to home, the stronger the minion; strength evens out in the middle, which prevents early rushes" (game doc). `Recommendation:` measure position as `t` = lane progress from the minion's home Stronghold (0) to the enemy Stronghold (1), taken from the lane's integration field (flow-field distance) rather than Euclidean distance, so it follows the bends of MVP lanes (DEC-14) and works unchanged for curved lanes later. Then:
+Source: "the closer to home, the stronger the minion; strength evens out in the middle, which prevents early rushes" (game doc). `Recommendation:` measure position as `t` = lane progress along the lane path from the minion's home gate (0) to the enemy gate (1) (DEC-280: the lane path ends at the gates), taken from the lane's integration field (flow-field distance) rather than Euclidean distance, so it follows the bends of MVP lanes (DEC-14) and works unchanged for curved lanes later. Then:
 
 ```text
 m(t) = clamp(1 + k · (1 − 2t), mMin, mMax)      k = 0.5, mMin = 0.75, mMax = 1.5
 ```
 
-| t (lane progress) | 0.00 (home) | 0.25 | 0.50 (middle) | 0.75 | 1.00 (enemy home) |
-| ----------------- | ----------- | ---- | ------------- | ---- | ----------------- |
-| m(t)              | 1.50        | 1.25 | 1.00          | 0.75 | 0.75 (clamped)    |
+| t (lane progress) | 0.00 (home gate) | 0.25 | 0.50 (middle) | 0.75 | 1.00 (enemy gate) |
+| ----------------- | ---------------- | ---- | ------------- | ---- | ----------------- |
+| m(t)              | 1.50             | 1.25 | 1.00          | 0.75 | 0.75 (clamped)    |
 
 Apply `m` in the `DamagePipeline` as a modifier (outgoing damage × m, incoming damage ÷ m) instead of rescaling health, so a minion's health bar never jumps as it walks. `HordeSystem` recomputes `t` every 15 ticks per minion; Legends are never affected. Shape options: linear with clamp (recommended: readable, one knob), smoothstep (softer edges), or stepped by lane thirds (1.5 / 1.0 / 0.75; the most legible in play but produces a visible seam). Because the far end is clamped at 0.75 rather than 0.5, an attacking horde is weaker at the enemy walls but not useless.
 

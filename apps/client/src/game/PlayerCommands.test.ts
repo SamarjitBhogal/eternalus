@@ -10,6 +10,7 @@ import type {
   Vec2,
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
+import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 
 import { AbilityCasts } from './AbilityCasts';
 import type { IntentSource } from './Match.types';
@@ -93,6 +94,7 @@ const setUp = () => {
     { enqueueCommand },
     { screenToWorld: (point) => point },
     [HOUSE],
+    createDefaultViewRegistry(),
     casts,
   );
   const queued = (type: Command['type']): number =>
@@ -104,6 +106,35 @@ const setUp = () => {
 };
 
 describe('PlayerCommands', () => {
+  it.each([
+    ['legend', { x: 0.1, y: 2 }],
+    ['mob', { x: 0.7, y: 2 }],
+  ] as const)('targets the visible edge of an enemy %s over a building', (family, aim) => {
+    const { input, commands, enqueueCommand, tick } = setUp();
+    const enemy = { ...ENEMY, family };
+    expect(commands.attackUnitAt(ACTOR, aim, snapshotOf([PLAYER, enemy]))).toBe(true);
+
+    input.isAttacking = true;
+    input.aim = aim;
+    tick([PLAYER, enemy]);
+
+    const expected = { type: 'attack-target', actorId: ACTOR, targetId: enemy.id };
+    expect(enqueueCommand.mock.calls).toEqual([[expected], [expected]]);
+  });
+
+  it('selects a minion by its drawn figure beyond the ordinary mob disc', () => {
+    const { commands, enqueueCommand } = setUp();
+    const minion = { ...ENEMY, kind: 'heavy-mob', definitionId: 'heavy-minion' };
+    const snapshot = snapshotOf([PLAYER, minion]);
+    expect(commands.attackUnitAt(ACTOR, { x: 2, y: -0.7 }, snapshot)).toBe(true);
+    expect(enqueueCommand).toHaveBeenCalledWith({
+      type: 'attack-target',
+      actorId: ACTOR,
+      targetId: minion.id,
+    });
+    expect(commands.attackUnitAt(ACTOR, { x: 2, y: -20 }, snapshot)).toBe(false);
+  });
+
   it('queues one attack per target while held, and again after a release or a stop', () => {
     const { input, queued, tick, enqueueCommand } = setUp();
     input.isAttacking = true;

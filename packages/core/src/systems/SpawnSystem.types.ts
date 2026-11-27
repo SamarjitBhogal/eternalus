@@ -32,6 +32,8 @@ export type SpawnPlan = {
   readonly guards: Readonly<Record<string, GuardPlanDefinition>>;
   /** Each capture-point checkpoint's defenders, keyed by checkpoint (07 §7, 18 §7.1). */
   readonly defenders: Readonly<Record<number, CheckpointDefenderPlanDefinition>>;
+  /** The most checkpoint defenders one capture point holds, living or waiting (DEC-350). */
+  readonly defenderLimit: number;
 };
 
 /** One spawner's repeating wave, with its times in ticks (`loadSpawnWaves`, architecture 03 §10). */
@@ -50,4 +52,10 @@ export type CheckpointReached = {
   readonly pointId: EntityId;
   readonly checkpoint: number;
   readonly owner: Team;
+};
+
+/** A capture point whose owner changed since the last pass: `from` lost it (DEC-350). */
+export type PointLost = {
+  readonly pointId: EntityId;
+  readonly from: Team;
 };

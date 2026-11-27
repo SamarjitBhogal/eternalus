@@ -4,13 +4,16 @@ import { describe, expect, it } from 'vitest';
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import type { EntityView } from './EntityView.types';
 import {
-  FACING_CHEVRON,
   FOCUS_RING_COLOR,
+  FACING_CHEVRON,
   LEGEND_OUTLINE_COLOR,
+  LEGEND_OUTLINE_SCALE,
+  LEGEND_VISUAL_DIAMETER,
   MINI_MAP_LEGEND_GLYPH,
   MINI_MAP_MOB_GLYPH,
   MINI_MAP_OUTLINE_COLORS,
 } from './entityViews.constants';
+import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { LegendView } from './LegendView';
 import { TEAM_COLORS } from './MapView.constants';
 import { MobView } from './MobView';
@@ -21,7 +24,7 @@ const WARRIOR: EntitySnapshot = {
   family: 'legend',
   definitionId: 'warrior',
   team: 'light',
-  transform: { x: 0, y: 0, radius: 0.5, facing: { x: 0, y: 1 } },
+  transform: { facing: { x: 1, y: 0 }, x: 0, y: 0, radius: 0.5 },
   health: { current: 600, max: 600 },
   progression: null,
   aether: null,
@@ -33,24 +36,112 @@ const WARRIOR: EntitySnapshot = {
 
 const AT = { x: 0, y: 0 };
 
-const SOUTH = { x: 0, y: 1 };
-
 describe('LegendView', () => {
-  it('draws a white outline and the facing chevron under the team disc (DEC-192)', () => {
+  it.each(['light', 'dark'] as const)(
+    'keeps every %s hero slightly larger than every troop without changing hitboxes',
+    (team) => {
+      const registry = createDefaultViewRegistry();
+      const troopSpans = (['light', 'medium', 'heavy'] as const).flatMap((weight) => {
+        const troop: EntitySnapshot = {
+          ...WARRIOR,
+          team,
+          kind: `${weight}-mob`,
+          family: 'mob',
+          definitionId: `${weight}-minion`,
+          transform: {
+            facing: { x: 1, y: 0 },
+            x: 0,
+            y: 0,
+            radius: { light: 0.4, medium: 0.5, heavy: 0.8 }[weight],
+          },
+        };
+        const renderer = new RecordingRenderer();
+        registry
+          .viewFor(troop)
+          .draw(
+            { facing: { x: 1, y: 0 }, entity: troop, position: AT, isFocused: false },
+            renderer,
+          );
+        const points = renderer.calls.flatMap((call) =>
+          call.op === 'fillPolygon' ? call.args[0] : [],
+        );
+        return (['x', 'y'] as const).map(
+          (axis) =>
+            Math.max(...points.map((point) => point[axis])) -
+            Math.min(...points.map((point) => point[axis])),
+        );
+      });
+      const largestTroop = Math.max(...troopSpans);
+      for (const [kind, radius] of [
+        ['warrior', 0.5],
+        ['magus', 0.75],
+        ['sentinel', 1.25],
+      ] as const) {
+        const hero: EntitySnapshot = {
+          ...WARRIOR,
+          team,
+          kind,
+          definitionId: kind,
+          transform: { facing: { x: 1, y: 0 }, x: 0, y: 0, radius },
+        };
+        const before = structuredClone(hero);
+        const renderer = new RecordingRenderer();
+        registry
+          .viewFor(hero)
+          .draw({ facing: { x: 1, y: 0 }, entity: hero, position: AT, isFocused: false }, renderer);
+        const disc = renderer.calls.find(
+          (call) => call.op === 'drawWorldGlyph' && call.args[2] === TEAM_COLORS[team],
+        );
+        if (disc?.op !== 'drawWorldGlyph') throw new Error('Missing hero body');
+        expect(disc.args[0].size).toBeGreaterThan(largestTroop);
+        expect(disc.args[0].size).toBeLessThan(largestTroop * 1.25);
+        expect(disc.args[0].size).toBeGreaterThan(radius * 2);
+        expect(hero).toEqual(before);
+      }
+    },
+  );
+
+  it('does not invent a visible body when the snapshot has no transform', () => {
+    const renderer = new RecordingRenderer();
+    new LegendView().draw(
+      {
+        facing: { x: 1, y: 0 },
+        entity: { ...WARRIOR, transform: null },
+        position: AT,
+        isFocused: false,
+      },
+      renderer,
+    );
+    expect(
+      renderer.calls.every((call) => call.op === 'drawWorldGlyph' && call.args[0].size === 0),
+    ).toBe(true);
+  });
+
+  it('draws a white outline under the team disc, so players stand out from mobs', () => {
     const renderer = new RecordingRenderer();
 
     new LegendView().draw(
-      { entity: WARRIOR, position: AT, facing: SOUTH, isFocused: false },
+      { facing: { x: 1, y: 0 }, entity: WARRIOR, position: AT, isFocused: false },
       renderer,
     );
 
     expect(renderer.calls).toEqual([
-      { op: 'drawWorldGlyph', args: [{ shape: 'dot', size: 1.25 }, AT, LEGEND_OUTLINE_COLOR] },
       {
-        op: 'strokePath',
+        op: 'drawWorldGlyph',
+        args: [
+          { shape: 'dot', size: LEGEND_VISUAL_DIAMETER * LEGEND_OUTLINE_SCALE },
+          AT,
+          LEGEND_OUTLINE_COLOR,
+        ],
+      },
+      {
+        op: 'strokePath', // DEC-192: Legends show their facing with a chevron.
         args: [expect.any(Array), FACING_CHEVRON.color, FACING_CHEVRON.lineWidth],
       },
-      { op: 'drawWorldGlyph', args: [{ shape: 'dot', size: 1 }, AT, TEAM_COLORS.light] },
+      {
+        op: 'drawWorldGlyph',
+        args: [{ shape: 'dot', size: LEGEND_VISUAL_DIAMETER }, AT, TEAM_COLORS.light],
+      },
     ]);
   });
 
@@ -58,7 +149,7 @@ describe('LegendView', () => {
     const renderer = new RecordingRenderer();
 
     new LegendView().draw(
-      { entity: WARRIOR, position: AT, facing: SOUTH, isFocused: true },
+      { facing: { x: 1, y: 0 }, entity: WARRIOR, position: AT, isFocused: true },
       renderer,
     );
 
@@ -68,11 +159,13 @@ describe('LegendView', () => {
   });
 
   it('marks the minimap with a dot larger than a mob, on a team outline, above mobs', () => {
-    // Exactly these two glyphs: the facing chevron is main view only (DEC-192).
     const renderer = new RecordingRenderer();
     const view = new LegendView();
 
-    view.drawMinimap({ entity: WARRIOR, position: AT, facing: SOUTH, isFocused: false }, renderer);
+    view.drawMinimap(
+      { facing: { x: 1, y: 0 }, entity: WARRIOR, position: AT, isFocused: false },
+      renderer,
+    );
 
     expect(renderer.calls).toEqual([
       { op: 'drawGlyph', args: [expect.anything(), AT, MINI_MAP_OUTLINE_COLORS.light] },

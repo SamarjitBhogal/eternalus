@@ -7,6 +7,7 @@ import { createDefaultAbilityRegistry } from '../abilities/defaultAbilityRegistr
 import { loadAbilities } from '../content/abilities/loadAbilities';
 import { Perception } from './perception/Perception';
 import type { BotTurn } from './BotLegendController.types';
+import { NO_PATH } from './BotMovement.constants';
 import { NORMAL_BOT } from '../content/ai/difficulties/normal';
 import { SeededRandom } from '../utils/SeededRandom';
 import { allReady, onlyReady } from '../state/__fixtures__/stubReadiness';
@@ -23,6 +24,7 @@ const turnWith = (seed: number): BotTurn => {
     targetId: null,
     nextCastTick: 0,
     isHalted: false,
+    ...NO_PATH,
   };
   return {
     state,
