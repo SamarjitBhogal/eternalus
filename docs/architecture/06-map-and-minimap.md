@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -630,6 +630,26 @@ destroyed object draws one ruin over its whole box. The pylon stays as a ruin (D
 its own health and bar (DEC-388). Until the tower-ruins work (#98) lands, every wall of a fallen
 tower's fort blocks (DEC-217 (12)). #98 lets a fort's keep and the struck wall fall; its merge
 note is in DEC-341 (2) and DEC-388.
+
+### 2026-11-23 — Implementation status (branch `feat/shots-over-lava`, DEC-345)
+
+A map object can carry two flags that say what its footprint does to a shot (`MapObjectFlags` in
+`content/maps/mapObjects.types.ts`): `canShotsCross` (a shot flies over it; a unit or a dash still
+collides with it) and `canLightShots` (a shot that flies over it, outside its passages, catches
+fire). The map builder sets them: `MapLandscapeBuilder` gives lakes `canShotsCross` and lava rivers
+both, through `MapDecorationBuilder.beginObject`. `MapObjectBuilder` copies them to the
+`MapObject`, and `staticCollisionIndexOf` to each collision shape. Every other object has neither,
+so it stops a shot. Collision reads the flags (10 §7); the map does not.
+
+### 2026-11-26 — Camp fires carry the shot flags (branch `feat/shots-over-lava`, DEC-386, HC-Q105)
+
+`MapSceneryBuilder` now sets both flags, `canShotsCross` and `canLightShots`, on each camp fire
+object (`<camp>-fire`), through `MapDecorationBuilder.beginObject`. So the note above ("Every other
+object has neither") no longer holds for camp fires. The fire's body follows the shot rule in the
+2026-11-26 correction note in 10 §7. The map still decides nothing about shots: it only sets the
+flags. The palace kitchen hearths (`MapPalaceRoomsBuilder`) carry no flag (`INBOX.md` HC-Q116).
+2026-11-27: DEC-409 (2) keeps this: each hearth's stone block holds its fire, so the stone stops a
+shot before the fire can light it.
 
 ## Related
 

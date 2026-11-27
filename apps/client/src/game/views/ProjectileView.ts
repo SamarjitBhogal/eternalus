@@ -22,6 +22,7 @@ import {
   PROJECTILE_DOT_SIZE,
   PROJECTILE_DROP_FADE_FROM,
   PROJECTILE_ENDING_LOOKS,
+  PROJECTILE_LIT_COLOR,
   PROJECTILE_MIST_DOT_COUNT,
   PROJECTILE_MIST_DOT_SIZE,
   PROJECTILE_MIST_END_RADIUS,
@@ -39,7 +40,8 @@ import type { Point, ProjectileBodyLook, ProjectileEndingLook } from './Projecti
  * The placeholder look for projectiles (arrows, bolts): a small dot in the shooter's team colour
  * with a bright core, and a short streak behind it, opposite its facing. A shot that drops (an
  * arrow) flies an artificial arc (DEC-322 (2)): its shadow dot below it drops away to mid-flight,
- * then closes in and meets it at the end of its range. When a shot ends (DEC-306), a
+ * then closes in and meets it at the end of its range. A lit shot (it flew over lava and burns what
+ * it lands on, HC-Q89, DEC-345) is drawn in `PROJECTILE_LIT_COLOR`. When a shot ends (DEC-306), a
  * bolt thins into a mist that grows and fades, and an arrow lies still on its shadow, then fades.
  * A shot whose id is in `PROJECTILE_BODY_LOOKS` as an orb draws a team-coloured circle in place of
  * the dot and streak. The ending look of each id is in `PROJECTILE_ENDING_LOOKS`, the body look in
@@ -91,7 +93,11 @@ export class ProjectileView extends DefaultEntityView {
     } else if (this.lookOf(state) === 'drop') {
       this.drawShadow(state, 1, renderer);
     }
-    this.bodies[this.bodyLookOf(state)](state, this.colorOf(state.entity.team), renderer);
+    const color =
+      state.entity.projectile?.isLit === true
+        ? PROJECTILE_LIT_COLOR
+        : this.colorOf(state.entity.team);
+    this.bodies[this.bodyLookOf(state)](state, color, renderer);
   }
 
   /** The shot's body look; an id with no entry in `PROJECTILE_BODY_LOOKS` is a streak. */

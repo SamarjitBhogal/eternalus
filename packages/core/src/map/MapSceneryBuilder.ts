@@ -237,7 +237,8 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
       );
     }
     this.endObject();
-    this.beginObject(`${id}-fire`, 'furniture');
+    // Shots fly over a camp fire, and an arrow that crosses one catches fire (DEC-386 (2), HC-Q105).
+    this.beginObject(`${id}-fire`, 'furniture', { canShotsCross: true, canLightShots: true });
     this.blockRect(`${id}-fire-stone`, point.x - 4, point.y - 4, 8, 8, P.stoneDark);
     this.rect(`${id}-fire`, point.x - 2, point.y - 2, 4, 4, P.lavaLight);
     this.endObject();

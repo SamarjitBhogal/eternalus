@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -574,6 +574,59 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   does not follow the owner yet (the minimap entity markers, SCRUM-151).
 - The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
   capture tracker); this PR publishes the presence and draws the split bar in the world.
+
+**Implementation status, 2026-11-23 (branch `feat/shots-over-lava`, DEC-345).** The launch-shape
+rule and the shapes that shots cross share one predicate, `doesShapeStopShot` (`utils/geometry.ts`,
+10 §7): a blocking shape does not stop a shot when shots can cross it (`canShotsCross`: a lake, a
+lava river) or when its blocking area holds the shot's launch point (DEC-334). The collision sweep
+(`CollisionResolver.shotReach`) and `WorldObjectStore.blockingAt` both use it, so
+`NoMapObjectOverlapInvariant` does not flag a shot over a lake or a lava river, and still flags a
+unit in one.
+
+**2026-11-26 (branch `feat/shots-over-lava`; HC-Q105, DEC-386 correction, HC-Q115).** `Outline`
+now has `canShotsFlyOver` (a walk-on outline, or a map object flagged `canShotsCross`).
+`StructureDefinition.canShotsFlyOver` reaches the structure's `Collider`, so a shot not aimed at the
+structure flies over its body. The forest camps set it. It has no effect on a structure with a map
+footprint, because the outline rule comes first. The rule is in 10 §7.
+
+**Implementation status, 2026-11-26 (branch `feat/palace-stronghold-pool`, DEC-386 (1)).** The
+Stronghold's outer wall ring and its throne are the Stronghold's body, as a lane tower's fort is
+the tower's body (one pool, DEC-185 (B)). This changes the 2026-11-05 note above ("only towers
+share one pool with their fort", DEC-217 (13)) for these objects only. The palace's inner ring,
+its room walls, its floor, its other furniture and the gates keep their own health. A map object
+names the structure it is part of with `MapObject.partOf`, which `MapPalaceWallsBuilder` and
+`MapBuildingInteriorBuilder` set. `Simulation.spawnStructures` adds the footprints of the blocking
+`partOf` objects to the structure's `Footprint` as solid polygons, and names them in the owners
+of `WorldObjectStore`, so they get no entity and no health of their own. An `Outline` now has the
+polygon lists `walkOn` and `solid` in place of `isWalkOn` (the 2026-11-20 note above), so one
+outline holds the walk-on palace floor and the solid outer walls and throne. Rule 1 of
+`AreaHitQuery` aims only by the walk-on polygons, and every hit that touches a solid polygon hits
+the body. `AreaHitQuery.shotPolygonsOf` gives the polygons that stop a shot, for
+`ProjectileSystem` and `LineOfFire`. A structure can own many body records in `WorldObjectStore`:
+`removed` leaves each one a ruin that blocks (DEC-341), and `contentsOf` skips a structure's body,
+so the collapse of the palace map object does not kill the Stronghold. The Stronghold's fort box
+(DEC-217 (16)) is now the box round its outer ring.
+
+**Implementation status, 2026-11-26, critic round 1 (branch `feat/palace-stronghold-pool`,
+DEC-386 (1) correction).** Three changes to the note above. (1) After the Stronghold falls, the
+match goes on (ADR 0021, DEC-71), so its outer walls and throne stay as ruins that block and never
+break for the rest of the match. No owner answer covers this: `INBOX.md` HC-Q122 asks it, and this
+is the interim until he answers. 2026-11-27: he answered with the fort rule (DEC-408); it comes
+with the merge where PR #98 (`StructureRuins`) meets this branch, and this interim stays until
+then. (2) The palace floor is not part of the Stronghold (DEC-344 (4)):
+the Stronghold's definition has no `hasMapFootprint`, and its `Footprint` is its outer walls and
+throne only, all solid (`Footprint.ofBody`, `map/structureBodyParts`). So a hit on the floor never
+takes the Stronghold's health, and a locked attack on the Stronghold lands on an outer wall or the
+throne. From outside, an aim at the floor hits the palace map object. Its fort box is still the box
+round the outer ring. (3) The client draws a body object by its own state, not by its building's:
+a standing outer wall keeps its art and its health bar after the palace map object falls, and a
+ruined one keeps its ruins (`SceneryView`, `WorldObjectsView`).
+
+**2026-11-26, merge of `feat/shots-over-lava` into `feat/palace-stronghold-pool` (Q104-9).** The
+shots-over-lava note above names `Outline.canShotsFlyOver`. The merge replaces it with the
+polygon list `Outline.shotsCross`, so the Stronghold's outer walls and throne still stop every
+shot not aimed at it. `StructureDefinition.canShotsFlyOver` and `Collider.canShotsFlyOver` stay
+as that note says. The rule is in the 10 §12 note of the same merge.
 
 ## Related
 

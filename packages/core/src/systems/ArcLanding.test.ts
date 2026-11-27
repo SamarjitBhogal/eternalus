@@ -59,6 +59,7 @@ const setUp = () => {
         health: entity.getComponent(Health),
         membership: entity.findComponent(TeamMembership),
         outline: entities.outlineOf(entity.id) ?? null,
+        collider: entity.findComponent(Collider),
       });
     });
     const payload = new ProjectilePayload({

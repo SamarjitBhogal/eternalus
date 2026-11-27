@@ -10,6 +10,13 @@ export const PROJECTILE_CORE_SIZE = 0.25;
 /** Colour of a projectile's bright core. */
 export const PROJECTILE_CORE_COLOR = '#ffffff';
 
+/**
+ * Colour of a lit shot's streak and dot, in place of its team colour: an arrow that flew over
+ * lava and burns what it lands on (HC-Q89, DEC-345).
+ */
+// TUNE: placeholder look (DEC-345); close is enough
+export const PROJECTILE_LIT_COLOR = '#ff7a1a';
+
 /** Length of the streak behind a projectile, in world units. */
 export const PROJECTILE_STREAK_LENGTH = 1.5;
 

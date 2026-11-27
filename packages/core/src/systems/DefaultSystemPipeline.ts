@@ -145,7 +145,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             ),
           ]),
       // Before combat, so a shot fired this tick flies a tick before it can land.
-      new ProjectileSystem(createDefaultProjectileImpacts(damage, hits)),
+      new ProjectileSystem(createDefaultProjectileImpacts(damage, hits), hits),
       new CombatSystem({ damage, factory, hits }),
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.

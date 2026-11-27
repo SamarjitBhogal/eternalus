@@ -191,6 +191,7 @@ describe('EntitySnapshotter', () => {
       range: 100,
       blastRadius: null,
       ending: null,
+      isLit: false,
     });
     expect(ending).toEqual({
       flownShare: 1,
@@ -198,6 +199,7 @@ describe('EntitySnapshotter', () => {
       range: 100,
       blastRadius: null,
       ending: 0.25,
+      isLit: false,
     });
     expect(snapshotter.snapshotOf(unfired).projectile).toBeNull();
     // An arc shot reports its flag and its shortened range, which the arc's height scales with.
@@ -240,5 +242,37 @@ describe('EntitySnapshotter', () => {
 
     expect(snapshotter.snapshotOf(shotWith(orb)).projectile?.blastRadius).toBe(3.5);
     expect(snapshotter.snapshotOf(shotWith(plain)).projectile?.blastRadius).toBeNull();
+  });
+
+  it('snapshots a lit shot as lit, and a shot that cannot catch fire as unlit (HC-Q89, DEC-345)', () => {
+    const snapshotter = new EntitySnapshotter(3, CURVES, 0);
+    const shotWith = (flight: ProjectileFlight) => {
+      const shot = new Bare('shot-1', 'arrow');
+      shot.addComponent(new Transform({ x: 13, y: 4 }, 0.15));
+      shot.addComponent(flight);
+      shot.addComponent(
+        new ProjectilePayload({
+          ownerId: 'owner',
+          team: 'light',
+          ownerLevel: 1,
+          source: { attackerId: 'owner', kind: 'weapon', definitionId: 'obsidian-bow' },
+          targetId: null,
+          impact: { kind: 'weapon', attack: SHOT_ATTACK },
+          origin: { x: 10, y: 0 },
+        }),
+      );
+      return shot;
+    };
+    const lit = new ProjectileFlight(100, 80, 4, false, [
+      { kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } },
+    ]);
+    const bolt = new ProjectileFlight(100, 80, 4);
+
+    expect(snapshotter.snapshotOf(shotWith(lit)).projectile?.isLit).toBe(false);
+    lit.light();
+    bolt.light();
+
+    expect(snapshotter.snapshotOf(shotWith(lit)).projectile?.isLit).toBe(true);
+    expect(snapshotter.snapshotOf(shotWith(bolt)).projectile?.isLit).toBe(false);
   });
 });

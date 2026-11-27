@@ -31,8 +31,11 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       baseHealth: 10_000, // TUNE: balancing.md
       footprintRadius: footprintOf('stronghold'),
       breakability: { kind: 'always' },
-      hasMapFootprint: true, // DEC-185 D: melee at the palace wall is in reach
-      hasFortBox: true, // DEC-217 (16): the palace box is a fort box for the chase rule
+      // No `hasMapFootprint`: the palace floor (its map object of the same id) is not part of it,
+      // so a hit on the floor never takes its health (DEC-344 (4)). Its body is its outer walls and
+      // throne (`MapObject.partOf`, DEC-386 (1)): one health pool, and melee at an outer wall is in
+      // reach (DEC-185 D).
+      hasFortBox: true, // DEC-217 (16): the box round its body is a fort box for the chase rule
     },
     {
       id: 'spawner-tower',
@@ -98,6 +101,7 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       baseHealth: 1, // never damaged: a camp is only its group's home
       footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
       breakability: { kind: 'never' },
+      canShotsFlyOver: true, // DEC-409 (1): unseen inside its camp fire, which shots fly over
     },
     {
       id: 'forest-camp-medium',
@@ -106,6 +110,7 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       baseHealth: 1, // never damaged: a camp is only its group's home
       footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
       breakability: { kind: 'never' },
+      canShotsFlyOver: true, // DEC-409 (1): unseen inside its camp fire, which shots fly over
     },
     {
       id: 'forest-camp-heavy',
@@ -114,5 +119,6 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       baseHealth: 1, // never damaged: a camp is only its group's home
       footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
       breakability: { kind: 'never' },
+      canShotsFlyOver: true, // DEC-409 (1): unseen inside its camp fire, which shots fly over
     },
   ]);

@@ -109,6 +109,64 @@ describe('WorldObjectsView', () => {
     expect(barFills()).toEqual([]);
     expect(renderer.calls.length).toBeGreaterThan(0);
   });
+  describe("an object of a fallen building (the Stronghold's palace, Q104-2)", () => {
+    const fallenPalace: MapObjectSnapshot = {
+      id: 'palace',
+      entityId: 'entity-1',
+      health: { current: 0, max: 100 },
+      condition: 'destroyed',
+    };
+    const wall: MapObject = { ...HOUSE, id: 'wall', kind: 'wall', buildingId: 'palace' };
+    const fills = (renderer: RecordingRenderer) =>
+      renderer.calls.filter((call) => call.op === 'fillPolygon');
+
+    it("keeps a standing body object's health bar: an outer wall outlives the palace (DEC-386 (1))", () => {
+      const view = new WorldObjectsView([wall]);
+      const renderer = new RecordingRenderer();
+      view.show([
+        fallenPalace,
+        {
+          id: 'wall',
+          entityId: 'entity-9',
+          health: { current: 50, max: 100 },
+          condition: 'standing',
+        },
+      ]);
+      view.draw(renderer, AREA);
+
+      expect(fills(renderer).map((call) => call.args[1])).toContain(S.barHealth);
+    });
+
+    it('draws a ruined body object as ruins, in the view and on the minimap', () => {
+      const view = new WorldObjectsView([wall]);
+      const renderer = new RecordingRenderer();
+      view.show([fallenPalace, { id: 'wall', entityId: null, health: null, condition: 'ruin' }]);
+      view.draw(renderer, AREA);
+      expect(fills(renderer).length).toBeGreaterThan(0);
+      renderer.calls.length = 0;
+      view.drawMinimap(renderer);
+      expect(fills(renderer).length).toBeGreaterThan(0);
+    });
+
+    it('still hides an object destroyed with its building: the building ruins stand for it', () => {
+      const chair: MapObject = { ...HOUSE, id: 'chair', kind: 'furniture', buildingId: 'palace' };
+      const view = new WorldObjectsView([chair]);
+      const renderer = new RecordingRenderer();
+      view.show([
+        fallenPalace,
+        {
+          id: 'chair',
+          entityId: 'entity-3',
+          health: { current: 0, max: 100 },
+          condition: 'destroyed',
+        },
+      ]);
+      view.draw(renderer, AREA);
+      view.drawMinimap(renderer);
+
+      expect(fills(renderer)).toEqual([]);
+    });
+  });
   it('keeps a fallen log visible when its original trunk footprint is offscreen', () => {
     const tree = {
       ...HOUSE,

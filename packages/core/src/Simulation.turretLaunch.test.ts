@@ -4,6 +4,7 @@ import { WALL_TURRET } from './content/ai/turret';
 import { MapGenerator } from './map/MapGenerator';
 import { MapObjectBuilder } from './map/MapObjectBuilder';
 import { MapPresentationBuilder } from './map/MapPresentationBuilder';
+import { Collider } from './components/Collider';
 import { Health } from './components/Health';
 import { isPointInAnyPolygon, isPointInBlockingArea } from './utils/geometry';
 import { doesCircleOverlapPolygon } from './utils/circlePolygon';
@@ -53,6 +54,7 @@ describe('Simulation wall turrets: launch shape (DEC-334)', () => {
             health,
             membership: entity.findComponent(TeamMembership),
             outline,
+            collider: entity.findComponent(Collider),
           };
           expect(
             AreaHitQuery.stopsShot(
@@ -83,7 +85,7 @@ describe('Simulation wall turrets: launch shape (DEC-334)', () => {
           y: (neighbour.y - position.y) / length,
         };
         const reach =
-          state.collisions?.reach(
+          state.collisions?.shotReach(
             position,
             direction,
             WALL_TURRET.range,

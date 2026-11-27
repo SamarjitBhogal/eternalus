@@ -135,7 +135,7 @@ describe('CombatSystem hit rules across systems (DEC-322, DEC-317 addendum)', ()
   });
 
   it.each([
-    ['a forest camp', 'neutral'],
+    ['a neutral body that takes no damage now', 'neutral'],
     ['an enemy body that takes no damage now (unbreakable)', 'dark'],
   ] as const)(
     'a bolt stops at %s in its path, with no damage to it or the body behind',

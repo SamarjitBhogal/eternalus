@@ -12,7 +12,7 @@ import type { EntityStore } from './EntityStore';
 import type { WorldObjectRecord, WorldObjectStoreOptions } from './WorldObjectStore.types';
 import type { Rect, Vec2 } from '../utils/geometry.types';
 import { doesCircleOverlapPolygon, isCircleInsidePolygon } from '../utils/circlePolygon';
-import { boundsOf, isPointInBlockingArea } from '../utils/geometry';
+import { boundsOf, doesShapeStopShot } from '../utils/geometry';
 import { BLOCKING_CELL_SIZE } from './WorldObjectStore.constants';
 
 /** Owns placed-object identity and persistent destroyed state after DeathSystem retires entities. */
@@ -23,8 +23,11 @@ export class WorldObjectStore {
   /** The ids of the structure bodies that outlive their structure: they block and draw as ruins. */
   private readonly ruined = new Set<string>();
 
-  /** A standing structure's id → the index of the record of the map object that is its body. */
-  private readonly owned = new Map<string, number>();
+  /**
+   * A standing structure's id → the indices of the records of the map objects that are its body
+   * (a fort; the Stronghold's outer walls and throne, DEC-386 (1)).
+   */
+  private readonly owned = new Map<string, number[]>();
 
   /** A standing structure's id → the index of the record of the map object it is mounted on. */
   private readonly mounts = new Map<string, number>();
@@ -41,8 +44,9 @@ export class WorldObjectStore {
   /**
    * Spawns physical objects through the existing registry/factory; terrain has no health entity.
    * An object named in `owners` gets no entity of its own: its health is its structure's (one pool,
-   * DEC-185 B: a lane tower's fort map object, DEC-217 (13); a wall turret's pylon), so a hit on it
-   * is a hit on the structure. It outlives its structure as a ruin that still blocks (`removed`).
+   * DEC-185 B: a lane tower's fort map object, DEC-217 (13); the Stronghold's outer walls and
+   * throne, DEC-386 (1)), so a hit on it is a hit on the structure. It outlives its structure as a
+   * ruin that still blocks (`removed`).
    * An object named in `mounted` (a wall turret's pylon, DEC-388) gets its own entity and health,
    * as any object does, and a structure is mounted on it: see `contentsOf` and `removed`.
    *
@@ -64,7 +68,9 @@ export class WorldObjectStore {
       const owner = entities.get(owners.get(object.id) ?? '');
       const health = owner?.findComponent(Health);
       if (owner !== undefined && health !== undefined) {
-        this.owned.set(owner.id, this.records.length);
+        const indices = this.owned.get(owner.id) ?? [];
+        indices.push(this.records.length);
+        this.owned.set(owner.id, indices);
         this.records.push({ object, entityId: owner.id, health, bounds });
         continue;
       }
@@ -116,38 +122,47 @@ export class WorldObjectStore {
   }
 
   /**
-   * Marks only actual retired entities destroyed; a roof toggle never changes this state. A
-   * retired structure's own map object stays standing and blocking: it is a ruin from then on
-   * (DEC-341, HC-Q91; fort pieces become ruins that block, DEC-219 (a), DEC-227 Q-C). A lane
-   * tower's fort has no health left to take. A wall turret's pylon keeps its own (DEC-388).
+   * Marks only actual retired entities destroyed; a roof toggle never changes this state. Each map
+   * object of a retired structure's body (a lane tower's fort, the Stronghold's outer walls and
+   * throne) stays standing and blocking, with no health left to take: it is a ruin from then on
+   * (DEC-341, HC-Q91; fort pieces become ruins that block, DEC-219 (a), DEC-227 Q-C). For a lane
+   * tower's fort (DEC-219 (a)) and the Stronghold's outer walls and throne (DEC-408) this is an
+   * interim: PR #98's `StructureRuins` brings the fort rule. The pylon a retired wall turret was
+   * mounted on is a ruin too, but keeps its own health (DEC-388).
    */
   public removed(entityId: string): void {
     const object = this.entityObjects.get(entityId);
     if (object !== undefined) this.destroyed.add(object.id);
-    this.leave(this.owned, entityId, (record) => ({ ...record, entityId: null, health: null }));
-    this.leave(this.mounts, entityId, ({ object: body, entityId: id, health, bounds }) => ({
-      object: body,
-      entityId: id,
-      health,
-      bounds,
+    this.leave(this.owned.get(entityId) ?? [], (record) => ({
+      ...record,
+      entityId: null,
+      health: null,
     }));
+    this.owned.delete(entityId);
+    const mount = this.mounts.get(entityId);
+    this.leave(
+      mount === undefined ? [] : [mount],
+      ({ object: body, entityId: id, health, bounds }) => ({
+        object: body,
+        entityId: id,
+        health,
+        bounds,
+      }),
+    );
+    this.mounts.delete(entityId);
   }
 
-  /**
-   * When `structureId` is a key of `bodies`, marks its map object a ruin and replaces that
-   * object's record with `keep` of it.
-   */
+  /** Marks the map objects of the records at `indices` ruins and replaces each record with `keep` of it. */
   private leave(
-    bodies: Map<string, number>,
-    structureId: string,
+    indices: readonly number[],
     keep: (record: WorldObjectRecord) => WorldObjectRecord,
   ): void {
-    const index = bodies.get(structureId);
-    const record = index === undefined ? undefined : this.records[index];
-    if (index === undefined || record === undefined) return;
-    bodies.delete(structureId);
-    this.ruined.add(record.object.id);
-    this.records[index] = keep(record);
+    for (const index of indices) {
+      const record = this.records[index];
+      if (record === undefined) continue;
+      this.ruined.add(record.object.id);
+      this.records[index] = keep(record);
+    }
   }
 
   /**
@@ -168,11 +183,14 @@ export class WorldObjectStore {
   /**
    * What falls with the map object `buildingId`, in deterministic placement order: the physical
    * contents of a building, and the structure mounted on the object (a wall turret on its pylon,
-   * DEC-388).
+   * DEC-388). A structure's body is not content: it has no health of its own, so a collapse does
+   * not break it (the Stronghold's outer walls and throne stand in its palace, DEC-386 (1)).
    */
   public contentsOf(buildingId: string): readonly string[] {
     return this.records.flatMap(({ object, entityId, mounted }) => [
-      ...(object.buildingId === buildingId && entityId !== null ? [entityId] : []),
+      ...(object.buildingId === buildingId && entityId !== null && !this.owned.has(entityId)
+        ? [entityId]
+        : []),
       ...(object.id === buildingId && mounted !== undefined ? [mounted.entityId] : []),
     ]);
   }
@@ -187,9 +205,11 @@ export class WorldObjectStore {
    * surviving blocking object whose footprint a circle of `radius` at `point` overlaps, outside its
    * passages, or `null`.
    *
-   * @param launch - A shot's launch point: a footprint whose blocking area (inside it or on its
-   *   edge, inside none of the object's passages) holds it does not count, as it does not stop the
-   *   shot (DEC-334).
+   * @param launch - A shot's launch point: a footprint that does not stop the shot does not count
+   *   (`doesShapeStopShot`, the rule the collision sweep uses): one whose blocking area (inside it
+   *   or on its edge, inside none of the object's passages) holds the launch point (DEC-334), or
+   *   one of an object shots can cross (`canShotsCross`, DEC-345). Without it (a unit) every
+   *   footprint counts.
    */
   public blockingAt(point: Vec2, radius: number, launch?: Vec2): string | null {
     const cells = this.grid();
@@ -271,7 +291,7 @@ export class WorldObjectStore {
     return object.footprints.some(
       (shape) =>
         doesCircleOverlapPolygon(point, radius, shape) &&
-        (launch === undefined || !isPointInBlockingArea(launch, shape, object.passages)),
+        (launch === undefined || doesShapeStopShot(shape, object, launch)),
     );
   }
 

@@ -10,17 +10,21 @@ import { LEGEND_CLASSES } from './legends/legendCatalogue';
 import { LEGEND_SPECS } from './legends/specs/legendSpecCatalogue';
 import { ORACLE } from './legends/specs/oracle';
 import { ContentValidator } from './validation/ContentValidator';
+import { DefaultWeaponAllowedRule } from './validation/DefaultWeaponAllowedRule';
 import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
 import { KitInPoolRule } from './validation/KitInPoolRule';
 import { KnownAbilityRefsRule } from './validation/KnownAbilityRefsRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
 import { KnownProjectileRule } from './validation/KnownProjectileRule';
+import { KnownSpecWeaponRule } from './validation/KnownSpecWeaponRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
 import { SpecClassExistsRule } from './validation/SpecClassExistsRule';
+import { SpecWeaponAllowedRule } from './validation/SpecWeaponAllowedRule';
+import type { WeaponDefinition } from './weapons/weapons.types';
 
 describe('createDefaultContentRules', () => {
   it('lists every shipped rule', () => {
@@ -33,6 +37,7 @@ describe('createDefaultContentRules', () => {
       KnownLevelCurveRule,
       LevelScalingRule,
       KnownWeaponRule,
+      DefaultWeaponAllowedRule,
       KnownProjectileRule,
       KnownAbilityRefsRule,
       KitInPoolRule,
@@ -58,7 +63,7 @@ describe('createDefaultContentRules', () => {
 
   it('rejects a Legend whose default weapon is not among the given weapons', () => {
     const validator = new ContentValidator(
-      createDefaultContentRules(undefined, { has: () => false }),
+      createDefaultContentRules(undefined, new ContentCatalogue<WeaponDefinition>([])),
     );
     const armed = new ContentCatalogue([
       { ...LEGEND_CLASSES.get('warrior'), defaultLoadout: { primaryWeaponId: 'test-talons' } },
@@ -80,6 +85,8 @@ describe('createLegendSpecRules', () => {
       RoleRatingRangeRule,
       KnownAbilityRefsRule,
       KitInPoolRule,
+      KnownSpecWeaponRule,
+      SpecWeaponAllowedRule,
     ]);
   });
 
@@ -91,6 +98,7 @@ describe('createLegendSpecRules', () => {
         id: 'Bad_Id',
         classId: 'harbinger',
         roleRatings: { damage: 0.5, support: 1.5, control: 0.5 },
+        primaryWeaponId: 'nope',
       },
     ]);
 
@@ -102,7 +110,8 @@ describe('createLegendSpecRules', () => {
     }).toThrow(
       'Invalid content: Bad_Id: id must be kebab-case; ' +
         'Bad_Id: classId "harbinger" is not a Legend class; ' +
-        'Bad_Id: roleRatings.support must be a fraction from 0 to 1',
+        'Bad_Id: roleRatings.support must be a fraction from 0 to 1; ' +
+        'Bad_Id: primaryWeaponId "nope" names no weapon',
     );
   });
 });

@@ -306,6 +306,11 @@ export class StateHasher {
         flight?.range ?? -1,
         flight?.slowFrom ?? -1,
       ]);
+      // Whether it is lit decides whether it runs its `litOnHit` steps where it lands (HC-Q89,
+      // DEC-345). Only a lit shot adds a field, so a match with no lit shot hashes as before.
+      if (flight?.isLit === true) {
+        fields.push(['lit']);
+      }
     }
     const watch = entity.findComponent(ChaseWatch);
     if (watch !== undefined) {

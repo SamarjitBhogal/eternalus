@@ -99,9 +99,15 @@ describe('createBrowserMatch', () => {
   it('rethrows what the simulation threw and leaves nothing behind', () => {
     const { window, factory, viewport, request, listeners } = setUp();
     const world = prepareMatchWorld(CONFIG, SEED);
+    const darkIds = new Set(world.map.features.flatMap((f) => (f.team === 'dark' ? [f.id] : [])));
     const withoutDark = {
       ...world,
       map: { ...world.map, features: world.map.features.filter((f) => f.team !== 'dark') },
+      // The dark Stronghold's outer walls and throne go with it: a body part of no structure is a
+      // map error of its own (Q104-13).
+      mapObjects: world.mapObjects.filter(
+        ({ partOf }) => partOf === undefined || !darkIds.has(partOf),
+      ),
     };
     // Core spawns the dark human slot, a Rover, at the dark Stronghold, so the map without one throws.
     expect(() => factory(request(withoutDark), viewport)).toThrow(

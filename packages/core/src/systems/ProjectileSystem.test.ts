@@ -73,7 +73,11 @@ const setUp = (wallAtX: number | null = null) => {
     wallAtX === null
       ? null
       : {
-          reach: (from, _dir, distance, radius) =>
+          lightsShot: () => false,
+          reach: () => {
+            throw new Error('a shot is swept by the shot rule (`shotReach`), never the mover rule');
+          },
+          shotReach: (from, _dir, distance, radius) =>
             Math.max(0, Math.min(distance, wallAtX - radius - from.x)),
         };
   const state = new GameState(CONFIG, 1, null, collisions === null ? {} : { collisions });
@@ -257,14 +261,14 @@ describe('ProjectileSystem', () => {
     expect(state.entities.has(shot.id)).toBe(true);
   });
 
-  it('stops at a body that takes no damage now (a forest camp), with no damage and no on-hit step (DEC-317 addendum)', () => {
+  it('stops at a body that takes no damage now (a wall turret before its rule), with no damage and no on-hit step (DEC-317 addendum)', () => {
     const { state, events, context, addBody, fire, healthOf } = setUp();
     const onHit: string[] = [];
     const system = projectileSystem({ afterHit: (_state, _owner, id) => onHit.push(id) });
     const damaged: string[] = [];
     state.events.on('damage-applied', ({ targetId }) => damaged.push(targetId));
-    const camp = addBody({ x: 10, y: 0 }, 'neutral');
-    camp.getComponent(Collider).setUnbreakable(true);
+    const blocker = addBody({ x: 10, y: 0 }, 'neutral');
+    blocker.getComponent(Collider).setUnbreakable(true);
     const target = addBody({ x: 15, y: 0 }, 'dark');
     const shot = fire({ x: 0, y: 0 }, 20);
 
@@ -272,7 +276,7 @@ describe('ProjectileSystem', () => {
 
     expect(state.entities.has(shot.id)).toBe(false);
     expect(events).toEqual([{ entityId: shot.id, cause: 'consumed' }]);
-    expect(healthOf(camp)).toBe(1000);
+    expect(healthOf(blocker)).toBe(1000);
     expect(healthOf(target)).toBe(1000);
     expect(damaged).toEqual([]);
     expect(onHit).toEqual([]);

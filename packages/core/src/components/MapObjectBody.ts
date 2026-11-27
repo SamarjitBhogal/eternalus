@@ -19,10 +19,23 @@ export class MapObjectBody implements Outline {
   }
 
   /**
-   * Whether units walk on the outline (the object does not block: a palace floor, a gate's
-   * passage), as `Footprint.isWalkOn`.
+   * Its footprints when units walk on them (the object does not block: a palace floor, a gate's
+   * passage); none for a blocking object.
    */
-  public get isWalkOn(): boolean {
-    return !this.object.isBlocking;
+  public get walkOn(): readonly Polygon[] {
+    return this.object.isBlocking ? [] : this.object.footprints;
+  }
+
+  /** Its footprints when the object blocks (a rock, a wall); none for a walk-on object. */
+  public get solid(): readonly Polygon[] {
+    return this.object.isBlocking ? this.object.footprints : [];
+  }
+
+  /**
+   * Its solid footprints when shots cross them (`MapObject.canShotsCross`: a camp fire, HC-Q105),
+   * so a shot not aimed at the object flies over it (`Outline.shotsCross`); none otherwise.
+   */
+  public get shotsCross(): readonly Polygon[] {
+    return this.object.canShotsCross === true ? this.solid : [];
   }
 }

@@ -754,7 +754,7 @@ Reply inline (`Decision: …`).
     suggestions in a follow-up". (1) and (2) stay. Lane A builds R2-A8 and R2-A10 in its next PR
     after PR 2.
 
-- [ ] **HC-Q87 — Inside the enemy palace, your weapon never hits the Stronghold
+- [x] **HC-Q87 — Inside the enemy palace, your weapon never hits the Stronghold
       (`feat/melee-sweeps`, PR 2, critic R2-A2).** Confirm. Your answer to HC-Q76 was "A: aim at
       it to hit it". Your HC-Q78 note says a swing inside a room should not bring the roof down
       on the swinger. So the game does this: when you stand inside the enemy palace, your sword
@@ -769,6 +769,11 @@ Reply inline (`Decision: …`).
     end-game target; the Emperor is. ... He is not built. Gurshaan or Aryan are supposed to
     handle this." Not built yet: which walls count is asked as HC-Q104 (Owner Calls v71). Lane A
     builds the answer in its own PR on PR 2. Tick this item when that PR is built.
+  - Built 2026-11-26 in `feat/palace-stronghold-pool` (DEC-386 (1) addendum and its correction of
+    2026-11-26): a hit on an outer wall or on the throne takes the Stronghold's health, also from
+    inside the palace. A hit on the palace floor never does, from inside or from outside: the
+    floor is the palace map object's, with its own health. The inner ring, the room walls and the
+    other furniture keep their own health.
 
 - [x] **HC-Q88 — An ability hit counts as attacking for the AI (`feat/melee-sweeps`, PR 2,
       critic R2-A3).** Confirm. When a Legend hits an enemy with an ability, the AI treats it
@@ -780,7 +785,7 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-23 (DEC-344 (2), Owner Calls v68): "A: keep it (built): ability hits count
     as attacks". No change.
 
-- [ ] **HC-Q104 — Do all the palace walls and the throne share the Stronghold's health?
+- [x] **HC-Q104 — Do all the palace walls and the throne share the Stronghold's health?
       (`feat/melee-sweeps` stack, follow-up to HC-Q87, DEC-344 (4)).** Asked on Owner Calls v71,
       2026-11-23, by COMBAT-WEAPONS-ABILITIES-59. Your HC-Q87 note: a hit on the Stronghold's
       walls or its throne damages the Stronghold; floors and furniture do not. Today each palace
@@ -793,6 +798,50 @@ Reply inline (`Decision: …`).
       and part of DEC-322 (1). Lane A builds the answer in its own PR on PR 2. Code names:
       `Simulation.spawnStructures` (one body object per structure today), `WorldObjectStore`,
       `AreaHitQuery` rule 1.
+  - Answered 2026-11-26 (DEC-386 (1), Owner Calls v98): "B: only the outer walls and the throne;
+    room walls keep their own health". The palace's inner ring keeps its own health too (DEC-386
+    (1) reading). Lane A builds it in `feat/palace-stronghold-pool`. Tick this item when that
+    branch is built.
+  - Built 2026-11-26 in `feat/palace-stronghold-pool` (DEC-386 (1) addendum): the outer walls
+    and the throne are part of the Stronghold's body (`MapObject.partOf`) and have no health of
+    their own; the inner ring and the room walls keep their own health and break on their own.
+
+- [x] **HC-Q122 — After the Stronghold falls, what happens to its outer walls and its throne?
+      (`feat/palace-stronghold-pool`, follow-up to HC-Q104, DEC-386 (1); critic r1 Q104-1).**
+      Card for Owner Calls v101, 2026-11-26, by COMBAT-WEAPONS-ABILITIES-70 (number from
+      PR-REVIEW-COORDINATION-49). The enemy Stronghold falls, and the match goes on: the
+      Stronghold is a container, not a win condition (ADR 0021, DEC-71), and the Emperor is the
+      target (your HC-Q87 note). Each Stronghold has 58 outer wall pieces and a throne. Built now:
+      they all stay standing as ruins for the rest of the match. They block units and shots, and
+      nothing can break them. Options: (A) keep that (built); (B) the rule for a lane tower's fort
+      (DEC-217 (12), built in PR #98): the piece that took the killing hit falls with the
+      Stronghold, and each other piece stands with health of its own and breaks on its own; (C)
+      they all fall with the Stronghold. Records: A follows the wall turret answer (DEC-341: the
+      pylon "stays as a ruin and blocks"). B follows your fort answer, and DEC-71 says the
+      Stronghold's walls "can be destroyed, one segment at a time". No record supports C. No
+      recommendation: the records support A and B. If you choose B, say in a note if each piece
+      gets half health, as fort walls do. The game keeps A until you answer. Code names:
+      `MapObject.partOf`, `WorldObjectStore.removed` (`isRuined`). PR #98's
+      `StructureRuins.fallen` reads `partOf` and gives each piece fort tuning, so the #98 merge
+      needs a rule per structure definition whatever the answer (DEC-341 merge note).
+  - Answered 2026-11-27 (DEC-408, Owner Calls v103): "B: the fort rule: the struck piece
+    falls, the others break on their own". It comes with the merge where PR #98
+    (`StructureRuins`) meets this branch; the second of the two to reach phase/3 proves it with
+    a test. Until then the pieces stay as ruins.
+
+- [ ] **FYI, and one better-than-design item: the Stronghold's fort box
+      (`feat/palace-stronghold-pool`, critic r1 Q104-3 and Q104-11, 2026-11-26;
+      COMBAT-WEAPONS-ABILITIES-70).** (1) FYI, nothing to decide: the chase rule's fort box of the
+      Stronghold (DEC-217 (16), "the Stronghold palace box") is now the box round its outer walls
+      and throne, as a lane tower's fort box is the box round its fort. Before HC-Q104 it was the
+      box round the palace floor. The box grew by 11 to 14 m on each side, so a unit in the court
+      between the palace and the outer walls now counts as inside the fort. A test pins the box
+      (`Simulation.strongholdBody.test.ts`). (2) Better than the design, not built: one box does
+      two jobs, the quick first test of the Stronghold's outline and its fort box. So the fort box
+      moved when the outline grew, and nobody chose it. A separate fort box, built from the
+      polygons that the structure's definition names, would keep the two jobs apart. Say "build
+      it" and lane A builds it; else nothing changes. Code names: `Footprint.bounds`,
+      `DefaultSystemPipeline.fortBoxesOf`, `HealingZones` `fort-box`.
 
 - [ ] **FYI for Samarjit (minion AI owner): three changes to minion AI in PR 2
       (`feat/melee-sweeps`).** Nothing to decide. (1) DEC-326 (2): a minion that is already
@@ -809,6 +858,93 @@ Reply inline (`Decision: …`).
       "fighting" and still turns to help (Owner Calls card `busy-minion-building`, answered
       2026-11-23: DEC-344 (1)).
       Architecture 18 §6.1 changes to match. Tick this item when Samarjit has read it.
+
+- [x] **HC-Q89 — Shots over lakes and lava rivers (`feat/wall-turrets`, PR 4).** Asked on Owner
+      Calls v63, 2026-11-22, from the wall turret work. Can arrows and orbs fly over lakes and
+      lava rivers? Built then as option A (they stop there, as at any blocking shape).
+  - Answered 2026-11-23 (DEC-345, Owner Calls v68): "B: shots fly over lakes and lava rivers —
+    Arrows shot over lava/fire catch fire and apply burn." Built in `feat/shots-over-lava`.
+
+- [x] **HC-Q105 — Does an arrow fly over a camp fire and catch fire? (`feat/shots-over-lava`,
+      follow-up to HC-Q89, DEC-345 (3)).** Asked on Owner Calls v71, 2026-11-23, by
+      COMBAT-WEAPONS-ABILITIES-59. Your HC-Q89 note: "Arrows shot over lava/fire catch fire and
+      apply burn." The only fires on the map are the camp fires in the forest camps. A camp fire
+      sits in a ring of stones that blocks units and stops shots, so today an arrow catches fire
+      only over a lava river. Options: (A, recommended) shots fly over a camp fire, as over lava,
+      and an arrow that crosses one catches fire; units still cannot walk through it; (B) camp
+      fires stop shots as today; only lava lights an arrow. Code names: camp fire = furniture
+      object `<camp>-fire` (`MapSceneryBuilder`).
+  - Updated 2026-11-23 (Owner Calls v83, after pre-PR gate round 1): the burn is now the one in
+    the reference table of status effects (`docs/reference/suggestions/more-abilities.md` §7):
+    10 damage a second for 3 s. Please also confirm three readings of your HC-Q89 note (built
+    this way): (1) only the bow's arrows catch fire; magic orbs, turret bolts and thrown blades
+    fly over lava but do not light. (2) A lit arrow stays lit until it lands; flying over a lake
+    does not put it out. (3) A lit arrow burns units only; towers and walls take no burn. The
+    reference table says buildings take burn too, but buildings have no status effects yet.
+  - Answered 2026-11-26 (DEC-386 (2), Owner Calls v98): "A: yes, shots fly over camp fires and
+    arrows catch fire there". Built in `feat/shots-over-lava`. The three readings above got no
+    note, so they stay as built. The palace kitchen hearths are not camp fires and still stop
+    shots (DEC-386 (2)).
+  - Correction 2026-11-26 (critic Q105-C-1, C-2; DEC-386 correction): the first build set only the
+    flags, so the fire's own body and the forest camp's home still stopped shots; now a shot not
+    aimed at them flies over both (HC-Q115, HC-Q116).
+
+- [x] **HC-Q115 — Does an arrow fly over the middle of a camp fire too? (`feat/shots-over-lava`,
+      follow-up to HC-Q105, DEC-386 correction 2026-11-26).** Asked on Owner Calls v100,
+      2026-11-26, by COMBAT-WEAPONS-ABILITIES-67. Each forest camp has an unseen home at the middle
+      of its camp fire. It takes no damage, and a body that takes no damage stopped every shot
+      (DEC-317 addendum (5), HC-Q77). Options: (A, built in this rework) an arrow that is not aimed
+      at the camp flies over the whole fire, middle included, and catches fire; an arrow aimed at
+      the camp still stops there, with no damage; (B) the arrow stops in the middle of the fire, as
+      before. Code names: `canShotsFlyOver` on the `forest-camp-*` structure definitions
+      (`structureCatalogue.ts`), `Collider.canShotsFlyOver`, `AreaHitQuery.stopsShot`.
+  - Answered 2026-11-27 (DEC-409 (1), Owner Calls v103): "A: the arrow flies over the whole
+    fire (being built, recommended)". Built as A; nothing changes.
+
+- [x] **HC-Q116 — Do the fires in the palace kitchens also light arrows? (`feat/shots-over-lava`,
+      follow-up to HC-Q105).** Asked 2026-11-26 by COMBAT-WEAPONS-ABILITIES-67. Options: (A, today,
+      recommended) a kitchen hearth is furniture: it stops arrows and does not light them; (B) a
+      hearth works like a camp fire: shots fly over it, and an arrow catches fire there. Note: the
+      HC-Q105 card said that the camp fires were the only fires on the map. That was wrong: each
+      palace kitchen has a hearth. Not built either way; today's behaviour stays until you answer.
+      Code names: `<team>-palace-interior-kitchen-hearth` (`MapPalaceRoomsBuilder`).
+  - Answered 2026-11-27 (DEC-409 (2), Owner Calls v103): "if theres a visual "wall" in the
+    hearth, then the wall would stop it. if its a bare fire, it makes sense that it would also
+    light an arrow." The hearth is a stone block with its fire inside it, so the stone stops
+    the arrow. Nothing changes.
+
+- [ ] **HC-B53 — Better than the design, not built: one place describes a body to the shot rule
+      (`feat/shots-over-lava`, #169, critic finding R3-2, 2026-11-26; COMBAT-WEAPONS-ABILITIES-70).**
+      No change for the player. To decide if a shot stops at a body, the game first writes down
+      what the body is (its shape, its collider, its team). Five places write that the same way:
+      two in the game and three in tests. Better: one function writes it, and the five places
+      call it; it can also hand over only "can shots fly over this body", not the whole collider.
+      Not built in #169: it changes the code's structure, and #169 has had its three critic
+      rounds. Build it in a small follow-up PR after #169 (A, recommended), or leave it (B)?
+      Code names: `ShotStopBody`, `ProjectileSystem.gather`, `LineOfFire.isBlocked`, a factory
+      such as `AreaHitQuery.bodyOf`.
+
+- [x] **HC-B41 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: two code tidy-ups in the shots-over-lava work (`feat/shots-over-lava`, HC-Q89,
+      pre-PR gate round 1, 2026-11-23; COMBAT-WEAPONS-ABILITIES-62).** Built and tested;
+      recorded as DEC-360. Nothing waits on you. No change for the player. (1) Each map shape
+      says what it does to a shot: "shots fly over it" and "a shot that flies over it catches
+      fire". Before, the flags named the ground ("low ground", "fire"). So if you say yes to
+      camp fires in HC-Q105, the change is two flags in one place. (2) One rule decides whether
+      a map shape stops a shot, and both places that check it use that rule. Before, each had
+      its own copy, and the two copies disagreed over lakes (the critic found it). Code names:
+      `canShotsCross`, `canLightShots`, `CollisionQuery.lightsShot`, `doesShapeStopShot`. Say
+      "no" to either and it goes back.
+  - Added 2026-11-23 (pre-PR gate round 2, DEC-360 addendum): (3) a shot and a moving unit now
+    ask the map two different questions: "how far can this shot fly?" and "how far can this unit
+    move?". Before, one question with an optional extra part served both, so a later shot that
+    left out the extra part would be stopped by a lake. No change for the player. Code names:
+    `CollisionQuery.reach` (units, dashes) and `CollisionQuery.shotReach` (shots).
+  - Added 2026-11-23 (pre-PR gate round 3, DEC-360 addendum): (4) two checks now share one piece
+    of code for bridge decks: "where does this unit or shot first touch a map shape?" and "does
+    this shot touch lava?". Before, each check had its own copy. No change for the player. Code
+    names: `CollisionResolver.contactWith`, used by `firstContact` and `touches`.
+  - Signed off 2026-11-26 (DEC-360, Owner Calls v98): "A: sign off all four (built)".
 
 - [ ] **HC-Q92 — Does destroying a wall turret pay a reward? (`feat/wall-turrets`, PR 4,
       Owner Calls card "WT destroyed reward").** Options: (A, built) yes: structure XP and points,
@@ -829,6 +965,43 @@ Reply inline (`Decision: …`).
       reward is capped (DEC-237). Also: when a minion lands the last hit, no one gets the XP.
   - Answered 2026-11-26 (DEC-389): "A: keep 2 levels (built)". Nothing changes on
     `feat/wall-turrets`.
+
+- [x] **HC-Q118 — What type of weapon are the Colossus's Bastions? (`feat/start-weapons`, PR 3
+      W3, Owner Calls v100).** You said yes to the Bastions at 120 damage every 1.6 s (DEC-387).
+      They are not built yet, because each weapon has one weapon type and reference 07 gives the
+      Bastions none. Until you answer, the Colossus starts with the Wuuthrad battle axe. The type
+      does not change how a weapon hits. Options: (A, recommended) a new type, Shield, because the
+      Bastions are walls on the arms; (B) Glove, like the Raptor Talons. Either way the Bastions
+      are one weapon file and one line in the Colossus spec. Code names: `WeaponClass` in
+      `content/weapons/weapons.types.ts`; DEC-387 (7).
+  - Answered 2026-11-27 (DEC-407, Owner Calls v103): "A: a new weapon type, Shield" and the
+    Bastions are dual-wielded, like the dual blades. Built in `feat/shots-over-lava` (fold
+    unit U1): `content/weapons/bastions.ts`, and the Colossus starts with them.
+
+- [ ] **HC-B48 — Better than the design, sign-off asked: 3 code ideas from the critic
+      (`feat/start-weapons`, PR 3, critic rounds 1 to 3, 2026-11-26;
+      COMBAT-WEAPONS-ABILITIES-68 and -72).** Nothing changes in play.
+      (1) Read a Legend's sub-class once when it spawns. Not built yet. Today a Legend
+      that spawns reads its sub-class twice: once for its start weapon and once for its
+      abilities. Better: one step reads the sub-class once and gives the abilities, the start
+      weapon and, after PR #156, the second weapon. When: in PR #156's loadout code, after #156
+      merges. Say "no" and the two reads stay. Code names: `loadoutOf(spec, legend)` replaces
+      `kitOf`, `primaryWeaponIdOf` and #156's inline `spec?.secondaryWeaponId ?? null`, in the
+      `Loadout` construction of `Legend`; DEC-387.
+      (2) Built (critic round 2): one check now decides which Legend classes may hold a weapon.
+      It runs on each sub-class's start weapon and each class's default weapon (and, after #156
+      merges, the second weapon). Before, only the start weapon was checked, and that check had
+      its own copy of the rule. Every sub-class and class in the game today passes it. Say "no"
+      and the check goes back to the start weapon only. Code names:
+      `content/weapons/isWeaponAllowedFor.ts`, `SpecWeaponAllowedRule`,
+      `DefaultWeaponAllowedRule`, #156's `SecondaryWeaponRule`; DEC-387 (10).
+      (3) Not built (critic round 3, after the last critic loop): the check in (2) runs in two
+      content rules, one for sub-classes and one for classes. Better: one rule that first finds
+      the weapon to check for a class or a sub-class, as the abilities check already does. Then
+      #156's second weapon adds one field, not a third rule. The gain is small: the two rules
+      already share the check itself. Options: (A) do it in a follow-up PR; (B) leave it as it
+      is. Code names: one `WeaponAllowedRule` (the 05 §12 name) with a
+      `weaponSubjectOf(definition, legends)` resolver, as `KitInPoolRule` + `kitSubjectOf`.
 
 - [x] **HC-B38 — Better than the design, sign-off asked: 5 code ideas from the critic
       (`feat/wall-turrets`, PR 4, critic rounds 4 and 5, 2026-11-23; PR-REVIEW-ASSIST-38/39).**
@@ -3663,6 +3836,11 @@ Reply inline (`Decision: …`).
       `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
       rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
       (SCRUM-290).
+  - Answered for point (2) (DEC-57, 2026-10-28; built by DEC-387 on `feat/start-weapons`,
+    2026-11-26): each Legend spawns with the start weapon of its sub-class. The Zealot has the
+    Raptor Talons, the Templar the dual blades, the Paladin the great sword, the Bulwark Wuuthrad
+    and every Magus Legend the staff. The Colossus's Bastions wait for HC-Q118. This note does
+    not answer points (1) and (3), so the box stays open.
 - [x] **ObjectPool — pooled `GameEvents` payloads (SCRUM-427, branch `feat/object-pool`).** The
       `ObjectPool` base is built in `utils/` (phase 1 plan, sprint 1.2: "pool resets fields on
       acquire and nulls references on release"). The item's "done when" (high-frequency

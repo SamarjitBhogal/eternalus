@@ -14,6 +14,7 @@ export const JUGGERNAUT = {
   roleLabel: null,
   description: 'A siege-breaker — faster, lower health, used to assault front lines.',
   roleRatings: null,
+  primaryWeaponId: 'wuuthrad', // DEC-387; DEC-57
   detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
   kit: null, // the class default kit; no Legend has its own yet
 } as const satisfies LegendSpecDefinition;

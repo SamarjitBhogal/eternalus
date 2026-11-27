@@ -1,5 +1,5 @@
 import { LANE_TOWER_REACH_FROM_CENTRE } from '../ai/turret';
-import type { ProjectileDefinition } from './projectiles.types';
+import type { AuthoredProjectile } from './projectiles.types';
 
 /**
  * A lane tower's orb (architecture 07 §5, DEC-302, DEC-342): a slow arc shot that flies over walls
@@ -28,4 +28,4 @@ export const TOWER_ORB = {
   slowFrom: LANE_TOWER_REACH_FROM_CENTRE + 21, // equal to range: an orb flies at full speed until it lands
   isArc: true, // DEC-366 (cards "ORB flight" and "ORB flight over cliffs"): it flies over walls and units
   endDuration: 0.5, // TUNE: no reference value; seconds, the burst's look
-} as const satisfies ProjectileDefinition;
+} as const satisfies AuthoredProjectile;

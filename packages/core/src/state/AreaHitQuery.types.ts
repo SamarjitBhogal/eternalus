@@ -1,3 +1,4 @@
+import type { Collider } from '../components/Collider';
 import type { Health } from '../components/Health';
 import type { Outline } from '../components/Outline.types';
 import type { TeamMembership } from '../components/TeamMembership';
@@ -63,7 +64,10 @@ export type AreaAttacker = {
 export type ShotAim = {
   readonly ownerId: EntityId;
   readonly team: Team;
-  /** The locked target, or the walk-on outline the aim point was on; `null` for neither. */
+  /**
+   * The locked target, or the body whose walk-on or `shotsCross` polygons the aim point was on
+   * (`AreaHitQuery.aimedBodyOf`); `null` for neither.
+   */
   readonly targetId: EntityId | null;
 };
 
@@ -74,4 +78,6 @@ export type ShotStopBody = {
   readonly membership: TeamMembership | undefined;
   /** What a shot touches; `null` for a body that is only its collider circle. */
   readonly outline: Outline | null;
+  /** Its collider, read once so the rule need not look it up per shot; `undefined` for none. */
+  readonly collider: Collider | undefined;
 };

@@ -1,4 +1,4 @@
-import type { ProjectileDefinition } from '../projectiles/projectiles.types';
+import type { AuthoredProjectile } from '../projectiles/projectiles.types';
 import type { ContentRule } from './ContentValidator.types';
 
 /**
@@ -6,9 +6,9 @@ import type { ContentRule } from './ContentValidator.types';
  * A turret leads its target by the flight time at full speed (`predictiveAim`), so a shot that
  * slowed on the way would land behind a moving target.
  */
-export class ArcShotSpeedRule implements ContentRule<ProjectileDefinition> {
+export class ArcShotSpeedRule implements ContentRule<AuthoredProjectile> {
   /** Flags an arc projectile (`isArc`) whose `slowFrom` is not its `range`. */
-  public check({ isArc, slowFrom, range }: ProjectileDefinition): readonly string[] {
+  public check({ isArc, slowFrom, range }: AuthoredProjectile): readonly string[] {
     return isArc === true && slowFrom !== range
       ? ['an arc shot needs slowFrom equal to range']
       : [];

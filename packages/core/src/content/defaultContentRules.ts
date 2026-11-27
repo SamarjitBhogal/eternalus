@@ -6,7 +6,7 @@ import type { LegendDefinition } from './legends/legends.types';
 import type { LockedClassDefinition } from './legends/locked/lockedClasses.types';
 import type { LegendSpecDefinition } from './legends/specs/legendSpecs.types';
 import { LEGEND_CLASSES } from './legends/legendCatalogue';
-import type { ProjectileDefinition } from './projectiles/projectiles.types';
+import type { AuthoredProjectile, ProjectileDefinition } from './projectiles/projectiles.types';
 import { PROJECTILES } from './projectiles/projectileCatalogue';
 import { LEVEL_CURVE_CATALOGUE } from './progression/levelCurveCatalogue';
 import type { LevelCurveDefinition } from './progression/progression.types';
@@ -16,27 +16,34 @@ import { AmmoNeedsTurretRule } from './validation/AmmoNeedsTurretRule';
 import { ArcShotSpeedRule } from './validation/ArcShotSpeedRule';
 import { BotRosterClassRule } from './validation/BotRosterClassRule';
 import { BotRosterDifficultyRule } from './validation/BotRosterDifficultyRule';
-import type { ContentRule, UnitDefinitionRule } from './validation/ContentValidator.types';
+import type {
+  ContentRule,
+  UnitDefinitionRule,
+  WeaponAccessCatalogue,
+} from './validation/ContentValidator.types';
+import { DefaultWeaponAllowedRule } from './validation/DefaultWeaponAllowedRule';
 import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
 import { KitInPoolRule } from './validation/KitInPoolRule';
 import { KnownAbilityRefsRule } from './validation/KnownAbilityRefsRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
 import { KnownProjectileRule } from './validation/KnownProjectileRule';
+import { KnownSpecWeaponRule } from './validation/KnownSpecWeaponRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
 import { SpecClassExistsRule } from './validation/SpecClassExistsRule';
+import { SpecWeaponAllowedRule } from './validation/SpecWeaponAllowedRule';
 import { TurretNeedsAmmoRule } from './validation/TurretNeedsAmmoRule';
 import { WEAPONS } from './weapons/weaponCatalogue';
-import type { WeaponDefinition } from './weapons/weapons.types';
 
 /**
  * Every shipped content rule. The one place that lists them: a new rule is one line here.
  *
  * @param curves - The level curves a Legend may name; the shipped set by default.
- * @param weapons - The weapons a Legend's default weapon must name; the shipped set by default.
+ * @param weapons - The weapons a Legend's default weapon must name, each with the classes that may
+ *   use it; the shipped set by default.
  * @param abilities - The abilities a Legend class's pool and default kit may name; the shipped set
  *   by default.
  * @param legends - The Legend classes the ability rules read pools from; the shipped set by default.
@@ -44,7 +51,7 @@ import type { WeaponDefinition } from './weapons/weapons.types';
  */
 export const createDefaultContentRules = (
   curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has'> = LEVEL_CURVE_CATALOGUE,
-  weapons: Pick<ContentCatalogue<WeaponDefinition>, 'has'> = WEAPONS,
+  weapons: WeaponAccessCatalogue = WEAPONS,
   abilities: Pick<ContentCatalogue<AbilityBase>, 'has' | 'get'> = ABILITIES,
   legends: Pick<ContentCatalogue<LegendDefinition>, 'has' | 'get'> = LEGEND_CLASSES,
   projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'has'> = PROJECTILES,
@@ -55,6 +62,7 @@ export const createDefaultContentRules = (
   new KnownLevelCurveRule(curves),
   new LevelScalingRule(),
   new KnownWeaponRule(weapons),
+  new DefaultWeaponAllowedRule(weapons),
   new KnownProjectileRule(projectiles),
   new KnownAbilityRefsRule(abilities, legends),
   new KitInPoolRule(legends),
@@ -65,16 +73,21 @@ export const createDefaultContentRules = (
  *
  * @param legends - The loaded Legend classes a spec's `classId` must name.
  * @param abilities - The abilities a spec's own kit may name; the shipped set by default.
+ * @param weapons - The weapons a spec's own start weapon may name, each with the classes that may
+ *   use it; the shipped set by default.
  */
 export const createLegendSpecRules = (
   legends: ContentCatalogue<LegendDefinition>,
   abilities: Pick<ContentCatalogue<AbilityBase>, 'has' | 'get'> = ABILITIES,
+  weapons: WeaponAccessCatalogue = WEAPONS,
 ): readonly ContentRule<LegendSpecDefinition>[] => [
   new KebabCaseIdRule(),
   new SpecClassExistsRule(legends),
   new RoleRatingRangeRule(),
   new KnownAbilityRefsRule(abilities, legends),
   new KitInPoolRule(legends),
+  new KnownSpecWeaponRule(weapons),
+  new SpecWeaponAllowedRule(legends, weapons),
 ];
 
 /** Every shipped locked-class rule. A new locked-class rule is one line here. */
@@ -92,10 +105,10 @@ export const createStructureRules = (): readonly ContentRule<StructureDefinition
 ];
 
 /**
- * Every shipped projectile rule, which `loadProjectiles` runs over each projectile. A new
- * projectile rule is one line here.
+ * Every shipped projectile rule, which `loadProjectiles` runs over each projectile as authored.
+ * A new projectile rule is one line here.
  */
-export const createProjectileRules = (): readonly ContentRule<ProjectileDefinition>[] => [
+export const createProjectileRules = (): readonly ContentRule<AuthoredProjectile>[] => [
   new KebabCaseIdRule(),
   new ArcShotSpeedRule(),
 ];
