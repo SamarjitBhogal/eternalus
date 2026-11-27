@@ -56,6 +56,11 @@ const DEFAULT_GAME_CONFIG: Omit<GameConfig, 'match'> & {
 
 /** The default timeline (architecture 12 §3); the countdown ends at `countdownTicks`. */
 const defaultTimeline = (countdownTicks: number): readonly MatchTimelineEntry[] => [
+  {
+    id: 'sovereigns-crowned',
+    at: { atTick: 0 },
+    action: { kind: 'spawn-sovereigns', definitionId: 'monarch' },
+  },
   // FR-003: the countdown (10 s by default, DEC-84)
   {
     id: 'countdown-over',

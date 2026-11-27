@@ -134,7 +134,11 @@ describe('the countdown (scenario)', () => {
     expect(sim.snapshot().match).toEqual({
       phase: 'countdown',
       phaseEnteredTick: 0,
-      upcoming: [{ entryId: 'countdown-over', tick: COUNTDOWN_TICKS }, ...later],
+      upcoming: [
+        { entryId: 'sovereigns-crowned', tick: 0 },
+        { entryId: 'countdown-over', tick: COUNTDOWN_TICKS },
+        ...later,
+      ],
       countdownEndTick: COUNTDOWN_TICKS,
       humanLegendId: null,
     });

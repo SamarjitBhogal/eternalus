@@ -3144,7 +3144,7 @@ Reply inline (`Decision: …`).
       it. When projectiles land, decide: (a) drop the idea, or (b) build it (a guard follows past
       the circle by a set distance for a set time, then walks back; doc 18 §7, the guard aggro
       content and `guard-within-leash` change). Or say what to do.
-- [ ] **GL-Q22 — The sovereign's spawn request: Samarjit agrees its shape before GL-3 starts
+- [x] **GL-Q22 — The sovereign's spawn request: Samarjit agrees its shape before GL-3 starts
       (asked 2026-10-31; blocks GL-3; game-loop plan §4.3).** GL-3 spawns each team's sovereign
       through `SpawnSystem`, which Samarjit owns with the minion system doc (18). No branch has
       the `spawn-requested` event yet: today `SpawnSystem` takes requests only from the
@@ -3163,7 +3163,8 @@ Reply inline (`Decision: …`).
       accepted on 2026-10-29). **Recommendation:** post as drafted; approve (3).
   - Decision (2026-10-31): (1) "C1: INBOX + post on #56 (Recommended)": the comment goes on PR
     #56. (3) "Yes, match 12 (Recommended)": DEC-136, which also covers 07 §11's event list.
-    **Open:** Samarjit's answer on #56. Tick this item when it is recorded here.
+    **Resolved (2026-11-26):** Gurshaan confirmed Samarjit's approval in chat. The agreed
+    payload is `spawn-requested { team, definitionId, position }`.
 - [x] **Out-of-combat healing — five rules DEC-188 and DEC-215 leave open (2026-11-07,
       `feat/out-of-combat-heal`, critic r1).** Each stays as built until you answer. Reply per
       question (`Q-D: A`).

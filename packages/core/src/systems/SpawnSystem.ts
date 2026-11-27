@@ -10,6 +10,7 @@ import { CapturePoint } from '../entities/zones/CapturePoint';
 import { Unit } from '../entities/Unit';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { GameEventMap } from '../state/GameEvents.types';
 import type { HordeRequest } from '../state/HordeRequest.types';
 import { assessLanes } from '../state/LaneAssessment';
 import type { LaneRoutes } from '../state/LaneRoutes';
@@ -52,6 +53,7 @@ export class SpawnSystem implements System {
   private readonly spawners: readonly Structure[];
   private readonly scheduled: readonly ScheduledWave[];
   private readonly guards: GuardRoster;
+  private readonly singleUnits: GameEventMap['spawn-requested'][] = [];
   /** The checkpoints reached with a Legend present since the last pass, in order. */
   private readonly checkpointsReached: CheckpointReached[] = [];
   /** The capture points that changed owner since the last pass, in order. */
@@ -110,6 +112,9 @@ export class SpawnSystem implements System {
       plan.defenderLimit,
     );
     this.guards.layOut(state);
+    state.events.on('spawn-requested', (request) => {
+      this.singleUnits.push({ ...request, position: { ...request.position } });
+    });
     // Queued for this system's pass (03 §4). DEC-259: only a push with a Legend on the zone wakes
     // the defenders, so passing hordes do not. The owner is read now: the same capture pass may
     // complete the capture after this event, and the defenders are the old owner's (DEC-257).
@@ -146,6 +151,9 @@ export class SpawnSystem implements System {
 
   /** Spawns the requested hordes in order, then every horde due this tick, then runs the guards. */
   public update({ state }: SystemContext): void {
+    for (const request of this.singleUnits.splice(0)) {
+      this.spawnSingleUnit(state, request);
+    }
     const routes = state.world?.routes;
     const requests = state.hordeRequests.splice(0);
     if (routes === undefined) {
@@ -171,6 +179,27 @@ export class SpawnSystem implements System {
     }
     this.guards.update(state);
     cancel();
+  }
+
+  private spawnSingleUnit(
+    state: GameState,
+    { team, definitionId, position }: GameEventMap['spawn-requested'],
+  ): void {
+    const { kind } = this.factory.definitions.get(definitionId);
+    const constructor = this.factory.registry.get(kind);
+    if (constructor === undefined || !(constructor.prototype instanceof Unit)) {
+      throw new ContentValidationError(`Invalid single-unit spawn definition "${definitionId}".`);
+    }
+    const hasRoom = state.entities.countOnTeam(team, Unit) < state.config.limits.maxUnitsPerTeam;
+    state.recordSpawnRequest(team, 1, hasRoom ? 1 : 0);
+    if (!hasRoom) return;
+    const entity = this.factory.create(kind, definitionId, {
+      team,
+      position,
+      ...state.world?.startFacing(team, position),
+    });
+    state.entities.add(entity);
+    state.events.emit('entity-spawned', { entityId: entity.id, kind, team });
   }
 
   /**

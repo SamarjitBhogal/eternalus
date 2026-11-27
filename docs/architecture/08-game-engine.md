@@ -350,6 +350,11 @@ unavailable. The health bar sits above the height a view reports it drew, else a
 `visualRadiusOf`, else above the footprint. Only the human player's Legend draws a sprite; the
 owner ships this in Phase 3 (DEC-374).
 
+The Sovereign view projects a CSS portrait to its interpolated world position with the same
+camera transform as the canvas. The viewport clips the portrait and passes pointer input through
+to the canvas. The view uses the building roof state, and the match removes portraits when they
+are absent from the frame or when the match is torn down.
+
 HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
 
 - `Match` receives a prepared world (`MatchDeps.world`: the map from `setup.seed`, generated in

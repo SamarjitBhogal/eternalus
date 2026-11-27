@@ -6,6 +6,7 @@ import { BossMinionDamageStep } from './BossMinionDamageStep';
 import { FriendlyFireStep } from './FriendlyFireStep';
 import { MinionStrengthStep } from './MinionStrengthStep';
 import type { LaneProgressOf } from './MinionStrengthStep.types';
+import { SovereignProtectionStep } from './SovereignProtectionStep';
 import { StatusModifierStep } from './StatusModifierStep';
 
 /**
@@ -19,6 +20,7 @@ export const createDefaultDamageSteps = (
   progressOf: LaneProgressOf | null = null,
 ): readonly DamageStep[] => [
   new BreakabilityStep(),
+  new SovereignProtectionStep(),
   new FriendlyFireStep(),
   new StatusModifierStep(),
   new MinionStrengthStep(MINION_STRENGTH, progressOf),

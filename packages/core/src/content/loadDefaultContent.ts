@@ -3,6 +3,7 @@ import { createDefaultContentRules } from './defaultContentRules';
 import { LEGEND_CLASSES } from './legends/legendCatalogue';
 import { MOB_DEFINITIONS } from './mobs/mobCatalogue';
 import { LEVEL_CURVE_CATALOGUE } from './progression/levelCurveCatalogue';
+import { MONARCH } from './sovereigns/monarch';
 import type { LevelCurveDefinition } from './progression/progression.types';
 import type { UnitDefinition } from './units/units.types';
 import { TickRate } from '../utils/TickRate';
@@ -26,7 +27,7 @@ const perTick = (definition: UnitDefinition, tickRate: number, rate: TickRate): 
 });
 
 /**
- * Loads every shipped unit definition (Legends, then mobs), validates it once and converts its
+ * Loads every shipped unit definition, validates it once and converts its
  * speeds and attack intervals from per second to per tick, so the simulation only ever sees ticks (architecture 03 §11,
  * 02 §6).
  *
@@ -43,6 +44,7 @@ export const loadDefaultContent = (
   const authored = new ContentCatalogue<UnitDefinition>([
     ...LEGEND_CLASSES.all(),
     ...MOB_DEFINITIONS.all(),
+    MONARCH,
   ]);
   new ContentValidator(createDefaultContentRules(curves, weapons)).validate(authored);
   const rate = new TickRate(tickRate);

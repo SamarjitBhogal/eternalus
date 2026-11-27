@@ -13,6 +13,12 @@
   height: 100%;
   touch-action: none;
 }
+.sovereignLayer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
 /*
  * Only the developer explorer drags the view (?dev=1; DEC-32, INBOX HC-F8); normal play has no
  * grab cursor.

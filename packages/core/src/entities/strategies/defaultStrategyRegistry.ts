@@ -3,6 +3,7 @@ import type { AttackStrategyId, MovementStrategyId } from '../../content/units/u
 import type { AttackStrategy } from './AttackStrategy.types';
 import { LaneFollowMovementStrategy } from './LaneFollowMovementStrategy';
 import { LeashedChaseMovementStrategy } from './LeashedChaseMovementStrategy';
+import { CleaveAttackStrategy } from './CleaveAttackStrategy';
 import { MeleeAttackStrategy } from './MeleeAttackStrategy';
 import type { MovementStrategy } from './MovementStrategy.types';
 
@@ -23,5 +24,6 @@ export const createDefaultStrategyRegistry = (): StrategyRegistry => ({
   },
   attack: {
     melee: new MeleeAttackStrategy(),
+    cleave: new CleaveAttackStrategy(),
   },
 });

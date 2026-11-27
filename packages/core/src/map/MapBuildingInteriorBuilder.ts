@@ -6,6 +6,7 @@ import type { MapDecoration } from '../content/maps/maps.types';
 import { CathedralInteriorBuilder } from './CathedralInteriorBuilder';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 import { MapPalaceRoomsBuilder } from './MapPalaceRoomsBuilder';
+import { orientPalacePoint } from './buildingPlacement';
 /** Furnishes interiors directly inside the buildings' original world footprints. */
 export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
   private readonly interiorBuilders: Partial<
@@ -85,16 +86,12 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
         this.rect(`${id}-banner-${String(dx)}-${String(y)}`, x + dx - 3, y - 13, 6, 8, accent);
       }
     // Orient the ceremonial aisle toward the opposing team, preserving the oval footprint.
-    const direction = team === 'light' ? 1 : -1;
     for (let i = start; i < this.pieces.length; i++) {
       const piece = this.pieces[i];
       if (piece === undefined) continue;
       this.pieces[i] = {
         ...piece,
-        shape: piece.shape.map((p) => ({
-          x: x + direction * (p.y - G.palace.y) * (G.palace.floorRadiusX / G.palace.floorRadiusY),
-          y: G.palace.y - direction * (p.x - x) * (G.palace.floorRadiusY / G.palace.floorRadiusX),
-        })),
+        shape: piece.shape.map((point) => orientPalacePoint(point, team)),
       };
     }
   }

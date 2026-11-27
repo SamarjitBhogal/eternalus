@@ -29,10 +29,11 @@ function render(isExplorerShown: boolean): string {
 }
 
 describe('GameCanvas', () => {
-  it('renders only the battlefield canvas in normal play', () => {
+  it('renders the battlefield and its decorative Sovereign layer in normal play', () => {
     const html = render(false);
     expect(html).toContain('<canvas');
     expect(html).toContain('aria-label="Battlefield"');
+    expect(html).toContain('aria-hidden="true"');
     expect(html).not.toContain('World overview');
     expect(html).not.toContain('Lux stronghold');
   });

@@ -59,6 +59,8 @@ const ACTION_RULES: Readonly<
   Record<TimelineActionKind, (action: Readonly<Record<string, unknown>>) => boolean>
 > = {
   'enter-phase': (action) => MATCH_PHASES.some((phase) => phase === action.phase),
+  'spawn-sovereigns': (action) =>
+    typeof action.definitionId === 'string' && action.definitionId.trim() !== '',
 };
 
 const isKnownAction = (action: unknown): boolean =>
@@ -75,11 +77,13 @@ const entriesOf = (timeline: unknown): readonly Readonly<Record<string, unknown>
 
 /** The timeline typed; only for rules after the ones that check every mark and action. */
 const timelineOf = (config: unknown): readonly MatchTimelineEntry[] =>
-  // ponytail: the timeline rules below read every entry as `enter-phase`, the one action kind
-  // today; the ones that use `.length` and `[first]` would count a second kind, and the compiler
-  // cannot catch that. Upgrade: filter the entries by action kind when `spawn-sovereigns` lands (GL-3).
   // Safe: every mark and every action passed their rules before any rule that calls this.
   valueAt(config, 'match.timeline') as readonly MatchTimelineEntry[];
+
+const phaseEntriesOf = (config: unknown) =>
+  timelineOf(config).flatMap(({ action, at }) =>
+    action.kind === 'enter-phase' ? [{ at, phase: action.phase }] : [],
+  );
 
 /** What the timeline's marks resolve against; only for rules after the three fields' own rules. */
 const frameOf = (config: unknown): TimelineFrame =>
@@ -219,9 +223,17 @@ const RULES: readonly Rule[] = [
   },
   {
     path: 'match.timeline',
+    rule: 'may request Sovereigns once, at tick 0',
+    isValid: (_value, config) => {
+      const spawns = timelineOf(config).filter(({ action }) => action.kind === 'spawn-sovereigns');
+      return spawns.length <= 1 && spawns.every(({ at }) => 'atTick' in at && at.atTick === 0);
+    },
+  },
+  {
+    path: 'match.timeline',
     rule: `enter-phase entries must not enter a terminal phase (${TERMINAL_MATCH_PHASES.join(', ')}): only a verdict does`,
     isValid: (_value, config) =>
-      timelineOf(config).every(({ action }) => !TERMINAL_MATCH_PHASES.includes(action.phase)),
+      phaseEntriesOf(config).every(({ phase }) => !TERMINAL_MATCH_PHASES.includes(phase)),
   },
   {
     path: 'match.timeline',
@@ -242,8 +254,8 @@ const RULES: readonly Rule[] = [
     rule: `enter-phase entries must move forward through the match phases, after ${MATCH_PHASES[0]}`,
     isValid: (_value, config) => {
       let reached = 0; // the match starts in MATCH_PHASES[0]
-      for (const { action } of timelineOf(config)) {
-        const index = MATCH_PHASES.indexOf(action.phase);
+      for (const { phase } of phaseEntriesOf(config)) {
+        const index = MATCH_PHASES.indexOf(phase);
         if (index <= reached) {
           return false;
         }
@@ -255,14 +267,14 @@ const RULES: readonly Rule[] = [
   {
     path: 'match.timeline',
     rule: 'must have at least one enter-phase entry: the first one ends the countdown',
-    isValid: (_value, config) => timelineOf(config).length > 0,
+    isValid: (_value, config) => phaseEntriesOf(config).length > 0,
   },
   {
     path: 'match.timeline',
     rule: 'the first enter-phase entry ends the countdown, so it must be at tick round(match.countdownSeconds * tickRate)',
     isValid: (_value, config) => {
       const frame = frameOf(config);
-      const [first] = timelineOf(config);
+      const [first] = phaseEntriesOf(config);
       return first !== undefined && timelineMarkTick(first.at, frame) === frame.countdownEndTick;
     },
   },

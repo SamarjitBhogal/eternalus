@@ -27,7 +27,7 @@ export const BUILDING_GEOMETRY = {
     floorRadiusX: 90,
     floorRadiusY: 101,
     /** Middle-back of the ceremonial hall, before team rotation and ring scaling. */
-    throne: { x: 0, y: 385, room: { x: -32, y: 360, width: 64, height: 48 } },
+    throne: { x: 0, y: 385, standY: 405, room: { x: -32, y: 360, width: 64, height: 48 } },
   },
   /**
    * A fort: an outer capture point's square side, walls included (sketch units), what every

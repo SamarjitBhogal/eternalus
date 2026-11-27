@@ -40,6 +40,11 @@ describe('createDefaultGameConfig', () => {
   it('builds the default timeline: the countdown end in ticks, then three fractions (12 §3)', () => {
     expect(createDefaultGameConfig().match.timeline).toEqual([
       {
+        id: 'sovereigns-crowned',
+        at: { atTick: 0 },
+        action: { kind: 'spawn-sovereigns', definitionId: 'monarch' },
+      },
+      {
         id: 'countdown-over',
         at: { atTick: 300 },
         action: { kind: 'enter-phase', phase: 'early-game' },
@@ -63,8 +68,9 @@ describe('createDefaultGameConfig', () => {
   });
 
   it('ends the default countdown at an overridden countdownSeconds', () => {
-    const [countdownOver] = createDefaultGameConfig({ match: { countdownSeconds: 2.5 } }).match
-      .timeline;
+    const countdownOver = createDefaultGameConfig({
+      match: { countdownSeconds: 2.5 },
+    }).match.timeline.find(({ id }) => id === 'countdown-over');
     expect(countdownOver?.at).toEqual({ atTick: 75 });
   });
 

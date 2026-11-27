@@ -3,7 +3,7 @@ import type { VerdictLines } from './verdictLines.types';
 /**
  * The verdict lines (architecture 12 §9). Only `objective-lost` and, in a Duel, `kill-count` end a match; `forfeit` and
  * `aborted` get lines with the conditions that produce them. `{name}` is the fallen side's
- * sovereign name (`content/sovereigns/sovereignDisplayNames.ts`): the enemy's on a victory, the
+ * sovereign name (`content/sovereigns/monarch.ts`): the enemy's on a victory, the
  * player's own on a defeat or a draw.
  */
 export const VERDICT_LINES = {

@@ -23,7 +23,7 @@ describe('unit families', () => {
     expect(families).toEqual(['unit', 'legend', 'mob']);
     expect(families.every(isUnitFamily)).toBe(true);
     expect(isUnitFamily('boss')).toBe(true);
-    expect(UNIT_FAMILIES).toEqual(['unit', 'legend', 'mob', 'boss']);
+    expect(UNIT_FAMILIES).toEqual(['unit', 'legend', 'mob', 'boss', 'sovereign']);
   });
 
   it('does not count structures, zones, obstacles or projectiles', () => {

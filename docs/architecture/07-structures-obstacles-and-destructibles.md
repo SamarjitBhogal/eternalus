@@ -208,9 +208,9 @@ export class Spawner {
 }
 ```
 
-`SpawnSystem` walks every `Spawner` in id order and emits `spawn-requested` events that
-`EntityFactory` fulfils at the end of the tick (deferred spawns, deterministic order); a horde
-batch is fulfilled in one step together with its horde record ([18](18-minion-system.md) §3.2):
+`SpawnSystem` processes spawners in id order and fulfils each horde batch together with its horde
+record. It also fulfils the match director's `spawn-requested` event for single units in its next
+pass (DEC-136, GL-Q22). Both use `EntityFactory` ([18](18-minion-system.md) §3.2):
 
 | Source          | Waves                                                                                   | Guards                                    | MVP status  |
 | --------------- | --------------------------------------------------------------------------------------- | ----------------------------------------- | ----------- |

@@ -58,6 +58,7 @@ describe('MatchTimeline', () => {
 
   it('resolves the default timeline: the 10 s countdown, then quarters of the 30-minute match', () => {
     expect(MatchTimeline.resolve(createDefaultGameConfig()).schedule()).toEqual([
+      { entryId: 'sovereigns-crowned', tick: 0 },
       { entryId: 'countdown-over', tick: 300 },
       { entryId: 'quarter-mark', tick: 13_800 },
       { entryId: 'mid-game', tick: 27_300 },

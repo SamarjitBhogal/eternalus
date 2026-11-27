@@ -18,7 +18,7 @@ import type { WorldRect } from './engine/render/Renderer.types';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
-import type { IntentSource } from './Match.types';
+import type { IntentSource, MatchDeps } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 
@@ -39,7 +39,7 @@ class ScriptedIntent implements IntentSource {
  * A match on seed 1's world whose player is a Light Warrior; it spawns at the Light Stronghold,
  * inside the Stronghold's building, and walks out across seed 1's map.
  */
-const setUp = () => {
+const setUp = (sovereignArtwork?: MatchDeps['sovereignArtwork']) => {
   const config = createDefaultGameConfig();
   const world = prepareMatchWorld(config, 1);
   const player: PlayerChoice = { legend: 'warrior', team: 'light' };
@@ -52,6 +52,7 @@ const setUp = () => {
   const renderer = new RecordingRenderer();
   const input = new ScriptedIntent();
   const match = new Match({
+    ...(sovereignArtwork === undefined ? {} : { sovereignArtwork }),
     simulation,
     world,
     tickRate: config.tickRate,
@@ -101,6 +102,21 @@ const setUp = () => {
 };
 
 describe("Match roofs: the player's building opens (DEC-143)", () => {
+  it('draws the CSS King only in the Citadel whose roof is open', () => {
+    const draw = vi.fn<NonNullable<MatchDeps['sovereignArtwork']>['draw']>();
+    const destroy = vi.fn();
+    const { match } = setUp({ beginFrame: vi.fn(), draw, endFrame: vi.fn(), destroy });
+    match.tick();
+    match.tick();
+    match.render(0);
+    const kings = match.snapshot.entities.filter(({ family }) => family === 'sovereign');
+    expect(kings).toHaveLength(2);
+    expect(draw.mock.calls.map(([id, isDark]) => ({ id, isDark }))).toEqual(
+      kings.filter(({ team }) => team === 'light').map(({ id }) => ({ id, isDark: false })),
+    );
+    match.destroy();
+    expect(destroy).toHaveBeenCalledOnce();
+  });
   it('cuts away the roof of the building the Legend stands in, and only that one', () => {
     const { match, roofsDrawn } = setUp();
     const before = roofsDrawn('light-stronghold');
