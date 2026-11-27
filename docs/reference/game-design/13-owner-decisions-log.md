@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,17 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-27 (HC-B51: one way for an ability step to put on a status)
+
+The owner's answer on the Owner Calls page v103, pasted in chat to session
+PR-REVIEW-COORDINATION-51 on 2026-11-27 at about 07:00Z. The verbatim text is outside the
+repository in `eternalus-agent-work/pr-review-coordination/owner-answers-2026-11-27/answers-v103.md`.
+DEC-419 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Docs changed                                                                          |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| DEC-419 | **HC-B51 is signed off: a step puts on a status only through `CastContext.applyStatus`** (PR #166 critic, round 1 item B1; built under DEC-223). The owner chose "A: keep it (built, recommended)". `CastContext.applyStatus(targetId, step)` replaces `CastContext.statuses` and `CastContext.statusDuration`. It credits the caster and stretches the time (`StatusEffectApplier.durationFor`); a status with `hasFixedDuration` keeps its time (DEC-361). The buff, debuff and knock-back steps call it, so no step can put on a status without the Erudition stretch. Nothing that the player sees changes. | architecture 05 §18 (the note now says signed off); `INBOX.md` HC-B51 moved to _Done_ |
 
 ## Batch 2026-11-23, latest (HC-B40: the Magus passives critic's better designs)
 
