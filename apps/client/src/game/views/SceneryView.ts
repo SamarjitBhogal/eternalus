@@ -37,7 +37,7 @@ export class SceneryView implements WorldLayer {
   /**
    * Whether a piece's art is gone because what it shows fell. A piece of a map object follows that
    * object's own state, so a structure's body that outlives its building stays drawn (the
-   * Stronghold's outer walls and throne when the palace falls, DEC-373 (1)). A piece with no
+   * Stronghold's outer walls and throne when the palace falls, DEC-386 (1)). A piece with no
    * object follows its building.
    */
   private isHidden(piece: MapDecoration): boolean {

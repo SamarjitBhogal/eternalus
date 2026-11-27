@@ -79,7 +79,7 @@ export abstract class Legend extends Unit {
 
   /**
    * The start weapon's attack (05 §10, §12): a Legend's damage comes from its weapon. The weapon
-   * is its spec's (DEC-374), else its class's default.
+   * is its spec's (DEC-387), else its class's default.
    *
    * @throws Error when the spawn context has no weapon source, or the weapon has no attacks, or the
    *   context names a spec that is not of this class (`specOf`).

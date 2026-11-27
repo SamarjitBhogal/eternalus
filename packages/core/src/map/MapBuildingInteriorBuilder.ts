@@ -127,7 +127,7 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
     this.rect(`${id}-carpet-border`, x - 9, 394, 18, 155, P.carpetBorder);
     this.rect(`${id}-carpet`, x - 7, 397, 14, 152, accent);
     this.rect(`${id}-dais`, x - 32, 374, 64, 27, P.ivoryStone);
-    // The throne is part of the Stronghold's body: one health pool (DEC-373 (1)).
+    // The throne is part of the Stronghold's body: one health pool (DEC-386 (1)).
     this.beginObject(`${id}-throne`, 'furniture', { partOf: strongholdId });
     this.blockRect(
       `${id}-throne-back`,

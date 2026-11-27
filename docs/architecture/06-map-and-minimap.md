@@ -640,7 +640,7 @@ both, through `MapDecorationBuilder.beginObject`. `MapObjectBuilder` copies them
 `MapObject`, and `staticCollisionIndexOf` to each collision shape. Every other object has neither,
 so it stops a shot. Collision reads the flags (10 §7); the map does not.
 
-### 2026-11-26 — Camp fires carry the shot flags (branch `feat/shots-over-lava`, DEC-373, HC-Q105)
+### 2026-11-26 — Camp fires carry the shot flags (branch `feat/shots-over-lava`, DEC-386, HC-Q105)
 
 `MapSceneryBuilder` now sets both flags, `canShotsCross` and `canLightShots`, on each camp fire
 object (`<camp>-fire`), through `MapDecorationBuilder.beginObject`. So the note above ("Every other

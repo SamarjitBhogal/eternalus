@@ -14,7 +14,7 @@ import { placePalace } from './buildingPlacement';
 /**
  * A segmented oval palace boundary with gaps aligned to its generated gate passages: an outer ring
  * and the palace's inner ring. The outer ring's segments are part of the Stronghold's body
- * (`partOf`, DEC-373 (1)); the inner ring's keep their own health.
+ * (`partOf`, DEC-386 (1)); the inner ring's keep their own health.
  */
 export class MapPalaceWallsBuilder extends MapDecorationBuilder {
   /** Keeps every lane entrance open while every other wall segment remains physical. */

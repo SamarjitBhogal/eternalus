@@ -408,7 +408,7 @@ export class Simulation {
    * A structure's `Footprint` (`Footprint.ofBody`) holds the footprints of its feature's map object
    * of the same id when its definition `hasMapFootprint` (a lane tower's fort, DEC-185; a gate's own
    * outline, DEC-217 (17); a wall turret's pylon), and the footprints of the blocking objects that
-   * are `partOf` it as solid polygons (the Stronghold's outer walls and throne, DEC-373 (1), so
+   * are `partOf` it as solid polygons (the Stronghold's outer walls and throne, DEC-386 (1), so
    * melee at an outer wall reaches it, DEC-185 D; `structureBodiesOf`). The palace floor is not
    * part of the Stronghold (DEC-344 (4)). Each blocking such object (a fort, a pylon, an outer wall,
    * the throne) is the structure's body: it has no health of its own (one pool, DEC-185 B). Towers,

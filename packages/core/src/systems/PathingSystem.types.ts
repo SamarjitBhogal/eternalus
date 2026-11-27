@@ -10,7 +10,7 @@ export type PathingWorld = {
   readonly flowFields?: LaneFlowFields | null;
   /**
    * The box of every structure's `Footprint` (a lane tower's fort; the box round the Stronghold's
-   * outer walls and throne is a fort box for the chase, DEC-217 (16), DEC-373 (1)), read once when
+   * outer walls and throne is a fort box for the chase, DEC-217 (16), DEC-386 (1)), read once when
    * the match is built, so a fort keeps its box whatever falls later and whenever the first chase
    * comes.
    */

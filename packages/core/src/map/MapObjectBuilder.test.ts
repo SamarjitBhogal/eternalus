@@ -47,7 +47,7 @@ describe('MapObjectBuilder', () => {
     expect(teamOf('capture-point-lane-0')).toBeUndefined();
     expect(objects.filter((o) => o.kind === 'tree').every((o) => o.team === undefined)).toBe(true);
   });
-  it('lets shots cross lakes, lava rivers and camp fires, lets only lava rivers and camp fires light shots, and flags nothing else (DEC-345, DEC-373)', () => {
+  it('lets shots cross lakes, lava rivers and camp fires, lets only lava rivers and camp fires light shots, and flags nothing else (DEC-345, DEC-386)', () => {
     const map = new MapGenerator().generate(createDefaultGameConfig(), 1);
     const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
     const lakes = objects.filter((o) => /^lake-\d+(-mirror)?$/.test(o.id));
@@ -69,7 +69,7 @@ describe('MapObjectBuilder', () => {
       true,
     );
   });
-  it("makes only each Stronghold's outer walls and throne part of its body (HC-Q104, DEC-373 (1))", () => {
+  it("makes only each Stronghold's outer walls and throne part of its body (HC-Q104, DEC-386 (1))", () => {
     const map = new MapGenerator().generate(createDefaultGameConfig(), 1);
     const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
 

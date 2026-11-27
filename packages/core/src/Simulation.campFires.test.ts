@@ -25,7 +25,7 @@ import type { Vec2 } from './utils/geometry.types';
 /*
  * Arrows across the real camp fires of the seed 1 match, as `Simulation` builds them: the fire's
  * body (`WorldObjectStore`), the forest camp's home at the fire's centre (`spawnStructures`) and
- * the fire's stones in the match's collision rule (HC-Q105, DEC-373, HC-Q115).
+ * the fire's stones in the match's collision rule (HC-Q105, DEC-386, HC-Q115).
  */
 
 const CONFIG = createDefaultGameConfig();
@@ -110,7 +110,7 @@ const match = () => {
   return { state, campOf, campIds, shootAcross, healthOf };
 };
 
-describe('Simulation: arrows over the camp fires (HC-Q105, DEC-373, HC-Q115)', () => {
+describe('Simulation: arrows over the camp fires (HC-Q105, DEC-386, HC-Q115)', () => {
   it("flies an arrow not aimed at the camp over every camp fire and the camp's home at its centre, and lights it", () => {
     const { state, campOf, campIds, shootAcross, healthOf } = match();
     expect(campIds()).toHaveLength(16);

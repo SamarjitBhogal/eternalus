@@ -6,7 +6,7 @@ import type { Outline } from './Outline.types';
  * The exact ground a structure stands on, as world-space polygons: a lane tower's fort walls,
  * corner towers and keep, or a gate's outline (DEC-217 (17)), from the map object of the same id
  * (07 §1, the definition's `hasMapFootprint`), plus the solid polygons of the map objects that are
- * part of its body (the Stronghold's outer walls and throne, `MapObject.partOf`, DEC-373 (1); the
+ * part of its body (the Stronghold's outer walls and throne, `MapObject.partOf`, DEC-386 (1); the
  * palace floor is not part of the Stronghold, DEC-344 (4)). `ofBody` builds it. Attack reach to
  * the structure is measured to these outlines instead of its collider circle, so a melee hit on
  * the fort is a hit on the tower (DEC-185) and melee at an outer wall reaches the Stronghold
@@ -42,7 +42,7 @@ export class Footprint implements Outline {
    * @param polygons - The outline of the map object of the same id, each with at least 3 corners.
    * @param options - `isWalkOn`: those polygons are walked on, from a map object that does not
    *   block; solid when omitted. `solid`: the solid polygons of the structure's other body objects
-   *   (DEC-373 (1)); none when omitted.
+   *   (DEC-386 (1)); none when omitted.
    * @throws Error when there is no polygon, or one has fewer than 3 corners.
    */
   public constructor(
@@ -70,7 +70,7 @@ export class Footprint implements Outline {
    * The footprint of a structure's body (07 §1), the one place that builds it: the polygons of its
    * map object of the same id (`own`, for a definition that `hasMapFootprint`), walked on when that
    * object does not block, then the solid polygons of the objects that are part of its body
-   * (`parts`, `structureBodyParts`, DEC-373 (1)).
+   * (`parts`, `structureBodyParts`, DEC-386 (1)).
    *
    * @returns The footprint, or `undefined` when the structure has neither.
    */

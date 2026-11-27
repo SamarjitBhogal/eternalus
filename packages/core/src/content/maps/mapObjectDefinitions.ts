@@ -21,7 +21,7 @@ export const MAP_OBJECT_HEALTH = {
   // DEC-217 (13)). The palace (its floor, `stronghold` above) and the gates keep their own health;
   // a hit on the palace floor never takes the Stronghold's (DEC-344 (4)). The Stronghold's outer
   // walls and throne (`MapObject.partOf`) share the Stronghold's pool, so their `wall` and
-  // `furniture` health is unused (DEC-373 (1)).
+  // `furniture` health is unused (DEC-386 (1)).
   'spawner-tower': 3000,
   'buff-tower': 2500,
   turret: 600,

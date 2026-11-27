@@ -3,7 +3,7 @@ import { MapGenerationError } from './MapGenerationError';
 
 /**
  * The map objects that are part of a structure's body (`MapObject.partOf`: the Stronghold's outer
- * walls and its throne, DEC-373 (1)), by the id of that structure's feature, in map object order.
+ * walls and its throne, DEC-386 (1)), by the id of that structure's feature, in map object order.
  * `Simulation.spawnStructures` adds their polygons to the structure's `Footprint`
  * (`Footprint.ofBody`), and they get no health of their own.
  *

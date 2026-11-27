@@ -40,7 +40,7 @@ describe('Footprint', () => {
     expect(new Footprint([floor], { isWalkOn: true }).shotsCross).toEqual([]);
   });
 
-  it('adds the solid polygons of its other body objects to a walk-on outline (DEC-373 (1))', () => {
+  it('adds the solid polygons of its other body objects to a walk-on outline (DEC-386 (1))', () => {
     const floor = [
       { x: 0, y: 0 },
       { x: 4, y: 0 },

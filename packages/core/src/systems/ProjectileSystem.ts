@@ -47,7 +47,7 @@ import type { System, SystemContext } from './System.types';
  * polygons the aim point was on, DEC-322 (1)) can hit each of its polygons. Any other shot flies
  * over the walk-on polygons (a palace floor, a gate's passage) and the solid polygons shots cross
  * (`Outline.shotsCross`: a camp fire's body, HC-Q105), and stops on every other solid polygon (a
- * fort, the Stronghold's outer walls and throne, DEC-373 (1), Q104-9). A body with no outline is
+ * fort, the Stronghold's outer walls and throne, DEC-386 (1), Q104-9). A body with no outline is
  * hit on its collider circle; a shot not aimed at it flies over it when its collider says so
  * (`Collider.canShotsFlyOver`: a forest camp's home). A body is gathered once a tick, and each
  * move tests only those whose box it reaches.

@@ -192,7 +192,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
     HORDE_WALK_TIMEOUT_MS,
   );
 
-  it("gives each lane tower its fort's footprint as its Footprint, the Stronghold its outer walls and throne but not the palace floor, and a gate its own outline (DEC-185, D; DEC-217 (17); DEC-373 (1); DEC-344 (4))", () => {
+  it("gives each lane tower its fort's footprint as its Footprint, the Stronghold its outer walls and throne but not the palace floor, and a gate its own outline (DEC-185, D; DEC-217 (17); DEC-386 (1); DEC-344 (4))", () => {
     const config = createDefaultGameConfig();
     const map = new MapGenerator().generate(config, 1);
     const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
@@ -281,7 +281,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
     expect(new ReachQuery().isInReach(entities, legend?.id ?? '', structure?.id ?? '')).toBe(true);
   });
 
-  it('puts a melee Legend at the outside of an outer wall in reach of its Stronghold, past its 40 m circle (DEC-185 D, DEC-373 (1))', () => {
+  it('puts a melee Legend at the outside of an outer wall in reach of its Stronghold, past its 40 m circle (DEC-185 D, DEC-386 (1))', () => {
     const config = createDefaultGameConfig();
     const map = new MapGenerator().generate(config, 1);
     const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
@@ -295,7 +295,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
     const centre = map.features.find(
       ({ kind, team }) => kind === 'stronghold' && team === 'light',
     )?.position;
-    // The outer walls are the Stronghold's walls (DEC-373 (1)).
+    // The outer walls are the Stronghold's walls (DEC-386 (1)).
     const outline = mapObjects
       .filter(({ partOf }) => partOf === 'light-stronghold')
       .flatMap(({ footprints }) => footprints.flat());

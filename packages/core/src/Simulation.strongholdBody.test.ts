@@ -120,7 +120,7 @@ const play = (
 
 /**
  * An aimed attack (`attack-aim`) with no lock at the middle of `id`: nothing names the Stronghold,
- * so only the object itself makes a hit on it a hit on the Stronghold (DEC-373 (1)).
+ * so only the object itself makes a hit on it a hit on the Stronghold (DEC-386 (1)).
  */
 const aimAt =
   (id: string) =>
@@ -154,7 +154,7 @@ const around = ({ x, y }: Vec2): readonly Vec2[] => [
   { x: x + 1, y },
 ];
 
-describe('Simulation: the Stronghold outer walls and throne are its body (HC-Q104, DEC-373 (1))', () => {
+describe('Simulation: the Stronghold outer walls and throne are its body (HC-Q104, DEC-386 (1))', () => {
   it('takes the Stronghold health for a hit on an outer wall, which has no health of its own', () => {
     // East of the wall, outside the palace, aiming west at it.
     const simulation = play([eastOf(OUTER_WALL, 2.5)], aimAt(OUTER_WALL), TWO_SWINGS);

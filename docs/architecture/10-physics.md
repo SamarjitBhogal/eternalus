@@ -438,12 +438,12 @@ and `lightsShot`. So where the dated notes above say that a shot's walls come fr
 import `physics/`, and `physics/` may not import `state/` or `content/`, so `utils/` is the one
 layer both can call (as for `isPointInBlockingArea`, DEC-334).
 
-**2026-11-26 (branch `feat/shots-over-lava`; HC-Q105, DEC-373 (2)).** Camp fires now light arrows:
+**2026-11-26 (branch `feat/shots-over-lava`; HC-Q105, DEC-386 (2)).** Camp fires now light arrows:
 `MapSceneryBuilder` sets `canShotsCross` and `canLightShots` on each `<camp>-fire` object, so the
 2026-11-23 note's "Camp fires do not light arrows yet" no longer holds. The palace kitchen hearths
 still stop shots.
 
-**2026-11-26, correction (branch `feat/shots-over-lava`; critic Q105-C-1, C-2; DEC-373 correction,
+**2026-11-26, correction (branch `feat/shots-over-lava`; critic Q105-C-1, C-2; DEC-386 correction,
 HC-Q115).** The note above took the fire's stones out of the shot's wall sweep only. Two bodies at
 each camp fire still stopped a shot: the fire's own body (furniture with health, `MapObjectBody`)
 and, at a forest camp, the camp's home at the fire's centre (it takes no damage). Bodies now follow
@@ -454,7 +454,7 @@ not aimed at such a body flies over it; a shot aimed at it stops there. So a bod
 `canShotsCross` and a forest camp's home follow the same rule as a walk-on floor, for
 `ProjectileSystem` and `LineOfFire` alike. The melee rule still reads `isWalkOn`.
 
-**2026-11-26 (branch `feat/palace-stronghold-pool`, DEC-373 (1)).** The 2026-11-20 note above
+**2026-11-26 (branch `feat/palace-stronghold-pool`, DEC-386 (1)).** The 2026-11-20 note above
 names `Footprint.isWalkOn` and `MapObjectBody.isWalkOn`; they no longer exist. An `Outline` now has
 two polygon lists, `walkOn` and `solid`. `AreaHitQuery.shotPolygonsOf` gives the polygons that stop
 a shot: every polygon when the shot aims at the entity, else only the solid ones. `ProjectileSystem`

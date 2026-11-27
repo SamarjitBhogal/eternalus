@@ -2,7 +2,7 @@ import type { LegendDefinition } from '../legends.types';
 import type { LegendSpecDefinition } from './legendSpecs.types';
 
 /**
- * The id of the weapon a Legend spawns with (DEC-374; the sibling of `kitOf`): its spec's own
+ * The id of the weapon a Legend spawns with (DEC-387; the sibling of `kitOf`): its spec's own
  * `primaryWeaponId`, else its class's `defaultLoadout`; the class's weapon when no spec is named.
  * The one place of this rule.
  *

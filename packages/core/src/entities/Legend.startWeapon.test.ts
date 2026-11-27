@@ -91,7 +91,7 @@ const stacksOf = (entity: Entity, statusId: string): number =>
   entity.getComponent(StatusEffects).active.find((status) => status.definition.id === statusId)
     ?.stacks ?? 0;
 
-describe('a Legend spawns with its spec weapon (DEC-374)', () => {
+describe('a Legend spawns with its spec weapon (DEC-387)', () => {
   it.each([
     ['warrior', 'knight', 'dual-blades', 30],
     ['warrior', 'paladin', 'great-sword', 85],
@@ -157,7 +157,7 @@ describe('a Legend spawns with its spec weapon (DEC-374)', () => {
     expect(swordsman.getComponent(Combat).attack).toMatchObject(asWarriorHolds('long-sword'));
   });
 
-  it('keeps the dual blades for the Warrior only (DEC-374 (9))', () => {
+  it('keeps the dual blades for the Warrior only (DEC-387 (9))', () => {
     expect(WEAPONS.get('dual-blades')).toMatchObject({
       allowedClasses: ['warrior'],
       uniqueTo: 'warrior',
@@ -165,7 +165,7 @@ describe('a Legend spawns with its spec weapon (DEC-374)', () => {
   });
 });
 
-describe('Raptor Talons bleed (DEC-374 W5)', () => {
+describe('Raptor Talons bleed (DEC-387 W5)', () => {
   it('adds one bleed stack on each hit, and stops at 3', () => {
     const { target, fight } = setUp('warrior', 'assassin');
     const { interval } = basicAttackOf('raptor-talons');
@@ -181,7 +181,7 @@ describe('Raptor Talons bleed (DEC-374 W5)', () => {
   });
 });
 
-describe('Obsidian Bow sundered (DEC-374 W6)', () => {
+describe('Obsidian Bow sundered (DEC-387 W6)', () => {
   it('adds a sundered stack on each arrow hit; the next hit is 5, 10 and 15 percent larger', () => {
     const { state, attacker, target, damage, hits } = setUp('warrior', 'assassin');
     const bow = WEAPONS.get('obsidian-bow').attacks[0];
@@ -208,7 +208,7 @@ describe('Obsidian Bow sundered (DEC-374 W6)', () => {
 
   it('wears off 4 s after the arrow hit', () => {
     const { state, attacker, target, damage, statuses, hits } = setUp('warrior', 'assassin');
-    const expiresTick = state.tick + 4 * CONFIG.tickRate; // DEC-374 (W6): 4 s
+    const expiresTick = state.tick + 4 * CONFIG.tickRate; // DEC-387 (W6): 4 s
     const statusSystem = new StatusEffectSystem(damage, statuses);
     /** Steps the match to `tick`, running the status system on each tick. */
     const runTo = (tick: number): void => {

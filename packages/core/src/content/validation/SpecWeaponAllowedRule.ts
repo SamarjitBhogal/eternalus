@@ -5,7 +5,7 @@ import { isWeaponAllowedFor } from '../weapons/isWeaponAllowedFor';
 import type { ContentRule, WeaponAccessCatalogue } from './ContentValidator.types';
 
 /**
- * A spec's own start weapon (`primaryWeaponId`, DEC-374) must be one that the spec's class may use
+ * A spec's own start weapon (`primaryWeaponId`, DEC-387) must be one that the spec's class may use
  * (`isWeaponAllowedFor`): the spec part of 05 §12 `WeaponAllowedRule`. It skips a spec whose
  * weapon id or class id does not resolve, because `KnownSpecWeaponRule` and `SpecClassExistsRule`
  * report those (05 §12: "the others skip unresolved ids"). The spec sibling of

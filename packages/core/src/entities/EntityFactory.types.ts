@@ -65,7 +65,7 @@ export interface WeaponSource {
 
 /**
  * Where a Legend finds the spec a `Placement.specId` names, for its kit and start weapon (ADR 0026
- * decision 1; DEC-374).
+ * decision 1; DEC-387).
  * A `ContentCatalogue<LegendSpecDefinition>` satisfies it.
  */
 export interface LegendSpecSource {

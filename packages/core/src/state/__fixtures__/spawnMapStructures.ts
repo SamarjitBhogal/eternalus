@@ -14,7 +14,7 @@ import type { GameState } from '../GameState';
  * structures and their bodies come from `structureBodiesOf`, and each structure gets its body's
  * `Footprint` (`Footprint.ofBody`): its feature's map object of the same id in `mapObjects` when
  * its definition `hasMapFootprint` (a lane tower's fort, a gate), blocking or not, and the objects
- * that are `partOf` it (the Stronghold's outer walls and throne, DEC-373 (1)).
+ * that are `partOf` it (the Stronghold's outer walls and throne, DEC-386 (1)).
  * Turrets carry the shipped ammo.
  */
 export const spawnMapStructures = (

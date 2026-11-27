@@ -4,7 +4,7 @@ import type { WeaponDefinition } from '../weapons/weapons.types';
 import type { ContentRule } from './ContentValidator.types';
 
 /**
- * A spec's own start weapon (`primaryWeaponId`, DEC-374) must name a loaded weapon; `null` falls
+ * A spec's own start weapon (`primaryWeaponId`, DEC-387) must name a loaded weapon; `null` falls
  * back to the class, which `KnownWeaponRule` checks. The spec sibling of `KnownWeaponRule`;
  * `SpecWeaponAllowedRule` checks that the spec's class may use the weapon.
  */

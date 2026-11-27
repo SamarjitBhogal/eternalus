@@ -564,13 +564,13 @@ lava river) or when its blocking area holds the shot's launch point (DEC-334). T
 `NoMapObjectOverlapInvariant` does not flag a shot over a lake or a lava river, and still flags a
 unit in one.
 
-**2026-11-26 (branch `feat/shots-over-lava`; HC-Q105, DEC-373 correction, HC-Q115).** `Outline`
+**2026-11-26 (branch `feat/shots-over-lava`; HC-Q105, DEC-386 correction, HC-Q115).** `Outline`
 now has `canShotsFlyOver` (a walk-on outline, or a map object flagged `canShotsCross`).
 `StructureDefinition.canShotsFlyOver` reaches the structure's `Collider`, so a shot not aimed at the
 structure flies over its body. The forest camps set it. It has no effect on a structure with a map
 footprint, because the outline rule comes first. The rule is in 10 §7.
 
-**Implementation status, 2026-11-26 (branch `feat/palace-stronghold-pool`, DEC-373 (1)).** The
+**Implementation status, 2026-11-26 (branch `feat/palace-stronghold-pool`, DEC-386 (1)).** The
 Stronghold's outer wall ring and its throne are the Stronghold's body, as a lane tower's fort is
 the tower's body (one pool, DEC-185 (B)). This changes the 2026-11-05 note above ("only towers
 share one pool with their fort", DEC-217 (13)) for these objects only. The palace's inner ring,
@@ -589,7 +589,7 @@ so the collapse of the palace map object does not kill the Stronghold. The Stron
 (DEC-217 (16)) is now the box round its outer ring.
 
 **Implementation status, 2026-11-26, critic round 1 (branch `feat/palace-stronghold-pool`,
-DEC-373 (1) correction).** Three changes to the note above. (1) After the Stronghold falls, the
+DEC-386 (1) correction).** Three changes to the note above. (1) After the Stronghold falls, the
 match goes on (ADR 0021, DEC-71), so its outer walls and throne stay as ruins that block and never
 break for the rest of the match. No owner answer covers this: `INBOX.md` HC-Q122 asks it, and this
 is the interim until he answers. (2) The palace floor is not part of the Stronghold (DEC-344 (4)):

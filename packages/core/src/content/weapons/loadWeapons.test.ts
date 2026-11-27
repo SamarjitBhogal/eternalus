@@ -127,7 +127,7 @@ describe('loadWeapons', () => {
     );
   });
 
-  it('ships the DEC-304 arcs, the DEC-305 weapon reach parts and the DEC-374 sword intervals', () => {
+  it('ships the DEC-304 arcs, the DEC-305 weapon reach parts and the DEC-387 sword intervals', () => {
     const weapons = loadWeapons(30);
     const sweep = (id: string, index = 0) => {
       const attack = weapons.get(id).attacks[index];
@@ -140,7 +140,7 @@ describe('loadWeapons', () => {
     expect(sweep('dual-blades')).toEqual([100, 1]);
     expect(sweep('great-sword')).toEqual([140, 2]);
     expect(sweep('long-sword')).toEqual([120, 2]);
-    // DEC-374: 0.45 s, 1.2 s and 0.9 s at 30 ticks per second (GameConfig.tickRate)
+    // DEC-387: 0.45 s, 1.2 s and 0.9 s at 30 ticks per second (GameConfig.tickRate)
     expect(
       ['dual-blades', 'great-sword', 'long-sword'].map(
         (id) => weapons.get(id).attacks[0]?.interval,

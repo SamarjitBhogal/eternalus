@@ -769,7 +769,7 @@ Reply inline (`Decision: …`).
     end-game target; the Emperor is. ... He is not built. Gurshaan or Aryan are supposed to
     handle this." Not built yet: which walls count is asked as HC-Q104 (Owner Calls v71). Lane A
     builds the answer in its own PR on PR 2. Tick this item when that PR is built.
-  - Built 2026-11-26 in `feat/palace-stronghold-pool` (DEC-373 (1) addendum and its correction of
+  - Built 2026-11-26 in `feat/palace-stronghold-pool` (DEC-386 (1) addendum and its correction of
     2026-11-26): a hit on an outer wall or on the throne takes the Stronghold's health, also from
     inside the palace. A hit on the palace floor never does, from inside or from outside: the
     floor is the palace map object's, with its own health. The inner ring, the room walls and the
@@ -798,16 +798,16 @@ Reply inline (`Decision: …`).
       and part of DEC-322 (1). Lane A builds the answer in its own PR on PR 2. Code names:
       `Simulation.spawnStructures` (one body object per structure today), `WorldObjectStore`,
       `AreaHitQuery` rule 1.
-  - Answered 2026-11-26 (DEC-373 (1), Owner Calls v98): "B: only the outer walls and the throne;
-    room walls keep their own health". The palace's inner ring keeps its own health too (DEC-373
+  - Answered 2026-11-26 (DEC-386 (1), Owner Calls v98): "B: only the outer walls and the throne;
+    room walls keep their own health". The palace's inner ring keeps its own health too (DEC-386
     (1) reading). Lane A builds it in `feat/palace-stronghold-pool`. Tick this item when that
     branch is built.
-  - Built 2026-11-26 in `feat/palace-stronghold-pool` (DEC-373 (1) addendum): the outer walls
+  - Built 2026-11-26 in `feat/palace-stronghold-pool` (DEC-386 (1) addendum): the outer walls
     and the throne are part of the Stronghold's body (`MapObject.partOf`) and have no health of
     their own; the inner ring and the room walls keep their own health and break on their own.
 
 - [ ] **HC-Q122 — After the Stronghold falls, what happens to its outer walls and its throne?
-      (`feat/palace-stronghold-pool`, follow-up to HC-Q104, DEC-373 (1); critic r1 Q104-1).**
+      (`feat/palace-stronghold-pool`, follow-up to HC-Q104, DEC-386 (1); critic r1 Q104-1).**
       Card for Owner Calls v101, 2026-11-26, by COMBAT-WEAPONS-ABILITIES-70 (number from
       PR-REVIEW-COORDINATION-49). The enemy Stronghold falls, and the match goes on: the
       Stronghold is a container, not a win condition (ADR 0021, DEC-71), and the Emperor is the
@@ -877,16 +877,16 @@ Reply inline (`Decision: …`).
     fly over lava but do not light. (2) A lit arrow stays lit until it lands; flying over a lake
     does not put it out. (3) A lit arrow burns units only; towers and walls take no burn. The
     reference table says buildings take burn too, but buildings have no status effects yet.
-  - Answered 2026-11-26 (DEC-373 (2), Owner Calls v98): "A: yes, shots fly over camp fires and
+  - Answered 2026-11-26 (DEC-386 (2), Owner Calls v98): "A: yes, shots fly over camp fires and
     arrows catch fire there". Built in `feat/shots-over-lava`. The three readings above got no
     note, so they stay as built. The palace kitchen hearths are not camp fires and still stop
-    shots (DEC-373 (2)).
-  - Correction 2026-11-26 (critic Q105-C-1, C-2; DEC-373 correction): the first build set only the
+    shots (DEC-386 (2)).
+  - Correction 2026-11-26 (critic Q105-C-1, C-2; DEC-386 correction): the first build set only the
     flags, so the fire's own body and the forest camp's home still stopped shots; now a shot not
     aimed at them flies over both (HC-Q115, HC-Q116).
 
 - [ ] **HC-Q115 — Does an arrow fly over the middle of a camp fire too? (`feat/shots-over-lava`,
-      follow-up to HC-Q105, DEC-373 correction 2026-11-26).** Asked on Owner Calls v100,
+      follow-up to HC-Q105, DEC-386 correction 2026-11-26).** Asked on Owner Calls v100,
       2026-11-26, by COMBAT-WEAPONS-ABILITIES-67. Each forest camp has an unseen home at the middle
       of its camp fire. It takes no damage, and a body that takes no damage stopped every shot
       (DEC-317 addendum (5), HC-Q77). Options: (A, built in this rework) an arrow that is not aimed
@@ -955,13 +955,13 @@ Reply inline (`Decision: …`).
       reward is capped (DEC-237). Also: when a minion lands the last hit, no one gets the XP.
 
 - [ ] **HC-Q118 — What type of weapon are the Colossus's Bastions? (`feat/start-weapons`, PR 3
-      W3, Owner Calls v100).** You said yes to the Bastions at 120 damage every 1.6 s (DEC-374).
+      W3, Owner Calls v100).** You said yes to the Bastions at 120 damage every 1.6 s (DEC-387).
       They are not built yet, because each weapon has one weapon type and reference 07 gives the
       Bastions none. Until you answer, the Colossus starts with the Wuuthrad battle axe. The type
       does not change how a weapon hits. Options: (A, recommended) a new type, Shield, because the
       Bastions are walls on the arms; (B) Glove, like the Raptor Talons. Either way the Bastions
       are one weapon file and one line in the Colossus spec. Code names: `WeaponClass` in
-      `content/weapons/weapons.types.ts`; DEC-374 (7).
+      `content/weapons/weapons.types.ts`; DEC-387 (7).
 
 - [ ] **HC-B48 — Better than the design, sign-off asked: 3 code ideas from the critic
       (`feat/start-weapons`, PR 3, critic rounds 1 to 3, 2026-11-26;
@@ -972,14 +972,14 @@ Reply inline (`Decision: …`).
       weapon and, after PR #156, the second weapon. When: in PR #156's loadout code, after #156
       merges. Say "no" and the two reads stay. Code names: `loadoutOf(spec, legend)` replaces
       `kitOf`, `primaryWeaponIdOf` and #156's inline `spec?.secondaryWeaponId ?? null`, in the
-      `Loadout` construction of `Legend`; DEC-374.
+      `Loadout` construction of `Legend`; DEC-387.
       (2) Built (critic round 2): one check now decides which Legend classes may hold a weapon.
       It runs on each sub-class's start weapon and each class's default weapon (and, after #156
       merges, the second weapon). Before, only the start weapon was checked, and that check had
       its own copy of the rule. Every sub-class and class in the game today passes it. Say "no"
       and the check goes back to the start weapon only. Code names:
       `content/weapons/isWeaponAllowedFor.ts`, `SpecWeaponAllowedRule`,
-      `DefaultWeaponAllowedRule`, #156's `SecondaryWeaponRule`; DEC-374 (10).
+      `DefaultWeaponAllowedRule`, #156's `SecondaryWeaponRule`; DEC-387 (10).
       (3) Not built (critic round 3, after the last critic loop): the check in (2) runs in two
       content rules, one for sub-classes and one for classes. Better: one rule that first finds
       the weapon to check for a class or a sub-class, as the abilities check already does. Then
@@ -3704,7 +3704,7 @@ Reply inline (`Decision: …`).
       `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
       rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
       (SCRUM-290).
-  - Answered for point (2) (DEC-57, 2026-10-28; built by DEC-374 on `feat/start-weapons`,
+  - Answered for point (2) (DEC-57, 2026-10-28; built by DEC-387 on `feat/start-weapons`,
     2026-11-26): each Legend spawns with the start weapon of its sub-class. The Zealot has the
     Raptor Talons, the Templar the dual blades, the Paladin the great sword, the Bulwark Wuuthrad
     and every Magus Legend the staff. The Colossus's Bastions wait for HC-Q118. This note does

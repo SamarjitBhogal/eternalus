@@ -4,7 +4,7 @@ import { WEAPONS } from '../content/weapons/weaponCatalogue';
 
 /**
  * The shipped weapons, except that the Raptor Talons have no `onHit`. Bleed from the talons
- * (DEC-374 W5) is not what a test that uses this checks (a sweep, blind, ...), and the bleed would
+ * (DEC-387 W5) is not what a test that uses this checks (a sweep, blind, ...), and the bleed would
  * kill the dummy it hits. `tickRate` is the match's tick rate.
  */
 export const weaponsWithoutTalonBleed = (tickRate: number) =>

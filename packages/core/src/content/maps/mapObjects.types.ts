@@ -43,7 +43,7 @@ type MapObjectFlags = {
 export type MapObjectTraits = MapObjectFlags & {
   /**
    * The id of the feature whose structure this object is part of the body of: the Stronghold's
-   * outer walls and its throne (DEC-373 (1)). It blocks (`MapObject.isBlocking`) and has no health
+   * outer walls and its throne (DEC-386 (1)). It blocks (`MapObject.isBlocking`) and has no health
    * of its own: a hit on it is a hit on the structure (one pool, as a lane tower's fort, DEC-185
    * B), and it outlives the structure as a ruin that blocks (DEC-341). Its polygons are solid
    * polygons of the structure's `Footprint` (`structureBodyParts`).

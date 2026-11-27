@@ -7,7 +7,7 @@ import type { Polygon, Rect } from '../utils/geometry.types';
  * place that picks which one an entity uses. Each polygon is either walked on or solid: `walkOn`
  * and `solid` split `polygons`, and each polygon object is in exactly one of them. A
  * structure's `Footprint` can hold both: the walk-on polygons of its own map object, and the solid
- * polygons of the objects that are part of its body (`Footprint.ofBody`, DEC-373 (1)). A shot not
+ * polygons of the objects that are part of its body (`Footprint.ofBody`, DEC-386 (1)). A shot not
  * aimed at the entity flies over its walk-on polygons and its `shotsCross` polygons, and stops on
  * the other solid ones (HC-Q105, Q104-9).
  */
@@ -30,7 +30,7 @@ export interface Outline {
   readonly solid: readonly Polygon[];
   /**
    * The solid polygons that a shot not aimed at the entity flies over: the footprint of a map
-   * object flagged `canShotsCross` (a camp fire's body, HC-Q105, DEC-373). They are the same
+   * object flagged `canShotsCross` (a camp fire's body, HC-Q105, DEC-386). They are the same
    * polygon objects as in `solid`. The shot rule (`AreaHitQuery.shotPolygonsOf`, for
    * `ProjectileSystem` and `LineOfFire` alike) reads it; a melee or ability hit does not.
    */

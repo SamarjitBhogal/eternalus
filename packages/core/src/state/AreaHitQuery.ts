@@ -33,7 +33,7 @@ import type { EntityId } from './EntityStore.types';
  *    solid polygon is hit by every hit that touches it. The palace floor is the palace map
  *    object's, not the Stronghold's (DEC-344 (4)): from outside, aiming at it hits the palace
  *    object; from inside, it is not hit. A swing that touches the Stronghold's outer walls or its
- *    throne hits the Stronghold (solid, DEC-373 (1)).
+ *    throne hits the Stronghold (solid, DEC-386 (1)).
  * 2. A body that takes no damage now (`EntityStore.takesNoDamage`) is never hit: it takes no
  *    damage and runs no on-hit step (DEC-317 addendum). A shot stops on it (`ProjectileSystem`).
  *
@@ -187,7 +187,7 @@ export class AreaHitQuery {
    * The polygons of `outline` that a shot not aimed at its body flies over, the one statement of
    * that rule: the walk-on ones (a palace floor, a gate's passage, DEC-322 (1)) and the solid ones
    * that shots cross (`Outline.shotsCross`: a camp fire's body, HC-Q105, Q104-9). Every other
-   * polygon stops such a shot (a fort, the Stronghold's outer walls and throne, DEC-373 (1)).
+   * polygon stops such a shot (a fort, the Stronghold's outer walls and throne, DEC-386 (1)).
    * `shotPolygonsOf` drops them and `aimedBodyOf` names a body by them. They are the same polygon
    * objects as in `outline.polygons` (the `Outline` contract), so a drop by identity is exact.
    */

@@ -143,7 +143,7 @@ describe('WorldObjectStore', () => {
     expect(world.destroyedIds.has('fort')).toBe(false);
   });
 
-  it("makes every body object of one structure share its health, keeps them out of a building's contents, and leaves each one a ruin once the structure is gone (DEC-373 (1))", () => {
+  it("makes every body object of one structure share its health, keeps them out of a building's contents, and leaves each one a ruin once the structure is gone (DEC-386 (1))", () => {
     const factory = fixtureFactory();
     const entities = new EntityStore();
     const stronghold = factory.create('obstacle', MAP_OBJECT_DEFINITIONS.rock.id, {

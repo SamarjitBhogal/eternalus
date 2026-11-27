@@ -67,7 +67,7 @@ type BodySpec = {
   /** A map object's outline (`MapObjectBody`) instead. */
   readonly object?: readonly Polygon[];
   readonly isWalkOn: boolean;
-  /** With an outline: the solid polygons of its other body objects (DEC-373 (1)). */
+  /** With an outline: the solid polygons of its other body objects (DEC-386 (1)). */
   readonly solid?: readonly Polygon[];
 };
 
@@ -351,7 +351,7 @@ describe('ProjectileSystem on real geometry', () => {
       expect(scene.state.entities.has(shot.id)).toBe(false);
     });
 
-    it('flies over the floor of an outline with solid walls too, and lands on a solid wall it meets (DEC-373 (1))', () => {
+    it('flies over the floor of an outline with solid walls too, and lands on a solid wall it meets (DEC-386 (1))', () => {
       // The Stronghold: a walk-on palace floor and a solid outer wall north of it.
       const stronghold = {
         at: { x: 10, y: 10 },

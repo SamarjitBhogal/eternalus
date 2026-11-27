@@ -105,7 +105,7 @@ export class WorldObjectsView implements WorldLayer {
    * Whether the object was destroyed with its fallen building: the building's ruins stand for it,
    * so it is not drawn. An object that still stands or is a ruin draws by its own state, so a
    * structure's body keeps its health bar or its ruins after its building falls (the Stronghold's
-   * outer walls and throne when the palace falls, DEC-373 (1)).
+   * outer walls and throne when the palace falls, DEC-386 (1)).
    */
   private isGoneWithBuilding({ buildingId }: MapObject, state: MapObjectSnapshot): boolean {
     return buildingId !== undefined && state.isDestroyed && this.isFallen(buildingId);

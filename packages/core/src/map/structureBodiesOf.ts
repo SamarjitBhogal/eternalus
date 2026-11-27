@@ -20,7 +20,7 @@ type StructureBody = {
  * objects of its body (07 §1): its own map object of the same id when its definition
  * `hasMapFootprint` (a lane tower's fort, DEC-185; a gate's outline, DEC-217 (17); a wall turret's
  * pylon), and the blocking objects that are `partOf` it (the Stronghold's outer walls and throne,
- * DEC-373 (1)). The palace floor is not part of the Stronghold (DEC-344 (4)). A blocking body
+ * DEC-386 (1)). The palace floor is not part of the Stronghold (DEC-344 (4)). A blocking body
  * object has no health of its own (one pool, DEC-185 B); a gate's own object does not block, so it
  * keeps its health. `Simulation.spawnStructures` and the test fixture `spawnMapStructures` both
  * spawn from it and build the `Footprint` (`Footprint.ofBody(own, parts)`), so they cannot drift.

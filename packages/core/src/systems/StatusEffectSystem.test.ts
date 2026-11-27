@@ -73,7 +73,7 @@ const setUp = (weapons = loadWeapons(CONFIG.tickRate)) => {
   };
   const ticksOf = (type: TimedEvent['type']) =>
     events.filter((event) => event.type === type).map((event) => event.tick);
-  // Bleed from the talons (DEC-374 W5) is not what the weapon-hit tests check: count weapon hits only.
+  // Bleed from the talons (DEC-387 W5) is not what the weapon-hit tests check: count weapon hits only.
   const weaponHitTicks = () =>
     events.flatMap((event) =>
       event.type === 'damage-applied' && event.payload.source.kind === 'weapon' ? [event.tick] : [],
@@ -208,7 +208,7 @@ describe('statuses in the tick', () => {
   });
 
   it('a blinded unit still lands its hits: blind has no hard miss (DEC-42)', () => {
-    // Talons without bleed (DEC-374 W5): bleed would kill the dummy before the third hit. This test
+    // Talons without bleed (DEC-387 W5): bleed would kill the dummy before the third hit. This test
     // checks blind, not bleed.
     const noBleed = weaponsWithoutTalonBleed(CONFIG.tickRate);
     const { state, warrior, dummy, apply, run, ticksOf } = setUp(noBleed);
@@ -221,7 +221,7 @@ describe('statuses in the tick', () => {
     expect(ticksOf('damage-applied')).toEqual([0, interval, 2 * interval]);
   });
 
-  it('a talon hit lands a bleed, and a later bleed tick is credited to the attacker (DEC-374 W5)', () => {
+  it('a talon hit lands a bleed, and a later bleed tick is credited to the attacker (DEC-387 W5)', () => {
     const { state, warrior, dummy, run, events } = setUp();
     state.entities.setAttackTarget(warrior.id, dummy.id);
 

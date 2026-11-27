@@ -73,7 +73,7 @@ type BodySpec = {
   readonly canShotsFlyOver?: boolean;
   /** With a team and an outline: units walk on it (a gate's passage). */
   readonly isWalkOn?: boolean;
-  /** With an outline: the solid polygons of its other body objects (DEC-373 (1)). */
+  /** With an outline: the solid polygons of its other body objects (DEC-386 (1)). */
   readonly solid?: readonly Polygon[];
 };
 
@@ -383,7 +383,7 @@ describe('LineOfFire', () => {
       expect(lineOfFire.isClear(state, bot, closedGate)).toBe(false);
     });
 
-    it('is blocked by the solid polygons of an outline it does not aim at, not by its walk-on ones (DEC-373 (1))', () => {
+    it('is blocked by the solid polygons of an outline it does not aim at, not by its walk-on ones (DEC-386 (1))', () => {
       const floorOnLine = scene();
       const wallOnLine = scene();
       // A Stronghold that takes no damage now: a walk-on floor and a solid outer wall.

@@ -33,7 +33,7 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       breakability: { kind: 'always' },
       // No `hasMapFootprint`: the palace floor (its map object of the same id) is not part of it,
       // so a hit on the floor never takes its health (DEC-344 (4)). Its body is its outer walls and
-      // throne (`MapObject.partOf`, DEC-373 (1)): one health pool, and melee at an outer wall is in
+      // throne (`MapObject.partOf`, DEC-386 (1)): one health pool, and melee at an outer wall is in
       // reach (DEC-185 D).
       hasFortBox: true, // DEC-217 (16): the box round its body is a fort box for the chase rule
     },

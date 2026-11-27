@@ -88,7 +88,7 @@ type RosterSlotBase = {
   readonly role: BotRole;
   /**
    * The Legend (spec) of that class whose kit and start weapon it equips (DEC-198, plan arch call
-   * 1, amending ADR 0018 point 2; DEC-374); absent = the class's `defaultKit` and weapon.
+   * 1, amending ADR 0018 point 2; DEC-387); absent = the class's `defaultKit` and weapon.
    */
   readonly specId?: string;
 };

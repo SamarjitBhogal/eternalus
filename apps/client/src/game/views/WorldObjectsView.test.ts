@@ -72,7 +72,7 @@ describe('WorldObjectsView', () => {
     const fills = (renderer: RecordingRenderer) =>
       renderer.calls.filter((call) => call.op === 'fillPolygon');
 
-    it("keeps a standing body object's health bar: an outer wall outlives the palace (DEC-373 (1))", () => {
+    it("keeps a standing body object's health bar: an outer wall outlives the palace (DEC-386 (1))", () => {
       const view = new WorldObjectsView([wall]);
       const renderer = new RecordingRenderer();
       view.show([

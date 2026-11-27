@@ -4,7 +4,7 @@ import type { AuthoredProjectile } from './projectiles.types';
  * An arrow (reference 07, 05 §10): the bow's shot. It flies straight until it hits something, or
  * slows near its range and falls to the ground there with a shadow below it (DEC-306). It flies
  * over lakes, lava and camp fires; over lava or a camp fire it catches fire and burns what it lands
- * on (DEC-345, DEC-373).
+ * on (DEC-345, DEC-386).
  *
  * TUNE: every number is a placeholder. `acceleration` and `mass` are not tuning: `MovementProfile`
  * requires them, the loader overwrites the first and flight ignores the second.

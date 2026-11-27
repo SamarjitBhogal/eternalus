@@ -320,7 +320,7 @@ class CampFire extends Entity {
   }
 }
 
-describe('ProjectileSystem over a camp fire, a body with health that shots cross (HC-Q105, DEC-373)', () => {
+describe('ProjectileSystem over a camp fire, a body with health that shots cross (HC-Q105, DEC-386)', () => {
   /** `setUp` over the lava strip, with a camp fire's body on the strip. */
   const withCampFire = () => {
     const scene = setUp(LAVA);

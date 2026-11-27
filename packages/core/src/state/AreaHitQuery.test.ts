@@ -27,7 +27,7 @@ type BodySpec = {
   readonly radius?: number;
   readonly outline?: readonly Polygon[];
   readonly isWalkOn?: boolean;
-  /** Solid polygons added to a walk-on outline (the Stronghold's outer walls, DEC-373 (1)). */
+  /** Solid polygons added to a walk-on outline (the Stronghold's outer walls, DEC-386 (1)). */
   readonly solid?: readonly Polygon[];
   readonly isUnbreakable?: boolean;
   readonly hasHealth?: boolean;
@@ -223,7 +223,7 @@ describe('AreaHitQuery.find', () => {
     expect(find(area, { targetId: 'floor', point: null })).toEqual(['floor']);
   });
 
-  it('hits a mixed outline on its solid polygons with no aim, and on its walk-on ones only when aimed (DEC-373 (1))', () => {
+  it('hits a mixed outline on its solid polygons with no aim, and on its walk-on ones only when aimed (DEC-386 (1))', () => {
     const { add, find } = setUp({ x: 2, y: 0 });
     add('stronghold', {
       at: { x: 5, y: 0 },
@@ -329,7 +329,7 @@ describe('AreaHitQuery.aimedBodyOf', () => {
     expect(query.aimedBodyOf(entities, attacker.id, { x: 5, y: 0 })).toBeNull();
   });
 
-  it('names a mixed outline by its walk-on polygons only, not by its solid ones (DEC-373 (1))', () => {
+  it('names a mixed outline by its walk-on polygons only, not by its solid ones (DEC-386 (1))', () => {
     const { entities, add, attacker, query } = setUp();
     add('stronghold', {
       at: { x: 5, y: 0 },
@@ -440,7 +440,7 @@ describe('AreaHitQuery.stopsShot', () => {
     expect(AreaHitQuery.stopsShot(scene.entities, shotAt(), removedBody)).toBe(false);
   });
 
-  it('stops every shot on a mixed outline, on its solid polygons unless the shot aims at it (DEC-373 (1))', () => {
+  it('stops every shot on a mixed outline, on its solid polygons unless the shot aims at it (DEC-386 (1))', () => {
     const scene = setUp();
     const spec = {
       at: { x: 5, y: 0 },
@@ -473,7 +473,7 @@ describe('AreaHitQuery: the shot rule on the seed 1 map (Q104-9, merge of #169)'
     return object;
   };
   const STRONGHOLD = 'dark-stronghold';
-  /** The Stronghold's body objects: its outer walls and its throne (`partOf`, DEC-373 (1)). */
+  /** The Stronghold's body objects: its outer walls and its throne (`partOf`, DEC-386 (1)). */
   const PARTS = mapObjects.filter(({ partOf }) => partOf === STRONGHOLD);
   const OUTER_WALL = objectOf(`${STRONGHOLD}-outer-boundary-0`);
   const THRONE = objectOf('dark-palace-interior-throne');

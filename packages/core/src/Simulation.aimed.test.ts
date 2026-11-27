@@ -58,7 +58,7 @@ const play = (live: Simulation, aim: Vec2): Replay =>
 
 describe('Simulation: aimed attacks (DEC-184, DEC-319)', () => {
   it('sweeps the body in front of the aim with no target, spares the one behind, and stops on release', () => {
-    // Talons without bleed (DEC-374 W5): bleed would kill the front dummy. This test checks the
+    // Talons without bleed (DEC-387 W5): bleed would kill the front dummy. This test checks the
     // sweep, not bleed.
     const noBleed = weaponsWithoutTalonBleed(SETUP.config.tickRate);
     const live = new Simulation({
