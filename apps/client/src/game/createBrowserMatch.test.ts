@@ -13,7 +13,7 @@ import { TypedEventBus } from '../bridge/TypedEventBus';
 import type { LogSink } from '../data/logging/LogSink.types';
 import { RingBufferSink } from '../data/logging/RingBufferSink';
 import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
-import { createBrowserMatch } from './createBrowserMatch';
+import { createBrowserMatch, type BrowserMatchDeps } from './createBrowserMatch';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
 import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
@@ -47,6 +47,7 @@ function setUp(
   canvas = new FakeViewportCanvas(),
   sinks: readonly LogSink[] = [],
   isDeveloperMenuEnabled = false,
+  resources?: BrowserMatchDeps['resources'],
 ) {
   const window = new FakeBrowserTarget();
   const document = new FakeBrowserTarget();
@@ -60,6 +61,7 @@ function setUp(
     settings: { bindings: null },
     clock: new FakeSessionClock(),
     sinks,
+    ...(resources === undefined ? {} : { resources }),
   });
   const viewport: MatchViewport = {
     canvas,
@@ -87,6 +89,36 @@ function setUp(
 }
 
 describe('createBrowserMatch', () => {
+  it('loads only the selected atlas and releases it with the match', async () => {
+    const group = 'atlas-colossus';
+    const resources = {
+      load: vi.fn(() => Promise.resolve({ group, failed: [] } as const)),
+      release: vi.fn(),
+      atlases: vi.fn(() => ({})),
+    };
+    const { factory, viewport, request } = setUp(undefined, [], false, resources);
+    const matchRequest = request();
+    const player: RosterEntry = {
+      legendId: 'player',
+      displayName: 'Player',
+      team: 'dark',
+      isBot: false,
+      isRover: true,
+      classId: 'sentinel',
+      specId: 'colossus',
+      isPlayer: true,
+    };
+    const running = factory(
+      { ...matchRequest, setup: { ...matchRequest.setup, allies: [player] } },
+      viewport,
+    );
+    await Promise.resolve();
+    expect(resources.load.mock.calls).toHaveLength(1);
+    expect(resources.load).toHaveBeenCalledWith(group, expect.any(Function));
+    expect(resources.atlases).toHaveBeenCalledWith(group);
+    running.destroy();
+    expect(resources.release).toHaveBeenCalledExactlyOnceWith(group);
+  });
   it.each([
     { isDeveloperMenuEnabled: true, opened: [true] },
     { isDeveloperMenuEnabled: false, opened: [] },
