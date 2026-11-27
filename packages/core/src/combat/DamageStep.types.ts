@@ -1,18 +1,6 @@
 import type { EntityId } from '../state/EntityStore.types';
-import type { DamageSource } from '../state/GameEvents.types';
+import type { DamageSource, HitPath } from '../state/GameEvents.types';
 import type { GameState } from '../state/GameState';
-import type { Vec2 } from '../utils/geometry.types';
-
-/**
- * Where a hit came from, in world units (DEC-381). The body-part bonuses read it
- * (`BodyPartBonusStep`).
- */
-export type HitPath = {
-  /** Where the hit came from: the melee attacker's position, or where a shot started. */
-  readonly origin: Vec2;
-  /** Where a shot struck; a melee hit leaves it out. */
-  readonly impactPoint?: Vec2;
-};
 
 /** One hit on its way through the pipeline. */
 export type DamageHit = {
@@ -20,7 +8,7 @@ export type DamageHit = {
   /** The amount after the steps before this one. */
   readonly amount: number;
   readonly source: DamageSource;
-  /** Where the hit came from; a hit from no side (a status tick, a blast, a collapse) has none. */
+  /** Where the hit came from; a hit from no side (a status tick, a collapse) has none. */
   readonly path?: HitPath;
 };
 

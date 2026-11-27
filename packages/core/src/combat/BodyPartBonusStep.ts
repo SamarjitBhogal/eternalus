@@ -11,8 +11,8 @@ import type { DamageHit, DamageStep } from './DamageStep.types';
  * hit that came from the zone behind it (`backZoneDegrees` wide, centred on the side its art shows
  * its back, `CombatHitbox.isBehind`) is multiplied by `backHit`, and a shot whose line of flight
  * crosses its head outline (`CombatHitbox.isHeadShot`) by `headShot`. When both hold, only the
- * larger applies. A hit with no path (a status tick such as bleed or burn, a blast, a collapse)
- * comes from no side, so it gets neither. Every other hit, and every unit that is only its circle,
+ * larger applies. A hit with no path (a status tick such as bleed or burn, a collapse) comes
+ * from no side, so it gets neither. Every other hit, and every unit that is only its circle,
  * passes unchanged.
  */
 export class BodyPartBonusStep implements DamageStep {

@@ -189,9 +189,11 @@ export class EntityStore {
     const entity = this.entities.get(id);
     if (entity === undefined) return undefined;
     const hitbox = entity.findComponent(CombatHitbox);
-    if (hitbox !== undefined) {
-      const { position, facing } = entity.getComponent(Transform);
-      return [hitbox.polygonAt(position, facing)];
+    const transform = entity.findComponent(Transform);
+    if (hitbox !== undefined && transform !== undefined) {
+      // ponytail: a new world polygon on each call (a few a tick per attacker of a big boss); 08 §9
+      // says profile first. Upgrade: keep one polygon per CombatHitbox, rebuilt when it moves.
+      return [hitbox.polygonAt(transform.position, transform.facing)];
     }
     return (
       entity.findComponent(MapObjectBody)?.object.footprints ??

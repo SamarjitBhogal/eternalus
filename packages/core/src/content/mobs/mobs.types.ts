@@ -13,12 +13,15 @@ export type MobDefinition = UnitDefinition & {
 
 /**
  * The damage multipliers on a big boss's body parts (DEC-381), each a finite number of at least 1,
- * and how wide the zone behind it is. Only a unit with a body outline (`combatHitbox`) gets them.
+ * and how wide the zone behind it is. Only a unit with a body shape (`bodyShape`) gets them.
  */
 export type BodyPartBonus = {
-  /** A hit from an attacker in the zone behind the boss (no status tick). */
+  /** A hit whose path starts in the zone behind the boss (`HitPath.origin`; no status tick). */
   readonly backHit: number;
-  /** A projectile whose impact point is on the boss's head outline (`headHitbox`). */
+  /**
+   * A shot that struck the boss's head (`bodyShape.head`), or whose line of flight, carried on
+   * through the body, crosses it (HC-B60 A).
+   */
   readonly headShot: number;
   /**
    * The zone behind the boss, in degrees, centred on the side its art shows its back: 180 is the

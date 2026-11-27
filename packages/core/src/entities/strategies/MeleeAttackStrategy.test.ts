@@ -3,9 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
-import type { DamageSource } from '../../state/GameEvents.types';
+import type { DamageSource, HitPath } from '../../state/GameEvents.types';
 import { GameState } from '../../state/GameState';
-import type { Vec2 } from '../../utils/geometry.types';
 import { Warrior } from '../legends/Warrior';
 import { MeleeAttackStrategy } from './MeleeAttackStrategy';
 
@@ -22,20 +21,15 @@ const WEAPONS = loadWeapons(30, [
 ]);
 const WARRIOR = loadDefaultContent(30).get('warrior');
 
-type Call = [string, number, DamageSource, { readonly origin: Vec2 } | undefined];
+type Call = [string, number, DamageSource, HitPath | undefined];
 
 /** Hits `entity-2` once with a Warrior spawned from `definition`; returns the damage calls. */
 const hitWith = (definition: typeof WARRIOR): Call[] => {
   const state = new GameState(createDefaultGameConfig(), 1);
   const calls: Call[] = [];
   const damage = {
-    apply: (
-      _: GameState,
-      targetId: string,
-      amount: number,
-      source: DamageSource,
-      path?: { readonly origin: Vec2 },
-    ) => calls.push([targetId, amount, source, path]),
+    apply: (_: GameState, targetId: string, amount: number, source: DamageSource, path?: HitPath) =>
+      calls.push([targetId, amount, source, path]),
   };
   const attacker = new Warrior('entity-1', definition.id);
   attacker.spawn({ definition, position: { x: 0, y: 0 }, team: 'light', weapons: WEAPONS });

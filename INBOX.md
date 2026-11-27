@@ -40,7 +40,13 @@ review comments under "Feedback". Answered decisions are recorded in
       built) a hit's path goes to `DamagePipeline.apply` as one object (`HitPath`); one object
       for the whole hit is not built, because it changes every caller. B4 (built) a hit says
       where it came from (`HitPath.origin`), so the bonus step needs no attacker lookup and no
-      status check: a hit without a path gets no bonus.
+      status check: a hit without a path gets no bonus. From the pre-PR critic (2026-11-27,
+      sign-off asked): B5 (built) `HitPath` lives in `state/` beside `DamageSource`, so the
+      `entities/` damage port uses the same type and does not copy it. B6 (built) a content rule
+      (`BodyShapeRule`) checks every body shape at load (at least 3 finite corners, the head inside
+      the outline), so a bad shape fails at boot, not when the boss spawns in a match. B7 (not
+      built; `ponytail:` note) `EntityStore.outlineOf` builds a new body polygon on each call;
+      08 §9 says profile first, so it stays until a profile shows the cost.
 
 - [ ] **Minion strength port (PR #82, 2026-11-25): sign off `LaneProgressOf`.** Built: `combat/`
       reads lane progress through a new port, `LaneProgressOf = (laneId, team, position) => number

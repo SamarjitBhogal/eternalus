@@ -9,11 +9,12 @@ import { loadWeapons } from '../content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { MeleeAttackStrategy } from '../entities/strategies/MeleeAttackStrategy';
+import type { HitPath } from '../state/GameEvents.types';
 import { GameState } from '../state/GameState';
 import type { Vec2 } from '../utils/geometry.types';
 import { BodyPartBonusStep } from './BodyPartBonusStep';
 import { DamagePipeline } from './DamagePipeline';
-import type { DamageHit, HitPath } from './DamageStep.types';
+import type { DamageHit } from './DamageStep.types';
 
 /** The Greater Boss's head and an off-head body point, local to its left-facing pose (greaterBoss.ts). */
 const HEAD = { x: -7, y: -10 };

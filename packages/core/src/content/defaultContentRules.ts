@@ -6,6 +6,7 @@ import type { LegendSpecDefinition } from './legends/specs/legendSpecs.types';
 import { LEVEL_CURVE_CATALOGUE } from './progression/levelCurveCatalogue';
 import type { LevelCurveDefinition } from './progression/progression.types';
 import type { BotRosterDefinition } from './teams/botRoster.types';
+import { BodyShapeRule } from './validation/BodyShapeRule';
 import { BotRosterClassRule } from './validation/BotRosterClassRule';
 import { BotRosterDifficultyRule } from './validation/BotRosterDifficultyRule';
 import type { ContentRule, UnitDefinitionRule } from './validation/ContentValidator.types';
@@ -36,6 +37,7 @@ export const createDefaultContentRules = (
   new KnownLevelCurveRule(curves),
   new LevelScalingRule(),
   new KnownWeaponRule(weapons),
+  new BodyShapeRule(),
 ];
 
 /**

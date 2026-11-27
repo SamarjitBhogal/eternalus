@@ -9,6 +9,7 @@ import {
 import { LEGEND_CLASSES } from './legends/legendCatalogue';
 import { LEGEND_SPECS } from './legends/specs/legendSpecCatalogue';
 import { ORACLE } from './legends/specs/oracle';
+import { BodyShapeRule } from './validation/BodyShapeRule';
 import { ContentValidator } from './validation/ContentValidator';
 import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
@@ -30,6 +31,7 @@ describe('createDefaultContentRules', () => {
       KnownLevelCurveRule,
       LevelScalingRule,
       KnownWeaponRule,
+      BodyShapeRule,
     ]);
   });
 

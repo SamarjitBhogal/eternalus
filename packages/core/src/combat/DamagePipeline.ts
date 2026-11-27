@@ -1,9 +1,9 @@
 import { Health } from '../components/Health';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
-import type { DamageSource } from '../state/GameEvents.types';
+import type { DamageSource, HitPath } from '../state/GameEvents.types';
 import type { DamageResult } from './DamagePipeline.types';
-import type { DamageStep, HitPath } from './DamageStep.types';
+import type { DamageStep } from './DamageStep.types';
 import { createDefaultDamageSteps } from './defaultDamageSteps';
 import type { KillCredit } from './KillCredit';
 
@@ -32,8 +32,8 @@ export class DamagePipeline {
 
   /**
    * Deals `amount` (finite, ≥ 0) damage from `source` to `targetId`. `path` is where the hit came
-   * from (the body-part bonuses read it, DEC-381); a hit from no side (a status tick, a blast, a
-   * collapse) leaves it out.
+   * from (the body-part bonuses read it, DEC-381); a hit from no side (a status tick, a collapse)
+   * leaves it out.
    */
   public apply(
     state: GameState,

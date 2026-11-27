@@ -5,7 +5,8 @@ import { GREATER_BOSS } from './greaterBoss';
 
 /**
  * Where #161's idle colossus art is drawn round the boss, in local metres: 48 m wide, centred on
- * it, from 24 m above it to 8 m below (768 × 512 px at 16 px a metre).
+ * it, from 24 m above it to 8 m below (768 × 512 px at 16 px a metre). Source: #161's
+ * `ColossusView` (b130ec95): `COLOSSUS_SPRITE.worldWidth` 48, the idle top at `size * 0.5` above.
  */
 const ART = { left: -24, right: 24, top: -24, bottom: 8 } as const;
 

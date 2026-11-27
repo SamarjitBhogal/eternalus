@@ -3,7 +3,7 @@ import type { BodyPartBonus } from './mobs.types';
 /**
  * The damage bonuses on a big boss's body parts (DEC-381: "a hit from behind should do slightly
  * more damage" and "a projectile to the head does a bit more damage than that"). Only a unit with a
- * body outline (`combatHitbox`) gets them; when both hold, only the larger applies
+ * body shape (`bodyShape`) gets them; when both hold, only the larger applies
  * (`BodyPartBonusStep`). The owner chose each value on the DEC-381 cards ("Tunable post
  * game-testing").
  */

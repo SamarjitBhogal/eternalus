@@ -276,6 +276,19 @@ describe('EntityStore', () => {
     expect(store.isInReach(minion.id, boss.id)).toBe(false);
   });
 
+  it('gives no outline for a body shape that has no Transform, and does not throw', () => {
+    const store = new EntityStore();
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const boss = factory.create('heavy-mob', 'greater-boss', {
+      team: 'neutral',
+      position: { x: 100, y: 100 },
+    });
+    store.add(boss);
+    expect(store.outlineOf(boss.id)).toHaveLength(1);
+    boss.removeComponent(Transform);
+    expect(store.outlineOf(boss.id)).toBeUndefined();
+  });
+
   it('measures reach to a map object from its footprint edge, and never to a cornerless one', () => {
     const store = new EntityStore();
     const content = loadDefaultContent(30);
