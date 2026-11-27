@@ -14,7 +14,7 @@ import type { GameState } from '../../state/GameState';
 import { normalize } from '../../utils/vec2';
 import type { AbilityEffect, CastContext } from '../AbilityEffect.types';
 import { mustBePositive, mustNotBeNegative } from '../specChecks';
-import { isSummonBlocked, summonPosition } from '../summonPlacement';
+import { summonPosition, summonPreview } from '../summonPlacement';
 
 /**
  * Places one body from a definition, owned by the caster (architecture 05 §3 `SummonEffect`; a
@@ -69,7 +69,7 @@ export class SummonEffect implements AbilityEffect<SummonSpec> {
 
   /**
    * `no-target` when the body's outline, placed for a cast of `casterId` aimed at `aim.point`,
-   * would overlap a wall or reach past the map's edge (`isSummonBlocked`, the rule the aim
+   * would overlap a wall or reach past the map's edge (`summonPreview`, the rule the aim
    * preview also uses); `null` otherwise, and always without walls (no map objects), an outline or
    * a direction.
    */
@@ -83,7 +83,8 @@ export class SummonEffect implements AbilityEffect<SummonSpec> {
     const { footprint } = this.definitions.get(spec.definitionId);
     if (centre === undefined || footprint === undefined) return null;
     const direction = normalize({ x: point.x - centre.x, y: point.y - centre.y });
-    return isSummonBlocked(state.walls, footprint, centre, direction, spec.distance)
+    return summonPreview(state.walls, footprint, centre, direction, spec.distance)?.isBlocked ===
+      true
       ? 'no-target'
       : null;
   }

@@ -38,10 +38,10 @@ export class AimOverlayView implements WorldLayer {
       direction,
       circleCentre: origin,
       pathLength: null,
-      isRefused: false,
+      placed: null,
     };
     const drawn = new Set<string>();
-    for (const { shape, reach, isRefused } of steps) {
+    for (const { shape, reach, placed } of steps) {
       if (reach !== null) {
         frame = {
           ...frame,
@@ -53,7 +53,7 @@ export class AimOverlayView implements WorldLayer {
       const key = `${JSON.stringify(shape)}@${String(frame.circleCentre.x)},${String(frame.circleCentre.y)}`;
       if (!drawn.has(key)) {
         drawn.add(key);
-        AimOverlayView.paint(this.painters, shape.kind, shape, { ...frame, isRefused }, renderer);
+        AimOverlayView.paint(this.painters, shape.kind, shape, { ...frame, placed }, renderer);
       }
     }
   }

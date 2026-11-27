@@ -3,13 +3,14 @@ import {
   createDefaultGameConfig,
   type EntitySnapshot,
   loadDisplayContent,
+  type PlacedSummon,
   type Snapshot,
 } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import type { HudSlotId } from '../bridge/Binding.types';
 import { AimTargeting } from './AimTargeting';
-import type { DashReach, SummonBlocked } from './Match.types';
+import type { DashReach, SummonPreview } from './Match.types';
 
 const ABILITIES = loadDisplayContent(createDefaultGameConfig().tickRate).abilities;
 const CASTER: EntitySnapshot = {
@@ -107,21 +108,23 @@ describe('AimTargeting', () => {
     expect(onCaster?.direction).toEqual({ x: 0, y: 0 });
   });
 
-  it('asks the simulation whether the Shield Wall outline can stand where it is drawn (DEC-382, HC-B43 (7))', () => {
+  it('copies the outline the simulation placed into the Shield Wall step (DEC-382, HC-B43 (7), HC-S15)', () => {
     const asked: unknown[] = [];
-    const blocked: SummonBlocked = (corners, origin, direction, distance) => {
+    const placed: PlacedSummon = {
+      outline: [
+        { x: 1, y: 2 },
+        { x: 3, y: 4 },
+        { x: 5, y: 6 },
+      ],
+      isBlocked: true,
+    };
+    const preview: SummonPreview = (corners, origin, direction, distance) => {
       asked.push([corners, origin, direction, distance]);
-      return true;
+      return placed;
     };
     const wall = ABILITIES.find(({ id }) => id === 'shield-wall')?.steps[0]?.shape;
 
-    const refused = new AimTargeting(ABILITIES, CASTER.id, undefined, blocked).targetOf(
-      snapshotWith('shield-wall'),
-      'ability-1',
-      { x: 100, y: 20 },
-      DRAWN_AT,
-    );
-    const unchecked = new AimTargeting(ABILITIES, CASTER.id).targetOf(
+    const target = new AimTargeting(ABILITIES, CASTER.id, undefined, preview).targetOf(
       snapshotWith('shield-wall'),
       'ability-1',
       { x: 100, y: 20 },
@@ -132,23 +135,33 @@ describe('AimTargeting', () => {
     expect(asked).toEqual([
       [wall?.kind === 'outline' ? wall.corners : null, DRAWN_AT, { x: 1, y: 0 }, 3],
     ]);
-    expect(refused?.steps.map(({ isRefused }) => isRefused)).toEqual([true]);
-    expect(unchecked?.steps.map(({ isRefused }) => isRefused)).toEqual([false]);
+    expect(target?.steps.map((step) => step.placed)).toEqual([placed]);
   });
 
-  it('never asks about or refuses a step that places no outline', () => {
-    const blocked: SummonBlocked = () => {
+  it('gives a Shield Wall step no outline without the query', () => {
+    const target = new AimTargeting(ABILITIES, CASTER.id).targetOf(
+      snapshotWith('shield-wall'),
+      'ability-1',
+      { x: 100, y: 20 },
+      DRAWN_AT,
+    );
+
+    expect(target?.steps.map((step) => step.placed)).toEqual([null]);
+  });
+
+  it('never asks about, and gives no outline to, a step that places none', () => {
+    const preview: SummonPreview = () => {
       throw new Error('asked');
     };
 
-    const dash = new AimTargeting(ABILITIES, CASTER.id, undefined, blocked).targetOf(
+    const dash = new AimTargeting(ABILITIES, CASTER.id, undefined, preview).targetOf(
       snapshotWith('blade-runner'),
       'ability-1',
       { x: 100, y: 20 },
       DRAWN_AT,
     );
 
-    expect(dash?.steps.every(({ isRefused }) => !isRefused)).toBe(true);
+    expect(dash?.steps.every(({ placed }) => placed === null)).toBe(true);
   });
 
   it('is null with no slot selected (quick cast), no pointer point, no place, an empty slot, an unknown ability or no Legend', () => {

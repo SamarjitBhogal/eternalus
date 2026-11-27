@@ -1,4 +1,4 @@
-import { createDefaultGameConfig, loadDisplayContent } from '@eternalus/core';
+import { createDefaultGameConfig, loadDisplayContent, type PlacedSummon } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
@@ -22,14 +22,14 @@ const CASTER_RADIUS = 1.25;
 
 /**
  * The target of the shipped ability `abilityId` cast from (10, 20) toward `aim`, each dash going
- * `reach` metres (its whole distance by default, as on open ground), every step refused when
- * `isRefused` (none by default).
+ * `reach` metres (its whole distance by default, as on open ground), every step holding the
+ * outline `placed` (none by default).
  */
 const targetOf = (
   abilityId: string,
   aim: { x: number; y: number },
   reach?: number,
-  isRefused = false,
+  placed: PlacedSummon | null = null,
 ): AimTarget => {
   const length = Math.hypot(aim.x - ORIGIN.x, aim.y - ORIGIN.y);
   const direction =
@@ -40,7 +40,7 @@ const targetOf = (
     ({ shape, distance }) => ({
       shape: shape ?? null,
       reach: distance === undefined ? null : (reach ?? distance),
-      isRefused,
+      placed,
     }),
   );
   return { origin: ORIGIN, casterRadius: CASTER_RADIUS, direction, steps };
@@ -153,8 +153,8 @@ describe('AimOverlayView', () => {
       casterRadius: CASTER_RADIUS,
       direction: { x: 1, y: 0 },
       steps: [
-        { shape: null, reach: 3, isRefused: false },
-        { shape: { kind: 'circle', radius: 1.5 }, reach: null, isRefused: false },
+        { shape: null, reach: 3, placed: null },
+        { shape: { kind: 'circle', radius: 1.5 }, reach: null, placed: null },
       ],
     };
 
@@ -205,35 +205,43 @@ describe('AimOverlayView', () => {
     expect(onCaster[0]).toHaveLength(AIM_CIRCLE_SEGMENTS);
   });
 
-  it('draws Shield Wall as the outline it places: 4 m by 1 m, its middle 3 m ahead, square to the pointer', () => {
-    const [east] = fills(drawn(targetOf('shield-wall', { x: 30, y: 20 })));
-    const [north] = fills(drawn(targetOf('shield-wall', { x: 10, y: 90 })));
-    const rounded = (corners: readonly { x: number; y: number }[] = []) =>
-      corners.map(({ x, y }) => ({ x: Number(x.toFixed(6)), y: Number(y.toFixed(6)) }));
+  it('draws Shield Wall as exactly the outline core placed (HC-S15)', () => {
+    const placed: PlacedSummon = {
+      outline: [
+        { x: 12.5, y: 18 },
+        { x: 13.5, y: 18 },
+        { x: 13.5, y: 22 },
+        { x: 12.5, y: 22 },
+      ],
+      isBlocked: false,
+    };
 
-    expect(rounded(east)).toEqual([
-      { x: 12.5, y: 18 },
-      { x: 13.5, y: 18 },
-      { x: 13.5, y: 22 },
-      { x: 12.5, y: 22 },
+    const recording = drawn(targetOf('shield-wall', { x: 30, y: 20 }, undefined, placed));
+
+    expect(fills(recording)).toEqual([placed.outline]);
+    expect(recording.calls.map(({ args }) => args[1])).toEqual([
+      AIM_OVERLAY_COLORS.fill,
+      AIM_OVERLAY_COLORS.outline,
     ]);
-    expect(rounded(north)).toEqual([
-      { x: 12, y: 22.5 },
-      { x: 12, y: 23.5 },
-      { x: 8, y: 23.5 },
-      { x: 8, y: 22.5 },
-    ]);
-    expect(fills(drawn(targetOf('shield-wall', ORIGIN)))).toEqual([]);
   });
 
-  it('draws the Shield Wall outline in red where the cast is refused, and as usual where it fits (DEC-382, HC-B43 (7))', () => {
-    const colours = (isRefused: boolean) =>
-      drawn(targetOf('shield-wall', { x: 30, y: 20 }, undefined, isRefused)).calls.map(
+  it('draws the Shield Wall outline in red where the cast is refused (DEC-382, HC-B43 (7))', () => {
+    const outline = [
+      { x: 1, y: 1 },
+      { x: 2, y: 1 },
+      { x: 2, y: 5 },
+    ];
+    const colours = (isBlocked: boolean) =>
+      drawn(targetOf('shield-wall', { x: 30, y: 20 }, undefined, { outline, isBlocked })).calls.map(
         ({ args }) => args[1],
       );
 
     expect(colours(true)).toEqual([AIM_REFUSED_COLORS.fill, AIM_REFUSED_COLORS.outline]);
     expect(colours(false)).toEqual([AIM_OVERLAY_COLORS.fill, AIM_OVERLAY_COLORS.outline]);
+  });
+
+  it('draws no Shield Wall outline when core placed none', () => {
+    expect(drawn(targetOf('shield-wall', ORIGIN)).calls).toEqual([]);
   });
 
   it('draws nothing without a target, as in quick cast or with no ability selected', () => {
@@ -261,7 +269,7 @@ describe('AimOverlayView', () => {
       origin: ORIGIN,
       casterRadius: CASTER_RADIUS,
       direction: { x: 1, y: 0 },
-      steps: [{ shape: { kind: 'circle', radius: 2 }, reach: null, isRefused: false }],
+      steps: [{ shape: { kind: 'circle', radius: 2 }, reach: null, placed: null }],
     });
     view.draw(new RecordingRenderer());
 

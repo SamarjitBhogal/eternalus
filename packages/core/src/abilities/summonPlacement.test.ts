@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { PlacedWalls } from '../state/PlacedWalls.types';
 import type { Polygon } from '../utils/geometry.types';
-import { isSummonBlocked, summonPosition } from './summonPlacement';
+import { summonPosition, summonPreview } from './summonPlacement';
 
 /** A 1 m by 4 m outline, +x along its facing (the Shield Wall barrier's shape). */
 const CORNERS: Polygon = [
@@ -37,30 +37,56 @@ describe('summonPosition', () => {
   });
 });
 
-describe('isSummonBlocked', () => {
-  it('asks the walls about the outline placed the distance ahead, turned to the direction', () => {
+describe('summonPreview', () => {
+  it('places the outline the distance ahead, turned to the direction, and asks the walls about it', () => {
     const { walls, asked } = wallAt(100);
 
-    expect(isSummonBlocked(walls, CORNERS, { x: 10, y: 20 }, EAST, 3)).toBe(false);
-    expect(asked).toEqual([
-      [
+    const east = summonPreview(walls, CORNERS, { x: 10, y: 20 }, EAST, 3);
+    const north = summonPreview(walls, CORNERS, { x: 10, y: 20 }, { x: 0, y: 1 }, 3);
+
+    expect(east).toEqual({
+      outline: [
         { x: 12.5, y: 18 },
         { x: 13.5, y: 18 },
         { x: 13.5, y: 22 },
         { x: 12.5, y: 22 },
       ],
+      isBlocked: false,
+    });
+    expect(north?.outline).toEqual([
+      { x: 12, y: 22.5 },
+      { x: 12, y: 23.5 },
+      { x: 8, y: 23.5 },
+      { x: 8, y: 22.5 },
     ]);
+    expect(asked).toEqual([east?.outline, north?.outline]);
   });
 
-  it('is blocked where the walls call the outline blocked', () => {
-    expect(isSummonBlocked(wallAt(13).walls, CORNERS, { x: 10, y: 20 }, EAST, 3)).toBe(true);
+  it('is blocked where the walls call the outline blocked, and free where they do not', () => {
+    expect(summonPreview(wallAt(13).walls, CORNERS, { x: 10, y: 20 }, EAST, 3)?.isBlocked).toBe(
+      true,
+    );
+    expect(summonPreview(wallAt(14).walls, CORNERS, { x: 10, y: 20 }, EAST, 3)?.isBlocked).toBe(
+      false,
+    );
   });
 
-  it('is never blocked with no walls (no map objects), or with no direction', () => {
+  it('places the outline but never blocks it with no walls (no map objects)', () => {
+    expect(summonPreview(null, CORNERS, { x: 10, y: 20 }, EAST, 3)).toEqual({
+      outline: [
+        { x: 12.5, y: 18 },
+        { x: 13.5, y: 18 },
+        { x: 13.5, y: 22 },
+        { x: 12.5, y: 22 },
+      ],
+      isBlocked: false,
+    });
+  });
+
+  it('is null with the zero direction, and does not ask the walls', () => {
     const { walls, asked } = wallAt(0);
 
-    expect(isSummonBlocked(null, CORNERS, { x: 10, y: 20 }, EAST, 3)).toBe(false);
-    expect(isSummonBlocked(walls, CORNERS, { x: 10, y: 20 }, { x: 0, y: 0 }, 3)).toBe(false);
+    expect(summonPreview(walls, CORNERS, { x: 10, y: 20 }, { x: 0, y: 0 }, 3)).toBeNull();
     expect(asked).toEqual([]);
   });
 });

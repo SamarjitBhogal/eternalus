@@ -7,6 +7,7 @@ import type {
   MapFeatureKind,
   MapObject,
   MapPresentation,
+  PlacedSummon,
   Simulation,
   Vec2,
 } from '@eternalus/core';
@@ -88,17 +89,18 @@ export type MatchSimulation = Pick<
 export type DashReach = (origin: Vec2, direction: Vec2, distance: number, radius: number) => number;
 
 /**
- * Whether a body with the outline `corners` (metres, +x along its facing) cannot stand `distance`
- * metres from `origin` along the unit `direction`, facing that way: the simulation's own rule
- * (`Simulation.isSummonBlocked`, the one a `summon` step refuses a cast with), so the range
- * overlay shows where a Shield Wall cast is refused (DEC-382, HC-B43 (7)).
+ * Where a body with the outline `corners` (metres, +x along its facing) stands when it is placed
+ * `distance` metres from `origin` along the unit `direction`, and whether it cannot stand there:
+ * the simulation's own rule (`Simulation.summonPreview`, the one a `summon` step refuses a cast
+ * with), so the range overlay draws the outline core placed and shows where a Shield Wall cast is
+ * refused (DEC-382, HC-B43 (7), HC-S15). `null` for the zero direction.
  */
-export type SummonBlocked = (
+export type SummonPreview = (
   corners: readonly Vec2[],
   origin: Vec2,
   direction: Vec2,
   distance: number,
-) => boolean;
+) => PlacedSummon | null;
 
 /** How an online Duel differs from a local match for `Match` (ADR 0016 point 1). */
 type RemotePlayer = {
@@ -134,11 +136,12 @@ export type MatchDeps = {
    */
   readonly dashReach?: DashReach;
   /**
-   * Whether a placed body (a Shield Wall) cannot stand where the range overlay draws it: the local
-   * simulation's `isSummonBlocked`. Absent online, as `dashReach` is: a Duel draws no range overlay
-   * (`createBrowserDuelMatch` gives it no abilities), so no outline is drawn there at all.
+   * Where a placed body (a Shield Wall) stands and whether it is refused there: the local
+   * simulation's `summonPreview`. The range overlay draws only this outline, so without it an
+   * outline step draws nothing. Absent online, as `dashReach` is: a Duel draws no range overlay
+   * (`createBrowserDuelMatch` gives it no abilities), so nothing is lost there.
    */
-  readonly isSummonBlocked?: SummonBlocked;
+  readonly summonPreview?: SummonPreview;
   /** Hears the match crash or end (the request's observer). */
   readonly observer: MatchObserver;
   /** Where the match's `MatchBridge` publishes, and what (architecture 08 §7). */

@@ -12,6 +12,7 @@ export type {
   CommandType,
   InputIntent,
 } from './commands/Command.types';
+export type { PlacedSummon } from './abilities/summonPlacement.types';
 export type { AbilityRejectReason } from './content/abilities/AbilityDefinition.types';
 export type { AttackMode } from './content/units/units.types';
 export { ConfigValidationError } from './config/ConfigValidationError';
