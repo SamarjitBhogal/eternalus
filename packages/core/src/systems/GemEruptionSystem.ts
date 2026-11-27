@@ -1,7 +1,6 @@
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
-import { Health } from '../components/Health';
 import { Transform } from '../components/Transform';
 import { ZoneArea } from '../components/ZoneArea';
 import type { CathedralGemDefinition } from '../content/structures/structures.types';
@@ -61,21 +60,20 @@ export class GemEruptionSystem implements System {
         zones.push(area);
       }
     });
-    const victims: { readonly id: string; readonly health: Health }[] = [];
+    const victims: string[] = [];
     state.entities.forEach((entity) => {
       const position = entity.findComponent(Transform)?.position;
-      const health = entity.findComponent(Health);
       if (
         entity instanceof Unit &&
-        health !== undefined &&
         position !== undefined &&
         zones.some((zone) => zone.contains(position))
       ) {
-        victims.push({ id: entity.id, health });
+        victims.push(entity.id);
       }
     });
-    for (const { id, health } of victims) {
-      this.damage.apply(state, id, health.total, this.source);
+    // `kill`, not `apply`: no step (a minion's strength, a status) may let a unit live.
+    for (const id of victims) {
+      this.damage.kill(state, id, this.source);
     }
   }
 }

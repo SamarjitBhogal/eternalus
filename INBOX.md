@@ -79,6 +79,16 @@ Reply inline (`Decision: …`).
       Cathedral is on it (the minimap shows 200 m around the player, DEC-182). Confirm or give
       values.
 
+- [ ] **Better than design: the blast's "kill" hit in the damage design (swholtzman reviewer,
+      2026-11-27, critic on PR #160 R6 S1).** For sign-off. The eruption blast now uses
+      `DamagePipeline.kill`: one hit for the unit's whole health that no damage rule can shrink or
+      block, so a strong minion or a unit with a damage-reduction status still dies. Architecture
+      05 §9 records `kill` only in its "Implementation status" note, and its design text says every
+      hit runs the fixed rule order. (1) Add one line for `kill` to the §9 design text. (2)
+      Optional while `kill` has one caller: split the rules into gates (unbreakable walls, friendly
+      fire), which `kill` would keep, and scalers (statuses, minion strength, boss share), which it
+      skips.
+
 - [x] **Better than design: shared boss numbers (Aryan Walanj, 2026-11-22, critic on
       `feat/cathedral-eruption-boss`).** For sign-off. (1) `greaterBoss.ts` copies balancing.md's
       Warrior anchor (`650 × 1.08^(L − 1)`) as its own `REF_HEALTH`; a shared `refHealth(level)`

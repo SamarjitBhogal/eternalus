@@ -14,7 +14,10 @@ import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import type { Entity } from '../entities/Entity';
 import { EntityFactory } from '../entities/EntityFactory';
 import { CapturePoint } from '../entities/zones/CapturePoint';
+import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { GameState } from '../state/GameState';
+import type { MatchWorld } from '../state/MatchWorld';
 import type { DamageSource } from '../state/GameEvents.types';
 import { GemEruptionSystem } from './GemEruptionSystem';
 
@@ -30,9 +33,14 @@ const square = (at: { x: number; y: number }) => [
   ],
 ];
 
-/** A gem in a capture zone, a system, and helpers to add units and run passes. */
-const setUp = () => {
-  const state = new GameState(createDefaultGameConfig(), 1);
+/**
+ * A gem in a capture zone, a system, and helpers to add units and run passes.
+ *
+ * @param world - The map (lane routes for the minion strength curve), or `null`.
+ * @param gemAt - Where the gem and the centre of its zone stand.
+ */
+const setUp = (world: MatchWorld | null = null, gemAt = GEM_AT) => {
+  const state = new GameState(createDefaultGameConfig(), 1, world);
   const units = loadDefaultContent(TICK_RATE);
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
@@ -52,12 +60,12 @@ const setUp = () => {
   const zone = new CapturePoint('zone-1', CAPTURE_POINT.id);
   zone.spawn({
     definition: CAPTURE_POINT,
-    position: GEM_AT,
+    position: gemAt,
     team: 'neutral',
-    area: square(GEM_AT),
+    area: square(gemAt),
   });
   state.entities.add(zone);
-  const gem = factory.create('cathedral-gem', 'cathedral', { position: GEM_AT, team: 'neutral' });
+  const gem = factory.create('cathedral-gem', 'cathedral', { position: gemAt, team: 'neutral' });
   state.entities.add(gem);
   const system = new GemEruptionSystem(state, new DamagePipeline(), CATHEDRAL_GEM.eruption);
   const add = (kind: string, id: string, at: { x: number; y: number }): Entity => {
@@ -73,7 +81,7 @@ const setUp = () => {
   const erupt = (): void => {
     state.events.emit('greater-boss-summoned', { bossId: 'greater-boss' });
   };
-  return { gem, add, deaths, pass, erupt };
+  return { state, gem, add, deaths, pass, erupt };
 };
 
 const isDead = (entity: Entity): boolean => entity.getComponent(Health).isDead;
@@ -113,5 +121,26 @@ describe('GemEruptionSystem (DEC-371 "BOSS guards")', () => {
 
     expect(isDead(outside)).toBe(false);
     expect(gem.findComponent(Health)?.isDead ?? false).toBe(false);
+  });
+
+  it('kills a horde minion on its own half of the lane, past the strength that shrinks its hits (S1)', () => {
+    // TWO_LANE_MAP lane-0 runs x 20 to x 180, so at x 55 a light minion has strength ≈ 1.28.
+    const at = { x: 55, y: 20 };
+    const { state, add, pass, erupt } = setUp(matchWorldOf(TWO_LANE_MAP), at);
+    const minion = add('light-mob', 'light-minion', at);
+    state.hordes.add({
+      id: 'horde-1',
+      team: 'light',
+      weightClass: 'light',
+      lane: 'lane-0',
+      formationId: 'ranks',
+      memberIds: [minion.id],
+      progress: 0,
+    });
+
+    erupt();
+    pass();
+
+    expect(isDead(minion)).toBe(true);
   });
 });
