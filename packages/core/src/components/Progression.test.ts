@@ -59,6 +59,18 @@ describe('Progression', () => {
     expect(progression.levelProgress(capped)).toEqual({ xp: 0, xpToNext: null });
   });
 
+  it('gives the XP that moves it a number of levels up, keeping its share of the level, up to the cap (DEC-371 E8a)', () => {
+    const progression = new Progression('test');
+    progression.addXp(50, CURVE); // halfway through level 1
+
+    // Halfway through level 2 is 100 + 75 = 175; 1.5 + 2.5 levels is the cap, level 4 (450).
+    expect(progression.xpToAdvance(1, CURVE)).toBe(125);
+    expect(progression.xpToAdvance(2.5, CURVE)).toBe(400);
+    expect(progression.xpToAdvance(0.5, CURVE)).toBe(50); // the start of level 2
+    progression.addXp(400, CURVE);
+    expect(progression.xpToAdvance(5, CURVE)).toBe(0);
+  });
+
   it('rejects negative or non-finite XP', () => {
     const progression = new Progression('test');
 

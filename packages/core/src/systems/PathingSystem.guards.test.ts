@@ -3,6 +3,7 @@ import { Movement } from '../components/Movement';
 import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { ContentCatalogue } from '../content/ContentCatalogue';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { INITIAL_FACING } from '../components/Transform.constants';
@@ -25,7 +26,18 @@ describe('PathingSystem', () => {
       const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
         space,
       });
-      const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+      // The Greater Boss keeps the guard chase it had before its BossController (#164): it is the
+      // only unit with a body shape, so it stands in for a big boss PathingSystem steers (DEC-421).
+      const content = new ContentCatalogue(
+        loadDefaultContent(30)
+          .all()
+          .map((definition) =>
+            definition.id === 'greater-boss'
+              ? { ...definition, movementStrategy: 'leashed-chase' as const }
+              : definition,
+          ),
+      );
+      const factory = new EntityFactory(createDefaultEntityRegistry(), content);
       const add = (team: 'light' | 'dark', x: number, y: number, definitionId: string) => {
         const entityKind = definitionId === mobId ? kind : 'light-mob';
         const entity = factory.create(entityKind, definitionId, { team, position: { x, y } });

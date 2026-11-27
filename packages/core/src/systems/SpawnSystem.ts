@@ -48,7 +48,7 @@ import { isPlayableTeam } from '../teams/playableTeams';
  * the new owner inside the zone and count as presence for their own side (DEC-261); the old
  * owner's defenders still waiting for room under the unit cap are cancelled (DEC-350). On its pass
  * after `greater-boss-summoned` it spawns the summoned boss and announces it with `boss-summoned`
- * (12 §3).
+ * and its entrance roar with `boss-entrance` (12 §3, reference 04).
  */
 export class SpawnSystem implements System {
   public readonly name = 'spawn';
@@ -159,6 +159,7 @@ export class SpawnSystem implements System {
     for (const bossId of this.summoned.splice(0)) {
       for (const boss of this.guards.activate(state, bossId)) {
         state.events.emit('boss-summoned', { entityId: boss.id, kind: boss.kind });
+        state.events.emit('boss-entrance', { bossId: boss.id });
       }
     }
     const routes = state.world?.routes;

@@ -25,6 +25,7 @@ describe('applyCommand', () => {
         player: 'player',
         missingRole: () => TEST_CONTROLLER,
         pickedBot: () => undefined,
+        bossTelegraphTicks: {},
       }),
       stop: {
         handle: (command) => {
@@ -53,6 +54,7 @@ describe('applyCommand', () => {
         player: 'player',
         missingRole: () => TEST_CONTROLLER,
         pickedBot: () => undefined,
+        bossTelegraphTicks: {},
       }),
       ctx,
     );
@@ -68,6 +70,7 @@ describe('applyCommand', () => {
         player: 'player',
         missingRole: () => TEST_CONTROLLER,
         pickedBot: () => undefined,
+        bossTelegraphTicks: {},
       }),
       stop: {
         handle: () => {

@@ -11580,6 +11580,35 @@ tick)`), and a minion records the point that granted its levels (`Veterancy.gran
 - Next step: merge phase/3 (PROGRESS conflict, keep both sides), refresh the PR body, re-request
   review.
 
+### 2026-11-22 — Phase 3 / sprint 3.6: the Greater Boss's BossController and its six moves — feat/greater-boss-moves — Aryan Walanj + Claude Code
+
+- What was done: stacked on `feat/cathedral-eruption-boss` (`c11e168a`). Ported Aryan's local
+  `feat/cathedral-boss-controller` and `feat/cathedral-boss-moves` (`803ffc8f` to `3bada812`) as
+  their final state: the files they add as they are, the files they change merged by hand onto
+  this line (the deferred spawn, the gem entity, the Cathedral capture zone as the boss's home).
+  The Greater Boss now runs on `BossController` (11 §4.6): an entrance roar (`boss-entrance`, on
+  `SpawnSystem`'s spawn pass), then `roam → telegraph → execute → recover`, its six moves in a
+  fixed rotation (slam, sweep, wide sweep, beam, charge, roar) through the interim `boss-move`
+  command, `BossMoveCast` and `BossMoveSystem` with one `BossMoveEffect` per shape. Its kill lifts
+  the killer's team exactly 5 levels (DEC-237, `XP_SOURCES.teamKills` `{ levels: 5 }`). Its old
+  `greater-boss` aggro profile is removed. Docs 03, 05, 07, 10, 11 and 12 and the moves branch's
+  `INBOX.md` items for Sam carried over.
+  Critic (`architecture-reviewer`): PASS, no blockers; nits applied (the `ponytail:` marker in
+  `Movement.pushBy`, doc 10's branch and date, the pipeline order TSDoc). Left for the PR or
+  `INBOX.md`: `PathingSystem`'s controller-id opt-out (interim), directional moves aiming where the
+  boss last walked (an open question for Sam), and the DRY nits. Ponytail review: ship; one
+  nice-to-have (the boss's unused `attack` and `movementStrategy`, already asked in `INBOX.md`).
+- Checks run: `npm run check` (2026-11-22 03:28-03:51) exit 1: format "All matched files use
+  Prettier code style!", `check:no-js`, lint, typecheck and knip passed; core "Test Files 1 failed
+  | 286 passed (287)", "Tests 1 failed | 1772 passed (1773)", the same `Simulation.modifiers.test.ts`
+  "enrages the lane of a tower lost in play" timeout ("Test timed out in 60000ms") as on
+  `feat/cathedral-eruption-boss`; protocol "Tests 29 passed (29)"; client "Test Files 306 passed
+  (306)", "Tests 2096 passed (2096)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)".
+  Then (03:53-04:06), after the critic's nits: lint of the edited files exit 0; core coverage with
+  `--maxWorkers=2` "Test Files 287 passed (287)", "Tests 1773 passed (1773)"; build exit 0;
+  "Documentation check passed."
+- Next step: push both branches and open the stacked PRs (the push was blocked for the agent).
+
 ### 2026-11-19 — Phase 3 / GL-16: merge phase/3 (#126, #121, #120, #119 merged) — refactor/map-feature-link — sholtzman + Claude Code
 
 - What was done: PR #129 became conflicting again when the stacked chain #126 → #121 → #120 →

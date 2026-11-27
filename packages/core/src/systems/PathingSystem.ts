@@ -265,6 +265,7 @@ export class PathingSystem implements System {
 
   /**
    * Steers every guard (18 §7) toward the unit it chases, or its post; never along a lane field.
+   * Only `GuardController`'s: a boss holding a post steers itself.
    * A guard at its post with nothing to chase turns to face outward, on guard again after a chase
    * or a leash return (DEC-220 (3)): at its post as the strategy's arrival counts it. A guard that
    * cannot move (stunned) does not turn (DEC-216 (7)).

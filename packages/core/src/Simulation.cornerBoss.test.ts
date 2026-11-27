@@ -151,9 +151,9 @@ describe('Simulation corner camp boss (DEC-236)', () => {
     expect(teamKillXp.map(({ entityId }) => entityId).sort()).toEqual(
       lights.map(({ id }) => id).sort(),
     );
-    expect(
-      teamKillXp.every(({ amount }) => amount < (XP_SOURCES.teamKills['corner-boss']?.xp ?? 0)),
-    ).toBe(true);
+    const reward = XP_SOURCES.teamKills['corner-boss'];
+    const rewardXp = reward !== undefined && 'xp' in reward ? reward.xp : 0;
+    expect(teamKillXp.every(({ amount }) => amount < rewardXp)).toBe(true);
     // DEC-237: "killing mini-bosses can go up 2 levels at most"; every Legend starts at level 1.
     expect(lights.map(({ progression }) => progression?.level)).toEqual(lights.map(() => 3));
     expect(teamKillXp.some(({ entityId }) => entityId === darkId)).toBe(false);

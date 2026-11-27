@@ -33,5 +33,10 @@ export const XP_SOURCES: XpSourcesDefinition = {
     // TUNE: as the capture point boss: the corner boss uses the same MiniBoss row; DEC-237 (owner
     // 2026-11-10): "team-wide is fine for now" for the corner boss.
     'corner-boss': { xp: 500, maxLevels: 2 },
+    // DEC-237 (owner 2026-11-10): "Killing the middle boss puts you up 5 levels from wherever you
+    // are, flat"; it replaces balancing.md's 1,500 XP. DEC-371 E8b (owner 2026-11-26): "2.5 for the
+    // whole team; 5 for the last hitter" (5 in all), each keeping its share of its level (E8a).
+    // DEC-416: a last hit by a minion or a tower gives the 5 to its team's Legend that hit last.
+    'greater-boss': { levels: 2.5, lastHitterLevels: 5 },
   },
 };

@@ -139,6 +139,8 @@ describe('DefaultSystemPipeline', () => {
       'stuck',
       'pathing',
       'combat',
+      // Lands boss moves due this tick (11 §4.6), before kill XP is awarded.
+      'boss-move',
       'map-destruction',
       'gem-eruption',
       'progression',

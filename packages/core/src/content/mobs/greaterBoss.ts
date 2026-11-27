@@ -6,14 +6,26 @@ import type { MobDefinition } from './mobs.types';
 // TUNE: the level was set for a 20-minute match (DEC-13: 30 minutes; INBOX).
 const REF_HEALTH = refHealth(7);
 
+/** TUNE: balancing.md's heavy move, 0.45 × refHealth (≈ 465); the slam's damage. */
+export const GREATER_BOSS_HEAVY_HIT = Math.round(0.45 * REF_HEALTH);
+
+/** TUNE: balancing.md's heavy moves come every 2.5 s ("2.5 s interval"). */
+export const GREATER_BOSS_HEAVY_INTERVAL = 2.5;
+
+/** TUNE: balancing.md's light move, 0.15 × refHealth (≈ 155); the sweep's damage. */
+export const GREATER_BOSS_LIGHT_HIT = Math.round(0.15 * REF_HEALTH);
+
 /**
  * The Greater Boss, "the Eternal" (reference 04, balancing.md's GreaterBoss row), summoned at the
- * Cathedral when the gem erupts (12 §3). Interim (doc 04's `GreaterBoss` class and doc 11
- * §4.6's `BossController` come later): a neutral heavy mob on the Cathedral zone's guard post,
- * driven by `GuardController` with one basic attack and no moves; its post, zone leash and (no)
- * respawn are the zone's guard plan (`content/structures/guardPlans.ts`). It takes a quarter of a
- * minion's hit (`BOSS_MINION_DAMAGE_TAKEN`). No kill reward yet: DEC-237's flat 5 levels come with
- * the boss's moves.
+ * Cathedral when the gem erupts (architecture 12 §3), driven by `BossController` (11 §4.6) with
+ * its moves in `content/ai/bosses/greaterBoss.ts`. Interim (doc 04's `GreaterBoss` class comes
+ * later): a neutral heavy mob on the Cathedral capture zone's guard post, whose circle is its zone
+ * and whose plan (`content/structures/guardPlans.ts`) gives its (no) respawn. Its movement profile
+ * and reach are the heavy minion's (`HEAVY_MOB_BASE`, DEC-371 E2). It has no movement strategy:
+ * its controller steers it with `move` commands, so `PathingSystem` leaves it alone. It takes a
+ * quarter of a minion's hit (`BOSS_MINION_DAMAGE_TAKEN`), and its kill lifts the killer's team 2.5
+ * levels and the last hitter 5 (`XP_SOURCES.teamKills`, DEC-237, DEC-371 E8, DEC-416). Its
+ * `attack` is never used: the controller gives it no attack target, only moves.
  */
 export const GREATER_BOSS = {
   id: 'greater-boss',
@@ -53,18 +65,16 @@ export const GREATER_BOSS = {
   },
   // TUNE: no reference value; the centre zone, so it sees the whole zone from its post
   visionRadius: GUARD_LEASH.greaterBossZone,
-  movementStrategy: 'leashed-chase',
-  controller: 'guard',
+  xpValue: 0, // the killer earns nothing alone: its reward is team-wide (XP_SOURCES.teamKills)
+  controller: 'boss',
   aiProfile: 'greater-boss',
-  // TUNE: balancing.md 0.45 × refHealth per heavy move, 2.5 s interval, as its one basic attack
-  // until the moves land; reach unspecified (the heavy minion's), measured from its body outline
-  // (`bodyShape.outline`, DEC-421)
+  // Unused (see above), kept from the heavy minion; INBOX asks whether to drop it. Its reach would
+  // count from the body outline (`bodyShape.outline`, DEC-421); the moves count from the centre.
   attack: {
     strategy: 'melee',
-    damage: Math.round(0.45 * REF_HEALTH),
+    damage: GREATER_BOSS_HEAVY_HIT,
     reach: HEAVY_MOB_BASE.reach,
-    interval: 2.5,
+    interval: GREATER_BOSS_HEAVY_INTERVAL,
   },
-  xpValue: 0, // DEC-237: its reward is 5 levels team-wide, not XP; built with its moves
   movementProfile: HEAVY_MOB_BASE.movementProfile, // TUNE: DEC-371 E2, as the heavy minion
 } as const satisfies MobDefinition;

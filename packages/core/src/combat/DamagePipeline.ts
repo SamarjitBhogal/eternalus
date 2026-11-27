@@ -23,7 +23,8 @@ import type { KillCredit } from './KillCredit';
 export class DamagePipeline {
   /**
    * @param steps - The rules each hit runs through, in order (`createDefaultDamageSteps`).
-   * @param credit - Who a death by the gem counts for; without it every killer is the hit's source.
+   * @param credit - Who a death by the gem counts for (DEC-346), and the last Legend hitters a
+   *   boss keeps (DEC-416); without it every killer is the hit's source and no boss keeps one.
    */
   public constructor(
     private readonly steps: readonly DamageStep[],

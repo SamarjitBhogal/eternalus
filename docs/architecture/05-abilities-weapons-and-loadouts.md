@@ -16,6 +16,7 @@ paths:
     'packages/core/src/content/progression/**',
     'packages/core/src/components/Progression.ts',
     'packages/core/src/systems/ProgressionSystem.ts',
+    'packages/core/src/systems/TeamKillAwards*',
   ]
 related:
   [
@@ -963,7 +964,12 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   Legend on the destroying team; a Legend waiting to respawn is paid as it returns, DEC-186). Team-kill XP is
   built for the capture point boss and the corner boss (DEC-237): a mob in `XP_SOURCES.teamKills` pays every Legend of
   its killer's playable team, not the killer alone, and each Legend gets at most the XP that lifts
-  it `maxLevels` levels (`Progression.xpToReach`); `level-matches-xp` checks that the killer is on
+  it `maxLevels` levels (`Progression.xpToReach`); a reward of `levels`
+  instead lifts each Legend that many levels from where it stands inside its level, up to the cap,
+  whatever the XP (`Progression.xpToAdvance`, DEC-371 E8a), and its `lastHitterLevels` goes to the
+  last hitter in all: the killing Legend, or its team's Legend whose hit landed last
+  (`LastLegendHits`, kept by `KillCredit`, DEC-416) (the Greater Boss: 2.5 and 5, DEC-371 E8b);
+  `level-matches-xp` checks that the killer is on
   the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
   `xp-granted` reward path. Camp XP is built: `camp-cleared` pays the camp's entry in
   `XP_SOURCES.campCleared`, keyed by camp definition id (the forest camps and the corner camp; a
@@ -982,8 +988,8 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   `STRUCTURE_MAP_OBJECT_KINDS` (`content/maps/`) as a structure. A match mode can turn match XP
   off (`ProgressionContent.hasMatchXp: false`, a Duel's rule, DEC-380 (1)): `ProgressionSystem`
   then listens for no award (a cleared camp's and a checkpoint set's included), and the max-level
-  start still applies. Not built yet: the minion-kill share radius (balancing.md "XP sources"), assists,
-  the Eternal's flat 5 levels (DEC-237) (their systems do not exist), ability potency per level,
+  start still applies. Not built yet: the minion-kill share radius (balancing.md "XP sources") and
+  assists (their systems do not exist), ability potency per level,
   the structure rate for ability hits (DEC-422: a follow-up PR after `feat/ability-framework`
   and this rate are both on phase/3), `upgradeIds` and the ultimate charge rules. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the

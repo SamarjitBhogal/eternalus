@@ -227,6 +227,9 @@ first).
 | `team-changed`                      | `{ entityId, from, to, cause }`                                               | `Team` component                                                                                        | `HordeSystem`, views                                                                                                                                              |
 | `greater-boss-summoned`             | `{ bossId }`                                                                  | `MatchRecord.eruptGem` (the `summon-greater-boss` timeline action)                                      | `GemEruptionSystem` (the blast, DEC-371), `SpawnSystem` (spawns the boss), `CathedralGemSystem` (removes the gem), client `CathedralCutscene`                     |
 | `boss-summoned`                     | `{ entityId, kind }`                                                          | `SpawnSystem` (on `greater-boss-summoned`)                                                              | `Announcer`, `AiSystem` (camps turn aggressive)                                                                                                                   |
+| `boss-entrance`                     | `{ bossId }`                                                                  | `SpawnSystem` (the Greater Boss spawn)                                                                  | views and audio (later; the roar, reference 04)                                                                                                                   |
+| `boss-telegraph`                    | `{ bossId, move }`                                                            | `BossMoveHandler` (a `boss-move` command from `BossController`, 11 §4.6)                                | views (later; the move's warning), tests                                                                                                                          |
+| `boss-move-executed`                | `{ bossId, move }`                                                            | `BossMoveSystem` (the move lands, 11 §4.6)                                                              | views (later), tests                                                                                                                                              |
 | `command-rejected`                  | `{ command, reason }`                                                         | `applyCommand`                                                                                          | `DeveloperMenu`, tests                                                                                                                                            |
 | `collision-anomaly`                 | `{ entityId, from, to, colliderId }`                                          | `CollisionSystem`                                                                                       | `InvariantSystem`, `Logger`                                                                                                                                       |
 | `invariant-violated`                | `{ invariantId, tick, details }`                                              | `InvariantRunner`                                                                                       | `Logger`, `PerfOverlay`, tests (throw)                                                                                                                            |
@@ -503,11 +506,14 @@ each closed by the session or phase named:
   a log of the external commands and replay checkpoints, both outside the hashed state); no
   `dispose()` yet.
 - `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
-  `AttackTargetHandler`). `jump { actorId, isHeld }` (2026-11-27, DEC-390; not in the §3 sketch)
-  has `JumpHandler`, which sets the held jump key through `EntityStore.holdJump` (rejected
-  `cannot-jump` for an entity without `Jump`); `JumpSystem`, before `MovementSystem`, flies each jump
-  and starts the held ones on the ground; a stun (`cannot-move`) ends a jump in the air at once
-  (DEC-420). `cast-ability` and `intent` are routed to
+  `AttackTargetHandler`). `boss-move { actorId, moveId }` (`BossMoveHandler`) is an interim
+  command, not in the sketch above: a boss's move until bosses cast through `cast-ability` (11's
+  Implementation status). Until then `boss-telegraph` comes from `BossMoveHandler` and
+  `boss-move-executed` from `BossMoveSystem`. `jump { actorId, isHeld }` (2026-11-27, DEC-390; not
+  in the §3 sketch) has `JumpHandler`, which sets the held jump key through `EntityStore.holdJump`
+  (rejected `cannot-jump` for an entity without `Jump`); `JumpSystem`, before `MovementSystem`,
+  flies each jump and starts the held ones on the ground; a stun (`cannot-move`) ends a jump in the
+  air at once (DEC-420). `cast-ability` and `intent` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
 - `dev-set-controller` (2026-11-13, FR-099) has `DevSetControllerHandler`: `controllerId` `player`

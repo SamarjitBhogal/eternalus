@@ -1,4 +1,5 @@
 import { LastEnemyHit } from '../components/LastEnemyHit';
+import { LastLegendHits } from '../components/LastLegendHits';
 import type { EntityId } from '../state/EntityStore.types';
 import type { DamageSource } from '../state/GameEvents.types';
 import type { GameState } from '../state/GameState';
@@ -11,20 +12,28 @@ import type { GameState } from '../state/GameState';
  * and id (the owner's "falling brick" icon) and gains the enemy as its attacker; whether that
  * enemy earns a Legend kill, points or XP is then each reader's own rule. With no enemy hit in the
  * window the killer stays empty: a death, and no one's kill or XP.
+ *
+ * On a boss whose kill pays a last hitter it also keeps each team's last Legend hitter
+ * (`LastLegendHits`, DEC-416), so a last hit by a minion or a tower pays that team's Legend.
  */
 export class KillCredit {
   private readonly credited: ReadonlySet<string>;
+  private readonly lastLegendHit: ReadonlySet<string>;
 
   /**
    * @param windowTicks - How long an enemy hit still earns the kill (the assist window).
    * @param creditedSourceIds - The definition ids of the attacker-less damage whose kills go to
    *   the victim's last enemy damager (`CATHEDRAL_GEM.statusIds`).
+   * @param lastLegendHitIds - The definition ids of the targets that keep each team's last Legend
+   *   hitter (the bosses with a `teamKills` `lastHitterLevels`).
    */
   public constructor(
     private readonly windowTicks: number,
     creditedSourceIds: readonly string[],
+    lastLegendHitIds: readonly string[] = [],
   ) {
     this.credited = new Set(creditedSourceIds);
+    this.lastLegendHit = new Set(lastLegendHitIds);
   }
 
   /** Remembers a landed hit's attacker on its target when the two are on different teams. */
@@ -36,6 +45,17 @@ export class KillCredit {
     const last = target.findComponent(LastEnemyHit);
     if (last === undefined) target.addComponent(new LastEnemyHit(attackerId, state.tick));
     else last.record(attackerId, state.tick);
+    if (
+      this.lastLegendHit.has(target.definitionId) &&
+      state.entities.get(attackerId)?.family === 'legend'
+    ) {
+      let legends = target.findComponent(LastLegendHits);
+      if (legends === undefined) {
+        legends = new LastLegendHits();
+        target.addComponent(legends);
+      }
+      legends.record(attackerTeam, attackerId);
+    }
   }
 
   /** The killer `entity-died` names: `source`, or for a credited source the last enemy damager. */

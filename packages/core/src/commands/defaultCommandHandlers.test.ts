@@ -41,6 +41,7 @@ describe('createDefaultCommandHandlers', () => {
           player: 'player',
           missingRole: () => TEST_CONTROLLER,
           pickedBot: () => undefined,
+          bossTelegraphTicks: {},
         }),
         {
           state,

@@ -12,7 +12,8 @@ import type { System, SystemContext } from './System.types';
  * (`cannot-move`); while the match holds units idle (`state.match.isIdleHeld`, the countdown)
  * every entity is held the same way. An airborne entity (`Jump`, DEC-390) moves and faces by its
  * takeoff velocity (momentum), while its `Movement` still follows the input for the next takeoff.
- * Allocates nothing per entity (architecture 10 §2).
+ * A pending push (`Movement.pushBy`, a knockback) is added to the step once, held, airborne or
+ * not. Allocates nothing per entity (architecture 10 §2).
  */
 export class MovementSystem implements System {
   public readonly name = 'movement';
@@ -32,9 +33,10 @@ export class MovementSystem implements System {
             : (statuses?.multiplier('moveSpeed') ?? 1);
         movement.advance(speedScale);
         const jump = entity.findComponent(Jump);
-        // No steering in the air: the takeoff velocity holds until landing (DEC-420).
+        // No steering in the air: the takeoff velocity holds until landing (DEC-420). A pending
+        // push (a knockback) moves even a held or airborne unit once; it does not turn it.
         const velocity = jump?.isAirborne === true ? jump.velocity : movement.velocity;
-        transform.moveBy(velocity);
+        transform.moveBy(movement.takeStep(velocity));
         transform.face(velocity);
       }
     });

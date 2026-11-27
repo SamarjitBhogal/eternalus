@@ -139,6 +139,7 @@ export class Scoring implements ScoreKeeper {
     }
     const death: ScoredDeath = {
       victimId: entityId,
+      definitionId: victim.definitionId,
       kind: victim.kind,
       team: this.state.entities.teamOf(entityId),
       killerId: attackerId,

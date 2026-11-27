@@ -71,6 +71,25 @@ export class Progression {
     return Math.max(0, Progression.xpForLevel(curve, Math.min(level, curve.cap)) - this.xpValue);
   }
 
+  /**
+   * The XP that moves this entity `levels` levels (≥ 0, may be fractional) up `curve` from where it
+   * stands inside its level, keeping its share of that level (DEC-371 E8a: halfway through level 2,
+   * plus 5, is halfway through level 7), or to the cap at most.
+   */
+  public xpToAdvance(levels: number, curve: LevelCurveDefinition): number {
+    const { xp, xpToNext } = this.levelProgress(curve);
+    const target = Math.min(
+      this.levelValue + (xpToNext === null ? 0 : xp / xpToNext) + levels,
+      curve.cap,
+    );
+    const level = Math.floor(target);
+    const step = level >= curve.cap ? 0 : (curve.xpToNext[level - 1] ?? 0);
+    return Math.max(
+      0,
+      Progression.xpForLevel(curve, level) + (target - level) * step - this.xpValue,
+    );
+  }
+
   /** Total XP needed to reach `level` on `curve`. */
   private static xpForLevel(curve: LevelCurveDefinition, level: number): number {
     return curve.xpToNext.slice(0, level - 1).reduce((sum, step) => sum + step, 0);

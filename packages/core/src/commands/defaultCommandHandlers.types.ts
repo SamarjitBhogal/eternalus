@@ -17,4 +17,9 @@ export type DefaultCommandHandlerDeps = {
   readonly missingRole: MissingRoleChooser;
   /** The bot a `dev-set-controller` bot id gives a Legend (`createPickedBotChooser`, DEC-356). */
   readonly pickedBot: PickedBotChooser;
+  /**
+   * By boss profile id, its moves' telegraphs in ticks (`loadBossTelegraphTicks`): the moves
+   * `boss-move` accepts from a boss with that profile.
+   */
+  readonly bossTelegraphTicks: Readonly<Record<string, Readonly<Record<string, number>>>>;
 };

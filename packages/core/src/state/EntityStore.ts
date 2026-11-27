@@ -1,3 +1,4 @@
+import { BossMoveCast } from '../components/BossMoveCast';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
 import { CombatHitbox } from '../components/CombatHitbox';
@@ -342,6 +343,23 @@ export class EntityStore {
     }
     combat.setTarget(targetId);
     return true;
+  }
+
+  /**
+   * Starts the boss's move `moveId`, to land on `landTick` (`BossMoveCast`). Lets `commands/` start
+   * one without importing `components/`, as `steer` does for movement.
+   */
+  public beginBossMove(id: EntityId, moveId: string, landTick: number): void {
+    const entity = this.entities.get(id);
+    if (entity === undefined) {
+      return;
+    }
+    let cast = entity.findComponent(BossMoveCast);
+    if (cast === undefined) {
+      cast = new BossMoveCast();
+      entity.addComponent(cast);
+    }
+    cast.begin(moveId, landTick);
   }
 
   /** Visits every entity in insertion order. Entities removed during the walk are skipped. */

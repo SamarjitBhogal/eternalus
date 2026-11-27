@@ -55,6 +55,8 @@ type CommandPayloads = {
     readonly aim: Aim;
   };
   readonly intent: { readonly actorId: EntityId; readonly intent: InputIntent };
+  /** A boss telegraphs `moveId` now; it lands the move's telegraph later (architecture 11 §4.6). */
+  readonly 'boss-move': { readonly actorId: EntityId; readonly moveId: string };
   /** Developer menu: spawn `count` entities of `kind` at `at`. */
   readonly 'dev-spawn': {
     readonly kind: string;

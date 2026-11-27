@@ -38,6 +38,21 @@ const setUp = (): { context: SystemContext; dummy: Entity } => {
 };
 
 describe('MovementSystem', () => {
+  it('moves a pushed unit by the push once, without turning it', () => {
+    const { context, dummy } = setUp();
+    const transform = dummy.getComponent(Transform);
+    const facing = { ...transform.facing };
+    dummy.getComponent(Movement).pushBy({ x: 0, y: 3 });
+    const system = new MovementSystem();
+
+    system.update(context);
+    expect(transform.position).toEqual({ x: 0, y: 3 });
+    expect(transform.previousPosition).toEqual({ x: 0, y: 0 });
+    expect(transform.facing).toEqual(facing);
+    system.update(context);
+    expect(transform.position).toEqual({ x: 0, y: 3 });
+  });
+
   it('brings a dummy to maxSpeed after maxSpeed / acceleration ticks, never above', () => {
     const { context, dummy } = setUp();
     const movement = dummy.getComponent(Movement);
@@ -85,6 +100,22 @@ describe('MovementSystem', () => {
     const transform = dummy.getComponent(Transform);
     expect(transform.position).toEqual({ x: 0.25, y: 0 });
     expect(transform.facing).toEqual({ x: 1, y: 0 });
+  });
+
+  it('adds a pending push to an airborne step once and faces the takeoff velocity', () => {
+    const { context, dummy } = setUp();
+    const jump = new Jump();
+    dummy.addComponent(jump);
+    jump.takeOff({ x: 0.25, y: 0 });
+    dummy.getComponent(Movement).pushBy({ x: 0, y: 3 });
+    const system = new MovementSystem();
+    const transform = dummy.getComponent(Transform);
+
+    system.update(context);
+    expect(transform.position).toEqual({ x: 0.25, y: 3 });
+    expect(transform.facing).toEqual({ x: 1, y: 0 });
+    system.update(context);
+    expect(transform.position).toEqual({ x: 0.5, y: 3 });
   });
 
   it('moves a grounded entity with Jump by its own velocity', () => {
