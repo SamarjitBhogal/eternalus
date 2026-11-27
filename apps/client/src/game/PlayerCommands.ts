@@ -74,6 +74,8 @@ export class PlayerCommands implements PlayerActions {
   /**
    * Reads this tick's intent and queues its commands for the Legend `actorId`.
    *
+   * @param snapshot - The latest snapshot: a Legend back in it after a respawn gets the held input
+   *   again.
    * @returns Whether the player's movement input is non-zero this tick.
    */
   public apply(actorId: EntityId, snapshot: TargetSnapshot): boolean {

@@ -18,6 +18,6 @@ export interface PlayerActions {
   apply(actorId: EntityId, snapshot: TargetSnapshot): boolean;
   /** The developer explorer's click on a unit; whether one was under `point`. */
   attackUnitAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): boolean;
-  /** The developer explorer's click on a map object. */
+  /** The developer explorer's click on the Cathedral gem, else on a map object. */
   attackObjectAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): void;
 }

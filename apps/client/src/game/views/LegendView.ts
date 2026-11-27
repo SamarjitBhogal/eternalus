@@ -30,12 +30,18 @@ export class LegendView extends DefaultEntityView {
     return LEGEND_VISUAL_DIAMETER / 2;
   }
 
-  /**
-   * Draws the fading swing wedge, the white outline and the facing chevron, then the team disc
-   * and focus ring on top.
-   */
+  /** Draws the fading swing wedge (DEC-304), then the body on top (`drawBody`). */
   public override draw(state: EntityDrawState, renderer: Renderer): number | undefined {
     drawSwingWedge(state, renderer);
+    this.drawBody(state, renderer);
+    return undefined;
+  }
+
+  /**
+   * Draws the white outline and the facing chevron, then the team disc and focus ring on top.
+   * The sprite view draws it when its atlas frame cannot draw, after its own swing wedge.
+   */
+  protected drawBody(state: EntityDrawState, renderer: Renderer): undefined {
     const visual = withVisualRadius(state, this.visualRadiusOf());
     const diameter = (visual.entity.transform?.radius ?? 0) * 2;
     renderer.drawWorldGlyph(
