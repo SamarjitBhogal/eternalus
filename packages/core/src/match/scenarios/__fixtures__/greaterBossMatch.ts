@@ -1,4 +1,5 @@
 import { clearCheckpointDefenders } from '../../../__fixtures__/clearCheckpointDefenders';
+import { Health } from '../../../components/Health';
 import { createDefaultGameConfig } from '../../../config/defaultGameConfig';
 import type { GameConfig } from '../../../config/GameConfig.types';
 import { timelineFrameOf } from '../../../config/timelineFrameOf';
@@ -81,6 +82,14 @@ export const spawnWarrior = (simulation: Simulation, at: Vec2): string => {
     .entities.find(({ id, kind }) => kind === 'warrior' && !before.has(id));
   if (warrior === undefined) throw new Error('No warrior');
   return warrior.id;
+};
+
+/** Health `toughen` adds: more than all the boss's hits of a run deal to one unit. */
+const TOUGH = 100_000;
+
+/** Makes unit `id` too tough for the boss's hits of a run to kill, so it lives to the end. */
+export const toughen = (simulation: Simulation, id: string): void => {
+  stateOf(simulation).entities.get(id)?.findComponent(Health)?.raiseMaxAndHeal(TOUGH);
 };
 
 /** The simulation's state, for reading brains and dealing a scripted hit. */

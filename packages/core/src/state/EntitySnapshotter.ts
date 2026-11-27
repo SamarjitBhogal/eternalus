@@ -1,4 +1,5 @@
 import { Aether } from '../components/Aether';
+import { BossPhase } from '../components/BossPhase';
 import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
 import { Health } from '../components/Health';
@@ -47,6 +48,7 @@ export class EntitySnapshotter {
         : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
       ...(entity instanceof Structure &&
         entity.mapFeatureId !== null && { mapFeatureId: entity.mapFeatureId }),
+      bossPhase: EntitySnapshotter.bossPhaseOf(entity),
       team: entity.findComponent(TeamMembership)?.team ?? null,
       transform:
         transform === undefined
@@ -88,5 +90,11 @@ export class EntitySnapshotter {
               ticksSinceHit: gem.ticksSinceHit,
             },
     };
+  }
+
+  /** `bossPhase` for an entity with a `BossPhase`, else `null`. */
+  private static bossPhaseOf(entity: Entity): EntitySnapshot['bossPhase'] {
+    const boss = entity.findComponent(BossPhase);
+    return boss === undefined ? null : { phase: boss.phase, changedTick: boss.changedTick };
   }
 }

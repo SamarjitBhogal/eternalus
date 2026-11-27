@@ -88,6 +88,44 @@ Reply inline (`Decision: …`).
       radius and length? (9) The boss's old melee `attack` stays in its definition, unused.
       (10) Can a stun or other `cannot-cast` status stop a boss move? Today nothing stops one.
 
+- [ ] **The Greater Boss's brain and hurt phase (E7-BOSS-BRAIN, 2026-11-27, `feat/boss-brain`;
+      DEC-371 E7, DEC-417).** No reference gives these numbers, so each is `TUNE`
+      (`content/ai/bosses/greaterBoss.ts`, `brain` and `hurtPhase`); please confirm or replace.
+      (1) Damage dealt to the boss counts as recent for 5 s. (2) Melee range is 4 m (the slam's
+      radius). When the nearest enemy is farther away, the boss reaches for it with the beam or
+      the charge. (3) Punish: a Legend in melee range that dealt at least 40% of the recent damage
+      gets the beam, the charge or the slam. This answers the "bias toward the highest recent
+      damage dealer" of the BossController item's point (6). (4) Crowd: 3 or more enemies within
+      6 m (the sweeps' radius) get the wide sweep, the sweep or the slam. (5) Inside a branch the
+      boss scores each move on reach, crowd and damage, with these weights: punish 1, 0, 2; crowd
+      0, 2, 1; far 1, 0, 1; fallback 0, 0, 1. (6) The boss turns hurt below half its health; that
+      opens the wide sweep and the charge. (7) The hurt cue: two rings grow to 14 boss radii and
+      fade in 1.5 s, then a purple glow 3.2 boss radii wide and 6 orbiting light motes stay for
+      the rest of the phase (`apps/client/src/game/views/BossPhaseCueView.constants.ts`).
+      (8) Should the boss roar when it turns hurt, to mark the moment? Today the boss roars only
+      when it enters the match. During the fight it never picks the roar, because the roar does
+      no damage and a kiting player could keep the boss roaring in place.
+      (9) Built, please confirm (a reviewer marked it better than the design): before a move, the
+      boss stops and turns to face the player its brain chose, so a sweep, beam or charge goes at
+      that player. Before this change, every move went the way the boss last walked.
+      (10) A code-structure idea, no change in play (not built): give the boss code its own small
+      reader for boss facts. Today each boss feature adds one more method to the shared entity
+      store (`EntityStore`, 356 lines). Two open PRs (#160, #164) change that file too, so the
+      split waits until they merge.
+      (11) A code-structure idea, no change in play (not built; a reviewer marked it better than
+      the design): list the boss's phases as data, each with its health share and the moves it
+      opens. A third phase, or a phase for the MiniBoss, would then be a data edit. Today the code
+      knows only two phases, healthy and hurt.
+      (12) A code-structure idea, no change in play (not built; a reviewer marked it better than
+      the design): one place for a phase change. Today the damage system and the developer menu
+      each set the phase and then announce it. One shared step could do both, so the two cannot
+      drift apart.
+      (13) A code-structure idea, no change in play (not built; a reviewer marked it better than
+      the design): one shared "find this part of a unit, or add it" step. Today five places in the
+      game code repeat the same few lines for it (the boss damage system, the entity store twice,
+      out-of-combat healing and stuck detection). Three of them are outside this change, so it
+      waits for its own small change.
+
 - [ ] **The Greater Boss's sweep (Aryan Walanj, 2026-11-20, `feat/cathedral-boss-moves`).**
       balancing.md gives the sweep "cone knockback" (the MiniBoss row) and the GreaterBoss's light
       moves 0.15 × refHealth (155), nothing else, so these are `TUNE`
@@ -100,6 +138,8 @@ Reply inline (`Decision: …`).
       OK as the interim? (5) The cone points where the boss faces when it lands (its last walk,
       toward its target), so a Legend can sidestep during the telegraph. Should it aim at the
       target instead?
+      **(5) changed by `feat/boss-brain` (2026-11-27):** before the telegraph, the boss now turns
+      to face the player its brain chose. Point (9) of the brain item asks you to confirm this.
 
 - [ ] **The Greater Boss's charge (Aryan Walanj, 2026-11-20, `feat/cathedral-boss-moves`).**
       balancing.md gives only the heavy move (0.45 × refHealth, 464, every 2.5 s), so these are
@@ -131,6 +171,10 @@ Reply inline (`Decision: …`).
       with no effect (range: the whole 25 m zone; telegraph 1 s, recover 1 s, cooldown 2.5 s, all
       `TUNE`), as at the entrance. Should it stun, slow or knock back (the MiniBoss's roar is a
       "concussion aura")?
+      **(1) and (2) answered by DEC-371 E7 (2026-11-27, `feat/boss-brain`):** the fixed rotation
+      is gone. The boss's brain now picks each move for the situation, so there is no order to
+      choose. (3) stays open. During the fight the boss never picks the roar; point (8) of the
+      brain item above asks if it should roar when it turns hurt.
 
 - [ ] **The Greater Boss's kill reward: killer only or whole team? (Aryan Walanj, 2026-11-20,
       `feat/cathedral-boss-moves`).** DEC-237: "Killing the middle boss puts you up 5 levels from

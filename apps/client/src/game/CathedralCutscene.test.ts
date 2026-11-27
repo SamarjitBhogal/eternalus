@@ -56,6 +56,7 @@ const GEM: EntitySnapshot = {
   area: null,
   capture: null,
   gem: null,
+  bossPhase: null,
 };
 
 /** The snapshot of `tick`: the gem stands and the eruption is upcoming until it fires. */

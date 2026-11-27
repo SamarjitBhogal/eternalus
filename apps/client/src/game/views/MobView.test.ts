@@ -27,6 +27,7 @@ const MINION: EntitySnapshot = {
   area: null,
   capture: null,
   gem: null,
+  bossPhase: null,
 };
 
 const AT = { x: 0, y: 0 };

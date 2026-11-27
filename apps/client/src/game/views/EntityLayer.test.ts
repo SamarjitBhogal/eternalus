@@ -6,6 +6,7 @@ import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { EntityLayer } from './EntityLayer';
 import type { HealthBarSide } from './HealthBarView.types';
 import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_MOB_GLYPH } from './entityViews.constants';
+import { BOSS_PHASE_CUE_LOOKS } from './BossPhaseCueView.constants';
 import { HEALTH_BAR_FILL_COLORS, HEALTH_BAR_TRACK_COLOR } from './HealthBarView.constants';
 import type { WorldLayer } from './SceneView.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
@@ -28,6 +29,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   area: null,
   capture: null,
   gem: null,
+  bossPhase: null,
 });
 
 const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
@@ -250,5 +252,41 @@ describe('EntityLayer', () => {
     expect(track?.[2]?.y).toBeLessThan(20);
     // The bars come after all three units, so no unit hides one.
     expect(calls.findIndex((call) => call.op === 'fillPolygon')).toBe(calls.length - 4);
+  });
+
+  it("draws a hurt boss's phase cue under every entity, timed by the snapshot's tick", () => {
+    // The boss turned hurt on tick 100; the mob stands lower (y 9), so it draws after the boss.
+    // BossPhaseCueView.test checks the cue's shapes; the cue is the only `rgba()` colour here.
+    const ringTicks = BOSS_PHASE_CUE_LOOKS.hurt?.rings.ticks ?? 0;
+    const hurtBoss: EntitySnapshot = {
+      ...member('boss', 'mob', 0),
+      bossPhase: { phase: 'hurt', changedTick: 100 },
+    };
+    const cueAt = (tick: number): { colors: string[]; rings: number } => {
+      const layer = new EntityLayer(
+        createDefaultViewRegistry(),
+        () => false,
+        () => null,
+      );
+      layer.show(null, snapshot(tick, [unit('mob', 0, 9), hurtBoss]), 0, null);
+      const renderer = new RecordingRenderer();
+      layer.draw(renderer);
+      const glyphs = renderer.calls.flatMap((call) =>
+        call.op === 'drawWorldGlyph' ? [call.args] : [],
+      );
+      return {
+        colors: glyphs.map(([, , color]) => color),
+        rings: glyphs.filter(
+          ([glyph, , color]) => glyph.shape === 'ring' && color.startsWith('rgba('),
+        ).length,
+      };
+    };
+
+    const { colors, rings } = cueAt(100 + ringTicks / 2);
+    const isCue = colors.map((color) => color.startsWith('rgba('));
+    expect(isCue[0]).toBe(true);
+    expect(isCue.slice(isCue.indexOf(false))).not.toContain(true);
+    expect(rings).toBeGreaterThan(0);
+    expect(cueAt(100 + ringTicks + 1).rings).toBe(0);
   });
 });

@@ -1,5 +1,5 @@
 import type { PlayableTeam, Team } from '../teams/teams.types';
-import type { EntityId } from '../state/EntityStore.types';
+import type { BossPhaseId, EntityId } from '../state/EntityStore.types';
 import type { Vec2 } from '../utils/geometry.types';
 
 /** An ability bar slot (architecture 05 §6); `ability-4` is the ultimate. */
@@ -48,8 +48,15 @@ type CommandPayloads = {
     readonly aim: Aim;
   };
   readonly intent: { readonly actorId: EntityId; readonly intent: InputIntent };
-  /** A boss telegraphs `moveId` now; it lands the move's telegraph later (architecture 11 §4.6). */
-  readonly 'boss-move': { readonly actorId: EntityId; readonly moveId: string };
+  /**
+   * A boss telegraphs `moveId` now; it lands the move's telegraph later (architecture 11 §4.6).
+   * With `targetId` the boss first turns to face that unit, so a move along its facing aims there.
+   */
+  readonly 'boss-move': {
+    readonly actorId: EntityId;
+    readonly moveId: string;
+    readonly targetId?: EntityId;
+  };
   /** Developer menu: spawn `count` entities of `kind` at `at`. */
   readonly 'dev-spawn': {
     readonly kind: string;
@@ -71,6 +78,8 @@ type CommandPayloads = {
   };
   /** Developer menu: remove an entity (cause `dev-removed`). */
   readonly 'dev-remove-entity': { readonly entityId: EntityId };
+  /** Developer menu: put a boss in `phase` (DEC-417), as if its health had crossed the line. */
+  readonly 'dev-set-boss-phase': { readonly entityId: EntityId; readonly phase: BossPhaseId };
   /** Developer menu: hand an entity to another controller (sim mode). */
   readonly 'dev-set-controller': { readonly entityId: EntityId; readonly controllerId: string };
 };

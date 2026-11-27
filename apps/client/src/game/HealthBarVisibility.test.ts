@@ -61,6 +61,7 @@ const entity = (
   area: null,
   capture: null,
   gem: null,
+  bossPhase: null,
 });
 
 const PLAYER = entity('me', 'legend', 'light');

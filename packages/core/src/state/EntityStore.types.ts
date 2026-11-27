@@ -1,4 +1,8 @@
+import type { BossPhaseId } from '../content/ai/ai.types';
 import type { Entity } from '../entities/Entity';
+
+/** Re-exported for `commands/`, which reads content types only through `state/`. */
+export type { BossPhaseId };
 
 /** The unique id of an entity instance (`entity-1`, `entity-2`, ... from `EntityFactory`). */
 export type EntityId = Entity['id'];

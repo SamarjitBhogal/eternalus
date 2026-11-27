@@ -1,4 +1,5 @@
 import type { ShieldBar } from '../components/Health.types';
+import type { BossPhaseId } from '../content/ai/ai.types';
 import type { MatchPhase } from '../config/matchPhases';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
@@ -152,6 +153,15 @@ export type GameEventMap = {
   readonly 'boss-telegraph': { readonly bossId: EntityId; readonly move: string };
   /** A boss's move landed: its hits went through the damage pipeline this tick. */
   readonly 'boss-move-executed': { readonly bossId: EntityId; readonly move: string };
+  /**
+   * A boss changed phase (DEC-417): `hurt` once its health falls below its profile's share, which
+   * opens its locked moves, or any phase from the developer menu (`dev-set-boss-phase`).
+   */
+  readonly 'boss-phase-changed': {
+    readonly bossId: EntityId;
+    readonly from: BossPhaseId;
+    readonly to: BossPhaseId;
+  };
   /** `command` is the rejected `Command` (typed loosely: `state/` sits below `commands/`). */
   readonly 'command-rejected': {
     readonly command: { readonly type: string };

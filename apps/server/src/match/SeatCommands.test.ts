@@ -23,6 +23,7 @@ const unit = (
   area: null,
   capture: null,
   gem: null,
+  bossPhase: null,
 });
 
 const intent = (over: Partial<InputIntent>): InputIntent => ({

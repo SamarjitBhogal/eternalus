@@ -140,6 +140,8 @@ describe('DefaultSystemPipeline', () => {
       'spawn',
       'enraged',
       'out-of-combat-healing',
+      // After every damage dealer and before death: a boss below its share turns hurt (DEC-417).
+      'boss-damage',
       'death',
       'capture',
       'cathedral-gem',

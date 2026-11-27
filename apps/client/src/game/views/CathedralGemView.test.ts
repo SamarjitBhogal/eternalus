@@ -22,6 +22,7 @@ const gemEntity = (gem: GemSnapshot | null): EntitySnapshot => ({
   area: null,
   capture: null,
   gem,
+  bossPhase: null,
 });
 
 const draw = (gem: GemSnapshot | null) => {

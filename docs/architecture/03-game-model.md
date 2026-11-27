@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-27
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -138,6 +138,11 @@ export type Command =
     }
   | { readonly type: 'dev-remove-entity'; readonly entityId: EntityId }
   | {
+      readonly type: 'dev-set-boss-phase'; // as if the boss's health had crossed the line (DEC-417)
+      readonly entityId: EntityId;
+      readonly phase: BossPhaseId;
+    }
+  | {
       readonly type: 'dev-set-controller';
       readonly entityId: EntityId;
       readonly controllerId: ControllerId;
@@ -210,6 +215,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `boss-entrance`                     | `{ bossId }`                                           | `SpawnSystem` (the Greater Boss spawn)                                   | views and audio (later; the roar, reference 04)                                                     |
 | `boss-telegraph`                    | `{ bossId, move }`                                     | `BossMoveHandler` (a `boss-move` command from `BossController`, 11 §4.6) | views (later; the move's warning), tests                                                            |
 | `boss-move-executed`                | `{ bossId, move }`                                     | `BossMoveSystem` (the move lands, 11 §4.6)                               | views (later), tests                                                                                |
+| `boss-phase-changed`                | `{ bossId, from, to }`                                 | `BossDamageSystem` (DEC-417); `DevSetBossPhaseHandler`                   | tests (views read the snapshot's `bossPhase` group)                                                 |
 | `command-rejected`                  | `{ command, reason }`                                  | `applyCommand`                                                           | `DeveloperMenu`, tests                                                                              |
 | `collision-anomaly`                 | `{ entityId, from, to, colliderId }`                   | `CollisionSystem`                                                        | `InvariantSystem`, `Logger`                                                                         |
 | `invariant-violated`                | `{ invariantId, tick, details }`                       | `InvariantRunner`                                                        | `Logger`, `PerfOverlay`, tests (throw)                                                              |
@@ -274,6 +280,10 @@ export type EntitySnapshot = {
     readonly glowHits: number; // hits since the glow last went dark (DEC-292)
     readonly ticksSinceHit: number | null;
   } | null; // the Cathedral gem's CathedralGemState only
+  readonly bossPhase: {
+    readonly phase: BossPhaseId; // 'healthy' | 'hurt' (DEC-417)
+    readonly changedTick: number; // the client plays the phase cue for `tick - changedTick` ticks
+  } | null; // a boss's BossPhase only (none before its first hit or phase change)
   readonly statusIds: readonly StatusEffectId[];
   readonly anim: AnimState;
 };
@@ -480,9 +490,11 @@ each closed by the session or phase named:
   a log of the external commands and replay checkpoints, both outside the hashed state); no
   `dispose()` yet.
 - `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
-  `AttackTargetHandler`). `boss-move { actorId, moveId }` (`BossMoveHandler`) is an interim
-  command, not in the sketch above: a boss's move until bosses cast through `cast-ability` (11's
-  Implementation status). Until then `boss-telegraph` comes from `BossMoveHandler` and
+  `AttackTargetHandler`). `boss-move { actorId, moveId, targetId? }` (`BossMoveHandler`) is an
+  interim command, not in the sketch above: a boss's move until bosses cast through
+  `cast-ability` (11's Implementation status). The handler halts the boss and, with a `targetId`,
+  turns it to face that unit, so a move that lands along the facing aims there. Until then
+  `boss-telegraph` comes from `BossMoveHandler` and
   `boss-move-executed` from `BossMoveSystem`. `cast-ability`, `intent` and `dev-set-controller` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
@@ -495,8 +507,9 @@ each closed by the session or phase named:
   (`x`, `y`, `radius`, `facing`), `health` (`current`, `max`), `progression` (a Legend's `level`,
   the `xp` inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the
   level curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
-  `area` (a zone's polygons), `capture` (a capture point's state and presence) and `gem` (the
-  Cathedral gem's holder and glow) groups only.
+  `area` (a zone's polygons), `capture` (a capture point's state and presence), `gem` (the
+  Cathedral gem's holder and glow) and `bossPhase` (a boss's phase and the tick it changed,
+  DEC-417) groups only.
   `MatchPhase` lives in `config/matchPhases.ts`; the match director is built (12 §13).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
   `WorldMap` grid) with no structures index yet (minion plan M2c), and the grid keeps no flow

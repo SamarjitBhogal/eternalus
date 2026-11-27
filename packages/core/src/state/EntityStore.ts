@@ -1,4 +1,5 @@
 import { BossMoveCast } from '../components/BossMoveCast';
+import { BossPhase } from '../components/BossPhase';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
@@ -9,6 +10,8 @@ import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { TeamMembership } from '../components/TeamMembership';
+import { ThreatLedger } from '../components/ThreatLedger';
+import type { ThreatTotal } from '../components/ThreatLedger.types';
 import type { Team } from '../teams/teams.types';
 import { distance, isPointInAnyPolygon, nearestPointOnPolygons } from '../utils/geometry';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
@@ -16,6 +19,7 @@ import type { MutableVec2 } from '../utils/vec2.types';
 import type { Entity } from '../entities/Entity';
 import type {
   AimedAt,
+  BossPhaseId,
   EntityClass,
   EntityId,
   RemovalCause,
@@ -32,7 +36,7 @@ export class EntityStore {
   private readonly removals: RemovalRecord[] = [];
   private added = 0;
   private sizeAtStart = 0;
-  /** Scratch for `isInReach`'s aim point. */
+  /** Scratch for the aim point of `isInReach` and `turnToward`. */
   private readonly aim: MutableVec2 = { x: 0, y: 0 };
 
   /** Number of live entities. */
@@ -125,6 +129,11 @@ export class EntityStore {
     }
     movement.steer(direction);
     return true;
+  }
+
+  /** Stops the entity at once (no speed, no heading); does nothing when it cannot move. */
+  public halt(id: EntityId): void {
+    this.entities.get(id)?.findComponent(Movement)?.stop();
   }
 
   /** The entity's health as a fraction of its maximum, or `undefined` without `Health`. */
@@ -297,6 +306,45 @@ export class EntityStore {
       entity.addComponent(cast);
     }
     cast.begin(moveId, landTick);
+  }
+
+  /**
+   * Turns `id` to face `targetId` (`facingPointOf`), as `CombatSystem` turns an attacker. Lets
+   * `commands/` aim a boss move without importing `components/`. Leaves the facing as it was when
+   * either has no position.
+   */
+  public turnToward(id: EntityId, targetId: EntityId): void {
+    const transform = this.entities.get(id)?.findComponent(Transform);
+    if (transform !== undefined && this.facingPointOf(id, targetId, this.aim)) {
+      transform.lookAt(this.aim);
+    }
+  }
+
+  /** The boss's phase (`BossPhase`, DEC-417): `healthy` until its first change. */
+  public bossPhaseOf(id: EntityId): BossPhaseId {
+    return this.entities.get(id)?.findComponent(BossPhase)?.phase ?? 'healthy';
+  }
+
+  /**
+   * Puts the entity in `phase` on `tick` (`BossPhase`, added on the first change). Lets
+   * `commands/` set it without importing `components/`. Does nothing for an unknown entity.
+   */
+  public setBossPhase(id: EntityId, phase: BossPhaseId, tick: number): void {
+    const entity = this.entities.get(id);
+    if (entity === undefined) {
+      return;
+    }
+    let current = entity.findComponent(BossPhase);
+    if (current === undefined) {
+      current = new BossPhase();
+      entity.addComponent(current);
+    }
+    current.enter(phase, tick);
+  }
+
+  /** Each attacker's damage to `id` from `sinceTick` on (`ThreatLedger`), in attacker id order. */
+  public recentDamageTo(id: EntityId, sinceTick: number): readonly ThreatTotal[] {
+    return this.entities.get(id)?.findComponent(ThreatLedger)?.totalsSince(sinceTick) ?? [];
   }
 
   /** Visits every entity in insertion order. Entities removed during the walk are skipped. */

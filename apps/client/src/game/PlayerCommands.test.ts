@@ -60,6 +60,7 @@ const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => (
   area: null,
   capture: null,
   gem: null,
+  bossPhase: null,
 });
 const PLAYER: EntitySnapshot = { ...unit(ACTOR, 'light', 20, 20), family: 'legend' };
 /** A dark-team minion standing on the house, so the house and the unit overlap. */
