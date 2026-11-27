@@ -8,8 +8,9 @@ import { SpawnContextReader } from './SpawnContextReader';
 
 /**
  * Abstract base for areas that can be held but not hit, such as capture points. Installs
- * `ZoneArea` (the ground it covers), `Transform` (its anchor, with the area's reach as radius) and
- * `TeamMembership`, and no `Collider`; a concrete zone adds its own components.
+ * `ZoneArea` (the ground it covers), `Transform` (its anchor, with the area's reach as radius),
+ * `TeamMembership`, and no `Collider`; a concrete zone adds its own components. `EntityFactory`
+ * adds a `MapFeatureLink` when the zone is built from a map feature.
  */
 export abstract class Zone extends Entity {
   /** The content kind of this class; one of `ZoneKind`. */

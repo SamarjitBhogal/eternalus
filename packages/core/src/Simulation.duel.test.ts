@@ -66,8 +66,8 @@ const ROUND_THE_GEM = 15;
  * also steps south and slides round it.
  */
 const fightUntil = (sim: Simulation, done: (snapshot: Snapshot) => boolean, limit = 6000) => {
-  for (let i = 0; i < limit && !done(sim.snapshot()); i += 1) {
-    const snapshot = sim.snapshot();
+  let snapshot = sim.snapshot();
+  for (let i = 0; i < limit && !done(snapshot); i += 1) {
     const { id: light, legend: from } = legendOf(sim, snapshot, 'light');
     const { id: dark, legend: to } = legendOf(sim, snapshot, 'dark');
     const at = { x: from.transform?.x ?? 0, y: from.transform?.y ?? 0 };
@@ -79,8 +79,9 @@ const fightUntil = (sim: Simulation, done: (snapshot: Snapshot) => boolean, limi
     sim.enqueueCommand({ type: 'move', actorId: light, direction });
     sim.enqueueCommand({ type: 'attack-target', actorId: light, targetId: dark });
     sim.step();
+    snapshot = sim.snapshot();
   }
-  return sim.snapshot();
+  return snapshot;
 };
 
 describe('Simulation: a Duel', () => {
