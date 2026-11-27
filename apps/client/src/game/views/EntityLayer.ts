@@ -68,12 +68,10 @@ export class EntityLayer implements WorldLayer {
     for (const state of ordered) {
       const side = this.healthBarOf(state.entity);
       if (side !== null) {
-        this.healthBars.draw(
-          state,
-          side,
-          renderer,
-          this.views.viewFor(state.entity).visualRadiusOf?.(state.entity),
-        );
+        // The top of the art, else its radius; `HealthBarView` falls back to the footprint.
+        const view = this.views.viewFor(state.entity);
+        const above = view.visualTopOf?.(state.entity) ?? view.visualRadiusOf?.(state.entity);
+        this.healthBars.draw(state, side, renderer, above);
       }
     }
   }

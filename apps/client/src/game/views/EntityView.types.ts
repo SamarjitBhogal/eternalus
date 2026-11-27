@@ -28,6 +28,15 @@ export interface EntityView {
    * without one is on layer 0.
    */
   readonly minimapLayer?: number;
-  /** Radius of the artwork for pointer targeting and health-bar placement. */
+  /**
+   * Radius of the artwork for pointer targeting (`PlayerCommands`). The health bar uses it too
+   * when the view gives no `visualTopOf`.
+   */
   visualRadiusOf?(entity: EntitySnapshot): number;
+  /**
+   * How far the top of the artwork stands above the entity's position, for the health bar
+   * (`EntityLayer`). A standing sprite is taller than its click area. Left out, the bar uses
+   * `visualRadiusOf`.
+   */
+  visualTopOf?(entity: EntitySnapshot): number;
 }

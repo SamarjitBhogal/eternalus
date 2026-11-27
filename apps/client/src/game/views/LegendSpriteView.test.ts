@@ -50,13 +50,14 @@ describe('LegendSpriteView', () => {
     ]);
   });
 
-  it('reports the sprite top above the position as its radius, so the health bar sits above it', () => {
+  it('gives the sprite top for the health bar and keeps the 2.6 m click radius (DEC-238)', () => {
     const view = new LegendSpriteView(() => SPRITE, 6.8);
 
-    expect(view.visualRadiusOf(entity)).toBeCloseTo(6.8 * 0.75);
+    expect(view.visualTopOf(entity)).toBeCloseTo(6.8 * 0.75);
+    expect(view.visualRadiusOf()).toBe(LEGEND_VISUAL_DIAMETER / 2);
   });
 
-  it("draws any other Legend as the ordinary Legend view, with LegendView's radius", () => {
+  it('draws any other Legend as the ordinary Legend view, with the bar on its radius', () => {
     const view = new LegendSpriteView(() => null, 6.8);
     const drawn = new RecordingRenderer();
     const ordinary = new RecordingRenderer();
@@ -64,7 +65,7 @@ describe('LegendSpriteView', () => {
     new LegendView().draw(state, ordinary);
 
     expect(drawn.calls).toEqual(ordinary.calls);
-    expect(view.visualRadiusOf(entity)).toBe(LEGEND_VISUAL_DIAMETER / 2);
+    expect(view.visualTopOf(entity)).toBe(LEGEND_VISUAL_DIAMETER / 2);
   });
 
   it('keeps the Legend minimap marker', () => {
