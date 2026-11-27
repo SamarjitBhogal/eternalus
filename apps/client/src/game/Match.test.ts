@@ -94,7 +94,7 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
  * mobs the map's structures spawn, it plays in sim mode instead: no map, so no roster (a roster
  * needs the map).
  */
-const setUp = (content?: Content, withMapObjects = false) => {
+const setUp = (content?: Content, withMapObjects = false, playerSpecId: string | null = null) => {
   // No countdown: core's countdown holds all movement, and these tests walk from the start.
   const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
   const world = prepareMatchWorld(config, SEED);
@@ -113,6 +113,7 @@ const setUp = (content?: Content, withMapObjects = false) => {
   const input = new ScriptedIntent();
   const logger = new MemoryLogger();
   const match = new Match({
+    playerSpecId,
     simulation,
     world,
     tickRate: config.tickRate,
@@ -475,4 +476,13 @@ describe('Match', () => {
     expect(aim?.x).toBeCloseTo(view.x + view.width / 2);
     expect(aim?.y).toBeCloseTo(view.y + view.height / 2);
   });
+});
+
+it('renders the selected Knight through the live match view registry', () => {
+  const { match, renderer } = setUp(undefined, false, 'knight');
+  match.render(0);
+  expect(
+    renderer.calls.filter((call) => call.op === 'drawSprite').map((call) => call.args[0]),
+  ).toContainEqual({ atlasId: 'knight-sprites', frame: 0 });
+  match.destroy();
 });

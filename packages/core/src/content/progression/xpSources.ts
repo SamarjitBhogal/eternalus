@@ -13,7 +13,7 @@ export const XP_SOURCES: XpSourcesDefinition = {
   // of the curve. One value for every structure kind.
   structureDestroyed: 120,
   // TUNE: balancing.md "Camps" `Recommendation:` "a 50 XP bonus to the clearing Legends"; the
-  // clearing Legend is the one that killed the camp's last mob (INBOX.md "Camp rewards"). Forest
+  // clearing Legend is the one that killed the camp's last mob (DEC-375). Forest
   // camps only: balancing.md lists the corner camps apart, and their boss pays `teamKills`.
   campCleared: {
     'forest-camp-light': 50,
