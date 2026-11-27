@@ -12,12 +12,9 @@ import { StatusModifierStep } from './StatusModifierStep';
  * The damage steps in the order every hit runs them (architecture 05 §9). This is the one place a
  * step is added: structure multipliers and breakability each add a line here.
  *
- * @param progressOf - Lane progress for the minion strength curve (the lane flow fields); `null`
- *   measures it along the lane polyline.
+ * @param progressOf - Lane progress for the minion strength curve (DEC-384).
  */
-export const createDefaultDamageSteps = (
-  progressOf: LaneProgressOf | null = null,
-): readonly DamageStep[] => [
+export const createDefaultDamageSteps = (progressOf: LaneProgressOf): readonly DamageStep[] => [
   new BreakabilityStep(),
   new FriendlyFireStep(),
   new StatusModifierStep(),

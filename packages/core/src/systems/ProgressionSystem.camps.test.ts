@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Progression } from '../components/Progression';
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { timelineFrameOf } from '../config/timelineFrameOf';
 import { loadDefaultContent } from '../content/loadDefaultContent';
@@ -108,7 +109,7 @@ describe('ProgressionSystem camp reward through the guard roster (balancing.md "
       .reduce((sum, xp) => sum + xp, 0);
 
     for (const id of mobs) {
-      new DamagePipeline().apply(state, id, 1e6, {
+      new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, id, 1e6, {
         attackerId: legend.id,
         kind: 'weapon',
         definitionId: 'test',
@@ -142,7 +143,7 @@ describe('ProgressionSystem camp reward through the guard roster (balancing.md "
     state.entities.withdraw(legend.id, 'died');
 
     for (const id of mobs) {
-      new DamagePipeline().apply(state, id, 1e6, {
+      new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, id, 1e6, {
         attackerId: legend.id,
         kind: 'weapon',
         definitionId: 'test',
@@ -178,7 +179,7 @@ describe('ProgressionSystem camp reward through the guard roster (balancing.md "
     expect(mobs.length).toBeGreaterThan(0);
 
     for (const id of mobs) {
-      new DamagePipeline().apply(state, id, 1e6, {
+      new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, id, 1e6, {
         attackerId: legend.id,
         kind: 'weapon',
         definitionId: 'test',

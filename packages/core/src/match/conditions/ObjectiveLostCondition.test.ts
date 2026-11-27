@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../../combat/__fixtures__/damageSteps';
 import { Health } from '../../components/Health';
 import { TeamMembership } from '../../components/TeamMembership';
 import { WinObjective } from '../../components/WinObjective';
@@ -26,7 +27,7 @@ class Banner extends Entity {
 const setUp = () => {
   const state = new GameState(createDefaultGameConfig(), 1);
   const condition = new ObjectiveLostCondition(state);
-  const damage = new DamagePipeline();
+  const damage = new DamagePipeline(damageStepsWithoutLaneProgress());
   const context: DirectorContext = { state, enterPhase: () => undefined };
   let next = 0;
   const addBanner = (team: Team, isObjective = true): Entity => {

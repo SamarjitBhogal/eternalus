@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
@@ -56,7 +57,7 @@ describe('DeathSystem', () => {
     const context = setUp();
     const { state } = context;
     const killer = { attackerId: null, kind: 'environment', definitionId: 'lava' } as const;
-    new DamagePipeline().apply(state, 'entity-1', 1000, killer);
+    new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, 'entity-1', 1000, killer);
 
     new DeathSystem().update(context);
 

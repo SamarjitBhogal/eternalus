@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Combat } from '../components/Combat';
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
@@ -54,7 +55,7 @@ describe('CombatSystem', () => {
     const { state, warrior, spawn, context, attack } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
     const { damage, interval } = warrior.getComponent(Combat).attack;
-    const system = new CombatSystem(new DamagePipeline());
+    const system = new CombatSystem(new DamagePipeline(damageStepsWithoutLaneProgress()));
 
     expect(attack(dummy)).toBe(true);
     for (let tick = 0; tick <= interval; tick += 1) {
@@ -71,7 +72,7 @@ describe('CombatSystem', () => {
     const dummy = spawn('light-mob', 'training-dummy', 50, 'dark');
 
     attack(dummy);
-    new CombatSystem(new DamagePipeline()).update(context);
+    new CombatSystem(new DamagePipeline(damageStepsWithoutLaneProgress())).update(context);
 
     expect(dummy.getComponent(Health).current).toBe(dummy.getComponent(Health).max);
   });
@@ -79,7 +80,7 @@ describe('CombatSystem', () => {
   it('turns to face a target in reach, also while the attack cools down (DEC-192)', () => {
     const { state, warrior, spawn, context, attack } = setUp();
     const facing = warrior.getComponent(Transform).facing;
-    const system = new CombatSystem(new DamagePipeline());
+    const system = new CombatSystem(new DamagePipeline(damageStepsWithoutLaneProgress()));
     attack(spawn('light-mob', 'training-dummy', -1, 'dark'));
 
     system.update(context);
@@ -100,7 +101,7 @@ describe('CombatSystem', () => {
       .apply(loadStatusEffects(CONFIG.tickRate, 2).get('stun'), null, 0);
 
     attack(spawn('light-mob', 'training-dummy', -1, 'dark'));
-    new CombatSystem(new DamagePipeline()).update(context);
+    new CombatSystem(new DamagePipeline(damageStepsWithoutLaneProgress())).update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual(INITIAL_FACING);
   });
@@ -133,7 +134,7 @@ describe('CombatSystem', () => {
     state.entities.add(object);
 
     expect(attack(object)).toBe(true);
-    new CombatSystem(new DamagePipeline()).update(context);
+    new CombatSystem(new DamagePipeline(damageStepsWithoutLaneProgress())).update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
   });
@@ -166,7 +167,7 @@ describe('CombatSystem', () => {
     state.entities.add(object);
 
     expect(attack(object)).toBe(true);
-    new CombatSystem(new DamagePipeline()).update(context);
+    new CombatSystem(new DamagePipeline(damageStepsWithoutLaneProgress())).update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
   });
@@ -189,7 +190,7 @@ describe('CombatSystem', () => {
     warrior.getComponent(Transform).moveTo({ x: 0, y: 6 });
 
     attack(tower);
-    new CombatSystem(new DamagePipeline()).update(context);
+    new CombatSystem(new DamagePipeline(damageStepsWithoutLaneProgress())).update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual({ x: 1, y: 0 });
   });
@@ -198,7 +199,7 @@ describe('CombatSystem', () => {
     const { warrior, spawn, context, attack } = setUp();
 
     attack(spawn('light-mob', 'training-dummy', -50, 'dark'));
-    new CombatSystem(new DamagePipeline()).update(context);
+    new CombatSystem(new DamagePipeline(damageStepsWithoutLaneProgress())).update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual(INITIAL_FACING);
   });
@@ -207,7 +208,7 @@ describe('CombatSystem', () => {
     const { state, warrior, spawn, context, attack } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
     const health = dummy.getComponent(Health);
-    const system = new CombatSystem(new DamagePipeline());
+    const system = new CombatSystem(new DamagePipeline(damageStepsWithoutLaneProgress()));
     attack(dummy);
     state.match.holdIdle(true);
 
@@ -226,7 +227,7 @@ describe('CombatSystem', () => {
 
     attack(dummy);
     dummy.getComponent(Health).applyDamage(1_000_000);
-    new CombatSystem(new DamagePipeline()).update(context);
+    new CombatSystem(new DamagePipeline(damageStepsWithoutLaneProgress())).update(context);
 
     expect(warrior.getComponent(Combat).targetId).toBeNull();
   });
@@ -235,7 +236,7 @@ describe('CombatSystem', () => {
     const run = (): number => {
       const { state, spawn, context, attack } = setUp();
       attack(spawn('light-mob', 'training-dummy', 1, 'dark'));
-      const system = new CombatSystem(new DamagePipeline());
+      const system = new CombatSystem(new DamagePipeline(damageStepsWithoutLaneProgress()));
       for (let tick = 0; tick < 60; tick += 1) {
         system.update(context);
         state.advanceTick();
@@ -289,7 +290,10 @@ const firstHit = (kind: string, definitionId: string): { amount: number; source:
   state.events.on('damage-applied', ({ amount, source }) => hits.push({ amount, source }));
 
   state.entities.setAttackTarget(attacker.id, dummy.id);
-  new CombatSystem(new DamagePipeline()).update({ state, logger: new NullLogger() });
+  new CombatSystem(new DamagePipeline(damageStepsWithoutLaneProgress())).update({
+    state,
+    logger: new NullLogger(),
+  });
 
   const [hit] = hits;
   if (hit === undefined) {

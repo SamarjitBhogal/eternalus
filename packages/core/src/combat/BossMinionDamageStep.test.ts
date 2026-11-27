@@ -11,6 +11,7 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { GameState } from '../state/GameState';
 import { BossMinionDamageStep } from './BossMinionDamageStep';
 import { DamagePipeline } from './DamagePipeline';
+import { damageStepsWithoutLaneProgress } from './__fixtures__/damageSteps';
 
 /** A neutral capture point boss and a heavy guard, a light horde minion, and a dark Warrior. */
 const setUp = () => {
@@ -65,7 +66,7 @@ describe('BossMinionDamageStep', () => {
 
   it("takes its share of a minion's hit off the boss's health through the default pipeline", () => {
     const { state, boss, minion, legend } = setUp();
-    const pipeline = new DamagePipeline();
+    const pipeline = new DamagePipeline(damageStepsWithoutLaneProgress());
     const health = state.entities.get(boss)?.getComponent(Health);
     const before = health?.current ?? 0;
 

@@ -19,6 +19,25 @@ describe('LaneRoutes', () => {
     expect(routes.distanceAlong('lane-0', 'light', { x: 999, y: 20 })).toBe(160);
   });
 
+  it('gives lane progress from each team’s own gate (0) to the enemy gate (1), DEC-384', () => {
+    expect(routes.progress('lane-0', 'light', { x: 60, y: 25 })).toBe(0.25);
+    expect(routes.progress('lane-0', 'dark', { x: 60, y: 25 })).toBe(0.75);
+    expect(routes.progress('lane-0', 'light', { x: 0, y: 30 })).toBe(0);
+    expect(routes.progress('lane-0', 'light', { x: 999, y: 20 })).toBe(1);
+    expect(() => routes.progress('lane-9', 'light', { x: 0, y: 0 })).toThrow('no lane "lane-9"');
+  });
+
+  it('gives progress 0 on a lane of no length', () => {
+    const [lane] = TWO_LANE_MAP.lanes;
+    if (lane === undefined) throw new Error('the fixture has lanes');
+    const onePointLane = new LaneRoutes({
+      ...TWO_LANE_MAP,
+      lanes: [{ ...lane, path: [{ x: 5, y: 5 }] }],
+    });
+
+    expect(onePointLane.progress(lane.id, 'light', { x: 90, y: 5 })).toBe(0);
+  });
+
   it('finds the lane nearest a point, the lower index on a tie', () => {
     expect(routes.nearestLane({ x: 90, y: 22 })?.id).toBe('lane-0');
     expect(routes.nearestLane({ x: 90, y: 38 })?.id).toBe('lane-1');

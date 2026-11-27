@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { KillCredit } from '../combat/KillCredit';
 import { Aether } from '../components/Aether';
 import { Health } from '../components/Health';
@@ -177,7 +178,10 @@ describe('ProgressionSystem', () => {
     ['after the window, earns none', 30 * 30 + 1, 0],
   ])('the enemy whose hit a gem death is credited to, %s (DEC-346)', (_, wait, xp) => {
     const { state, spawn, run } = setUp();
-    const damage = new DamagePipeline(undefined, new KillCredit(30 * 30, CATHEDRAL_GEM.statusIds));
+    const damage = new DamagePipeline(
+      damageStepsWithoutLaneProgress(),
+      new KillCredit(30 * 30, CATHEDRAL_GEM.statusIds),
+    );
     const enemy = spawn('warrior', 'warrior', 'light');
     const victim = spawn('magus', 'magus', 'dark');
     damage.apply(state, victim.id, 1, { attackerId: enemy.id, kind: 'weapon', definitionId: 'x' });

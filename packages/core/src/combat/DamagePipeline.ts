@@ -4,7 +4,6 @@ import type { GameState } from '../state/GameState';
 import type { DamageSource } from '../state/GameEvents.types';
 import type { DamageResult } from './DamagePipeline.types';
 import type { DamageStep } from './DamageStep.types';
-import { createDefaultDamageSteps } from './defaultDamageSteps';
 import type { KillCredit } from './KillCredit';
 
 /**
@@ -22,11 +21,11 @@ import type { KillCredit } from './KillCredit';
  */
 export class DamagePipeline {
   /**
-   * @param steps - The rules each hit runs through, in order.
+   * @param steps - The rules each hit runs through, in order (`createDefaultDamageSteps`).
    * @param credit - Who a death by the gem counts for; without it every killer is the hit's source.
    */
   public constructor(
-    private readonly steps: readonly DamageStep[] = createDefaultDamageSteps(),
+    private readonly steps: readonly DamageStep[],
     private readonly credit?: KillCredit,
   ) {}
 

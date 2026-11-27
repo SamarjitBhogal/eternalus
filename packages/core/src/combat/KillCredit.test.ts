@@ -15,6 +15,7 @@ import { GameState } from '../state/GameState';
 import { DeathSystem } from '../systems/DeathSystem';
 import type { Team } from '../teams/teams.types';
 import { DamagePipeline } from './DamagePipeline';
+import { damageStepsWithoutLaneProgress } from './__fixtures__/damageSteps';
 import type { DamageStep } from './DamageStep.types';
 import { KillCredit } from './KillCredit';
 
@@ -38,7 +39,7 @@ const BURN = { attackerId: null, kind: 'status', definitionId: 'gem-burn' } as c
 /**
  * @param steps - The damage steps; `[]` lets an ally's hit land, so only `KillCredit` judges it.
  */
-const setUp = (steps?: readonly DamageStep[]) => {
+const setUp = (steps: readonly DamageStep[] = damageStepsWithoutLaneProgress()) => {
   const state = new GameState(createDefaultGameConfig(), 1);
   const scoring = loadScoring(state.config.tickRate);
   const score = new Scoring(state, createDefaultScoringRules(scoring));

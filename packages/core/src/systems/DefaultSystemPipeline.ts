@@ -1,6 +1,7 @@
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { createDefaultDamageSteps } from '../combat/defaultDamageSteps';
 import { KillCredit } from '../combat/KillCredit';
+import type { LaneProgressOf } from '../combat/MinionStrengthStep.types';
 import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
@@ -96,10 +97,12 @@ export class DefaultSystemPipeline extends SystemPipeline {
             state.world.definition,
             map.flowFieldCorridorHalfWidth,
           );
-    // Minion strength reads lane progress from the lane fields (05 §9, `balancing.md`).
+    // Minion strength reads lane progress from the lane fields, else the polyline (05 §9, DEC-384).
     // A death by the gem counts for the victim's last enemy damager in the assist window (DEC-346).
     const damage = new DamagePipeline(
-      createDefaultDamageSteps(flowFields?.progress.bind(flowFields) ?? null),
+      createDefaultDamageSteps(
+        DefaultSystemPipeline.laneProgressOf(flowFields, state.world?.routes ?? null),
+      ),
       new KillCredit(assistWindowTicks, CATHEDRAL_GEM.statusIds),
     );
     const world = state.world?.grid ?? null;
@@ -187,6 +190,22 @@ export class DefaultSystemPipeline extends SystemPipeline {
       new MatchDirectorSystem(director),
       new InvariantSystem(invariants),
     ]);
+  }
+
+  /**
+   * Lane progress for the minion strength curve (05 §9, DEC-384): the lane flow field's path cost
+   * (`balancing.md`), else the lane polyline where the field cannot say (no field, or a unit off
+   * its corridor), else `null` (no map).
+   *
+   * @param fields - The lane flow fields, or `null` in a match without hordes or a map.
+   * @param routes - The lane polylines (`LaneRoutes`), or `null` in a match without a map.
+   */
+  public static laneProgressOf(
+    fields: { readonly progress: LaneProgressOf } | null,
+    routes: { readonly progress: LaneProgressOf } | null,
+  ): LaneProgressOf {
+    return (laneId, team, position) =>
+      fields?.progress(laneId, team, position) ?? routes?.progress(laneId, team, position) ?? null;
   }
 
   /**

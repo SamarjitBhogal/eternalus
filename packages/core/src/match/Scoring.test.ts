@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -56,7 +57,7 @@ const setUp = (assistWindowSeconds: number = SCORING.assistWindowSeconds) => {
       loadScoring(state.config.tickRate, { weights: SCORING.weights, assistWindowSeconds }),
     ),
   );
-  const damage = new DamagePipeline();
+  const damage = new DamagePipeline(damageStepsWithoutLaneProgress());
   let next = 0;
   /** Adds a unit and announces it with `entity-spawned`, as a spawn does. */
   const spawn = (
