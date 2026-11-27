@@ -3472,7 +3472,7 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   (`fix/corner-boss-levels`): "A: the corner boss levels, like the other neutral mobs". The
   `corner-camp` guard plan now has `canLevel: true`, so the corner boss gains veteran levels from
   its kills of minions, guards and camp mobs, as the other neutral mobs do. This changes (d) of
-  DEC-376 (next entry). Your design doc: architecture 18 (the minion XP rules and the M6c
+  DEC-376 (next entry). Design doc changed: architecture 18 (the minion XP rules and the M6c
   paragraph). Decision: DEC-402.
 
 - 2026-11-26 — **Minion M6c interpretations approved as built (DEC-376)**

@@ -104,8 +104,7 @@ type GuardPlanBase = {
   readonly leashTolerance: number;
   /**
    * Whether the plan's guards level from their kills and are rallied by the veterancy aura
-   * (`VeterancySystem`, 18 MS-16): tower guards (DEC-165), forest-camp mobs (DEC-260) and the
-   * capture point boss group (DEC-350).
+   * (`VeterancySystem`, 18 MS-16). Each plan in `guardPlans.ts` names the DEC row that sets it.
    */
   readonly canLevel: boolean;
 };

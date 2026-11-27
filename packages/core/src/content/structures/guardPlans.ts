@@ -61,9 +61,7 @@ const CAMP_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     // TUNE: DEC-12; game doc "spawns new bosses every 5 minutes". `group`, not `each`: with one
     // boss both bring it back 300 s after it dies, and only `group` announces `camp-cleared`.
     respawn: { kind: 'group', seconds: 300 },
-    // DEC-402 (owner 2026-11-27): the corner boss levels, like the other neutral mobs (changes
-    // DEC-376 (d)).
-    canLevel: true,
+    canLevel: true, // DEC-402 (owner 2026-11-27): the corner boss levels (changes DEC-376 (d))
   },
 };
 
