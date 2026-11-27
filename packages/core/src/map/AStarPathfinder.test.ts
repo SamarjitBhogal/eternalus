@@ -78,6 +78,17 @@ describe('AStarPathfinder (A* for Legends, 10 §9)', () => {
     expect(out).toEqual({ x: 74, y: 20 });
   });
 
+  it('reports its grid’s version, which changes when a footprint is stamped (DEC-379)', () => {
+    const grid = openGrid();
+    const finder = new AStarPathfinder(grid, LIMITS);
+    const before = finder.version;
+
+    grid.stampFootprint(OFF_CENTRE_WALL);
+
+    expect(before).toBe(grid.version - 1);
+    expect(finder.version).toBe(grid.version);
+  });
+
   it('finds the optimal octile path: its cost is the hand-computed shortest', () => {
     const grid = openGrid();
     grid.stampFootprint(OFF_CENTRE_WALL);
