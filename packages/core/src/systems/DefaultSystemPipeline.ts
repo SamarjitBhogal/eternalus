@@ -83,11 +83,6 @@ export class DefaultSystemPipeline extends SystemPipeline {
     assistWindowTicks,
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
-    // A death by the gem counts for the victim's last enemy damager in the assist window (DEC-346).
-    const damage = new DamagePipeline(
-      createDefaultDamageSteps(),
-      new KillCredit(assistWindowTicks, CATHEDRAL_GEM.statusIds),
-    );
     const veterancy = loadMinionVeterancy(tickRate);
     const loadedStatuses = loadStatusEffects(
       tickRate,
@@ -102,6 +97,12 @@ export class DefaultSystemPipeline extends SystemPipeline {
             state.world.definition,
             map.flowFieldCorridorHalfWidth,
           );
+    // Minion strength reads lane progress from the lane fields (05 §9, `balancing.md`).
+    // A death by the gem counts for the victim's last enemy damager in the assist window (DEC-346).
+    const damage = new DamagePipeline(
+      createDefaultDamageSteps(flowFields?.progress.bind(flowFields) ?? null),
+      new KillCredit(assistWindowTicks, CATHEDRAL_GEM.statusIds),
+    );
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
       new StatusEffectSystem(damage, statuses),

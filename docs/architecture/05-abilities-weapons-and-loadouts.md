@@ -586,7 +586,8 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 which gives the same result as §9's late check; 07 §3), `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
 `INBOX.md`), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8), `MinionStrengthStep`
 (the minion strength-by-distance curve, its base-stat point moved toward the enemy for each lane
-tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16) and
+tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16; `createDefaultDamageSteps(progressOf)`
+injects the lane flow fields' progress, gate to gate by path cost, DEC-280, see 18's status note) and
 `BossMinionDamageStep` (a boss takes only its share of a lane minion's hit, balancing.md; the
 shares are `BOSS_MINION_DAMAGE_TAKEN` in `content/mobs/minionModifiers.ts`). Interim differences:
 no `DamageType` yet (nothing reads it; it joins `DamageHit` and
