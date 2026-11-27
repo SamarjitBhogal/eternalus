@@ -23,32 +23,34 @@ export const GREATER_BOSS = {
   // TUNE: Aryan 2026-11-15 and 2026-11-22 (reference 04 "obscenely massive"), twice the Sentinel;
   // Sam to confirm (INBOX)
   footprintRadius: 2.5,
-  // The body shape clicks and hits count on (DEC-381), in local metres for the left-facing pose:
-  // the solid shoulders, torso and planted limbs of the 48 m obsidian colossus art (#161), which
-  // draws this boss once #160 merges (DEC-370). #161 traced the feet at y 9; the art ends at y 8
-  // (drawn from 24 m above the boss to 8 m below), so the bottom edge is cut to the art's edge.
-  combatHitbox: [
-    { x: -20, y: -9 },
-    { x: -12, y: -18 },
-    { x: 11, y: -18 },
-    { x: 20, y: -9 },
-    { x: 20, y: 2 },
-    { x: 11, y: 8 },
-    { x: -15, y: 8 },
-    { x: -20, y: 4 },
-  ],
-  // The head (DEC-381), in the same local metres and pose: the hooded head round the glowing visor
-  // of the idle colossus art (#161, colossus-idle.webp, 768 × 512 px). #161's ColossusView draws it
-  // 48 m wide (16 px a metre), centred on the boss, from 24 m above it to 8 m below. The visor is
-  // at about (-6.8, -10.2); the head spans the hood above it to the chin below.
-  headHitbox: [
-    { x: -12, y: -12 },
-    { x: -8, y: -16 },
-    { x: -3, y: -15 },
-    { x: -2, y: -10 },
-    { x: -4, y: -6 },
-    { x: -9, y: -6 },
-  ],
+  bodyShape: {
+    // The body shape clicks and hits count on (DEC-381), in local metres for the left-facing pose:
+    // the solid shoulders, torso and planted limbs of the 48 m obsidian colossus art (#161), which
+    // draws this boss once #160 merges (DEC-370). #161 traced the feet at y 9; the art ends at y 8
+    // (drawn from 24 m above the boss to 8 m below), so the bottom edge is cut to the art's edge.
+    outline: [
+      { x: -20, y: -9 },
+      { x: -12, y: -18 },
+      { x: 11, y: -18 },
+      { x: 20, y: -9 },
+      { x: 20, y: 2 },
+      { x: 11, y: 8 },
+      { x: -15, y: 8 },
+      { x: -20, y: 4 },
+    ],
+    // The head (DEC-381), in the same local metres and pose: the hooded head round the glowing
+    // visor of the idle colossus art (#161, colossus-idle.webp, 768 × 512 px). #161's ColossusView
+    // draws it 48 m wide (16 px a metre), centred on the boss, from 24 m above it to 8 m below. The
+    // visor is at about (-6.8, -10.2); the head spans the hood above it to the chin below.
+    head: [
+      { x: -12, y: -12 },
+      { x: -8, y: -16 },
+      { x: -3, y: -15 },
+      { x: -2, y: -10 },
+      { x: -4, y: -6 },
+      { x: -9, y: -6 },
+    ],
+  },
   // TUNE: no reference value; the centre zone, so it sees the whole zone from its post
   visionRadius: GUARD_LEASH.greaterBossZone,
   movementStrategy: 'leashed-chase',

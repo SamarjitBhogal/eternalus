@@ -2,14 +2,22 @@ import type { UnitAttack } from '../../content/units/units.types';
 import type { EntityId } from '../../state/EntityStore.types';
 import type { DamageSource } from '../../state/GameEvents.types';
 import type { GameState } from '../../state/GameState';
+import type { Vec2 } from '../../utils/geometry.types';
 import type { Entity } from '../Entity';
 
 /**
  * Whatever applies damage. `combat/DamagePipeline` satisfies it; the port exists because
- * `entities/` may not import `combat/` (02 §2).
+ * `entities/` may not import `combat/` (02 §2). `path.origin` is where the hit came from (the
+ * melee attacker's position; `combat/HitPath`, DEC-381).
  */
 type DamageDealer = {
-  apply(state: GameState, targetId: EntityId, amount: number, source: DamageSource): unknown;
+  apply(
+    state: GameState,
+    targetId: EntityId,
+    amount: number,
+    source: DamageSource,
+    path?: { readonly origin: Vec2 },
+  ): unknown;
 };
 
 /** What an attack may use: the state and the one damage pipeline. */

@@ -5,6 +5,7 @@ import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
 import type { DamageSource } from '../../state/GameEvents.types';
 import { GameState } from '../../state/GameState';
+import type { Vec2 } from '../../utils/geometry.types';
 import { Warrior } from '../legends/Warrior';
 import { MeleeAttackStrategy } from './MeleeAttackStrategy';
 
@@ -21,13 +22,20 @@ const WEAPONS = loadWeapons(30, [
 ]);
 const WARRIOR = loadDefaultContent(30).get('warrior');
 
+type Call = [string, number, DamageSource, { readonly origin: Vec2 } | undefined];
+
 /** Hits `entity-2` once with a Warrior spawned from `definition`; returns the damage calls. */
-const hitWith = (definition: typeof WARRIOR): [string, number, DamageSource][] => {
+const hitWith = (definition: typeof WARRIOR): Call[] => {
   const state = new GameState(createDefaultGameConfig(), 1);
-  const calls: [string, number, DamageSource][] = [];
+  const calls: Call[] = [];
   const damage = {
-    apply: (_: GameState, targetId: string, amount: number, source: DamageSource) =>
-      calls.push([targetId, amount, source]),
+    apply: (
+      _: GameState,
+      targetId: string,
+      amount: number,
+      source: DamageSource,
+      path?: { readonly origin: Vec2 },
+    ) => calls.push([targetId, amount, source, path]),
   };
   const attacker = new Warrior('entity-1', definition.id);
   attacker.spawn({ definition, position: { x: 0, y: 0 }, team: 'light', weapons: WEAPONS });
@@ -37,11 +45,16 @@ const hitWith = (definition: typeof WARRIOR): [string, number, DamageSource][] =
 };
 
 describe('MeleeAttackStrategy', () => {
-  it('deals the weapon damage at once, naming the attacker and its weapon as the source', () => {
+  it('deals the weapon damage at once from the attacker’s position, naming it and its weapon as the source', () => {
     const armed = { ...WARRIOR, defaultLoadout: { primaryWeaponId: 'test-talons' } };
 
     expect(hitWith(armed)).toEqual([
-      ['entity-2', 40, { attackerId: 'entity-1', kind: 'weapon', definitionId: 'test-talons' }],
+      [
+        'entity-2',
+        40,
+        { attackerId: 'entity-1', kind: 'weapon', definitionId: 'test-talons' },
+        { origin: { x: 0, y: 0 } },
+      ],
     ]);
   });
 });

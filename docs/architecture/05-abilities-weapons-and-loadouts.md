@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -569,9 +569,10 @@ The order is fixed and every multiplier is data: attacker statuses (`imbue`, `en
 strength-by-distance curve), target statuses (`sundered`, `marked`, `hexed`), the target's
 `damageMultipliers` keyed by the attacker's `damageClass`
 ([07 §4](07-structures-obstacles-and-destructibles.md#4-gates)), a big boss's body-part bonus
-(a hit from an attacker in the zone behind it, `backZoneDegrees` wide and centred on the side its
-art shows its back, but no status tick; or a
-projectile's impact point on its head outline; only the larger when both hold; DEC-381), `Collider.isUnbreakable` (rejects), then `Health.applyDamage`.
+(DEC-381: a hit that came from the zone behind it, `backZoneDegrees` wide and centred on the side
+its art shows its back; or a shot whose line of flight, carried on from where it struck, crosses
+its head outline; only the larger when both hold; a hit from no side, such as a status tick,
+gets neither), `Collider.isUnbreakable` (rejects), then `Health.applyDamage`.
 `DeathResolver` turns an overflow into `entity-died {
 entityId, killer: DamageSource }` and records the cause for `DeathSystem` (rule B). A death by
 attacker-less damage that credits a killer (the Cathedral gem's statuses, DEC-346) names the
@@ -595,8 +596,11 @@ injects the lane flow fields' progress, gate to gate by path cost, DEC-280, see 
 shares are `BOSS_MINION_DAMAGE_TAKEN` in `content/mobs/minionModifiers.ts`) and
 `BodyPartBonusStep` (DEC-381: the back-hit and head-shot bonuses on a unit with a `CombatHitbox`;
 the multipliers are `BODY_PART_BONUS` in `content/mobs/bodyPartBonus.ts`). `DamageHit` and
-`apply` carry an optional `impactPoint`, which only a projectile's hit sets; no projectile deals
-damage yet, so only tests reach the head-shot bonus today. Interim differences:
+`apply` carry an optional `HitPath`: `origin`, where the hit came from, and `impactPoint`, where a
+shot struck. A melee hit's origin is its attacker's position (`MeleeAttackStrategy`). A status
+tick, the gem's eruption and the map collapse pass no path, so they get no bonus. No projectile
+deals damage yet, so only tests reach the head-shot bonus today; when ranged attacks land, the
+projectile hit passes where it started and where it struck (`INBOX.md`). Interim differences:
 no `DamageType` yet (nothing reads it; it joins `DamageHit` and
 `apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
 `DeathResolver` is not a separate class yet. The gem's kill credit is `KillCredit`, which the

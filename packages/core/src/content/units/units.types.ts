@@ -39,6 +39,17 @@ export type UnitAttack = {
   readonly interval: number;
 };
 
+/**
+ * A big boss's body shape (DEC-381), in local world units for the art's left-facing pose
+ * (`CombatHitbox` mirrors it when the unit faces right).
+ */
+export type BodyShape = {
+  /** The body outline: clicks, attack reach and hits count on it instead of the collider circle. */
+  readonly outline: Polygon;
+  /** The head inside the outline: a shot whose flight line crosses it gets the head-shot bonus. */
+  readonly head?: Polygon;
+};
+
 /** What every unit definition (Legend or mob) has. Shared, immutable and keyed by `id`. */
 export type UnitDefinition = EntityDefinitionBase & {
   /** Full base health. */
@@ -46,17 +57,10 @@ export type UnitDefinition = EntityDefinitionBase & {
   /** Collider circle radius in world units. */
   readonly footprintRadius: number;
   /**
-   * The body shape of a big boss (DEC-381), in local world units for the art's left-facing pose
-   * (`CombatHitbox` mirrors it when the unit faces right). Clicks, attack reach and hits count on
-   * it instead of the collider circle. Leave it out for a unit that is only its circle (DEC-183).
+   * The body shape of a big boss (DEC-381); `CombatHitbox` holds it. Leave it out for a unit that
+   * is only its circle (DEC-183).
    */
-  readonly combatHitbox?: Polygon;
-  /**
-   * The head inside `combatHitbox` (DEC-381), in the same local units and pose: a projectile whose
-   * impact point is on it gets the head-shot bonus (`BodyPartBonusStep`). Read only with
-   * `combatHitbox`.
-   */
-  readonly headHitbox?: Polygon;
+  readonly bodyShape?: BodyShape;
   /** Sight radius in world units. */
   readonly visionRadius: number;
   /** Top speed, acceleration and mass; `movementStrategy` says how the unit steers. */

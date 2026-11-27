@@ -42,10 +42,9 @@ export const findUnitAt = (
     const dx = transform.x - point.x;
     const dy = transform.y - point.y;
     // Squared distances: core keeps transcendental Math out (ADR 0012).
-    const radius = radiusFor(entity);
     const isUnderPoint =
       combatHitbox === undefined
-        ? dx * dx + dy * dy <= radius * radius
+        ? dx * dx + dy * dy <= radiusFor(entity) ** 2
         : isPointInPolygon(point, combatHitbox);
     if (isUnderPoint && transform.y >= frontY) {
       selected = id;

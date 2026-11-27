@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -258,6 +258,7 @@ export type EntitySnapshot = {
   readonly family: EntityFamily;
   readonly definitionId: string;
   readonly mapFeatureId?: string; // a structure's map feature, so the HUD binds its tile (DEC-212)
+  readonly combatHitbox?: Polygon; // a big boss's body outline in world units, mirrored to its facing; a click inside it selects the unit (DEC-381)
   readonly team: Team | null;
   readonly transform: {
     readonly x: number;

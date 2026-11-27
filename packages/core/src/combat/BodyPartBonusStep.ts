@@ -8,11 +8,12 @@ import type { DamageHit, DamageStep } from './DamageStep.types';
 
 /**
  * The body-part bonuses on a big boss (DEC-381). On a unit with a body outline (`CombatHitbox`), a
- * hit from an attacker in the zone behind it (`backZoneDegrees` wide, centred on the side its art
- * shows its back, `CombatHitbox.isBehind`) is multiplied by `backHit`, and a hit whose impact point is on its head outline (only a projectile
- * hit has an impact point) by `headShot`. When both hold, only the larger applies. A status tick
- * (bleed, burn) is no hit from a side, so it gets no back-hit bonus. Every other hit, and every
- * unit that is only its circle, passes unchanged.
+ * hit that came from the zone behind it (`backZoneDegrees` wide, centred on the side its art shows
+ * its back, `CombatHitbox.isBehind`) is multiplied by `backHit`, and a shot whose line of flight
+ * crosses its head outline (`CombatHitbox.isHeadShot`) by `headShot`. When both hold, only the
+ * larger applies. A hit with no path (a status tick such as bleed or burn, a blast, a collapse)
+ * comes from no side, so it gets neither. Every other hit, and every unit that is only its circle,
+ * passes unchanged.
  */
 export class BodyPartBonusStep implements DamageStep {
   public readonly name = 'body-part-bonus';
@@ -43,23 +44,18 @@ export class BodyPartBonusStep implements DamageStep {
   }
 
   /** Returns the amount times the larger bonus that holds, else the amount unchanged. */
-  public adjust({ targetId, amount, source, impactPoint }: DamageHit, state: GameState): number {
+  public adjust({ targetId, amount, path }: DamageHit, state: GameState): number {
     const target = state.entities.get(targetId);
     const hitbox = target?.findComponent(CombatHitbox);
     const body = target?.findComponent(Transform);
-    if (hitbox === undefined || body === undefined) {
+    if (path === undefined || hitbox === undefined || body === undefined) {
       return amount;
     }
+    const { origin, impactPoint } = path;
     const { position, facing } = body;
-    const isHeadShot = impactPoint !== undefined && hitbox.isOnHead(impactPoint, position, facing);
-    const attacker =
-      source.attackerId === null
-        ? undefined
-        : state.entities.get(source.attackerId)?.findComponent(Transform);
-    const isFromBehind =
-      source.kind !== 'status' &&
-      attacker !== undefined &&
-      hitbox.isBehind(attacker.position, position, facing, this.backZoneCos);
+    const isHeadShot =
+      impactPoint !== undefined && hitbox.isHeadShot(origin, impactPoint, position, facing);
+    const isFromBehind = hitbox.isBehind(origin, position, facing, this.backZoneCos);
     return (
       amount * Math.max(isHeadShot ? this.bonus.headShot : 1, isFromBehind ? this.bonus.backHit : 1)
     );

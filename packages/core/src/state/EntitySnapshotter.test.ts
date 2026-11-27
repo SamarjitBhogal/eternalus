@@ -64,7 +64,7 @@ describe('EntitySnapshotter', () => {
   it("puts a big boss's body outline where it stands, and leaves the key out for every other entity", () => {
     const boss = new Bare('entity-1', 'greater-boss');
     boss.addComponent(new Transform({ x: 10, y: 20 }, 2.5));
-    boss.addComponent(new CombatHitbox(SQUARE));
+    boss.addComponent(new CombatHitbox({ outline: SQUARE }));
     const snapshotter = new EntitySnapshotter(4, CURVES);
 
     expect(snapshotter.snapshotOf(boss).combatHitbox).toEqual([

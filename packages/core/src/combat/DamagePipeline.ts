@@ -2,9 +2,8 @@ import { Health } from '../components/Health';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { DamageSource } from '../state/GameEvents.types';
-import type { Vec2 } from '../utils/geometry.types';
 import type { DamageResult } from './DamagePipeline.types';
-import type { DamageStep } from './DamageStep.types';
+import type { DamageStep, HitPath } from './DamageStep.types';
 import { createDefaultDamageSteps } from './defaultDamageSteps';
 import type { KillCredit } from './KillCredit';
 
@@ -32,16 +31,16 @@ export class DamagePipeline {
   ) {}
 
   /**
-   * Deals `amount` (finite, ≥ 0) damage from `source` to `targetId`. `impactPoint` is where a
-   * projectile struck, in world units (the head-shot bonus reads it, DEC-381); other hits leave it
-   * out.
+   * Deals `amount` (finite, ≥ 0) damage from `source` to `targetId`. `path` is where the hit came
+   * from (the body-part bonuses read it, DEC-381); a hit from no side (a status tick, a blast, a
+   * collapse) leaves it out.
    */
   public apply(
     state: GameState,
     targetId: EntityId,
     amount: number,
     source: DamageSource,
-    impactPoint?: Vec2,
+    path?: HitPath,
   ): DamageResult {
     const target = state.entities.get(targetId);
     if (target === undefined) {
@@ -59,10 +58,10 @@ export class DamagePipeline {
     if (amount === 0) {
       return { applied: false, reason: 'zero-damage' };
     }
-    const where = impactPoint === undefined ? {} : { impactPoint };
+    const from = path === undefined ? {} : { path };
     const final = this.steps.reduce(
       (current, step) =>
-        Math.max(0, step.adjust({ targetId, amount: current, source, ...where }, state)),
+        Math.max(0, step.adjust({ targetId, amount: current, source, ...from }, state)),
       amount,
     );
     if (final === 0) {

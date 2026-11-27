@@ -10,14 +10,14 @@ import { GREATER_BOSS } from './greaterBoss';
 const ART = { left: -24, right: 24, top: -24, bottom: 8 } as const;
 
 it('keeps the body and head outlines on the art the player sees, and the head on the body (DEC-381)', () => {
-  const { combatHitbox, headHitbox } = GREATER_BOSS;
-  for (const { x, y } of [...combatHitbox, ...headHitbox]) {
+  const { outline, head } = GREATER_BOSS.bodyShape;
+  for (const { x, y } of [...outline, ...head]) {
     expect(x).toBeGreaterThanOrEqual(ART.left);
     expect(x).toBeLessThanOrEqual(ART.right);
     expect(y).toBeGreaterThanOrEqual(ART.top);
     expect(y).toBeLessThanOrEqual(ART.bottom);
   }
-  for (const point of headHitbox) {
-    expect(isPointInPolygon(point, combatHitbox)).toBe(true);
+  for (const point of head) {
+    expect(isPointInPolygon(point, outline)).toBe(true);
   }
 });

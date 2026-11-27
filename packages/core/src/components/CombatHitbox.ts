@@ -1,21 +1,28 @@
-import { isPointInPolygon } from '../utils/geometry';
+import type { BodyShape } from '../content/units/units.types';
+import { doesRayCrossPolygon, isPointInPolygon, isPolygon } from '../utils/geometry';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 
 /**
  * A big boss's body shape (DEC-381): the outline clicks, attack reach and hits count on instead of
- * the collider circle, and the head inside it that a projectile's head shot lands on. Both are
- * static definition data in local world units for the art's left-facing pose, so they are not
+ * the collider circle, and the head inside it, which a head shot's line of flight crosses. Both
+ * are static definition data in local world units for the art's left-facing pose, so they are not
  * hashed; navigation keeps the circle.
  */
 export class CombatHitbox {
   /**
-   * @param outline - The local-space body outline (`UnitDefinition.combatHitbox`).
-   * @param head - The local-space head outline inside it (`UnitDefinition.headHitbox`), if any.
+   * @param shape - The local-space body outline and the head inside it
+   *   (`UnitDefinition.bodyShape`).
+   * @throws Error when the outline or the head has fewer than 3 corners or a corner that is not
+   *   finite.
    */
-  public constructor(
-    private readonly outline: Polygon,
-    private readonly head?: Polygon,
-  ) {}
+  public constructor(private readonly shape: BodyShape) {
+    const parts = shape.head === undefined ? [shape.outline] : [shape.outline, shape.head];
+    if (!parts.every(isPolygon)) {
+      throw new Error(
+        'CombatHitbox: the outline and the head each need at least 3 finite corners.',
+      );
+    }
+  }
 
   /**
    * The outline in world units for a unit at `position`, mirrored when it faces right
@@ -23,22 +30,27 @@ export class CombatHitbox {
    */
   public polygonAt(position: Vec2, facing: Vec2): Polygon {
     const mirror = CombatHitbox.mirrorOf(facing);
-    return this.outline.map(({ x, y }) => ({ x: position.x + x * mirror, y: position.y + y }));
+    return this.shape.outline.map(({ x, y }) => ({
+      x: position.x + x * mirror,
+      y: position.y + y,
+    }));
   }
 
   /**
-   * Whether the world point `point` is on the head of a unit at `position`, mirrored as
+   * Whether a shot from `origin` that struck at `impactPoint` (world points) is a head shot on a
+   * unit at `position` (DEC-381, HC-B60 A): the impact point is on the head, or the shot's line of
+   * flight, carried on from the impact point through the body, crosses the head. Mirrored as
    * `polygonAt` mirrors the body; `false` without a head outline.
    */
-  public isOnHead(point: Vec2, position: Vec2, facing: Vec2): boolean {
-    if (this.head === undefined) {
+  public isHeadShot(origin: Vec2, impactPoint: Vec2, position: Vec2, facing: Vec2): boolean {
+    const { head } = this.shape;
+    if (head === undefined) {
       return false;
     }
     const mirror = CombatHitbox.mirrorOf(facing);
-    return isPointInPolygon(
-      { x: (point.x - position.x) * mirror, y: point.y - position.y },
-      this.head,
-    );
+    const local = { x: (impactPoint.x - position.x) * mirror, y: impactPoint.y - position.y };
+    const flight = { x: (impactPoint.x - origin.x) * mirror, y: impactPoint.y - origin.y };
+    return isPointInPolygon(local, head) || doesRayCrossPolygon(local, flight, head);
   }
 
   /**

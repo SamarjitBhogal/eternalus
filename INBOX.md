@@ -15,19 +15,32 @@ review comments under "Feedback". Answered decisions are recorded in
 
 - [ ] **Boss body parts: the built defaults (DEC-381, `feat/boss-hit-area` on PR #160,
       2026-11-27).** You said: build defaults, then ask with options. Built: the Greater Boss's
-      body outline (from #161's colossus art) counts for clicks and attack reach. A hit from behind
-      (a 120-degree zone) does 15% more damage. A projectile on the head does 25% more. When both hold, only the larger
-      applies. "Behind" is the side the art shows the boss's back. A bleed or burn tick gets no
-      bonus. A melee hit gets no head bonus. Each number is `TUNE` in
-      `content/mobs/bodyPartBonus.ts`. Sam answered cards (1) to (5) on 2026-11-27 (DEC-381 row); (6)
-      and (7) are open.
-      Open after the cards, for the agents (no answer needed): (a) no projectile deals damage yet.
-      When ranged attacks (#148, `feat/ranged-attacks`) and this branch are both on phase/3, the
-      later PR passes the projectile's impact point to `DamagePipeline.apply` in `WeaponImpact`.
-      Until then only the tests reach the head bonus. (b) Play test: players now hit the boss from
-      up to about 20 m (the outline's edge). The boss's own reach stays 1.5 m past its 2.5 m
-      circle (DEC-371 E2 keeps these numbers). (c) The outlines fit the idle art. When #161's art
-      lands (Unit 2), check that its other frames draw on the same anchor.
+      body outline (from #161's colossus art) counts for clicks and attack reach. A hit from
+      behind (a 120-degree zone) does 15% more damage. A shot to the head does 25% more. When both
+      hold, only the larger applies. "Behind" is the side the art shows the boss's back. A bleed
+      or burn tick gets no bonus. A melee hit gets no head bonus. Each number is `TUNE` in
+      `content/mobs/bodyPartBonus.ts`. Sam answered cards (1) to (7) on 2026-11-27 (DEC-381 row).
+      Two new cards wait on the next Owner Calls page: HC-B60 (when does an arrow or a spell count
+      as a head shot; built: A, its line of flight crosses the head) and HC-B61 (does the boss hit
+      from its feet or from its whole body; as built: A, from its feet).
+      Open, for the agents (no answer needed): (a) no projectile deals damage yet. When ranged
+      attacks (#148, `feat/ranged-attacks`) and this branch are both on phase/3, the later PR
+      passes `{ origin: hit.origin, impactPoint: hit.point }` to `DamagePipeline.apply` in
+      `WeaponImpact`, and feeds `CombatHitbox` into #148's `Outline` (B2 below). Until then only
+      the tests reach the head bonus. (b) Play test: players now hit the boss from up to about
+      20 m (the outline's edge). The boss's own reach stays 1.5 m past its 2.5 m circle (DEC-371
+      E2 keeps these numbers); card HC-B61 asks about it. (c) The outlines fit the idle art. When
+      #161's art lands (Unit 2), check that its other frames draw on the same anchor. (d) Interim
+      gap: until #161's view lands (Unit 2), `MobView` draws the boss as a disc of about 3.5 m,
+      but clicks and hits count on the outline of about 40 m.
+      Better than the design (the branch critic's items B1 to B4; sign-off asked): B1 (built) the
+      unit definition has one `bodyShape` (`outline`, `head`) in place of two loose polygons. B2
+      (not built; at #148's merge) `CombatHitbox` gives #148's `Outline` its world polygon, its
+      bounds and "not walkable", so a shot stops on the body shape, not the circle. B3 (part
+      built) a hit's path goes to `DamagePipeline.apply` as one object (`HitPath`); one object
+      for the whole hit is not built, because it changes every caller. B4 (built) a hit says
+      where it came from (`HitPath.origin`), so the bonus step needs no attacker lookup and no
+      status check: a hit without a path gets no bonus.
 
 - [ ] **Minion strength port (PR #82, 2026-11-25): sign off `LaneProgressOf`.** Built: `combat/`
       reads lane progress through a new port, `LaneProgressOf = (laneId, team, position) => number

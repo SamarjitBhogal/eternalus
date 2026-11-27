@@ -54,8 +54,8 @@ export abstract class Unit extends Entity {
       transform.face(facing);
     }
     this.addComponent(transform);
-    if (definition.combatHitbox !== undefined) {
-      this.addComponent(new CombatHitbox(definition.combatHitbox, definition.headHitbox));
+    if (definition.bodyShape !== undefined) {
+      this.addComponent(new CombatHitbox(definition.bodyShape));
     }
     this.addComponent(new Health(definition.baseHealth));
     this.addComponent(new Movement(definition.movementProfile, definition.movementStrategy));
