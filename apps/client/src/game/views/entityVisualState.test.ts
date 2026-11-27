@@ -14,6 +14,7 @@ describe('withVisualRadius', () => {
         team: 'light',
         transform: { facing: { x: 1, y: 0 }, x: 1, y: 2, radius: 0.5 },
         health: null,
+        jump: null,
         progression: null,
         aether: null,
         area: null,
