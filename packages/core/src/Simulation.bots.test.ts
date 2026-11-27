@@ -258,7 +258,8 @@ describe('Simulation with bot laners (minion plan M3)', () => {
         simulation.step();
       }
       const cached = stored.mock.calls.filter(
-        ([, { memory }]) => typeof memory.pathGoalX === 'number',
+        ([, { memory }]) =>
+          typeof memory.pathGoalX === 'number' && typeof memory.pathVersion === 'number',
       ).length;
       stored.mockRestore();
       return { cached, hash: simulation.hash() };
