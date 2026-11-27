@@ -13,9 +13,10 @@ import { TypedEventBus } from '../bridge/TypedEventBus';
 import type { LogSink } from '../data/logging/LogSink.types';
 import { RingBufferSink } from '../data/logging/RingBufferSink';
 import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
-import { createBrowserMatch } from './createBrowserMatch';
+import { createBrowserMatch, type BrowserMatchDeps } from './createBrowserMatch';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
+import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
 import { MS_PER_SECOND } from './Match.constants';
 import type { MatchObserver, PreparedWorld } from './Match.types';
@@ -42,7 +43,12 @@ function evidenceOf(running: RunningMatch): MatchEvidence {
   return evidence;
 }
 
-function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []) {
+function setUp(
+  canvas = new FakeViewportCanvas(),
+  sinks: readonly LogSink[] = [],
+  isDeveloperMenuEnabled = false,
+  resources?: BrowserMatchDeps['resources'],
+) {
   const window = new FakeBrowserTarget();
   const document = new FakeBrowserTarget();
   const bus = new TypedEventBus<BridgeEventMap>();
@@ -50,10 +56,12 @@ function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []
     window,
     document,
     gameConfig: CONFIG,
+    isDeveloperMenuEnabled,
     bus,
     settings: { bindings: null },
     clock: new FakeSessionClock(),
     sinks,
+    ...(resources === undefined ? {} : { resources }),
   });
   const viewport: MatchViewport = {
     canvas,
@@ -81,6 +89,56 @@ function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []
 }
 
 describe('createBrowserMatch', () => {
+  it('loads only the selected atlas and releases it with the match', async () => {
+    const group = 'atlas-colossus';
+    const resources = {
+      load: vi.fn(() => Promise.resolve({ group, failed: [] } as const)),
+      release: vi.fn(),
+      atlases: vi.fn(() => ({})),
+    };
+    const { factory, viewport, request } = setUp(undefined, [], false, resources);
+    const matchRequest = request();
+    const player: RosterEntry = {
+      legendId: 'player',
+      displayName: 'Player',
+      team: 'dark',
+      isBot: false,
+      isRover: true,
+      classId: 'sentinel',
+      specId: 'colossus',
+      isPlayer: true,
+    };
+    const running = factory(
+      { ...matchRequest, setup: { ...matchRequest.setup, allies: [player] } },
+      viewport,
+    );
+    await Promise.resolve();
+    expect(resources.load.mock.calls).toHaveLength(1);
+    expect(resources.load).toHaveBeenCalledWith(group, expect.any(Function));
+    expect(resources.atlases).toHaveBeenCalledWith(group);
+    running.destroy();
+    expect(resources.release).toHaveBeenCalledExactlyOnceWith(group);
+  });
+  it.each([
+    { isDeveloperMenuEnabled: true, opened: [true] },
+    { isDeveloperMenuEnabled: false, opened: [] },
+  ])(
+    'passes ?dev=1 to the match: F1 opens the developer menu only when it is enabled ($isDeveloperMenuEnabled)',
+    ({ isDeveloperMenuEnabled, opened }) => {
+      const { window, bus, factory, viewport, request } = setUp(
+        undefined,
+        [],
+        isDeveloperMenuEnabled,
+      );
+      const states: boolean[] = [];
+      bus.on('developer-menu', ({ isOpen }) => states.push(isOpen));
+      const running = factory(request(), viewport);
+      window.dispatchEvent(fakeKeyEvent('keydown', 'F1'));
+      expect(states.filter((isOpen) => isOpen)).toEqual(opened);
+      running.destroy();
+    },
+  );
+
   it('throws for a canvas without a 2D context and leaves nothing behind', () => {
     const { window, factory, viewport, request, listeners } = setUp(
       new FakeViewportCanvas(1280, 720, null),
@@ -158,7 +216,7 @@ describe('createBrowserMatch', () => {
     expect(bus.listenerCount()).toBe(busBefore + 1);
   });
 
-  it('links each capture point the HUD lists to its zone in the simulation (PR #64)', () => {
+  it('links each capture point the HUD lists to its zone in the simulation by map feature id (PR #64, DEC-231)', () => {
     const { bus, factory, viewport, request } = setUp();
     const published: BridgeEventMap['capture-state'][] = [];
     bus.on('capture-state', (event) => published.push(event));
@@ -168,6 +226,7 @@ describe('createBrowserMatch', () => {
     running.destroy();
 
     expect(points.length).toBeGreaterThan(0);
+    // Progress 0, not `null`: core's zone names the point's feature, so the bridge found it.
     for (const point of points) {
       expect(point).toMatchObject({ ownerTeam: 'neutral', progress: 0 });
     }

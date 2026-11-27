@@ -3,11 +3,13 @@ import type { GuardSlot } from './GuardStore.types';
 
 /**
  * Every structure's guard posts (architecture 18 §7), in the order they were added. Plain data in
- * `GameState`, hashed by `StateHasher`. Changed only through `add`, `fill` and `vacate`.
+ * `GameState`, hashed by `StateHasher`. Changed only through `add`, `fill`, `vacate` and
+ * `markCleared`. It also keeps the checkpoint defender sets announced cleared (07 §7).
  */
 export class GuardStore {
   private readonly slots: GuardSlot[] = [];
   private readonly byGuard = new Map<EntityId, GuardSlot>();
+  private readonly clearedSets = new Set<string>();
 
   /** How many posts exist. */
   public get size(): number {
@@ -27,6 +29,21 @@ export class GuardStore {
   /** Every post, in the order it was added. */
   public forEach(visit: (slot: GuardSlot, index: number) => void): void {
     this.slots.forEach(visit);
+  }
+
+  /** Records checkpoint defender set `defenceId` as cleared (`checkpoint-cleared`). */
+  public markCleared(defenceId: string): void {
+    this.clearedSets.add(defenceId);
+  }
+
+  /** Whether checkpoint defender set `defenceId` was announced cleared. */
+  public isCleared(defenceId: string): boolean {
+    return this.clearedSets.has(defenceId);
+  }
+
+  /** Every cleared checkpoint defender set, in the order cleared. */
+  public get cleared(): readonly string[] {
+    return [...this.clearedSets];
   }
 
   /** Puts `guardId` on post `index`. */

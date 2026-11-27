@@ -36,6 +36,7 @@ const structure = (
     area: null,
     capture: null,
     aura,
+    gem: null,
   },
   position: { x: 5, y: 6 },
   facing: { x: 1, y: 0 },

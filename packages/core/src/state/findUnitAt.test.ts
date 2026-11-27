@@ -24,6 +24,7 @@ const entity = (
   area: null,
   capture: null,
   aura: null,
+  gem: null,
 });
 
 const PLAYER = entity('player', 'legend', 'light', 100);

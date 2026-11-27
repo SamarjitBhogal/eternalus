@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-27
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -518,7 +518,8 @@ add (the `veteran` damage bonus, DEC-164); `value` counts once per stack, and a 
 ticks count from the first application. Every unit gets `StatusEffects`; anything without it
 (structures) is immune. The component recomputes its multiplier table and flags when its list
 changes, not per tick. `combat/StatusEffectApplier` (not in the sketch above) is the one way in and out and emits every
-status event: `apply` (by id) emits `status-applied`; `remove` ends a status early (auras, holds)
+status event: `apply` (by id) emits `status-applied`; `removeStacks` takes stacks off with one
+`status-stacks-lost` (a lost minion level, DEC-353), or `status-expired` when none stay; `remove` ends a status early (auras, holds)
 and `expire`, called by `StatusEffectSystem`, removes the timed-out ones, both with
 `status-expired`. `DefaultSystemPipeline` loads the statuses for the match's config and builds the
 one applier, next to the one `DamagePipeline`, so later producers (turret concussion 2.3, gate
@@ -569,9 +570,13 @@ strength-by-distance curve), target statuses (`sundered`, `marked`, `hexed`), th
 `damageMultipliers` keyed by the attacker's `damageClass`
 ([07 §4](07-structures-obstacles-and-destructibles.md#4-gates)), `Collider.isUnbreakable`
 (rejects), then `Health.applyDamage`. `DeathResolver` turns an overflow into `entity-died {
-entityId, killer: DamageSource }` and records the cause for `DeathSystem` (rule B). That is why
-every ability, weapon, status tick and gate fire names a `DamageSource`: "extra effective against
-Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `CombatSystem`.
+entityId, killer: DamageSource }` and records the cause for `DeathSystem` (rule B). A death by
+attacker-less damage that credits a killer (the Cathedral gem's statuses, DEC-346) names the
+victim's last enemy damager inside the assist window as the attacker, keeping the gem's source kind
+and id; it is decided there, once, so every reader of `entity-died` sees the same killer. Only a
+hit in the victim's current life counts: a respawn or a Duel round reset forgets the last one.
+That is why every ability, weapon, status tick and gate fire names a `DamageSource`: "extra
+effective against Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `CombatSystem`.
 
 **Implementation status (sprint 2.2, PR #34).** `DamagePipeline.apply(state, targetId, amount,
 source)` is built and is the only caller of `Health.applyDamage`. Each modifier above is a
@@ -581,7 +586,8 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 which gives the same result as §9's late check; 07 §3), `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
 `INBOX.md`), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8), `MinionStrengthStep`
 (the minion strength-by-distance curve, its base-stat point moved toward the enemy for each lane
-tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16) and
+tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16; `createDefaultDamageSteps(progressOf)`
+injects the lane flow fields' progress, gate to gate by path cost, DEC-280, see 18's status note) and
 `BossMinionDamageStep` (a boss takes only its share of a lane minion's hit, balancing.md; the
 shares are `BOSS_MINION_DAMAGE_TAKEN` in `content/mobs/minionModifiers.ts`) and
 `InteriorAttackStep` (an attacker standing inside a building deals
@@ -591,7 +597,9 @@ band, so not from a doorway; DEC-247 (2), DEC-288, DEC-315, DEC-324;
 [07](07-structures-obstacles-and-destructibles.md)). Interim differences:
 no `DamageType` yet (nothing reads it; it joins `DamageHit` and
 `apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
-`DeathResolver` is not a separate class yet. `BossMinionDamageStep` stands in for the target's
+`DeathResolver` is not a separate class yet. The gem's kill credit is `KillCredit`, which the
+pipeline asks on each landed hit (it keeps the `LastEnemyHit` component) and before
+`entity-died`. `BossMinionDamageStep` stands in for the target's
 `damageMultipliers` keyed by the attacker's `damageClass` above: mobs have neither field yet, so
 the step keys its own table by boss id and finds a lane minion by horde membership; a
 `damageClass` on lane minions and `damageMultipliers` on the boss replace it. `GameState.killerOf` keeps this tick's killers, so
@@ -783,7 +791,7 @@ export type LevelScalingDefinition = {
 ```
 
 `ProgressionSystem` listens to `entity-died`, `damage-applied` (assist window, objective damage),
-`structure-destroyed` and `checkpoint-cleared`, defers the awards to its own pass, applies XP from
+`structure-destroyed`, `camp-cleared` and `checkpoint-cleared`, defers the awards to its own pass, applies XP from
 `content/progression/xpSources.ts` (per-source amounts, share radius, damage bias;
 `Recommendation:` balancing.md), emits `level-up { entityId, level }`, raises the `Health` base
 max and `Abilities.maxAether` by the class's `LevelScalingDefinition`, and applies the
@@ -940,17 +948,50 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   self or ally kill (O5), and in its own pass emits `xp-gained` and gives the XP to the killer
   only. A level-up raises max health by the class's share of base health and max aether, and heals
   and refills by the raise only while the Legend is alive (O3, O4). Structure XP is built (DEC-186: every
-  Legend on the destroying team; a dead Legend is skipped until respawn, GL-12). Team-kill XP is
-  built for the capture point boss and the corner boss (DEC-237): a mob in
-  `XP_SOURCES.teamKills` pays every Legend of its killer's playable team, not the killer alone, and each Legend gets at most the XP that lifts
+  Legend on the destroying team; a Legend waiting to respawn is paid as it returns, DEC-186). Team-kill XP is
+  built for the capture point boss and the corner boss (DEC-237): a mob in `XP_SOURCES.teamKills` pays every Legend of
+  its killer's playable team, not the killer alone, and each Legend gets at most the XP that lifts
   it `maxLevels` levels (`Progression.xpToReach`); `level-matches-xp` checks that the killer is on
   the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
-  `xp-granted` reward path. Not built yet: the share radius and damage bias, assists, checkpoint and
-  camp XP, the Eternal's flat 5 levels (DEC-237) (their systems do not exist),
-  basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
-  dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
+  `xp-granted` reward path. Camp XP is built: `camp-cleared` pays the camp's entry in
+  `XP_SOURCES.campCleared`, keyed by camp definition id (forest camps only; a corner camp's boss
+  pays `teamKills` instead) (`cause: 'camp-cleared'`), one tick after the last mob's kill XP, and
+  is owed like a kill when its Legend waits to respawn; `level-matches-xp` checks that the camp is
+  a guard home with none of its own posts holding a guard (checkpoint-defender posts on the same
+  home do not count). The bonus goes only to the Legend that killed the camp's last mob, and to
+  nobody when a minion or turret lands that hit (DEC-375). Not built yet:
+  the share radius and damage bias, assists, checkpoint XP, the Eternal's flat 5 levels (DEC-237)
+  (their systems do not exist), basic-attack and ability potency per level, `upgradeIds` and the
+  ultimate charge rules. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
   soak metric can change them) and live in `content/progression/`.
+- **Legend respawn (`fix/legend-respawn`, GL-12, DEC-295).** FR-051 and DEC-80, with the
+  owner's middle way (DEC-295). `RespawnSystem` runs just before `DeathSystem` in every match,
+  after the Duel round: it queues every dead Legend of a playable team in `state.respawns`
+  (`RespawnQueue`, hashed with the waiting Legend's own fields), and `DeathSystem` then withdraws
+  it (`EntityStore.withdraw`), not retires it. After the fixed delay in
+  `content/progression/legendRespawn.ts` the same Legend object returns at its team's Stronghold,
+  facing the enemy Stronghold, with full health and aether and no status effects, movement or
+  target; its id, level, XP, caps and loadout are its own. Only the ultimate's charge and cooldown
+  survive death (kept apart from aether, DEC-295 (1)); every other ability comes back fully cooled
+  down (FR-117). A bot laner picks its lane again by the current threat
+  (DEC-295 (2)); a return ignores every cap (DEC-295 (4)). XP the Legend earns while it waits (its
+  team's structure and boss awards, a kill its hit lands after it died) is owed on its queue entry
+  and paid by `ProgressionSystem` in its pass after it returns (`legend-respawned` is buffered,
+  cause `respawn`, DEC-186). `LegendReset` holds the reset `DuelRoundSystem` shares. The sovereign is not a Legend, so it never returns. The client leaves a greyed-out body
+  where a Legend fell (`LegendBodies`). `RespawnSystem` reads `Health.isDead` just before
+  `DeathSystem` rather than subscribing to `entity-died`: `entity-died` fires while the victim is
+  still in the store, but the later pass also keeps any XP the Legend earns later in the same tick.
+  The momentum-scaling timer (claudiodh, DEC-80) replaces the fixed delay.
+- **Duel start at max level (`feat/duel-legend-max-level`, SCRUM-444).** In a Duel only,
+  `Simulation` sets `ProgressionContent.legendsStartAtMaxLevel` from `DUEL_RULES`. Then
+  `ProgressionSystem` raises each Legend to its curve's cap when it spawns (`entity-spawned`), with
+  each level's health and aether raises. Only Legends are raised. The start is no award, so it
+  emits no `xp-gained` and no `level-up` (`INBOX.md`, the DEC-36 item, question (1)).
+  The raise is made in the listener, which is an exception to 03 §4 (a listener defers a state
+  change to its system's pass): the roster spawns in the `Simulation` constructor, before any
+  pass, so a deferred raise would show level-1 Legends for the first tick. The owner signed off
+  the exception (DEC-406), and 03 §4 names it.
 - **HUD (`feat/hud-and-character-select`, 2026-10-24).** §15's `PlayerSnapshot` does not exist
   in core yet. The client's `MatchBridge` joins the player's `EntitySnapshot` groups into
   `PlayerHudSnapshot` (`bridge/hud.types.ts`), as §15 sets (DEC-232); until `SnapshotSystem` fills

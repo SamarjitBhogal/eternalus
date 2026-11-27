@@ -48,6 +48,7 @@ export class MinionController implements Controller {
       return hordeId !== undefined && state.hordes.hordeOf(victimId)?.id === hordeId;
     },
     helpRadius: ({ rule }) => rule.callForHelpRadius,
+    acquisitionRadius: ({ rule }) => rule.acquisitionRadius,
   };
   /** What `decideLeashed` reads from this controller, built once (DEC-168 B1, DEC-219 (d)). */
   private readonly parts: LeashDecisionParts<'marching', HordeAggroRuleDefinition> = {

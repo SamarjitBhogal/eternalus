@@ -137,6 +137,7 @@ describe('StuckSystem', () => {
         leashRadius,
         leashTolerance: 2,
         respawnTicks: 1,
+        canLevel: false,
       });
       chase.state.guards.fill(0, chase.chaser.id);
       const system = new StuckSystem(RULE);

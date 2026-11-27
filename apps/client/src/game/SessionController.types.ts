@@ -18,6 +18,7 @@ import type { ResourceController } from '../data/resources/ResourceController';
 import type { DuelLink } from './duel/DuelLink.types';
 import type { CatalogueSource } from './content/CatalogueSource.types';
 import type { MessageTransport } from './engine/net/MessageTransport';
+import type { GuestIdStore } from './duel/DuelSession.types';
 import type { SessionClock } from './engine/time/SessionClock.types';
 import type { MatchCrash, MatchObserver, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
@@ -125,6 +126,8 @@ export interface SessionContext {
   joinDuelQueue(name: string): void;
   /** Leaves the Duel queue (`queue-leave`) and closes the connection. */
   leaveDuelQueue(): void;
+  /** Forfeits the Duel in progress (`forfeit`) and closes the connection. */
+  forfeitDuel(): void;
   /**
    * Drops the setup, the selection, the prepared world and the team theme, and closes any Duel
    * connection (the menu is where every match ends up).
@@ -234,6 +237,8 @@ export type SessionControllerDeps = {
   readonly createDuelMatch: DuelMatchFactory;
   /** A new, unconnected transport to the Duel server per Duel (`WebSocketTransport` in the app). */
   readonly createDuelTransport: () => MessageTransport;
+  /** Where the guest id the Duel server issued is kept (`PersistenceController` in the app). */
+  readonly guestIds: GuestIdStore;
   /** Where the session reports a match that could not start or a load bug. */
   readonly logger: Logger;
   /**

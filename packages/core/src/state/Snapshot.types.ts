@@ -10,14 +10,17 @@ import type { Polygon, Rect } from '../utils/geometry.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
- * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`, `Capturable`
- * or `Aura`), never a made-up default.
+ * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`, `Capturable`,
+ * `Aura` or `CathedralGemState`), never a made-up default.
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
   /**
-   * A structure built from a map feature: the feature's id (`MapFeature.id`), so a HUD tile binds
-   * to its structure by identity, never by position.
+   * An entity built from a map feature (a structure or a capture zone): the feature's id
+   * (`MapFeatureLink`), so a HUD tile or capture point binds to its entity by identity, never by
+   * position. Absent for an entity built from no feature. One feature may back several entities
+   * (the Cathedral's zone and its gem structure, DEC-233), so a consumer selects by this id
+   * and by the group it reads (`FeatureKeyedGroup`).
    */
   readonly mapFeatureId?: string;
   readonly id: EntityId;
@@ -48,7 +51,28 @@ export type EntitySnapshot = {
    * from. The client draws the field from it, so no radius lives in the client.
    */
   readonly aura: { readonly radius: number; readonly box: Rect } | null;
+  /** The Cathedral gem's state (`CathedralGemState`, DEC-291, DEC-292); `null` for the rest. */
+  readonly gem: GemSnapshot | null;
 };
+
+/** The Cathedral gem as the client sees it: whose colour it shows, and its glow. */
+export type GemSnapshot = {
+  /** Who holds the Cathedral (DEC-291: the gem shows that team's colour). */
+  readonly holder: Team;
+  /** Ticks the glow still lasts; 0 when it is dark. */
+  readonly glowTicksLeft: number;
+  /** Hits since the glow last went dark: more hits glow brighter and wider (DEC-292). */
+  readonly glowHits: number;
+  /** Ticks since the last hit (0 on the tick it was struck), or `null` before the first. */
+  readonly ticksSinceHit: number | null;
+};
+
+/**
+ * A group a consumer may read by `EntitySnapshot.mapFeatureId`: at most one entity of a feature
+ * carries it, which core checks (`map-feature-groups-unique`), so the lookup finds one value and
+ * never hides another (DEC-233, DEC-255, DEC-256).
+ */
+export type FeatureKeyedGroup = keyof Pick<EntitySnapshot, 'health' | 'capture'>;
 
 /** A Legend's level and XP as the client sees it (architecture 03 §5, the HUD's XP ring). */
 type ProgressionSnapshot = LevelProgress & {

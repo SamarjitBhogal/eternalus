@@ -45,12 +45,12 @@ const setUp = () => {
     return entity.id;
   };
   /** Puts `guardId` on a new post at `postX` of the home `homeId` (same place and size). */
-  const post = (guardId: string, homeId: string, postX: number) => {
+  const post = (guardId: string, homeId: string, postX: number, team: Team = 'light') => {
     const index = state.guards.size;
     state.guards.add({
       id: `${homeId}:${String(index)}`,
       homeId,
-      team: 'light',
+      team,
       mobId: 'light-guard',
       row: 0,
       indexInRow: index,
@@ -62,6 +62,7 @@ const setUp = () => {
       leashRadius: 8,
       leashTolerance: 2,
       respawnTicks: 3600,
+      canLevel: false,
     });
     state.guards.fill(index, guardId);
   };
@@ -74,7 +75,7 @@ const setUp = () => {
   const moveGuardTo = (x: number) => {
     moveTo(guard, x);
   };
-  const decide = (memory: AiMemory = {}) => {
+  const decide = (memory: AiMemory = {}, profileId = 'tower-guard') => {
     space.begin(state.entities.size);
     state.entities.forEach((entity) => {
       const { x, y } = entity.getComponent(Transform).position;
@@ -87,7 +88,7 @@ const setUp = () => {
       perception,
       brain: {
         controllerId: 'guard',
-        profileId: 'tower-guard',
+        profileId,
         memory,
         rngState: { seed: 1, words: [1, 2, 3, 4] as const },
       },
@@ -219,6 +220,26 @@ describe('GuardController', () => {
     expect(decide().commands).toEqual([]);
   });
 
+  it('answers no call from a guard of the same home on another team (capture-point defenders)', () => {
+    const { state, add, post, decide } = setUp();
+    const other = add('neutral', 38, 'light-guard');
+    post(other, 'home', 38, 'neutral');
+    const enemy = add('dark', 36); // inside the circle, 24 from the guard
+    state.entities.setAttackTarget(enemy, other);
+
+    expect(decide().commands).toEqual([]);
+  });
+
+  it('takes any enemy inside its leash with the checkpoint-defender profile, past the tower range (DEC-260)', () => {
+    const { guard, add, decide } = setUp();
+    const enemy = add('dark', 36); // inside the circle, 24 from the guard: past 6 m
+
+    expect(decide().commands).toEqual([]);
+    expect(decide({}, 'checkpoint-defender').commands).toEqual([
+      { type: 'attack-target', actorId: guard, targetId: enemy },
+    ]);
+  });
+
   it('fights back against a neutral camp mob that attacks it, and leaves alone one that does not (DEC-166)', () => {
     const { state, guard, add, decide } = setUp();
     const camp = add('neutral', 64, 'light-camp-mob'); // inside its circle
@@ -298,6 +319,7 @@ describe('GuardController', () => {
       leashRadius: 6,
       leashTolerance: 2,
       respawnTicks: 3600,
+      canLevel: false,
     });
     state.guards.fill(0, mob.id);
     const decide = (memory: AiMemory = {}) => {

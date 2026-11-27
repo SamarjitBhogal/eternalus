@@ -7,14 +7,16 @@ import {
   distributeCamps,
   placeCampSlots,
 } from './campPlacement';
-import { BUILDING_GEOMETRY } from '../content/maps/buildingGeometry';
 import { SKETCH_HEIGHT, SKETCH_WIDTH } from '../content/maps/map1Scenery';
 import { laneFortKeepOuts } from './fortInWorld';
+import { campHalfExtent } from './campArtByKind';
+import type { CampArtKind } from './campArtByKind';
 import { createMapFeature } from './createMapFeature';
 import { LaneGeometry } from './LaneGeometry';
 import { RADIANS_PER_DEGREE } from '../utils/geometry';
 import { NEUTRAL_SIDES, TEAM_SIDES } from './MapBuilder.constants';
 import type {
+  CampClearance,
   FeatureSpec,
   MapBuildInput,
   MirroredFeatureSpec,
@@ -129,15 +131,21 @@ export class MapBuilder {
   /** Forest camps between adjacent lanes (weight by depth, DISC-42), then the corner camps. */
   public placeCamps(): this {
     const { config, layout } = this.input;
-    // Camps are in world units; keep-outs and the camp box are authored in sketch units.
+    // Camps are in world units; keep-outs and the camp art are authored in sketch units.
     const world = { width: config.worldWidth, height: config.worldHeight };
-    const clearance = {
-      keepOuts: laneFortKeepOuts(this.features, world),
-      extent: {
-        x: (BUILDING_GEOMETRY.camp.halfExtent.x * world.width) / SKETCH_WIDTH,
-        y: (BUILDING_GEOMETRY.camp.halfExtent.y * world.height) / SKETCH_HEIGHT,
-      },
+    const keepOuts = laneFortKeepOuts(this.features, world);
+    const clearanceOf = (kind: CampArtKind): CampClearance => {
+      const half = campHalfExtent(kind);
+      return {
+        keepOuts,
+        extent: {
+          x: (half.x * world.width) / SKETCH_WIDTH,
+          y: (half.y * world.height) / SKETCH_HEIGHT,
+        },
+      };
     };
+    const clearance = clearanceOf('camp');
+    const cornerClearance = clearanceOf('corner-camp');
     const slots = placeCampSlots({
       lightHalves: this.lightHalves,
       lanePaths: this.lanes.map((lane) => lane.path),
@@ -166,12 +174,12 @@ export class MapBuilder {
       (anchor, index) => {
         const position = clearCampOfForts(
           { x: anchor.x + this.input.rng.next() * layout.cornerCamps.stepX, y: anchor.y },
-          clearance,
+          cornerClearance,
           ({ x, y }) =>
-            x >= clearance.extent.x &&
+            x >= cornerClearance.extent.x &&
             x <= this.centreX &&
-            y >= clearance.extent.y &&
-            y <= config.worldHeight - clearance.extent.y,
+            y >= cornerClearance.extent.y &&
+            y <= config.worldHeight - cornerClearance.extent.y,
         );
         this.addMirrored(
           { suffix: `corner-camp-${String(index)}`, definitionId: this.ids().cornerCamp, position },

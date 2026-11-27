@@ -23,6 +23,7 @@ const unit = (
   area: null,
   capture: null,
   aura: null,
+  gem: null,
 });
 
 const intent = (over: Partial<InputIntent>): InputIntent => ({

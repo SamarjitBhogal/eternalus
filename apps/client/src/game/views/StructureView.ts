@@ -48,7 +48,7 @@ export class StructureView extends DefaultEntityView {
   }
 
   /** Draws the kind's marker while the structure stands; nothing for a kind without one. */
-  public override draw({ entity, position }: EntityDrawState, renderer: Renderer): void {
+  public override draw({ entity, position }: EntityDrawState, renderer: Renderer): undefined {
     const marker = STRUCTURE_MARKERS[entity.kind];
     if (marker === undefined || StructureView.hasFallen(entity)) return;
     renderer.drawWorldGlyph(marker, position, this.colorOf(entity.team));

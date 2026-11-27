@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { STATUS_EFFECTS } from './statusEffectCatalogue';
 
 describe('STATUS_EFFECTS', () => {
-  it('holds the MVP set, the minion veterancy statuses and the BuffTower aura statuses', () => {
+  it('holds the MVP set, the minion veterancy statuses, the BuffTower aura statuses and the Cathedral gem’s', () => {
     expect(STATUS_EFFECTS.ids).toEqual([
       'bleed',
       'concussion',
@@ -16,6 +16,8 @@ describe('STATUS_EFFECTS', () => {
       'rallied',
       'tower-aura-buff',
       'tower-aura-debuff',
+      'gem-shock',
+      'gem-burn',
     ]);
   });
 

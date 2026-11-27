@@ -19,6 +19,7 @@ const dummy = (team: EntitySnapshot['team']): EntitySnapshot => ({
   area: null,
   capture: null,
   aura: null,
+  gem: null,
 });
 
 const AT = { x: 10, y: 20 };

@@ -2,14 +2,17 @@ import { describe, expect, it } from 'vitest';
 
 import { Capturable } from '../components/Capturable';
 import { Footprint } from '../components/Footprint';
+import { MapFeatureLink } from '../components/MapFeatureLink';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { ZoneArea } from '../components/ZoneArea';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { CAPTURE_POINT } from '../content/zones/capturePoint';
 import { Entity } from '../entities/Entity';
 import { BuffTower } from '../entities/structures/BuffTower';
 import { Stronghold } from '../entities/structures/Stronghold';
+import { CapturePoint } from '../entities/zones/CapturePoint';
 import { EntitySnapshotter } from './EntitySnapshotter';
 
 /** An entity with no components; a test adds the ones it needs. */
@@ -67,8 +70,8 @@ describe('EntitySnapshotter', () => {
       definition: STRUCTURE_DEFINITIONS.get('stronghold'),
       position: { x: 5, y: 6 },
       team: 'light',
-      mapFeatureId: 'light-stronghold',
     });
+    built.addComponent(new MapFeatureLink('light-stronghold'));
     const loose = new Stronghold('entity-2', 'stronghold');
     loose.spawn({
       definition: STRUCTURE_DEFINITIONS.get('stronghold'),
@@ -122,5 +125,28 @@ describe('EntitySnapshotter', () => {
     expect(snapshot.aura).toEqual({ radius: 12, box: { x: 0, y: 0, width: 10, height: 4 } });
     expect(snapshot.aura?.box).toEqual(footprint.bounds);
     expect(structuredClone(snapshot)).toEqual(snapshot);
+  });
+
+  it('names the map feature of every entity that links one, a capture zone too (DEC-231)', () => {
+    const zoneAt = (id: string, mapFeatureId?: string): CapturePoint => {
+      const zone = new CapturePoint(id, CAPTURE_POINT.id);
+      zone.spawn({
+        definition: CAPTURE_POINT,
+        position: { x: 5, y: 5 },
+        team: 'neutral',
+        area: [SQUARE],
+      });
+      if (mapFeatureId !== undefined) zone.addComponent(new MapFeatureLink(mapFeatureId));
+      return zone;
+    };
+    const linked = new Bare('entity-3', 'bare');
+    linked.addComponent(new MapFeatureLink('light-gate-lane-0'));
+    const snapshotter = new EntitySnapshotter(4, CURVES);
+
+    expect(snapshotter.snapshotOf(zoneAt('entity-1', 'capture-point-lane-1')).mapFeatureId).toBe(
+      'capture-point-lane-1',
+    );
+    expect(snapshotter.snapshotOf(zoneAt('entity-2'))).not.toHaveProperty('mapFeatureId');
+    expect(snapshotter.snapshotOf(linked).mapFeatureId).toBe('light-gate-lane-0');
   });
 });

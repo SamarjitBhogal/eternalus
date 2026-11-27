@@ -29,8 +29,10 @@ import type { WorldMap } from './WorldMap';
  * changes (`CourtExitField`). Lane flow fields share the rule (`WorldMap.isRoutable`), so hordes
  * march through a court by its west and east doorways (DEC-315).
  *
- * @remarks ponytail: a bot searches again on each decision whose straight line is blocked (11 §6
- * puts heavy work in systems); cache the path in the brain if profiling shows the cost.
+ * @remarks ponytail: a bot caches one waypoint per brain (`BotMovement`, 11 §6), so it searches
+ * again only when that waypoint stops serving its destination; a bot whose destination moves
+ * more than `arrivalDistance` each decision still searches each decision. Cache the whole path
+ * if profiling shows that cost.
  */
 export class AStarPathfinder {
   private readonly cost: Uint32Array;
@@ -74,6 +76,11 @@ export class AStarPathfinder {
    */
   public get lastCost(): number {
     return this.foundCost;
+  }
+
+  /** Whether a walker can go straight from `start` to `end` without crossing blocked ground. */
+  public isLineClear(start: Vec2, end: Vec2): boolean {
+    return this.grid.isLineClear(start.x, start.y, end.x, end.y);
   }
 
   /**
