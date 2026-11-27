@@ -37,7 +37,11 @@ describe('ResultsState', () => {
 
     new ResultsState().enter(context);
 
-    expect(context.calls.releaseAssets).toEqual([['match'], ['atlas-oracle'], ['atlas-colossus']]);
+    expect(context.calls.releaseAssets).toEqual([
+      ['match'],
+      ['sprite-atlas:oracle-sprites'],
+      ['sprite-atlas:colossus-sprites'],
+    ]);
   });
 
   it('goes to the menu when the countdown ends, not before (DEC-78)', () => {

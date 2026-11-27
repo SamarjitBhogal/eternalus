@@ -19,6 +19,7 @@ import { PRESETS } from './input/keybindings';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, LOG_RING_CAPACITY } from './Match.constants';
 import { matchLegendSheets } from './matchLegendSheets';
+import { matchAssetGroups } from './session/matchAssetGroups';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { MatchHost } from './MatchHost';
 import type { HostDocument, HostWindow } from './MatchHost.types';
@@ -94,8 +95,9 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
     // Core spawns the roster's human slot, the player's Rover, at the team's Stronghold: a map
     // without one throws in `Simulation`, below.
     const config = withPlayerTeam(gameConfig, request.setup.playerTeam);
+    // The groups `match-loading` loaded; only the sprite sheet groups hold atlases.
     const atlases = Object.fromEntries(
-      [...legendSheets.values()].flatMap(({ group }) =>
+      matchAssetGroups(request.setup).flatMap((group) =>
         Object.entries(resources?.atlases(group) ?? {}),
       ),
     );

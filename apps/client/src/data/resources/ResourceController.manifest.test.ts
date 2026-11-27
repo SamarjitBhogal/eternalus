@@ -24,14 +24,14 @@ const BUDGETS: readonly (readonly [AssetGroup, number, number])[] = [
   ['match', 141_646, 359_902],
   // The Legend sprite sheets, accepted as written, lossless (ADR 0027, DEC-378 (3)). A match
   // loads the sheet of every Legend in it (DEC-378 (2)).
-  ['atlas-assassin', 150_240, 519_994],
-  ['atlas-knight', 202_298, 700_854],
-  ['atlas-paladin', 234_572, 826_646],
-  ['atlas-colossus', 245_878, 873_836],
-  ['atlas-juggernaut', 264_830, 934_970],
-  ['atlas-catalyst', 399_098, 1_391_908],
-  ['atlas-oracle', 426_890, 1_487_658],
-  ['atlas-necromancer', 345_032, 1_210_002],
+  ['sprite-atlas:assassin-sprites', 150_240, 519_994],
+  ['sprite-atlas:knight-sprites', 202_298, 700_854],
+  ['sprite-atlas:paladin-sprites', 234_572, 826_646],
+  ['sprite-atlas:colossus-sprites', 245_878, 873_836],
+  ['sprite-atlas:juggernaut-sprites', 264_830, 934_970],
+  ['sprite-atlas:catalyst-sprites', 399_098, 1_391_908],
+  ['sprite-atlas:oracle-sprites', 426_890, 1_487_658],
+  ['sprite-atlas:necromancer-sprites', 345_032, 1_210_002],
 ];
 
 /** The shipped manifest behind the browser adapters, with fake images and font faces. */
@@ -74,6 +74,12 @@ describe('ResourceController with the shipped manifest', () => {
     ]);
 
     expect(totals).toEqual(BUDGETS);
+  });
+
+  it('has one budget row for each group in the manifest, so a new sheet needs one (ADR 0027)', () => {
+    const manifestGroups = new Set(ASSET_MANIFEST.assets.map((entry) => entry.group));
+
+    expect([...manifestGroups].sort()).toEqual(BUDGETS.map(([group]) => group).sort());
   });
 
   it('registers the Cinzel face with the boot group', async () => {

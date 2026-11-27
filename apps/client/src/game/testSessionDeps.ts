@@ -46,7 +46,9 @@ export function testResources(failingGroups: readonly AssetGroup[] = []): {
     'boot',
     ...SELECTION_ASSET_GROUPS,
     'match',
-    ...Object.values(LEGEND_SPRITE_SHEETS).map(({ group }) => group),
+    ...Object.values(LEGEND_SPRITE_SHEETS).map(
+      ({ atlasId }): AssetGroup => `sprite-atlas:${atlasId}`,
+    ),
   ];
   const manifest: AssetManifest = {
     version: 'test',

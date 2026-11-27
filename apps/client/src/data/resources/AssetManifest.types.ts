@@ -16,12 +16,18 @@ export type AssetId = string;
 export type AssetType = 'ui-image' | 'font' | 'sprite-atlas';
 
 /**
+ * The sprite sheet group family (DEC-398, card PR170 (9)): each sheet is its own group, named by
+ * its asset id, so the match loads a sheet by its id. A new sheet needs no new group name.
+ */
+export type SpriteAtlasGroup = `sprite-atlas:${AssetId}`;
+
+/**
  * When an asset loads (13 §2; 14 §14): `boot` before the menu; the `selection` groups in `loading`
  * (`selection` for both class-step layouts and the Legend step, `selection-primary` and
  * `selection-alternate` for one layout's class step, `selection-primary-raster` and
  * `selection-raster` for the plates the `figma-raster` effects renderer draws); `match` in
- * `match-loading`. Each `atlas-<sub-class>` group holds one Legend sprite sheet; `match-loading`
- * loads the sheet of every Legend in the match after `match` (`matchAssetGroups`; DEC-378 (2)).
+ * `match-loading`. `match-loading` then loads the sheet group (`SpriteAtlasGroup`) of every Legend
+ * in the match (`matchAssetGroups`; DEC-378 (2)).
  */
 export type AssetGroup =
   | 'boot'
@@ -31,14 +37,7 @@ export type AssetGroup =
   | 'selection-raster'
   | 'selection-primary-raster'
   | 'match'
-  | 'atlas-assassin'
-  | 'atlas-knight'
-  | 'atlas-paladin'
-  | 'atlas-colossus'
-  | 'atlas-juggernaut'
-  | 'atlas-catalyst'
-  | 'atlas-oracle'
-  | 'atlas-necromancer';
+  | SpriteAtlasGroup;
 
 /**
  * One use of an image whose device-pixel box differs from the entry's other uses in size,

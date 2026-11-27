@@ -6,9 +6,12 @@ import { matchAssetGroups } from './matchAssetGroups';
 
 describe('matchAssetGroups', () => {
   it.each(Object.entries(LEGEND_SPRITE_SHEETS))(
-    'loads the %s sheet group after the match group',
-    (specId, { group }) => {
-      expect(matchAssetGroups(filledRostersFixture({ player: specId }))).toEqual(['match', group]);
+    'loads the %s sheet by its id, in the sheet family, after the match group',
+    (specId, { atlasId }) => {
+      expect(matchAssetGroups(filledRostersFixture({ player: specId }))).toEqual([
+        'match',
+        `sprite-atlas:${atlasId}`,
+      ]);
     },
   );
 
@@ -29,7 +32,12 @@ describe('matchAssetGroups', () => {
 
     expect(first).toBe('match');
     expect(new Set(sheets)).toEqual(
-      new Set(['atlas-oracle', 'atlas-knight', 'atlas-colossus', 'atlas-necromancer']),
+      new Set([
+        'sprite-atlas:oracle-sprites',
+        'sprite-atlas:knight-sprites',
+        'sprite-atlas:colossus-sprites',
+        'sprite-atlas:necromancer-sprites',
+      ]),
     );
     expect(sheets).toHaveLength(4);
   });

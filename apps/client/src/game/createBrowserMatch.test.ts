@@ -125,7 +125,7 @@ describe('createBrowserMatch', () => {
         'colossus-sprites': new SpriteAtlasAsset(image, 6, 10, 0.1),
       });
 
-      expect(lookups).toEqual([['atlas-colossus']]);
+      expect(lookups).toEqual([['match'], ['sprite-atlas:colossus-sprites']]);
       expect(warnings).toEqual([]);
       // The session owns the atlas: the match neither loads nor closes it.
       expect(image.close).not.toHaveBeenCalled();
@@ -141,8 +141,12 @@ describe('createBrowserMatch', () => {
       const ring = new RingBufferSink(LOG_RING_CAPACITY);
       const image = () => ({ width: 384, height: 640, close: vi.fn() });
       const byGroup: Readonly<Record<string, Readonly<Record<string, SpriteAtlasAsset>>>> = {
-        'atlas-colossus': { 'colossus-sprites': new SpriteAtlasAsset(image(), 6, 10, 0.1) },
-        'atlas-oracle': { 'oracle-sprites': new SpriteAtlasAsset(image(), 6, 10, 0.1) },
+        'sprite-atlas:colossus-sprites': {
+          'colossus-sprites': new SpriteAtlasAsset(image(), 6, 10, 0.1),
+        },
+        'sprite-atlas:oracle-sprites': {
+          'oracle-sprites': new SpriteAtlasAsset(image(), 6, 10, 0.1),
+        },
       };
       const resources = { atlases: vi.fn((group: string) => byGroup[group] ?? {}) };
       const { factory, viewport, request } = setUp(undefined, [ring], resources);
@@ -164,7 +168,11 @@ describe('createBrowserMatch', () => {
       const warnings = ring.tail(LOG_RING_CAPACITY).filter(({ scope }) => scope === 'client.views');
       running.destroy();
 
-      expect(resources.atlases.mock.calls).toEqual([['atlas-colossus'], ['atlas-oracle']]);
+      expect(resources.atlases.mock.calls).toEqual([
+        ['match'],
+        ['sprite-atlas:colossus-sprites'],
+        ['sprite-atlas:oracle-sprites'],
+      ]);
       expect(warnings).toEqual([]);
     });
   });

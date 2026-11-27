@@ -23,7 +23,11 @@ describe('MenuState', () => {
 
     new MenuState().enter(context);
 
-    expect(context.calls.releaseAssets).toEqual([['match'], ['atlas-oracle'], ['atlas-knight']]);
+    expect(context.calls.releaseAssets).toEqual([
+      ['match'],
+      ['sprite-atlas:oracle-sprites'],
+      ['sprite-atlas:knight-sprites'],
+    ]);
     expect(context.order.indexOf('releaseAssets')).toBeLessThan(
       context.order.indexOf('clearMatchSetup'),
     );

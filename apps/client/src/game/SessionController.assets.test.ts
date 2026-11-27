@@ -202,13 +202,14 @@ describe('SessionController asset groups', () => {
     session.controller.start();
     await session.resolveLoads();
     await session.toMatch();
-    const isLoadedInMatch = session.resources.isLoaded(sheet.group);
+    const group = `sprite-atlas:${sheet.atlasId}` as const;
+    const isLoadedInMatch = session.resources.isLoaded(group);
 
     session.intent({ kind: 'leave-match' });
 
     expect(session.controller.phase).toBe('menu');
     expect(isLoadedInMatch).toBe(true);
-    expect(session.resources.isLoaded(sheet.group)).toBe(false);
+    expect(session.resources.isLoaded(group)).toBe(false);
   });
 
   it('loads the sheet group of every Legend in the filled rosters, and frees each on leave-match', async () => {
@@ -218,7 +219,9 @@ describe('SessionController asset groups', () => {
     session.controller.start();
     await session.resolveLoads();
     await session.toMatch();
-    const groups = [...matchLegendSheets(locked[0] ?? null).values()].map(({ group }) => group);
+    const groups = [...matchLegendSheets(locked[0] ?? null).values()].map(
+      ({ atlasId }) => `sprite-atlas:${atlasId}` as const,
+    );
     const loadedInMatch = groups.filter((group) => session.resources.isLoaded(group));
 
     session.intent({ kind: 'leave-match' });

@@ -9,17 +9,28 @@ import colossus from '../../assets/match/legends/colossus-sprites.webp';
 import colossus2x from '../../assets/match/legends/colossus-sprites@2x.webp';
 import juggernaut from '../../assets/match/legends/juggernaut-sprites.webp';
 import juggernaut2x from '../../assets/match/legends/juggernaut-sprites@2x.webp';
+import catalyst from '../../assets/match/legends/catalyst-sprites.webp';
+import catalyst2x from '../../assets/match/legends/catalyst-sprites@2x.webp';
+import oracle from '../../assets/match/legends/oracle-sprites.webp';
+import oracle2x from '../../assets/match/legends/oracle-sprites@2x.webp';
+import necromancer from '../../assets/match/legends/necromancer-sprites.webp';
+import necromancer2x from '../../assets/match/legends/necromancer-sprites@2x.webp';
 
 /**
- * User-authorised character art: provenance in ADR 0028 and
- * `docs/reference/legend-sprite-provenance.md`; the accepted byte budget in ADR 0027 (DEC-378 (3)).
+ * The sprite sheet group family (DEC-398, card PR170 (9)): every Legend sprite sheet, each in its
+ * own `sprite-atlas:<id>` group, all in this one file and in the one folder
+ * `assets/match/legends/`. A new sheet is one entry here and one row in `LEGEND_SPRITE_SHEETS`.
+ * The accepted byte budget is in ADR 0027 (DEC-378 (3)). Provenance: the five user-authorised
+ * sheets in ADR 0028 and `docs/reference/legend-sprite-provenance.md`; the three Magus sheets,
+ * owner-reference generated atlases under the owner's licence (DEC-398, card PR170 (7)), in
+ * `docs/reference/magus-sprite-provenance.md`.
  */
 export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
   {
     id: 'assassin-sprites',
     attachmentReferenceId: 'assassin-reference',
     type: 'sprite-atlas',
-    group: 'atlas-assassin',
+    group: 'sprite-atlas:assassin-sprites',
     licence: 'user-authorised-art',
     source:
       'User-provided 8026e904-46be-4d2c-93ad-40812f27e23e.avif; permission to use and adapt confirmed by Gurshaan 2026-11-12; AI-generated 6-by-10 pixel atlas; see docs/reference/legend-sprite-provenance.md',
@@ -43,7 +54,7 @@ export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
     id: 'knight-sprites',
     attachmentReferenceId: 'knight-reference',
     type: 'sprite-atlas',
-    group: 'atlas-knight',
+    group: 'sprite-atlas:knight-sprites',
     licence: 'user-authorised-art',
     source:
       'User-provided Gemini_Generated_Image_vpyd7fvpyd7fvpyd.jpeg; permission to use and adapt confirmed by Gurshaan 2026-11-12; AI-generated 6-by-10 pixel atlas; see docs/reference/legend-sprite-provenance.md',
@@ -67,7 +78,7 @@ export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
     id: 'paladin-sprites',
     attachmentReferenceId: 'paladin-reference',
     type: 'sprite-atlas',
-    group: 'atlas-paladin',
+    group: 'sprite-atlas:paladin-sprites',
     licence: 'user-authorised-art',
     source:
       'User-provided ayqniwg53.webp; permission to use and adapt confirmed by Gurshaan 2026-11-12; AI-generated 6-by-10 pixel atlas; see docs/reference/legend-sprite-provenance.md',
@@ -91,7 +102,7 @@ export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
     id: 'colossus-sprites',
     attachmentReferenceId: 'colossus-reference',
     type: 'sprite-atlas',
-    group: 'atlas-colossus',
+    group: 'sprite-atlas:colossus-sprites',
     licence: 'user-authorised-art',
     source:
       'User-provided flat750x075f-pad750x1000f8f8f8.jpg; permission to use and adapt confirmed by Gurshaan 2026-11-12; AI-generated 6-by-10 pixel atlas; see docs/reference/legend-sprite-provenance.md',
@@ -115,7 +126,7 @@ export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
     id: 'juggernaut-sprites',
     attachmentReferenceId: 'juggernaut-reference',
     type: 'sprite-atlas',
-    group: 'atlas-juggernaut',
+    group: 'sprite-atlas:juggernaut-sprites',
     licence: 'user-authorised-art',
     source:
       'User-provided 3a3b993770906ed01544422b12c6fb37.jpg, printed credit https://www.artstation.com/jsraphael; copyright 2021 Arackhan Wars, Nothing But Dreams; permission to use and adapt confirmed by Gurshaan 2026-11-12; AI-generated 6-by-10 pixel atlas; see docs/reference/legend-sprite-provenance.md',
@@ -133,6 +144,69 @@ export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
       url: juggernaut2x,
       bytes: 934970,
       hash: '0f85ecad47db27eeb7f6108d381d588d703172c278652688cb739fe13de2e746',
+    },
+  },
+  {
+    id: 'catalyst-sprites',
+    type: 'sprite-atlas',
+    group: 'sprite-atlas:catalyst-sprites',
+    columns: 6,
+    rows: 10,
+    groundOffset: 0.35, // TUNE: provisional; magus-sprite-provenance.md records no ground baseline
+    licence: 'owner',
+    source:
+      'AI-generated from owner catalyst-card-art, Figma frame 58:271 (DEC-51); six-by-ten grid; lossless WebP; see docs/reference/magus-sprite-provenance.md',
+    file: {
+      url: catalyst,
+      bytes: 399098,
+      hash: '1da95ba93e7ce97d0b8f3b979cfc5cf8092fd38ff96e3914589a690f56ad3af2',
+    },
+    file2x: {
+      url: catalyst2x,
+      bytes: 1391908,
+      hash: '17b3d551c72866f334e8d5e8eae349a3825e7421091db299d33645fc2ee92232',
+    },
+  },
+  {
+    id: 'oracle-sprites',
+    type: 'sprite-atlas',
+    group: 'sprite-atlas:oracle-sprites',
+    columns: 6,
+    rows: 10,
+    groundOffset: 0.35, // TUNE: provisional; magus-sprite-provenance.md records no ground baseline
+    licence: 'owner',
+    source:
+      'AI-generated from owner oracle-card-art, Figma frame 58:271 (DEC-51); six-by-ten grid; lossless WebP; see docs/reference/magus-sprite-provenance.md',
+    file: {
+      url: oracle,
+      bytes: 426890,
+      hash: '11589c2e3d5863aacd8adc8711fb58c47413412d132f570b9f45bd505481526c',
+    },
+    file2x: {
+      url: oracle2x,
+      bytes: 1487658,
+      hash: 'f5e0d1d874e2bac5d4411d35c7b993a10b622d54d29ab68e9f92818a6df4b814',
+    },
+  },
+  {
+    id: 'necromancer-sprites',
+    type: 'sprite-atlas',
+    group: 'sprite-atlas:necromancer-sprites',
+    columns: 6,
+    rows: 10,
+    groundOffset: 0.35, // TUNE: provisional; magus-sprite-provenance.md records no ground baseline
+    licence: 'owner',
+    source:
+      'AI-generated from owner necromancer-card-art, Figma frame 58:271 (DEC-51); six-by-ten grid; lossless WebP; see docs/reference/magus-sprite-provenance.md',
+    file: {
+      url: necromancer,
+      bytes: 345032,
+      hash: 'ab7fc0731cfbf0b19501ec4649e79ea3b57f708f654d5425419bf15429af6111',
+    },
+    file2x: {
+      url: necromancer2x,
+      bytes: 1210002,
+      hash: '8345bbcb36b403a377c9c6b6a4bf90c4a84d4c3d7a40cbcb7fb8cf21bc598742',
     },
   },
 ];

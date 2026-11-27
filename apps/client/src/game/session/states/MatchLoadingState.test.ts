@@ -51,7 +51,7 @@ describe('MatchLoadingState', () => {
     new MatchLoadingState().enter(context);
 
     expect(context.calls.loadAssets.map(([groups]) => groups)).toEqual([
-      ['match', 'atlas-colossus'],
+      ['match', 'sprite-atlas:colossus-sprites'],
     ]);
   });
 
@@ -70,14 +70,19 @@ describe('MatchLoadingState', () => {
     expect(loads).toHaveLength(1);
     expect(first).toBe('match');
     expect(new Set(sheets)).toEqual(
-      new Set(['atlas-colossus', 'atlas-oracle', 'atlas-juggernaut']),
+      new Set([
+        'sprite-atlas:colossus-sprites',
+        'sprite-atlas:oracle-sprites',
+        'sprite-atlas:juggernaut-sprites',
+      ]),
     );
     expect(sheets).toHaveLength(3);
   });
 
   it('opens the match when the sprite sheet fails to load: the sheet stays unloaded', async () => {
-    const sheet = LEGEND_SPRITE_SHEETS[SENTINEL_LEGEND]?.group;
-    if (sheet === undefined) throw new Error(`${SENTINEL_LEGEND} has no sprite sheet`);
+    const atlasId = LEGEND_SPRITE_SHEETS[SENTINEL_LEGEND]?.atlasId;
+    if (atlasId === undefined) throw new Error(`${SENTINEL_LEGEND} has no sprite sheet`);
+    const sheet = `sprite-atlas:${atlasId}` as const;
     const { resources, loader } = testResources([sheet]);
     const session = testSession({ resources });
     const settle = async (): Promise<void> => {

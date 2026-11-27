@@ -1,9 +1,8 @@
-import type { AssetGroup } from '../bridge/events';
-
-/** One sub-class's sprite sheet: its manifest id and its asset group. */
+/**
+ * One sub-class's sprite sheet: its manifest id. The match loads the sheet by that id, as the
+ * group `sprite-atlas:<id>` (`matchAssetGroups`; DEC-398, card PR170 (9)).
+ */
 export type LegendSpriteSheet = {
   /** The manifest id of the atlas, which `SpriteRef.atlasId` names. */
   readonly atlasId: string;
-  /** The asset group that loads only this atlas (`match-loading`, after `match`). */
-  readonly group: AssetGroup;
 };
