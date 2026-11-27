@@ -128,6 +128,7 @@ describe('the countdown (scenario)', () => {
     const later = [
       { entryId: 'quarter-mark', tick: 13_560 },
       { entryId: 'mid-game', tick: 27_060 },
+      { entryId: 'gem-eruption', tick: 27_060 },
       { entryId: 'end-game', tick: 40_560 },
     ];
 

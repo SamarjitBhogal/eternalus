@@ -18,6 +18,7 @@ import { Camera } from './engine/Camera';
 import type { Projection } from './engine/input/Projection.types';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
+import { CUTSCENE } from './CathedralCutscene.constants';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
 import type { IntentSource } from './Match.types';
@@ -94,9 +95,19 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
  * mobs the map's structures spawn, it plays in sim mode instead: no map, so no roster (a roster
  * needs the map).
  */
-const setUp = (content?: Content, withMapObjects = false, playerSpecId: string | null = null) => {
+const setUp = (
+  content?: Content,
+  withMapObjects = false,
+  plannedMatchSeconds?: number,
+  playerSpecId: string | null = null,
+) => {
   // No countdown: core's countdown holds all movement, and these tests walk from the start.
-  const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
+  const config = createDefaultGameConfig({
+    match: {
+      countdownSeconds: 0,
+      ...(plannedMatchSeconds === undefined ? {} : { plannedMatchSeconds }),
+    },
+  });
   const world = prepareMatchWorld(config, SEED);
   const generated = world.map;
   const simulation = new Simulation({
@@ -476,10 +487,35 @@ describe('Match', () => {
     expect(aim?.x).toBeCloseTo(view.x + view.width / 2);
     expect(aim?.y).toBeCloseTo(view.y + view.height / 2);
   });
+
+  it('keeps a player far from the Cathedral on their own Legend through the eruption (DEC-371 E1)', () => {
+    // A 20 s plan: the gem erupts at 10 s. The player starts at their Stronghold, far from the
+    // Cathedral, so the cut-scene never takes the camera (`CathedralCutscene` tests the near case).
+    const { match, camera, map } = setUp(undefined, false, 20);
+    const { tickRate } = createDefaultGameConfig();
+    const gem = match.snapshot.entities.find(({ kind }) => kind === 'cathedral-gem')?.transform;
+    if (gem == null) throw new Error('No gem');
+    expect(Math.hypot(playerX(match) - gem.x, playerY(match) - gem.y)).toBeGreaterThan(
+      CUTSCENE.nearRadius,
+    );
+    const offPlayer = () => {
+      const view = camera.visibleArea(map.width, map.height);
+      const centre = { x: view.x + view.width / 2, y: view.y + view.height / 2 };
+      return Math.hypot(centre.x - playerX(match), centre.y - playerY(match));
+    };
+    let farthest = 0;
+    for (let tick = 0; tick < (10 + CUTSCENE.holdSeconds) * tickRate; tick += 1) {
+      match.tick();
+      match.render(1);
+      if (tick > tickRate) farthest = Math.max(farthest, offPlayer());
+    }
+
+    expect(farthest).toBeLessThan(FOLLOW_VIEW_WIDTH / 10);
+  });
 });
 
 it('renders the selected Knight through the live match view registry', () => {
-  const { match, renderer } = setUp(undefined, false, 'knight');
+  const { match, renderer } = setUp(undefined, false, undefined, 'knight');
   match.render(0);
   expect(
     renderer.calls.filter((call) => call.op === 'drawSprite').map((call) => call.args[0]),

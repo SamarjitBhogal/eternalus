@@ -24,6 +24,37 @@ const fixtureFactory = (): EntityFactory => {
 };
 
 describe('WorldObjectStore', () => {
+  it('retires a carried map object with its carrier, which then blocks nothing (12 §3)', () => {
+    const plinth: MapObject = {
+      id: 'plinth',
+      kind: 'cathedral',
+      isBlocking: true,
+      footprints: [
+        [
+          { x: 0, y: 0 },
+          { x: 4, y: 0 },
+          { x: 4, y: 4 },
+          { x: 0, y: 4 },
+        ],
+      ],
+    };
+    const world = new WorldObjectStore({
+      objects: [plinth],
+      factory: fixtureFactory(),
+      entities: new EntityStore(),
+      definitions: MAP_OBJECT_DEFINITIONS,
+      carriers: new Map([['plinth', 'gem']]),
+    });
+    expect(world.blockingAt({ x: 2, y: 2 }, 1)).toBe('plinth');
+    expect(world.objectFor('gem')).toBe(plinth);
+
+    world.removed('gem');
+
+    expect(world.blockingAt({ x: 2, y: 2 }, 1)).toBeNull();
+    expect([...world.destroyedIds]).toEqual(['plinth']);
+    expect(world.snapshot()[0]?.isDestroyed).toBe(true);
+  });
+
   it('uses injected content policy instead of global map-object defaults', () => {
     const definitions = {
       ...MAP_OBJECT_DEFINITIONS,

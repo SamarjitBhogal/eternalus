@@ -169,5 +169,5 @@ describe('Simulation corner camp boss (DEC-236)', () => {
     expect(boss()?.transform).toEqual(post);
     expect(cleared).toHaveLength(1);
     expect(logger.records.filter(({ severityText }) => severityText === 'ERROR')).toEqual([]);
-  }, 120_000); // a real 8,200 HP kill takes several seconds of test time
+  }, 120_000); // a real 8,188 HP kill takes several seconds of test time
 });

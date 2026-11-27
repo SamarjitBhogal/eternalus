@@ -26,4 +26,9 @@ export type WorldObjectStoreOptions = {
   readonly definitions: Readonly<Record<MapObjectKind, ObstacleDefinition>>;
   /** Map object id → the id of the structure in `entities` the object is the body of. */
   readonly owners?: ReadonlyMap<string, string>;
+  /**
+   * Map object id → the id of the structure in `entities` that carries it: an object with no
+   * health of its own that is destroyed when that structure is removed (the gem's plinth).
+   */
+  readonly carriers?: ReadonlyMap<string, string>;
 };

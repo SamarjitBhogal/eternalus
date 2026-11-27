@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -544,11 +544,27 @@ sovereign, whose display name per team is in `content/sovereigns/sovereignDispla
 `loadDisplayContent()` returns both, and the client's results screen shows the line.
 `forfeit` and `aborted` have no lines yet (no condition produces them).
 
-Not built yet: `atmosphere` in `MatchState`; the rest of `content/narrative/` (§9); an entity
+Not built yet: `atmosphere` in `MatchState` (the interim is the boolean
+`MatchState.isGemErupted`, below); the rest of `content/narrative/` (§9); an entity
 that carries `WinObjective` (the sovereign); `MatchResult.timeline` and `achievements` (with
 their producers); the other §5 counters and `TeamStats` fields; a condition for `forfeit` or
-`aborted` (the ids exist); the timeline actions other than `enter-phase`; `dev-set-phase`; the
-announcer; the other invariants of §12.
+`aborted` (the ids exist); the timeline actions other than `enter-phase` and
+`summon-greater-boss`; `dev-set-phase`; the announcer; the other invariants of §12.
+
+The gem eruption (§3) is built (2026-11-22, `feat/cathedral-eruption-boss`): the default
+timeline's `gem-eruption` entry, at `mid-game`'s fraction and right after it (DEC-81), runs
+`summon-greater-boss` (`match/actions/SummonGreaterBossAction.ts`). It calls
+`MatchRecord.eruptGem(bossId)` outside a Duel (DEC-36), which sets `MatchState.isGemErupted` once (a second call throws;
+hashed from then on) and emits `greater-boss-summoned { bossId }`. On the next tick
+`GemEruptionSystem`'s blast kills every unit in the Cathedral (DEC-371), the gem and its plinth
+are removed, and `SpawnSystem` spawns the boss and emits `boss-summoned` (07's implementation
+status).
+`GuardRoster.activate` fills the gem-eruption posts of `bossId`'s mob; `SpawnSystem` rejects at
+load a `bossId` that no gem-eruption post on the map names. The timeline's phase rules read only its
+`enter-phase` entries. The client's `CathedralCutscene` turns the camera to the Cathedral from
+just before the eruption tick (read from `upcoming`), for a player whose Legend is near the
+Cathedral then (DEC-371 E1), and draws the burst on `greater-boss-summoned`, on the minimap too
+(08 §11).
 
 ## Related
 
