@@ -90,8 +90,17 @@ type CommandPayloads = {
    * the Legend, that is, outside sim mode.
    */
   readonly 'dev-remove-legend': { readonly entityId: EntityId };
-  /** Developer menu: hand an entity to another controller (sim mode). */
-  readonly 'dev-set-controller': { readonly entityId: EntityId; readonly controllerId: string };
+  /**
+   * Developer menu, sim mode: hand a Legend to a controller. `controllerId` is `player` (the Legend
+   * becomes the human's; a Legend of `playerTeam` only; a seated human is swapped off to the bot
+   * its team lacks, DEC-294), a bot's id (the Rover's or the lane bot's: that bot plays it; the
+   * game picks the lane) or `null` (the bot its team lacks plays it). On the human's Legend, a bot
+   * id or `null` leaves no human (DEC-356).
+   */
+  readonly 'dev-set-controller': {
+    readonly entityId: EntityId;
+    readonly controllerId: string | null;
+  };
 };
 
 /** The name of a command. */
@@ -110,6 +119,7 @@ export type CommandRejectReason =
   | 'unknown-entity'
   | 'unknown-kind'
   | 'unknown-definition'
+  | 'unknown-controller'
   | 'invalid-count'
   | 'invalid-position'
   | 'invalid-origin'
@@ -125,4 +135,5 @@ export type CommandRejectReason =
   | 'invalid-target'
   | 'not-supported'
   | 'human-legend'
+  | 'not-player-team'
   | 'match-ended';

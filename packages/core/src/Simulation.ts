@@ -1,5 +1,5 @@
 import { AiSystem } from './ai/AiSystem';
-import type { AiMemory } from './content/ai/ai.types';
+import type { AiMemory, ControllerId } from './content/ai/ai.types';
 import {
   createDefaultControllerRegistry,
   type ControllerRegistry,
@@ -9,7 +9,6 @@ import type { Command } from './commands/Command.types';
 import type { CommandContext, CommandHandlers } from './commands/CommandHandler.types';
 import { CommandQueue } from './commands/CommandQueue';
 import { LegendSpawner } from './entities/LegendSpawner';
-import { ROVER_BOT } from './content/ai/difficulties/rover';
 import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers';
 import { Footprint } from './components/Footprint';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from './config/matchPhases';
@@ -35,6 +34,8 @@ import { BOT_DIFFICULTIES } from './content/ai/difficulties/botDifficulties';
 import { RANKS_FORMATION } from './content/mobs/formations/ranks';
 import type { EntityId } from './state/EntityStore.types';
 import { assignLanes } from './state/assignLanes';
+import { createMissingRoleChooser, createPickedBotChooser } from './state/missingRoleChooser';
+import { ROVER_SPAWN, SIM_MODE_BOTS } from './Simulation.constants';
 import { formationSlot } from './state/formationSlot';
 import { unitClassOf } from './content/ai/unitClasses';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
@@ -100,7 +101,10 @@ export class Simulation {
   /** Commands from `enqueueCommand` (player, developer menu). Each one enters the replay log. */
   private readonly externalQueue = new CommandQueue();
   private readonly handlers: CommandHandlers = createDefaultCommandHandlers({
-    rover: { controllerId: 'rover', profileId: ROVER_BOT.id, memory: {} },
+    rover: ROVER_SPAWN,
+    player: 'player' satisfies ControllerId,
+    missingRole: createMissingRoleChooser(SIM_MODE_BOTS),
+    pickedBot: createPickedBotChooser(SIM_MODE_BOTS),
   });
   private readonly commandContext: CommandContext;
   private readonly systemContext: SystemContext;

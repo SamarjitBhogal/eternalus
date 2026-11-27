@@ -4,7 +4,7 @@ description: Proposals that resolve or extend mechanics the sources leave open, 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-26
 tags: [reference, suggestions, mechanics, ai, developer-menu, achievements, persistence]
 paths:
   [
@@ -203,7 +203,7 @@ export type RoverMemory = {
 
 **Mechanics.**
 
-- One command, replayable: `dev-set-controller { entityId, controllerId }`. Removing the human = set its Legend's controller to `bot-legend`; adding = set a chosen Legend (or one spawned with `dev-spawn-legend`) to `player`. `applyCommand` refuses a second `player` while one exists and emits `command-rejected`. The two architecture docs formerly named this command differently (`dev-set-sim-mode` in `../../architecture/03-game-model.md`, `set-controller` in `../../architecture/11-game-ai.md`); both now use `dev-set-controller`, recorded as DISC-56 (resolved).
+- One command, replayable: `dev-set-controller { entityId, controllerId }`. Removing the human = set its Legend's controller to the bot the developer picks (the Rover's, or the lane bot's on a lane the game picks) or, with no pick (`null`), to the bot its team lacks (DEC-356); adding = set a chosen Legend of `playerTeam` (or one spawned with `dev-spawn-legend`) to `player`. Taking control of a Legend while a human exists moves the seat: the old human's Legend becomes the bot its team lacks, so there is never a second `player` (DEC-294, DEC-356). A Legend off `playerTeam` is refused with `command-rejected` (DEC-173). The two architecture docs formerly named this command differently (`dev-set-sim-mode` in `../../architecture/03-game-model.md`, `set-controller` in `../../architecture/11-game-ai.md`); both now use `dev-set-controller`, recorded as DISC-56 (resolved).
 - The camera and HUD follow a **spectated** Legend: `PlayerSnapshot` is built for `spectatedLegendId`, which equals `humanLegendId` when there is one and is selectable from the developer menu otherwise. The `PlayerController` is the only thing that differs, so the HUD needs no sim-mode branch.
 - Headless entry point, in core so tests and the balance harness share it:
 

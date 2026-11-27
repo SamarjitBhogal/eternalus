@@ -23,7 +23,6 @@ const NOT_YET_SUPPORTED: readonly Command[] = [
     actorId: 'entity-1',
     intent: { move: { x: 1, y: 0 }, aim: null, triggered: ['ability-2'] },
   },
-  { type: 'dev-set-controller', entityId: 'entity-1', controllerId: 'bot-legend' },
 ];
 
 const TEST_CONTROLLER = { controllerId: 'rover', profileId: 'rover', memory: {} } as const;
@@ -35,10 +34,19 @@ describe('createDefaultCommandHandlers', () => {
       const state = new GameState(createDefaultGameConfig(), 1);
       const reasons: string[] = [];
       state.events.on('command-rejected', ({ reason }) => reasons.push(reason));
-      applyCommand(command, createDefaultCommandHandlers({ rover: TEST_CONTROLLER }), {
-        state,
-        factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
-      });
+      applyCommand(
+        command,
+        createDefaultCommandHandlers({
+          rover: TEST_CONTROLLER,
+          player: 'player',
+          missingRole: () => TEST_CONTROLLER,
+          pickedBot: () => undefined,
+        }),
+        {
+          state,
+          factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
+        },
+      );
       expect(reasons).toEqual(['not-supported']);
     },
   );

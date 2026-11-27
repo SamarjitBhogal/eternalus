@@ -66,7 +66,8 @@ export class MatchViewControls {
    * @returns Whether a roof was toggled, so the chrome can report the roofs (DEC-150).
    */
   public clickAt(screenX: number, screenY: number): boolean {
-    const { playerId, camera, commands, roofs, snapshot } = this.deps;
+    const { camera, commands, roofs, snapshot } = this.deps;
+    const playerId = this.deps.playerId();
     const point = camera.worldAt(screenX, screenY);
     if (playerId !== null && commands.attackUnitAt(playerId, point, snapshot())) {
       return false;

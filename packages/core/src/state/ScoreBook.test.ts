@@ -33,6 +33,21 @@ const ZERO_COUNTERS = {
 } as const;
 
 describe('ScoreBook', () => {
+  it('moves the human mark between rows (sim mode) and leaves a Legend with no row alone', () => {
+    const book = new ScoreBook();
+    book.addRow(LIGHT_WARRIOR);
+    book.addRow(LIGHT_MAGUS);
+
+    book.setController('entity-1', 'bot');
+    book.setController('entity-2', 'human');
+    book.setController('entity-9', 'human');
+
+    expect(book.view.legends.map(({ entityId, controller }) => [entityId, controller])).toEqual([
+      ['entity-1', 'bot'],
+      ['entity-2', 'human'],
+    ]);
+  });
+
   it('starts with no rows, both teams at 0 and no recent hits', () => {
     expect(new ScoreBook().view).toEqual({
       legends: [],

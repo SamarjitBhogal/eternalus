@@ -61,6 +61,11 @@ export type GameEventMap = {
     readonly cause: RemovalCause;
     readonly killer?: DamageSource;
   };
+  /**
+   * Sim mode moved the `playerTeam` human seat (`dev-set-controller`, FR-099): `from` is the
+   * Legend that was the human's, `to` the one that is now; either is `null` for no human.
+   */
+  readonly 'human-reseated': { readonly from: EntityId | null; readonly to: EntityId | null };
   readonly 'damage-applied': {
     readonly targetId: EntityId;
     readonly amount: number;

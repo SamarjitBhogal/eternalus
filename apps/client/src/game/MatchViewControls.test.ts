@@ -131,7 +131,7 @@ const setUp = (
     commands,
     miniMap,
     onMiniMapShownChanged,
-    playerId,
+    playerId: () => playerId,
     snapshot: () => ({ entities: units, mapObjects: HOUSE_STATES }),
   });
   const sent = (): Command[] => enqueueCommand.mock.calls.map(([command]) => command);

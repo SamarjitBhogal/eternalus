@@ -6,6 +6,10 @@ const { changed, reset } = developerMenuSlice.actions;
 const OPEN = {
   isOpen: true,
   origins: [{ id: 'gate-1', label: 'gate-1' }],
+  humanLegendId: 'entity-1',
+  followedLegendId: null,
+  legends: [],
+  controllerIds: { player: 'player', rover: 'rover', laner: 'bot-legend' },
 };
 
 describe('developerMenuSlice', () => {

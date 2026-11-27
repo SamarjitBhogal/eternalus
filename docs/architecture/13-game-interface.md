@@ -582,6 +582,17 @@ difference is registered in
 
 ## 10. Implementation status
 
+Sim mode (2026-11-13, FR-099): the developer menu's Sim mode section sends `dev-set-controller` (Remove
+human: the human Legend to the bot picked in the Bot select, a lane bot or the Rover, or with "Game
+picks" to the bot role its team lacks, DEC-356; Take control: a typed Legend id to
+`player`, swapping the seat if a human exists, DEC-294). With no human, Follow (client-only, no
+`Command`: a `dev-follow` intent to `DeveloperMenuController`, not §4's `dev-toggle` spectate
+row) makes the camera follow the Legend picked in a select fed from the live snapshot; "None"
+ends it. The menu reads the three controller ids from the `developer-menu` state. `Match` reads the
+human Legend from each snapshot, so with none the HUD player block and the attack clicks stand
+idle, the camera too unless Follow names a Legend, and the match runs on. Not built: `SinglePlayerBrainInvariant` (cited by the sim-mode row of the
+table in section 4); a Legend with no human is not checked for it.
+
 Built (Sprint 1, sessions D and F): the bridge (`bridge/`), the session shell and menu screens,
 and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver`, `InputMapper`,
 `KeyboardDevice` and `MouseDevice`, `SettingsController`, `settingsSlice`, `KeyGlyph`, `Prompt`,
@@ -614,8 +625,8 @@ opened by `toggle-developer-menu` (F1). Built controls: spawn mobs (`dev-spawn-m
 entity by id (`dev-remove-entity`), each sent as a `dev-command` intent that `Match` enqueues. The
 mob picker lists the lane minions of core's display content (`DisplayContent.laneMinions`). Core
 refuses `dev-remove-entity` for a Legend in a human seat (`human-legend`): the human is removed
-only in sim mode (the "Add / remove a Legend" row above). Not built: sim mode, `dev-toggle`,
-invariant level, timeline jump, config overrides,
+only in sim mode (the "Add / remove a Legend" row above). Not built: `dev-toggle`, invariant
+level, timeline jump, config overrides,
 and showing core's refusals in the UI. `bridge/events.ts` has no `dev-toggle` yet.
 
 HUD (2026-10-18): the `AbilityBar` cooldown sweep of §3 is the owner's Figma look, a vertical fill
@@ -727,7 +738,7 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   `capture-state` is now
   published; `loading-progress` names the seven shared asset groups and the sprite sheet group
   family (`sprite-atlas:<asset id>`, one group per sheet; [14](14-persistence-and-resources.md) §14); `hud-state` is `{ player }` with no
-  `spectatedLegendId` (no spectate producer yet). The display types live in
+  `spectatedLegendId` (sim mode's Follow moves only the camera; see the sim mode note above). The display types live in
   `bridge/catalogue.types.ts` and `bridge/hud.types.ts`; `bridge/` also gains `selectionRules.ts`,
   `matchSetupRules.ts`, `minimapRing.ts`, `legendNames.ts` and `opponentOf.ts`, and `assetsSlice`. The HUD data is in
   `hudSlice` (the Sprint 1 contract), `matchSlice.clock` is nullable, and `match-setup` resets the

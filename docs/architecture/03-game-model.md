@@ -77,6 +77,7 @@ export class MatchRecord implements MatchState {
   public holdIdle(isHeld: boolean): void; // the countdown phase only (DEC-88)
   public endMatch(result: MatchResult): void; // MatchDirector only, once; a second call throws
   public seatHuman(legendId: EntityId): void; // Simulation only, once, when the human slot's Legend spawns
+  public reseatHuman(legendId: EntityId | null): void; // DevSetControllerHandler only (sim mode, DEC-294); emits 'human-reseated'
   public advanceTimeline(): void; // MatchDirector only, once per fired timeline entry
   // the scoring data's only writer (DEC-211): written by Scoring only, in its fold (12 §5)
   public readonly scoreBook: ScoreBook; // addRow, award, awardTeam, recordHit, takeAssists
@@ -149,7 +150,7 @@ export type Command =
   | {
       readonly type: 'dev-set-controller';
       readonly entityId: EntityId;
-      readonly controllerId: ControllerId;
+      readonly controllerId: ControllerId | null; // null: the bot the Legend's team lacks
     }
   | { readonly type: 'dev-set-assert-level'; readonly level: AssertLevel };
 ```
@@ -201,6 +202,7 @@ first).
 | `entity-spawned`                    | `{ entityId, kind, team }`                                                    | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster; `RespawnSystem` for a returning Legend | `SnapshotSystem`, views, `Scoring` (a row per Legend); `ProgressionSystem` raises a Duel Legend to max level at once (05 §18, DEC-406)                            |
 | `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`                                  | `DeathSystem` only                                                                                      | `HordeSystem`, `ProjectilePool`, invariants                                                                                                                       |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }`                        | `DamagePipeline`                                                                                        | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage)                                                                          |
+| `human-reseated`                    | `{ from: EntityId \| null, to: EntityId \| null }`                            | `MatchRecord.reseatHuman` (sim mode, DEC-294)                                                           | `Scoring`                                                                                                                                                         |
 | `damage-blocked`                    | `{ targetId, source: DamageSource }`                                          | `DamagePipeline` (a step took the hit to 0)                                                             | `CathedralGemSystem` (DEC-292)                                                                                                                                    |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                                          | `DeathResolver`                                                                                         | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                                                                                           |
 | `structure-destroyed`               | `{ entityId, kind, team, lane }`                                              | `StructureSystem`                                                                                       | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212)                                                                           |
@@ -505,9 +507,21 @@ each closed by the session or phase named:
   has `JumpHandler`, which sets the held jump key through `EntityStore.holdJump` (rejected
   `cannot-jump` for an entity without `Jump`); `JumpSystem`, before `MovementSystem`, flies each jump
   and starts the held ones on the ground; a stun (`cannot-move`) ends a jump in the air at once
-  (DEC-420). `cast-ability`, `intent` and `dev-set-controller` are routed to
+  (DEC-420). `cast-ability` and `intent` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
+- `dev-set-controller` (2026-11-13, FR-099) has `DevSetControllerHandler`: `controllerId` `player`
+  makes a Legend of `playerTeam` the human's (no `ControllerBinding`, no brain; the seat moves,
+  DEC-294); a bot's id (`rover`, or `bot-legend` on the lane with the fewest of its team's lane
+  bots, past `legendsPerLane` if every lane is full) binds that bot, and `null` binds the bot the
+  Legend's team lacks: the Rover if the team has no Rover bot, otherwise a `bot-legend` laner on
+  the free lane (`assignLanes` with `occupied`). On the human's Legend, a bot id or `null` leaves
+  no human (`humanLegendId` null; DEC-356). The Legend a seat move leaves also becomes the bot its
+  team lacks. Both choosers are in `state/missingRoleChooser.ts`, built by `Simulation` from
+  content. A refused command changes nothing. Refused `unknown-entity`,
+  `not-a-legend`, `not-player-team` (DEC-173), `unknown-controller` or, in a Duel,
+  `not-supported`. `MatchRecord.reseatHuman` is the second writer of `humanLegendId`; each seat
+  move emits `human-reseated`, which `Scoring` folds into the rows' `controller`. A bot re-bound loses its brain memory.
 - `dev-spawn-legend` (2026-11-13) is built as `{ team, definitionId }` (a bot Legend at the
   Stronghold, Rover controller); it is in `Command.types.ts`.
   `dev-remove-legend { entityId }` (2026-11-20, DEC-293) removes a Legend through

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
 import type { Command } from '../commands/Command.types';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -220,6 +221,23 @@ describe('AiSystem', () => {
     step();
 
     expect(state.ai.size).toBe(0);
+  });
+
+  it('drops the brain of an entity that loses its binding, and starts a fresh one when it is bound again', () => {
+    const { state, ids, step } = setUp(1);
+    const id = ids[0] ?? '';
+    step();
+    expect(state.ai.get(id)).toBeDefined();
+
+    state.entities.get(id)?.removeComponent(ControllerBinding);
+    step();
+    expect(state.ai.get(id)).toBeUndefined();
+
+    state.entities
+      .get(id)
+      ?.addComponent(new ControllerBinding('minion', 'lane-minion', { fresh: 1 }));
+    step();
+    expect(state.ai.get(id)?.memory).toEqual({ fresh: 1 });
   });
 
   it('gives a deploying minion no brain until its Deploying component is removed', () => {
