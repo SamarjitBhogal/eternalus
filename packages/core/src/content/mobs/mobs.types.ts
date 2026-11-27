@@ -16,7 +16,7 @@ export type MobDefinition = UnitDefinition & {
  * Only a unit with a body outline (`combatHitbox`) gets them.
  */
 export type BodyPartBonus = {
-  /** A hit from an attacker in the boss's rear half. */
+  /** A hit from an attacker behind the boss, on the side its art shows its back (no status tick). */
   readonly backHit: number;
   /** A projectile whose impact point is on the boss's head outline (`headHitbox`). */
   readonly headShot: number;

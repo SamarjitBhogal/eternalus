@@ -1,0 +1,23 @@
+import { expect, it } from 'vitest';
+
+import { isPointInPolygon } from '../../utils/geometry';
+import { GREATER_BOSS } from './greaterBoss';
+
+/**
+ * Where #161's idle colossus art is drawn round the boss, in local metres: 48 m wide, centred on
+ * it, from 24 m above it to 8 m below (768 × 512 px at 16 px a metre).
+ */
+const ART = { left: -24, right: 24, top: -24, bottom: 8 } as const;
+
+it('keeps the body and head outlines on the art the player sees, and the head on the body (DEC-381)', () => {
+  const { combatHitbox, headHitbox } = GREATER_BOSS;
+  for (const { x, y } of [...combatHitbox, ...headHitbox]) {
+    expect(x).toBeGreaterThanOrEqual(ART.left);
+    expect(x).toBeLessThanOrEqual(ART.right);
+    expect(y).toBeGreaterThanOrEqual(ART.top);
+    expect(y).toBeLessThanOrEqual(ART.bottom);
+  }
+  for (const point of headHitbox) {
+    expect(isPointInPolygon(point, combatHitbox)).toBe(true);
+  }
+});

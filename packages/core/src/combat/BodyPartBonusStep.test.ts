@@ -70,6 +70,27 @@ describe('BodyPartBonusStep', () => {
     expect(step.adjust(hit(null, boss), state)).toBe(100);
   });
 
+  it('finds behind on the side the art shows its back, also when the boss walks up or down', () => {
+    const { state, boss, legend, standAt } = setUp({ x: 0, y: 1 });
+
+    standAt({ x: 30, y: 0 });
+    expect(step.adjust(hit(legend, boss), state)).toBeCloseTo(100 * BODY_PART_BONUS.backHit);
+    standAt({ x: 0, y: -30 });
+    expect(step.adjust(hit(legend, boss), state)).toBe(100);
+  });
+
+  it('gives a status tick no back-hit bonus, as a tick is no hit from a side', () => {
+    const { state, boss, legend, standAt } = setUp();
+    standAt({ x: 30, y: 0 });
+    const tick: DamageHit = {
+      targetId: boss,
+      amount: 100,
+      source: { attackerId: legend, kind: 'status', definitionId: 'bleed' },
+    };
+
+    expect(step.adjust(tick, state)).toBe(100);
+  });
+
   it('adds the head-shot bonus to a projectile that lands on the head outline, not on the body', () => {
     const { state, boss, legend } = setUp();
 

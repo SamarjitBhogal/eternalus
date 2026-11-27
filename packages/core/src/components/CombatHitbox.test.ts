@@ -45,3 +45,21 @@ it('finds a point on the head on the side the unit faces, and never without a he
   expect(hitbox.isOnHead({ x: 6, y: 19 }, position, right)).toBe(false);
   expect(new CombatHitbox(body).isOnHead({ x: 6, y: 19 }, position, left)).toBe(false);
 });
+
+it('finds behind on the side the art shows its back, also when the unit faces up or down', () => {
+  const hitbox = new CombatHitbox([
+    { x: -2, y: 1 },
+    { x: 1, y: 2 },
+    { x: 0, y: -1 },
+  ]);
+  const position = { x: 10, y: 20 };
+  const down = { x: 0, y: 1 };
+  const upRight = { x: 0.3, y: -0.95 };
+
+  expect(hitbox.isBehind({ x: 15, y: 20 }, position, down)).toBe(true);
+  expect(hitbox.isBehind({ x: 10, y: 15 }, position, down)).toBe(false);
+  expect(hitbox.isBehind({ x: 5, y: 20 }, position, down)).toBe(false);
+  expect(hitbox.isBehind({ x: 5, y: 25 }, position, upRight)).toBe(true);
+  expect(hitbox.isBehind({ x: 15, y: 15 }, position, upRight)).toBe(false);
+  expect(hitbox.isBehind({ x: 10, y: 25 }, position, upRight)).toBe(false);
+});

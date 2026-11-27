@@ -41,6 +41,15 @@ export class CombatHitbox {
     );
   }
 
+  /**
+   * Whether the world point `point` is behind a unit at `position`: on the side the side-view art
+   * shows its back, the right when it faces left and the left when it faces right, as `polygonAt`
+   * mirrors it. A point straight above or below it is not behind.
+   */
+  public isBehind(point: Vec2, position: Vec2, facing: Vec2): boolean {
+    return (point.x - position.x) * CombatHitbox.mirrorOf(facing) > 0;
+  }
+
   /** -1 when the unit faces right, so the left-facing outline flips; else 1. */
   private static mirrorOf(facing: Vec2): number {
     return facing.x > 0 ? -1 : 1;

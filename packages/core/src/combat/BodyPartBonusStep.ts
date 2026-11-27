@@ -2,14 +2,14 @@ import { CombatHitbox } from '../components/CombatHitbox';
 import { Transform } from '../components/Transform';
 import type { BodyPartBonus } from '../content/mobs/mobs.types';
 import type { GameState } from '../state/GameState';
-import { dot, sub } from '../utils/vec2';
 import type { DamageHit, DamageStep } from './DamageStep.types';
 
 /**
  * The body-part bonuses on a big boss (DEC-381). On a unit with a body outline (`CombatHitbox`), a
- * hit from an attacker in its rear half (more than 90 degrees from its facing) is multiplied by
- * `backHit`, and a hit whose impact point is on its head outline (only a projectile hit has an
- * impact point) by `headShot`. When both hold, only the larger applies. Every other hit, and every
+ * hit from an attacker behind it (on the side its art shows its back, `CombatHitbox.isBehind`) is
+ * multiplied by `backHit`, and a hit whose impact point is on its head outline (only a projectile
+ * hit has an impact point) by `headShot`. When both hold, only the larger applies. A status tick
+ * (bleed, burn) is no hit from a side, so it gets no back-hit bonus. Every other hit, and every
  * unit that is only its circle, passes unchanged.
  */
 export class BodyPartBonusStep implements DamageStep {
@@ -43,10 +43,10 @@ export class BodyPartBonusStep implements DamageStep {
       source.attackerId === null
         ? undefined
         : state.entities.get(source.attackerId)?.findComponent(Transform);
-    // The rear half: a negative dot product of the facing and the way to the attacker, so no
-    // angle and no trigonometry (ADR 0012).
     const isFromBehind =
-      attacker !== undefined && dot(facing, sub(attacker.position, position)) < 0;
+      source.kind !== 'status' &&
+      attacker !== undefined &&
+      hitbox.isBehind(attacker.position, position, facing);
     return (
       amount * Math.max(isHeadShot ? this.bonus.headShot : 1, isFromBehind ? this.bonus.backHit : 1)
     );
