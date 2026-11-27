@@ -15,6 +15,7 @@ const hero: EntitySnapshot = {
   health: { current: 800, max: 800 },
   aether: null,
   combat: null,
+  elevation: null,
   progression: null,
   capture: null,
   gem: null,

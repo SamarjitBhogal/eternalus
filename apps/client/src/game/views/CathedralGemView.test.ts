@@ -17,6 +17,7 @@ const gemEntity = (gem: GemSnapshot | null): EntitySnapshot => ({
   team: 'neutral',
   transform: { x: AT.x, y: AT.y, radius: 5, facing: { x: 1, y: 0 } },
   health: { current: 1, max: 1 },
+  elevation: null,
   progression: null,
   aether: null,
   combat: null,

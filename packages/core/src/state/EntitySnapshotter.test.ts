@@ -2,13 +2,17 @@ import { describe, expect, it } from 'vitest';
 
 import { Capturable } from '../components/Capturable';
 import { Combat } from '../components/Combat';
+import { Jump } from '../components/Jump';
+import { MapFeatureLink } from '../components/MapFeatureLink';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { ZoneArea } from '../components/ZoneArea';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { CAPTURE_POINT } from '../content/zones/capturePoint';
 import { Entity } from '../entities/Entity';
 import { Stronghold } from '../entities/structures/Stronghold';
+import { CapturePoint } from '../entities/zones/CapturePoint';
 import { EntitySnapshotter } from './EntitySnapshotter';
 
 /** An entity with no components; a test adds the ones it needs. */
@@ -50,6 +54,20 @@ describe('EntitySnapshotter', () => {
     });
   });
 
+  it("snapshots a jumper's height, and null for an entity that cannot jump (DEC-390)", () => {
+    const jumper = new Bare('entity-1', 'bare-definition');
+    const jump = new Jump();
+    jumper.addComponent(jump);
+    const snapshotter = new EntitySnapshotter(4, CURVES);
+    expect(snapshotter.snapshotOf(jumper).elevation).toEqual({ height: 0 });
+
+    jump.takeOff({ x: 1, y: 0 });
+    jump.advance({ airTicks: 4, peakHeight: 2 });
+
+    expect(snapshotter.snapshotOf(jumper).elevation).toEqual({ height: 1.5 });
+    expect(snapshotter.snapshotOf(new Bare('entity-2', 'bare-definition')).elevation).toBeNull();
+  });
+
   it('names the map object a body stands for, and leaves the key out for every other entity', () => {
     const house = new Bare('entity-1', 'house');
     house.addComponent(
@@ -67,8 +85,8 @@ describe('EntitySnapshotter', () => {
       definition: STRUCTURE_DEFINITIONS.get('stronghold'),
       position: { x: 5, y: 6 },
       team: 'light',
-      mapFeatureId: 'light-stronghold',
     });
+    built.addComponent(new MapFeatureLink('light-stronghold'));
     const loose = new Stronghold('entity-2', 'stronghold');
     loose.spawn({
       definition: STRUCTURE_DEFINITIONS.get('stronghold'),
@@ -101,5 +119,28 @@ describe('EntitySnapshotter', () => {
     expect(snapshotter.snapshotOf(legend).combat).toEqual({ weaponId: 'wuuthrad' });
     expect(snapshotter.snapshotOf(mob).combat).toEqual({ weaponId: null });
     expect(snapshotter.snapshotOf(structure).combat).toBeNull();
+  });
+
+  it('names the map feature of every entity that links one, a capture zone too (DEC-231)', () => {
+    const zoneAt = (id: string, mapFeatureId?: string): CapturePoint => {
+      const zone = new CapturePoint(id, CAPTURE_POINT.id);
+      zone.spawn({
+        definition: CAPTURE_POINT,
+        position: { x: 5, y: 5 },
+        team: 'neutral',
+        area: [SQUARE],
+      });
+      if (mapFeatureId !== undefined) zone.addComponent(new MapFeatureLink(mapFeatureId));
+      return zone;
+    };
+    const linked = new Bare('entity-3', 'bare');
+    linked.addComponent(new MapFeatureLink('light-gate-lane-0'));
+    const snapshotter = new EntitySnapshotter(4, CURVES);
+
+    expect(snapshotter.snapshotOf(zoneAt('entity-1', 'capture-point-lane-1')).mapFeatureId).toBe(
+      'capture-point-lane-1',
+    );
+    expect(snapshotter.snapshotOf(zoneAt('entity-2'))).not.toHaveProperty('mapFeatureId');
+    expect(snapshotter.snapshotOf(linked).mapFeatureId).toBe('light-gate-lane-0');
   });
 });

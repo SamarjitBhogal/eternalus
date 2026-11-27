@@ -72,12 +72,13 @@ const setUp = (config = createDefaultGameConfig()) => {
   };
   /**
    * Puts a new `mobId` of `unitTeam` on a post of `team` (a tower guard; a camp mob on a `neutral`
-   * post).
+   * post) whose plan can level (`canLevel`) or not.
    */
   const guard = (
     team: 'light' | 'dark' | 'neutral',
     mobId: string,
     unitTeam: 'light' | 'dark' | 'neutral' = 'light',
+    canLevel = true,
   ) => {
     const entity = add(unitTeam, 48, mobId);
     state.guards.add({
@@ -95,6 +96,7 @@ const setUp = (config = createDefaultGameConfig()) => {
       leashRadius: 6,
       leashTolerance: 1,
       respawnTicks: 30,
+      canLevel,
     });
     state.guards.fill(state.guards.size - 1, entity.id);
     return entity;
@@ -217,11 +219,12 @@ describe('VeterancySystem', () => {
     expect(killer.getComponent(StatusEffects).multiplier('damageDealt')).toBeCloseTo(1.365, 6);
   });
 
-  it('levels a tower guard from its own kills, but not a camp mob (DEC-165)', () => {
+  it('levels a tower guard and a neutral camp mob whose posts can level, but no guard whose post cannot (DEC-165, DEC-260)', () => {
     const { guard, kill, step } = setUp();
     const towerGuard = guard('light', 'light-guard');
-    const campMob = guard('neutral', 'light-camp-mob');
-    for (const id of [towerGuard.id, towerGuard.id, campMob.id, campMob.id]) {
+    const campMob = guard('neutral', 'light-camp-mob', 'neutral');
+    const fixed = guard('light', 'light-guard', 'light', false);
+    for (const id of [towerGuard.id, towerGuard.id, campMob.id, campMob.id, fixed.id, fixed.id]) {
       kill(true, id);
     }
     step();
@@ -229,21 +232,23 @@ describe('VeterancySystem', () => {
     expect(towerGuard.getComponent(Veterancy).level).toBe(1);
     expect(towerGuard.getComponent(Health).max).toBeCloseTo(165);
     expect(statusesOf(towerGuard)).toContainEqual(['veteran', 1]);
-    expect(campMob.findComponent(Veterancy)).toBeUndefined();
-    expect(campMob.getComponent(Health).max).toBe(150);
+    expect(campMob.getComponent(Veterancy).level).toBe(1);
+    expect(statusesOf(campMob)).toContainEqual(['veteran', 1]);
+    expect(fixed.findComponent(Veterancy)).toBeUndefined();
+    expect(fixed.getComponent(Health).max).toBe(150);
   });
 
-  it('rallies a friendly tower guard in range of a levelled minion, but not a camp mob (DEC-165)', () => {
+  it('rallies a friendly guard in range of a levelled minion only when its post can level (DEC-165, DEC-260)', () => {
     const { guard, kill, step } = setUp();
     const towerGuard = guard('light', 'light-guard');
-    const campMob = guard('neutral', 'light-camp-mob');
+    const fixed = guard('light', 'light-guard', 'light', false);
     kill();
     kill();
     step();
     step(); // the aura reads the level applied on the first pass
 
     expect(statusesOf(towerGuard)).toContainEqual(['rallied', 1]);
-    expect(statusesOf(campMob)).toEqual([]);
+    expect(statusesOf(fixed)).toEqual([]);
   });
 
   it('counts a killed enemy tower guard and a killed camp mob as kills (DEC-165, owner 2026-11-04)', () => {

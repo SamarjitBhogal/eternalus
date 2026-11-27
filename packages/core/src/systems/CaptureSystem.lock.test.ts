@@ -57,6 +57,7 @@ const setUp = (...mobIds: string[]) => {
       leashRadius: 35,
       leashTolerance: 5,
       respawnTicks: 0,
+      canLevel: false,
     });
     state.guards.fill(index, guard.id);
     return guard;

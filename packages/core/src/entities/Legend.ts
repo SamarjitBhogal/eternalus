@@ -1,4 +1,5 @@
 import { Aether } from '../components/Aether';
+import { Jump } from '../components/Jump';
 import { Progression } from '../components/Progression';
 import type { LegendDefinition } from '../content/legends/legends.types';
 import { SpawnContextReader } from './SpawnContextReader';
@@ -25,8 +26,8 @@ export abstract class Legend extends Unit {
   }
 
   /**
-   * Installs the unit components, then the legend-only `Aether` (MP) pool and `Progression` (XP
-   * and level). Mobs and structures have neither.
+   * Installs the unit components, then the legend-only `Aether` (MP) pool, `Progression` (XP
+   * and level) and `Jump` (DEC-390). Mobs and structures have none of them.
    */
   protected override installComponents(context: unknown): void {
     super.installComponents(context);
@@ -35,6 +36,7 @@ export abstract class Legend extends Unit {
     this.addComponent(new Aether(definition.baseAether));
     // The id is checked at content load (`KnownLevelCurveRule`); `ProgressionSystem` resolves it.
     this.addComponent(new Progression(definition.levelCurveId));
+    this.addComponent(new Jump());
   }
 
   /**

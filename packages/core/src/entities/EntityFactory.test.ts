@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { MapFeatureLink } from '../components/MapFeatureLink';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { IdGenerator } from '../utils/IdGenerator';
 import { Entity } from './Entity';
@@ -39,6 +40,20 @@ describe('EntityFactory', () => {
       ...PLACEMENT,
       definition: DEFINITION,
     });
+  });
+
+  it('links an entity placed from a map feature, whatever its family, and no other (DEC-252)', () => {
+    const factory = makeFactory();
+
+    const built = factory.create('factory-entity', 'factory-definition', {
+      ...PLACEMENT,
+      mapFeatureId: 'capture-point-lane-1',
+    });
+    const loose = factory.create('factory-entity', 'factory-definition', PLACEMENT);
+
+    expect(built.family).toBe('test-family');
+    expect(built.getComponent(MapFeatureLink).featureId).toBe('capture-point-lane-1');
+    expect(loose.hasComponent(MapFeatureLink)).toBe(false);
   });
 
   it('assigns unique sequential ids per factory, skipping failed lookups', () => {

@@ -3,6 +3,8 @@ import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
+import { MapFeatureLink } from '../components/MapFeatureLink';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
@@ -11,7 +13,6 @@ import { ZoneArea } from '../components/ZoneArea';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
-import { Structure } from '../entities/structures/Structure';
 import type { EntitySnapshot } from './Snapshot.types';
 
 /**
@@ -34,10 +35,12 @@ export class EntitySnapshotter {
   public snapshotOf(entity: Entity): EntitySnapshot {
     const transform = entity.findComponent(Transform);
     const health = entity.findComponent(Health);
+    const jump = entity.findComponent(Jump);
     const progression = entity.findComponent(Progression);
     const aether = entity.findComponent(Aether);
     const combat = entity.findComponent(Combat);
     const capture = entity.findComponent(Capturable);
+    const link = entity.findComponent(MapFeatureLink);
     const gem = entity.findComponent(CathedralGemState);
     return {
       id: entity.id,
@@ -47,8 +50,7 @@ export class EntitySnapshotter {
       ...(entity.findComponent(MapObjectBody) === undefined
         ? {}
         : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
-      ...(entity instanceof Structure &&
-        entity.mapFeatureId !== null && { mapFeatureId: entity.mapFeatureId }),
+      ...(link !== undefined && { mapFeatureId: link.featureId }),
       team: entity.findComponent(TeamMembership)?.team ?? null,
       transform:
         transform === undefined
@@ -59,6 +61,7 @@ export class EntitySnapshotter {
               radius: transform.radius,
               facing: { x: transform.facing.x, y: transform.facing.y },
             },
+      elevation: jump === undefined ? null : { height: jump.height },
       health: health === undefined ? null : { current: health.current, max: health.max },
       progression:
         progression === undefined

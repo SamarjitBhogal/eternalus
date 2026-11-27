@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Combat } from '../components/Combat';
+import { Jump } from '../components/Jump';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import type { WeaponDefinition } from '../content/weapons/weapons.types';
@@ -64,6 +65,14 @@ describe('Legend', () => {
     const combat = legend.getComponent(Combat);
     expect(combat.weaponId).toBe('raptor-talons');
     expect(combat.attack).toMatchObject({ damage: 45, reach: 1.5, interval: 21 });
+  });
+
+  it('can jump, standing on the ground with the key released (DEC-390)', () => {
+    const legend = new Warrior('entity-1', 'warrior');
+
+    legend.spawn({ ...PLACEMENT, definition: WARRIOR, weapons: loadWeapons(30) });
+
+    expect(legend.getComponent(Jump).fields).toEqual([false, null, 0, 0]);
   });
 
   it('throws when it names a weapon but was spawned without a weapon source', () => {

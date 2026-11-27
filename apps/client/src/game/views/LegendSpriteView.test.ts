@@ -14,6 +14,7 @@ const entity: EntitySnapshot = {
   health: { current: 800, max: 800 },
   aether: null,
   combat: null,
+  elevation: null,
   progression: null,
   area: null,
   capture: null,
