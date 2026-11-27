@@ -471,9 +471,7 @@ Legends to their start points at full health at once, and `KillCountCondition` (
 the match at the target. The score is `state.match.duel` and `Snapshot.match.duel`. The shipped
 numbers (target, countdown, start offset) are `DUEL_RULES` in `content/duel/duelRules.ts`. What
 this note left as generated (mobs, objectives, the crystal, the Cathedral's entrances) is the
-2026-11-25 note below; FR-115's inert world beyond that is not built. Every Legend enters a Duel at
-its level curve's cap (`DUEL_RULES.legendsStartAtMaxLevel`, SCRUM-444; `ProgressionSystem` raises
-it when it spawns); only Legends are raised.
+2026-11-25 note below; FR-115's inert world beyond that is not built.
 
 Implementation status, 2026-11-25 (branch `feat/duel-arena-only-legends`; the owner's feedback on
 the Duel demo of 2026-11-20, Jira SCRUM-445, SCRUM-446 and SCRUM-450, and the owner's answers
@@ -501,6 +499,10 @@ that part is built, never in a system's tick:
 
 The removed structures' art is still drawn from the map presentation; hiding it in a Duel is not
 built.
+
+Implementation status, 2026-11-25 (branch `feat/duel-legend-max-level`, SCRUM-444): every Legend
+enters a Duel at its level curve's cap (`DUEL_RULES.legendsStartAtMaxLevel`; `ProgressionSystem`
+raises it when it spawns, 05 §18). Only Legends are raised.
 
 The human's Legend works like this (DEC-173): it is the roster's `human` slot (`RosterSlot.pilot`),
 at most one per roster and on `playerTeam`; a roster without one is sim mode. The client gives it

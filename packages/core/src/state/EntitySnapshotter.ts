@@ -3,6 +3,8 @@ import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
 import { CombatHitbox } from '../components/CombatHitbox';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
+import { MapFeatureLink } from '../components/MapFeatureLink';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
@@ -11,7 +13,6 @@ import { ZoneArea } from '../components/ZoneArea';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
-import { Structure } from '../entities/structures/Structure';
 import type { EntitySnapshot } from './Snapshot.types';
 
 /**
@@ -35,9 +36,11 @@ export class EntitySnapshotter {
     const transform = entity.findComponent(Transform);
     const hitbox = entity.findComponent(CombatHitbox);
     const health = entity.findComponent(Health);
+    const jump = entity.findComponent(Jump);
     const progression = entity.findComponent(Progression);
     const aether = entity.findComponent(Aether);
     const capture = entity.findComponent(Capturable);
+    const link = entity.findComponent(MapFeatureLink);
     const gem = entity.findComponent(CathedralGemState);
     return {
       id: entity.id,
@@ -47,8 +50,7 @@ export class EntitySnapshotter {
       ...(entity.findComponent(MapObjectBody) === undefined
         ? {}
         : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
-      ...(entity instanceof Structure &&
-        entity.mapFeatureId !== null && { mapFeatureId: entity.mapFeatureId }),
+      ...(link !== undefined && { mapFeatureId: link.featureId }),
       ...(hitbox !== undefined &&
         transform !== undefined && {
           combatHitbox: hitbox.polygonAt(transform.position, transform.facing),
@@ -63,6 +65,7 @@ export class EntitySnapshotter {
               radius: transform.radius,
               facing: { x: transform.facing.x, y: transform.facing.y },
             },
+      elevation: jump === undefined ? null : { height: jump.height },
       health: health === undefined ? null : { current: health.current, max: health.max },
       progression:
         progression === undefined

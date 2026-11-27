@@ -5,6 +5,7 @@ import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
@@ -143,6 +144,21 @@ export class EntityStore {
       return false;
     }
     movement.steer(direction);
+    return true;
+  }
+
+  /**
+   * Records whether the entity's jump key is held (`Jump`, DEC-390). Lets `commands/` jump
+   * without importing `components/`, as `steer` does for movement.
+   *
+   * @returns `false` when the entity is unknown or cannot jump.
+   */
+  public holdJump(id: EntityId, isHeld: boolean): boolean {
+    const jump = this.entities.get(id)?.findComponent(Jump);
+    if (jump === undefined) {
+      return false;
+    }
+    jump.hold(isHeld);
     return true;
   }
 

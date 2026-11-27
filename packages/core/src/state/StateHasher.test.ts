@@ -5,6 +5,8 @@ import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
+import { MapFeatureLink } from '../components/MapFeatureLink';
 import { Movement } from '../components/Movement';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { CombatClock } from '../components/CombatClock';
@@ -136,6 +138,14 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(before);
   });
 
+  it('hashes an entity the same with or without a map-feature link: setup the replay carries (DEC-231)', () => {
+    const { state: plain } = stateWithSoldier();
+    const { state: linked, soldier } = stateWithSoldier();
+    soldier.addComponent(new MapFeatureLink('light-stronghold'));
+
+    expect(hasher.hash(linked)).toBe(hasher.hash(plain));
+  });
+
   it('changes when only a granted minion level differs, the level capped (DEC-258)', () => {
     const { state, soldier } = stateWithSoldier();
     const veterancy = new Veterancy();
@@ -228,6 +238,28 @@ describe('StateHasher', () => {
     expect(hit).not.toBe(bare);
     expect(byAnother).not.toBe(hit);
     expect(hasher.hash(state)).not.toBe(byAnother);
+  });
+
+  it('hashes a jump only while its key is held or it flies, then with each field (DEC-390)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const bare = hasher.hash(state);
+    const jump = new Jump();
+    soldier.addComponent(jump);
+    const grounded = hasher.hash(state);
+    jump.hold(true);
+    const held = hasher.hash(state);
+    jump.takeOff({ x: 1, y: 0 });
+    const flying = hasher.hash(state);
+    jump.advance({ airTicks: 5, peakHeight: 1 });
+    const higher = hasher.hash(state);
+
+    jump.reset();
+
+    expect(grounded).toBe(bare);
+    expect(held).not.toBe(grounded);
+    expect(flying).not.toBe(held);
+    expect(higher).not.toBe(flying);
+    expect(hasher.hash(state)).toBe(bare);
   });
 
   it('differs between seeds', () => {

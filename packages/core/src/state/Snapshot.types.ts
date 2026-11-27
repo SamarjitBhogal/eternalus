@@ -10,14 +10,17 @@ import type { Polygon } from '../utils/geometry.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
- * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`, `Capturable`
- * or `CathedralGemState`), never a made-up default.
+ * (no `Transform`, `Jump`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`,
+ * `Capturable` or `CathedralGemState`), never a made-up default.
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
   /**
-   * A structure built from a map feature: the feature's id (`MapFeature.id`), so a HUD tile binds
-   * to its structure by identity, never by position.
+   * An entity built from a map feature (a structure or a capture zone): the feature's id
+   * (`MapFeatureLink`), so a HUD tile or capture point binds to its entity by identity, never by
+   * position. Absent for an entity built from no feature. One feature may back several entities
+   * (the Cathedral's zone and its gem structure, DEC-233), so a consumer selects by this id
+   * and by the group it reads (`FeatureKeyedGroup`).
    */
   readonly mapFeatureId?: string;
   /**
@@ -37,6 +40,12 @@ export type EntitySnapshot = {
     readonly radius: number;
     readonly facing: { readonly x: number; readonly y: number };
   } | null;
+  /**
+   * The drawn height above the ground in metres, from any lift (today only a Legend's `Jump`,
+   * DEC-390; named for what the view draws, DEC-420): above 0 only in the air; `null` for every
+   * entity that nothing can lift.
+   */
+  readonly elevation: { readonly height: number } | null;
   readonly health: { readonly current: number; readonly max: number } | null;
   /** A Legend's level and XP (`Progression`, DEC-224); `null` for every entity that does not level. */
   readonly progression: ProgressionSnapshot | null;
@@ -61,6 +70,13 @@ export type GemSnapshot = {
   /** Ticks since the last hit (0 on the tick it was struck), or `null` before the first. */
   readonly ticksSinceHit: number | null;
 };
+
+/**
+ * A group a consumer may read by `EntitySnapshot.mapFeatureId`: at most one entity of a feature
+ * carries it, which core checks (`map-feature-groups-unique`), so the lookup finds one value and
+ * never hides another (DEC-233, DEC-255, DEC-256).
+ */
+export type FeatureKeyedGroup = keyof Pick<EntitySnapshot, 'health' | 'capture'>;
 
 /** A Legend's level and XP as the client sees it (architecture 03 §5, the HUD's XP ring). */
 type ProgressionSnapshot = LevelProgress & {

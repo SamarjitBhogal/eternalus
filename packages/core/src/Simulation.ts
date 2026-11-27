@@ -627,10 +627,10 @@ export class Simulation {
   /**
    * Spawns one zone per map feature that places one (`ZONE_PLACEMENTS`): a capture point where
    * each lane crosses the centre line, the middle one in the Cathedral (architecture 07 §7), each
-   * covering its building's floor (DEC-145 (a)). They come from the map alone, so a replay (seed,
-   * config and commands) rebuilds them. They spawn right after the structures, before the system
-   * pipeline is built, since a zone can be a guard home (18 §7); the caller announces them once the
-   * pipeline listens.
+   * covering its building's floor (DEC-145 (a)) and linked to its feature (`MapFeatureLink`,
+   * DEC-231). They come from the map alone, so a replay (seed, config and commands) rebuilds them.
+   * They spawn right after the structures, before the system pipeline is built, since a zone can be
+   * a guard home (18 §7); the caller announces them once the pipeline listens.
    *
    * @returns Each zone's `entity-spawned` payload, in spawn order.
    */
@@ -652,6 +652,7 @@ export class Simulation {
       const entity = factory.create(kind, definitionId, {
         position: feature.position,
         team: feature.team,
+        mapFeatureId: feature.id,
         area: zoneAreaOf(map, feature),
         ...(feature.laneId !== undefined && { laneId: feature.laneId }),
       });

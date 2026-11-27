@@ -51,6 +51,7 @@ const GEM: EntitySnapshot = {
   definitionId: 'cathedral',
   team: 'neutral',
   transform: { ...GEM_AT, radius: 5, facing: { x: 1, y: 0 } },
+  elevation: null,
   health: { current: 1, max: 1 },
   progression: null,
   aether: null,
