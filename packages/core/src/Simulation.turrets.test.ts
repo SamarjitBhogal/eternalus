@@ -59,7 +59,7 @@ describe('Simulation wall turrets', () => {
     }
   });
 
-  it("gives each turret's pylon map object its own entity, 600 health and the turret's breakability, and carries the turret's health on it (DEC-375)", () => {
+  it("gives each turret's pylon map object its own entity, 600 health and the turret's breakability, and reports the mounted turret's health on it (DEC-375)", () => {
     const { simulation, state, turretOf } = setUp();
     const { entities, mapObjects = [] } = simulation.snapshot();
 
@@ -69,7 +69,7 @@ describe('Simulation wall turrets', () => {
       expect(pylon).toMatchObject({
         health: { current: 600, max: 600 },
         condition: 'standing',
-        carriedHealth: turret?.health,
+        mountedHealth: turret?.health,
       });
       expect(entities.find(({ id }) => id === pylon?.entityId)).toMatchObject({
         definitionId: 'map-object-turret',
@@ -114,11 +114,11 @@ describe('Simulation wall turrets', () => {
     expect(afterTurretHit).toMatchObject({
       entityId: pylonId,
       health: { current: 600, max: 600 },
-      carriedHealth: { current: 500, max: 600 },
+      mountedHealth: { current: 500, max: 600 },
     });
     expect(pylonOf()).toMatchObject({
       health: { current: 550, max: 600 },
-      carriedHealth: { current: 500, max: 600 },
+      mountedHealth: { current: 500, max: 600 },
     });
     expect(turretOf(feature)?.health).toEqual({ current: 500, max: 600 });
   });
@@ -161,7 +161,7 @@ describe('Simulation wall turrets', () => {
     const gap = Math.hypot(toProbe.x, toProbe.y);
     const direction = { x: toProbe.x / gap, y: toProbe.y / gap };
     const { grid } = state.world ?? {};
-    const pylonId = state.worldObjects?.carrierOf(turretOf(feature)?.id ?? '');
+    const pylonId = state.worldObjects?.mountOf(turretOf(feature)?.id ?? '');
 
     expect(state.worldObjects?.blockingAt(probe, 0.3)).toBe(feature.id);
     expect(grid?.isWalkableAt(probe.x, probe.y)).toBe(false);

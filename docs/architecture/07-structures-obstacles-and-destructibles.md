@@ -469,18 +469,18 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   builds a `Turret` structure: definition `turret` in `content/structures/structureCatalogue.ts`
   (base health from balancing.md, the map pylon's radius, no lane, the walls' breakability rule,
   DEC-341). Reach to the turret is measured to its pylon map object (`hasMapFootprint`). The
-  pylon carries the turret (`isCarriedByBody`, DEC-375, which replaces the one health pool of
+  turret is mounted on the pylon (`isMounted`, DEC-375, which replaces the one health pool of
   DEC-332 (1)): it has its own entity and health (a provisional `TUNE` in
   `content/maps/mapObjectDefinitions.ts`), and it breaks under the turret's rule
   (`StructureSystem` flips both). Its fall takes the turret with it on the same tick:
-  `MapDestructionSystem` fells what the pylon carries with `DamagePipeline.collapse`, with the
+  `MapDestructionSystem` fells what is mounted on the pylon with `DamagePipeline.collapse`, with the
   pylon's killer as its killer, so the turret's XP goes to the Legend that felled the pylon. Like
   a fort, the pylon outlives the turret: it stays as a ruin that blocks, with its own health, and
   its footprint and nav cells stay (DEC-341, HC-Q91). `WorldObjectStore.removed` marks every such
   body a ruin, and the snapshot's `MapObjectSnapshot.condition` is `ruin` (DEC-376), so the client
   draws a fallen tower's fort and a dead turret's pylon as ruins (06; the fort's walls still
-  block, DEC-217 (12), until the tower-ruins work (#98) lands). The snapshot also carries the
-  turret's health on its pylon (`carriedHealth`), so the client draws the turret's bar above the
+  block, DEC-217 (12), until the tower-ruins work (#98) lands). The snapshot also reports the
+  turret's health on its pylon (`mountedHealth`), so the client draws the turret's bar above the
   pylon and the pylon's own bar below it. A destroyed turret sends `structure-destroyed`. It
   pays structure points (DEC-212; whether it should is open in DEC-341), but no team-wide
   structure XP: its XP (`xpSources.destroyerOnly`) goes only to the Legend that lands the killing

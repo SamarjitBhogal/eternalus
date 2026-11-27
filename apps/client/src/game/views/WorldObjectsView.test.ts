@@ -71,7 +71,7 @@ describe('WorldObjectsView', () => {
         entityId: 'entity-2',
         health: { current: 300, max: 600 },
         condition: 'standing',
-        carriedHealth: { current: 150, max: 600 },
+        mountedHealth: { current: 150, max: 600 },
       },
     ]);
     view.draw(renderer, AREA);

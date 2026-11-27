@@ -39,7 +39,7 @@ const pylonMatch = () => {
   run(COUNTDOWN + 1);
   const legendId = spawnDark(match, 'warrior', 'warrior', outside(feature, 0.5));
   const turretId = turretOf(feature)?.id ?? '';
-  const pylonId = state.worldObjects?.carrierOf(turretId) ?? '';
+  const pylonId = state.worldObjects?.mountOf(turretId) ?? '';
   if (pylonId === '') throw new Error('The turret has no pylon.');
   const removedAt = new Map<string, number>();
   const deaths: GameEventMap['entity-died'][] = [];
@@ -90,7 +90,7 @@ describe('Simulation wall turret pylons (DEC-375)', () => {
       },
     ]);
     expect(m.pylon()).toMatchObject({ entityId: m.pylonId, condition: 'destroyed' });
-    expect(m.pylon()?.carriedHealth).toBeUndefined();
+    expect(m.pylon()?.mountedHealth).toBeUndefined();
   });
 
   it('destroys the turret with a pylon that no Legend destroyed, and pays its XP to no one', () => {

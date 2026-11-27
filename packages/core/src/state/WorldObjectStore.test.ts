@@ -143,7 +143,7 @@ describe('WorldObjectStore', () => {
     expect(world.destroyedIds.has('fort')).toBe(false);
   });
 
-  it("gives an object that carries a structure (a wall turret's pylon) its own entity, health and the structure's breakability, and leaves it standing with them, as a ruin, once the structure is gone (DEC-375)", () => {
+  it("gives an object a structure is mounted on (a wall turret's pylon) its own entity, health and the structure's breakability, and leaves it standing with them, as a ruin, once the structure is gone (DEC-375)", () => {
     const factory = fixtureFactory();
     const entities = new EntityStore();
     const turret = factory.create('obstacle', MAP_OBJECT_DEFINITIONS.rock.id, {
@@ -168,7 +168,7 @@ describe('WorldObjectStore', () => {
       factory,
       entities,
       definitions: MAP_OBJECT_DEFINITIONS,
-      carried: new Map([['pylon', turret.id]]),
+      mounted: new Map([['pylon', turret.id]]),
     });
     const pylonId = world.snapshot()[0]?.entityId ?? '';
     const pylonHealth = entities.get(pylonId)?.getComponent(Health);
@@ -183,9 +183,9 @@ describe('WorldObjectStore', () => {
       entityId: pylonId,
       health: { current: 500, max: 600 },
       condition: 'standing',
-      carriedHealth: { current: 60, max: 100 },
+      mountedHealth: { current: 60, max: 100 },
     });
-    expect(world.carrierOf(turret.id)).toBe(pylonId);
+    expect(world.mountOf(turret.id)).toBe(pylonId);
     expect(world.contentsOf('pylon')).toEqual([turret.id]);
     expect(entities.takesNoDamage(pylonId)).toBe(true);
 
@@ -200,7 +200,7 @@ describe('WorldObjectStore', () => {
       condition: 'ruin',
     });
     expect(world.contentsOf('pylon')).toEqual([]);
-    expect(world.carrierOf(turret.id)).toBeUndefined();
+    expect(world.mountOf(turret.id)).toBeUndefined();
     expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBe('pylon');
 
     // The pylon falls later on its own: it is destroyed and blocks no more.

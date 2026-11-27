@@ -74,11 +74,11 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       footprintRadius: footprintOf('turret'),
       // DEC-341 (HC-Q90): damageable like the wall it sits on.
       breakability: AFTER_BUFF_TOWERS,
-      // Reach to the turret's pylon. The pylon carries the turret (DEC-375): it has its own health
+      // Reach to the turret's pylon. The turret is mounted on the pylon (DEC-375). The pylon has its own health
       // and breaks under the turret's rule. Its fall takes the turret with it. The turret's fall
       // leaves it as a ruin that blocks, with its own health (DEC-341, HC-Q91).
       hasMapFootprint: true,
-      isCarriedByBody: true,
+      isMounted: true,
       controller: 'turret',
       aiProfile: 'wall-turret',
       ammo: ['bolt-heavy', 'bolt-default'], // balancing.md "Turrets — MVP": heavy for heavy targets

@@ -57,8 +57,8 @@ export type MapObjectSnapshot = {
   readonly health: { readonly current: number; readonly max: number } | null;
   readonly condition: MapObjectCondition;
   /**
-   * The health of the structure it carries, while that stands (a wall turret on its pylon,
+   * The health of the structure mounted on it, while that stands (a wall turret on its pylon,
    * DEC-375). `health` is then the object's own.
    */
-  readonly carriedHealth?: { readonly current: number; readonly max: number };
+  readonly mountedHealth?: { readonly current: number; readonly max: number };
 };

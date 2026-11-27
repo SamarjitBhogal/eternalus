@@ -52,7 +52,7 @@ export class WorldObjectsView implements WorldLayer {
   public readonly isFallen = (id: string): boolean => this.fallen.has(id);
   /**
    * Draws nearby health bars and low ruined silhouettes without changing collision geometry. An
-   * object's own bar sits under it; the structure it carries shows its bar above it (a wall turret
+   * object's own bar sits under it; the structure mounted on it shows its bar above it (a wall turret
    * on its pylon, DEC-375). A ruin with health left (a pylon whose turret fell) keeps its bar.
    */
   public draw(renderer: Renderer, view = this.currentView?.()): void {
@@ -80,8 +80,8 @@ export class WorldObjectsView implements WorldLayer {
       if (state.condition === 'destroyed' || view.width >= S.healthBarViewLimit) continue;
       if (state.health !== null)
         this.bar(renderer, bounds, state.health, bounds.y + bounds.height + S.barGap);
-      if (state.carriedHealth !== undefined)
-        this.bar(renderer, bounds, state.carriedHealth, bounds.y - S.barGap - S.barHeight);
+      if (state.mountedHealth !== undefined)
+        this.bar(renderer, bounds, state.mountedHealth, bounds.y - S.barGap - S.barHeight);
     }
   }
   /** Draws destroyed and ruined exterior objects on the minimap without health-bar clutter. */

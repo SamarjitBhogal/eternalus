@@ -25,19 +25,19 @@ export class WorldObjectStore {
   /** A standing structure's id → the index of the record of the map object that is its body. */
   private readonly owned = new Map<string, number>();
 
-  /** A standing structure's id → the index of the record of the map object that carries it. */
-  private readonly carriers = new Map<string, number>();
+  /** A standing structure's id → the index of the record of the map object it is mounted on. */
+  private readonly mounts = new Map<string, number>();
 
   /**
    * Spawns physical objects through the existing registry/factory; terrain has no health entity.
    * An object named in `owners` gets no entity of its own: its health is its structure's (one pool,
    * DEC-185 B: a lane tower's fort map object, DEC-217 (13); a wall turret's pylon), so a hit on it
    * is a hit on the structure. It outlives its structure as a ruin that still blocks (`removed`).
-   * An object named in `carried` (a wall turret's pylon, DEC-375) gets its own entity and health,
-   * as any object does, and carries its structure: see `contentsOf` and `removed`.
+   * An object named in `mounted` (a wall turret's pylon, DEC-375) gets its own entity and health,
+   * as any object does, and a structure is mounted on it: see `contentsOf` and `removed`.
    *
    * @param options - The objects, how to spawn them, and the structures some of them are bodies
-   *   of or carry.
+   *   of or are mounted on.
    */
   public constructor({
     objects,
@@ -45,7 +45,7 @@ export class WorldObjectStore {
     entities,
     definitions,
     owners = new Map(),
-    carried = new Map(),
+    mounted = new Map(),
   }: WorldObjectStoreOptions) {
     for (const object of objects) {
       const definition = definitions[object.kind];
@@ -72,33 +72,33 @@ export class WorldObjectStore {
       if (object.team !== undefined) entity.addComponent(new TeamMembership(object.team));
       entities.add(entity);
       this.entityObjects.set(entity.id, object);
-      const load = this.carry(entities, carried.get(object.id), entity);
+      const load = this.mount(entities, mounted.get(object.id), entity);
       this.records.push({
         object,
         entityId: entity.id,
         health: entity.getComponent(Health),
         bounds,
-        ...(load !== undefined && { carried: load }),
+        ...(load !== undefined && { mounted: load }),
       });
     }
   }
 
   /**
-   * Links the object entity `body` to the structure `structureId` it carries (DEC-375), and gives
+   * Links the object entity `body` to the structure `structureId` mounted on it (DEC-375), and gives
    * it that structure's breakability at spawn; `StructureSystem` keeps the two equal from then on.
    * Call it before the body's record is pushed.
    *
-   * @returns The carried structure's id and health, or `undefined` when there is none.
+   * @returns The mounted structure's id and health, or `undefined` when there is none.
    */
-  private carry(
+  private mount(
     entities: EntityStore,
     structureId: string | undefined,
     body: Entity,
-  ): WorldObjectRecord['carried'] {
+  ): WorldObjectRecord['mounted'] {
     const structure = entities.get(structureId ?? '');
     const health = structure?.findComponent(Health);
     if (structure === undefined || health === undefined) return undefined;
-    this.carriers.set(structure.id, this.records.length);
+    this.mounts.set(structure.id, this.records.length);
     body
       .findComponent(Collider)
       ?.setUnbreakable(structure.findComponent(Collider)?.isUnbreakable === true);
@@ -115,7 +115,7 @@ export class WorldObjectStore {
     const object = this.entityObjects.get(entityId);
     if (object !== undefined) this.destroyed.add(object.id);
     this.leave(this.owned, entityId, (record) => ({ ...record, entityId: null, health: null }));
-    this.leave(this.carriers, entityId, ({ object: body, entityId: id, health, bounds }) => ({
+    this.leave(this.mounts, entityId, ({ object: body, entityId: id, health, bounds }) => ({
       object: body,
       entityId: id,
       health,
@@ -141,11 +141,11 @@ export class WorldObjectStore {
   }
 
   /**
-   * The entity id of the map object that carries the standing structure `structureId` (a wall
+   * The entity id of the map object the standing structure `structureId` is mounted on (a wall
    * turret's pylon, DEC-375), or `undefined` when none does.
    */
-  public carrierOf(structureId: string): string | undefined {
-    const index = this.carriers.get(structureId);
+  public mountOf(structureId: string): string | undefined {
+    const index = this.mounts.get(structureId);
     if (index === undefined) return undefined;
     return this.records[index]?.entityId ?? undefined;
   }
@@ -157,13 +157,13 @@ export class WorldObjectStore {
 
   /**
    * What falls with the map object `buildingId`, in deterministic placement order: the physical
-   * contents of a building, and the structure the object carries (a wall turret on its pylon,
+   * contents of a building, and the structure mounted on the object (a wall turret on its pylon,
    * DEC-375).
    */
   public contentsOf(buildingId: string): readonly string[] {
-    return this.records.flatMap(({ object, entityId, carried }) => [
+    return this.records.flatMap(({ object, entityId, mounted }) => [
       ...(object.buildingId === buildingId && entityId !== null ? [entityId] : []),
-      ...(object.id === buildingId && carried !== undefined ? [carried.entityId] : []),
+      ...(object.id === buildingId && mounted !== undefined ? [mounted.entityId] : []),
     ]);
   }
 
@@ -216,13 +216,13 @@ export class WorldObjectStore {
 
   /** Snapshot state contains no simulation components or mutable references. */
   public snapshot(): readonly MapObjectSnapshot[] {
-    return this.records.map(({ object, entityId, health, carried }) => ({
+    return this.records.map(({ object, entityId, health, mounted }) => ({
       id: object.id,
       entityId,
       health: health === null ? null : { current: health.current, max: health.max },
       condition: this.conditionOf(object.id),
-      ...(carried !== undefined && {
-        carriedHealth: { current: carried.health.current, max: carried.health.max },
+      ...(mounted !== undefined && {
+        mountedHealth: { current: mounted.health.current, max: mounted.health.max },
       }),
     }));
   }

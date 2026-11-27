@@ -30,16 +30,17 @@ export type StructureDefinition = EntityDefinitionBase & {
    * Whether its map object of the same id (a lane tower's fort, the Stronghold's palace) is its
    * outline: attack reach and chases measure to that object's footprints, not the collider circle
    * (`Footprint`, DEC-185). A blocking such object is also its body, with no health of its own,
-   * unless the structure `isCarriedByBody`.
+   * unless the structure `isMounted`.
    */
   readonly hasMapFootprint?: true;
   /**
-   * Whether its map object of the same id (`hasMapFootprint`) carries it, as a hill carries a tree
-   * (DEC-375, a wall turret on its pylon). That object keeps a health pool of its own and breaks
-   * under this structure's rule. When the object falls, the structure falls with it on the same
-   * tick. When the structure falls, the object stays standing as a ruin, with its own health.
+   * Whether the structure stands on its map object of the same id (`hasMapFootprint`), as a wall
+   * turret stands on its pylon. The structure is mounted on that object. The object keeps its own
+   * entity and health. The object breaks under this structure's rule. When the object falls, the
+   * structure falls with it on the same tick (DEC-375). When the structure falls, the object stays
+   * standing as a ruin, with its own health.
    */
-  readonly isCarriedByBody?: true;
+  readonly isMounted?: true;
   /**
    * Whether the box round its `Footprint` is a fort box (`PathingWorld.forts`): a chase of a unit
    * standing inside it closes in over the blocked ground there (DEC-185; the Stronghold's palace,

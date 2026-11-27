@@ -413,29 +413,29 @@ export class Simulation {
    * (a fort) is the structure's body: it has no health of its own (one pool, DEC-185 B). Only towers
    * share one pool (DEC-217 (13)): the palace's and the gates' objects do not block, so they keep
    * their own health, and their outline is walked on (`Footprint.isWalkOn`): a shot flies over it
-   * unless it was fired at the structure. An object that carries its structure (a wall turret's
-   * pylon, `isCarriedByBody`, DEC-375) keeps its own health too, and its fall takes the structure
+   * unless it was fired at the structure. An object that a structure is mounted on (a wall turret's
+   * pylon, `isMounted`, DEC-375) keeps its own health too, and its fall takes the structure
    * with it. A body outlives its structure as a ruin that blocks (`WorldObjectStore.removed`,
    * DEC-341).
    *
-   * @returns Map object id → the id of the structure it is the body of (`owners`) or carries
-   *   (`carried`).
+   * @returns Map object id → the id of the structure it is the body of (`owners`) or is mounted on
+   *   (`mounted`).
    */
   private static spawnStructures(
     state: GameState,
     factory: EntityFactory,
     structures: StructureSource,
     mapObjects: readonly MapObject[] = [],
-  ): Required<Pick<WorldObjectStoreOptions, 'owners' | 'carried'>> {
+  ): Required<Pick<WorldObjectStoreOptions, 'owners' | 'mounted'>> {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
       compareById(a.id, b.id),
     );
     const bodies = new Map(mapObjects.map((object) => [object.id, object]));
     const owners = new Map<string, string>();
-    const carried = new Map<string, string>();
+    const mounted = new Map<string, string>();
     for (const { id, definitionId, position, team, laneId } of features) {
       if (structures.has(definitionId)) {
-        const { kind, hasMapFootprint, isCarriedByBody } = structures.get(definitionId);
+        const { kind, hasMapFootprint, isMounted } = structures.get(definitionId);
         const placement = {
           position,
           team,
@@ -447,12 +447,12 @@ export class Simulation {
         if (body !== undefined) {
           structure.addComponent(new Footprint(body.footprints, { isWalkOn: !body.isBlocking }));
         }
-        if (body !== undefined && isCarriedByBody === true) carried.set(body.id, structure.id);
+        if (body !== undefined && isMounted === true) mounted.set(body.id, structure.id);
         else if (body?.isBlocking === true) owners.set(body.id, structure.id);
         state.entities.add(structure);
       }
     }
-    return { owners, carried };
+    return { owners, mounted };
   }
 
   /**
