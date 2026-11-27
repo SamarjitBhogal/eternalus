@@ -181,7 +181,7 @@ describe('WorldObjectStore', () => {
     expect(world.snapshot()[0]).toEqual({
       id: 'pylon',
       entityId: pylonId,
-      health: { current: 500, max: 600 },
+      health: { current: 1900, max: 2000 },
       condition: 'standing',
       mountedHealth: { current: 60, max: 100 },
     });
@@ -196,7 +196,7 @@ describe('WorldObjectStore', () => {
     expect(world.snapshot()[0]).toEqual({
       id: 'pylon',
       entityId: pylonId,
-      health: { current: 500, max: 600 },
+      health: { current: 1900, max: 2000 },
       condition: 'ruin',
     });
     expect(world.contentsOf('pylon')).toEqual([]);
@@ -204,7 +204,7 @@ describe('WorldObjectStore', () => {
     expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBe('pylon');
 
     // The pylon falls later on its own: it is destroyed and blocks no more.
-    pylonHealth?.applyDamage(500);
+    pylonHealth?.applyDamage(1900);
     entities.remove(pylonId, 'died');
     world.removed(pylonId);
     // A ruin first, then destroyed: destroyed wins (DEC-389).
