@@ -105,3 +105,19 @@
   left: calc(31 * var(--hud-u));
   top: calc(92 * var(--hud-u));
 }
+
+/* A reason nothing else on the HUD shows ("Not enough space", HC-Q113; no Figma node): small
+   text centred above the slot while the reason holds. */
+.prompt {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: calc(6 * var(--hud-u));
+  white-space: nowrap;
+  color: var(--hud-text);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(calc(14 * var(--hud-u)), var(--text-min));
+  line-height: 1.2;
+}

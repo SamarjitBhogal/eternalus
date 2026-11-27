@@ -332,6 +332,8 @@ export const STRINGS = {
       casting: 'Casting',
       'cannot-cast': 'Cannot cast',
       'no-target': 'No target',
+      /** Berserk's grown body has no room here (DEC-382, HC-Q113); the slot also shows it as a prompt. */
+      'no-room': 'Not enough space',
       restricted: 'Restricted',
       unavailable: 'Not yet available',
     } satisfies Record<HudBlockReason, string>,

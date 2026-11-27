@@ -15,7 +15,9 @@ export type AbilitySlot =
 
 /**
  * Why a cast was refused (05 §6). `unavailable`: the ability has no effects yet (`effects: []`),
- * so it is in a kit but cannot be cast until its class's PR builds it.
+ * so it is in a kit but cannot be cast until its class's PR builds it. `no-room`: the body that
+ * the cast grows has no room where the caster stands (Berserk, `BuffEffect.casterBlockedBy`;
+ * DEC-382, HC-Q113).
  */
 export type AbilityRejectReason =
   | 'empty-slot'
@@ -26,6 +28,7 @@ export type AbilityRejectReason =
   | 'casting'
   | 'cannot-cast'
   | 'no-target'
+  | 'no-room'
   | 'restricted'
   | 'unavailable';
 

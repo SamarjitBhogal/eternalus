@@ -24,8 +24,9 @@ import type { CastRejectReason } from './CastValidator.types';
  * the countdown is a freeze, DEC-88), the cooldown is over, an ultimate's meter is full
  * (`not-charged`), the aether covers the price, the aim suits the ability's targeting (its
  * `CastTargeting` strategy: a directional cast needs a direction, `no-target`), each step's own
- * aim check (`AbilityEffect.aimBlockedBy`: a summoned wall needs room, `no-target`), then each
- * restriction in content order. `slotBlockedBy` runs the same checks without the aim's.
+ * checks (`AbilityEffect.casterBlockedBy`: Berserk's grown body needs room, `no-room`; then
+ * `AbilityEffect.aimBlockedBy`: a summoned wall needs room, `no-target`), then each restriction in
+ * content order. `slotBlockedBy` runs the same checks without the aim's.
  * A refused cast spends nothing and starts no cooldown.
  */
 export class CastValidator implements SlotReadiness {
@@ -116,8 +117,7 @@ export class CastValidator implements SlotReadiness {
     if (aimReason !== null) {
       return aimReason;
     }
-    const stepReason =
-      aim === null ? null : CastValidator.stepBlockedBy(ability, aim, actorId, state);
+    const stepReason = CastValidator.stepBlockedBy(ability, aim, actorId, state);
     if (stepReason !== null) {
       return stepReason;
     }
@@ -130,15 +130,21 @@ export class CastValidator implements SlotReadiness {
     return null;
   }
 
-  /** The first reason a step of `ability` gives against `aim` (`AbilityEffect.aimBlockedBy`), or `null`. */
+  /**
+   * The first reason a step of `ability` gives: its check of the caster
+   * (`AbilityEffect.casterBlockedBy`), then, with an aim, its check of `aim`
+   * (`AbilityEffect.aimBlockedBy`); `null` when no step refuses.
+   */
   private static stepBlockedBy(
     ability: Ability,
-    aim: Aim,
+    aim: Aim | null,
     actorId: EntityId,
     state: GameState,
   ): AbilityRejectReason | null {
     for (const { effect, spec } of ability.steps) {
-      const reason = effect.aimBlockedBy?.(spec, aim, actorId, state) ?? null;
+      const reason =
+        effect.casterBlockedBy?.(spec, actorId, state) ??
+        (aim === null ? null : (effect.aimBlockedBy?.(spec, aim, actorId, state) ?? null));
       if (reason !== null) {
         return reason;
       }

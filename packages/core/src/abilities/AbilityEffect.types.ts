@@ -92,6 +92,13 @@ export interface AbilityEffect<S extends EffectStep = EffectStep> {
   /** Applies `spec` for the cast described by `cast`, this tick. */
   apply(spec: S, cast: CastContext): void;
   /**
+   * Why the step cannot run for a cast of `casterId` now, whatever the aim (`no-room`: Berserk's
+   * grown body has no room, DEC-382), or `null` when it can. `CastValidator` asks every step of the
+   * ability with and without an aim, so the player snapshot shows the reason (`slotBlockedBy`) and
+   * a refused cast spends nothing. Optional: a step without it has no such check.
+   */
+  casterBlockedBy?(spec: S, casterId: EntityId, state: GameState): AbilityRejectReason | null;
+  /**
    * Why the step cannot run for a cast of `casterId` aimed with `aim` now (`no-target`: a summoned
    * wall would overlap a wall), or `null` when it can. `CastValidator` asks every step of the
    * ability at the cast, after the targeting, so a refused cast spends nothing. Optional: a step

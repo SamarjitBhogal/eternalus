@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
+import { StatusEffectApplier } from '../../combat/StatusEffectApplier';
 import { StatusEffects } from '../../components/StatusEffects';
+import { createDefaultGameConfig } from '../../config/defaultGameConfig';
+import { loadStatusEffects } from '../../content/status-effects/loadStatusEffects';
 import { STATUS_EFFECTS } from '../../content/status-effects/statusEffectCatalogue';
 import type { Entity } from '../../entities/Entity';
+import { CollisionResolver } from '../../physics/CollisionResolver';
+import { StaticCollisionIndex } from '../../physics/StaticCollisionIndex';
+import { GameState } from '../../state/GameState';
 import type { GameEventMap } from '../../state/GameEvents.types';
+import type { Polygon } from '../../utils/geometry.types';
 import { casterState } from '../__fixtures__/casterState';
 import { castSteps } from '../__fixtures__/castSteps';
 import { BuffEffect } from './BuffEffect';
@@ -64,5 +71,64 @@ describe('BuffEffect', () => {
 
   it('draws nothing on the aim overlay: it has no area', () => {
     expect(new BuffEffect(STATUS_EFFECTS).describe()).toEqual([]);
+  });
+});
+
+/** A wall from x 0 to 10, from `y` to `y + 2`. */
+const wallAt = (y: number): Polygon => [
+  { x: 0, y },
+  { x: 10, y },
+  { x: 10, y: y + 2 },
+  { x: 0, y: y + 2 },
+];
+
+/**
+ * A Sentinel (radius 1.25, DEC-06; 1.625 once Berserk grows it) at (5, 5) in a state whose walls
+ * are `walls` (none: no collision rule), and the buff step's own check for it.
+ */
+const roomSetUp = (walls: readonly Polygon[] | null) => {
+  const { factory } = casterState();
+  const collisions =
+    walls === null
+      ? null
+      : new CollisionResolver(
+          new StaticCollisionIndex(
+            walls.map((polygon, index) => ({ id: `wall-${String(index)}`, polygon })),
+          ),
+          { x: 0, y: 0, width: 20, height: 20 },
+        );
+  const state = new GameState(createDefaultGameConfig(), 1, null, { collisions });
+  const sentinel = factory.create('sentinel', 'sentinel', {
+    position: { x: 5, y: 5 },
+    team: 'light',
+  });
+  state.entities.add(sentinel);
+  const buff = new BuffEffect(STATUS_EFFECTS);
+  const check = (statusId: string) =>
+    buff.casterBlockedBy({ kind: 'buff', statusId }, sentinel.id, state);
+  return { state, sentinel, check };
+};
+
+describe('BuffEffect.casterBlockedBy (Berserk needs room, DEC-382, HC-Q113)', () => {
+  /** Walls 3 m apart around the Sentinel: its 2.5 m body fits, the grown 3.25 m one does not. */
+  const GAP = [wallAt(1.5), wallAt(6.5)];
+
+  it('refuses a status that grows the body where the grown body has no room', () => {
+    expect(roomSetUp(GAP).check('berserk')).toBe('no-room');
+  });
+
+  it('takes it where the walls push the grown body out to room: beside one wall, or in the open', () => {
+    expect(roomSetUp([wallAt(1.5)]).check('berserk')).toBeNull();
+    expect(roomSetUp([]).check('berserk')).toBeNull();
+    expect(roomSetUp(null).check('berserk')).toBeNull();
+  });
+
+  it('takes a status that does not grow the body, and a recast of one the caster holds already', () => {
+    const { state, sentinel, check } = roomSetUp(GAP);
+    expect(check('fury')).toBeNull();
+
+    new StatusEffectApplier(loadStatusEffects(30, 2)).apply(state, sentinel.id, 'berserk', null);
+
+    expect(check('berserk')).toBeNull();
   });
 });

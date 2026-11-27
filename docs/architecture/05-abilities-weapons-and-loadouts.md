@@ -1167,7 +1167,12 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **Motion and statuses.** Dashes and knock-backs are forced motion (`Movement.push`; ADR 0026
     decision 4); a knock-back's base mass and travel time are in
     `content/abilities/knockback.ts`, and `loadKnockback` converts the travel time to ticks at load
-    (03 §8, DEC-241). Every knock-back target gets `staggered` (cannot cast);
+    (03 §8, DEC-241). A target whose knock-back a wall stops short (a map object, a wall, a
+    placed wall or a structure; not the map's edge) takes the knock-back's `impactDamage` (40),
+    once per push, credited to the caster, through the `DamagePipeline` (DEC-382, `INBOX.md`
+    HC-B43 (6); the test is `CollisionQuery.hitsWall`, [10](10-physics.md)). The push-out of a
+    unit under a new Shield Wall does not deal it yet. Every knock-back target gets `staggered`
+    (cannot cast);
     `knockup` (shown as "Airborne") stops moving, attacking and casting. An airborne target can
     still be pushed: DEC-208's stacking is kept over `more-abilities.md` §7's "cannot be pushed
     further" (`INBOX.md` HC-Q53). The 0.2 s landing stagger and `control-immune` wait for status
@@ -1448,9 +1453,18 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     sweep), areas, shots, clicks (`findUnitAt`), collision, the hash and the snapshot, so the
     client draws the larger body. A moving body that grows is pushed out of the walls it then
     overlaps. Where the push leaves it in a wall (a gap narrower than the grown body), it keeps
-    its size until it has room; the other three modifiers apply from the cast
-    ([10](10-physics.md) §12, DEC-365, `INBOX.md` HC-Q113). `ascended` (× 1.25) and `eternal`
-    (× 1.5) can use the same stat.
+    its size until it has room ([10](10-physics.md) §12, DEC-365). `ascended` (× 1.25) and
+    `eternal` (× 1.5) can use the same stat.
+  - **No room, no cast (DEC-382, `INBOX.md` HC-Q113).** Berserk cannot be cast where the grown
+    body has no room. `BuffEffect.casterBlockedBy` refuses the cast with a new reason, `no-room`
+    (a reason the §6 sketch does not list). It reads the growth from the `size` modifiers of the
+    status the step applies, so the 1.3 is not copied. Its room test is `BodySizeSystem`'s
+    (`state/placeWithRoom`: the push-out, then `hasRoom`), so a Sentinel beside one wall can still
+    cast. A refused cast spends nothing, so the meter stays full; the cast works once the
+    Sentinel stands where it has room. The player snapshot shows the reason, and the HUD shows
+    "Not enough space" above the ultimate slot ([13](13-game-interface.md) §10).
+    `BodySizeSystem`'s rule stays as the safety net for a body that grows in another way (a wall
+    placed later in the tick of the cast, a later size status).
 - **Shield Wall (`feat/sentinel-wall`, 2026-11-23; DEC-330 (7), DEC-307, reading R4).** Shield
   Wall is the Sentinel's `ability-3` (`content/abilities/shieldWall.ts`): `directional`, with one
   `summon` step that places the `shield-wall-barrier` obstacle (`content/obstacles/`). Where the
@@ -1482,7 +1496,9 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     partly inside the new wall; it can walk out (10 §12, `INBOX.md` HC-S14).
   - **A step's aim check.** An effect may have `aimBlockedBy` (optional on `AbilityEffect`);
     `CastValidator` asks every step of the ability after the targeting, so a refused cast spends
-    nothing. The summon refuses (`no-target`) a wall whose outline would overlap a wall (terrain,
+    nothing. An effect may also have `casterBlockedBy`, a check without the aim (Berserk's
+    `no-room`, the Berserk bullet above). `CastValidator` asks it first, also in `slotBlockedBy`,
+    so the player snapshot shows its reason. The summon refuses (`no-target`) a wall whose outline would overlap a wall (terrain,
     a blocking map object, another placed wall, the caster's oldest wall included) or reach past
     the map's edge. A delayed step is checked at the cast.
   - **Aim overlay.** `describe` gives one display step with the display-only shape `outline`

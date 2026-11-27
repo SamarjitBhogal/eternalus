@@ -21,6 +21,15 @@ export interface CollisionQuery {
   reach(from: Vec2, direction: Vec2, distance: number, radius: number): number;
 
   /**
+   * Whether a wall stops a circle of `radius` that moves `distance` metres from `from` along
+   * `direction` (a unit vector) in a straight line: it touches a wall, a map object, a placed wall
+   * or a structure more than `CONTACT_EPSILON` before the end of the move. The map's edge is not a
+   * wall: a move the edge stops first hits none. `KnockbackEffect` deals the impact damage of a
+   * knock-back into a wall by it (DEC-382, `INBOX.md` HC-B43 (6)). Same precondition as `reach`.
+   */
+  hitsWall(from: Vec2, direction: Vec2, distance: number, radius: number): boolean;
+
+  /**
    * Where a circle of `radius` at `at` stands once pushed out of the walls it overlaps, each time
    * the shortest way out of the deepest one, never into another wall, and kept inside the map's
    * edge: `at` itself when it overlaps none. A unit a new wall was placed over is moved here

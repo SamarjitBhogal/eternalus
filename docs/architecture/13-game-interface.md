@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-26
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -814,6 +814,13 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
     longer a copy, so it gains `unavailable` (an ability in the kit that is not built yet;
     HC-B5). The ultimate shows `not-charged` until its meter is full (the meter is built since
     `feat/vanguard-kit`, [05](05-abilities-weapons-and-loadouts.md) §18).
+  - **"Not enough space" (`feat/sentinel-kit`, 2026-11-26; DEC-382, `INBOX.md` HC-Q113).** A
+    slot whose reason is `no-room` (Berserk's grown body has no room) shows the reason's text as
+    a small prompt above the slot while it holds. No other part of the HUD shows that reason; the
+    cooldown fill, the aether bar and the meter show the others. `AbilitySlot`'s
+    `PROMPTED_REASONS` lists the prompted reasons, and the text is in `ui/strings.ts`
+    (`hud.blockedBy`). The slot's accessible name already carries the reason, so the prompt is
+    hidden from screen readers.
   - **Fury's dash (`feat/vanguard-kit`, 2026-11-16; DEC-270).** The `InputAction` `granted`
     (Space, label "Fury dash") casts the status-granted slot. `game/AbilityCasts.ts` casts it at
     once in both cast modes and never selects it for aiming (core ignores the aim and aims it
