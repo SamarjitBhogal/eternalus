@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,19 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-27 (Owner Calls page v103: the eruption blast, the cut-scene's reach and the corner boss's health, PR #160)
+
+The owner's answers of 2026-11-27 on the Owner Calls page (v103) to three cards of PR #160
+(`feat/cathedral-eruption-boss`): "BOSS explosion who", "BOSS cut-scene near" and "BOSS corner
+boss health", pasted in chat to PR-REVIEW-COORDINATION-51 (kept outside the repository in
+`eternalus-agent-work/pr-review-coordination/owner-answers-2026-11-27/answers-v103.md`). DEC-415
+is this batch (the coordinator assigned the number). Built in `feat/cathedral-eruption-boss` on
+2026-11-27.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| DEC-415 | **The eruption kills every unit in the Cathedral, Legends too, with no kill credit; the cut-scene reach stays 50 m; the corner boss takes the shared boss health** (closes `INBOX.md` "The eruption's blast and the cut-scene's reach: three readings to confirm" (1) to (3), and the corner boss question in "Better than design: shared boss numbers"; PR #160). The owner's words, verbatim: **BOSS explosion who:** "A: every unit dies, Legends too; no kill credit (recommended)". **BOSS cut-scene near:** "A: 50 m, as built (recommended)". **BOSS corner boss health:** "A: yes, both use the shared formula (8,188) (recommended)". What it changes: (explosion who) no behaviour change: `GemEruptionSystem` kills every unit in the gem's capture zone with `DamagePipeline.kill` and a source of no team, so a strong minion or a unit with a damage-reduction status also dies (PR #160 R6 S1). (cut-scene near) no change: `CUTSCENE.nearRadius` stays 50 m. (corner boss health) `CORNER_BOSS.baseHealth` becomes `Math.round(10 × refHealth(4))` = 8,188 (was 8,200), the same as the capture point boss; this is the health half of DEC-296 (3), and the corner boss's hit stays the literal 205 until that row's follow-up PR (with HC-B12); DEC-296 (1) keeps its other numbers. The blast and the reach now cite this row at their values (`GemEruptionSystem`, `CUTSCENE.nearRadius`). Docs changed: architecture 07 implementation status, `INBOX.md`. |
 
 ## Batch 2026-11-26 (minion M6c: the seven interpretations)
 

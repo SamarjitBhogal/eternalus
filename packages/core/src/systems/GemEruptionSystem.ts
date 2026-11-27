@@ -15,8 +15,8 @@ import type { System, SystemContext } from './System.types';
  * every unit (Legends, minions, camp mobs, defenders) standing in a capture zone that holds the
  * gem dies; the Cathedral's zone is the whole building (DEC-145). It runs with the other damage
  * systems, before progression and death, so the dead leave this tick, and before `SpawnSystem`,
- * so the Greater Boss appears after it. The blast is no team's: no kill credit or XP (until the
- * owner says otherwise). `CathedralGemSystem` removes the gem later in the same tick.
+ * so the Greater Boss appears after it. The blast is no team's: no kill credit or XP (DEC-415).
+ * `CathedralGemSystem` removes the gem later in the same tick.
  */
 export class GemEruptionSystem implements System {
   public readonly name = 'gem-eruption';
