@@ -13,7 +13,7 @@ export type {
   InputIntent,
 } from './commands/Command.types';
 export { ConfigValidationError } from './config/ConfigValidationError';
-export { createDefaultGameConfig } from './config/defaultGameConfig';
+export { createDefaultGameConfig, GEM_ERUPTION_ENTRY_ID } from './config/defaultGameConfig';
 export type {
   DeepPartial,
   GameConfig,
@@ -58,6 +58,7 @@ export type {
   MinimapColourRole,
   MinimapGlyph,
   MinimapGlyphShape,
+  BiomeKind,
 } from './content/maps/maps.types';
 export type { VerdictLines } from './content/narrative/verdictLines.types';
 export type { BotRole, BotRosterDefinition, EnemyRoverRule } from './content/teams/botRoster.types';
@@ -98,6 +99,7 @@ export type { LegendStats, TeamStats } from './state/ScoringState.types';
 export type {
   CaptureSnapshot,
   EntitySnapshot,
+  FeatureKeyedGroup,
   GemSnapshot,
   MatchSnapshot,
   Snapshot,

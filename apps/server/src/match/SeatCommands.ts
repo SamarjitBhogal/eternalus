@@ -15,13 +15,15 @@ type TargetSnapshot = Pick<Snapshot, 'entities' | 'mapObjects'>;
 /**
  * Turns one seat's `InputIntent`s into commands for that seat's Legend (ADR 0016 point 1), the
  * server's copy of the client's `PlayerCommands` rules, because core's `intent` handler does not
- * apply intents yet: `move` or `stop` only when the movement axes change, and one `attack-target`
- * per target the held attack aims at (a living enemy unit first, else a map object). One per seat,
- * so each keeps its own last movement and target.
+ * apply intents yet: `move` or `stop` only when the movement axes change, `jump` only when the jump
+ * key's held state changes (DEC-390), and one `attack-target` per target the held attack aims at
+ * (a living enemy unit first, else a map object). One per seat, so each keeps its own last
+ * movement, jump and target.
  */
 export class SeatCommands {
   private lastMove: Vec2 = { x: 0, y: 0 };
   private attackTargetId: EntityId | null = null;
+  private wasJumpHeld = false;
 
   /**
    * @param actorId The seat's Legend, stamped on every command.
@@ -37,8 +39,9 @@ export class SeatCommands {
   /** Queues the commands `intent` asks for; `snapshot` is the latest state. */
   public apply(intent: InputIntent, snapshot: TargetSnapshot): void {
     const { actorId } = this;
-    const { move, isAttacking, aim } = intent;
+    const { move, isAttacking, isJumping, aim } = intent;
     this.applyAttack(isAttacking === true ? aim : null, snapshot);
+    this.applyJump(isJumping === true);
     if (move.x === this.lastMove.x && move.y === this.lastMove.y) return;
     const isMoving = move.x !== 0 || move.y !== 0;
     this.enqueue(isMoving ? { type: 'move', actorId, direction: move } : { type: 'stop', actorId });
@@ -48,12 +51,20 @@ export class SeatCommands {
   }
 
   /**
-   * Forgets the last movement and target, for when the simulation cleared the Legend's own (a
+   * Forgets the last movement, jump and target, for when the simulation cleared the Legend's own (a
    * Duel round reset), so a key still held queues its command again next intent.
    */
   public reset(): void {
     this.lastMove = { x: 0, y: 0 };
     this.attackTargetId = null;
+    this.wasJumpHeld = false;
+  }
+
+  /** Queues `jump` when the held state of the jump key changes; core re-jumps on landing. */
+  private applyJump(isHeld: boolean): void {
+    if (isHeld === this.wasJumpHeld) return;
+    this.enqueue({ type: 'jump', actorId: this.actorId, isHeld });
+    this.wasJumpHeld = isHeld;
   }
 
   private applyAttack(aim: Vec2 | null, snapshot: TargetSnapshot): void {

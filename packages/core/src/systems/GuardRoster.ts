@@ -17,10 +17,20 @@ import type { Team } from '../teams/teams.types';
 import { guardOutward } from '../state/guardOutward';
 import { compareById } from '../utils/compareById';
 import type { Vec2 } from '../utils/geometry.types';
+import { CheckpointGuardRespawn } from './CheckpointGuardRespawn';
+import { countDefenders } from './checkpointDefenders';
+import { cos, sin } from '../utils/deterministicMath';
 import { clearGuardPost } from './clearGuardPost';
 import { EachGuardRespawn } from './EachGuardRespawn';
 import { GroupGuardRespawn } from './GroupGuardRespawn';
-import type { GuardRespawnRule, PostLayout } from './GuardRoster.types';
+import { GUARD_FIRST_TICKS } from './GuardRoster.constants';
+import type {
+  ActivationKind,
+  ActivationOf,
+  FirstTickRules,
+  GuardRespawnRule,
+  PostLayout,
+} from './GuardRoster.types';
 import { NeverGuardRespawn } from './NeverGuardRespawn';
 
 /**
@@ -34,7 +44,10 @@ import { NeverGuardRespawn } from './NeverGuardRespawn';
  * the kind it names (DISC-21: the Stronghold's light guards per lost SpawnerTower); a guard on a
  * dropped post stays until it dies. Plans are looked up by the home's definition id; a capture
  * point's checkpoint defenders (`defend`, 07 §7) are posts of their own, marked with their
- * checkpoint, which never refill and stay when the point changes owner (DEC-261).
+ * checkpoint and set, which never refill, stay when the point changes owner (DEC-261) and are
+ * announced cleared by `CheckpointGuardRespawn`. A point holds at most `defenderLimit` of them,
+ * living or waiting for room under the unit cap; a team's waiting ones are cancelled when the point
+ * changes owner (`cancelWaitingDefenders`, DEC-350).
  */
 export class GuardRoster {
   /** Each plan's respawn rule, by its `respawn.kind` (DEC-168). */
@@ -46,18 +59,24 @@ export class GuardRoster {
     never: new NeverGuardRespawn(),
   };
 
+  /** The checkpoint defenders' respawn rule: never, announcing a cleared set (07 §7). */
+  private readonly defenderRespawn = new CheckpointGuardRespawn();
+
   /**
    * @param factory - Builds the guards.
    * @param definitions - Where each guard's mob definition, and so its kind, is looked up.
    * @param plans - Each home's guard plan, keyed by structure or zone definition id (content, loaded
    *   in ticks).
    * @param defenders - Each capture-point checkpoint's defenders, keyed by checkpoint (content).
+   * @param defenderLimit - The most checkpoint defenders one capture point holds (content,
+   *   DEC-350).
    */
   public constructor(
     private readonly factory: EntityFactory,
     private readonly definitions: DefinitionSource,
     private readonly plans: Readonly<Record<string, GuardPlanDefinition>>,
     private readonly defenders: Readonly<Record<number, CheckpointDefenderPlanDefinition>>,
+    private readonly defenderLimit: number,
   ) {}
 
   /** Whether `entity` can be a guard home: a structure or a zone (18 §7.1). */
@@ -91,7 +110,8 @@ export class GuardRoster {
         leashTolerance: plan.leashTolerance,
         // A `never` post is never refilled, so it has no respawn delay.
         respawnTicks: plan.respawn.kind === 'never' ? 0 : plan.respawn.ticks,
-        firstTick: GuardRoster.firstTick(state, plan),
+        firstTick: GuardRoster.firstTick(state, plan.activation),
+        canLevel: plan.canLevel,
       });
     }
   }
@@ -100,8 +120,9 @@ export class GuardRoster {
    * Adds the posts of `checkpoint`'s defenders around capture point `pointId` (07 §7, 18 §7.1),
    * filled on this pass, for `team`: the point's owner when the checkpoint was reached (`neutral`
    * while no team did, DEC-257). The leash is the zone's reach from its centre (DEC-257). The posts never refill and
-   * outlive an owner change (DEC-261). A checkpoint with no defender row adds nothing. Post ids
-   * carry the tick, as a checkpoint can be reached again. Posts keep clear of every structure
+   * outlive an owner change (DEC-261). A checkpoint with no defender row adds nothing. Only the
+   * defenders that fit under the point's `defenderLimit` are added, in table order (DEC-350). Post
+   * ids carry the tick, as a checkpoint can be reached again. Posts keep clear of every structure
    * standing in the zone, so no defender rests against the Cathedral gem, which strikes whoever
    * touches it (07 §1).
    */
@@ -112,18 +133,29 @@ export class GuardRoster {
     if (plan === undefined || home === undefined || transform === undefined) {
       return;
     }
+    let room = this.defenderLimit - countDefenders(state, pointId);
+    const table = plan.table.flatMap((row) => {
+      const count = Math.min(row.count, Math.max(room, 0));
+      room -= count;
+      return count > 0 ? [{ ...row, count }] : [];
+    });
+    if (table.length === 0) {
+      return;
+    }
+    const defenceId = `${home.id}:${String(state.tick)}:checkpoint-${String(checkpoint)}`;
     this.addPosts(state, {
       home,
       team,
-      table: plan.table,
+      table,
       ring: plan.postGap,
       homeRadius: 0,
       leashRadius: transform.radius,
       leashTolerance: plan.leashTolerance,
       respawnTicks: 0,
       firstTick: state.tick,
+      canLevel: plan.canLevel,
       checkpoint,
-      idPrefix: `${home.id}:${String(state.tick)}:checkpoint-${String(checkpoint)}`,
+      idPrefix: defenceId,
       keepOut: GuardRoster.structuresWithin(state, transform.position, transform.radius),
     });
   }
@@ -160,7 +192,12 @@ export class GuardRoster {
       const body = this.bodyRadius(row.mobId);
       for (let indexInRow = 0; indexInRow < row.count; indexInRow += 1, post += 1) {
         const turn = (2 * Math.PI * post) / total;
-        const at = clearGuardPost(state, center, turn, ring, edge, body, keepOut);
+        // A post that waits for `activate` (the gem's eruption) keeps its ring point: what blocks
+        // it at load-in (the gem's plinth) is gone when it fills (12 §3).
+        const at =
+          firstTick === null
+            ? { x: center.x + ring * cos(turn), y: center.y + ring * sin(turn) }
+            : clearGuardPost(state, center, turn, ring, edge, body, keepOut);
         state.guards.add(
           {
             id: `${prefix}:${String(post)}`,
@@ -177,7 +214,8 @@ export class GuardRoster {
             leashRadius,
             leashTolerance: posts.leashTolerance,
             respawnTicks: posts.respawnTicks,
-            ...(checkpoint === undefined ? {} : { checkpoint }),
+            canLevel: posts.canLevel,
+            ...(checkpoint === undefined ? {} : { checkpoint, defenceId: prefix }),
           },
           firstTick,
         );
@@ -194,11 +232,11 @@ export class GuardRoster {
       if (slot.guardId !== null && GuardRoster.isLost(state, slot.guardId, slot)) {
         // A checkpoint defender's post never refills (DEC-261); a post whose home is gone has no
         // plan to look up, and `each` releases it, never to refill.
-        const kind =
+        const rule =
           slot.checkpoint === undefined
-            ? (this.planOf(state, slot)?.respawn.kind ?? 'each')
-            : 'never';
-        this.respawns[kind].release(state, index, slot);
+            ? this.respawns[this.planOf(state, slot)?.respawn.kind ?? 'each']
+            : this.defenderRespawn;
+        rule.release(state, index, slot);
       }
     });
     state.guards.forEach((slot, index) => {
@@ -281,15 +319,15 @@ export class GuardRoster {
     return !state.entities.isAlive(guardId) || state.entities.teamOf(guardId) !== slot.team;
   }
 
-  /** The tick `plan`'s posts are first filled (its `activation`), or `null`: when `activate` says. */
-  private static firstTick(state: GameState, { activation }: GuardPlanDefinition): number | null {
-    if (activation.at === 'match-start') {
-      return 0;
-    }
-    if (activation.at === 'gem-eruption') {
-      return null; // `activate` fills these posts when the gem erupts
-    }
-    return state.match.countdownEndTick + activation.delayTicks;
+  /**
+   * The tick a plan's posts are first filled (its `activation`), or `null`: `activate` fills them.
+   */
+  private static firstTick<K extends ActivationKind>(
+    state: GameState,
+    activation: ActivationOf<K>,
+  ): number | null {
+    const rule: FirstTickRules[K] = GUARD_FIRST_TICKS[activation.at];
+    return rule(state, activation);
   }
 
   /**

@@ -38,6 +38,11 @@ export type StructureDefinition = EntityDefinitionBase & {
    * DEC-217 (16)). A gate's outline is for reach only (DEC-217 (17)).
    */
   readonly hasFortBox?: true;
+  /**
+   * A map object with no health of its own that stands while this structure does and is destroyed
+   * with it (`WorldObjectStore`'s `carriers`): the gem's plinth, gone when the gem erupts (12 §3).
+   */
+  readonly carriedObjectId?: string;
 };
 
 /** Which lane a spawner's horde takes: the spawner's own lane, or the team's worst lane. */
@@ -102,6 +107,12 @@ type GuardPlanBase = {
    * between two decisions plus the farthest it stands from a target in reach.
    */
   readonly leashTolerance: number;
+  /**
+   * Whether the plan's guards level from their kills and are rallied by the veterancy aura
+   * (`VeterancySystem`, 18 MS-16): tower guards (DEC-165), forest-camp mobs (DEC-260) and the
+   * capture point boss group (DEC-350).
+   */
+  readonly canLevel: boolean;
 };
 
 /**
@@ -116,6 +127,8 @@ export type CheckpointDefenderPlanDefinition = {
   readonly postGap: number;
   /** As `GuardPlanDefinition.leashTolerance`. */
   readonly leashTolerance: number;
+  /** As `GuardPlanDefinition.canLevel` (DEC-260: owned and neutral defenders level). */
+  readonly canLevel: boolean;
 };
 
 /**
@@ -164,17 +177,17 @@ type GuardRespawn =
   { readonly kind: 'each' | 'group'; readonly ticks: number } | { readonly kind: 'never' };
 
 /**
- * What the Cathedral gem does to whoever hits or touches it (DEC-292), by status id: the statuses
+ * What the Cathedral gem does to whoever hits it (DEC-292, DEC-346), by status id: the statuses
  * it lands on them (from the environment: the gem is no team's), and how long it glows after.
  */
 export type CathedralGemDefinition = {
-  /** Landed on a hitter or toucher, in order (a stun and its tick damage). */
+  /** Landed on a hitter, in order (a stun and its tick damage). */
   readonly statusIds: readonly string[];
-  /**
-   * A unit touching the gem is struck again only once this status has run out on it, so brushing
-   * the gem is not a stun every tick (the stun would never end) nor a death by contact alone.
-   */
-  readonly touchCooldownStatusId: string;
   /** The gem glows for this status's duration plus `extraTicks` after each hit. */
   readonly glow: { readonly statusId: string; readonly extraTicks: number };
+  /**
+   * The eruption's blast (DEC-371 "BOSS guards" C): every unit in the capture zone the gem stands
+   * in dies to it. It is no team's, so no one is credited; `sourceId` names it as the killer.
+   */
+  readonly eruption: { readonly sourceId: string };
 };

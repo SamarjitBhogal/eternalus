@@ -107,6 +107,37 @@ describe('Simulation capture points', () => {
     expect([ownerAt(cathedral), ownerAt(fort)]).toEqual(['dark', 'light']);
   });
 
+  it('links each capture point to its feature, the same way every run (DEC-231)', () => {
+    const features = MAP.features.filter(
+      ({ kind }) => kind === 'capture-point' || kind === 'cathedral',
+    );
+    const play = () => {
+      const simulation = match();
+      simulation.enqueueCommand({
+        type: 'dev-spawn',
+        kind: 'warrior',
+        definitionId: 'warrior',
+        team: 'light',
+        at: features[0]?.position ?? { x: 0, y: 0 },
+        count: 1,
+      });
+      for (let tick = 0; tick < 30; tick += 1) {
+        simulation.step();
+      }
+      return simulation;
+    };
+    const linksOf = (simulation: Simulation) =>
+      zonesOf(simulation).map(({ id, mapFeatureId }) => ({ id, mapFeatureId }));
+    const first = play();
+    const second = play();
+
+    expect(zonesOf(first).map(({ mapFeatureId }) => mapFeatureId)).toEqual(
+      features.map(({ id }) => id),
+    );
+    expect(linksOf(second)).toEqual(linksOf(first));
+    expect(second.hash()).toBe(first.hash());
+  });
+
   it('has no capture points without a map', () => {
     expect(zonesOf(match(false))).toEqual([]);
   });
@@ -211,6 +242,10 @@ describe('Simulation capture points', () => {
       });
       const owners: string[] = [];
       simulation.on('capture-point-owner-changed', ({ to }) => owners.push(to));
+      const died = new Set<string>();
+      simulation.on('entity-removed', ({ entityId, cause }) => {
+        if (cause === 'died') died.add(entityId);
+      });
       simulation.enqueueCommand({
         type: 'dev-spawn',
         kind: 'warrior',
@@ -227,6 +262,10 @@ describe('Simulation capture points', () => {
         simulation.step();
       }
       const atCapture = defendersOf();
+      const darkLegendsAtCapture = simulation
+        .snapshot()
+        .entities.filter(({ family, team }) => family === 'legend' && team === 'dark')
+        .map(({ id }) => id);
       const zoneAt = () =>
         zonesOf(simulation).find(
           ({ transform }) =>
@@ -240,6 +279,8 @@ describe('Simulation capture points', () => {
       return {
         simulation,
         owners,
+        died,
+        darkLegendsAtCapture,
         atCapture,
         presenceAtCapture,
         after: defendersOf(),
@@ -252,10 +293,10 @@ describe('Simulation capture points', () => {
     expect(first.atCapture.length).toBeGreaterThan(0);
     expect(first.atCapture.every(({ team }) => team === 'neutral')).toBe(true);
     expect(first.presenceAtCapture?.neutral).toBe(first.atCapture.length);
-    const darkLegends = first.simulation
-      .snapshot()
-      .entities.filter(({ family, team }) => family === 'legend' && team === 'dark');
-    expect(darkLegends).toEqual([]);
+    // The defenders kill every Legend that took the point (a dead Legend respawns at its
+    // Stronghold after 10 s, FR-051, so the test checks the deaths, not an empty world).
+    expect(first.darkLegendsAtCapture.length).toBeGreaterThan(0);
+    expect(first.darkLegendsAtCapture.every((id) => first.died.has(id))).toBe(true);
     expect(first.after.map(({ id }) => id)).toEqual(first.atCapture.map(({ id }) => id));
     expect(first.owners).toEqual(['dark', 'neutral']);
     expect(first.zone?.owner).toBe('neutral');

@@ -1,21 +1,29 @@
 import { describe, expect, it } from 'vitest';
 
+import { DamagePipeline } from '../combat/DamagePipeline';
+import { KillCredit } from '../combat/KillCredit';
 import { Aether } from '../components/Aether';
 import { Health } from '../components/Health';
 import { Progression } from '../components/Progression';
+import { TeamMembership } from '../components/TeamMembership';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { WARRIOR } from '../content/legends/warrior';
+import { LIGHT_MINION } from '../content/mobs/lightMinion';
+import { CATHEDRAL_GEM } from '../content/structures/cathedralGem';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import type { Entity } from '../entities/Entity';
+import type { Legend } from '../entities/Legend';
 import { EntityFactory } from '../entities/EntityFactory';
 import type { GameEventType } from '../state/GameEvents.types';
 import { GameState } from '../state/GameState';
 import { StateHasher } from '../state/StateHasher';
 import type { Team } from '../teams/teams.types';
+import { IdGenerator } from '../utils/IdGenerator';
 import { ProgressionSystem } from './ProgressionSystem';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 
@@ -28,24 +36,28 @@ const CURVES = new ContentCatalogue<LevelCurveDefinition>([
 const XP_SOURCES = {
   legendKill: { base: 150, perVictimLevel: 25 },
   structureDestroyed: 300,
+  campCleared: { 'forest-camp-light': 50 },
   teamKills: {
     'capture-point-boss': { xp: 500, maxLevels: 2 },
     'greater-boss': { levels: 5 },
   },
+  checkpointCleared: { xp: { 1: 60 }, shareRadius: 10, evenShare: 0.6 },
 };
 /** A curve long enough to show a 5-level lift below its cap. */
 const LONG_CURVES = new ContentCatalogue<LevelCurveDefinition>([
   { id: 'legend', cap: 10, xpToNext: [100, 100, 100, 100, 100, 100, 100, 100, 100] },
 ]);
 
-const setUp = (curves = CURVES) => {
+const setUp = (curves = CURVES, legendsStartAtMaxLevel = false) => {
   const state = new GameState(CONFIG, 1);
+  const ids = new IdGenerator();
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     UNITS,
-    undefined,
+    ids,
     loadWeapons(CONFIG.tickRate),
   );
+  const structures = new EntityFactory(createDefaultEntityRegistry(), STRUCTURE_DEFINITIONS, ids);
   const spawn = (kind: string, definitionId: string, team: Team): Entity => {
     const entity = factory.create(kind, definitionId, { position: { x: 0, y: 0 }, team });
     state.entities.add(entity);
@@ -55,7 +67,11 @@ const setUp = (curves = CURVES) => {
     units: UNITS,
     curves,
     xpSources: XP_SOURCES,
+    ...(legendsStartAtMaxLevel ? { legendsStartAtMaxLevel } : {}),
   });
+  const announceSpawn = (entity: Entity, team: Team) => {
+    state.events.emit('entity-spawned', { entityId: entity.id, kind: entity.kind, team });
+  };
   const kill = (killer: Entity | null, victim: Entity) => {
     state.events.emit('entity-died', {
       entityId: victim.id,
@@ -77,7 +93,20 @@ const setUp = (curves = CURVES) => {
   const destroyStructure = (team: Team, kind = 'spawner-tower') => {
     state.events.emit('structure-destroyed', { entityId: 'entity-gone', kind, team, lane: null });
   };
-  return { state, spawn, kill, run, payloads, destroyStructure };
+  const clearCamp = (killer: Entity | null) => {
+    const camp = structures.create('camp', 'forest-camp-light', {
+      position: { x: 0, y: 0 },
+      team: 'neutral',
+    });
+    state.entities.add(camp);
+    state.events.emit('camp-cleared', {
+      entityId: camp.id,
+      team: killer?.findComponent(TeamMembership)?.team ?? null,
+      killerId: killer?.id ?? null,
+    });
+    return camp;
+  };
+  return { state, spawn, announceSpawn, kill, run, payloads, destroyStructure, clearCamp };
 };
 
 describe('ProgressionSystem', () => {
@@ -153,6 +182,27 @@ describe('ProgressionSystem', () => {
     expect(payloads('level-up').map((payload) => (payload as { level: number }).level)).toEqual([
       2, 3, 4,
     ]);
+  });
+
+  it.each([
+    ['10 s after its hit, earns the kill XP', 10 * 30, 175],
+    ['after the window, earns none', 30 * 30 + 1, 0],
+  ])('the enemy whose hit a gem death is credited to, %s (DEC-346)', (_, wait, xp) => {
+    const { state, spawn, run } = setUp();
+    const damage = new DamagePipeline(undefined, new KillCredit(30 * 30, CATHEDRAL_GEM.statusIds));
+    const enemy = spawn('warrior', 'warrior', 'light');
+    const victim = spawn('magus', 'magus', 'dark');
+    damage.apply(state, victim.id, 1, { attackerId: enemy.id, kind: 'weapon', definitionId: 'x' });
+    for (let at = 0; at < wait; at += 1) state.advanceTick();
+
+    damage.apply(state, victim.id, 1_000_000, {
+      attackerId: null,
+      kind: 'status',
+      definitionId: 'gem-burn',
+    });
+    run();
+
+    expect(enemy.getComponent(Progression).xp).toBe(xp);
   });
 
   it('ignores kills with no attacker and attackers that do not level', () => {
@@ -268,6 +318,43 @@ describe('ProgressionSystem', () => {
       const warrior = spawn('warrior', 'warrior', 'light');
 
       kill(warrior, spawn('light-mob', 'training-dummy', 'dark'));
+      run();
+
+      expect(warrior.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual([]);
+    });
+  });
+
+  describe('camp cleared (balancing.md "Camps")', () => {
+    it('pays the Legend that killed the last mob the clear bonus, and nobody else', () => {
+      const { spawn, run, payloads, clearCamp } = setUp();
+      const clearer = spawn('warrior', 'warrior', 'light');
+      const mate = spawn('magus', 'magus', 'light');
+      const dark = spawn('warrior', 'warrior', 'dark');
+
+      const camp = clearCamp(clearer);
+      run();
+
+      expect(clearer.getComponent(Progression).xp).toBe(50);
+      expect(mate.getComponent(Progression).xp).toBe(0);
+      expect(dark.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual([
+        {
+          entityId: clearer.id,
+          amount: 50,
+          victimId: camp.id,
+          victimTeam: 'neutral',
+          cause: 'camp-cleared',
+        },
+      ]);
+    });
+
+    it('pays no bonus when a minion or no known killer lands the last hit', () => {
+      const { spawn, run, payloads, clearCamp } = setUp();
+      const warrior = spawn('warrior', 'warrior', 'light');
+
+      clearCamp(spawn('light-mob', 'light-minion', 'light'));
+      clearCamp(null);
       run();
 
       expect(warrior.getComponent(Progression).xp).toBe(0);
@@ -396,5 +483,196 @@ describe('ProgressionSystem', () => {
         },
       ]);
     });
+  });
+
+  describe('a Legend waiting to respawn (DEC-186 "pay on respawn")', () => {
+    /** Takes `legend` out of the store into the respawn queue, as `RespawnSystem` and `DeathSystem` do. */
+    const wait = (state: GameState, legend: Entity, team: 'light' | 'dark') => {
+      state.respawns.add(legend as Legend, team, 300);
+      state.entities.withdraw(legend.id, 'died');
+    };
+    const respawn = (state: GameState, legend: Entity) => {
+      const [entry] = state.respawns.takeDue(300);
+      state.entities.add(legend);
+      state.events.emit('legend-respawned', {
+        entityId: legend.id,
+        team: 'light',
+        position: { x: 0, y: 0 },
+        owedXp: entry?.owedXp ?? [],
+      });
+    };
+
+    it('owes it the structure XP while it waits and pays it, with its level-up, as it returns', () => {
+      const { state, spawn, run, payloads, destroyStructure } = setUp();
+      const waiting = spawn('warrior', 'warrior', 'light');
+      const living = spawn('magus', 'magus', 'light');
+      wait(state, waiting, 'light');
+
+      destroyStructure('dark');
+      run();
+
+      expect(waiting.getComponent(Progression).xp).toBe(0);
+      expect(living.getComponent(Progression).xp).toBe(300);
+      let owed: unknown[] = [];
+      state.respawns.forEach(({ owedXp }) => (owed = [...owedXp]));
+      expect(owed).toEqual([
+        { cause: 'structure-destroyed', victimId: 'entity-gone', victimTeam: 'dark', xp: 300 },
+      ]);
+
+      respawn(state, waiting);
+
+      // The listener only buffers; the pass of the next tick pays.
+      expect(waiting.getComponent(Progression).xp).toBe(0);
+      run();
+
+      expect(waiting.getComponent(Progression)).toMatchObject({ xp: 300, level: 3 });
+      expect(payloads('xp-gained').at(-1)).toEqual({
+        entityId: waiting.id,
+        amount: 300,
+        victimId: 'entity-gone',
+        victimTeam: 'dark',
+        cause: 'respawn',
+      });
+      expect(payloads('level-up').slice(-2)).toEqual([
+        { entityId: waiting.id, level: 2 },
+        { entityId: waiting.id, level: 3 },
+      ]);
+    });
+
+    it('owes it a kill its hit landed after it died, and a boss its team killed, capped as it returns', () => {
+      const { state, spawn, kill, run } = setUp();
+      const waiting = spawn('warrior', 'warrior', 'light');
+      const mate = spawn('magus', 'magus', 'light');
+      const minion = spawn('light-mob', 'light-minion', 'dark');
+      const boss = spawn('heavy-mob', 'capture-point-boss', 'neutral');
+      wait(state, waiting, 'light');
+
+      kill(waiting, minion);
+      kill(mate, boss);
+      run();
+      respawn(state, waiting);
+      run();
+
+      // The minion's XP, then the boss's 500 capped at two levels up (250 XP in all on this curve).
+      expect(waiting.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
+      expect(mate.getComponent(Progression).xp).toBe(250);
+      expect(
+        state
+          .xpAwardsThisTick()
+          .filter((award) => award.entityId === waiting.id)
+          .map((award) => [award.amount, award.victimId, award.cause]),
+      ).toEqual([
+        [LIGHT_MINION.xpValue, minion.id, 'respawn'],
+        [250 - LIGHT_MINION.xpValue, boss.id, 'respawn'],
+      ]);
+    });
+
+    it("owes it a camp's clear bonus when its hit killed the last mob after it died (O4)", () => {
+      const { state, spawn, run, payloads, clearCamp } = setUp();
+      const waiting = spawn('warrior', 'warrior', 'light');
+      wait(state, waiting, 'light');
+
+      const camp = clearCamp(waiting);
+      run();
+
+      let owed: unknown[] = [];
+      state.respawns.forEach(({ owedXp }) => (owed = [...owedXp]));
+      expect(owed).toEqual([
+        { cause: 'camp-cleared', victimId: camp.id, victimTeam: 'neutral', xp: 50 },
+      ]);
+
+      respawn(state, waiting);
+      run();
+
+      expect(waiting.getComponent(Progression).xp).toBe(50);
+      expect(payloads('xp-gained').at(-1)).toMatchObject({
+        entityId: waiting.id,
+        amount: 50,
+        victimId: camp.id,
+        cause: 'respawn',
+      });
+    });
+
+    it('pays nothing to a waiting Legend of the other team', () => {
+      const { state, spawn, run, destroyStructure } = setUp();
+      const waiting = spawn('warrior', 'warrior', 'dark');
+      wait(state, waiting, 'dark');
+
+      destroyStructure('dark');
+      run();
+
+      let owed = -1;
+      state.respawns.forEach(({ owedXp }) => (owed = owedXp.length));
+      expect(owed).toBe(0);
+    });
+  });
+});
+
+describe('ProgressionSystem with legendsStartAtMaxLevel (a Duel, SCRUM-444)', () => {
+  /** The short curve's cap is 4, so a raise to the cap is 3 levels (100 + 150 + 200 = 450 XP). */
+  const LEVELS_RAISED = 3;
+
+  it("raises a spawned Legend to its curve's cap with each level's raises, at full health", () => {
+    const { spawn, announceSpawn } = setUp(CURVES, true);
+    const warrior = spawn('warrior', 'warrior', 'light');
+    const health = warrior.getComponent(Health);
+    const aether = warrior.getComponent(Aether);
+    const [maxHealth, maxAether] = [health.max, aether.max];
+
+    announceSpawn(warrior, 'light');
+
+    expect(warrior.getComponent(Progression)).toMatchObject({ level: 4, xp: 450 });
+    const raise = WARRIOR.baseHealth * WARRIOR.levelScaling.healthPerLevel * LEVELS_RAISED;
+    expect(health.max).toBeCloseTo(maxHealth + raise);
+    expect(health.current).toBeCloseTo(health.max);
+    expect(aether.max).toBe(maxAether + WARRIOR.levelScaling.aetherPerLevel * LEVELS_RAISED);
+    expect(aether.current).toBe(aether.max);
+  });
+
+  it('announces no award: no xp-gained and no level-up', () => {
+    const { spawn, announceSpawn, run, payloads } = setUp(CURVES, true);
+    const warrior = spawn('warrior', 'warrior', 'light');
+    announceSpawn(warrior, 'light');
+    run();
+
+    expect(warrior.getComponent(Progression).level).toBe(4);
+    expect(payloads('xp-gained')).toEqual([]);
+    expect(payloads('level-up')).toEqual([]);
+  });
+
+  it('leaves a mob as it is', () => {
+    const { spawn, announceSpawn } = setUp(CURVES, true);
+    const minion = spawn('light-mob', 'light-minion', 'light');
+    const maxHealth = minion.getComponent(Health).max;
+
+    expect(() => {
+      announceSpawn(minion, 'light');
+    }).not.toThrow();
+    expect(minion.getComponent(Health).max).toBe(maxHealth);
+  });
+
+  it('raises nothing more when a Legend at the cap spawns again', () => {
+    const { spawn, announceSpawn } = setUp(CURVES, true);
+    const warrior = spawn('warrior', 'warrior', 'light');
+    announceSpawn(warrior, 'light');
+    const [maxHealth, maxAether] = [
+      warrior.getComponent(Health).max,
+      warrior.getComponent(Aether).max,
+    ];
+
+    announceSpawn(warrior, 'light');
+
+    expect(warrior.getComponent(Progression)).toMatchObject({ level: 4, xp: 450 });
+    expect(warrior.getComponent(Health).max).toBe(maxHealth);
+    expect(warrior.getComponent(Aether).max).toBe(maxAether);
+  });
+
+  it('keeps a spawned Legend at level 1 without the rule', () => {
+    const { spawn, announceSpawn } = setUp();
+    const warrior = spawn('warrior', 'warrior', 'light');
+
+    announceSpawn(warrior, 'light');
+
+    expect(warrior.getComponent(Progression)).toMatchObject({ level: 1, xp: 0 });
   });
 });

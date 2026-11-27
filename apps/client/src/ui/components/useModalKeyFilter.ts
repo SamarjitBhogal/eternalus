@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { type RefObject, useEffect, useRef } from 'react';
 
 import { useAppSelector } from '../../bridge/hooks';
 import { settingsSlice } from '../../bridge/slices/settingsSlice';
@@ -7,9 +7,14 @@ import { bindModalKeyFilter } from './modalKeyFilter';
 /**
  * While `isOpen`, every key and every bound mouse button is stopped, and a `pause-menu` one calls
  * `onClose` (`bindModalKeyFilter` on `window`, DEC-65); the bindings and `onClose` are read at press
- * time, so a rebinding or a new `onClose` takes effect without listening again.
+ * time, so a rebinding or a new `onClose` takes effect without listening again. With `scopeRef`
+ * (a dialog), Tab, Enter and Space work on the dialog's own buttons (13 §7).
  */
-export function useModalKeyFilter(isOpen: boolean, onClose: () => void): void {
+export function useModalKeyFilter(
+  isOpen: boolean,
+  onClose: () => void,
+  scopeRef?: RefObject<Element | null>,
+): void {
   const bindings = useAppSelector(settingsSlice.selectors.selectBindings);
   const bindingsRef = useRef(bindings);
   const onCloseRef = useRef(onClose);
@@ -25,6 +30,7 @@ export function useModalKeyFilter(isOpen: boolean, onClose: () => void): void {
       () => {
         onCloseRef.current();
       },
+      () => scopeRef?.current ?? null,
     );
-  }, [isOpen]);
+  }, [isOpen, scopeRef]);
 }

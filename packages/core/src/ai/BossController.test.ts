@@ -59,6 +59,7 @@ const setUp = (bossX = HOME.x) => {
     leashRadius: ZONE - 5,
     leashTolerance: 3,
     respawnTicks: 0,
+    canLevel: false,
   });
   state.guards.fill(0, boss.id);
   const add = (x: number, y = HOME.y): string => {

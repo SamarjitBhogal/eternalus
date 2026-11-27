@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-09
+last-reviewed: 2026-11-27
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -12,6 +12,7 @@ paths:
     'apps/client/src/game/views/**',
     'apps/client/src/game/Match.ts',
     'apps/client/src/game/HealthBarVisibility.ts',
+    'apps/client/src/game/LegendBodies.ts',
   ]
 related:
   [
@@ -123,7 +124,7 @@ export interface Renderer {
   resize(cssWidth: number, cssHeight: number, dpr: number): void;
   beginFrame(): void; // clears 'entities' and 'overlay'; 'terrain' only where chunks are dirty
   layer(name: RenderLayer): void; // subsequent draw calls go to this layer
-  drawSprite(sprite: SpriteRef, x: number, y: number, options?: SpriteOptions): void;
+  drawSprite(sprite: SpriteRef, feet: WorldPoint, size: number): boolean;
   drawPolygon(points: readonly Vec2Like[], style: PolygonStyle): void;
   drawText(text: string, x: number, y: number, style: TextStyle): void;
   drawGlyph(glyph: GlyphSpec, x: number, y: number, colour: string): void; // minimap markers
@@ -245,7 +246,9 @@ flowchart LR
   order (`apps/client/AGENTS.md`): terrain layer → entities sorted by interpolated `y` → overlay.
 - `ViewRegistry` (Registry pattern) maps entity `kind` → `EntityView`; `DefaultEntityView` draws
   a definition sprite for kinds without a bespoke view. Views read snapshots through `import type`
-  only and never mutate state (rule 6).
+  only and never mutate state (rule 6). The `EntityView.draw` contract returns
+  `number | undefined`: a view may report its rendered height above its anchor for health-bar
+  placement. An undefined height uses the snapshot radius.
 - Interpolation: views draw `prev + (current - prev) × alpha` for position. The facing uses the
   same blend, scaled back to length 1 (`EntityLayer.turn`), and snaps at the midpoint when the two
   facings are opposite (a zero blend takes `current`). Entities that appeared this tick draw at `current` (no ghost from the
@@ -255,6 +258,10 @@ flowchart LR
   by `HealthBarVisibility` (DEC-195), which reads `damage-applied` and `entity-removed` through
   `Simulation.on`, as §6 designs `SoundView`; `Match` injects its rule into the layer, because
   views read only snapshots.
+- Fallen Legend bodies: `LegendBodies` (`game/`) reads `entity-removed` with the cause `died`
+  through `Simulation.on` and keeps where each Legend last stood, from the latest snapshot; the
+  view draws those bodies greyed out for the rest of the match (DEC-295). Presentation only: core
+  keeps no bodies, and a respawned Legend is a living entity again.
 - `MinimapView` runs at a lower cadence into the `'minimap'` layer (`06-map-and-minimap.md` §8).
 
 ## 9. Performance budget and how it is measured
@@ -262,20 +269,55 @@ flowchart LR
 Targets at the MVP cap (144 units per team plus 20 Legends, ~300 units; "engineered for
 hundreds"). **Recommendation:** these are the numbers the plan's phase gates check.
 
-| Metric                                                   | Budget                        | Where measured                                                           |
-| -------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------ |
-| `Simulation.step()` at 300 units                         | ≤ 8 ms (p95)                  | `performance.measure('tick')` in `Match`                                 |
-| `Match.render()` at 1080p, DPR 2                         | ≤ 8 ms (p95)                  | `performance.measure('render')`                                          |
-| Frame time                                               | ≤ 16.7 ms; no LoAF > 50 ms    | `PerformanceObserver('long-animation-frame')`                            |
-| Allocations in hot paths (steering, collision, snapshot) | zero per tick after warm-up   | heap sampling in the Performance panel; soak test counters               |
-| Flow-field rebuild after terrain change                  | ≤ 2 ms per tick (time-sliced) | `performance.measure('flow-rebuild')` in core via `Logger` timing events |
-| Minimap redraw                                           | ≤ 1 ms every 6th frame        | `performance.measure('minimap')`                                         |
+| Metric                                                   | Budget                                                                                                                             | Where measured                                                                   |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `Simulation.step()` at 300 units                         | ≤ 8 ms (p95)                                                                                                                       | `performance.measure('tick')` in `Match`                                         |
+| `Match.render()` at 1080p, DPR 2                         | ≤ 8 ms (p95)                                                                                                                       | `performance.measure('render')`                                                  |
+| Frame time                                               | median ≤ one 60 Hz frame; no missed frame, as the missed-frame count below defines it (DEC-328, DEC-336, DEC-368); no LoAF > 50 ms | the `PerfMonitor` frame histogram; `PerformanceObserver('long-animation-frame')` |
+| Allocations in hot paths (steering, collision, snapshot) | zero per tick after warm-up                                                                                                        | heap sampling in the Performance panel; soak test counters                       |
+| Flow-field rebuild after terrain change                  | ≤ 2 ms per tick (time-sliced)                                                                                                      | `performance.measure('flow-rebuild')` in core via `Logger` timing events         |
+| Minimap redraw                                           | ≤ 1 ms every 6th frame                                                                                                             | `performance.measure('minimap')`                                                 |
+
+**Frame terms (DEC-336).** This is the one definition. The plan's gates
+([README](../plan/README.md) §5, phase 1, phase 3, phase 6) and rule 7 of the
+[UI enhancements plan](../plan/ui-enhancements-plan.md) point here.
+
+- **Frame interval:** the time from one animation frame's timestamp to the next.
+- **One 60 Hz frame:** a frame interval of 1/60 s (16.67 ms). Chrome rounds the timestamps of a
+  page that is not cross-origin isolated to 0.1 ms, with jitter, so the same frame reads 16.5 to
+  16.8 ms there. The game page is such a page (§10), so in the game an interval of at most
+  16.8 ms, as Chrome reads it and rounded to the clock's step (0.1 ms), is one 60 Hz frame. On a
+  cross-origin isolated page the step is 0.005 ms and the limit is 16.67 ms. Only Chrome is
+  measured.
+- **Two 60 Hz frames (DEC-368):** twice the one-frame limit: 33.6 ms in the game, 33.34 ms on a
+  cross-origin isolated page. No histogram edge is near it, so a gate that uses it reads the median
+  from the raw frame intervals.
+- **Missed frame:** a frame interval over 25 ms, the midpoint between one 60 Hz frame and two.
+  The player sees it as a stutter.
+- **Missed-frame count (DEC-368):** the number of missed frames in a gate run. A gate allows none,
+  with two exceptions. The count skips the first frame interval after the loop starts or resumes
+  (after a pause) or after the page becomes visible again; after a resume that interval is long,
+  because no frame ran. Each terrain change in the run may cause one missed frame of up to 50 ms. A
+  terrain change is a `structure-destroyed`, `obstacle-destroyed` or `tree-felled` event; a gate
+  that opens or closes is not one.
 
 `PerfMonitor` (`engine/time/`) wraps `performance.mark`/`measure` with a `detail.devtools` track,
-keeps a fixed-bucket frame histogram (< 8, < 16, < 33, < 50, ≥ 50 ms) and subscribes a
-`PerformanceObserver` to `long-animation-frame` (feature-detected via `supportedEntryTypes`); the
-`PerfOverlay` HUD reads it through the bridge store
+keeps a fixed-bucket histogram of frame intervals and subscribes a `PerformanceObserver` to
+`long-animation-frame` (feature-detected via `supportedEntryTypes`); the `PerfOverlay` HUD reads
+it through the bridge store
 ([research C2](../research/persistence-input-diagnostics-research.md#c2-structured-logging-timing-memory-and-a-developer-overlay)).
+The frame histogram has three bucket edges: one 60 Hz frame, 25 ms and 50 ms. Its four buckets
+are: at most one 60 Hz frame; over that, up to 25 ms; over 25 ms, up to 50 ms; over 50 ms. The
+last two buckets hold the missed frames. `PerfMonitor` does not record the first frame interval
+after `GameLoop.start()` or after the page becomes visible again, and it counts the terrain
+changes of the run. So `PerfOverlay` reads the frame gates from the histogram: the median is
+within one 60 Hz frame when the first bucket holds at least half of the frames; the missed-frame
+gate passes when the over-50 ms bucket is empty and the 25–50 ms bucket holds no more frames than
+the run had terrain changes. The edges are named constants beside `PerfMonitor`. `PerfMonitor`
+rounds each interval to the clock's step (see "One 60 Hz frame") before it picks a bucket, and it
+compares whole clock steps (integers), so floating-point noise cannot move a reading over an edge.
+One injected isolation flag, which the composition root reads from `crossOriginIsolated`, picks
+the step and the first edge (DEC-368).
 GC-free hot paths come from pooling (projectiles, particles, events), pre-allocated typed arrays
 (spatial hash, flow fields, snapshot buffers) and scratch vectors in steering
 ([research §6](../research/game-architecture-and-performance-research.md#6-object-pooling-and-gc-avoidance)).
@@ -300,6 +342,13 @@ The design keeps the move cheap:
   snapshots exceed the ~10 KiB per message rule of thumb.
 
 ## 11. Implementation status
+
+The selected player's Legend uses atlas frames for idle, movement, and basic attacks.
+The renderer prepares destination-size frames lazily in a bounded cache and returns whether
+it drew the sprite. The Legend view falls back to the standard drawing when the atlas is
+unavailable. The health bar sits above the height a view reports it drew, else above the view's
+`visualRadiusOf`, else above the footprint. Only the human player's Legend draws a sprite; the
+owner ships this in Phase 3 (DEC-374).
 
 HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
 
@@ -328,6 +377,68 @@ Game-loop plan GL-5 (`feat/results-flow`): `Match.tick` calls the match observer
 after the tick on which `MatchBridge` publishes `match-ended`; the world keeps running (DEC-92)
 until `MatchState` leaves the phase ([13](13-game-interface.md) §2). A pause overlay still pauses
 the loop, but not the timer that leaves the phase (DEC-134).
+
+Gem eruption cut-scene (`feat/cathedral-eruption-boss`, 2026-11-26; DEC-371 E1):
+`CathedralCutscene` overrides the camera around the mid-game eruption, through
+`MatchCamera.focusOn`, which also closes the free (exploring) view; the camera follows the player
+again when it ends or a fresh move press skips it. It plays only for a player whose living Legend
+is within `CUTSCENE.nearRadius` of the gem. `EruptionView` is a world layer that draws the burst
+in the main view and, as a ring, on the minimap, for every player.
+
+**2026-11-11 — DEC-238 visual stand-ins.**
+
+[DEC-238](../reference/game-design/13-owner-decisions-log.md#batch-2026-11-10-pr-90-review-visuals) approves these provisional visuals.
+
+### 2026-11-07 — Fantasy minion presentation
+
+The minion kind registrations select separate light, medium and heavy `MinionView` profiles.
+Local polygon figures are built once per weight and faction and drawn through `Renderer` at
+interpolated positions. Light scouts carry paired blades, medium foot soldiers carry a sword
+and kite shield, and broad armored heavies carry a maul. Silver armor, crests and cyan accents
+identify Light; dark armor, horns, goblin faces and violet accents identify Dark. Neutral units
+use a woodland palette. Visual scale follows snapshot radius; physical radii, balance values,
+AI and commands are unchanged. The existing outlined faction footprint and focused-unit ring
+remain readable beneath and above the figure respectively. Unregistered mob kinds retain the
+family fallback, and minimap marker rendering remains independent of the detailed figures.
+
+### 2026-11-07 — Unit size hierarchy
+
+Minion figure scale and fallback troop-marker scale are presentation constants. All Legend
+classes on both teams share a display diameter slightly larger than the largest shipped
+minion silhouette; the player uses that same hero presentation, with a close focus ring.
+`entityVisualState.ts` supplies view-only radius overrides for the existing marker painters,
+without modifying snapshots or changing collision, movement, combat or spawning. The values
+live in `MinionView.constants.ts` and `entityViews.constants.ts`; a render regression compares
+all three minion weights against all shipped hero classes for both factions. Minimap markers
+and the camera retain their existing scales.
+
+### 2026-11-08 — Wider follow view and local atmosphere
+
+The default player camera shows a wider world area, configured by `FOLLOW_VIEW_WIDTH` and
+`FOLLOW_VIEW_HEIGHT` in `Match.constants.ts`; tracking, manual zoom and overview keep their
+existing behavior. `BiomeAtmosphereView` reads explicitly tagged presentation geometry and
+interpolated tick time from `Match`. Molten surfaces pulse subtly; local snowfall, ash, embers
+and haze fade toward the region boundary and appear only while the camera follows a player
+inside that biome. Free/overview views suppress local weather, and the minimap receives no
+atmospheric overlay. Effects use a bounded particle count from the view's companion constants,
+create no gameplay entities and use no timers or gameplay RNG.
+
+### 2026-11-16 — Clean Phase 3 presentation follow-up
+
+The follow-up is based directly on Phase 3. Code-drawn unit figures and the display hierarchy
+retain the phase-facing chevrons; biome weather remains a renderer-only layer. Generated
+character atlases and their resource-budget extensions, and the parallel ability prototype,
+are deferred to preserved feature work outside this branch. No independent ability stack or
+new raster-art loading path is registered here. The PR gate and requested owner confirmation
+remain explicit handoff items; this status note grants neither.
+
+### 2026-11-27 — Legend jump (DEC-390)
+
+`defaultViewRegistry` wraps the Legend family view in `AirborneView`. For a Legend in the air it
+draws a ground shadow at the position, then the Legend raised by its height, so the health bar
+rises too. `EntityLayer.show` interpolates the height like the position
+(`EntityDrawState.height`). The mini map marker stays at the ground position. The team and focus
+rings are part of the Legend view, so they rise with it.
 
 ## Related
 

@@ -54,6 +54,12 @@ const DEFAULT_GAME_CONFIG: Omit<GameConfig, 'match'> & {
   },
 };
 
+/**
+ * The default timeline's entry the gem erupts on (architecture 12 §3); the client's cut-scene
+ * reads it.
+ */
+export const GEM_ERUPTION_ENTRY_ID = 'gem-eruption';
+
 /** The default timeline (architecture 12 §3); the countdown ends at `countdownTicks`. */
 const defaultTimeline = (countdownTicks: number): readonly MatchTimelineEntry[] => [
   // FR-003: the countdown (10 s by default, DEC-84)
@@ -73,7 +79,7 @@ const defaultTimeline = (countdownTicks: number): readonly MatchTimelineEntry[] 
   // Right after `mid-game` (12 §3): the gem erupts and summons doc 12's `greater-boss` (the mob
   // the Cathedral zone's guard plan posts).
   {
-    id: 'gem-eruption',
+    id: GEM_ERUPTION_ENTRY_ID,
     at: { atFraction: 0.5 },
     action: { kind: 'summon-greater-boss', bossId: 'greater-boss' },
   },

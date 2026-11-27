@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-26
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -470,8 +470,40 @@ a Duel: both human Legends start in the Cathedral (`match/duelStartPoints.ts`), 
 (before `DeathSystem`) counts a kill for the other team when a seat's Legend dies and resets both
 Legends to their start points at full health at once, and `KillCountCondition` (`kill-count`) ends
 the match at the target. The score is `state.match.duel` and `Snapshot.match.duel`. The shipped
-numbers (target, countdown, start offset) are `DUEL_RULES` in `content/duel/duelRules.ts`. Mobs and
-structures still run as generated; FR-115's inert world is not built.
+numbers (target, countdown, start offset) are `DUEL_RULES` in `content/duel/duelRules.ts`. What
+this note left as generated (mobs, objectives, the crystal, the Cathedral's entrances) is the
+2026-11-25 note below; FR-115's inert world beyond that is not built.
+
+Implementation status, 2026-11-25 (branch `feat/duel-arena-only-legends`; the owner's feedback on
+the Duel demo of 2026-11-20, Jira SCRUM-445, SCRUM-446 and SCRUM-450, and the owner's answers
+DEC-348, within DEC-36): a Duel keeps only its arena. `DUEL_RULES.arena` (`DuelArenaRules`,
+`content/duel/duelRules.types.ts`) holds one switch or id list per part of the world, read where
+that part is built, never in a system's tick:
+
+- no mobs (`spawnsMobs`: `DefaultSystemPipeline` leaves out `SpawnSystem`, so no minion, host unit,
+  guard or camp unit spawns or respawns);
+- no capture objectives (`hasCaptureObjectives`: `Simulation` spawns no zones, so
+  `ObjectiveLostCondition` and the client's `ObjectiveTracker` have none; the tracker renders
+  nothing in a Duel; DEC-348 removes the capture points with the structures, SCRUM-446);
+- no structure but the Cathedral's gem (DEC-348): `omittedStructureIds` lists the definition ids a
+  Duel does not build (towers, gates, camps and Strongholds). The gem (`cathedral`) is not listed,
+  so it stays, and the client's `CrystalStatus` draws in a Duel too;
+- none of their map objects (`omittedObjectKinds`, and `omitsSideObjects` for everything a side
+  built: each palace with its walls and rooms, the wall segments and turrets): `match/duelArena.ts`
+  drops them before `Simulation` builds the walk grid, the collision index and the world objects,
+  so no removed structure leaves an obstacle. Trees, houses and rocks stay;
+- a closed Cathedral (`isCathedralClosed`: the Cathedral's four entrances, the map objects marked
+  `isDuelBarrier`, block; 06 §10) whose walls cannot break (`unbreakableCathedralKinds`:
+  `duelMapObjects` marks the Cathedral's walls `MapObject.isUnbreakable`, `WorldObjectStore` makes
+  their colliders unbreakable and `BreakabilityStep` blocks every hit on them). A normal match is
+  unchanged.
+
+The removed structures' art is still drawn from the map presentation; hiding it in a Duel is not
+built.
+
+Implementation status, 2026-11-25 (branch `feat/duel-legend-max-level`, SCRUM-444): every Legend
+enters a Duel at its level curve's cap (`DUEL_RULES.legendsStartAtMaxLevel`; `ProgressionSystem`
+raises it when it spawns, 05 §18). Only Legends are raised.
 
 The human's Legend works like this (DEC-173): it is the roster's `human` slot (`RosterSlot.pilot`),
 at most one per roster and on `playerTeam`; a roster without one is sim mode. The client gives it
@@ -513,7 +545,8 @@ sovereign, whose display name per team is in `content/sovereigns/sovereignDispla
 `loadDisplayContent()` returns both, and the client's results screen shows the line.
 `forfeit` and `aborted` have no lines yet (no condition produces them).
 
-Not built yet: `atmosphere` in `MatchState`; the rest of `content/narrative/` (§9); an entity
+Not built yet: `atmosphere` in `MatchState` (the interim is the boolean
+`MatchState.isGemErupted`, below); the rest of `content/narrative/` (§9); an entity
 that carries `WinObjective` (the sovereign); `MatchResult.timeline` and `achievements` (with
 their producers); the other §5 counters and `TeamStats` fields; a condition for `forfeit` or
 `aborted` (the ids exist); the timeline actions other than `enter-phase` and
@@ -525,13 +558,16 @@ The gem eruption (§3) is built (2026-11-22, `feat/cathedral-eruption-boss`): th
 timeline's `gem-eruption` entry, at `mid-game`'s fraction and right after it (DEC-81), runs
 `summon-greater-boss` (`match/actions/SummonGreaterBossAction.ts`). It calls
 `MatchRecord.eruptGem(bossId)` outside a Duel (DEC-36), which sets `MatchState.isGemErupted` once (a second call throws;
-hashed from then on) and emits `greater-boss-summoned { bossId }`. On the next tick the gem is
-removed and `SpawnSystem` spawns the boss and emits `boss-summoned` (07's implementation status).
-`bossId` is checked only as a non-empty string; `GuardRoster.activate` fills the gem-eruption
-posts of that mob, so an id no plan posts spawns nothing. The timeline's phase rules read only its
+hashed from then on) and emits `greater-boss-summoned { bossId }`. On the next tick
+`GemEruptionSystem`'s blast kills every unit in the Cathedral (DEC-371), the gem and its plinth
+are removed, and `SpawnSystem` spawns the boss and emits `boss-summoned` (07's implementation
+status).
+`GuardRoster.activate` fills the gem-eruption posts of `bossId`'s mob; `SpawnSystem` rejects at
+load a `bossId` that no gem-eruption post on the map names. The timeline's phase rules read only its
 `enter-phase` entries. The client's `CathedralCutscene` turns the camera to the Cathedral from
-just before the eruption tick (read from `upcoming`) and draws the burst on `greater-boss-summoned`
-(Aryan 2026-11-22; `INBOX.md`).
+just before the eruption tick (read from `upcoming`), for a player whose Legend is near the
+Cathedral then (DEC-371 E1), and draws the burst on `greater-boss-summoned`, on the minimap too
+(08 §11).
 
 ## Related
 

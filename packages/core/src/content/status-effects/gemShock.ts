@@ -1,7 +1,7 @@
 import type { AuthoredStatusEffect } from './statusEffects.types';
 
 /**
- * Shocked by the Cathedral gem: a toned-down stun on whoever hits or touches it (DEC-292). TUNE:
+ * Shocked by the Cathedral gem: a toned-down stun on whoever hits it (DEC-292, DEC-346). TUNE:
  * DEC-292 leaves the numbers to the build; 1 s is half the 2 s default `stun` (DEC-42). Hard
  * control, so `control-immune` blocks it and follows it, as after `stun` (DEC-99).
  */

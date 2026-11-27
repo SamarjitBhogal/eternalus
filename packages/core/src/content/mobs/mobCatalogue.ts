@@ -22,7 +22,7 @@ import { TRAINING_DUMMY } from './trainingDummy';
 /**
  * Every mob definition: the training dummy, the three lane minions, the three tower guards, the
  * three camp mobs, the corner camp boss, the capture point boss and its two support mobs, the
- * three assist mobs, and the Greater Boss.
+ * three assist mobs and the Greater Boss.
  */
 export const MOB_DEFINITIONS = new ContentCatalogue<MobDefinition>([
   TRAINING_DUMMY,
@@ -39,8 +39,8 @@ export const MOB_DEFINITIONS = new ContentCatalogue<MobDefinition>([
   CAPTURE_POINT_BOSS,
   CAPTURE_POINT_HEAVY_GUARD,
   CAPTURE_POINT_LIGHT_GUARD,
-  GREATER_BOSS,
   LIGHT_ASSIST_MOB,
   MEDIUM_ASSIST_MOB,
   HEAVY_ASSIST_MOB,
+  GREATER_BOSS,
 ]);

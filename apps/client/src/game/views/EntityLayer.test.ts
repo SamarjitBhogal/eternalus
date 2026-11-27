@@ -6,7 +6,11 @@ import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { EntityLayer } from './EntityLayer';
 import type { HealthBarSide } from './HealthBarView.types';
 import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_MOB_GLYPH } from './entityViews.constants';
-import { HEALTH_BAR_FILL_COLORS, HEALTH_BAR_TRACK_COLOR } from './HealthBarView.constants';
+import {
+  HEALTH_BAR_FILL_COLORS,
+  HEALTH_BAR_GAP,
+  HEALTH_BAR_TRACK_COLOR,
+} from './HealthBarView.constants';
 import type { WorldLayer } from './SceneView.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
 import { ViewRegistry } from './ViewRegistry';
@@ -23,6 +27,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   team: 'dark',
   transform: { x, y, radius: 0.4, facing },
   health: null,
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
@@ -51,8 +56,11 @@ const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
 class SpyView implements EntityView {
   public readonly drawn: EntityDrawState[] = [];
 
-  public draw(state: EntityDrawState): void {
+  public constructor(private readonly visibleHeight?: number) {}
+
+  public draw(state: EntityDrawState): number | undefined {
     this.drawn.push(state);
+    return this.visibleHeight;
   }
 
   public drawMinimap(): void {
@@ -97,6 +105,33 @@ describe('EntityLayer', () => {
     layer.draw(new RecordingRenderer());
 
     expect(spy.drawn.map((state) => state.position)).toEqual([{ x: 2.5, y: 1 }]);
+  });
+
+  it('interpolates a jump height like the position; a new entity starts at its height (DEC-390)', () => {
+    const spy = new SpyView();
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      () => false,
+      () => null,
+    );
+    const lifted = (id: string, height: number): EntitySnapshot => ({
+      ...unit(id, 0, 0),
+      elevation: { height },
+    });
+
+    layer.show(
+      snapshot(1, [lifted('a', 0.4), unit('mob', 5, 0)]),
+      snapshot(2, [lifted('a', 1.2), unit('mob', 5, 0), lifted('new', 1)]),
+      0.25,
+      null,
+    );
+    layer.draw(new RecordingRenderer());
+
+    expect(spy.drawn.map((state) => [state.entity.id, state.height])).toEqual([
+      ['a', 0.6],
+      ['mob', 0],
+      ['new', 1],
+    ]);
   });
 
   it('turns the facing between the last two snapshots by alpha, as a unit vector (08 §8)', () => {
@@ -247,8 +282,22 @@ describe('EntityLayer', () => {
     // The foe's bar is centred over the foe, just above it.
     const track = polygons[2]?.[0];
     expect(((track?.[0]?.x ?? 0) + (track?.[1]?.x ?? 0)) / 2).toBeCloseTo(10);
-    expect(track?.[2]?.y).toBeLessThan(20);
+    expect(track?.[2]?.y).toBeLessThan(20 - 0.5 * 1.4);
     // The bars come after all three units, so no unit hides one.
     expect(calls.findIndex((call) => call.op === 'fillPolygon')).toBe(calls.length - 4);
+  });
+
+  it('places the health bar above the height reported by the registered view', () => {
+    const visibleHeight = 3;
+    const layer = new EntityLayer(
+      new ViewRegistry(new SpyView(visibleHeight)),
+      () => false,
+      () => 'enemy',
+    );
+    layer.show(null, snapshot(1, [member('foe', 'mob', 10)]), 0, null);
+    const renderer = new RecordingRenderer();
+    layer.draw(renderer);
+    const track = renderer.calls.find((call) => call.op === 'fillPolygon');
+    expect(track?.args[0][2]?.y).toBeCloseTo(-visibleHeight - HEALTH_BAR_GAP);
   });
 });

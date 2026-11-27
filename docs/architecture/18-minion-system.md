@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-24
+last-reviewed: 2026-11-25
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -24,6 +24,7 @@ paths:
     'packages/core/src/systems/SpawnSystem*',
     'packages/core/src/systems/PathingSystem*',
     'packages/core/src/systems/EnragedSystem*',
+    'packages/core/src/systems/{MinionLevelSystem,veterancyOf}*',
     'packages/core/src/combat/MinionStrengthStep*',
     'packages/core/src/entities/strategies/LaneFollowMovementStrategy*',
     'packages/core/src/content/mobs/**',
@@ -103,7 +104,9 @@ spawn's own controller and starting memory (`Placement.controller`, holding the 
 11 §10).
 Pull request M5a adds the MVP minion modifiers (MS-16): `MinionStrengthStep` in the damage steps
 (strength by distance, floored at base stats per DISC-24, its base-stat point moving toward the
-enemy for each lane tower the enemy has lost there) and `EnragedSystem`, its own system right after
+enemy for each lane tower the enemy has lost there; lane progress is the path cost on the lane's
+flow field, gate to gate as the polyline measured it (DEC-280), through `LaneFlowFields.progress` injected as the `LaneProgressOf` port, with the
+lane polyline as the fallback off the corridor) and `EnragedSystem`, its own system right after
 `SpawnSystem` (one `enraged` stack per lost SpawnerTower or BuffTower on the lane; the losses are
 kept per team and lane in `TeamState.towersLostByLane`, which the strength step reads too). The
 damage pipeline (`combat/DamagePipeline`) is built. Pull request `feat/minion-structures` adds the
@@ -123,7 +126,8 @@ shipped at 0, so off); Tower Guardians wait for ranged attacks and the owner's n
 (`INBOX.md`). Owner rules for minion XP: each veteran level adds to damage, it does not compound
 (DEC-164); tower guards level up and get the rally aura like horde minions, and a kill of a lane
 minion, a tower guard or a camp mob counts toward the killer's level; camp mobs never level and
-get no aura (DEC-165). Pull request M6 adds the forest camps: a `Camp`
+get no aura (DEC-165, changed by DEC-260: forest-camp mobs level). Pull request M6 adds the
+forest camps: a `Camp`
 structure per camp feature, the camp groups in `content/structures/guardPlans.ts` (a `group` plan
 activated when the countdown ends), camp mobs held by `GuardController`, and `camp-cleared`
 emitted by `SpawnSystem`'s `GuardRoster`; `GuardWithinLeashInvariant` covers camp mobs, since it
@@ -131,8 +135,15 @@ checks every post. Pull request M6b adds the checkpoint defenders: `CHECKPOINT_D
 `content/structures/guardPlans.ts` (checkpoint 1 and 2; checkpoint 3's massive mob is
 MVP-if-time), on the light, medium and heavy assist mobs (DEC-260), laid out by
 `GuardRoster.defend` on `checkpoint-reached`; a lost point's living defenders stay (DEC-261).
-The owner's 2026-11-20 rule that neutral defenders and forest-camp mobs level (DEC-260) is not
-built yet. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
+Pull request M6c makes a guard a leveller when its plan's `canLevel` says so (tower guards,
+DEC-165; forest-camp mobs and checkpoint defenders, DEC-260; the capture point boss group,
+DEC-350; not the corner boss), adds the defender limit per capture point and the cancelling of a
+lost owner's waiting defenders (DEC-350), and announces `checkpoint-cleared` for its XP (07 §7).
+Pull request M10 adds the zone level-up (07 §7, DEC-258): `ZoneLevelUpSystem` and
+`minion-levels-granted`, applied with kill levels (`minion-level-earned`) by `MinionLevelSystem`
+(DEC-353), after `DeathSystem`, so the aura (`VeterancySystem`) reads a new level from its next
+cadence on, at most `aura.everyTicks` later; `Veterancy` keeps the levels kills earned
+apart from the levels a zone granted. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
 `ai/decideLeashed.ts` (DEC-168 B1), the guard respawn rules `systems/EachGuardRespawn.ts` and
 `GroupGuardRespawn.ts` (B4), the ally-damage listener `state/AllyDamageTally.ts` (B6), and
 `StuckSystem` with its `ChaseWatch` component (§5.2, DEC-193). A unit that chases a lane tower,
@@ -262,8 +273,10 @@ mob ever exists without its horde (MS-25).
 **Pipeline positions.** `CommandApplySystem` → `AiSystem` → `HordeSystem` → `StatusEffectSystem`
 → `MovementSystem` → `CollisionSystem` (10 §9, DEC-121 (c)) → `SpaceSystem` → `StuckSystem`
 (§5.2, DEC-193) → `PathingSystem` → … → `SpawnSystem` (schedule and fulfilment) →
-`EnragedSystem` (MS-16) → `OutOfCombatHealingSystem` (DEC-188) → `DeathSystem` →
-`CaptureSystem` (07 §7) → `CathedralGemSystem` (07 §1) → `MatchDirectorSystem` (12 §1) → `InvariantSystem` → `SnapshotSystem`.
+`EnragedSystem` (MS-16) → `OutOfCombatHealingSystem` (DEC-188) → `RespawnSystem` (FR-051,
+DEC-295: in every match, after the Duel round, so a fallen Duel Legend is never queued) →
+`DeathSystem` →
+`CaptureSystem` (07 §7) → `CathedralGemSystem` (07 §1) → `ZoneLevelUpSystem` (07 §7, DEC-258) → `MinionLevelSystem` (every minion level change, DEC-353) → `MatchDirectorSystem` (12 §1) → `InvariantSystem` → `SnapshotSystem`.
 A horde spawned on tick N has its members and record when the invariants and the snapshot of tick
 N run, and its first decisions in tick N+1.
 
@@ -617,8 +630,12 @@ without a new controller. Only the home changes, and it is data on the spawning 
   respawns: a checkpoint is reached once per side per owner (07 §7). When the point changes
   owner, its living defenders stay: they fight the new owner's units inside the zone and count as
   presence for their own side, so the new owner must kill them to keep the point (DEC-261). A
-  defender post the unit cap blocks waits, as any post does (§3.4), so a delayed defender may
-  appear after the point has changed owner (`INBOX.md` "Minion M6b follow-ups" (6)).
+  defender post the unit cap blocks waits, as any post does (§3.4), until the point changes
+  owner: then the old owner's waiting defenders are cancelled. A point holds at most
+  `CHECKPOINT_DEFENDER_LIMIT` defenders, living or waiting; a reached set that does not fit adds
+  only the defenders that fit, in table order (DEC-350). Each reach's defenders are one set
+  (`GuardSlot.defenceId`); `CheckpointGuardRespawn` announces `checkpoint-cleared` when a set's
+  last defender is lost (07 §7).
 - **Zone homes.** A guard plan keyed by a zone's definition id makes the zone a home, like a
   structure's. A zone has no collider edge, so its home radius is 0: posts and the leash are
   measured from its anchor. A zone has no `Health`, so it always stands. Zones exist before the
