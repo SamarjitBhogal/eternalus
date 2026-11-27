@@ -1,7 +1,6 @@
-import type { MapDefinition, MapFeatureKind, Simulation, Snapshot, Vec2 } from '@eternalus/core';
+import type { MapDefinition, MapFeatureKind, Simulation, Snapshot } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
-import type { CapturePointStatus } from '../bridge/hud.types';
 import type { RetiredFeatures } from './RetiredFeatures';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
 
@@ -31,12 +30,4 @@ export type MatchBridgeDeps = {
    * snapshot into it before the bridge reads it (first the first snapshot, then once per tick).
    */
   readonly retired: Pick<RetiredFeatures, 'isRetired'>;
-};
-
-/** A capture point the HUD lists, and where its zone stands. */
-export type CaptureSite = {
-  /** The map feature's position, where `Simulation.spawnZones` puts the zone. */
-  readonly position: Vec2;
-  /** The point's status while no zone stands there: neutral, no progress. */
-  readonly withoutZone: CapturePointStatus;
 };

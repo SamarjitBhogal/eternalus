@@ -6,10 +6,17 @@ import {
   type Snapshot,
 } from '@eternalus/core';
 
+import { LegendAnimation } from './LegendAnimation';
+import { LEGEND_VISUAL_DIAMETER } from './views/entityViews.constants';
+import { LegendSpriteView } from './views/LegendSpriteView';
+
 import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
+import { BiomeAtmosphereView } from './views/BiomeAtmosphereView';
 import { GameLoop } from './engine/loop/GameLoop';
+import { DeveloperMenuController } from './DeveloperMenuController';
 import { HealthBarVisibility } from './HealthBarVisibility';
+import { LegendBodies } from './LegendBodies';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
 import type { WorldPoint, WorldRect } from './engine/render/Renderer.types';
 import {
@@ -27,6 +34,7 @@ import type { PlayerActions } from './PlayerActions';
 import { PlayerCommands } from './PlayerCommands';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
+import { LegendBodyLayer } from './views/LegendBodyLayer';
 import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';
@@ -57,10 +65,13 @@ export class Match implements LoopTarget {
   /** Which units draw a world health bar, and on which side; it listens to the simulation's events. */
   private readonly healthBars: HealthBarVisibility;
 
+  private readonly bodies: LegendBodies;
+
   /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */
   private readonly objects: WorldObjectsView;
   /** Which structures have fallen; `Match` observes every snapshot into it. */
   private readonly retired = new RetiredFeatures();
+  private readonly atmosphere: BiomeAtmosphereView;
 
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
 
@@ -75,8 +86,13 @@ export class Match implements LoopTarget {
   private previous: Snapshot | null = null;
 
   private current: Snapshot;
+  private readonly legendAnimation: LegendAnimation;
+  private frameTick = 0;
 
   private readonly playerId: EntityId | null;
+
+  /** The developer menu's key, state and `dev-command` path (13 §4); inert unless enabled. */
+  public readonly developerMenu: DeveloperMenuController;
 
   /** What the canvas gestures do to this match: camera, minimap, roofs, explorer attack. */
   public readonly controls: MatchViewControls;
@@ -89,9 +105,18 @@ export class Match implements LoopTarget {
   public constructor(private readonly deps: MatchDeps) {
     const { simulation, world, tickRate, scheduler, camera, logger, bridge, input } = deps;
     const { map, presentation, mapObjects } = world;
+    this.current = simulation.snapshot();
+    this.playerId = deps.remote?.legendId ?? this.current.match.humanLegendId;
+    this.legendAnimation = new LegendAnimation(
+      this.playerId,
+      deps.playerSpecId ?? null,
+      tickRate,
+      simulation,
+    );
     this.healthBars = new HealthBarVisibility(simulation);
-    this.entities = new EntityLayer(
-      createDefaultViewRegistry((kind) => {
+    this.bodies = new LegendBodies(simulation);
+    const views = createDefaultViewRegistry(
+      (kind) => {
         logger.log(
           makeLogRecord(
             'WARN',
@@ -99,14 +124,17 @@ export class Match implements LoopTarget {
             `No view for kind "${kind}"; drawing the default view.`,
           ),
         );
-      }),
-      isDead,
-      this.healthBars.healthBarOf,
+      },
+      new LegendSpriteView(
+        (entity) => this.legendAnimation.frame(entity, this.frameTick),
+        LEGEND_VISUAL_DIAMETER,
+      ),
     );
+    this.entities = new EntityLayer(views, isDead, this.healthBars.healthBarOf);
     this.camera = new MatchCamera(camera, map);
     this.commands =
       deps.remote?.createActions(this.camera) ??
-      new PlayerCommands(input, simulation, this.camera, mapObjects);
+      new PlayerCommands(input, simulation, this.camera, mapObjects, views);
     const { scenery, buildings } = presentation;
     this.roofs = new BuildingRoofs(buildings);
     const { hidden: hiddenRoofs } = this.roofs;
@@ -114,6 +142,7 @@ export class Match implements LoopTarget {
     this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
     const { isDestroyed } = this.objects;
     const { isRetired } = this.retired;
+    this.atmosphere = new BiomeAtmosphereView(scenery, shown);
     const featureSizes = { 'corner-camp': 2 * CORNER_CAMP_RING.radius } as const;
     const scene = new SceneView([
       new MapView(
@@ -128,7 +157,9 @@ export class Match implements LoopTarget {
       ),
       new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
       this.objects,
+      new LegendBodyLayer(this.bodies.bodies),
       this.entities,
+      this.atmosphere,
     ]);
     const centre = (): WorldPoint => this.miniMapCentre();
     this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING, centre) };
@@ -137,10 +168,15 @@ export class Match implements LoopTarget {
       tickMs,
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
-    this.current = simulation.snapshot();
-    this.playerId = deps.remote?.legendId ?? this.current.match.humanLegendId;
+    this.developerMenu = new DeveloperMenuController({
+      isEnabled: deps.isDeveloperMenuEnabled === true,
+      simulation,
+      bus: bridge.bus,
+      map,
+    });
     this.healthBars.observe(this.current, this.playerId);
     this.retired.observe(this.current);
+    this.bodies.observe(this.current);
     this.bridge = new MatchBridge({
       ...bridge,
       tickRate,
@@ -149,13 +185,18 @@ export class Match implements LoopTarget {
       firstSnapshot: this.current,
       retired: this.retired,
     });
-    this.controls = new MatchViewControls({
+    this.controls = this.createControls();
+    camera.lookAt(this.playerEntity()?.transform ?? { x: map.width / 2, y: map.height / 2 });
+  }
+
+  private createControls(): MatchViewControls {
+    return new MatchViewControls({
       camera: this.camera,
       roofs: this.roofs,
       commands: this.commands,
       miniMap: this.world.miniMap,
       onMiniMapShownChanged: (isShown) => {
-        bridge.bus.emit('minimap-visibility', { isShown });
+        this.deps.bridge.bus.emit('minimap-visibility', { isShown });
         // The loop is stopped while paused, so nothing else would repaint the canvas.
         if (!this.loop.isRunning) {
           this.render(1);
@@ -164,7 +205,6 @@ export class Match implements LoopTarget {
       playerId: this.playerId,
       snapshot: () => this.current,
     });
-    camera.lookAt(this.playerEntity()?.transform ?? { x: map.width / 2, y: map.height / 2 });
   }
 
   /** The id of the player's Legend; known from construction, `null` when its spawn failed. */
@@ -183,6 +223,7 @@ export class Match implements LoopTarget {
    */
   public start(): void {
     this.bridge.publishAll(this.current, this.playerId);
+    this.developerMenu.publish();
     this.deps.bridge.bus.emit('minimap-visibility', { isShown: this.world.miniMap.isVisible });
     this.loop.start();
   }
@@ -222,8 +263,10 @@ export class Match implements LoopTarget {
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
+    this.legendAnimation.observe(this.previous, this.current);
     this.healthBars.observe(this.current, this.playerId);
     this.retired.observe(this.current);
+    this.bodies.observe(this.current);
     this.roofs.playerAt(this.livingPlayerAt());
     if (this.bridge.afterTick(this.current, this.playerId)) {
       this.deps.observer.ended();
@@ -232,6 +275,7 @@ export class Match implements LoopTarget {
 
   /** One frame: the camera follows the player, then the scene and the minimap are drawn. */
   public render(alpha: number): void {
+    this.frameTick = this.current.tick + alpha;
     const { renderer } = this.deps;
     this.camera.follow(this.playerEntity()?.transform ?? null);
     const view = this.camera.visibleArea();
@@ -240,6 +284,11 @@ export class Match implements LoopTarget {
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
     this.objects.show(this.current.mapObjects ?? []);
+    this.atmosphere.show(
+      this.livingPlayerAt(),
+      (this.current.tick + alpha) / this.deps.tickRate,
+      this.camera.isPlayerFollowing,
+    );
     scene.draw(renderer);
     miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight);
   }
@@ -257,8 +306,11 @@ export class Match implements LoopTarget {
    * camera are injected, so their owner (`MatchHost`) destroys them.
    */
   public destroy(): void {
+    this.legendAnimation.destroy();
     this.loop.destroy();
     this.healthBars.destroy();
+    this.bodies.destroy();
+    this.developerMenu.destroy();
     this.bridge.destroy();
   }
 

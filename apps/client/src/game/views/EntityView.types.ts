@@ -31,8 +31,8 @@ export interface EntityView {
    * by a ground fill drawn after it. A view without it draws nothing there.
    */
   drawGround?(state: EntityDrawState, renderer: Renderer): void;
-  /** Draws the entity in the main view, sized in world units. */
-  draw(state: EntityDrawState, renderer: Renderer): void;
+  /** Draws the entity and may return its visible height above its position in world units. */
+  draw(state: EntityDrawState, renderer: Renderer): number | undefined;
   /** Draws the entity's mini map marker, sized in CSS pixels, or nothing. */
   drawMinimap(state: EntityDrawState, renderer: Renderer): void;
   /**
@@ -40,4 +40,6 @@ export interface EntityView {
    * without one is on layer 0.
    */
   readonly minimapLayer?: number;
+  /** Radius of the artwork for pointer targeting and health-bar placement. */
+  visualRadiusOf?(entity: EntitySnapshot): number;
 }

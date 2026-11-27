@@ -405,3 +405,146 @@ describe('LaneFlowFields', () => {
     expect(fields.rebuildDirty(100)).toBe(0);
   });
 });
+
+describe('LaneFlowFields.progress', () => {
+  const { map, fields } = THREE;
+  /** One diagonal step's cost over the lane's cost: the most a cell boundary can move `t`. */
+  const oneStep = (field: FlowField): number => stepCost(4) / (field.integration[field.start] ?? 1);
+  /**
+   * The largest gaps measured between field and polyline `t` at the 2.5 m nav cells of DEC-227
+   * (Q-A), seed 1: 1.38% (3 lanes) and 1.83% (5 lanes) on the bare grid; on the match grid
+   * (`MatchGrid`, with the lane tower forts' wall bands closed), 1.22% (3 lanes) and 1.53%
+   * (5 lanes). The owner allowed 2.5% on the 5-lane match grid (DEC-391), when the grid with only
+   * the map objects stamped measured 2.13% there.
+   */
+  const POLYLINE_AGREEMENT = 0.02;
+  const FIVE_LANE_MATCH_GRID_AGREEMENT = 0.025;
+
+  /** Points along `path`, eight per segment, with the polyline's own `t` for each. */
+  const samples = (world: Pick<typeof THREE, 'map'>, laneId: string, team: 'light' | 'dark') => {
+    const routes = new LaneRoutes(world.map);
+    const length = routes.length(laneId);
+    const lane = world.map.lanes.find(({ id }) => id === laneId);
+    const path = team === 'light' ? (lane?.path ?? []) : [...(lane?.path ?? [])].reverse();
+    return path.slice(1).flatMap((b, index) => {
+      const a = path[index] ?? b;
+      return [1, 2, 3, 4, 5, 6, 7, 8].map((step) => {
+        const point = { x: a.x + ((b.x - a.x) * step) / 8, y: a.y + ((b.y - a.y) * step) / 8 };
+        return { point, polyline: routes.distanceAlong(laneId, team, point) / length };
+      });
+    });
+  };
+
+  it('runs from 0 at the team’s own lane end to 1 at the enemy end, never falling by more than one cell', () => {
+    for (const lane of map.lanes) {
+      for (const team of ['light', 'dark'] as const) {
+        const field = fields.field(lane.id, team);
+        const path = team === 'light' ? lane.path : [...lane.path].reverse();
+        const first = path[0];
+        const last = path[path.length - 1];
+        if (field === undefined || first === undefined || last === undefined) {
+          throw new Error(`lane ${lane.id} has no ${team} field`);
+        }
+        expect(fields.progress(lane.id, team, first)).toBe(0);
+        expect(fields.progress(lane.id, team, last)).toBeGreaterThanOrEqual(1 - oneStep(field));
+        let highest = 0;
+        let largestDrop = 0;
+        for (const { point } of samples(THREE, lane.id, team)) {
+          const t = fields.progress(lane.id, team, point) ?? highest;
+          largestDrop = Math.max(largestDrop, highest - t);
+          highest = Math.max(highest, t);
+        }
+        expect(largestDrop).toBeLessThanOrEqual(oneStep(field));
+        expect(highest).toBeGreaterThanOrEqual(1 - oneStep(field));
+      }
+    }
+  });
+
+  it.each([
+    ['3 lanes', THREE, POLYLINE_AGREEMENT],
+    ['5 lanes', FIVE, POLYLINE_AGREEMENT],
+    [
+      '3 lanes, match grid',
+      matchFields(createDefaultGameConfig({ map: { numLanes: 3 } }), 1),
+      POLYLINE_AGREEMENT,
+    ],
+    [
+      '5 lanes, match grid',
+      matchFields(createDefaultGameConfig({ map: { numLanes: 5 } }), 1),
+      FIVE_LANE_MATCH_GRID_AGREEMENT,
+    ],
+  ] as const)(
+    'agrees with the lane polyline within its bound wherever the field can say: %s',
+    (_, world, bound) => {
+      let largest = 0;
+      for (const lane of world.map.lanes) {
+        for (const team of ['light', 'dark'] as const) {
+          for (const { point, polyline } of samples(world, lane.id, team)) {
+            const t = world.fields.progress(lane.id, team, point);
+            if (t !== null) largest = Math.max(largest, Math.abs(t - polyline));
+          }
+        }
+      }
+      expect(largest).toBeLessThanOrEqual(bound);
+    },
+  );
+
+  it.each([
+    [3, THREE],
+    [5, FIVE],
+  ] as const)('gives Light and Dark the same progress at mirrored points: %i lanes', (_, world) => {
+    const { grid } = world;
+    for (const lane of world.map.lanes) {
+      const light = world.fields.field(lane.id, 'light');
+      const dark = world.fields.field(lane.id, 'dark');
+      if (light === undefined || dark === undefined) {
+        throw new Error(`lane ${lane.id} has no Light or Dark field`);
+      }
+      const row = Math.floor(light.start / grid.cols);
+      expect(dark.start).toBe(row * grid.cols + (grid.cols - 1 - (light.start % grid.cols)));
+      // The first cell centre whose mirrored twin reads differently, or -1 (one expect per lane).
+      let mismatch = -1;
+      for (let cell = 0; cell < light.mask.length && mismatch === -1; cell += 1) {
+        const col = cell % grid.cols;
+        const y = (Math.floor(cell / grid.cols) + 0.5) * grid.cellSize;
+        const here = light.progressAt({ x: (col + 0.5) * grid.cellSize, y });
+        const twin = dark.progressAt({ x: (grid.cols - col - 0.5) * grid.cellSize, y });
+        if (here !== twin) mismatch = cell;
+      }
+      expect(mismatch, `first non-mirrored cell in ${lane.id}`).toBe(-1);
+    }
+  });
+
+  /**
+   * A field whose start cost reached `UNREACHED` would make `progressAt` fall back to the polyline
+   * on every point; a quarter of the cap leaves room for maps four times as long.
+   */
+  const HOME_COST_HEADROOM = 4;
+
+  it.each([
+    [3, 1],
+    [3, 2],
+    [5, 1],
+    [5, 2],
+  ] as const)(
+    'keeps every lane’s cost from its own end well below UNREACHED: %i lanes, seed %i',
+    (numLanes, seed) => {
+      const world = matchFields(createDefaultGameConfig({ map: { numLanes } }), seed);
+      for (const lane of world.map.lanes) {
+        for (const team of ['light', 'dark'] as const) {
+          const field = world.fields.field(lane.id, team);
+          const home =
+            field === undefined ? UNREACHED : (field.integration[field.start] ?? UNREACHED);
+          expect(home, `${lane.id} ${team}`).toBeLessThanOrEqual(UNREACHED / HOME_COST_HEADROOM);
+        }
+      }
+    },
+  );
+
+  it('cannot say for an unknown lane or a point outside the world', () => {
+    const lane = map.lanes[0];
+    if (lane === undefined) throw new Error('no lane');
+    expect(fields.progress('no-such-lane', 'light', lane.path[0] ?? { x: 0, y: 0 })).toBeNull();
+    expect(fields.progress(lane.id, 'light', { x: -100, y: -100 })).toBeNull();
+  });
+});

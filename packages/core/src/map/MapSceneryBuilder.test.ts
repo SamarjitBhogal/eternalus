@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
-import type { MapDefinition } from '../content/maps/maps.types';
+import type { MapDecoration, MapDefinition } from '../content/maps/maps.types';
 import { MapGenerator } from './MapGenerator';
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
 import { MapSceneryBuilder } from './MapSceneryBuilder';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
-import { doesPolygonOverlapRect, doPolygonsOverlap } from '../utils/geometry';
-import { laneFortKeepOuts } from './fortInWorld';
+import { boundsOf, doesPolygonOverlapRect, doPolygonsOverlap } from '../utils/geometry';
+import { isInLaneFortKeepOut, laneFortKeepOuts } from './fortInWorld';
 import { WALL_RING_KINDS } from './MapSceneryBuilder.constants';
 import { MapObjectBuilder } from './MapObjectBuilder';
 import { MapPresentationBuilder } from './MapPresentationBuilder';
+import { CAMP_ART, campHalfExtent, isCampArtKind } from './campArtByKind';
 
 const generate = (): MapDefinition => new MapGenerator().generate(createDefaultGameConfig(), 1);
 
@@ -163,38 +164,70 @@ describe('MapSceneryBuilder', () => {
     expect(touches).toEqual([]);
   });
 
-  it('keeps every camp whole: tents, fire and supplies stand in every camp, 3 and 5 lanes, across seeds (DEC-315)', () => {
+  it('keeps every camp whole: each blocking piece of its art still blocks, 3 and 5 lanes, across seeds (DEC-315)', () => {
     const config = createDefaultGameConfig();
-    const missing: string[] = [];
+    const lost: string[] = [];
     for (const numLanes of [3, 5]) {
       for (const seed of [1, 1234, 7, 10, 42, 99, 2026]) {
         const map = new MapGenerator().generate({ map: { ...config.map, numLanes } }, seed);
-        const ids = new Set(new MapSceneryBuilder(map).build().map(({ id }) => id));
-        const camps = map.features.filter(({ kind }) => kind === 'camp' || kind === 'corner-camp');
-        expect(camps.length).toBeGreaterThan(0);
-        for (const { id } of camps) {
-          for (const piece of ['tent--1', 'tent-1', 'fire-stone', 'supplies']) {
-            if (!ids.has(`${id}-camp-${piece}`)) {
-              missing.push(`${String(numLanes)} lanes, seed ${String(seed)}: ${id} lost ${piece}`);
-            }
+        const scenery = new MapSceneryBuilder(map).build();
+        let camps = 0;
+        for (const camp of map.features) {
+          if (!isCampArtKind(camp.kind)) continue;
+          camps += 1;
+          const isBlocking = (piece: MapDecoration): boolean => piece.object?.isFootprint === true;
+          const authored = CAMP_ART[camp.kind](camp).filter(isBlocking).length;
+          const blocking = scenery.filter((p) => p.replacesFeature === camp.id && isBlocking(p));
+          if (blocking.length !== authored) {
+            lost.push(
+              `${String(numLanes)} lanes, seed ${String(seed)}: ${camp.id} blocks with ${String(blocking.length)} of ${String(authored)} pieces`,
+            );
           }
         }
+        expect(camps).toBeGreaterThan(0);
       }
     }
 
-    expect(missing).toEqual([]);
+    expect(lost).toEqual([]);
   });
 
-  it('fills exactly the box the generator clears for a camp, so art and generation cannot drift apart (BUILDING_GEOMETRY.camp)', () => {
+  it('leaves out the pieces of a camp that cannot move that stand in a fort, and keeps its ground (DEC-318 (BTD4))', () => {
+    // 5 lanes with 2 + 3 towers per lane: corridor 0's camp has no step clear of the forts.
+    const config = createDefaultGameConfig();
+    const crowded = { ...config.map, numLanes: 5, spawnTowersPerLane: 2, buffTowersPerLane: 3 };
+    for (const seed of [1234, 7]) {
+      const map = new MapGenerator().generate({ map: crowded }, seed);
+      const keepOuts = laneFortKeepOuts(map.features, map);
+      const camp = map.features.find(({ id }) => id === 'west-camp-corridor-0-0');
+      if (camp === undefined || !isCampArtKind(camp.kind)) throw new Error('No corridor 0 camp');
+      const art = CAMP_ART[camp.kind](camp);
+      const drawn = new MapSceneryBuilder(map)
+        .build()
+        .filter((piece) => piece.replacesFeature === camp.id);
+      const inFort = drawn.filter(
+        (piece) => piece.layer !== 'ground' && isInLaneFortKeepOut(boundsOf(piece.shape), keepOuts),
+      );
+
+      expect(drawn.length).toBeLessThan(art.length);
+      expect(inFort.map(({ id }) => id)).toEqual([]);
+      expect(drawn.filter(({ layer }) => layer === 'ground')).toHaveLength(
+        art.filter(({ layer }) => layer === 'ground').length,
+      );
+    }
+  });
+
+  it('fills exactly the box the generator clears for a camp, so art and generation cannot drift apart (campHalfExtent)', () => {
     // At the default world, 1 sketch unit is 1 m, so the sketch-unit extent applies as it is.
-    const { halfExtent } = G.camp;
     const map = generate();
     const scenery = new MapSceneryBuilder(map).build();
-    const camps = map.features.filter(({ kind }) => kind === 'camp' || kind === 'corner-camp');
     const misfits: string[] = [];
-    for (const { id, position } of camps) {
+    let camps = 0;
+    for (const { id, kind, position } of map.features) {
+      if (!isCampArtKind(kind)) continue;
+      camps += 1;
+      const halfExtent = campHalfExtent(kind);
       const points = scenery
-        .filter((piece) => piece.id.startsWith(`${id}-camp-`))
+        .filter((piece) => piece.replacesFeature === id)
         .flatMap(({ shape }) => shape);
       const reach = {
         x: Math.max(...points.map(({ x }) => Math.abs(x - position.x))),
@@ -205,7 +238,7 @@ describe('MapSceneryBuilder', () => {
       }
     }
 
-    expect(camps.length).toBeGreaterThan(0);
+    expect(camps).toBeGreaterThan(0);
     expect(misfits).toEqual([]);
   });
 });

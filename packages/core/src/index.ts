@@ -58,6 +58,7 @@ export type {
   MinimapColourRole,
   MinimapGlyph,
   MinimapGlyphShape,
+  BiomeKind,
 } from './content/maps/maps.types';
 export type { VerdictLines } from './content/narrative/verdictLines.types';
 export type { BotRole, BotRosterDefinition, EnemyRoverRule } from './content/teams/botRoster.types';
@@ -98,6 +99,8 @@ export type { LegendStats, TeamStats } from './state/ScoringState.types';
 export type {
   CaptureSnapshot,
   EntitySnapshot,
+  FeatureKeyedGroup,
+  GemSnapshot,
   MatchSnapshot,
   Snapshot,
 } from './state/Snapshot.types';
@@ -133,4 +136,5 @@ export type { MatchNavigation } from './map/MatchPathfinderFactory.types';
 export type { MapObject, MapObjectKind, MapObjectSnapshot } from './content/maps/mapObjects.types';
 export { findBuildingAt } from './map/findBuildingAt';
 export { findMapObjectAt } from './map/findMapObjectAt';
+export { findGemAt } from './state/findGemAt';
 export { findUnitAt } from './state/findUnitAt';

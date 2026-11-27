@@ -141,7 +141,12 @@ describe("Match roofs: the player's building opens (DEC-143)", () => {
     const entityId = match.playerEntityId;
     if (entityId === null) throw new Error('the player did not spawn');
 
-    simulation.enqueueCommand({ type: 'dev-remove-entity', entityId });
+    // Core refuses to remove the human's Legend outside sim mode (13 §4), so the snapshot drops it.
+    const snapshot = simulation.snapshot.bind(simulation);
+    vi.spyOn(simulation, 'snapshot').mockImplementation(() => {
+      const real = snapshot();
+      return { ...real, entities: real.entities.filter(({ id }) => id !== entityId) };
+    });
     match.tick();
 
     const roof = roofsDrawn('light-stronghold');

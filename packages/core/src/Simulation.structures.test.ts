@@ -146,14 +146,16 @@ describe('Simulation structures', () => {
       .entities.filter(({ family }) => family === 'structure')
       .map(({ id, kind, team }) => ({ id, kind, team }));
 
-    // Feature id order: buff towers, spawner towers, then strongholds; the cathedral stays map data.
+    // Feature id order: buff towers, the neutral Cathedral gem (DISC-11, DEC-292), spawner towers,
+    // then strongholds.
     expect(structures).toEqual([
       { id: 'entity-1', kind: 'buff-tower', team: 'dark' },
       { id: 'entity-2', kind: 'buff-tower', team: 'light' },
-      { id: 'entity-3', kind: 'spawner-tower', team: 'dark' },
-      { id: 'entity-4', kind: 'spawner-tower', team: 'light' },
-      { id: 'entity-5', kind: 'stronghold', team: 'dark' },
-      { id: 'entity-6', kind: 'stronghold', team: 'light' },
+      { id: 'entity-3', kind: 'cathedral-gem', team: 'neutral' },
+      { id: 'entity-4', kind: 'spawner-tower', team: 'dark' },
+      { id: 'entity-5', kind: 'spawner-tower', team: 'light' },
+      { id: 'entity-6', kind: 'stronghold', team: 'dark' },
+      { id: 'entity-7', kind: 'stronghold', team: 'light' },
     ]);
   });
 

@@ -26,6 +26,7 @@ const snapshotWith = (...ids: string[]): Snapshot => ({
     area: null,
     capture: null,
     aura: null,
+    gem: null,
   })),
   hordes: [],
   teams: {

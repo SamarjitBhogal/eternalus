@@ -268,7 +268,7 @@ describe('Match lifecycle', () => {
       deps.simulation
         .snapshot()
         .entities.flatMap(({ mapFeatureId, health }) =>
-          mapFeatureId === undefined ? [] : [[mapFeatureId, health] as const],
+          mapFeatureId === undefined || health === null ? [] : [[mapFeatureId, health] as const],
         ),
     );
     const shown = published[0]?.structures ?? [];
@@ -364,8 +364,9 @@ describe('Match lifecycle', () => {
 
     expect(scheduler.hasPendingFrame).toBe(false);
     expect(simulation.tick).toBe(0);
-    // The health bars' two subscriptions (DEC-195) and the bridge's `match-ended`; each is dropped once.
-    const types = ['damage-applied', 'entity-removed', 'match-ended'];
+    // The health bars' two subscriptions (DEC-195), the Legend bodies' `entity-removed` (DEC-295)
+    // and the bridge's `match-ended`; each is dropped once.
+    const types = ['damage-applied', 'entity-removed', 'entity-removed', 'match-ended'];
     expect(on.mock.calls.map(([type]) => type)).toEqual(types);
     expect(dropped).toEqual(types);
   });

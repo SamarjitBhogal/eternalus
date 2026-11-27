@@ -6,6 +6,12 @@ import type { AssetLicence, AssetManifestEntry, LicenceId } from './AssetManifes
 import { describeCredits } from './describeCredits';
 
 const LICENCES: Readonly<Record<LicenceId, AssetLicence>> = {
+  'user-authorised-art': {
+    work: 'References',
+    licenceName: 'Permission confirmed',
+    notice: 'Permission by contributor',
+    text: null,
+  },
   owner: { work: 'Art', licenceName: 'Owner', notice: 'By the owner', text: null },
   'ofl-cinzel': { work: 'Font', licenceName: 'OFL', notice: 'Copyright font', text: 'OFL text' },
   'mit-phosphor': {
@@ -63,10 +69,14 @@ describe('describeCredits', () => {
     const credited = credits.flatMap((credit) => credit.assets.map((asset) => asset.assetId));
 
     expect(credits.map((credit) => [credit.licenceId, credit.licenceText !== null])).toEqual([
+      ['user-authorised-art', false],
       ['owner', false],
       ['ofl-cinzel', true],
       ['mit-phosphor', true],
     ]);
     expect(credited.sort()).toEqual(ASSET_MANIFEST.assets.map((asset) => asset.id).sort());
+    const references = credits.find((credit) => credit.licenceId === 'user-authorised-art');
+    expect(references?.assets).toHaveLength(5);
+    expect(references?.notice).toContain('Arackhan Wars');
   });
 });

@@ -7,7 +7,7 @@ import type { DuelHostOptions } from './DuelHost.types';
 
 /**
  * The match host (ADR 0016 point 2): starts a `DuelMatch` for each pair the queue hands over,
- * finds a connection's match, and forgets matches that ended. Every Duel steps on the main thread.
+ * finds a connection's match, rates both players when it ends, and forgets it. Every Duel steps on the main thread.
  */
 export class DuelHost implements MatchStarter {
   private readonly matchByConnection = new Map<ClientConnection, DuelMatch>();
@@ -17,7 +17,7 @@ export class DuelHost implements MatchStarter {
 
   /** Starts a Duel between the two players; if it cannot be built, closes both connections. */
   public start(lightPlayer: DuelPlayer, darkPlayer: DuelPlayer): void {
-    const { factory, scheduler, tickIntervalMs, versusMs, logger } = this.options;
+    const { factory, scheduler, tickIntervalMs, versusMs, logger, ratings } = this.options;
     const light = lightPlayer.connection;
     const dark = darkPlayer.connection;
     const id = `duel-${String(this.nextId)}`;
@@ -33,8 +33,20 @@ export class DuelHost implements MatchStarter {
         tickIntervalMs,
         versusMs,
         logger,
-        onEnded: (ended) => {
+        onEnded: (ended, winner) => {
           this.forget(ended);
+          try {
+            ratings.recordMatch(lightPlayer.guestId, darkPlayer.guestId, winner);
+          } catch (error) {
+            logger.log(
+              makeLogRecord('ERROR', HOST_LOG_SCOPE, 'A Duel result could not be rated.', {
+                attributes: {
+                  matchId: id,
+                  error: error instanceof Error ? error.message : String(error),
+                },
+              }),
+            );
+          }
         },
       });
     } catch (error) {
@@ -74,6 +86,21 @@ export class DuelHost implements MatchStarter {
   /** `connection` disconnected: its match, if any, ends with `opponent-left`. */
   public leave(connection: ClientConnection): void {
     this.matchByConnection.get(connection)?.leave(connection);
+  }
+
+  /** The other seat's connection in `connection`'s match, or `null`. */
+  public rivalOf(connection: ClientConnection): ClientConnection | null {
+    const match = this.matchByConnection.get(connection);
+    return match?.connections.find((seat) => seat !== connection) ?? null;
+  }
+
+  /** A reconnect: `to` takes over `from`'s seat; does nothing if `from` has no match. */
+  public replace(from: ClientConnection, to: ClientConnection): void {
+    const match = this.matchByConnection.get(from);
+    if (match === undefined) return;
+    this.matchByConnection.delete(from);
+    this.matchByConnection.set(to, match);
+    match.replaceSeat(from, to);
   }
 
   private forget(match: DuelMatch): void {
