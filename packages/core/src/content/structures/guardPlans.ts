@@ -23,6 +23,7 @@ const CAMP = {
   activation: { at: 'countdown-end', delaySeconds: 0 },
   // TUNE: balancing.md "a cleared camp respawns 120 s later"
   respawn: { kind: 'group', seconds: 120 },
+  canLevel: true, // DEC-260 (owner 2026-11-20): forest-camp mobs level (changes DEC-165)
 } as const;
 
 /**
@@ -61,6 +62,7 @@ const CAMP_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     // TUNE: DEC-12; game doc "spawns new bosses every 5 minutes". `group`, not `each`: with one
     // boss both bring it back 300 s after it dies, and only `group` announces `camp-cleared`.
     respawn: { kind: 'group', seconds: 300 },
+    canLevel: false, // DEC-260 names forest-camp mobs only
   },
 };
 
@@ -79,6 +81,7 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     leashTolerance: TOLERANCE,
     activation: { at: 'match-start' },
     respawn: { kind: 'each', seconds: RESPAWN },
+    canLevel: true, // DEC-165: tower guards level
   },
   'buff-tower': {
     table: [{ mobId: 'medium-guard', count: 6 }],
@@ -87,6 +90,7 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     leashTolerance: TOLERANCE,
     activation: { at: 'match-start' },
     respawn: { kind: 'each', seconds: RESPAWN },
+    canLevel: true, // DEC-165: tower guards level
   },
   stronghold: {
     table: [
@@ -98,6 +102,7 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     leashTolerance: TOLERANCE,
     activation: { at: 'match-start' },
     respawn: { kind: 'each', seconds: RESPAWN },
+    canLevel: true, // DEC-165: tower guards level
   },
   ...CAMP_PLANS,
   // The outer capture points' mini-boss and its support mobs (18 §7.1, reference 04 "along with
@@ -122,6 +127,7 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     // reference 04: one mini-boss per match; its support mobs do not come back either until
     // respawning guards is signed off (INBOX.md)
     respawn: { kind: 'never' },
+    canLevel: true, // DEC-350 (4): the capture point boss group levels
   },
   // The Greater Boss (12 §3): one post at the centre of the Cathedral's zone (a zone's edge is its
   // anchor, so the post gap 0 is the centre itself), filled when the gem erupts and leashed to the
@@ -135,6 +141,7 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     leashTolerance: 7,
     activation: { at: 'gem-eruption' },
     respawn: { kind: 'never' }, // TUNE: no respawn (Aryan 2026-11-15; INBOX)
+    canLevel: false, // as before M6c: a neutral post never levelled (DEC-165); DEC-260 names no boss
   },
 };
 
@@ -144,7 +151,11 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
  * + 4 light), on the assist mobs (DEC-260).
  * Checkpoint 3's one massive mob is MVP-if-time (reference 02 "Assist mobs") and has no row yet.
  */
-const DEFENDERS = { postGap: GUARD_LEASH.checkpointPostRing, leashTolerance: TOLERANCE } as const;
+const DEFENDERS = {
+  postGap: GUARD_LEASH.checkpointPostRing,
+  leashTolerance: TOLERANCE,
+  canLevel: true, // DEC-260: owned and neutral defenders level
+} as const;
 
 export const CHECKPOINT_DEFENDERS: Readonly<Record<number, CheckpointDefenderPlanDefinition>> = {
   1: {
@@ -159,3 +170,11 @@ export const CHECKPOINT_DEFENDERS: Readonly<Record<number, CheckpointDefenderPla
     ],
   },
 };
+
+/**
+ * The most checkpoint defenders one capture point holds, living (of any side) or waiting for room
+ * under the unit cap (DEC-350): one full defence, checkpoint 2's 2 heavy + 4 light plus checkpoint
+ * 1's 4 medium, so the first push always gets its full set and a contested point never builds a
+ * crowd. Review it if checkpoint 3's massive mob is added.
+ */
+export const CHECKPOINT_DEFENDER_LIMIT = 10; // TUNE: DEC-350

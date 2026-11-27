@@ -17,10 +17,11 @@ import type { MatchWorld } from '../state/MatchWorld';
 import type { PlayableTeam } from '../teams/teams.types';
 import { compareById } from '../utils/compareById';
 import type { Vec2 } from '../utils/geometry.types';
+import { cancelWaitingDefenders } from './checkpointDefenders';
 import { GuardRoster } from './GuardRoster';
 import { checkEruptionPlan } from './eruptionPlanProblems';
 import { spawnPlanProblems } from './spawnPlanProblems';
-import type { ScheduledWave, SpawnPlan, CheckpointReached } from './SpawnSystem.types';
+import type { CheckpointReached, PointLost, ScheduledWave, SpawnPlan } from './SpawnSystem.types';
 import type { System, SystemContext } from './System.types';
 import { isPlayableTeam } from '../teams/playableTeams';
 
@@ -44,7 +45,8 @@ import { isPlayableTeam } from '../teams/playableTeams';
  * It also runs every structure's and zone's guard plan (18 §7, 07 §6) through its `GuardRoster`,
  * adds a capture point's defenders when `checkpoint-reached` names it with a Legend present
  * (07 §7, 18 §7.1, DEC-259). A point that changes owner keeps its living defenders: they fight
- * the new owner inside the zone and count as presence for their own side (DEC-261). On its pass
+ * the new owner inside the zone and count as presence for their own side (DEC-261); the old
+ * owner's defenders still waiting for room under the unit cap are cancelled (DEC-350). On its pass
  * after `greater-boss-summoned` it spawns the summoned boss and announces it with `boss-summoned`
  * (12 §3).
  */
@@ -57,6 +59,8 @@ export class SpawnSystem implements System {
   private readonly checkpointsReached: CheckpointReached[] = [];
   /** The bosses `greater-boss-summoned` asked for, spawned on the next pass. */
   private readonly summoned: string[] = [];
+  /** The capture points that changed owner since the last pass, in order. */
+  private readonly pointsLost: PointLost[] = [];
 
   /**
    * @param state - The match; its structure entities, already spawned, are the spawn points, and
@@ -103,7 +107,13 @@ export class SpawnSystem implements System {
       })),
     );
     this.validate(homes, hasCapturePoints);
-    this.guards = new GuardRoster(factory, plan.definitions, plan.guards, plan.defenders);
+    this.guards = new GuardRoster(
+      factory,
+      plan.definitions,
+      plan.guards,
+      plan.defenders,
+      plan.defenderLimit,
+    );
     this.guards.layOut(state);
     checkEruptionPlan(state, plan);
     // Queued for this system's pass (03 §4). DEC-259: only a push with a Legend on the zone wakes
@@ -118,6 +128,9 @@ export class SpawnSystem implements System {
     // The erupted gem summons its boss (12 §3), spawned on this system's next pass.
     state.events.on('greater-boss-summoned', ({ bossId }) => {
       this.summoned.push(bossId);
+    });
+    state.events.on('capture-point-owner-changed', ({ pointId, from }) => {
+      this.pointsLost.push({ pointId, from });
     });
   }
 
@@ -160,10 +173,19 @@ export class SpawnSystem implements System {
     for (const request of [...opening, ...this.dueWaves(state)]) {
       this.spawnHorde(state, routes, request);
     }
+    // DEC-350: a lost owner's waiting defenders are cancelled before the posts fill, so none
+    // appears late; a set reached on the pass that changed the owner is the old owner's (DEC-257),
+    // so its defenders that find room appear now and the ones the cap blocks are cancelled after.
+    const lost = this.pointsLost.splice(0);
+    const cancel = (): void => {
+      for (const { pointId, from } of lost) cancelWaitingDefenders(state, pointId, from);
+    };
+    cancel();
     for (const { pointId, checkpoint, owner } of this.checkpointsReached.splice(0)) {
       this.guards.defend(state, pointId, checkpoint, owner);
     }
     this.guards.update(state);
+    cancel();
   }
 
   /**

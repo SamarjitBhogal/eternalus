@@ -107,6 +107,12 @@ type GuardPlanBase = {
    * between two decisions plus the farthest it stands from a target in reach.
    */
   readonly leashTolerance: number;
+  /**
+   * Whether the plan's guards level from their kills and are rallied by the veterancy aura
+   * (`VeterancySystem`, 18 MS-16): tower guards (DEC-165), forest-camp mobs (DEC-260) and the
+   * capture point boss group (DEC-350).
+   */
+  readonly canLevel: boolean;
 };
 
 /**
@@ -121,6 +127,8 @@ export type CheckpointDefenderPlanDefinition = {
   readonly postGap: number;
   /** As `GuardPlanDefinition.leashTolerance`. */
   readonly leashTolerance: number;
+  /** As `GuardPlanDefinition.canLevel` (DEC-260: owned and neutral defenders level). */
+  readonly canLevel: boolean;
 };
 
 /**

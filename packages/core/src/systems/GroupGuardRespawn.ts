@@ -1,3 +1,4 @@
+import { TeamMembership } from '../components/TeamMembership';
 import type { GameState } from '../state/GameState';
 import type { GuardSlot } from '../state/GuardStore.types';
 import type { GuardRespawnRule } from './GuardRoster.types';
@@ -29,8 +30,14 @@ export class GroupGuardRespawn implements GuardRespawnRule {
     });
     const killerId =
       (slot.guardId === null ? undefined : state.killerOf(slot.guardId))?.attackerId ?? null;
-    // A killer whose team cannot be read (it left the store) is not named: both or neither.
-    const team = killerId === null ? null : (state.entities.teamOf(killerId) ?? null);
+    // A killer whose team cannot be read is not named: both or neither. A Legend waiting to
+    // respawn (DEC-295) is out of the store but keeps its team.
+    const team =
+      killerId === null
+        ? null
+        : (state.entities.teamOf(killerId) ??
+          state.respawns.legendOf(killerId)?.findComponent(TeamMembership)?.team ??
+          null);
     state.events.emit('camp-cleared', {
       entityId: slot.homeId,
       team,

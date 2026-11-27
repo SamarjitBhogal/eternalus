@@ -37,6 +37,11 @@ export class MatchCamera implements Projection {
     this.explorer = new MapExplorer(map);
   }
 
+  /** Whether the player camera, rather than a free or panned view, is active. */
+  public get isPlayerFollowing(): boolean {
+    return this.isFollowing && !this.isExploring;
+  }
+
   /** The drawing area's width in device pixels (0 before the first resize). */
   public get screenWidth(): number {
     return this.drawWidth;
