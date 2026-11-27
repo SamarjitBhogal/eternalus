@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-27
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -494,7 +494,10 @@ each closed by the session or phase named:
   a log of the external commands and replay checkpoints, both outside the hashed state); no
   `dispose()` yet.
 - `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
-  `AttackTargetHandler`). `cast-ability`, `intent` and `dev-set-controller` are routed to
+  `AttackTargetHandler`). `jump { actorId, isHeld }` (2026-11-27, DEC-390; not in the §3 sketch)
+  has `JumpHandler`, which sets the held jump key through `EntityStore.holdJump` (rejected
+  `cannot-jump` for an entity without `Jump`); `JumpSystem`, before `MovementSystem`, flies each jump
+  and starts the held ones on the ground. `cast-ability`, `intent` and `dev-set-controller` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
 - `dev-spawn-legend` (2026-11-13) is built as `{ team, definitionId }` (a bot Legend at the
@@ -507,7 +510,8 @@ each closed by the session or phase named:
   `SnapshotSystem` exists; `Snapshot` carries
   `tick`, `match`, `entities`, `hordes` and `teams` (the team counters, since minion plan M1),
   and `EntitySnapshot` its identity, `team`, `transform`
-  (`x`, `y`, `radius`, `facing`), `health` (`current`, `max`), `progression` (a Legend's `level`,
+  (`x`, `y`, `radius`, `facing`), `health` (`current`, `max`), `jump` (a Legend's `height` above
+  the ground, DEC-390), `progression` (a Legend's `level`,
   the `xp` inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the
   level curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
   `area` (a zone's polygons), `capture` (a capture point's state and presence) and `gem` (the

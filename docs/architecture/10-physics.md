@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-27
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -309,6 +309,15 @@ back out.
 gaps in the same wall geometry used for drawing. Bridge decks permit passage across terrain
 while retaining collision at their sides. Destroyed object IDs disable their static footprints.
 Unit-to-unit momentum, SAT and the remaining physics described above are still planned.
+
+**2026-11-27 (DEC-390, Legend jump).** A Legend's jump height lives in its `Jump` component, not
+in §1's `Transform.height`. The height is only drawn: no physics reads it, and §1 keeps
+`Transform.height` for a real altitude (the Flying class, post-MVP). While a Legend is in the air,
+`MovementSystem` moves it by the velocity it had at takeoff, and `CollisionSystem` sweeps that move
+against walls and footprints, so a jump crosses nothing that a walk cannot. Units do not block
+units yet (above), so a jump passes through units as a walk does. The snapshot group is
+`jump: { height }`; `INBOX.md` HC-B64 asks whether to name it for what the view draws
+(`elevation`).
 
 ## Related
 

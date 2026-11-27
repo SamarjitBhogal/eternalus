@@ -32,6 +32,23 @@ review comments under "Feedback". Answered decisions are recorded in
       (the only `vi.mock` in core). No gameplay number or behaviour changes. Approve (built in its
       own PR) or drop.
 
+- [ ] **HC-B64 — Better than the design, not built, sign-off asked: name the jump height in the
+      snapshot for what the view draws** (`feat/legend-jump` critic, DEC-390, 2026-11-27). The
+      snapshot group is `jump: { height }`, named after its component like `health` and `aether`.
+      The critic proposes `elevation: { height }`: a later Flying altitude (architecture
+      `10-physics.md` §1) or the knock-up of #136 could then lift a unit and draw its shadow with
+      no view change. Recommendation: keep `jump` until a second height source exists, then rename
+      it in that PR (client and server ship together, so the rename costs the same then).
+      Approve the rename now, or keep `jump`.
+
+- [ ] **HC-B65 — Better than the design, not built, sign-off asked: one movement seam for jump,
+      dash and knockback** (`feat/legend-jump` critic, DEC-390, 2026-11-27). The jump moves an
+      airborne Legend by its takeoff velocity inside `MovementSystem`. Open PR #136 rewrites the
+      same code for forced motion (`Movement.push`, `isForced`). Proposal: carry the jump momentum
+      through #136's forced-motion seam, so one seam moves a Legend for a dash, a knockback and a
+      jump. The second of #136 and the jump PR to merge does it, and settles how a Legend faces and
+      takes a stun in the air. Approve, or keep the two paths apart.
+
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 

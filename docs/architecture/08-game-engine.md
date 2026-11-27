@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -389,6 +389,14 @@ character atlases and their resource-budget extensions, and the parallel ability
 are deferred to preserved feature work outside this branch. No independent ability stack or
 new raster-art loading path is registered here. The PR gate and requested owner confirmation
 remain explicit handoff items; this status note grants neither.
+
+### 2026-11-27 — Legend jump (DEC-390)
+
+`defaultViewRegistry` wraps the Legend family view in `AirborneView`. For a Legend in the air it
+draws a ground shadow at the position, then the Legend raised by its height, so the health bar
+rises too. `EntityLayer.show` interpolates the height like the position
+(`EntityDrawState.height`). The mini map marker stays at the ground position. The team and focus
+rings are part of the Legend view, so they rise with it.
 
 ## Related
 
