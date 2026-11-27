@@ -21,7 +21,9 @@ import type { Award, ProgressionContent } from './ProgressionSystem.types';
  * `Progression`. A destroyed structure (`structure-destroyed`) pays every Legend of the opposing
  * team (DEC-186), and a boss in `xpSources.teamKills` pays every Legend of its killer's playable
  * team instead of the killer, lifting none more than the reward's `maxLevels` (DEC-237); a Legend
- * the cap leaves nothing to pay gets no award. Self-kills and ally kills pay nothing (O5). Each
+ * the cap leaves nothing to pay gets no award. A cleared camp (`camp-cleared`) pays the Legend
+ * that killed its last mob the camp's `xpSources.campCleared` entry; a camp without one (a corner
+ * camp) pays no bonus. Self-kills and ally kills pay nothing (O5). Each
  * level gained raises max health by the class's share of its base health (O3) and max aether,
  * heals and refills by the raise only while the Legend is alive (O4), and emits `level-up`.
  * With `content.legendsStartAtMaxLevel` (a Duel, SCRUM-444) each Legend that spawns is raised to its
@@ -62,8 +64,9 @@ export class ProgressionSystem implements System {
   }
 
   /**
-   * Buffers every award this match pays: a kill (`entity-died`), a destroyed structure and XP owed
-   * to a Legend that has respawned. Not called when the match has no match XP (DEC-380 (1)).
+   * Buffers every award this match pays: a kill (`entity-died`), a destroyed structure, a cleared
+   * camp and XP owed to a Legend that has respawned. Not called when the match has no match XP
+   * (DEC-380 (1)).
    */
   private listenForAwards(state: GameState): void {
     state.events.on('entity-died', ({ entityId, killer }) => {
@@ -81,6 +84,36 @@ export class ProgressionSystem implements System {
           xp: this.content.xpSources.structureDestroyed,
         });
       }
+    });
+    // balancing.md "Camps": the Legend that killed a camp's last mob earns the clear bonus on top of
+    // the mob XP it was paid per kill; a last hit from anything but a Legend pays no bonus.
+    // `SpawnSystem` emits it after this system's pass, so the bonus lands one tick after the kill
+    // XP, as structure XP does.
+    state.events.on('camp-cleared', ({ entityId, killerId }) => {
+      // A killer waiting to respawn is owed the bonus, as it is owed a kill (O4).
+      const killer =
+        killerId === null
+          ? undefined
+          : (state.entities.get(killerId) ?? state.respawns.legendOf(killerId));
+      const camp = state.entities.get(entityId);
+      const campTeam = camp?.findComponent(TeamMembership)?.team;
+      const xp =
+        camp === undefined ? undefined : this.content.xpSources.campCleared[camp.definitionId];
+      if (
+        killer === undefined ||
+        campTeam === undefined ||
+        xp === undefined ||
+        this.legendOf(killer) === undefined
+      ) {
+        return;
+      }
+      this.pending.push({
+        kind: 'camp-cleared',
+        killerId: killer.id,
+        victimId: entityId,
+        victimTeam: campTeam,
+        xp,
+      });
     });
     // The listener only buffers: the XP is paid in this system's own pass on the next tick, as
     // architecture 03 §4 requires of a listener that changes state.
@@ -153,7 +186,7 @@ export class ProgressionSystem implements System {
         }
         continue;
       }
-      if (award.kind === 'kill') {
+      if (award.kind === 'kill' || award.kind === 'camp-cleared') {
         // O4 pays a Legend killed earlier: still in the store this tick, or waiting to respawn.
         const killer = state.entities.get(award.killerId);
         if (killer !== undefined) {
@@ -188,7 +221,9 @@ export class ProgressionSystem implements System {
       victimId: award.victimId,
       victimTeam: award.victimTeam,
       xp: award.xp,
-      ...(award.kind !== 'kill' && award.maxLevels !== undefined && { maxLevels: award.maxLevels }),
+      ...(award.kind !== 'kill' &&
+        award.kind !== 'camp-cleared' &&
+        award.maxLevels !== undefined && { maxLevels: award.maxLevels }),
     };
   }
 
@@ -200,7 +235,7 @@ export class ProgressionSystem implements System {
     }
     const curve = this.content.curves.get(progression.curveId);
     const capped =
-      award.kind === 'kill' || award.maxLevels === undefined
+      award.kind === 'kill' || award.kind === 'camp-cleared' || award.maxLevels === undefined
         ? award
         : {
             ...award,

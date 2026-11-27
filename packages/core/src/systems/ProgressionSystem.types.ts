@@ -20,8 +20,8 @@ export type ProgressionContent = {
    */
   readonly legendsStartAtMaxLevel?: boolean;
   /**
-   * When `false`, nothing earns match XP: no kill, destroyed structure or respawn pays any (a Duel,
-   * `DUEL_RULES.hasMatchXp`, DEC-380 (1)). Absent means XP is earned as normal.
+   * When `false`, nothing earns match XP: no kill, destroyed structure, cleared camp or respawn
+   * pays any (a Duel, `DUEL_RULES.hasMatchXp`, DEC-380 (1)). Absent means XP is earned as normal.
    */
   readonly hasMatchXp?: boolean;
 };
@@ -34,6 +34,9 @@ type KillAward = {
   readonly victimTeam: Team;
   readonly xp: number;
 };
+
+/** One cleared camp waiting for this system's pass: the bonus to its last mob's killer. */
+type CampAward = Omit<KillAward, 'kind'> & { readonly kind: 'camp-cleared' };
 
 /**
  * One team-wide award: `xp` for every Legend of `team`, for a structure it destroyed (DEC-186) or a
@@ -62,4 +65,4 @@ type RespawnAward = {
 };
 
 /** One award this system gives, waiting for its pass. */
-export type Award = KillAward | TeamAward | RespawnAward;
+export type Award = KillAward | CampAward | TeamAward | RespawnAward;

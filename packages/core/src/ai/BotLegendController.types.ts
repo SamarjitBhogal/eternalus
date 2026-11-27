@@ -23,6 +23,14 @@ export type BotMemory = {
    * (B66-F2). Only its own commands steer a Legend, so this matches its heading.
    */
   readonly isHalted: boolean;
+  /** Path cache (11 §6): x of the last A\* search's destination; `null` when none is cached. */
+  readonly pathGoalX: number | null;
+  /** Path cache: y of the last A\* search's destination; `null` when none is cached. */
+  readonly pathGoalY: number | null;
+  /** Path cache: x of the waypoint that search gave; `null` when none is cached. */
+  readonly pathStepX: number | null;
+  /** Path cache: y of the waypoint that search gave; `null` when none is cached. */
+  readonly pathStepY: number | null;
 };
 
 /** What the bot controllers read besides the state, injected so they hold no content. */

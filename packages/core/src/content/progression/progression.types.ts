@@ -27,6 +27,12 @@ export type XpSourcesDefinition = {
   /** A destroyed structure: this much XP to every Legend of the destroying team (DEC-186). */
   readonly structureDestroyed: number;
   /**
+   * A cleared camp: this much XP to the Legend that killed its last mob, on top of the XP each camp
+   * mob paid its own killer (balancing.md "Camps"), by camp structure definition id. A camp with no
+   * entry pays no bonus.
+   */
+  readonly campCleared: Readonly<Record<string, number>>;
+  /**
    * The mobs whose kill pays every Legend of the killer's team instead of the killer, by mob
    * definition id: `xp` each, but never more than lifts a Legend `maxLevels` levels (DEC-237).
    */
