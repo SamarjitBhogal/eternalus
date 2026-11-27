@@ -5,7 +5,7 @@ import type { BuildingCollapse } from './MapDestructionSystem.types';
 
 /**
  * Collapses what falls with a destroyed map object (a building's contents; the wall turret on a
- * pylon, DEC-375) through ordinary damage events before DeathSystem retires them. Each one falls
+ * pylon, DEC-388) through ordinary damage events before DeathSystem retires them. Each one falls
  * at once (`DamagePipeline.collapse`), with the object's killer as its killer.
  */
 export class MapDestructionSystem implements System {

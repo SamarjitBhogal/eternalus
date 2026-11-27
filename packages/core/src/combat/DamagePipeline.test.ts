@@ -107,7 +107,7 @@ describe('DamagePipeline', () => {
     });
   });
 
-  it('collapses a target in one hit that no step reduces, and names the killer (DEC-375)', () => {
+  it('collapses a target in one hit that no step reduces, and names the killer (DEC-388)', () => {
     const state = setUp();
     healthOf(state).addShield('entity-50', 10);
     const halving = { name: 'halving', adjust: ({ amount }: { amount: number }) => amount / 2 };

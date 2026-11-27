@@ -16,7 +16,7 @@ import {
 } from './__fixtures__/turretMatch';
 
 /*
- * DEC-375 (Owner Calls v98, HC-B36 B): a wall turret and its pylon each have a health bar. The
+ * DEC-388 (Owner Calls v98, HC-B36 B): a wall turret and its pylon each have a health bar. The
  * pylon's fall takes the turret with it on the same tick; the turret's fall leaves the pylon
  * standing with its own health.
  */
@@ -69,7 +69,7 @@ const pylonMatch = () => {
   };
 };
 
-describe('Simulation wall turret pylons (DEC-375)', () => {
+describe('Simulation wall turret pylons (DEC-388)', () => {
   it('destroys the turret on the same tick as its pylon, and pays the turret XP to the Legend that destroyed the pylon', () => {
     const m = pylonMatch();
 
@@ -129,7 +129,7 @@ describe('Simulation wall turret pylons (DEC-375)', () => {
     expect(m.xp.filter(({ entityId }) => entityId === m.legendId)).toEqual([
       expect.objectContaining({ victimId: m.turretId, amount: XP_SOURCES.destroyerOnly.turret }),
     ]);
-    // A ruin first, then destroyed: destroyed wins (DEC-376).
+    // A ruin first, then destroyed: destroyed wins (DEC-389).
     expect(m.pylon()).toMatchObject({ condition: 'destroyed' });
   });
 
@@ -160,8 +160,8 @@ const attackTurret = (kind: string, gap: number) => {
   const turretId = turretOf(feature)?.id ?? '';
   const pylonId = state.worldObjects?.mountOf(turretId) ?? '';
   if (pylonId === '') throw new Error('The turret has no pylon.');
-  const pylonFull = simulation.snapshot().mapObjects?.find(({ id }) => id === feature.id)?.health
-    ?.max;
+  const pylonFull = simulation.snapshot().mapObjects?.find(({ id }) => id === feature.id)
+    ?.health?.max;
   simulation.enqueueCommand({ type: 'attack-target', actorId, targetId: turretId });
   run(config.tickRate * 3);
   const pylon = simulation.snapshot().mapObjects?.find(({ id }) => id === feature.id);

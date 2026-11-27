@@ -624,12 +624,12 @@ All decoration stays in the existing render layers and adds no new shield-immuni
 ### 2026-11-23 — A structure's body that outlives its structure (DEC-341)
 
 A structure's body that outlives its structure (a lane tower's fort, a wall turret's pylon) is a
-ruin: its snapshot's `condition` is `ruin` (DEC-376), it still blocks, and its cells stay closed.
+ruin: its snapshot's `condition` is `ruin` (DEC-389), it still blocks, and its cells stay closed.
 The client draws one ruin per footprint polygon, so a ruined fort keeps the shape of its walls. A
 destroyed object draws one ruin over its whole box. The pylon stays as a ruin (DEC-341 (2)), with
-its own health and bar (DEC-375). Until the tower-ruins work (#98) lands, every wall of a fallen
+its own health and bar (DEC-388). Until the tower-ruins work (#98) lands, every wall of a fallen
 tower's fort blocks (DEC-217 (12)). #98 lets a fort's keep and the struck wall fall; its merge
-note is in DEC-341 (2).
+note is in DEC-341 (2) and DEC-388.
 
 ## Related
 

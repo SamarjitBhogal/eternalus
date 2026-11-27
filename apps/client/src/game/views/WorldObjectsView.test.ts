@@ -61,7 +61,7 @@ describe('WorldObjectsView', () => {
     expect(view.revision).toBe(1);
     expect(renderer.calls.filter((call) => call.op === 'fillPolygon').length).toBeGreaterThan(0);
   });
-  it("draws a pylon's own bar under it and its turret's bar above it, each by its own health (DEC-375)", () => {
+  it("draws a pylon's own bar under it and its turret's bar above it, each by its own health (DEC-388)", () => {
     const pylon: MapObject = { ...HOUSE, id: 'pylon', kind: 'turret' };
     const view = new WorldObjectsView([pylon]);
     const renderer = new RecordingRenderer();
@@ -86,7 +86,7 @@ describe('WorldObjectsView', () => {
       { y: -S.barGap - S.barHeight, width: S.barWidth / 4 },
     ]);
   });
-  it("keeps a ruined pylon's own bar with its ruin once its turret fell, and draws no bar for a destroyed one (DEC-375)", () => {
+  it("keeps a ruined pylon's own bar with its ruin once its turret fell, and draws no bar for a destroyed one (DEC-388)", () => {
     const pylon: MapObject = { ...HOUSE, id: 'pylon', kind: 'turret' };
     const view = new WorldObjectsView([pylon]);
     const renderer = new RecordingRenderer();

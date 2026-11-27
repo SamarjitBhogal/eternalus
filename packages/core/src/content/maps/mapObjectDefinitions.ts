@@ -21,8 +21,8 @@ export const MAP_OBJECT_HEALTH = {
   // DEC-217 (13): only towers share a pool, the palace and gates keep their own health).
   'spawner-tower': 3000,
   'buff-tower': 2500,
-  // The pylon's own health: the turret is mounted on it and has its own (DEC-375). The pair's 600.
-  turret: 600, // TUNE: provisional, owner card pending (DEC-375)
+  // The pylon's own health: the turret is mounted on it and has its own (DEC-388). The pair's 600.
+  turret: 600, // TUNE: provisional, owner card HC-Q120 (DEC-388)
   gate: 3000,
 } as const satisfies Record<MapObjectKind, number | null>;
 

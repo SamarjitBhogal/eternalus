@@ -59,7 +59,7 @@ describe('Simulation wall turrets', () => {
     }
   });
 
-  it("gives each turret's pylon map object its own entity, 600 health and the turret's breakability, and reports the mounted turret's health on it (DEC-375)", () => {
+  it("gives each turret's pylon map object its own entity, 600 health and the turret's breakability, and reports the mounted turret's health on it (DEC-388)", () => {
     const { simulation, state, turretOf } = setUp();
     const { entities, mapObjects = [] } = simulation.snapshot();
 
@@ -84,7 +84,7 @@ describe('Simulation wall turrets', () => {
     ).toHaveLength(TURRET_FEATURES.length);
   });
 
-  it("takes a hit on the turret into its pool only, and a hit on its pylon into the pylon's only (DEC-375)", () => {
+  it("takes a hit on the turret into its pool only, and a hit on its pylon into the pylon's only (DEC-388)", () => {
     // Breakable from the start, so a hit lands before two BuffTowers fall.
     const breakable = new ContentCatalogue<StructureDefinition>(
       STRUCTURE_DEFINITIONS.all().map((definition) =>
@@ -123,7 +123,7 @@ describe('Simulation wall turrets', () => {
     expect(turretOf(feature)?.health).toEqual({ current: 500, max: 600 });
   });
 
-  it("keeps a destroyed turret's pylon standing and blocking, with its own health, its footprint and nav cells kept, as a fallen lane tower's fort (DEC-341, HC-Q91, DEC-375)", () => {
+  it("keeps a destroyed turret's pylon standing and blocking, with its own health, its footprint and nav cells kept, as a fallen lane tower's fort (DEC-341, HC-Q91, DEC-388)", () => {
     // The lethal hits below skip the damage pipeline, which the test invariants refuse.
     const { simulation, state, run, turretOf } = setUp({ debug: RELEASE_DEBUG_CONFIG });
     const tower = MAP.features.find(

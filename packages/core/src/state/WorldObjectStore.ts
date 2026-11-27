@@ -33,7 +33,7 @@ export class WorldObjectStore {
    * An object named in `owners` gets no entity of its own: its health is its structure's (one pool,
    * DEC-185 B: a lane tower's fort map object, DEC-217 (13); a wall turret's pylon), so a hit on it
    * is a hit on the structure. It outlives its structure as a ruin that still blocks (`removed`).
-   * An object named in `mounted` (a wall turret's pylon, DEC-375) gets its own entity and health,
+   * An object named in `mounted` (a wall turret's pylon, DEC-388) gets its own entity and health,
    * as any object does, and a structure is mounted on it: see `contentsOf` and `removed`.
    *
    * @param options - The objects, how to spawn them, and the structures some of them are bodies
@@ -84,7 +84,7 @@ export class WorldObjectStore {
   }
 
   /**
-   * Links the object entity `body` to the structure `structureId` mounted on it (DEC-375), and gives
+   * Links the object entity `body` to the structure `structureId` mounted on it (DEC-388), and gives
    * it that structure's breakability at spawn; `StructureSystem` keeps the two equal from then on.
    * Call it before the body's record is pushed.
    *
@@ -109,7 +109,7 @@ export class WorldObjectStore {
    * Marks only actual retired entities destroyed; a roof toggle never changes this state. A
    * retired structure's own map object stays standing and blocking: it is a ruin from then on
    * (DEC-341, HC-Q91; fort pieces become ruins that block, DEC-219 (a), DEC-227 Q-C). A lane
-   * tower's fort has no health left to take. A wall turret's pylon keeps its own (DEC-375).
+   * tower's fort has no health left to take. A wall turret's pylon keeps its own (DEC-388).
    */
   public removed(entityId: string): void {
     const object = this.entityObjects.get(entityId);
@@ -142,7 +142,7 @@ export class WorldObjectStore {
 
   /**
    * The entity id of the map object the standing structure `structureId` is mounted on (a wall
-   * turret's pylon, DEC-375), or `undefined` when none does.
+   * turret's pylon, DEC-388), or `undefined` when none does.
    */
   public mountOf(structureId: string): string | undefined {
     const index = this.mounts.get(structureId);
@@ -158,7 +158,7 @@ export class WorldObjectStore {
   /**
    * What falls with the map object `buildingId`, in deterministic placement order: the physical
    * contents of a building, and the structure mounted on the object (a wall turret on its pylon,
-   * DEC-375).
+   * DEC-388).
    */
   public contentsOf(buildingId: string): readonly string[] {
     return this.records.flatMap(({ object, entityId, mounted }) => [
@@ -208,7 +208,7 @@ export class WorldObjectStore {
     return null;
   }
 
-  /** Destroyed wins over a ruin: a pylon can be a ruin first and fall later (DEC-375). */
+  /** Destroyed wins over a ruin: a pylon can be a ruin first and fall later (DEC-388). */
   private conditionOf(id: string): MapObjectCondition {
     if (this.destroyed.has(id)) return 'destroyed';
     return this.ruined.has(id) ? 'ruin' : 'standing';

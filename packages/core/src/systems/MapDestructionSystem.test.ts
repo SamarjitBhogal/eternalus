@@ -78,7 +78,7 @@ describe('MapDestructionSystem', () => {
     expect(worldObjects.snapshot().every((o) => o.condition === 'destroyed')).toBe(true);
   });
 
-  it('fells every content in full though a damage step would weaken the hit (DEC-375)', () => {
+  it('fells every content in full though a damage step would weaken the hit (DEC-388)', () => {
     const halving = { name: 'halving', adjust: ({ amount }: { amount: number }) => amount / 2 };
     const { state, hits, fell } = setUp(new DamagePipeline([halving]));
 

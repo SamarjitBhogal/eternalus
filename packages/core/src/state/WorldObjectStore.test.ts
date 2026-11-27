@@ -143,7 +143,7 @@ describe('WorldObjectStore', () => {
     expect(world.destroyedIds.has('fort')).toBe(false);
   });
 
-  it("gives an object a structure is mounted on (a wall turret's pylon) its own entity, health and the structure's breakability, and leaves it standing with them, as a ruin, once the structure is gone (DEC-375)", () => {
+  it("gives an object a structure is mounted on (a wall turret's pylon) its own entity, health and the structure's breakability, and leaves it standing with them, as a ruin, once the structure is gone (DEC-388)", () => {
     const factory = fixtureFactory();
     const entities = new EntityStore();
     const turret = factory.create('obstacle', MAP_OBJECT_DEFINITIONS.rock.id, {
@@ -207,7 +207,7 @@ describe('WorldObjectStore', () => {
     pylonHealth?.applyDamage(500);
     entities.remove(pylonId, 'died');
     world.removed(pylonId);
-    // A ruin first, then destroyed: destroyed wins (DEC-376).
+    // A ruin first, then destroyed: destroyed wins (DEC-389).
     expect(world.snapshot()[0]).toMatchObject({ condition: 'destroyed' });
     expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBeNull();
   });

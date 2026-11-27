@@ -316,10 +316,10 @@ lock the outer zones (`lockedBy`) until they die (`MatchDirector` timeline).
 | `BuffTower` destroyed          | its shield bars removed everywhere; team buff and enemy debuff aura end                                                                        | MVP        |
 | `Gate`/`WallSegment` destroyed | footprint cleared; flow fields rebuilt; minimap terrain dirty                                                                                  | MVP        |
 | `Stronghold` destroyed         | `match-ended` with the winner                                                                                                                  | MVP        |
-| `Turret` destroyed             | its pylon stays as a ruin that blocks, with its own health (DEC-341 (2), DEC-375); XP only to the destroyer (DEC-341 (3), 05 §18)              | MVP        |
-| a turret's pylon destroyed     | the turret on it falls on the same tick, with the pylon's killer as its killer (DEC-375; `MapDestructionSystem`, on the pylon's `entity-died`) | MVP        |
+| `Turret` destroyed             | its pylon stays as a ruin that blocks, with its own health (DEC-341 (2), DEC-388); XP only to the destroyer (DEC-341 (3), 05 §18)              | MVP        |
+| a turret's pylon destroyed     | the turret on it falls on the same tick, with the pylon's killer as its killer (DEC-388; `MapDestructionSystem`, on the pylon's `entity-died`) | MVP        |
 
-Every effect is a listener on `structure-destroyed` in the owning system; `StructureSystem` never
+Every effect is a listener on a typed event (`structure-destroyed`; for a map object, `entity-died`) in the owning system; `StructureSystem` never
 calls another system (rule 12).
 
 ## 9. Obstacles
@@ -469,7 +469,7 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   builds a `Turret` structure: definition `turret` in `content/structures/structureCatalogue.ts`
   (base health from balancing.md, the map pylon's radius, no lane, the walls' breakability rule,
   DEC-341). Reach to the turret is measured to its pylon map object (`hasMapFootprint`). The
-  turret is mounted on the pylon (`isMounted`, DEC-375, which replaces the one health pool of
+  turret is mounted on the pylon (`isMounted`, DEC-388, which replaces the one health pool of
   DEC-332 (1)): it has its own entity and health (a provisional `TUNE` in
   `content/maps/mapObjectDefinitions.ts`), and it breaks under the turret's rule
   (`StructureSystem` flips both). Its fall takes the turret with it on the same tick:
@@ -477,7 +477,7 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   pylon's killer as its killer, so the turret's XP goes to the Legend that felled the pylon. Like
   a fort, the pylon outlives the turret: it stays as a ruin that blocks, with its own health, and
   its footprint and nav cells stay (DEC-341, HC-Q91). `WorldObjectStore.removed` marks every such
-  body a ruin, and the snapshot's `MapObjectSnapshot.condition` is `ruin` (DEC-376), so the client
+  body a ruin, and the snapshot's `MapObjectSnapshot.condition` is `ruin` (DEC-389), so the client
   draws a fallen tower's fort and a dead turret's pylon as ruins (06; the fort's walls still
   block, DEC-217 (12), until the tower-ruins work (#98) lands). The snapshot also reports the
   turret's health on its pylon (`mountedHealth`), so the client draws the turret's bar above the

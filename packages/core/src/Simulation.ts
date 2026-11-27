@@ -247,7 +247,7 @@ export class Simulation {
         // At once, so walking and a dash both stop seeing it from now on (critic r2 F1). A retired
         // structure is not a map object (`objectFor` gives nothing), so its body (a tower's fort,
         // a turret's pylon) stays as a ruin that blocks (DEC-341, HC-Q91). A pylon that falls
-        // itself is its own entity, so it goes (DEC-375).
+        // itself is its own entity, so it goes (DEC-388).
         const object = worldObjects.objectFor(entityId);
         if (object !== undefined) walls.remove(object.id);
       });
@@ -414,7 +414,7 @@ export class Simulation {
    * share one pool (DEC-217 (13)): the palace's and the gates' objects do not block, so they keep
    * their own health, and their outline is walked on (`Footprint.isWalkOn`): a shot flies over it
    * unless it was fired at the structure. An object that a structure is mounted on (a wall turret's
-   * pylon, `isMounted`, DEC-375) keeps its own health too, and its fall takes the structure
+   * pylon, `isMounted`, DEC-388) keeps its own health too, and its fall takes the structure
    * with it. A body outlives its structure as a ruin that blocks (`WorldObjectStore.removed`,
    * DEC-341).
    *

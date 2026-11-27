@@ -43,10 +43,10 @@ export type MapObject = {
 };
 
 /**
- * What is left of a map object (DEC-376, HC-B38 (3)). `standing`: it is whole. `ruin`: a
+ * What is left of a map object (DEC-389, HC-B38 (3)). `standing`: it is whole. `ruin`: a
  * structure's body whose structure is gone (a lane tower's fort, a wall turret's pylon); it still
  * stands and blocks, and it draws as ruins (DEC-341, HC-Q91); a pylon keeps its own health
- * (DEC-375). `destroyed`: its own health ran out; it blocks no more and draws as rubble.
+ * (DEC-388). `destroyed`: its own health ran out; it blocks no more and draws as rubble.
  */
 export type MapObjectCondition = 'standing' | 'ruin' | 'destroyed';
 
@@ -58,7 +58,7 @@ export type MapObjectSnapshot = {
   readonly condition: MapObjectCondition;
   /**
    * The health of the structure mounted on it, while that stands (a wall turret on its pylon,
-   * DEC-375). `health` is then the object's own.
+   * DEC-388). `health` is then the object's own.
    */
   readonly mountedHealth?: { readonly current: number; readonly max: number };
 };

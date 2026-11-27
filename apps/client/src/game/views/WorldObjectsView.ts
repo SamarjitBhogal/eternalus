@@ -53,7 +53,7 @@ export class WorldObjectsView implements WorldLayer {
   /**
    * Draws nearby health bars and low ruined silhouettes without changing collision geometry. An
    * object's own bar sits under it; the structure mounted on it shows its bar above it (a wall turret
-   * on its pylon, DEC-375). A ruin with health left (a pylon whose turret fell) keeps its bar.
+   * on its pylon, DEC-388). A ruin with health left (a pylon whose turret fell) keeps its bar.
    */
   public draw(renderer: Renderer, view = this.currentView?.()): void {
     if (view === undefined) return;

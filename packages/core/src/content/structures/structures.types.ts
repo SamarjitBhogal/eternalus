@@ -37,7 +37,7 @@ export type StructureDefinition = EntityDefinitionBase & {
    * Whether the structure stands on its map object of the same id (`hasMapFootprint`), as a wall
    * turret stands on its pylon. The structure is mounted on that object. The object keeps its own
    * entity and health. The object breaks under this structure's rule. When the object falls, the
-   * structure falls with it on the same tick (DEC-375). When the structure falls, the object stays
+   * structure falls with it on the same tick (DEC-388). When the structure falls, the object stays
    * standing as a ruin, with its own health.
    */
   readonly isMounted?: true;

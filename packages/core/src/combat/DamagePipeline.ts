@@ -57,7 +57,7 @@ export class DamagePipeline {
 
   /**
    * Takes all of `targetId`'s health from `source` in one hit that no step changes: it falls with
-   * what it stands on or in (a building's contents, 07 §13; a wall turret on its pylon, DEC-375).
+   * what it stands on or in (a building's contents, 07 §13; a wall turret on its pylon, DEC-388).
    * No modifier can leave it alive, so it falls on the same tick. It is announced as `apply`
    * announces a lethal hit, so the fall scores and pays as a last hit does.
    */

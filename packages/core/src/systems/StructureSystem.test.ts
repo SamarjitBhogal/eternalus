@@ -85,7 +85,7 @@ describe('StructureSystem', () => {
     expect(changed).toEqual([{ entityId: gate.id, isBreakable: true, lane: 'lane-0' }]);
   });
 
-  it("flips the map object a structure is mounted on (a wall turret's pylon) with it (DEC-375)", () => {
+  it("flips the map object a structure is mounted on (a wall turret's pylon) with it (DEC-388)", () => {
     const { state, system, gate, buffTowers, kill } = setUp();
     const [first, second] = buffTowers;
     if (first === undefined || second === undefined) {

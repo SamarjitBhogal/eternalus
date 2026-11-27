@@ -827,7 +827,7 @@ Reply inline (`Decision: …`).
       One turret lifts a Legend by 2 levels at every level from 1 to 20. The old rule (DEC-190)
       was at most 1 level. Options: (A, built) keep 2 levels; (B) cap it at 1 level, as the boss
       reward is capped (DEC-237). Also: when a minion lands the last hit, no one gets the XP.
-  - Answered 2026-11-26 (DEC-376): "A: keep 2 levels (built)". Nothing changes on
+  - Answered 2026-11-26 (DEC-389): "A: keep 2 levels (built)". Nothing changes on
     `feat/wall-turrets`.
 
 - [x] **HC-B38 — Better than the design, sign-off asked: 5 code ideas from the critic
@@ -844,7 +844,7 @@ Reply inline (`Decision: …`).
       people on different events and share no data.
       (5) Built (critic round 5): the map view picks one ruin look per fallen object (one ruin over
       the whole box, or one ruin per wall piece) and uses it both to cull and to draw.
-  - Answered 2026-11-26 (DEC-376): "A: sign off (1) to (5) as above — build 3 if we can somehow
+  - Answered 2026-11-26 (DEC-389): "A: sign off (1) to (5) as above — build 3 if we can somehow
     get it in cleaner." (1), (4) and (5) stay as built; (2) waits for #98. (3) is built on
     `feat/wall-turrets`: `MapObjectSnapshot.condition` (standing, ruin, destroyed). No pinned
     replay hash covers map objects, so no golden hash changed.
@@ -877,12 +877,17 @@ Reply inline (`Decision: …`).
       aggro entry `turret-attacking-ally-minion` never matches, because `unitClassOf` does not map
       the `turret` kind (`content/ai/unitClasses.ts`). Map `turret` there to turn it on. Tick
       this part when Samarjit has read it.
-  - Answered 2026-11-26 (DEC-375): "B: give the pylon its own health bar". It replaces DEC-332
+  - Answered 2026-11-26 (DEC-388): "B: give the pylon its own health bar". It replaces DEC-332
     (1); DEC-335 (2) stays signed off. Built on `feat/wall-turrets`: the pylon and the turret
     each have a health bar; the pylon's fall takes the turret with it, and the turret's fall
     leaves the pylon. The pylon's health and the reward when it takes the turret are defaults on
-    a new card (DEC-375 (4)). Only the FYI for Samarjit stays open: tick this item when he has
+    a new card (DEC-388 (4)). Only the FYI for Samarjit stays open: tick this item when he has
     read it.
+
+- [ ] **HC-Q120 — Wall turret pylon defaults (DEC-388; `feat/wall-turrets`, PR 4).** Owner card
+      HC-Q120 on Owner Calls v101. (1) The pylon's health is 600, provisional. (2) The turret's
+      XP goes to the pylon's destroyer. (3) The pylon takes the turret's breakability rule.
+      Built as these defaults. Say "no" to an item and it goes back.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays

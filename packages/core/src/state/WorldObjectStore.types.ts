@@ -12,7 +12,7 @@ export type WorldObjectRecord = {
   readonly health: Health | null;
   /** The box around every footprint, so `blockingAt` skips objects far from the circle. */
   readonly bounds: Rect;
-  /** The structure mounted on it while that stands (a wall turret on its pylon, DEC-375). */
+  /** The structure mounted on it while that stands (a wall turret on its pylon, DEC-388). */
   readonly mounted?: { readonly entityId: string; readonly health: Health };
 };
 
@@ -29,7 +29,7 @@ export type WorldObjectStoreOptions = {
   /** Map object id → the id of the structure in `entities` the object is the body of. */
   readonly owners?: ReadonlyMap<string, string>;
   /**
-   * Map object id → the id of the structure in `entities` is mounted on the object (DEC-375): the object
+   * Map object id → the id of the structure in `entities` is mounted on the object (DEC-388): the object
    * keeps its own health and entity, and its fall takes the structure with it.
    */
   readonly mounted?: ReadonlyMap<string, string>;
