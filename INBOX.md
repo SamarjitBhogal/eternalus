@@ -938,6 +938,9 @@ Reply inline (`Decision: …`).
       the whole Duel rule set, which the server fills from `DUEL_RULES`, so every rule that
       changes the simulation is in the replay setup, without one new field per rule. This covers
       the `DuelOptions` note under DEC-36 above and claudiodh's item (9). Decision: …
+  - 2026-11-27: answered (DEC-406, Owner Calls v103). (1) A: 03 §4 now names the exception, and
+    its event table lists the listener (built in `chore/duel-max-level-gate-followups`). (2) A: a
+    follow-up PR builds the `DuelOptions` rule set. It is not built yet, so this item stays open.
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
       of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only

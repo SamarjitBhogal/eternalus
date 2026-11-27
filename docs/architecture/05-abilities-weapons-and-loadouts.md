@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -980,8 +980,8 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   emits no `xp-gained` and no `level-up` (`INBOX.md`, the DEC-36 item, question (1)).
   The raise is made in the listener, which is an exception to 03 §4 (a listener defers a state
   change to its system's pass): the roster spawns in the `Simulation` constructor, before any
-  pass, so a deferred raise would show level-1 Legends for the first tick. The exception waits
-  for the owner's sign-off (`INBOX.md` HC-B46 (1)).
+  pass, so a deferred raise would show level-1 Legends for the first tick. The owner signed off
+  the exception (DEC-406), and 03 §4 names it.
 - **HUD (`feat/hud-and-character-select`, 2026-10-24).** §15's `PlayerSnapshot` does not exist
   in core yet. The client's `MatchBridge` joins the player's `EntitySnapshot` groups into
   `PlayerHudSnapshot` (`bridge/hud.types.ts`), as §15 sets (DEC-232); until `SnapshotSystem` fills
