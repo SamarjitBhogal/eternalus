@@ -27,6 +27,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   team: 'dark',
   transform: { x, y, radius: 0.4, facing },
   health: null,
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
@@ -104,6 +105,33 @@ describe('EntityLayer', () => {
     layer.draw(new RecordingRenderer());
 
     expect(spy.drawn.map((state) => state.position)).toEqual([{ x: 2.5, y: 1 }]);
+  });
+
+  it('interpolates a jump height like the position; a new entity starts at its height (DEC-390)', () => {
+    const spy = new SpyView();
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      () => false,
+      () => null,
+    );
+    const lifted = (id: string, height: number): EntitySnapshot => ({
+      ...unit(id, 0, 0),
+      elevation: { height },
+    });
+
+    layer.show(
+      snapshot(1, [lifted('a', 0.4), unit('mob', 5, 0)]),
+      snapshot(2, [lifted('a', 1.2), unit('mob', 5, 0), lifted('new', 1)]),
+      0.25,
+      null,
+    );
+    layer.draw(new RecordingRenderer());
+
+    expect(spy.drawn.map((state) => [state.entity.id, state.height])).toEqual([
+      ['a', 0.6],
+      ['mob', 0],
+      ['new', 1],
+    ]);
   });
 
   it('turns the facing between the last two snapshots by alpha, as a unit vector (08 §8)', () => {
