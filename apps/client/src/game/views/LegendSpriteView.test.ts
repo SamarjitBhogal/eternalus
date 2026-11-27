@@ -13,6 +13,7 @@ const entity: EntitySnapshot = {
   transform: { x: 1, y: 2, radius: 0.75, facing: { x: 0, y: 1 } },
   health: { current: 800, max: 800 },
   aether: null,
+  elevation: null,
   progression: null,
   area: null,
   capture: null,
