@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -265,6 +265,11 @@ members are created through `EntityFactory`, the `Horde` record (§4) is inserte
 `state.hordes`, and only then are `entity-spawned` (per member) and
 `horde-spawned { hordeId, lane, team, memberIds }` emitted. No listener creates the record, so no
 mob ever exists without its horde (MS-25).
+
+Single-unit requests use `spawn-requested { team, definitionId, position }` (GL-Q22).
+The match director requests each Sovereign at tick 0. In its next pass, `SpawnSystem` counts
+each request against the team unit cap, builds the unit through `EntityFactory`, and emits
+`entity-spawned` for a successful spawn. No horde record is created.
 
 **Pipeline positions.** `CommandApplySystem` → `AiSystem` → `HordeSystem` → `StatusEffectSystem`
 → `MovementSystem` → `CollisionSystem` (10 §9, DEC-121 (c)) → `SpaceSystem` → `StuckSystem`

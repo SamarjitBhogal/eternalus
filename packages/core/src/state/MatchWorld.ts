@@ -1,5 +1,6 @@
 import type { MapDefinition } from '../content/maps/maps.types';
 import type { WorldMap } from '../map/WorldMap';
+import { throneStandingPoint } from '../map/buildingPlacement';
 import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
 import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
@@ -49,5 +50,14 @@ export class MatchWorld {
   public strongholdOf(team: PlayableTeam): Vec2 | undefined {
     const stronghold = this.strongholds.get(team);
     return stronghold === undefined ? undefined : { x: stronghold.x, y: stronghold.y };
+  }
+
+  /** The authored throne-room standing point for a generated Citadel. */
+  public throneOf(team: PlayableTeam): Vec2 | undefined {
+    const stronghold = this.definition.features.find(
+      ({ kind, team: owner }) => kind === 'stronghold' && owner === team,
+    );
+    if (stronghold?.wallBoundary === undefined) return undefined;
+    return throneStandingPoint(stronghold, team, stronghold.wallBoundary);
   }
 }

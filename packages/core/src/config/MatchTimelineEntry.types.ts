@@ -17,6 +17,7 @@ export type TimelineFrame = {
 /** Each timeline action's fields, by kind. A new kind is one line here and one handler class. */
 type TimelineActionPayloads = {
   readonly 'enter-phase': { readonly phase: MatchPhase };
+  readonly 'spawn-sovereigns': { readonly definitionId: string };
 };
 
 /** The kind of a timeline action, e.g. `enter-phase`. */

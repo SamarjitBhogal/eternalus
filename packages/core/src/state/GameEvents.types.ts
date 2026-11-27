@@ -1,6 +1,6 @@
 import type { ShieldBar } from '../components/Health.types';
 import type { MatchPhase } from '../config/matchPhases';
-import type { Team } from '../teams/teams.types';
+import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { EntityId, RemovalCause } from './EntityStore.types';
 import type { MatchResult } from './MatchResult.types';
@@ -38,6 +38,11 @@ type StatusPayload = {
  * Ids of things that have no type yet (lanes, hordes, statuses, abilities) are plain strings.
  */
 export type GameEventMap = {
+  readonly 'spawn-requested': {
+    readonly team: PlayableTeam;
+    readonly definitionId: string;
+    readonly position: Vec2;
+  };
   readonly 'entity-spawned': {
     readonly entityId: EntityId;
     readonly kind: string;
