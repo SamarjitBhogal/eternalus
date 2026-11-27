@@ -10,6 +10,7 @@ import {
   PROJECTILE_DOT_SIZE,
   PROJECTILE_DROP_FADE_FROM,
   PROJECTILE_ENDING_LOOKS,
+  PROJECTILE_LIT_COLOR,
   PROJECTILE_MIST_DOT_COUNT,
   PROJECTILE_MIST_DOT_SIZE,
   PROJECTILE_MIST_END_RADIUS,
@@ -27,7 +28,8 @@ import type { Point, ProjectileEndingLook } from './ProjectileView.types';
  * The placeholder look for projectiles (arrows, bolts): a small dot in the shooter's team colour
  * with a bright core, and a short streak behind it, opposite its facing. A shot that drops (an
  * arrow) flies an artificial arc (DEC-322 (2)): its shadow dot below it drops away to mid-flight,
- * then closes in and meets it at the end of its range. When a shot ends (DEC-306), a
+ * then closes in and meets it at the end of its range. A lit shot (it flew over lava and burns what
+ * it lands on, HC-Q89, DEC-345) is drawn in `PROJECTILE_LIT_COLOR`. When a shot ends (DEC-306), a
  * bolt thins into a mist that grows and fades, and an arrow lies still on its shadow, then fades.
  * The look of each id is in `PROJECTILE_ENDING_LOOKS`. It has no mini map marker. Final projectile
  * art replaces it.
@@ -58,7 +60,11 @@ export class ProjectileView extends DefaultEntityView {
     if (this.lookOf(state) === 'drop') {
       this.drawShadow(state, 1, renderer);
     }
-    this.drawShot(state, this.colorOf(state.entity.team), renderer);
+    const color =
+      state.entity.projectile?.isLit === true
+        ? PROJECTILE_LIT_COLOR
+        : this.colorOf(state.entity.team);
+    this.drawShot(state, color, renderer);
   }
 
   /** The shot's ending look; throws for an id with none, which the content check rules out. */

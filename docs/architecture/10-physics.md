@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-26
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -198,7 +198,24 @@ Overlap tests are therefore not enough:
   sprint). **Swept when fast**: any unit whose displacement this tick exceeds its radius.
   Projectiles are swept by `ProjectileSystem`, not by the resolver's step 1: a shot is not pushed
   or slid, it ends at the first body or wall it touches (05 §10, DEC-314). Walls still come from
-  the resolver's `CollisionQuery.reach`. The resolver's steps below are for units.
+  the resolver's `CollisionQuery.shotReach`. The resolver's steps below are for units.
+- **Shapes that shots cross, shapes that light shots (HC-Q89, DEC-345).** A shot flies over some
+  map shapes that a unit and a dash collide with. Each map object says what it does to a shot
+  with two flags (`MapObjectFlags` in `content/maps/mapObjects.types.ts`): `canShotsCross` (a shot
+  flies over it) and `canLightShots` (a shot that flies over it catches fire). The map builder
+  that draws the object sets them (`MapDecorationBuilder.beginObject`), `MapObjectBuilder` copies
+  them to the `MapObject`, and the static index keeps them on each shape. One predicate decides
+  whether a shape stops a shot: `doesShapeStopShot` (`utils/geometry.ts`) is false when shots can cross the shape or when the shape's blocking area
+  holds the shot's launch point (the launch-shape rule, DEC-334). `CollisionQuery.shotReach` applies
+  it (a shot must give its launch point); `CollisionQuery.reach`, for a mover or a dash, does not, so
+  every blocking shape stops them (DEC-360).
+  `WorldObjectStore.blockingAt` also applies it, for `NoMapObjectOverlapInvariant`, so the sweep
+  and the invariant agree. Every shape without `canShotsCross` stops a shot.
+  `CollisionQuery.lightsShot` answers whether a circle that moves along a delta touches (or starts
+  in) a shape with `canLightShots`, outside its passages: a bridge deck (a
+  passage) does not light a shot, so a move along the deck does not, while a move that leaves the
+  deck over the lava does. `ProjectileSystem` asks it for a shot whose definition has `litOnHit`
+  steps, over the part of the move before the body the shot lands on (05 §10).
 - The test casts the segment `previousPosition → position` (expanded by the circle's radius, i.e.
   a capsule) against `StaticColliderIndex` entries flagged `isUnbreakable`, plus closed gates and
   map bounds; the earliest time of impact `t ∈ [0, 1]` wins; the mover is placed at
@@ -399,6 +416,43 @@ piece toward the court can cross that piece again further along the ring and pas
 ring's size puts that second crossing far from the turret, near the end of the bolt's range (not
 measured). The sentence in §4 that concave footprints are split into convex colliders does not hold
 for wall pieces; that was so before PR 4.
+
+**2026-11-23 (branch `feat/shots-over-lava`; HC-Q89, DEC-345).** Shots fly over lakes and lava
+rivers (§7 "Shapes that shots cross, shapes that light shots"). This replaces one sentence of the
+DEC-334 note above: a unit on a bridge no longer has its shot stopped by the lava beside the deck,
+because no shot is stopped by lava; a mover from the bridge is still stopped there. The rest of
+the launch-shape rule stands (it still applies to walls and every shape without `canShotsCross`).
+The sweep and `WorldObjectStore.blockingAt` share one predicate for both rules,
+`doesShapeStopShot` (`utils/geometry.ts`), so the DEC-334 note's "which skips such a shape too"
+also holds for a shape shots can cross: `NoMapObjectOverlapInvariant` does not flag a shot over a
+lake or a lava river, and still flags a unit in one. `MapObject`, `MapObjectArt` and
+`StaticCollisionShape` carry `canShotsCross` and `canLightShots` (set in `MapLandscapeBuilder` for
+`lake-N` and `lava-river-N`, copied by `MapObjectBuilder` and `staticCollisionIndexOf`); `physics/`
+declares its own two fields, so it imports nothing from `content/`. Camp fires do not light arrows
+yet (HC-Q105). The `CollisionQuery` port has two more methods: `shotReach`, the sweep of a shot,
+whose launch point is required, so a shot cannot get the mover rule by leaving it out (DEC-360);
+and `lightsShot`. So where the dated notes above say that a shot's walls come from
+`CollisionQuery.reach` (the 2026-11-20 note, `state.collisions.reach`, and the DEC-334 note), read
+`shotReach`; `reach` serves movers and dashes only.
+`doesShapeStopShot` uses game words but lives in `utils/`: `state/` (`WorldObjectStore`) may not
+import `physics/`, and `physics/` may not import `state/` or `content/`, so `utils/` is the one
+layer both can call (as for `isPointInBlockingArea`, DEC-334).
+
+**2026-11-26 (branch `feat/shots-over-lava`; HC-Q105, DEC-373 (2)).** Camp fires now light arrows:
+`MapSceneryBuilder` sets `canShotsCross` and `canLightShots` on each `<camp>-fire` object, so the
+2026-11-23 note's "Camp fires do not light arrows yet" no longer holds. The palace kitchen hearths
+still stop shots.
+
+**2026-11-26, correction (branch `feat/shots-over-lava`; critic Q105-C-1, C-2; DEC-373 correction,
+HC-Q115).** The note above took the fire's stones out of the shot's wall sweep only. Two bodies at
+each camp fire still stopped a shot: the fire's own body (furniture with health, `MapObjectBody`)
+and, at a forest camp, the camp's home at the fire's centre (it takes no damage). Bodies now follow
+one shot rule, `AreaHitQuery.stopsShot` (05 §10), which reads one property: `Outline.canShotsFlyOver`
+(a walk-on outline, or a map object flagged `canShotsCross`), or `Collider.canShotsFlyOver` for a
+body with no outline (set from `StructureDefinition.canShotsFlyOver`, on the forest camps). A shot
+not aimed at such a body flies over it; a shot aimed at it stops there. So a body flagged
+`canShotsCross` and a forest camp's home follow the same rule as a walk-on floor, for
+`ProjectileSystem` and `LineOfFire` alike. The melee rule still reads `isWalkOn`.
 
 ## Related
 

@@ -35,8 +35,9 @@ import type { EntityId } from './EntityStore.types';
  *    damage and runs no on-hit step (DEC-317 addendum). A shot stops on it (`ProjectileSystem`).
  *
  * It also holds the one rule for which bodies stop a shot (`stopsShot`), which `ProjectileSystem`
- * flies shots by and `LineOfFire` predicts them by. Ids come back in `compareById` order, so every
- * run hits in the same order. Stateless.
+ * flies shots by and `LineOfFire` predicts them by. A shot reads `canShotsFlyOver`, not
+ * `isWalkOn`: a camp fire is not walked on, but a shot flies over it (HC-Q105). Ids come back in
+ * `compareById` order, so every run hits in the same order. Stateless.
  *
  * ponytail: a walk over the store, not the `SpatialHash`, O(entities) per area. Only Legends
  * sweep and casts are rare. Ceiling: many sweepers (mob weapons); upgrade to a `SpatialHash`
@@ -46,18 +47,19 @@ export class AreaHitQuery {
   /**
    * Whether `shot` stops on `body` when it touches it (DEC-317 addendum, DEC-322 (1)): the body is
    * alive and still in the world, not the shot's owner and not on its team (no team counts as
-   * enemy), and, for a walk-on outline, the entity the shot aims at (`shot.targetId`), so a shot
-   * flies over the ground units stand on. A body that takes no damage now
-   * (`EntityStore.takesNoDamage`) stops it too, and nothing lands on it. The one rule by which
-   * `ProjectileSystem` flies a shot and `LineOfFire` predicts it.
+   * enemy), and, for a body shots fly over (`canFlyOver`), the entity the shot aims at
+   * (`shot.targetId`). So a shot flies over the ground units stand on, a camp fire and a forest
+   * camp's home (HC-Q105). A body that takes no damage now (`EntityStore.takesNoDamage`) stops it
+   * too, and nothing lands on it. The one rule by which `ProjectileSystem` flies a shot and
+   * `LineOfFire` predicts it.
    */
   public static stopsShot(entities: EntityStore, shot: ShotAim, body: ShotStopBody): boolean {
-    const { entity, health, membership, outline } = body;
+    const { entity, health, membership } = body;
     return (
       !health.isDead &&
       entity.id !== shot.ownerId &&
       membership?.team !== shot.team &&
-      (outline?.isWalkOn !== true || entity.id === shot.targetId) &&
+      (!AreaHitQuery.canFlyOver(body) || entity.id === shot.targetId) &&
       entities.has(entity.id)
     );
   }
@@ -120,11 +122,13 @@ export class AreaHitQuery {
   }
 
   /**
-   * The walk-on outline that `attackerId` aims at with `point` under rule 1, which its shot then
-   * names as its target (`ProjectilePayload.targetId`), so the shot can hit it. Only enemy bodies
-   * (no team counts as enemy). When several walk-on outlines hold the point (a palace floor is both
-   * the Stronghold's outline and the palace map object's), a structure comes first, then the first
-   * by id, so a shot at the palace names the Stronghold. A sweep still hits both (DEC-284 (2)).
+   * The outline shots fly over (`Outline.canShotsFlyOver`: a walk-on outline, a camp fire) that
+   * `attackerId` aims at with `point` under rule 1, which its shot then names as its target
+   * (`ProjectilePayload.targetId`), so the shot can hit it. Only `RangedProjectileAttackStrategy`
+   * asks it, so it reads the shot property, not `isWalkOn`. Only enemy bodies (no team counts as
+   * enemy). When several such outlines hold the point (a palace floor is both the Stronghold's
+   * outline and the palace map object's), a structure comes first, then the first by id, so a shot
+   * at the palace names the Stronghold. A sweep still hits both (DEC-284 (2)).
    *
    * @returns The body's id, or `null` when the point is on no such outline, on an enemy unit, or
    *   the attacker stands inside the outline or is unknown.
@@ -135,7 +139,7 @@ export class AreaHitQuery {
     entities.forEach((entity) => {
       const outline = entities.outlineOf(entity.id);
       if (
-        outline?.isWalkOn === true &&
+        outline?.canShotsFlyOver === true &&
         entity.hasComponent(Transform) &&
         AreaHitQuery.isAlive(entity) &&
         !AreaHitQuery.isAlly(entity, attackerTeam) &&
@@ -158,6 +162,14 @@ export class AreaHitQuery {
       team: entities.teamOf(attackerId),
       position: entities.get(attackerId)?.findComponent(Transform)?.position,
     };
+  }
+
+  /**
+   * Whether a shot not aimed at the body flies over it: its outline says so, or, for a body that is
+   * only its collider circle, its collider (a forest camp's home, HC-Q115).
+   */
+  private static canFlyOver({ collider, outline }: ShotStopBody): boolean {
+    return outline === null ? collider?.canShotsFlyOver === true : outline.canShotsFlyOver;
   }
 
   /** Rule 1 by aim point: on the outline, the attacker outside it, and on no enemy unit. */

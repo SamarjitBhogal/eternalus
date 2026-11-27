@@ -91,7 +91,7 @@ export class EntitySnapshotter {
   }
 
   /**
-   * A fired shot's flown share and ending as plain data; `null` for an entity that is not one (no
+   * A fired shot's flown share, ending and whether it is lit as plain data; `null` for an entity that is not one (no
    * `ProjectileFlight`, `ProjectilePayload` or `Transform`).
    */
   private projectileOf(
@@ -106,6 +106,7 @@ export class EntitySnapshotter {
     return {
       flownShare: Math.min(1, distance(payload.origin, transform.position) / flight.range),
       ending: flight.isEnded ? flight.endingShare : null,
+      isLit: flight.isLit,
     };
   }
 

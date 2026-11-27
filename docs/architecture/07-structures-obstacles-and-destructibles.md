@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-26
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -555,6 +555,20 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   does not follow the owner yet (the minimap entity markers, SCRUM-151).
 - The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
   capture tracker); this PR publishes the presence and draws the split bar in the world.
+
+**Implementation status, 2026-11-23 (branch `feat/shots-over-lava`, DEC-345).** The launch-shape
+rule and the shapes that shots cross share one predicate, `doesShapeStopShot` (`utils/geometry.ts`,
+10 §7): a blocking shape does not stop a shot when shots can cross it (`canShotsCross`: a lake, a
+lava river) or when its blocking area holds the shot's launch point (DEC-334). The collision sweep
+(`CollisionResolver.shotReach`) and `WorldObjectStore.blockingAt` both use it, so
+`NoMapObjectOverlapInvariant` does not flag a shot over a lake or a lava river, and still flags a
+unit in one.
+
+**2026-11-26 (branch `feat/shots-over-lava`; HC-Q105, DEC-373 correction, HC-Q115).** `Outline`
+now has `canShotsFlyOver` (a walk-on outline, or a map object flagged `canShotsCross`).
+`StructureDefinition.canShotsFlyOver` reaches the structure's `Collider`, so a shot not aimed at the
+structure flies over its body. The forest camps set it. It has no effect on a structure with a map
+footprint, because the outline rule comes first. The rule is in 10 §7.
 
 ## Related
 

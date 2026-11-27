@@ -1,3 +1,4 @@
+import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { ProjectileFlight } from '../components/ProjectileFlight';
@@ -16,6 +17,7 @@ import { sweepCircle } from '../physics/sweepCircle';
 import { sweepDisc } from '../physics/sweepDisc';
 import { AreaHitQuery } from '../state/AreaHitQuery';
 import type { GameState } from '../state/GameState';
+import type { StepRunner } from '../state/HitRunner.types';
 import { isTouchedBeforeWall } from '../state/isTouchedBeforeWall';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
 import { distance, doRectsOverlap, isPointInAnyPolygon } from '../utils/geometry';
@@ -32,20 +34,32 @@ import type { System, SystemContext } from './System.types';
  * the `ProjectileImpact` of the payload's impact kind (a weapon's: its damage, fallen off over the
  * distance from the origin, then the owner's on-hit effects), the hit is recorded on the owner
  * (`EntityStore.recordHits`, DEC-322 (2)), and the shot is removed as `consumed`. A body that
- * takes no damage now (`EntityStore.takesNoDamage`: a forest camp, a wall or gate before its rule)
+ * takes no damage now (`EntityStore.takesNoDamage`: a wall or gate before its rule, a forest camp)
  * stops the shot like any body, but nothing lands: no damage, no on-hit step, no hit recorded
- * (DEC-317 addendum). A gate's outline is walk-on, so only a shot aimed at the gate stops on it.
+ * (DEC-317 addendum). A gate's outline is walk-on and shots fly over a forest camp's home
+ * (HC-Q105), so only a shot aimed at one of them stops on it.
  *
  * Which bodies stop a shot is `AreaHitQuery.stopsShot`, the rule `LineOfFire` predicts by: live
  * things with `Health` other than the owner and its team (neutral bodies count as enemies). A body
  * with an outline (`Footprint`, `MapObjectBody`) is hit on that outline, at once when the shot
- * starts inside it. A walk-on outline (a palace floor, a gate's passage) is hit only by a shot
- * aimed at that entity (`payload.targetId`: the locked target, or the walk-on outline the aim
- * point was on, DEC-322 (1)), so a shot flies over the ground units stand on. A body is gathered
- * once a tick, and each move tests only those whose box it reaches.
+ * starts inside it. A body shots fly over (`Outline.canShotsFlyOver`, or for a body with no
+ * outline `Collider.canShotsFlyOver`: a walk-on outline, a map object flagged `canShotsCross`, a
+ * forest camp's home) is hit only by a shot aimed at that entity (`payload.targetId`: the locked
+ * target, or the outline shots fly over that the aim point was on, DEC-322 (1)). A body is
+ * gathered once a tick, and each move tests only those whose box it reaches.
  * Ties go to the first body in store order, except that the shot's target takes a near tie
  * (`isTouchedBeforeWall` on the first body's contact): a palace wall whose face is the
  * Stronghold's edge does not take a shot fired at the Stronghold (DEC-317 (8)).
+ *
+ * A shot flies over a shape flagged `canShotsCross` (a map builder sets it: the collision rule
+ * skips it for a shot, so it is no wall here). A shot whose definition has `litOnHit` steps
+ * catches fire when its move touches a shape flagged `canLightShots` (a map builder sets it,
+ * `CollisionQuery.lightsShot`). When the move lands on a body, only the part before that body is
+ * tested: a shot that crosses lava and lands in the same move lands lit, and one that lands before
+ * it reaches the lava does not. It stays lit until it lands or ends. A lit shot that lands damage
+ * runs its `litOnHit` steps on the body, as one cast named after the weapon that fired it
+ * (`payload.source.definitionId`), cast by the owner, or by the payload as the `Shooter` when the
+ * owner is gone (HC-Q89, DEC-345).
  *
  * A shot that touches nothing flies to the end of its `range` (DEC-306): it slows from `slowFrom`
  * (`flightSpeed`, through `Movement.limitSpeed`) so it stops exactly at `range`, then ends. The
@@ -68,8 +82,15 @@ export class ProjectileSystem implements System {
   private readonly bodies: ShotBody[] = [];
   private isGathered = false;
 
-  /** @param impacts - What a landed shot does, by its payload's impact kind. */
-  public constructor(private readonly impacts: ProjectileImpacts) {}
+  /**
+   * @param impacts - What a landed shot does, by its payload's impact kind.
+   * @param hits - Runs a lit shot's `litOnHit` steps where it lands (HC-Q89, DEC-345); `null`
+   *   runs none.
+   */
+  public constructor(
+    private readonly impacts: ProjectileImpacts,
+    private readonly hits: StepRunner | null = null,
+  ) {}
 
   /** Flies every shot in the air, in store order. */
   public update({ state }: SystemContext): void {
@@ -104,7 +125,13 @@ export class ProjectileSystem implements System {
 
     const wall = this.wallDistance(state, from, delta, length, body.radius, payload.origin);
     const hit = this.firstBody(state, payload, from, delta, length, body.radius);
-    if (hit !== null && isTouchedBeforeWall(hit.time * length, wall)) {
+    const lands = hit !== null && isTouchedBeforeWall(hit.time * length, wall);
+    if (flight.canLight && !flight.isLit) {
+      // Only the part of the move before the body it lands on: lava past the body does not count.
+      const flown = lands ? { x: delta.x * hit.time, y: delta.y * hit.time } : delta;
+      if (state.collisions?.lightsShot(from, flown, body.radius) === true) flight.light();
+    }
+    if (lands) {
       if (!state.entities.takesNoDamage(hit.body.entity.id)) {
         this.landOn(state, {
           impact: payload.impact,
@@ -117,6 +144,16 @@ export class ProjectileSystem implements System {
           point: { x: from.x + delta.x * hit.time, y: from.y + delta.y * hit.time },
         });
         state.entities.recordHits(payload.ownerId, [hit.body.entity.id], state.tick);
+        if (flight.isLit) {
+          this.hits?.runSteps(
+            state,
+            payload.ownerId,
+            hit.body.entity.id,
+            payload.source.definitionId,
+            flight.litOnHit,
+            payload,
+          );
+        }
       }
       this.spend(state, shot);
     } else if (wall < Number.POSITIVE_INFINITY) {
@@ -158,7 +195,7 @@ export class ProjectileSystem implements System {
   ): number {
     if (state.collisions === null || length === 0) return Number.POSITIVE_INFINITY;
     const dir = { x: delta.x / length, y: delta.y / length };
-    const reach = state.collisions.reach(from, dir, length, radius, launch);
+    const reach = state.collisions.shotReach(from, dir, length, radius, launch);
     return reach < length ? reach : Number.POSITIVE_INFINITY;
   }
 
@@ -174,6 +211,7 @@ export class ProjectileSystem implements System {
         health,
         membership: entity.findComponent(TeamMembership),
         outline: state.entities.outlineOf(entity.id) ?? null,
+        collider: entity.findComponent(Collider),
       });
     });
     this.isGathered = true;

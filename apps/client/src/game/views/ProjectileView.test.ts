@@ -13,6 +13,7 @@ import {
   PROJECTILE_DOT_SIZE,
   PROJECTILE_DROP_FADE_FROM,
   PROJECTILE_ENDING_LOOKS,
+  PROJECTILE_LIT_COLOR,
   PROJECTILE_MIST_DOT_COUNT,
   PROJECTILE_MIST_DOT_SIZE,
   PROJECTILE_MIST_END_RADIUS,
@@ -46,11 +47,11 @@ const BOLT: EntitySnapshot = {
 const ARROW: EntitySnapshot = { ...BOLT, definitionId: 'arrow' };
 const flying = (entity: EntitySnapshot, flownShare: number): EntitySnapshot => ({
   ...entity,
-  projectile: { flownShare, ending: null },
+  projectile: { flownShare, ending: null, isLit: false },
 });
 const ended = (entity: EntitySnapshot, ending: number): EntitySnapshot => ({
   ...entity,
-  projectile: { flownShare: 1, ending },
+  projectile: { flownShare: 1, ending, isLit: false },
 });
 const draw = (entity: EntitySnapshot): RecordingRenderer => {
   const renderer = new RecordingRenderer();
@@ -91,6 +92,25 @@ describe('ProjectileView', () => {
         args: [{ shape: 'dot', size: PROJECTILE_CORE_SIZE }, AT, PROJECTILE_CORE_COLOR],
       },
     ]);
+  });
+
+  it('draws a lit shot, one that flew over lava, with its streak and dot in the fire colour and the core still white (HC-Q89, DEC-345)', () => {
+    const lit: EntitySnapshot = {
+      ...ARROW,
+      projectile: { flownShare: 0.5, ending: null, isLit: true },
+    };
+
+    const { calls } = draw(lit);
+
+    const streak = calls.find(({ op }) => op === 'strokePath');
+    const glyphs = calls.filter(({ op }) => op === 'drawWorldGlyph');
+    expect(streak?.args[1]).toBe(PROJECTILE_LIT_COLOR);
+    expect(glyphs.map(({ args }) => args[2])).toContain(PROJECTILE_LIT_COLOR);
+    expect(glyphs.at(-1)?.args[2]).toBe(PROJECTILE_CORE_COLOR);
+    expect(glyphs.map(({ args }) => args[2])).not.toContain(TEAM_COLORS.dark);
+    expect(draw(flying(ARROW, 0.5)).calls.map(({ args }) => args[1])).not.toContain(
+      PROJECTILE_LIT_COLOR,
+    );
   });
 
   it('uses the neutral colour for a projectile without a team', () => {

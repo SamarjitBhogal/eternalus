@@ -5,7 +5,7 @@ import type { MapObject, MapObjectSnapshot } from '../content/maps/mapObjects.ty
 import type { WorldObjectRecord, WorldObjectStoreOptions } from './WorldObjectStore.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { doesCircleOverlapPolygon, isCircleInsidePolygon } from '../utils/circlePolygon';
-import { boundsOf, isPointInBlockingArea } from '../utils/geometry';
+import { boundsOf, doesShapeStopShot } from '../utils/geometry';
 
 /** Owns placed-object identity and persistent destroyed state after DeathSystem retires entities. */
 export class WorldObjectStore {
@@ -107,9 +107,11 @@ export class WorldObjectStore {
    * surviving blocking object whose footprint a circle of `radius` at `point` overlaps, outside its
    * passages, or `null`.
    *
-   * @param launch - A shot's launch point: a footprint whose blocking area (inside it or on its
-   *   edge, inside none of the object's passages) holds it does not count, as it does not stop the
-   *   shot (DEC-334).
+   * @param launch - A shot's launch point: a footprint that does not stop the shot does not count
+   *   (`doesShapeStopShot`, the rule the collision sweep uses): one whose blocking area (inside it
+   *   or on its edge, inside none of the object's passages) holds the launch point (DEC-334), or
+   *   one of an object shots can cross (`canShotsCross`, DEC-345). Without it (a unit) every
+   *   footprint counts.
    */
   public blockingAt(point: Vec2, radius: number, launch?: Vec2): string | null {
     for (const { object, entityId, health, bounds } of this.records) {
@@ -130,7 +132,7 @@ export class WorldObjectStore {
         object.footprints.some(
           (shape) =>
             doesCircleOverlapPolygon(point, radius, shape) &&
-            (launch === undefined || !isPointInBlockingArea(launch, shape, object.passages)),
+            (launch === undefined || doesShapeStopShot(shape, object, launch)),
         )
       )
         return object.id;

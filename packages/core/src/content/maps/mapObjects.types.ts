@@ -18,15 +18,33 @@ export type MapObjectKind =
   | 'turret'
   | 'gate';
 
+/**
+ * What an object's footprint does to a shot (HC-Q89, DEC-345). A map builder sets them; an object
+ * without them stops a shot. A unit or a dash collides with the footprint whatever they say.
+ */
+export type MapObjectFlags = {
+  /**
+   * A shot flies over the footprint: it is no wall to a shot. A unit or a dash still stops. On an
+   * object with health (a camp fire), a shot aimed at the object still lands on it
+   * (`MapObjectBody.canShotsFlyOver`, `AreaHitQuery.stopsShot`, HC-Q105).
+   */
+  readonly canShotsCross?: true;
+  /**
+   * A shot that flies over the footprint, outside its passages, catches fire (if its definition
+   * lets it). A passage (a bridge deck) does not light a shot.
+   */
+  readonly canLightShots?: true;
+};
+
 /** Authored ownership: all art of one object changes together when that object is destroyed. */
-export type MapObjectArt = {
+export type MapObjectArt = MapObjectFlags & {
   readonly id: string;
   readonly kind: MapObjectKind;
   readonly isFootprint: boolean;
 };
 
 /** Exact world geometry shared by collision, targeting and destruction presentation. */
-export type MapObject = {
+export type MapObject = MapObjectFlags & {
   readonly id: string;
   readonly kind: MapObjectKind;
   readonly footprints: readonly Polygon[];

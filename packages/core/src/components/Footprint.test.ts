@@ -31,6 +31,10 @@ describe('Footprint', () => {
 
     expect(new Footprint([floor]).isWalkOn).toBe(false);
     expect(new Footprint([floor], { isWalkOn: true }).isWalkOn).toBe(true);
+    // A shot flies over a walk-on outline unless it aims at it (DEC-322 (1)), and stops on a
+    // solid one.
+    expect(new Footprint([floor]).canShotsFlyOver).toBe(false);
+    expect(new Footprint([floor], { isWalkOn: true }).canShotsFlyOver).toBe(true);
   });
 
   it('rejects no polygon, or one with fewer than 3 corners', () => {

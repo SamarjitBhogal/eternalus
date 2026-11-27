@@ -42,8 +42,9 @@ export type ProjectilePayloadData = {
   /** Who the hit is credited to. */
   readonly source: ProjectileSource;
   /**
-   * The entity it aims at, the only one whose walk-on outline it can hit: the locked target, or
-   * the walk-on outline the aim point was on (DEC-322 (1)); `null` for a shot aimed at no body.
+   * The entity it aims at, the only body it can hit of those shots fly over
+   * (`Outline.canShotsFlyOver`): the locked target, or the outline shots fly over that the aim
+   * point was on (DEC-322 (1), HC-Q105); `null` for a shot aimed at no body.
    */
   readonly targetId: string | null;
   /** What it does where it lands. */

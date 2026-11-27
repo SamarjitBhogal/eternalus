@@ -292,7 +292,8 @@ export class StateHasher {
     // removed.
     const shot = entity.findComponent(ProjectilePayload);
     if (shot !== undefined) {
-      const endTicksLeft = entity.findComponent(ProjectileFlight)?.endTicksLeft ?? -1;
+      const flight = entity.findComponent(ProjectileFlight);
+      const endTicksLeft = flight?.endTicksLeft ?? -1;
       fields.push([
         'projectile',
         shot.ownerId,
@@ -303,6 +304,11 @@ export class StateHasher {
         shot.origin.y,
         endTicksLeft,
       ]);
+      // Whether it is lit decides whether it runs its `litOnHit` steps where it lands (HC-Q89,
+      // DEC-345). Only a lit shot adds a field, so a match with no lit shot hashes as before.
+      if (flight?.isLit === true) {
+        fields.push(['lit']);
+      }
     }
     const watch = entity.findComponent(ChaseWatch);
     if (watch !== undefined) {
