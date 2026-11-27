@@ -772,7 +772,7 @@ Reply inline (`Decision: …`).
     (`content/abilities/knockback.ts`, `TUNE`). (7) build it in PR 6 now, red where the wall
     cannot stand: built (HC-S15). (8) the check keeps its own rule. (9) the list forgets a broken
     wall: it falls out of (3).
-- [ ] **HC-B62 — Better than the design, not built, sign-off asked: five follow-ups from the
+- [x] **HC-B62 — Better than the design, not built, sign-off asked: five follow-ups from the
       PR 6 gate on your answers (lane B PR 6, #175, gate v98 round 1, 2026-11-27;
       COMBAT-ABILITIES-LANE-2-31, -32).** Only (3) changes what the player sees, and only in a rare
       case. Nothing blocks the PR.
@@ -812,6 +812,8 @@ Reply inline (`Decision: …`).
       Options: (A) all five as follow-up PRs after the stack lands, and keep (a) and (b)
       (recommended); (B) only some (name them in the note); (C) none, keep (a) and (b);
       (D) other (note).
+  - Answered 2026-11-27 (DEC-426; Owner Calls v108, the card's words): A: build all five as
+    follow-up PRs after the stack merges; keep the two built clean-ups (recommended).
 - [ ] **HC-S14 — Scheduled: the map-object overlap check does not see placed walls (lane B PR 6,
       `feat/sentinel-kit`, critic N8, 2026-11-23).** Nothing to answer now.
       `NoMapObjectOverlapInvariant` checks that no unit stands inside a map object. It does not
