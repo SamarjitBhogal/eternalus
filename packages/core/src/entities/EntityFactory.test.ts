@@ -122,7 +122,7 @@ describe('EntityFactory', () => {
     registry.register('factory-entity', FactoryEntity);
     const weapons = new ContentCatalogue([]);
     const asked: unknown[] = [];
-    const decided = { classId: 'warrior', primaryWeaponId: 'raptor-talons' };
+    const decided = { classId: 'warrior', specId: 'knight', primaryWeaponId: 'raptor-talons' };
     const factory = new EntityFactory(registry, new ContentCatalogue([DEFINITION]), undefined, {
       weapons,
       loadouts: {
@@ -132,7 +132,7 @@ describe('EntityFactory', () => {
         },
       },
     });
-    const given = { classId: 'warrior', primaryWeaponId: 'gone' };
+    const given = { classId: 'warrior', specId: 'knight', primaryWeaponId: 'gone' };
 
     const entity = factory.create('factory-entity', 'factory-definition', {
       ...PLACEMENT,

@@ -308,9 +308,14 @@ describe('connectBusToStore', () => {
   it('copies the loadouts state', () => {
     const { bus, store } = connected();
     const loadouts = {
-      options: { warrior: { defaultWeaponId: 'a', weapons: [{ id: 'a', displayName: 'A' }] } },
-      saved: { warrior: 'a' },
-      repaired: ['warrior'],
+      options: {
+        knight: {
+          defaultWeaponId: 'a',
+          weapons: [{ id: 'a', displayName: 'A' }],
+        },
+      },
+      saved: { knight: 'a' },
+      repaired: ['knight'],
     };
     bus.emit('loadouts', loadouts);
     expect(store.getState().loadouts).toEqual(loadouts);

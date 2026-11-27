@@ -23,6 +23,7 @@ const unit = (weight: MinionWeight, team: EntitySnapshot['team'] = 'light'): Ent
   elevation: null,
   progression: null,
   aether: null,
+  combat: null,
   area: null,
   capture: null,
   gem: null,

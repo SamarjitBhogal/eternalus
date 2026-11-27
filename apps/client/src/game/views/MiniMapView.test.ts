@@ -354,6 +354,7 @@ describe('MiniMapView unit markers (DEC-187)', () => {
       elevation: null,
       progression: null,
       aether: null,
+      combat: null,
       area: null,
       capture: null,
       gem: null,

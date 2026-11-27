@@ -18,6 +18,7 @@ const legend = (height: number | null): EntitySnapshot => ({
   elevation: height === null ? null : { height },
   progression: null,
   aether: null,
+  combat: null,
   area: null,
   capture: null,
   gem: null,

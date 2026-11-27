@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { LEGEND_CLASSES } from '../../content/legends/legendCatalogue';
+import { LEGEND_SPECS } from '../../content/legends/specs/legendSpecCatalogue';
 import type { WeaponDefinition } from '../../content/weapons/weapons.types';
 import type { LoadoutContent } from '../LoadoutValidator.types';
 import { WeaponAllowedRule } from './WeaponAllowedRule';
@@ -10,11 +11,15 @@ type Rules = Pick<WeaponDefinition, 'allowedClasses' | 'uniqueTo'>;
 /** The shipped classes and one weapon, `blade`, with the given restrictions. */
 const contentWith = (blade: Rules): LoadoutContent => ({
   legends: LEGEND_CLASSES,
+  specs: LEGEND_SPECS,
   weapons: { has: (id) => id === 'blade', get: () => blade },
 });
 
 const problemsOf = (classId: string, blade: Rules) =>
-  new WeaponAllowedRule().check({ classId, primaryWeaponId: 'blade' }, contentWith(blade));
+  new WeaponAllowedRule().check(
+    { classId, specId: null, primaryWeaponId: 'blade' },
+    contentWith(blade),
+  );
 
 describe('WeaponAllowedRule', () => {
   it('lets every class carry a non-unique weapon', () => {
@@ -47,7 +52,11 @@ describe('WeaponAllowedRule', () => {
     const rule = new WeaponAllowedRule();
     const content = contentWith({ allowedClasses: ['magus'], uniqueTo: 'magus' });
 
-    expect(rule.check({ classId: 'harbinger', primaryWeaponId: 'blade' }, content)).toEqual([]);
-    expect(rule.check({ classId: 'warrior', primaryWeaponId: 'nope' }, content)).toEqual([]);
+    expect(
+      rule.check({ classId: 'harbinger', specId: null, primaryWeaponId: 'blade' }, content),
+    ).toEqual([]);
+    expect(
+      rule.check({ classId: 'warrior', specId: null, primaryWeaponId: 'nope' }, content),
+    ).toEqual([]);
   });
 });

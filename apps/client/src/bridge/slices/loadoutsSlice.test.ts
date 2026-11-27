@@ -4,7 +4,7 @@ import { loadoutsSlice, type LoadoutsSliceState } from './loadoutsSlice';
 
 const STATE: LoadoutsSliceState = {
   options: {
-    warrior: {
+    knight: {
       defaultWeaponId: 'raptor-talons',
       weapons: [
         { id: 'raptor-talons', displayName: 'Raptor Talons' },
@@ -12,12 +12,12 @@ const STATE: LoadoutsSliceState = {
       ],
     },
   },
-  saved: { warrior: 'wuuthrad' },
+  saved: { knight: 'wuuthrad' },
   repaired: [],
 };
 
 const wrap = (loadouts: LoadoutsSliceState) => ({ loadouts });
-const { selectChosenWeaponId, selectClassOptions, selectWasRepaired } = loadoutsSlice.selectors;
+const { selectChosenWeaponId, selectLegendOptions, selectWasRepaired } = loadoutsSlice.selectors;
 
 describe('loadoutsSlice', () => {
   it('starts with no options, nothing saved and nothing repaired', () => {
@@ -29,19 +29,20 @@ describe('loadoutsSlice', () => {
     expect(next).toEqual(STATE);
   });
 
-  it('chooses the saved weapon, else the class default, else nothing', () => {
-    expect(selectChosenWeaponId(wrap(STATE), 'warrior')).toBe('wuuthrad');
-    expect(selectChosenWeaponId(wrap({ ...STATE, saved: {} }), 'warrior')).toBe('raptor-talons');
-    expect(selectChosenWeaponId(wrap(STATE), 'magus')).toBeNull();
+  it('chooses the saved weapon, else the auto-build, else nothing, per Legend', () => {
+    expect(selectChosenWeaponId(wrap(STATE), 'knight')).toBe('wuuthrad');
+    expect(selectChosenWeaponId(wrap({ ...STATE, saved: {} }), 'knight')).toBe('raptor-talons');
+    expect(selectChosenWeaponId(wrap(STATE), 'oracle')).toBeNull();
   });
 
-  it('gives the options of a class, or null while they are unpublished', () => {
-    expect(selectClassOptions(wrap(STATE), 'warrior')?.weapons).toHaveLength(2);
-    expect(selectClassOptions(wrap(STATE), 'magus')).toBeNull();
+  it('gives the options of a Legend, or null while they are unpublished', () => {
+    expect(selectLegendOptions(wrap(STATE), 'knight')?.weapons).toHaveLength(2);
+    expect(selectLegendOptions(wrap(STATE), 'knight')).toEqual(STATE.options.knight);
+    expect(selectLegendOptions(wrap(STATE), 'oracle')).toBeNull();
   });
 
-  it('says whether a class had its saved weapon repaired', () => {
-    expect(selectWasRepaired(wrap({ ...STATE, repaired: ['warrior'] }), 'warrior')).toBe(true);
-    expect(selectWasRepaired(wrap(STATE), 'warrior')).toBe(false);
+  it('says whether a Legend had its saved weapon repaired', () => {
+    expect(selectWasRepaired(wrap({ ...STATE, repaired: ['knight'] }), 'knight')).toBe(true);
+    expect(selectWasRepaired(wrap(STATE), 'knight')).toBe(false);
   });
 });

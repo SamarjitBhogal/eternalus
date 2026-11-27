@@ -1,8 +1,12 @@
 import type { LegendDefinition } from '../content/legends/legends.types';
+import type { LegendSpecDefinition } from '../content/legends/specs/legendSpecs.types';
 import type { WeaponDefinition } from '../content/weapons/weapons.types';
 import type { Loadout, LoadoutSlot } from './Loadout.types';
 
-/** A part of a `Loadout` a problem is about: its class, or one of its slots (05 §12, DEC-354 (3)). */
+/**
+ * A part of a `Loadout` a problem is about: its class or its Legend (both `'class'`), or one of its
+ * slots (05 §12, DEC-354 (3)).
+ */
 export type LoadoutField = 'class' | LoadoutSlot;
 
 /** One broken rule of a loadout (05 §12 `LoadoutProblem`). */
@@ -20,12 +24,14 @@ type Lookup<Definition> = {
 };
 
 /**
- * The content a loadout is checked against and auto-built from: each class's default loadout, and
- * which classes may carry each weapon. Core's catalogues satisfy it; the client builds one from
- * display content with `loadoutContentOf`.
+ * The content a loadout is checked against and auto-built from: each class's default loadout, the
+ * class of each Legend, and which classes may carry each weapon. Core's catalogues satisfy it; the
+ * client builds one from display content with `loadoutContentOf`.
  */
 export type LoadoutContent = {
   readonly legends: Lookup<Pick<LegendDefinition, 'defaultLoadout'>>;
+  /** The Legends (sub-classes), by `LegendSpecDefinition` id: core finds a Legend's class here. */
+  readonly specs: Lookup<Pick<LegendSpecDefinition, 'classId'>>;
   readonly weapons: Lookup<Pick<WeaponDefinition, 'allowedClasses' | 'uniqueTo'>>;
 };
 

@@ -68,7 +68,7 @@ describe('LockedSelectStep', () => {
   it('names the weapon the player spawns with, the one saved on the Loadout screen (SCRUM-31)', () => {
     const loadouts: LoadoutsSliceState = {
       options: {
-        magus: {
+        oracle: {
           defaultWeaponId: 'magus-staff',
           weapons: [
             { id: 'wuuthrad', displayName: 'Wuuthrad' },
@@ -76,7 +76,7 @@ describe('LockedSelectStep', () => {
           ],
         },
       },
-      saved: { magus: 'wuuthrad' },
+      saved: { oracle: 'wuuthrad' },
       repaired: [],
     };
 

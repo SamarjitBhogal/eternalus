@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-26
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -534,9 +534,10 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
   IDE rename of the symbol and its file, its imports and the `extends` clauses of subclasses.
   Content id (`'warrior'`): **never** once a save or a release stores it, because replays,
   loadouts and match history reference it (a persistence migration plus new replay fixtures if the
-  team insists; `Recommendation:` do not). Until saves or a release exist (none yet, ADR 0023),
-  renaming an id is a content refactor, and a reference it misses must fail the checks, never
-  silently.
+  team insists; `Recommendation:` do not). Saves already store Legend, weapon and input-action
+  ids ([14](14-persistence-and-resources.md) §7), so these do not change. Any other id (ADR 0023):
+  until a save or a release stores it, renaming it is a content refactor, and a reference it
+  misses must fail the checks, never silently.
 - **Registry line:** the one registry line that names the class (the rename tool updates it).
 - **Tests:** none new; `npm run check` (typecheck follows the imports, knip flags a stale export).
 - **Docs:** the pick in `../reference/suggestions/naming.md`; the "(rename pending)" note in the

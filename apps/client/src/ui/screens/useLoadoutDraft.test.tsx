@@ -15,22 +15,33 @@ import { useLoadoutDraft } from './useLoadoutDraft';
 /** React's `act` expects this flag in a test page (react.dev, "act"). */
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+const MAGUS_OPTIONS = {
+  defaultWeaponId: 'magus-staff',
+  weapons: [
+    { id: 'magus-staff', displayName: 'Staff' },
+    { id: 'wuuthrad', displayName: 'Wuuthrad' },
+  ],
+};
+
+/** Keyed by Legend (DEC-354 (1)): TEST_CONTENT's Templar (`knight`), Colossus and Magus Legends. */
 const LOADOUTS: LoadoutsSliceState = {
   options: {
-    warrior: {
+    knight: {
       defaultWeaponId: 'raptor-talons',
       weapons: [
         { id: 'raptor-talons', displayName: 'Raptor Talons' },
         { id: 'wuuthrad', displayName: 'Wuuthrad' },
       ],
     },
-    sentinel: {
+    colossus: {
       defaultWeaponId: 'sentinel-shield',
       weapons: [{ id: 'sentinel-shield', displayName: 'Sentinel Shield' }],
     },
+    catalyst: MAGUS_OPTIONS,
+    oracle: MAGUS_OPTIONS,
   },
-  saved: { warrior: 'wuuthrad' },
-  repaired: ['sentinel'],
+  saved: { knight: 'wuuthrad', catalyst: 'wuuthrad' },
+  repaired: ['colossus'],
 };
 
 type Draft = ReturnType<typeof useLoadoutDraft>;
@@ -69,10 +80,12 @@ afterEach(() => {
 });
 
 describe('useLoadoutDraft', () => {
-  it('opens the first class on its saved weapon, with nothing to save', () => {
+  it("opens the first class's first Legend on its saved weapon, with nothing to save", () => {
     const draft = mountHook();
 
     expect(draft().classId).toBe(TEST_CONTENT.legendClasses[0]?.classId);
+    expect(draft().legends.map((spec) => spec.specId)).toEqual(['knight']);
+    expect(draft().specId).toBe('knight');
     expect(draft().weaponId).toBe('wuuthrad');
     expect(draft().isDirty).toBe(false);
     expect(draft().isAutoBuilt).toBe(false);
@@ -94,7 +107,7 @@ describe('useLoadoutDraft', () => {
     expect(draft().isDirty).toBe(false);
   });
 
-  it('picks the class default on autoBuild', () => {
+  it("picks the Legend's auto-build weapon on autoBuild", () => {
     const draft = mountHook();
 
     act(() => {
@@ -104,7 +117,7 @@ describe('useLoadoutDraft', () => {
     expect(draft().weaponId).toBe('raptor-talons');
   });
 
-  it('keeps an unsaved pick per class and reads the other class from the store', () => {
+  it('keeps an unsaved pick per Legend and reads the other Legend from the store', () => {
     const draft = mountHook();
     act(() => {
       draft().pickWeapon('raptor-talons');
@@ -113,6 +126,7 @@ describe('useLoadoutDraft', () => {
     act(() => {
       draft().pickClass('sentinel');
     });
+    expect(draft().specId).toBe('colossus');
     expect(draft().weaponId).toBe('sentinel-shield');
     expect(draft().wasRepaired).toBe(true);
     expect(draft().isDirty).toBe(false);
@@ -122,6 +136,30 @@ describe('useLoadoutDraft', () => {
     });
     expect(draft().weaponId).toBe('raptor-talons');
     expect(draft().wasRepaired).toBe(false);
+  });
+
+  it('gives two Legends of one class their own weapons, and reopens the last Legend picked', () => {
+    const draft = mountHook();
+    act(() => {
+      draft().pickClass('magus');
+    });
+    expect(draft().specId).toBe('catalyst');
+    expect(draft().weaponId).toBe('wuuthrad');
+
+    act(() => {
+      draft().pickLegend('oracle');
+    });
+    expect(draft().specId).toBe('oracle');
+    expect(draft().weaponId).toBe('magus-staff');
+    expect(draft().isAutoBuilt).toBe(true);
+
+    act(() => {
+      draft().pickClass('warrior');
+    });
+    act(() => {
+      draft().pickClass('magus');
+    });
+    expect(draft().specId).toBe('oracle');
   });
 
   it('sends a save-loadout intent for a dirty pick and drops the draft', () => {
@@ -135,7 +173,7 @@ describe('useLoadoutDraft', () => {
     });
 
     expect(intents).toEqual([
-      { kind: 'save-loadout', classId: 'warrior', primaryWeaponId: 'raptor-talons' },
+      { kind: 'save-loadout', specId: 'knight', primaryWeaponId: 'raptor-talons' },
     ]);
     expect(draft().weaponId).toBe('wuuthrad');
     expect(draft().isDirty).toBe(false);

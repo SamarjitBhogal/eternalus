@@ -7,9 +7,16 @@ import type { EntityId } from '../state/EntityStore.types';
  */
 export type DiagnosticEventMap = {
   readonly 'command-rejected': { readonly commandType: string; readonly reason: string };
-  /** A spawn loadout that failed validation, and the auto-build used instead (05 §12, DEC-354 (3)). */
+  /**
+   * A spawn loadout that failed validation, and the loadout used instead: its Legend's auto-build,
+   * else the class default (05 §12, DEC-354 (3)).
+   */
   readonly 'loadout-rejected': {
     readonly definitionId: string;
+    /** The given loadout's Legend; `null` when it names none. */
+    readonly givenSpecId: string | null;
+    /** The used loadout's Legend; `null` when it falls back to the class default. */
+    readonly usedSpecId: string | null;
     readonly givenWeaponId: string;
     readonly usedWeaponId: string;
     /** Every problem's message, joined with `; `. */

@@ -56,6 +56,8 @@ export const FIGMA_HUD_PLAYER: PlayerHudSnapshot = {
   level: 42,
   xp: 699,
   xpToNext: 1000,
+  // The battle axe of 62:231 is Wuuthrad's art (DEC-114, DEC-354 (2)).
+  weaponId: 'wuuthrad',
   weaponProgress: 5 / 6,
   ultimatePips: { filled: 2, total: 3 },
   slots: [
@@ -223,4 +225,5 @@ export const TEST_HUD_CATALOGUE: HudCatalogue = {
       neutral: 'objective-shield-neutral',
     },
   },
+  weaponArt: { wuuthrad: 'warrior-weapon-battle-axe', 'magus-staff': 'magus-weapon-staff' },
 };

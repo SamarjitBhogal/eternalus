@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Capturable } from '../components/Capturable';
+import { Combat } from '../components/Combat';
 import { Jump } from '../components/Jump';
 import { MapFeatureLink } from '../components/MapFeatureLink';
 import { MapObjectBody } from '../components/MapObjectBody';
@@ -25,6 +26,7 @@ class Bare extends Entity {
 }
 
 const CURVES = new ContentCatalogue<LevelCurveDefinition>([]);
+const ATTACK = { strategy: 'melee', damage: 10, reach: 1, interval: 5 } as const;
 const SQUARE = [
   { x: 0, y: 0 },
   { x: 4, y: 0 },
@@ -99,6 +101,24 @@ describe('EntitySnapshotter', () => {
     expect(snapshotter.snapshotOf(loose)).not.toHaveProperty('mapFeatureId');
     expect(snapshotter.snapshotOf(new Bare('entity-3', 'bare'))).not.toHaveProperty('mapFeatureId');
     expect(structuredClone(snapshot)).toEqual(snapshot);
+  });
+
+  it('snapshots the weapon a unit holds, null for a mob, and no combat group without Combat', () => {
+    const legend = new Bare('entity-1', 'warrior');
+    legend.addComponent(new Combat(ATTACK, 'wuuthrad'));
+    const mob = new Bare('entity-2', 'brute');
+    mob.addComponent(new Combat(ATTACK));
+    const structure = new Stronghold('entity-3', 'stronghold');
+    structure.spawn({
+      definition: STRUCTURE_DEFINITIONS.get('stronghold'),
+      position: { x: 5, y: 6 },
+      team: 'light',
+    });
+    const snapshotter = new EntitySnapshotter(4, CURVES);
+
+    expect(snapshotter.snapshotOf(legend).combat).toEqual({ weaponId: 'wuuthrad' });
+    expect(snapshotter.snapshotOf(mob).combat).toEqual({ weaponId: null });
+    expect(snapshotter.snapshotOf(structure).combat).toBeNull();
   });
 
   it('names the map feature of every entity that links one, a capture zone too (DEC-231)', () => {

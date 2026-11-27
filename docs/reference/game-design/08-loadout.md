@@ -4,7 +4,7 @@ description: The loadout slots a Legend carries, pre-game configuration with aut
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-11-26
 tags: [reference, game-design, loadout, profile]
 paths: ['packages/core/src/loadout/**', 'apps/client/src/ui/screens/LoadoutScreen*']
 related:
@@ -22,8 +22,9 @@ profile that remembers loadouts between matches. The items that fill the slots a
 
 ## Loadout slots
 
-From the game doc, per Legend (per class, since abilities, artifacts and skins are
-class-specific):
+From the game doc, per Legend. A saved loadout belongs to the Legend (`specId`), not to its class
+(DEC-354 (1)). The slots are filled from the Legend's class, since abilities, artifacts and skins
+are class-specific:
 
 | Slot                      | Filled from                                                                                                               | Status                                                    |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
@@ -50,9 +51,10 @@ it can be filled later, and is an open question.
 ## Pre-game configuration and auto-build
 
 - The loadout **can be configured pre-game, with an auto-build option** (game doc).
-- Auto-build fills every slot with the class's default choices from content (`Recommendation:`
-  a `defaultLoadout` per `LegendDefinition`; the same defaults are what bot Legends use, so the
-  bots and the auto-build never disagree).
+- Auto-build fills every slot with the Legend's default choices from content: it starts from the
+  Legend, not the class (DEC-354 (1)). (`Recommendation:` a `defaultLoadout` per Legend, on its
+  `LegendSpecDefinition`, not on the class's `LegendDefinition`; the same defaults are what bot
+  Legends use, so the bots and the auto-build never disagree.)
 - The `LoadoutScreen` (React, `apps/client/src/ui/screens/`) edits a `Loadout` value validated
   against content by `packages/core/src/loadout/` (class restrictions, one item per slot, a
   variety only where the ability defines one). Status: **MVP**.
@@ -77,7 +79,7 @@ Status: **MVP-if-time** (the requirements doc asks only for pre-game configurati
 
 - Loadouts are **saved to the user's profile** (requirements doc) through the
   `PersistenceController` facade into IndexedDB (decided, D3): a `LoadoutRepository` keyed by
-  profile and class, with versioned DTOs and migrations
+  profile and Legend (`specId`, DEC-354 (1)), with versioned DTOs and migrations
   (`../../architecture/14-persistence-and-resources.md`).
 - The profile (themed name wanted; see `11-mvp-scope.md`) also holds match history and settings;
   the loadout is one of its documents.
@@ -90,7 +92,8 @@ Status: **MVP**.
 ## Engineering notes
 
 - Domain model: `packages/core/src/loadout/` holds the `Loadout` value type (one ID per slot,
-  varieties, modes), `validateLoadout(loadout, content)` and `autoBuild(classId, content)`. It
+  varieties, modes), `validateLoadout(loadout, content)` and `autoBuild(specId, content)`, which
+  starts from the Legend (DEC-354 (1)). It
   is pure; the client persists it and the `Match` composition root passes it into
   `EntityFactory` when spawning the Legend, which fills the `Loadout` component.
 - Single place of change: a new slot is one field on the type, one validation rule, one screen

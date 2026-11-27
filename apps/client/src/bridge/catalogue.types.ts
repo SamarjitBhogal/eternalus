@@ -146,8 +146,6 @@ export type LegendSpecCard = {
   /** Signature, specialty, ultimate (58:271). */
   readonly details: readonly DetailRow[];
   readonly art: LegendSpecArt;
-  /** The HUD weapon art of this Legend's start weapon; `null` keeps the class kit's (DEC-114). */
-  readonly hudWeapon: ClassHudDisplay['weapon'];
 };
 
 /** Art of one class; `null` renders the placeholder. */
@@ -169,13 +167,12 @@ type HudSlotDisplay = {
   readonly iconAssetId: AssetId | null;
 };
 
-/** What the HUD shows for a class: emblem, weapon art and the placeholder kit (05 §15). */
+/**
+ * What the HUD shows for a class: emblem and the placeholder kit (05 §15). The weapon art is the
+ * held weapon's, not the class's (`HudCatalogue.weaponArt`, DEC-354 (2)).
+ */
 export type ClassHudDisplay = {
   readonly emblemAssetId: AssetId | null;
-  readonly weapon: {
-    readonly displayName: string | null;
-    readonly iconAssetId: AssetId | null;
-  } | null;
   /** ability-1..4, gadget-1, gadget-2, in that order. */
   readonly slots: readonly HudSlotDisplay[];
 };
@@ -256,6 +253,11 @@ export type HudCatalogue = {
   readonly objectiveKinds: readonly HudObjectiveKind[];
   /** `null` until content loads. */
   readonly chrome: HudChrome | null;
+  /**
+   * The weapon panel's art, keyed by core weapon id; a weapon without an entry shows an empty slot
+   * (DEC-354 (2)).
+   */
+  readonly weaponArt: Readonly<Record<string, AssetId>>;
 };
 
 /** Display-ready content projected into the store at boot. */

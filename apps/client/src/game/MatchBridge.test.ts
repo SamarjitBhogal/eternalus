@@ -32,6 +32,7 @@ const PLAYER: EntitySnapshot = {
   elevation: null,
   progression: { level: 3, xp: 40, xpToNext: 114 },
   aether: { current: 95, max: 160 },
+  combat: { weaponId: 'magus-staff' },
   area: null,
   capture: null,
   gem: null,
@@ -99,6 +100,7 @@ const zoneSnapshot = (
   elevation: null,
   progression: null,
   aether: null,
+  combat: null,
   area: [],
   capture: {
     owner,
@@ -124,6 +126,7 @@ const structureOf = (feature: MapFeature, current: number, max: number): EntityS
   elevation: null,
   progression: null,
   aether: null,
+  combat: null,
   area: null,
   capture: null,
   gem: null,
@@ -207,7 +210,7 @@ describe('MatchBridge', () => {
     expect(huds).toEqual([{ player: null }]);
   });
 
-  it("carries the player's health, aether, level and XP; every other HUD value stays empty", () => {
+  it("carries the player's health, aether, level, XP and held weapon; every other HUD value stays empty", () => {
     const { bridge, huds } = setUp();
     bridge.publishAll(snapshotAt(0, [PLAYER]), 'player-1');
     bridge.publishAll(snapshotAt(0, [PLAYER]), 'someone-else');
@@ -224,6 +227,7 @@ describe('MatchBridge', () => {
           level: 3,
           xp: 40,
           xpToNext: 114,
+          weaponId: 'magus-staff',
           weaponProgress: null,
           ultimatePips: null,
           slots: [],
@@ -245,6 +249,14 @@ describe('MatchBridge', () => {
       [null, null, null],
       [50, 12, null],
     ]);
+  });
+
+  it('shows no weapon for a player without a combat group (DEC-354 (2))', () => {
+    const { bridge, huds } = setUp();
+    bridge.publishAll(snapshotAt(0, [{ ...PLAYER, combat: null }]), 'player-1');
+    bridge.publishAll(snapshotAt(0, [{ ...PLAYER, combat: { weaponId: null } }]), 'player-1');
+
+    expect(huds.map(({ player }) => player?.weaponId)).toEqual([null, null]);
   });
 
   it('shows no aether for a player without an aether pool', () => {
@@ -461,6 +473,7 @@ describe('MatchBridge', () => {
       elevation: null,
       progression: null,
       aether: null,
+      combat: null,
       area: null,
       capture: null,
       gem: null,

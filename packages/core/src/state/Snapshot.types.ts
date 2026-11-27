@@ -10,8 +10,8 @@ import type { Polygon } from '../utils/geometry.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
- * (no `Transform`, `Jump`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`,
- * `Capturable` or `CathedralGemState`), never a made-up default.
+ * (no `Transform`, `Jump`, `Health`, `Progression`, `Aether`, `Combat`, `TeamMembership`,
+ * `ZoneArea`, `Capturable` or `CathedralGemState`), never a made-up default.
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
@@ -46,6 +46,11 @@ export type EntitySnapshot = {
   readonly progression: ProgressionSnapshot | null;
   /** A Legend's aether pool (`Aether`, DEC-230); `null` for every entity without one. */
   readonly aether: { readonly current: number; readonly max: number } | null;
+  /**
+   * A unit's attack (`Combat`): the weapon it holds (05 §10), `null` for a unit's own attack (a
+   * mob); the HUD shows the held weapon's art (DEC-354 (2)). `null` for an entity without `Combat`.
+   */
+  readonly combat: { readonly weaponId: string | null } | null;
   /** The ground a zone covers (`ZoneArea`), as polygons in world units; `null` for non-zones. */
   readonly area: readonly Polygon[] | null;
   /** A capture point's state (`Capturable`, architecture 07 §7); `null` for every other entity. */

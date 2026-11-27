@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -109,13 +109,13 @@ are unnecessary because `MemoryStorageAdapter` makes the real class fast in Node
 adapter, not the repository). Repositories return domain types mapped from DTOs at their boundary
 (§8) and never class instances from core.
 
-| Repository               | Store(s)   | Domain type it returns                                                | Methods (sketch)                                                                                                                |
-| ------------------------ | ---------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `ProfileRepository`      | `profiles` | `Profile` (name, aggregate stats, achievements, timestamps)           | `get(id)`, `list()`, `create(name)`, `save(profile)`, `applyMatch(tx, profileId, result, achievements)` (inside a unit of work) |
-| `LoadoutRepository`      | `loadouts` | core `Loadout` (repaired by `repairLoadout` when content moved)       | `listByProfile(profileId)`, `getByProfileAndClass(profileId, classId)`, `save(profileId, loadout)`, `delete(id)`                |
-| `SettingsRepository`     | `settings` | `Settings` = `{ bindings, audio, accessibility, developer, storage }` | `load(profileId)` (defaults for missing groups), `saveGroup(profileId, group, value)`                                           |
-| `MatchHistoryRepository` | `matches`  | `MatchHistoryRecord` (core `MatchResult` + identity and time)         | `listByProfile(profileId, { limit, before })` newest first via `by_profile_and_date`, `get(id)`, `append(tx, record)`           |
-| `ReplayRepository`       | `replays`  | core `Replay` ([03](03-game-model.md) §9)                             | `get(matchId)`, `put(tx, matchId, profileId, replay)`, `listOldest(count)` (for eviction), `delete(matchId)`                    |
+| Repository               | Store(s)   | Domain type it returns                                                       | Methods (sketch)                                                                                                                |
+| ------------------------ | ---------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `ProfileRepository`      | `profiles` | `Profile` (name, aggregate stats, achievements, timestamps)                  | `get(id)`, `list()`, `create(name)`, `save(profile)`, `applyMatch(tx, profileId, result, achievements)` (inside a unit of work) |
+| `LoadoutRepository`      | `loadouts` | core `Loadout` (`LoadoutController` repairs it when content moved, §8)       | `listByProfile(profileId)`, `getByProfileAndLegend(profileId, specId)`, `save(profileId, loadout)`, `delete(id)`                |
+| `SettingsRepository`     | `settings` | `Settings` = `{ bindings, audio, video, accessibility, developer, storage }` | `load(profileId)` (defaults for missing groups), `saveGroup(profileId, group, value)`                                           |
+| `MatchHistoryRepository` | `matches`  | `MatchHistoryRecord` (core `MatchResult` + identity and time)                | `listByProfile(profileId, { limit, before })` newest first via `by_profile_and_date`, `get(id)`, `append(tx, record)`           |
+| `ReplayRepository`       | `replays`  | core `Replay` ([03](03-game-model.md) §9)                                    | `get(matchId)`, `put(tx, matchId, profileId, replay)`, `listOldest(count)` (for eviction), `delete(matchId)`                    |
 
 ## 4. `StorageAdapter` and its adapters
 
@@ -238,7 +238,7 @@ export const MIGRATIONS: readonly Migration[] = [
     ],
     createIndexes: [
       { store: 'loadouts', name: 'by_profile', keyPath: 'profileId' },
-      { store: 'loadouts', name: 'by_profile_and_class', keyPath: ['profileId', 'classId'] },
+      { store: 'loadouts', name: 'by_profile_and_legend', keyPath: ['profileId', 'specId'] },
       { store: 'matches', name: 'by_profile', keyPath: 'profileId' },
       { store: 'matches', name: 'by_profile_and_date', keyPath: ['profileId', 'playedAt'] },
       { store: 'replays', name: 'by_played_at', keyPath: 'playedAt' },
@@ -291,15 +291,15 @@ numbers, strings, booleans, `null`; no class instances, functions, `Map`s or `Da
 ([research A1, structured clone](../research/persistence-input-diagnostics-research.md#a1-indexeddb-fundamentals-and-browser-behaviour)).
 Wall-clock fields exist only here, never in core.
 
-| Store        | Key                  | DTO                       | Fields (sketch)                                                                                                                                                                                                                                                                                                                                                                                            | Status                                |
-| ------------ | -------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `profiles`   | `id`                 | `ProfileDtoV1`            | `schemaVersion: 1`, `id`, `name`, `createdAt`, `lastPlayedAt`, `stats { matches, wins, losses, kills, deaths, assists, structuresDestroyed, playTimeTicks }`, `achievements: { id, matchId, unlockedAt }[]`                                                                                                                                                                                                | **MVP**; achievements **MVP-if-time** |
-| `loadouts`   | `id`                 | `SavedLoadoutDtoV1`       | `schemaVersion`, `id`, `profileId`, `classId`, `name`, `updatedAt`, `loadout: LoadoutDtoV1` (mirrors core `Loadout`, [05](05-abilities-weapons-and-loadouts.md) §12: `primaryWeaponId`, `abilities[3]`, `ultimate`, `artifacts[2]`, …)                                                                                                                                                                     | **MVP**                               |
-| `settings`   | `[profileId, group]` | `SettingsGroupDtoV1`      | `schemaVersion`, `profileId`, `group: 'bindings' \| 'audio' \| 'accessibility' \| 'developer' \| 'storage'`, `value`: bindings `{ preset, bindings: BindingDtoV1[] }` (`{ action, chords: ChordDtoV1[] }`, [13](13-game-interface.md) §6); audio `{ master, music, sfx }`; accessibility `{ reducedMotion }`; developer `{ menuEnabled, assertLevel }`; storage `{ recordSimulatedMatches, storeReplays }` | **MVP**                               |
-| `matches`    | `id`                 | `MatchHistoryRecordDtoV1` | as in [mechanics-ideas §8](../reference/suggestions/mechanics-ideas.md#8-match-history-record-contents): `id`, `profileId`, `playedAt`, `durationTicks`, `tickRate`, `seed`, `mapPresetId`, `configHash`, `coreVersion`, `contentVersion`, `isSimulation`, `result`, `player`, `legends: LegendScoreDtoV1[]`, `teams`, `timeline`, `achievements`, `replayId`                                              | **MVP**                               |
-| `replays`    | `matchId`            | `ReplayDtoV1`             | `schemaVersion`, `matchId`, `profileId`, `playedAt`, `replay: Replay` (core: `versions { core, content, schema }`, the setup (`seed`, `config`, `map`, `mapObjects`, `roster`), `commands[{ tick, command }]`, `checkpoints[{ tick, hash }]`)                                                                                                                                                              | **MVP** (cut line 9 in the plan)      |
-| `meta`       | `key`                | `MetaDtoV1`               | `key: 'schema'`, `dbVersion`, `coreVersion`, `contentVersion`, `persistRequestedAt`, `lastOpenedAt`                                                                                                                                                                                                                                                                                                        | **MVP**                               |
-| `quarantine` | `id` (auto)          | `QuarantineRecordDtoV1`   | `id`, `store`, `key`, `reason`, `quarantinedAt`, `value: unknown`                                                                                                                                                                                                                                                                                                                                          | **MVP**                               |
+| Store        | Key                  | DTO                       | Fields (sketch)                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Status                                |
+| ------------ | -------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------- |
+| `profiles`   | `id`                 | `ProfileDtoV1`            | `schemaVersion: 1`, `id`, `name`, `createdAt`, `lastPlayedAt`, `stats { matches, wins, losses, kills, deaths, assists, structuresDestroyed, playTimeTicks }`, `achievements: { id, matchId, unlockedAt }[]`                                                                                                                                                                                                                                                                    | **MVP**; achievements **MVP-if-time** |
+| `loadouts`   | `id`                 | `SavedLoadoutDtoV1`       | `schemaVersion`, `id`, `profileId`, `specId` (the Legend, DEC-354 (1)), `name`, `updatedAt`, `loadout: LoadoutDtoV1` (mirrors core `Loadout`, [05](05-abilities-weapons-and-loadouts.md) §12: `primaryWeaponId`, `abilities[3]`, `ultimate`, `artifacts[2]`, …)                                                                                                                                                                                                                | **MVP**                               |
+| `settings`   | `[profileId, group]` | `SettingsGroupDtoV1`      | `schemaVersion`, `profileId`, `group: 'bindings' \| 'audio' \| 'video' \| 'accessibility' \| 'developer' \| 'storage'`, `value`: bindings `{ preset, bindings: BindingDtoV1[] }` (`{ action, chords: ChordDtoV1[] }`, [13](13-game-interface.md) §6); audio `{ master, music, effects }`; video `{ fullscreen, renderScale }`; accessibility `{ reduceMotion, colourBlindMode }`; developer `{ menuEnabled, assertLevel }`; storage `{ recordSimulatedMatches, storeReplays }` | **MVP**                               |
+| `matches`    | `id`                 | `MatchHistoryRecordDtoV1` | as in [mechanics-ideas §8](../reference/suggestions/mechanics-ideas.md#8-match-history-record-contents): `id`, `profileId`, `playedAt`, `durationTicks`, `tickRate`, `seed`, `mapPresetId`, `configHash`, `coreVersion`, `contentVersion`, `isSimulation`, `result`, `player`, `legends: LegendScoreDtoV1[]`, `teams`, `timeline`, `achievements`, `replayId`                                                                                                                  | **MVP**                               |
+| `replays`    | `matchId`            | `ReplayDtoV1`             | `schemaVersion`, `matchId`, `profileId`, `playedAt`, `replay: Replay` (core: `versions { core, content, schema }`, the setup (`seed`, `config`, `map`, `mapObjects`, `roster`), `commands[{ tick, command }]`, `checkpoints[{ tick, hash }]`)                                                                                                                                                                                                                                  | **MVP** (cut line 9 in the plan)      |
+| `meta`       | `key`                | `MetaDtoV1`               | `key: 'schema'`, `dbVersion`, `coreVersion`, `contentVersion`, `persistRequestedAt`, `lastOpenedAt`                                                                                                                                                                                                                                                                                                                                                                            | **MVP**                               |
+| `quarantine` | `id` (auto)          | `QuarantineRecordDtoV1`   | `id`, `store`, `key`, `reason`, `quarantinedAt`, `value: unknown`                                                                                                                                                                                                                                                                                                                                                                                                              | **MVP**                               |
 
 Replays store seed + command log + versions, never full state ([research A3](../research/persistence-input-diagnostics-research.md#a3-patterns-repository-unit-of-work-facade-dtos-migrations-replays)):
 `ReplayRecorder` in core records the commands that enter through `Simulation.enqueueCommand`
@@ -352,8 +352,9 @@ export async function readOrQuarantine<T>(
 A corrupt record is copied to `quarantine`, removed from the live store, logged at WARN through
 `Logger` and replaced by a default; it is never fatal and no screen can crash on stored data
 (plan Phase 5, sprint 5.1). Semantic checks that need knowledge `data/` may not import are
-injected: the bindings validator receives `knownActions` from `main.tsx`, and `LoadoutRepository`
-calls core's `repairLoadout` (public API) for content ids that no longer exist.
+injected: the bindings validator receives `knownActions` from `main.tsx`. A saved loadout that
+names content ids that no longer exist is repaired above `data/`: the client's `LoadoutController`
+calls core's `repairLoadout` (public API) and logs it, so `data/` needs no content (DEC-354 (3)).
 
 ## 9. Durable storage, quota, eviction, export and import
 
@@ -483,8 +484,7 @@ export class ResourceController {
   [09](09-hardware-abstraction.md) §9): CRUD round trips of structured-cloneable DTOs, index and
   range queries, `readonly` isolation, abort rollback (an error mid-work leaves 0 writes),
   `close` then `open`. Runs against `MemoryStorageAdapter` in Node and `IndexedDbStorageAdapter`
-  against an IndexedDB fake (`Recommendation:` `fake-indexeddb`, a dev dependency needing
-  approval per `AGENTS.md`; fallback: a hand-written fake of the used subset).
+  against `fake-indexeddb` (a test-only dev dependency of `apps/client`, approved by DEC-354 (4)).
 - **Migrations**: open at v1, seed fixtures, reopen with a test `Migration` at v2 adding an
   index and a `transform`; 100 % of records survive; v2 data under v1 code fails with
   `StorageError('version')`, never a hang.
@@ -509,35 +509,53 @@ export class ResourceController {
 
 ## 14. Implementation status
 
-**Loadouts (`feat/loadout-screen`, 2026-11-20).** `PersistenceController` also has
-`loadLoadouts(classIds)` and `saveLoadout(classId, loadout)` over `LoadoutRepository`, one
-`LoadoutDtoV1` (`primaryWeaponId`) per profile and class in the v1 `loadouts` store (no `name`,
-`updatedAt` or nested `loadout` of §7's `SavedLoadoutDtoV1` yet). The DTO check is shape only.
-A weapon id content no longer has is not quarantined: the client's `LoadoutController` repairs
-it with core's `repairLoadout` and logs it, in place of §8's repository-side repair, so `data/`
-needs no content and the screen learns which classes were repaired. The owner signed off this
-place for the repair (DEC-354 (3)). Loadouts stay keyed per class until `feat/loadout-per-legend`
-keys them per Legend (DEC-354 (1)).
+**Loadouts (`feat/loadout-screen`, 2026-11-20; `feat/loadout-per-legend`, 2026-11-26).**
+`PersistenceController` also has `loadLoadouts(specIds)` and `saveLoadout(specId, loadout)` over
+`LoadoutRepository`, one `SavedLoadoutDtoV1` per profile and Legend (`specId`, DEC-354 (1)) in the
+v1 `loadouts` store, in the shape of §7 (DEC-418 (1)). Its key `id` is
+`loadoutKey(profileId, specId)`. `name` is always `null`, because a profile keeps one loadout per
+Legend and no design names a loadout. `updatedAt` is the repository's `now()` at save. The facade
+takes and returns `PersistedLoadout` (`primaryWeaponId`), and the repository maps it to and from
+the record's `loadout`. Two parts differ from §7 and §8. The nested `loadout: LoadoutDtoV1` holds
+only the slots (`primaryWeaponId`), with no class and no Legend. So there is no `toLoadout` or
+`fromLoadout` mapper: the client's `LoadoutController` builds the core `Loadout` from `specId` and
+the slots. This waits for the owner's sign-off as a better-than-design item (`INBOX.md`, "Better than
+design: three loadout items"). There is no `upgradeSavedLoadoutDto` either (no version
+bump, below). `LoadoutRepository.load`
+is §3's `getByProfileAndLegend`; `listByProfile`, `delete` and §5's indexes are not built,
+because the storage port has no index reads: the caller names the Legends. The DTO check is shape
+only. A weapon id content no longer has is not quarantined: the client's `LoadoutController`
+repairs it with core's `repairLoadout` and logs it (§8), so
+`data/` needs no content and the screen learns which Legends were repaired. The owner signed off
+this place for the repair (DEC-354 (3)). Records saved per class before DEC-354 (1)
+(`local/warrior`) are not migrated and never read: no released build stored them, and class ids
+and Legend ids do not overlap. Core finds a Legend's class from content (DEC-418 (2);
+[05](05-abilities-weapons-and-loadouts.md) §18, "Loadout").
 
-**IndexedDB (`feat/loadout-indexeddb`, 2026-11-20; `feat/loadout-screen`, 2026-11-25).**
-`IndexedDbStorageAdapter` (over `idbPromises.ts`, no dependency) is built by `inBrowser()` from
-the page's `indexedDB`; it types against narrow `Idb*Api` interfaces
-(`IndexedDbStorageAdapter.types.ts`) that the browser's objects satisfy. `open` runs the
-`createStores` ladder inside `onupgradeneeded`; a `work` that throws aborts its transaction; on
-`versionchange` the connection closes. Open failures are a `StorageError` (`unavailable`,
-`version`, `blocked`; the other §10 kinds wait for a caller). `main.tsx` does not inject it yet:
-it injects `MemoryStorageAdapter`, so nothing is saved past the session, because the owner wants
-the layout changed before disk saves turn on (DEC-354 (5)). `feat/loadout-per-legend` moves the
-settings store to §7's `[profileId, group]` key, keys loadouts per Legend and then injects this
-adapter. An optional `fallback` (`StorageFallback`) makes `PersistenceController` wrap its adapter
-in `FallbackStorageAdapter`: when `open` fails, it reports the failure through the fallback's
-`reportError` and continues on `MemoryStorageAdapter`; `blocked` falls back at once. `main.tsx`
-does not pass a `fallback` yet; when it does (`feat/loadout-per-legend`), `reportError` writes an
-ERROR record, as §10 says. No `degraded` status yet.
-§12's contract suite and the adapter's own cases (reads and writes, upgrade, newer version,
-blocked, abort, `versionchange`) run against a hand-written fake of the used subset
-(`__fixtures__/FakeIdb*.ts`); `fake-indexeddb` replaces it in `feat/loadout-per-legend`
-(DEC-354 (4)).
+No released build stored loadouts: `origin/main`, `origin/feat/loadout-screen` and
+`origin/phase/3-sprint-3-work` use `MemoryStorageAdapter`, and only `feat/loadout-per-legend`
+turns on IndexedDB. So the v1 layout changed in place, with no `schemaVersion` bump. A dev
+browser that ran this branch before DEC-418 holds flat records (the slots beside the header). The
+validator refuses them on `name`, `readOrQuarantine` quarantines them, and the loadout falls back
+to the auto-build.
+
+**IndexedDB (`feat/loadout-indexeddb`, 2026-11-20; `feat/loadout-screen`, 2026-11-25;
+`feat/loadout-per-legend`, 2026-11-26).** `IndexedDbStorageAdapter` (over `idbPromises.ts`, no
+dependency) is built by `inBrowser()` from the page's `indexedDB`; it types against narrow
+`Idb*Api` interfaces (`IndexedDbStorageAdapter.types.ts`) that the browser's objects satisfy.
+`open` runs the `createStores` ladder inside `onupgradeneeded`; a `work` that throws aborts its
+transaction; on `versionchange` the connection closes. Open failures are a `StorageError`
+(`unavailable`, `version`, `blocked`; the other §10 kinds wait for a caller). `main.tsx` builds
+`PersistenceController` through `game/createPersistence.ts` and injects
+`IndexedDbStorageAdapter.inBrowser()`, so settings, loadouts and the guest id survive a reload
+(DEC-354 (5)). `createPersistence` also passes a `fallback` (`StorageFallback`), so
+`PersistenceController` wraps its adapter in `FallbackStorageAdapter`: when `open` fails, the
+fallback's `reportError` writes an ERROR `client.persistence` record, as §10 says, which becomes
+an error report, and storage continues on `MemoryStorageAdapter`, so nothing is saved past the
+session. `blocked` falls back at once. The owner chose ERROR for this record (DEC-418 (3)).
+`createPersistence` lives in `game/` because it builds log records, and `data/` imports core
+types only (§1). No `degraded` status yet. §12's contract suite and the adapter's own cases (reads and writes, upgrade, newer version, blocked, abort,
+`versionchange`) run against `fake-indexeddb` (DEC-354 (4)), one fresh `IDBFactory` per test.
 
 ADR 0028 (DEC-298) registers contributor-confirmed art using attachmentReferenceId and the user-authorised-art licence. hasAssetProvenance checks each reference against its documented record. Sprite atlases use the sprite-atlas asset type in separate per-Legend groups.
 
@@ -548,20 +566,24 @@ Built in Sprint 1 (session F), settings only: `PersistenceController` with `open
 come with their first caller); `MemoryStorageAdapter`, which runs transactions one at a time in
 call order, and the `describeStorageAdapter` contract suite; `schema/migrations.ts` v1 with the
 `settings` and `quarantine` stores only; `SettingsRepository` (a class, no interface yet), which
-reads through the shared `readOrQuarantine`. Interim gaps, to settle before
-`IndexedDbStorageAdapter` (S2) fixes v1 on disk:
+reads through the shared `readOrQuarantine`. Interim gaps. `main.tsx` now injects
+`IndexedDbStorageAdapter` (above), so v1 is on disk: closing a gap that changes a stored record
+follows §13's "A field or a settings group" (an optional field, or a `schemaVersion` bump with an
+upgrade step):
 
-- Settings are one `SettingsDtoV1` record per profile keyed by `profileId`, not §7's
-  `SettingsGroupDtoV1` keyed by `[profileId, group]`; the groups are `audio`, `video` and
-  `accessibility` (the Sprint 1 contract's `settingsSlice`), with no `developer` or `storage`
-  group yet. Changing the key path after IndexedDB ships needs a new store and a `transform`.
+- Settings are one `SettingsGroupDtoV1` record per profile and group, keyed `[profileId, group]`
+  (DEC-354 (5)). The groups built are `bindings`, `audio`, `video` and `accessibility`. The
+  `developer` and `storage` groups are not built yet, and the bindings value has no `preset` yet. `SettingsRepository.load` returns only the
+  groups it found: a missing or corrupt group is absent, and the game keeps that group's default.
+  A corrupt group is quarantined alone. `save` writes all groups in one transaction.
+- `SettingsRepository.saveGroup` of §3 is not built: no caller saves one group.
 - One profile (`LOCAL_PROFILE_ID`) until the profiles store exists.
 - The validation helpers (`isRecord`, `groupProblem`, field checks) are private to
   `dto/SettingsDto.ts`; when S2 adds the second DTO, the common ones move to a shared
   `dto/dtoCheck.ts` beside `DtoCheck.types.ts` (PR #24 review).
 - A quarantine is reported through an injected `warn` callback, because `data/` imports core
-  types only (§1); `main.tsx` turns it into a `Logger` record. No `degraded` status or memory
-  fallback yet (§10): a failed open leaves the settings on defaults.
+  types only (§1); `game/createPersistence.ts` turns it into a `Logger` record. No `degraded`
+  status yet (§10). The memory fallback is built (see "IndexedDB" above).
 - **Stored chord modifiers (2026-10-30).** A stored keyboard chord has an optional `modifiers`
   field (DEC-105), added inside schema version 1: records saved before it still read, because the
   field is optional, so no upgrade step was needed and none was written. §13's recipe "A field or

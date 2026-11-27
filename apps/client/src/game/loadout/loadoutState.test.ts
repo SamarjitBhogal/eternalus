@@ -1,36 +1,81 @@
 import { loadDisplayContent, loadoutContentOf } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
+import { legendLoadoutOptions } from './legendLoadoutOptions';
 import type { SavedLoadout } from './LoadoutController.types';
-import { resolveSavedLoadouts } from './loadoutState';
+import { legendLoadout, resolveSavedLoadouts } from './loadoutState';
 
-const CONTENT = loadoutContentOf(loadDisplayContent());
+const DISPLAY = loadDisplayContent();
+const CONTENT = loadoutContentOf(DISPLAY);
+const OPTIONS = legendLoadoutOptions(DISPLAY);
 
 const saved = (entries: Record<string, string>): ReadonlyMap<string, SavedLoadout> =>
-  new Map(Object.entries(entries).map(([classId, id]) => [classId, { primaryWeaponId: id }]));
+  new Map(Object.entries(entries).map(([specId, id]) => [specId, { primaryWeaponId: id }]));
 
 describe('resolveSavedLoadouts', () => {
-  it('keeps a saved loadout that passes the loadout rules', () => {
-    const resolved = resolveSavedLoadouts(CONTENT, saved({ warrior: 'wuuthrad' }));
-    expect(resolved).toEqual({ saved: { warrior: 'wuuthrad' }, repairs: new Map() });
+  it('keeps a saved loadout that passes the loadout rules, per Legend', () => {
+    const resolved = resolveSavedLoadouts(
+      CONTENT,
+      OPTIONS,
+      saved({ knight: 'wuuthrad', paladin: 'raptor-talons' }),
+    );
+    expect(resolved).toEqual({
+      saved: { knight: 'wuuthrad', paladin: 'raptor-talons' },
+      repairs: new Map(),
+    });
   });
 
   it('repairs a weapon that no longer exists with the auto-build and names the slot', () => {
-    const resolved = resolveSavedLoadouts(CONTENT, saved({ sentinel: 'renamed-axe' }));
-    expect(resolved.saved).toEqual({ sentinel: 'wuuthrad' });
-    expect(resolved.repairs).toEqual(new Map([['sentinel', ['primary-weapon']]]));
+    const resolved = resolveSavedLoadouts(CONTENT, OPTIONS, saved({ colossus: 'renamed-axe' }));
+    expect(resolved.saved).toEqual({ colossus: 'wuuthrad' });
+    expect(resolved.repairs).toEqual(new Map([['colossus', ['primary-weapon']]]));
   });
 
-  it('repairs a weapon the class may not carry the same way', () => {
-    const resolved = resolveSavedLoadouts(CONTENT, saved({ warrior: 'magus-staff' }));
-    expect(resolved.saved).toEqual({ warrior: 'raptor-talons' });
-    expect([...resolved.repairs.keys()]).toEqual(['warrior']);
+  it("repairs a weapon the Legend's class may not carry the same way", () => {
+    const resolved = resolveSavedLoadouts(CONTENT, OPTIONS, saved({ knight: 'magus-staff' }));
+    expect(resolved.saved).toEqual({ knight: 'raptor-talons' });
+    expect([...resolved.repairs.keys()]).toEqual(['knight']);
   });
 
-  it('ignores a class content does not have', () => {
-    expect(resolveSavedLoadouts(CONTENT, saved({ 'old-class': 'x' }))).toEqual({
+  it('ignores a Legend content does not have, and a record keyed by class', () => {
+    expect(
+      resolveSavedLoadouts(CONTENT, OPTIONS, saved({ 'old-legend': 'x', warrior: 'wuuthrad' })),
+    ).toEqual({
       saved: {},
       repairs: new Map(),
     });
+  });
+
+  it('ignores, without throwing, a Legend the screen offers but content does not have', () => {
+    const options = {
+      ...OPTIONS,
+      'lost-legend': { defaultWeaponId: 'x', weapons: [] },
+    };
+    expect(resolveSavedLoadouts(CONTENT, options, saved({ 'lost-legend': 'wuuthrad' }))).toEqual({
+      saved: {},
+      repairs: new Map(),
+    });
+  });
+});
+
+describe('legendLoadout', () => {
+  it("builds a Legend's core loadout with the class core finds (DEC-418 (2))", () => {
+    expect(legendLoadout(CONTENT, OPTIONS, 'oracle', { primaryWeaponId: 'wuuthrad' })).toEqual({
+      classId: 'magus',
+      specId: 'oracle',
+      primaryWeaponId: 'wuuthrad',
+    });
+  });
+
+  it('answers null for a Legend the screen does not offer or content does not have', () => {
+    const options = Object.fromEntries([
+      ...Object.entries(OPTIONS).filter(([specId]) => specId !== 'oracle'),
+      ['lost-legend', { defaultWeaponId: 'x', weapons: [] }],
+    ]);
+
+    expect(legendLoadout(CONTENT, options, 'oracle', { primaryWeaponId: 'wuuthrad' })).toBeNull();
+    expect(
+      legendLoadout(CONTENT, options, 'lost-legend', { primaryWeaponId: 'wuuthrad' }),
+    ).toBeNull();
   });
 });

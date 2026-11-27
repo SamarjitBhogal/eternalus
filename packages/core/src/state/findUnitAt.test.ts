@@ -22,6 +22,7 @@ const entity = (
   elevation: null,
   progression: null,
   aether: null,
+  combat: null,
   area: null,
   capture: null,
   gem: null,

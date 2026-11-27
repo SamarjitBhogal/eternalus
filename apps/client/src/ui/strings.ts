@@ -89,14 +89,14 @@ export const STRINGS = {
   loadouts: {
     title: 'Loadouts',
     classGroup: 'Class',
+    /** The Legend (sub-class, DEC-49) a loadout is saved for (DEC-354 (1)). */
+    legendGroup: 'Legend',
     weaponGroup: 'Primary weapon',
-    /** Shown when content has not published the weapons a class may take. */
-    weaponsUnavailable: 'The weapons of this class are not available yet.',
-    /** Prefix of the start weapon shown while the choices are unavailable, e.g. "Starts with X". */
-    startsWith: 'Starts with',
+    /** Shown when content has not published the weapons the picked Legend may take. */
+    weaponsUnavailable: 'The weapons of this Legend are not available yet.',
     /** Auto-build replaced a saved weapon that broke the loadout rules (08 "Saved to the profile"). */
     repaired: 'The saved weapon is no longer available, so auto-build replaced it.',
-    /** Fills every slot with the class's defaults (08 "Pre-game configuration and auto-build"). */
+    /** Fills every slot with the Legend's defaults (08 "Pre-game configuration and auto-build"). */
     autoBuild: 'Auto-build',
     save: 'Save loadout',
     pendingTitle: 'Coming with their content',

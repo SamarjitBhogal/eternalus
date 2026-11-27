@@ -2,17 +2,16 @@ import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { ContentCatalogue } from './content/ContentCatalogue';
+import type { LegendSpecDefinition } from './content/legends/specs/legendSpecs.types';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import type { Logger } from './diagnostics/Logger.types';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { NullLogger } from './diagnostics/NullLogger';
 import { recordReplay, runReplay } from './diagnostics/replay';
 import type { MapDefinition } from './content/maps/maps.types';
-import { Combat } from './components/Combat';
 import { Simulation } from './Simulation';
 import type { ReplaySetup, RosterSlot } from './Simulation.types';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
-import type { GameState } from './state/GameState';
 import type { PlayableTeam } from './teams/teams.types';
 
 /** The dark Stronghold of the two-lane map. */
@@ -81,25 +80,25 @@ describe('Simulation: the human slot of the roster', () => {
         team: 'dark',
         definitionId: 'warrior',
         role: 'rover',
-        loadout: { classId: 'warrior', primaryWeaponId: 'wuuthrad' },
+        loadout: { classId: 'warrior', specId: 'knight', primaryWeaponId: 'wuuthrad' },
       },
       laner('dark'),
     ]);
-    // ponytail: reads the private state, as Simulation.healing.test.ts does; snapshots carry no weapon.
-    const { state } = sim as unknown as { readonly state: GameState };
-    const weapons = new Map<string, string | null>();
-    state.entities.forEach((entity) => {
-      if (entity.family === 'legend') weapons.set(entity.id, entity.getComponent(Combat).weaponId);
-    });
+    const { entities, match } = sim.snapshot();
+    const weapons = entities
+      .filter((entity) => entity.family === 'legend')
+      .map((entity) => [entity.id, entity.combat?.weaponId] as const);
 
-    const humanId = sim.snapshot().match.humanLegendId ?? '';
-    expect(weapons.get(humanId)).toBe('wuuthrad');
-    expect([...weapons].filter(([id]) => id !== humanId).map(([, weapon]) => weapon)).toEqual([
-      'raptor-talons',
+    // The snapshot's `combat` group carries the held weapon (the HUD's weapon art, DEC-354 (2)).
+    expect(weapons.filter(([id]) => id === match.humanLegendId)).toEqual([
+      [match.humanLegendId, 'wuuthrad'],
     ]);
+    expect(
+      weapons.filter(([id]) => id !== match.humanLegendId).map(([, weapon]) => weapon),
+    ).toEqual(['raptor-talons']);
   });
 
-  it("logs an invalid loadout on the human slot as a diagnostic event and spawns the class's auto-build", () => {
+  it("logs an invalid loadout on the human slot as a diagnostic event and spawns its Legend's auto-build", () => {
     const logger = new MemoryLogger();
     const sim = build(
       [
@@ -108,26 +107,58 @@ describe('Simulation: the human slot of the roster', () => {
           team: 'dark',
           definitionId: 'warrior',
           role: 'rover',
-          loadout: { classId: 'warrior', primaryWeaponId: 'magus-staff' },
+          loadout: { classId: 'warrior', specId: 'knight', primaryWeaponId: 'magus-staff' },
         },
       ],
       logger,
     );
-    const { state } = sim as unknown as { readonly state: GameState };
-    const humanId = sim.snapshot().match.humanLegendId ?? '';
+    const { entities, match } = sim.snapshot();
 
-    expect(state.entities.get(humanId)?.getComponent(Combat).weaponId).toBe('raptor-talons');
+    expect(entities.find(({ id }) => id === match.humanLegendId)?.combat).toEqual({
+      weaponId: 'raptor-talons',
+    });
     expect(logger.records.filter(({ scope }) => scope === 'core.loadout')).toMatchObject([
       {
         severityText: 'WARN',
         eventName: 'loadout-rejected',
         attributes: {
           definitionId: 'warrior',
+          givenSpecId: 'knight',
           givenWeaponId: 'magus-staff',
+          usedSpecId: 'knight',
           usedWeaponId: 'raptor-talons',
           problems: 'class "warrior" may not carry weapon "magus-staff"',
         },
       },
+    ]);
+  });
+
+  it('rejects a loadout whose Legend is not in the injected specs, and spawns the class default', () => {
+    const logger = new MemoryLogger();
+    const sim = new Simulation({
+      config: configFor(),
+      seed: 5,
+      logger,
+      map: TWO_LANE_MAP,
+      specs: new ContentCatalogue<LegendSpecDefinition>([]),
+      roster: [
+        {
+          pilot: 'human',
+          team: 'dark',
+          definitionId: 'warrior',
+          role: 'rover',
+          loadout: { classId: 'warrior', specId: 'knight', primaryWeaponId: 'wuuthrad' },
+        },
+      ],
+    });
+    const { entities, match } = sim.snapshot();
+
+    // The shipped Legends would accept this loadout and keep the Wuuthrad.
+    expect(entities.find(({ id }) => id === match.humanLegendId)?.combat).toEqual({
+      weaponId: 'raptor-talons',
+    });
+    expect(logger.records.filter(({ scope }) => scope === 'core.loadout')).toMatchObject([
+      { eventName: 'loadout-rejected', attributes: { givenSpecId: 'knight', usedSpecId: null } },
     ]);
   });
 
@@ -391,7 +422,7 @@ describe('Simulation: the human slot of the roster', () => {
       team: 'dark',
       definitionId: 'warrior',
       role: 'rover',
-      loadout: { classId: 'warrior', primaryWeaponId: 'wuuthrad' },
+      loadout: { classId: 'warrior', specId: 'knight', primaryWeaponId: 'wuuthrad' },
     };
     const createTarget = ({ config, seed, roster }: ReplaySetup) =>
       new Simulation({

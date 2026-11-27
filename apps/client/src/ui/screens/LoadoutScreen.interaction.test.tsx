@@ -16,21 +16,33 @@ import { LoadoutScreen } from './LoadoutScreen';
 /** React's `act` expects this flag in a test page (react.dev, "act"). */
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+const MAGUS_OPTIONS = {
+  defaultWeaponId: 'magus-staff',
+  weapons: [
+    { id: 'magus-staff', displayName: 'Staff' },
+    { id: 'wuuthrad', displayName: 'Wuuthrad' },
+  ],
+};
+
+/** Keyed by Legend (DEC-354 (1)): TEST_CONTENT's warrior Templar, sentinel Colossus, Magus three. */
 const LOADOUTS: LoadoutsSliceState = {
   options: {
-    warrior: {
+    knight: {
       defaultWeaponId: 'raptor-talons',
       weapons: [
         { id: 'raptor-talons', displayName: 'Raptor Talons' },
         { id: 'wuuthrad', displayName: 'Wuuthrad' },
       ],
     },
-    sentinel: {
+    colossus: {
       defaultWeaponId: 'sentinel-shield',
       weapons: [{ id: 'sentinel-shield', displayName: 'Sentinel Shield' }],
     },
+    catalyst: MAGUS_OPTIONS,
+    oracle: MAGUS_OPTIONS,
+    necromancer: MAGUS_OPTIONS,
   },
-  saved: {},
+  saved: { catalyst: 'wuuthrad' },
   repaired: [],
 };
 
@@ -52,6 +64,9 @@ function mount(): HTMLElement {
   });
   return container;
 }
+
+const names = (radios: readonly HTMLElement[]): (string | null)[] =>
+  radios.map((radio) => radio.textContent);
 
 const group = (container: HTMLElement, label: string): HTMLElement[] => [
   ...container.querySelectorAll<HTMLElement>(
@@ -91,6 +106,19 @@ describe('LoadoutScreen (page)', () => {
     ]);
   });
 
+  it('changes the Legends offered when another class is picked, and opens the first', () => {
+    const container = mount();
+    expect(names(group(container, STRINGS.loadouts.legendGroup))).toEqual(['Templar']);
+    click(group(container, STRINGS.loadouts.classGroup)[2]);
+    const legends = group(container, STRINGS.loadouts.legendGroup);
+    expect(names(legends)).toEqual(['Catalyst', 'Oracle', 'Heretic']);
+    expect(legends.map((radio) => radio.getAttribute('aria-checked'))).toEqual([
+      'true',
+      'false',
+      'false',
+    ]);
+  });
+
   it('keeps Save disabled until a different weapon is picked, then sends the intent', () => {
     const container = mount();
     expect(saveButton(container)?.disabled).toBe(true);
@@ -98,7 +126,26 @@ describe('LoadoutScreen (page)', () => {
     expect(saveButton(container)?.disabled).toBe(false);
     click(saveButton(container));
     expect(intents).toEqual([
-      { kind: 'save-loadout', classId: 'warrior', primaryWeaponId: 'wuuthrad' },
+      { kind: 'save-loadout', specId: 'knight', primaryWeaponId: 'wuuthrad' },
+    ]);
+  });
+
+  it('saves a weapon for the picked Legend: a Legend, a weapon, then Save (DEC-354 (1))', () => {
+    const container = mount();
+    click(group(container, STRINGS.loadouts.classGroup)[2]);
+    // The Catalyst has Wuuthrad saved; the Oracle, of the same class, has nothing saved.
+    expect(group(container, STRINGS.loadouts.weaponGroup)[1]?.getAttribute('aria-checked')).toBe(
+      'true',
+    );
+    click(group(container, STRINGS.loadouts.legendGroup)[1]);
+    const weapons = group(container, STRINGS.loadouts.weaponGroup);
+    expect(weapons.map((radio) => radio.getAttribute('aria-checked'))).toEqual(['true', 'false']);
+
+    click(weapons[1]);
+    click(saveButton(container));
+
+    expect(intents).toEqual([
+      { kind: 'save-loadout', specId: 'oracle', primaryWeaponId: 'wuuthrad' },
     ]);
   });
 

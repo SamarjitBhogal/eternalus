@@ -12,15 +12,15 @@ import styles from './LoadoutScreen.module.css';
 import { useLoadoutDraft } from './useLoadoutDraft';
 
 /**
- * Loadouts (08, 14 §1): pick a class, then its primary weapon (or Auto-build), and save it to the
- * profile; the game checks it against the loadout rules. The slots content cannot fill yet are
- * listed but disabled, so the design is visible.
+ * Loadouts (08, 14 §1): pick a class, then one of its Legends, then the Legend's primary weapon (or
+ * Auto-build), and save it to the profile for that Legend (DEC-354 (1)); the game checks it against
+ * the loadout rules. The slots content cannot fill yet are listed but disabled, so the design is
+ * visible.
  */
 export function LoadoutScreen(): ReactElement {
   const classes = useAppSelector(selectSelectableClasses);
   const draft = useLoadoutDraft(classes);
   const pickedClass = classes.find((card) => card.classId === draft.classId);
-  const startWeapon = pickedClass?.hud?.weapon?.displayName ?? null;
   return (
     <ScreenFrame>
       <Panel title={STRINGS.loadouts.title}>
@@ -32,12 +32,16 @@ export function LoadoutScreen(): ReactElement {
           autoFocusPicked
         />
         {pickedClass !== undefined && <p className={styles.note}>{pickedClass.blurb}</p>}
+        <h3>{STRINGS.loadouts.legendGroup}</h3>
+        <LoadoutRadioGroup
+          label={STRINGS.loadouts.legendGroup}
+          choices={draft.legends.map((spec) => ({ id: spec.specId, label: spec.displayName }))}
+          pickedId={draft.specId}
+          onPick={draft.pickLegend}
+        />
         <h3>{STRINGS.loadouts.weaponGroup}</h3>
         {draft.options === null ? (
-          <p className={styles.note}>
-            {STRINGS.loadouts.weaponsUnavailable}
-            {startWeapon !== null && ` ${STRINGS.loadouts.startsWith} ${startWeapon}.`}
-          </p>
+          <p className={styles.note}>{STRINGS.loadouts.weaponsUnavailable}</p>
         ) : (
           <LoadoutRadioGroup
             label={STRINGS.loadouts.weaponGroup}

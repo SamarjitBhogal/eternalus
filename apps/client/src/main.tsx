@@ -21,8 +21,7 @@ import { LOG_TAIL_RECORDS } from './data/logging/ErrorReporter.constants';
 import { logWindowErrors } from './data/logging/logWindowErrors';
 import { RingBufferSink } from './data/logging/RingBufferSink';
 import { SinkLogger } from './data/logging/SinkLogger';
-import { MemoryStorageAdapter } from './data/persistence/MemoryStorageAdapter';
-import { PersistenceController } from './data/persistence/PersistenceController';
+import { IndexedDbStorageAdapter } from './data/persistence/IndexedDbStorageAdapter';
 import { ASSET_LICENCES } from './data/resources/assetLicences';
 import { ASSET_MANIFEST } from './data/resources/AssetManifest';
 import { describeCredits } from './data/resources/describeCredits';
@@ -35,9 +34,10 @@ import { PLACEHOLDER_PLAYER_NAME } from './game/content/placeholderSetup';
 import { createBrowserDuelMatch } from './game/createBrowserDuelMatch';
 import { createBrowserMatch, type BrowserMatchDeps } from './game/createBrowserMatch';
 import { createMatchSeed } from './game/createMatchSeed';
+import { createPersistence } from './game/createPersistence';
 import { readDeveloperFlags } from './game/developerFlags';
 import { isAppleUserAgent } from './game/isAppleUserAgent';
-import { classLoadoutOptions } from './game/loadout/classLoadoutOptions';
+import { legendLoadoutOptions } from './game/loadout/legendLoadoutOptions';
 import { LoadoutController } from './game/loadout/LoadoutController';
 import { DEFAULT_DUEL_SERVER_URL } from './game/engine/net/DuelServer.constants';
 import { WebSocketTransport } from './game/engine/net/WebSocketTransport';
@@ -102,20 +102,18 @@ logWindowErrors(window, logger);
 const developer = readDeveloperFlags(window.location.search);
 
 connectBusToStore(eventBus, store.dispatch);
-// What the Loadout screen offers per class, and the rules loadouts are checked and repaired by (08).
+// What the Loadout screen offers per Legend, and the rules loadouts are checked and repaired by (08).
 const displayContent = loadDisplayContent();
-const persistence = new PersistenceController({
-  // Memory only until the settings layout (per group) and per-Legend loadout keys land: writing
-  // today's shape to players' browsers would need a migration for a schema that never shipped
-  // (owner answer 5, DEC-354). The follow-up PR turns IndexedDbStorageAdapter.inBrowser() on.
-  adapter: new MemoryStorageAdapter(),
+// Saves go to IndexedDB (DEC-354 (5)). If it does not open, storage continues in memory and the
+// switch is logged at ERROR (architecture 14 §10).
+const persistence = createPersistence({
+  adapter: IndexedDbStorageAdapter.inBrowser(),
+  logger,
   knownActions: new Set(INPUT_ACTIONS),
   now: () => Date.now(),
-  warn: (body, attributes) => {
-    logger.log(makeLogRecord('WARN', 'client.persistence', body, { attributes }));
-  },
 });
-// Settings, loadouts and the guest id load once storage is open.
+// Settings, loadouts and the guest id load once storage is open. With the memory fallback, this
+// catch runs only when the fallback also fails to open.
 const storageOpen = persistence.open().catch((error: unknown) => {
   logger.log(
     makeLogRecord('ERROR', 'client.persistence', 'storage did not open', {
@@ -134,7 +132,7 @@ const loadouts = new LoadoutController({
   bus: eventBus,
   persistence,
   logger,
-  options: classLoadoutOptions(displayContent),
+  options: legendLoadoutOptions(displayContent),
   content: loadoutContentOf(displayContent),
 });
 const resources = new ResourceController({
@@ -182,7 +180,7 @@ const session = new SessionController({
   catalogue: { load: () => catalogue },
   matchConfig: gameConfig.match,
   playerName: PLACEHOLDER_PLAYER_NAME,
-  playerLoadout: (classId) => loadouts.loadoutOf(classId),
+  playerLoadout: (specId) => loadouts.loadoutOf(specId),
   seedSource: createMatchSeed,
   createRng: (seed) => new LcgRng(seed),
   createRosterRng,

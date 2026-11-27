@@ -38,10 +38,23 @@ describe('Legend', () => {
       ...PLACEMENT,
       definition: WARRIOR,
       weapons: loadWeapons(30),
-      loadout: { classId: 'warrior', primaryWeaponId: 'wuuthrad' },
+      loadout: { classId: 'warrior', specId: 'knight', primaryWeaponId: 'wuuthrad' },
     });
 
     expect(legend.getComponent(Combat).weaponId).toBe('wuuthrad');
+  });
+
+  it('takes a spawn loadout with no Legend field for no loadout, and keeps the default weapon', () => {
+    const legend = new Warrior('entity-1', 'warrior');
+
+    legend.spawn({
+      ...PLACEMENT,
+      definition: WARRIOR,
+      weapons: loadWeapons(30),
+      loadout: { classId: 'warrior', primaryWeaponId: 'wuuthrad' },
+    });
+
+    expect(legend.getComponent(Combat).weaponId).toBe('raptor-talons');
   });
 
   it('builds its Combat from its shipped default weapon', () => {

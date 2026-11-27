@@ -1,4 +1,4 @@
-import type { PersistedLoadout } from './dto/LoadoutDto';
+import type { PersistedLoadout } from './dto/SavedLoadoutDto';
 import type { PersistedSettings } from './dto/SettingsDto';
 import { FallbackStorageAdapter } from './FallbackStorageAdapter';
 import { LOCAL_PROFILE_ID } from './PersistenceController.constants';
@@ -39,8 +39,8 @@ export class PersistenceController {
     return this.adapter.open(STORAGE_SCHEMA);
   }
 
-  /** The saved settings, or `null` when there are none (or they were corrupt): use defaults. */
-  public loadSettings(): Promise<PersistedSettings | null> {
+  /** The saved settings groups. A group not saved (or corrupt) is absent: use its default. */
+  public loadSettings(): Promise<Partial<PersistedSettings>> {
     return this.settings.load(LOCAL_PROFILE_ID);
   }
 
@@ -50,16 +50,16 @@ export class PersistenceController {
   }
 
   /**
-   * The saved loadout of each named class. A class with nothing saved, or a corrupt record, is
-   * absent from the map: use the class default.
+   * The saved loadout of each named Legend (`specId`, DEC-354 (1)). A Legend with nothing saved,
+   * or a corrupt record, is absent from the map: use the auto-build.
    */
-  public loadLoadouts(classIds: readonly string[]): Promise<ReadonlyMap<string, PersistedLoadout>> {
-    return this.loadouts.loadAll(LOCAL_PROFILE_ID, classIds);
+  public loadLoadouts(specIds: readonly string[]): Promise<ReadonlyMap<string, PersistedLoadout>> {
+    return this.loadouts.loadAll(LOCAL_PROFILE_ID, specIds);
   }
 
-  /** Saves the loadout of one class, replacing the previous one. */
-  public saveLoadout(classId: string, loadout: PersistedLoadout): Promise<void> {
-    return this.loadouts.save(LOCAL_PROFILE_ID, classId, loadout);
+  /** Saves the loadout of one Legend, replacing the previous one. */
+  public saveLoadout(specId: string, loadout: PersistedLoadout): Promise<void> {
+    return this.loadouts.save(LOCAL_PROFILE_ID, specId, loadout);
   }
 
   /** The guest id the Duel server issued, or `null` when none is saved (or it was corrupt). */

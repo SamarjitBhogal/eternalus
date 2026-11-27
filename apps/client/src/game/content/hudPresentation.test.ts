@@ -31,46 +31,43 @@ describe('HUD presentation', () => {
     expect(catalogue.legendClasses.find((card) => card.classId === 'harbinger')?.hud).toBeNull();
   });
 
-  it('shows an empty kit in a live match except the art that fits the Legend (DEC-101, DEC-114)', () => {
+  it('shows an empty kit in a live match except the art that fits the class (DEC-101, DEC-114)', () => {
     const available = catalogue.legendClasses.filter(isSelectableClass);
     expect(
       available.map((card) => [
         card.classId,
         card.hud?.emblemAssetId,
-        card.hud?.weapon?.iconAssetId ?? null,
         card.hud?.slots.flatMap((slot) =>
           slot.iconAssetId === null ? [] : [[slot.slot, slot.iconAssetId]],
         ),
       ]),
     ).toEqual([
-      ['warrior', 'warrior-hud-emblem', null, [['gadget-1', 'warrior-gadget-courage']]],
-      ['sentinel', null, null, []],
-      ['magus', null, 'magus-weapon-staff', []],
+      ['warrior', 'warrior-hud-emblem', [['gadget-1', 'warrior-gadget-courage']]],
+      ['sentinel', null, []],
+      ['magus', null, []],
     ]);
     for (const card of available) {
       expect(card.hud?.slots.map((slot) => slot.displayName)).toEqual(SLOT_ORDER.map(() => null));
     }
-    const specWeapons = available
-      .flatMap((card) => card.specs)
-      .filter((spec) => spec.hudWeapon !== null)
-      .map((spec) => [spec.specId, spec.hudWeapon?.iconAssetId]);
-    expect(specWeapons).toEqual([['juggernaut', 'warrior-weapon-battle-axe']]);
+  });
+
+  it('gives Wuuthrad the battle axe and the Magus staff its staff; every other weapon has no art (DEC-354 (2))', () => {
+    expect(catalogue.hud.weaponArt).toEqual({
+      wuuthrad: 'warrior-weapon-battle-axe',
+      'magus-staff': 'magus-weapon-staff',
+    });
   });
 
   it('names only match-group assets', () => {
     const kitIds = catalogue.legendClasses.flatMap((card) =>
       card.hud === null
         ? []
-        : [
-            card.hud.emblemAssetId,
-            card.hud.weapon?.iconAssetId ?? null,
-            ...card.hud.slots.map((slot) => slot.iconAssetId),
-            ...card.specs.map((spec) => spec.hudWeapon?.iconAssetId ?? null),
-          ],
+        : [card.hud.emblemAssetId, ...card.hud.slots.map((slot) => slot.iconAssetId)],
     );
-    const { chrome } = HUD_PRESENTATION;
+    const { chrome, weaponArt } = HUD_PRESENTATION;
     const ids = [
       ...kitIds.filter((id) => id !== null),
+      ...Object.values(weaponArt),
       ...HUD_PRESENTATION.structureKinds.map((entry) => entry.iconAssetId),
       chrome.minimapFrameAssetId,
       chrome.crystalAssetId,

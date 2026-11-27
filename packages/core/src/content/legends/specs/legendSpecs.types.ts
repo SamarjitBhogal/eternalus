@@ -40,9 +40,8 @@ export type LegendName = {
  */
 export type LegendSpecDefinition = {
   /**
-   * Kebab-case content id. No save or release stores it yet, so renaming it is a content refactor
-   * whose missed references must fail the checks (ADR 0018 point 5); once a save or a release
-   * references it, it is never renamed (17 R26).
+   * Kebab-case content id. Saved loadouts are keyed by it (DEC-354 (1)) and saves are on disk
+   * (DEC-354 (5)), so it is never renamed (`AGENTS.md` naming rule, 17 R26).
    */
   readonly id: string;
   /**

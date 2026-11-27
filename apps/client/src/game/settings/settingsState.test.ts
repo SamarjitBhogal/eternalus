@@ -4,7 +4,7 @@ import type { ChordModifier } from '../../bridge/Binding.types';
 import { settingsSlice } from '../../bridge/slices/settingsSlice';
 import {
   type PersistedSettings,
-  validateSettingsDto,
+  validateSettingsGroupDto,
 } from '../../data/persistence/dto/SettingsDto';
 import { MODIFIER_FLAGS } from '../input/InputMapper.constants';
 import { DEFAULT_CHORDS, PRESETS } from '../input/keybindings';
@@ -90,13 +90,18 @@ describe('stored chord modifiers', () => {
     expectTypeOf<StoredModifier>().toEqualTypeOf<ChordModifier>();
     const modifiers = MODIFIER_FLAGS.map(([modifier]) => modifier);
     const record = {
-      ...settingsWithDefaults(null),
       schemaVersion: 1,
       profileId: 'local',
-      bindings: [
-        { action: 'attack', chords: [{ device: 'keyboard', code: 'F3', label: 'F3', modifiers }] },
-      ],
+      group: 'bindings',
+      value: {
+        bindings: [
+          {
+            action: 'attack',
+            chords: [{ device: 'keyboard', code: 'F3', label: 'F3', modifiers }],
+          },
+        ],
+      },
     };
-    expect(validateSettingsDto(record, new Set(['attack'])).ok).toBe(true);
+    expect(validateSettingsGroupDto('bindings', record, new Set(['attack'])).ok).toBe(true);
   });
 });

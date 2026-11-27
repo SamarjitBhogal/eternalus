@@ -1,3 +1,4 @@
+import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
 import type { PersistedSettings } from './dto/SettingsDto';
@@ -28,7 +29,7 @@ describe('PersistenceController', () => {
     const persistence = controller();
     await persistence.open();
 
-    expect(await persistence.loadSettings()).toBeNull();
+    expect(await persistence.loadSettings()).toEqual({});
   });
 
   it('keeps saved settings across a close and reopen', async () => {
@@ -48,21 +49,25 @@ describe('PersistenceController', () => {
     const persistence = controller();
     await persistence.open();
 
-    expect(await persistence.loadLoadouts(['warrior'])).toEqual(new Map());
+    expect(await persistence.loadLoadouts(['knight'])).toEqual(new Map());
   });
 
-  it('keeps a saved loadout per class across a close and reopen', async () => {
+  it('keeps a saved loadout per Legend across a close and reopen', async () => {
     const adapter = new MemoryStorageAdapter();
     const first = controller(adapter);
     await first.open();
-    await first.saveLoadout('warrior', { primaryWeaponId: 'raptor-talons' });
+    await first.saveLoadout('knight', { primaryWeaponId: 'raptor-talons' });
+    await first.saveLoadout('paladin', { primaryWeaponId: 'wuuthrad' });
     first.close();
 
     const second = controller(adapter);
     await second.open();
 
-    expect(await second.loadLoadouts(['warrior', 'magus'])).toEqual(
-      new Map([['warrior', { primaryWeaponId: 'raptor-talons' }]]),
+    expect(await second.loadLoadouts(['knight', 'paladin', 'oracle'])).toEqual(
+      new Map([
+        ['knight', { primaryWeaponId: 'raptor-talons' }],
+        ['paladin', { primaryWeaponId: 'wuuthrad' }],
+      ]),
     );
   });
 
@@ -92,6 +97,20 @@ describe('PersistenceController', () => {
     expect(await persistence.loadGuestId()).toBeNull();
   });
 
+  it('round-trips settings on IndexedDB with the real schema', async () => {
+    const factory = new IDBFactory();
+    const first = controller(new IndexedDbStorageAdapter(factory));
+    await first.open();
+    await first.saveSettings(SETTINGS);
+    first.close();
+
+    const second = controller(new IndexedDbStorageAdapter(factory));
+    await second.open();
+
+    expect(await second.loadSettings()).toEqual(SETTINGS);
+    second.close();
+  });
+
   it('falls back to memory storage and reports it once through reportError, not warn (14 §10)', async () => {
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -108,12 +127,12 @@ describe('PersistenceController', () => {
 
     await persistence.open();
     await persistence.saveSettings(SETTINGS);
-    await persistence.saveLoadout('warrior', { primaryWeaponId: 'raptor-talons' });
+    await persistence.saveLoadout('knight', { primaryWeaponId: 'raptor-talons' });
     await persistence.saveGuestId('123e4567-e89b-42d3-a456-426614174000');
 
     expect(await persistence.loadSettings()).toEqual(SETTINGS);
-    expect(await persistence.loadLoadouts(['warrior'])).toEqual(
-      new Map([['warrior', { primaryWeaponId: 'raptor-talons' }]]),
+    expect(await persistence.loadLoadouts(['knight'])).toEqual(
+      new Map([['knight', { primaryWeaponId: 'raptor-talons' }]]),
     );
     expect(await persistence.loadGuestId()).toBe('123e4567-e89b-42d3-a456-426614174000');
     expect(errors).toEqual([

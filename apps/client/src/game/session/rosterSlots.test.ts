@@ -45,7 +45,7 @@ describe('rosterSlots', () => {
       allies: [entry('light', 0, 'magus', true)],
       enemies: [entry('dark', 0, 'magus')],
     };
-    const staff = { classId: 'magus', primaryWeaponId: 'magus-staff' };
+    const staff = { classId: 'magus', specId: 'oracle', primaryWeaponId: 'magus-staff' };
 
     expect(rosterSlots(rosters, DIFFICULTIES, staff)[0]).toEqual({
       pilot: 'human',
@@ -59,7 +59,7 @@ describe('rosterSlots', () => {
 
   it('leaves the loadout out when it is for another class, so core spawns the class default', () => {
     const rosters = { allies: [entry('light', 0, 'magus', true)], enemies: [] };
-    const talons = { classId: 'warrior', primaryWeaponId: 'raptor-talons' };
+    const talons = { classId: 'warrior', specId: 'knight', primaryWeaponId: 'raptor-talons' };
 
     expect(rosterSlots(rosters, DIFFICULTIES, talons)[0]).not.toHaveProperty('loadout');
   });

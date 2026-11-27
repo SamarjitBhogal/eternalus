@@ -4,7 +4,7 @@ description: Sprint checklists for the persistence layer (IndexedDB behind Persi
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-26
 tags: [plan, phase-5, persistence, resources, ui, settings, keybindings, developer-menu]
 paths: ['apps/client/src/data/**', 'apps/client/src/ui/**', 'apps/client/src/game/input/**']
 related:
@@ -54,9 +54,8 @@ Owner: _ (persistence owner). Week 6. In `apps/client/src/data/persistence/`. Fo
 - [ ] **`IndexedDbStorageAdapter`** (a ~40-line promise wrapper: `requestToPromise`,
       `transactionDone`, `openDatabase`; `onversionchange` closes and raises a "reload" event;
       `QuotaExceededError` and `VersionError` mapped to typed `StorageError`s). Owner: _.
-      Test: the contract suite against an IndexedDB fake (`Recommendation:` `fake-indexeddb`, a
-      dev dependency needing human approval per `AGENTS.md`; fallback: a hand-written fake of the
-      used subset) plus one manual browser run. Done when: it is the only file naming `IDBDatabase`.
+      Test: the contract suite against `fake-indexeddb` (a test-only devDependency the owner
+      approved, DEC-354 (4)) plus one manual browser run. Done when: it is the only file naming `IDBDatabase`.
 - [ ] **Versioned schema + migration ladder** in `schema/` (`DB_VERSION`; a `Migration[]`
       ladder; `onupgradeneeded` runs `if (oldVersion < n)` steps; v1 stores `profiles`,
       `loadouts` (index `by_profile`), `settings`, `matches` (indexes `by_profile`,
@@ -66,7 +65,7 @@ Owner: _ (persistence owner). Week 6. In `apps/client/src/data/persistence/`. Fo
       Done when: only the ladder alters stores; a new store is one migration entry.
 - [ ] **Repositories** (`ProfileRepository`, `LoadoutRepository`, `SettingsRepository`,
       `MatchHistoryRepository`, `ReplayRepository`: an `interface` each, one implementation over
-      `StorageAdapter`). Owner: _. Test: loadouts by profile and class; history newest first;
+      `StorageAdapter`). Owner: _. Test: loadouts by profile and Legend (DEC-354 (1)); history newest first;
       replay by match id; `structuredClone` of every stored value succeeds. Done when:
       repositories return DTOs mapped to core types at the boundary, never class instances.
 - [ ] **Versioned DTOs + validation-on-read with quarantine** (`dto/*` carry `schemaVersion`;
@@ -142,12 +141,12 @@ Owner: _ (UI owner). Week 8. Depends on 5.2 and Phase 4 sprint 4.5 (`Loadout` va
       Settings, About; the player's team is chosen at random at match start; keyboard-navigable
       with a visible focus ring; Escape returns to the menu). Owner: _. Test: `react-dom/server`
       render; each item dispatches its session event or `menuRoute`. Done when: labels live in one strings file.
-- [ ] **`LoadoutScreen`** (per class, the slots of [08-loadout.md](../reference/game-design/08-loadout.md):
+- [ ] **`LoadoutScreen`** (per Legend (DEC-354 (1)), the slots of [08-loadout.md](../reference/game-design/08-loadout.md):
       primary weapon, artifacts 1–2, abilities 1–3 with varieties, ultimate; secondary weapon and
-      passive **MVP-if-time**; saved loadouts per profile and class; an auto-build button;
+      passive **MVP-if-time**; saved loadouts per profile and Legend; an auto-build button;
       validation runs in L3 behind the bridge so `ui/` never imports core). Owner: _. Test: an
       invalid pick lists every violation from `validateLoadout`; auto-build fills every slot for
-      all three classes; save → reload → identical loadout; a missing content id is repaired by
+      every Legend; save → reload → identical loadout; a missing content id is repaired by
       auto-build and logged. Done when: the validator here is the one `EntityFactory` runs at spawn.
 - [ ] **`ProfileScreen` (themed name pending)** (profile name, aggregate stats, match history
       newest first via `by_profile_and_date`, per-match Legend scores; an achievements panel fed
@@ -159,8 +158,8 @@ Owner: _ (UI owner). Week 8. Depends on 5.2 and Phase 4 sprint 4.5 (`Loadout` va
       manifest's `licence` and `source` fields). Owner: _. Test: every manifest asset appears once
       with its licence. Done when: nothing in the licence list is typed by hand.
 
-**Success metric:** a reviewer saves a loadout for each class, closes the tab, reopens the app
-and finds all three intact; the achievements panel has 0 kind-specific code (registry only).
+**Success metric:** a reviewer saves a loadout for each Legend, closes the tab, reopens the app
+and finds them all intact; the achievements panel has 0 kind-specific code (registry only).
 
 ## Sprint 5.4 — Settings and keybindings
 
@@ -263,7 +262,7 @@ passes the keyboard-only walk.
 | Migration ladder                        | v1 → v2 keeps 100% of fixture records; downgrade refused with a typed error            |
 | Bad-data resilience                     | 0 throws over the corrupt-record fixture set; 1 quarantine row per record              |
 | Rebinding acceptance (requirements doc) | W → Up Arrow and Z → mouse side button scenarios green; 0 literal key names in prompts |
-| Loadouts saved to the profile           | save → reload identical for all 3 classes                                              |
+| Loadouts saved to the profile           | save → reload identical for every Legend                                               |
 | Developer menu                          | 100% of actions are debug `Command`s; caps 10 Legends / 144 units enforced             |
 | Match history + replay                  | one atomic write per match; the replay reproduces the final hash                       |
 | Coverage; lint, knip, docs check        | core ≥ 85%, client ≥ 65% (`Recommendation:`, roadmap ratchet); all green               |
@@ -294,12 +293,12 @@ passes the keyboard-only walk.
 
 ## Risks
 
-| Risk                                                                     | Mitigation                                                                                                                                                                      |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| IndexedDB fake needs a new dependency; browser APIs hard to test in Node | Ask early (INBOX); the contract suite is adapter-agnostic, so a hand-written fake is the fallback; injected decoders, fake `navigator.storage` and `fetch`, `react-dom/server`. |
-| Safari eviction and private windows lose data                            | `persist()` at first launch, status in settings, export/import JSON, memory fallback with a "not saved" banner (Phase 6.4).                                                     |
-| Settings DTO churn breaks saved data                                     | Migrations and `schemaVersion` from day 1; quarantine instead of crashes; the corrupt-record fixture set grows with each bug.                                                   |
-| Phase 4 `<KeyGlyph/>` lands late; menu scope creep                       | Stub glyph until 4.7 merges, acceptance test first; skins, armour slot and multiple profiles stay post-MVP ([backlog](backlog-post-mvp.md)).                                    |
+| Risk                                               | Mitigation                                                                                                                                   |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Browser APIs hard to test in Node                  | `fake-indexeddb` for IndexedDB (approved, DEC-354 (4)); injected decoders, fake `navigator.storage` and `fetch`, `react-dom/server`.         |
+| Safari eviction and private windows lose data      | `persist()` at first launch, status in settings, export/import JSON, memory fallback with a "not saved" banner (Phase 6.4).                  |
+| Settings DTO churn breaks saved data               | Migrations and `schemaVersion` from day 1; quarantine instead of crashes; the corrupt-record fixture set grows with each bug.                |
+| Phase 4 `<KeyGlyph/>` lands late; menu scope creep | Stub glyph until 4.7 merges, acceptance test first; skins, armour slot and multiple profiles stay post-MVP ([backlog](backlog-post-mvp.md)). |
 
 ## Related
 

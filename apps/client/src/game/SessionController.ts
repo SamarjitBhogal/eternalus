@@ -325,7 +325,7 @@ export class SessionController {
         roster: rosterSlots(
           rosters,
           this.context.catalogue.botRoster.difficulties,
-          this.deps.playerLoadout(selection.classId),
+          this.deps.playerLoadout(selection.specId),
         ),
         observer,
       },

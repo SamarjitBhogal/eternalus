@@ -73,6 +73,7 @@ const unit = (id: string, team: 'light' | 'dark', at: Vec2): EntitySnapshot => (
   elevation: null,
   progression: null,
   aether: null,
+  combat: null,
   area: null,
   capture: null,
   gem: null,

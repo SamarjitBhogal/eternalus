@@ -67,6 +67,7 @@ const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => (
   elevation: null,
   progression: null,
   aether: null,
+  combat: null,
   area: null,
   capture: null,
   gem: null,
