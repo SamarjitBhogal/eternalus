@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -299,8 +299,15 @@ heavy plus light assist mobs; 3: one massive "Balrog-type" mob; DEC-260), held b
 that owns the point, or neutral while no team does ([18](18-minion-system.md) MS-28, §7.1;
 DEC-257). They never respawn. A change of owner keeps the ones still alive: they fight the new
 owner's units inside the zone and count as presence for their own side, so the new owner must
-kill them to keep the point (DEC-261). A cleared checkpoint awards XP shared among nearby allies biased toward the top
-damage dealer (`ProgressionSystem` listens to `checkpoint-cleared`). Holding a zone applies
+kill them to keep the point (DEC-261). Defenders level from their kills like tower guards
+(DEC-260). A capture point holds at most `CHECKPOINT_DEFENDER_LIMIT` defenders, living (of any
+side) or waiting for room under the unit cap: a reached set that does not fit adds only the
+defenders that fit, in table order, and a team's waiting defenders are cancelled when the point
+changes owner (DEC-350). Each reached checkpoint's defenders are one set; when a set's last
+defender is lost, the roster announces `checkpoint-cleared`, and `ProgressionSystem` shares the
+checkpoint's XP among the clearing team's living Legends near where it fell, biased toward the
+damage each dealt to the set (`xpSources.checkpointCleared`; the damage is kept in
+`GameState.defenderDamage`); DEC-376 fixes how the sources' silent points are read. Holding a zone applies
 `StatusEffects` from content: ability/ultimate cooldown reduction, removed on loss. Every capture
 point has a zone level-up (DEC-258): once a side has held it for the hold time without a break,
 that side's hordes spawned on its lane gain minion levels, and losing the point takes them back on
@@ -541,18 +548,23 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   pass after `greater-boss-summoned` (03 §Events), `SpawnSystem` fills the Greater Boss's post and
   `CathedralGemSystem` removes the gem entity (`despawned`); its plinth is the map object the
   gem carries (`carriedObjectId`), so it is destroyed with the gem and collision, the path grid
-  and the lane fields reopen there (§10).
+  and the lane fields reopen there (§10). Earlier on that tick, with the other damage systems,
+  `GemEruptionSystem` kills every unit standing in the capture zone the gem stands in, Legends
+  too, as environment damage that credits no one (DEC-371 "BOSS guards").
   Interim for the Cathedral's `Spawner` (§1, §6): the boss is a guard of the Cathedral capture
   zone's guard plan (`content/structures/guardPlans.ts`, `cathedral-capture-point`), one post at
   the zone's centre with `activation: { at: 'gem-eruption' }` (posts that `GuardRoster.activate`
   fills for the summoned `bossId`) and `respawn: never`; `SpawnSystem` then emits
   `boss-summoned`. Its leash is balancing.md's 25 m centre zone (`GUARD_LEASH.greaterBossZone`).
   The boss is a neutral `heavy-mob` definition (`content/mobs/greaterBoss.ts`) on
-  `GuardController`, not doc 04's `GreaterBoss` class (11's implementation status). Minions deal it
-  a quarter of their hit (`BOSS_MINION_DAMAGE_TAKEN`); its kill reward (DEC-237: 5 levels, flat)
-  is not built yet. Every number is `TUNE`; the questions are in `INBOX.md` (the
-  Greater Boss item). In a Duel the action does nothing (DEC-36), so the gem
-  stays and no boss comes.
+  `GuardController`, not doc 04's `GreaterBoss` class (11's implementation status), built by
+  #160 and #164 (DEC-370). It locks the Cathedral's capture while it lives (`ZONE_LOCKING_MOBS`,
+  DEC-371 E4), so no checkpoint is reached and no defenders come. Its health and hit are
+  multiples of the shared `refHealth(level)` and its movement and reach the shared
+  `HEAVY_MOB_BASE` (`content/mobs/bossReference.ts`, DEC-371 E6), as the capture point boss's.
+  Minions deal it a quarter of their hit (`BOSS_MINION_DAMAGE_TAKEN`); its kill reward is #164's
+  (DEC-371 E8). The open readings are in `INBOX.md` (the eruption's blast item). In a Duel the
+  action does nothing (DEC-36), so the gem stays and no boss comes.
 
 **2026-11-09 (`feat/bosses-p3`, corner camp boss, interim; updated 2026-11-17).** DEC-236
 approves corner camps for Phase 3, with the corner boss on `GuardController` as an interim

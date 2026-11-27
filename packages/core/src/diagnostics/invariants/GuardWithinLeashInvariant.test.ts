@@ -32,6 +32,7 @@ const setUp = () => {
     leashRadius: 8,
     leashTolerance: 2,
     respawnTicks: 3600,
+    canLevel: false,
   });
   state.guards.fill(0, guard.id);
   return { state, guard };
@@ -85,6 +86,7 @@ describe('GuardWithinLeashInvariant', () => {
       leashRadius: 6,
       leashTolerance: 2,
       respawnTicks: 3600,
+      canLevel: false,
     });
     state.guards.fill(0, mob.id);
 

@@ -8,7 +8,13 @@ export const CUTSCENE = {
   panSeconds: 1.5,
   /** How long the camera stays on the Cathedral after the eruption, before it returns. */
   holdSeconds: 2.5,
-  /** How long the burst lasts on the screen, from the eruption. */
+  /**
+   * How close (world units, Legend to gem) a player must be for the cut-scene to play (DEC-371
+   * E1: "only to players near the Cathedral"). TUNE: no reference value; twice the Cathedral's
+   * 25 m centre zone (INBOX).
+   */
+  nearRadius: 50,
+  /** How long the burst lasts on the screen and the minimap, from the eruption. */
   burstSeconds: 1.5,
   /** Share of the distance to the Cathedral the camera covers each frame (slower than follow). */
   smoothing: 0.08,

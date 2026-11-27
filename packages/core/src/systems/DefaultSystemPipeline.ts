@@ -29,6 +29,7 @@ import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
 import type { DefaultSystemPipelineOptions } from './DefaultSystemPipeline.types';
 import { DuelRoundSystem } from './DuelRoundSystem';
+import { GemEruptionSystem } from './GemEruptionSystem';
 import { EnragedSystem } from './EnragedSystem';
 import { HordeSystem } from './HordeSystem';
 import { InvariantSystem } from './InvariantSystem';
@@ -47,7 +48,7 @@ import { VeterancySystem } from './VeterancySystem';
 import { ZoneLevelUpSystem } from './ZoneLevelUpSystem';
 import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
-import { CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
+import { CHECKPOINT_DEFENDER_LIMIT, CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
 import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
 import { TickRate } from '../utils/TickRate';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
@@ -59,9 +60,10 @@ import { SystemPipeline } from './SystemPipeline';
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
- * progression (kill XP), minion veterancy, structure losses and breakability, spawning (none in a
- * Duel, SCRUM-445), enraging, out-of-combat healing (DEC-188), respawn (queues the dead Legends,
- * FR-051), death, capture points, the Cathedral gem, the match director, then invariants last.
+ * the gem eruption's blast (DEC-371), progression (kill XP), minion veterancy, structure losses
+ * and breakability, spawning (none in a Duel, SCRUM-445), enraging, out-of-combat healing
+ * (DEC-188), respawn (queues the dead Legends, FR-051), death, capture points, the Cathedral
+ * gem, the match director, then invariants last.
  * Combat runs after movement, so a unit with a target in reach faces it, not its own way
  * (DEC-192). This is the one place a system is added, at its position in the tick (architecture
  * 02 §9). It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the
@@ -82,11 +84,6 @@ export class DefaultSystemPipeline extends SystemPipeline {
     assistWindowTicks,
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
-    // A death by the gem counts for the victim's last enemy damager in the assist window (DEC-346).
-    const damage = new DamagePipeline(
-      createDefaultDamageSteps(),
-      new KillCredit(assistWindowTicks, CATHEDRAL_GEM.statusIds),
-    );
     const veterancy = loadMinionVeterancy(tickRate);
     const loadedStatuses = loadStatusEffects(
       tickRate,
@@ -101,6 +98,12 @@ export class DefaultSystemPipeline extends SystemPipeline {
             state.world.definition,
             map.flowFieldCorridorHalfWidth,
           );
+    // Minion strength reads lane progress from the lane fields (05 §9, `balancing.md`).
+    // A death by the gem counts for the victim's last enemy damager in the assist window (DEC-346).
+    const damage = new DamagePipeline(
+      createDefaultDamageSteps(flowFields?.progress.bind(flowFields) ?? null),
+      new KillCredit(assistWindowTicks, CATHEDRAL_GEM.statusIds),
+    );
     const world = state.world?.grid ?? null;
     const features = state.world?.definition.features ?? [];
     if (world !== null && state.worldObjects !== undefined) {
@@ -140,6 +143,10 @@ export class DefaultSystemPipeline extends SystemPipeline {
           ]),
       new CombatSystem(damage),
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
+      // The eruption's blast kills before progression and death (DEC-371); none in a Duel (DEC-36).
+      ...(duelStarts === undefined
+        ? [new GemEruptionSystem(state, damage, CATHEDRAL_GEM.eruption)]
+        : []),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
       new VeterancySystem(state, statuses, veterancy),
@@ -158,6 +165,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
                     formationId: RANKS_FORMATION.id,
                     guards: loadGuardPlans(tickRate, hordes.guards),
                     defenders: CHECKPOINT_DEFENDERS,
+                    defenderLimit: CHECKPOINT_DEFENDER_LIMIT,
                   }),
                 ]
               : []),

@@ -13,10 +13,29 @@ review comments under "Feedback". Answered decisions are recorded in
 
 ## Decisions needed from Sam
 
+- [ ] **Minion strength port (PR #82, 2026-11-25): sign off `LaneProgressOf`.** Built: `combat/`
+      reads lane progress through a new port, `LaneProgressOf = (laneId, team, position) => number
+| null` (`MinionStrengthStep.types.ts`), which `LaneFlowFields.progress` implements and
+      `DefaultSystemPipeline` injects. It keeps `combat/` from importing `map/` (core folder
+      rules); DEC-280 fixes what it returns (`t` from the home gate, 0, to the enemy gate, 1). No DEC
+      names the port itself (CodeRabbit, PR #82). Approve as built, or say what to change. HC-B45
+      below asks whether the polyline fallback should become a second implementation of it.
+
+- [ ] **HC-B45 — Better than the design, not built, sign-off asked: minion strength depends only
+      on its lane-progress port** (PR #82 critic, 2026-11-22). Today `MinionStrengthStep` knows two
+      ways to measure `t`: the injected `LaneProgressOf` (the lane flow field, DEC-280) and a
+      built-in fallback to the `LaneRoutes` polyline; `createDefaultDamageSteps`, `DamagePipeline`
+      and the step default the port to `null`, so a composition root that forgets to inject falls
+      back to the polyline without a sign. Proposal: make the polyline a `LaneProgressOf` too, let
+      `DefaultSystemPipeline` compose "field, else polyline", make the parameter required, and test
+      the wiring by injection instead of the `vi.mock` in `DefaultSystemPipeline.strength.test.ts`
+      (the only `vi.mock` in core). No gameplay number or behaviour changes. Approve (built in its
+      own PR) or drop.
+
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **The gem eruption and the Greater Boss: choices to confirm (Aryan Walanj, 2026-11-22,
+- [x] **The gem eruption and the Greater Boss: choices to confirm (Aryan Walanj, 2026-11-22,
       `feat/cathedral-eruption-boss`).** Sam (2026-11-15, chat): the boss is in, sprint 3.6 is
       Aryan's, `GuardController` is the interim. Built: at mid-game (DEC-81, 15:00 of the 30-minute
       plan) the gem erupts: the gem entity is removed, and one neutral `greater-boss` spawns at the
@@ -42,21 +61,47 @@ Reply inline (`Decision: …`).
       test checks that no other guard post on the default map (seeds 1 to 3) reaches its zone. But
       a Cathedral checkpoint's defenders (#130) are leashed to the capture zone itself, so they
       will fight the boss. Is that intended, or should the defenders leave it alone?
+  - **Answered 2026-11-26 by DEC-370 and DEC-371** (PR #160 R5). (1) The cut-scene plays only
+    near the Cathedral; the burst shows on the minimap. (2), (3), (5) and (7) stay as built. (4),
+    (8) and the move order are #164's. (6) The boss locks the Cathedral's capture. (9) is a code
+    interim, no question. (10) No defenders while the boss lives (the lock), and the eruption
+    kills every unit in the Cathedral. Built in `feat/cathedral-eruption-boss`; open follow-ups
+    are the item below.
 
-- [ ] **Better than design: shared boss numbers (Aryan Walanj, 2026-11-22, critic on
+- [ ] **The eruption's blast and the cut-scene's reach: three readings to confirm (Aryan
+      Walanj, 2026-11-26, PR #160 R5).** (1) **Who dies.** "if any defenders or entities are in the
+      cathedral when the boss erupts, they die to the explosion" is built as every unit, Legends
+      too, standing in the Cathedral's capture zone (the whole building, DEC-145), on the tick
+      after the eruption. (2) **Credit.** The blast is no team's: no kill, points or XP for anyone
+      (swholtzman sends you a card for (1) and (2)). (3) **"Near".** The cut-scene plays for a
+      player whose Legend is within 50 m of the gem (twice the 25 m centre zone; `TUNE`, no
+      reference value). A player farther away sees the burst on the minimap only while the
+      Cathedral is on it (the minimap shows 200 m around the player, DEC-182). Confirm or give
+      values.
+
+- [x] **Better than design: shared boss numbers (Aryan Walanj, 2026-11-22, critic on
       `feat/cathedral-eruption-boss`).** For sign-off. (1) `greaterBoss.ts` copies balancing.md's
       Warrior anchor (`650 × 1.08^(L − 1)`) as its own `REF_HEALTH`; a shared `refHealth(level)`
       helper in `content/`, built from the Warrior's content, would keep every boss in step with a
       Legend retune (balancing.md: the boss table "never silently detunes"). (2) The Greater Boss and
       the capture point boss each repeat the heavy minion's movement and reach; a shared heavy-mob
       base would hold them once. Adopt now, with the boss's moves, or leave?
+  - **Answered 2026-11-26 by DEC-371 E6** ("do it now"). Built in PR #160 as
+    `content/mobs/bossReference.ts`. One reading to confirm: `refHealth` keeps balancing.md's 650
+    anchor and grows by the Warrior's `healthPerLevel` (compounding, as balancing.md writes it).
+    Built purely on the Warrior's content (600 at level 1, +8% of it per level, added), the
+    Greater Boss would have 35,520 health, not the 41,259 E3 keeps. The capture point boss's
+    health is now `10 × refHealth(4)` = 8,188 (was the rounded 8,200). Better than design (#160
+    critic): the corner boss uses the same MiniBoss row and still has 8,200 (DEC-296); should it
+    move to `10 × refHealth(4)` too, so both MiniBoss-row bosses agree?
 
-- [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
+- [x] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only
       its group's home (`CAMP_BODY`: "a camp is only its group's home"): the camp's mobs are what
       players fight, and no reference doc gives the camp body health of its own. Should a camp
       become breakable (and if so, what happens to its mobs and respawns)? A breakable camp leaves
       the shared `NEVER_DAMAGED` spread with a one-line change.
+  - **Answered 2026-11-26 by DEC-372** ("Keep it. A forest camp cannot be destroyed"). No change.
 
 - [ ] **Better than design: four Cathedral gem items (#132 pre-PR critic, 2026-11-25).** Not
       built in #132; each would be a small follow-up PR if you agree. (BTD3) One body: the gem's
@@ -341,6 +386,15 @@ Reply inline (`Decision: …`).
       **Done in PR #130 (2026-11-22):** defender posts carry `GuardSlot.checkpoint` and sit beside
       the zone's plan; mates need the same home and team (`GuardController`), and a `group` plan's
       group is the home's own posts only (`GroupGuardRespawn`).
+
+- [x] **PR #90 stand-in confirmation (2026-11-16).** The owner confirmed DEC-238 on
+      2026-11-20 (Owner Calls page), reaffirming their
+      [PR #90 review](https://github.com/SamarjitBhogal/eternalus/pull/90#pullrequestreview-5852980286).
+      The confirmation covers retained code-drawn map, camp and minion art, unit display sizes,
+      the follow camera and weather.
+      The confirmation excludes disputed image assets, asset provenance ADRs, and the
+      parallel ability stack.
+
 - [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
       but unhandled actions: `toggle-developer-menu` (handled since #107), `sprint`, `interact`,
       `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
@@ -673,6 +727,10 @@ Reply inline (`Decision: …`).
       while its team still owns the point, and is cancelled when the point changes owner; at most
       10 defenders per capture point. They are built in M6c. (3)(b), (5) and (9) still wait for
       sign-off.
+      **Update 2026-11-25 (M6c, `feat/minion-m6c-defender-followups`):** (1), (4), (6) and (7)
+      are built: `checkpoint-cleared` and its XP, DEC-260 levelling (with DEC-350's boss group)
+      and DEC-350's limit and cancelling. The calls M6c made where the sources are silent are
+      approved as built in DEC-376 (2026-11-26). (2), (3)(b), (5) and (9) still wait.
 
 - [x] **Minion M10 better-than-design items (`feat/minion-m10-zone-level-up`, 2026-11-15,
       critic; DEC-139) — sign-off per item.** (a) A `MinionLevelSystem` after
@@ -880,7 +938,8 @@ Reply inline (`Decision: …`).
     snapshot); a snapshot every tick, no interpolation or prediction. (3) Core's `intent` command
     is still a stub (sprint 1.5 PlayerController), so the server translates intents into
     `move`/`stop`/`attack-target` (`SeatCommands`, ported from the client's `PlayerCommands`);
-    once `intent` is applied in core, `SeatCommands` goes. (4) Map desync risk: the client
+    once `intent` is applied in core, `SeatCommands` goes. Apply the shared drawn-size hit test
+    at that point so local and Duel input select the same targets. (4) Map desync risk: the client
     regenerates the map from `match-found.seed` with its own default `GameConfig`; a config drift
     between the two builds, or an engine-level Math difference (03 §8), would draw a world that is
     not the server's. Send the map (or a config hash) on the wire, or accept the risk while both
@@ -1100,6 +1159,8 @@ Reply inline (`Decision: …`).
   - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
     line say A\* is a `PathQuery` (PR #47). (1) Numbers from the design docs, else the agent's
     judgement, which the owner may correct later, so they stay as built.
+  - Update 2026-11-20 (PR #84): a blocked decision no longer always searches again; the brain
+    caches one waypoint and reuses it while it serves the destination (doc 11 §6).
 - [ ] **Minion M8 — exact line checks wait for wall avoidance (FYI, CodeRabbit on PR #47).**
       `WorldMap.isLineClear` samples a quarter cell apart, so a line can clip a blocked cell's
       corner unseen. An exact cell walk (DDA) catches it, but then minions hold at rift corners
@@ -3468,6 +3529,22 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Done
 
+- 2026-11-26 — **Minion M6c interpretations approved as built (DEC-376)**
+  (`feat/minion-m6c-defender-followups`, PR #173): you approved (a) to (g) as built (the 10 m from
+  where the last defender fell, the damage-biased share with an even split when Legends dealt
+  none, the clearing team by the last killer, no corner-boss levelling, `rallied` for levelling
+  guards, no XP for a set emptied by cancels, and the owner-change pass rule). Decision: DEC-376.
+
+- 2026-11-26 — **Camp rewards: the clearing Legend is the last killer; the three critic refactors
+  are dropped (DEC-375)** (`feat/camp-rewards`, PR #153): you chose "as built" for who gets the
+  camp clear bonus (the Legend that killed the camp's last mob; nobody when a minion or turret
+  does) and dropped B1 to B3. Closes "Camp rewards" and "`feat/camp-rewards` critic (2026-11-22),
+  better than the design". Decision: DEC-375.
+
+- 2026-11-26 — **Bot path cache: "one leg late" accepted (DEC-373)** (`feat/minion-bot-path-cache`,
+  PR #84): you chose (a), accept as built. The cache holds no grid version; a way that opens while
+  a bot walks a cached leg is found at most one leg late. Doc 11 §6 states it. Decision: DEC-373.
+
 - 2026-11-23 — **Your answers on the five Cathedral gem cards (DEC-346)** (`feat/cathedral-gem-hittable`,
   PR #132): recorded as DEC-346. The gem blocks movement (an unbreakable plinth under it) and a
   touch no longer strikes; a death by the gem counts for the victim's last enemy damager within the
@@ -3822,3 +3899,5 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   `docs/inbox-decisions-2026-10-03`.
 - 2026-09-30 — Phase 0 documentation + harness written on `docs/phase-0-foundation`
   (merged as PR #3; see `docs/changelog/2026-09-30-phase-0-foundation.md`).
+
+- [ ] DEC-298 (5), (7) — Selected-subclass portrait follow-up. Carry the credited Juggernaut portrait with its notice intact for the class-project MVP and replace it after delivery. Build the selected, forward-facing character cutouts using the Oracle reference and propose their actual encoded bytes for review.

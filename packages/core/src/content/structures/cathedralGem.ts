@@ -5,9 +5,10 @@ import type { CathedralGemDefinition } from './structures.types';
  * stun and tick-damage", and a purple glow "for the stun duration + 5 ticks", read as 5 game ticks
  * (about 1.17 s; the burn's "+ 1 tick" is read as one burn pulse, `gemBurn.ts`). The owner keeps
  * both readings (DEC-346). The stun and damage numbers live in the two statuses (`gemShock.ts`,
- * `gemBurn.ts`).
+ * `gemBurn.ts`). Its eruption kills every unit in the Cathedral's capture zone (DEC-371).
  */
 export const CATHEDRAL_GEM: CathedralGemDefinition = {
   statusIds: ['gem-shock', 'gem-burn'],
   glow: { statusId: 'gem-shock', extraTicks: 5 },
+  eruption: { sourceId: 'gem-eruption' },
 };

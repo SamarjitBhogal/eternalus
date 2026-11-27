@@ -107,6 +107,12 @@ type GuardPlanBase = {
    * between two decisions plus the farthest it stands from a target in reach.
    */
   readonly leashTolerance: number;
+  /**
+   * Whether the plan's guards level from their kills and are rallied by the veterancy aura
+   * (`VeterancySystem`, 18 MS-16): tower guards (DEC-165), forest-camp mobs (DEC-260) and the
+   * capture point boss group (DEC-350).
+   */
+  readonly canLevel: boolean;
 };
 
 /**
@@ -121,6 +127,8 @@ export type CheckpointDefenderPlanDefinition = {
   readonly postGap: number;
   /** As `GuardPlanDefinition.leashTolerance`. */
   readonly leashTolerance: number;
+  /** As `GuardPlanDefinition.canLevel` (DEC-260: owned and neutral defenders level). */
+  readonly canLevel: boolean;
 };
 
 /**
@@ -177,4 +185,9 @@ export type CathedralGemDefinition = {
   readonly statusIds: readonly string[];
   /** The gem glows for this status's duration plus `extraTicks` after each hit. */
   readonly glow: { readonly statusId: string; readonly extraTicks: number };
+  /**
+   * The eruption's blast (DEC-371 "BOSS guards" C): every unit in the capture zone the gem stands
+   * in dies to it. It is no team's, so no one is credited; `sourceId` names it as the killer.
+   */
+  readonly eruption: { readonly sourceId: string };
 };

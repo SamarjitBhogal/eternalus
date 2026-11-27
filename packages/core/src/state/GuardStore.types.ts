@@ -32,6 +32,13 @@ export type GuardSlot = {
    * post of the home's own guard plan.
    */
   readonly checkpoint?: number;
+  /**
+   * The defender set this post belongs to: one per reached checkpoint (`checkpoint-reached`), as
+   * a checkpoint can be reached again after its point changes owner. Absent with `checkpoint`.
+   */
+  readonly defenceId?: string;
+  /** Whether the post's guard levels and is rallied (its plan's `canLevel`, 18 MS-16). */
+  readonly canLevel: boolean;
   /** The guard holding the post, or `null` while it waits to respawn. */
   readonly guardId: EntityId | null;
   /**

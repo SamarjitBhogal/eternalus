@@ -30,6 +30,7 @@ export type PostLayout = {
   readonly respawnTicks: number;
   /** The tick the posts are first filled, or `null`: not until `GuardRoster.activate`. */
   readonly firstTick: number | null;
+  readonly canLevel: boolean;
   /** The checkpoint whose defenders hold these posts; absent for the home's own guard plan. */
   readonly checkpoint?: number;
   /** The posts' id prefix; the home's id by default. */

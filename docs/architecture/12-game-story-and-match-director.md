@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -553,13 +553,16 @@ The gem eruption (§3) is built (2026-11-22, `feat/cathedral-eruption-boss`): th
 timeline's `gem-eruption` entry, at `mid-game`'s fraction and right after it (DEC-81), runs
 `summon-greater-boss` (`match/actions/SummonGreaterBossAction.ts`). It calls
 `MatchRecord.eruptGem(bossId)` outside a Duel (DEC-36), which sets `MatchState.isGemErupted` once (a second call throws;
-hashed from then on) and emits `greater-boss-summoned { bossId }`. On the next tick the gem and its
-plinth are removed and `SpawnSystem` spawns the boss and emits `boss-summoned` (07's implementation status).
+hashed from then on) and emits `greater-boss-summoned { bossId }`. On the next tick
+`GemEruptionSystem`'s blast kills every unit in the Cathedral (DEC-371), the gem and its plinth
+are removed, and `SpawnSystem` spawns the boss and emits `boss-summoned` (07's implementation
+status).
 `GuardRoster.activate` fills the gem-eruption posts of `bossId`'s mob; `SpawnSystem` rejects at
 load a `bossId` that no gem-eruption post on the map names. The timeline's phase rules read only its
 `enter-phase` entries. The client's `CathedralCutscene` turns the camera to the Cathedral from
-just before the eruption tick (read from `upcoming`) and draws the burst on `greater-boss-summoned`
-(Aryan 2026-11-22; `INBOX.md`).
+just before the eruption tick (read from `upcoming`), for a player whose Legend is near the
+Cathedral then (DEC-371 E1), and draws the burst on `greater-boss-summoned`, on the minimap too
+(08 §11).
 
 ## Related
 
