@@ -30,7 +30,8 @@ import { ReachQuery } from './ReachQuery';
  * more than `BODY_BEFORE_WALL_MARGIN` before it touches the target, as `ProjectileSystem` breaks a
  * near tie for the target. A body that takes damage does not: the shot lands on it. An attack
  * needs a line only when it fires a projectile. An attacker inside the target's outline hits it at
- * once. The attacker's centre is the shot's launch point: a shape that holds it does not block
+ * once. An arc shot (`ProjectileDefinition.isArc`, DEC-342) needs no line: it flies over every wall
+ * and body, so it is clear within its range. The attacker's centre is the shot's launch point: a shape that holds it does not block
  * the line, as it does not stop the shot (DEC-334), so a wall turret sees past its own pylon.
  *
  * ponytail: the no-damage bodies are found by a walk over the store, O(entities) per call. Callers
@@ -85,6 +86,10 @@ export class LineOfFire implements LineOfFireQuery {
     }
     if (contact > shot.range) {
       return false;
+    }
+    if (shot.isArc === true) {
+      // An arc shot flies over every wall and body (DEC-342): only its range matters.
+      return true;
     }
     normalizeInto(this.aim, subInto(this.aim, this.aim, from));
     const wall = state.collisions.reach(from, this.aim, contact, shot.footprintRadius, from);

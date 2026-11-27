@@ -4,128 +4,27 @@ import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { TurretState } from '../components/TurretState';
-import { createDefaultGameConfig } from '../config/defaultGameConfig';
-import { timelineFrameOf } from '../config/timelineFrameOf';
 import { AI_CADENCE } from '../content/ai/cadence';
-import { loadDefaultContent } from '../content/loadDefaultContent';
-import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
-import { loadProjectiles } from '../content/projectiles/loadProjectiles';
-import { loadTurrets } from '../content/structures/loadTurrets';
+import { LEGEND_CLASSES } from '../content/legends/legendCatalogue';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
-import { loadWeapons } from '../content/weapons/loadWeapons';
-import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
-import { EntityFactory } from '../entities/EntityFactory';
-import { SpaceIndex } from '../physics/SpaceIndex';
-import { matchWorldOf } from '../state/__fixtures__/matchWorld';
-import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
-import type { AiMemory } from '../state/AiState.types';
 import type { EntityId } from '../state/EntityStore.types';
-import { GameState } from '../state/GameState';
-import type { LineOfFireQuery } from '../state/LineOfFire.types';
 import { StateHasher } from '../state/StateHasher';
 import { TurretAmmoRule } from '../state/TurretAmmoRule';
-import type { Team } from '../teams/teams.types';
-import { IdGenerator } from '../utils/IdGenerator';
+import { distance } from '../utils/geometry';
 import { AiSystem } from './AiSystem';
-import { Perception } from './perception/Perception';
 import { predictiveAim } from './predictiveAim';
-import { TurretController } from './TurretController';
-
-const PROJECTILES = loadProjectiles(30);
-const TURRETS = loadTurrets(30);
-/** A line of fire that is clear to every target. */
-const CLEAR: LineOfFireQuery = { isClear: () => true };
-const controller = new TurretController({
-  profiles: TURRETS.profiles,
-  projectiles: PROJECTILES,
-  lineOfFire: CLEAR,
-});
-const PYLON = MAP_FEATURE_DEFINITIONS.turret?.footprintRadius ?? 0;
-const RANGE = 14;
-/** The light turret stands here; units are placed by their distance east of it. */
-const AT = { x: 100, y: 30 };
-
-/**
- * A light wall turret on the two-lane map with a space index; `add` places units east of it, and
- * `hit` makes a Legend hit another (a `damage-applied` event at the current tick). The turret's
- * controller reads `lineOfFire`.
- */
-const setUp = (lineOfFire: LineOfFireQuery = CLEAR) => {
-  const config = createDefaultGameConfig();
-  const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-  const state = new GameState(
-    config,
-    1,
-    matchWorldOf(TWO_LANE_MAP),
-    { space },
-    { countdownEndTick: timelineFrameOf(config).countdownEndTick },
-  );
-  const units = new EntityFactory(
-    createDefaultEntityRegistry(),
-    loadDefaultContent(30),
-    undefined,
-    loadWeapons(30),
-  );
-  const structures = new EntityFactory(
-    createDefaultEntityRegistry(),
-    STRUCTURE_DEFINITIONS,
-    new IdGenerator(1000),
-    null,
-    null,
-    TURRETS.ammo,
-  );
-  const turret = structures.create('turret', 'turret', { team: 'light', position: AT });
-  state.entities.add(turret);
-  const add = (team: Team, east: number, kind = 'light-mob', id = 'light-minion', y = AT.y) => {
-    const entity = units.create(kind, id, { team, position: { x: AT.x + east, y } });
-    state.entities.add(entity);
-    return entity.id;
-  };
-  /** Refills the index the way `SpaceSystem` does: every unit, in store order. */
-  const index = () => {
-    space.begin(state.entities.size);
-    state.entities.forEach((entity) => {
-      if (entity.id !== turret.id) {
-        const { x, y } = entity.getComponent(Transform).position;
-        space.add(entity.id, x, y);
-      }
-    });
-    space.commit();
-  };
-  const perception = new Perception(state);
-  const turretController =
-    lineOfFire === CLEAR
-      ? controller
-      : new TurretController({ profiles: TURRETS.profiles, projectiles: PROJECTILES, lineOfFire });
-  const decide = (memory: AiMemory = {}, profileId = 'wall-turret') => {
-    index();
-    return turretController.decide({
-      state,
-      entityId: turret.id,
-      perception,
-      brain: {
-        controllerId: 'turret',
-        profileId,
-        memory,
-        rngState: { seed: 1, words: [1, 2, 3, 4] as const },
-      },
-    });
-  };
-  const advance = (ticks: number) => {
-    for (let tick = 0; tick < ticks; tick += 1) {
-      state.advanceTick();
-    }
-  };
-  const hit = (attackerId: EntityId, targetId: EntityId) => {
-    state.events.emit('damage-applied', {
-      targetId,
-      amount: 10,
-      absorbed: 0,
-      source: { attackerId, kind: 'weapon', definitionId: 'test' },
-    });
-  };
-  return { state, turret, add, index, decide, advance, hit };
-};
+import { ARC_LAUNCH_DELAY_TICKS } from './TurretController.constants';
+import {
+  AT,
+  CLEAR,
+  controller,
+  PROJECTILES,
+  PYLON,
+  RANGE,
+  setUp,
+  TICK_RATE,
+  TURRETS,
+} from './__fixtures__/turretControllerSetup';
 
 describe('TurretController', () => {
   it('has only the turret profiles it was given, and throws on a brain that names another', () => {
@@ -327,7 +226,7 @@ describe('TurretController', () => {
     expect(decide({ targetId: null }).commands).toEqual([]);
   });
 
-  it('aims ahead of a moving target at its bolt speed (predictive aim)', () => {
+  it('aims ahead of a moving target at its bolt speed, plus the launch delay of an arc shot (predictive aim)', () => {
     const { state, turret, add, decide } = setUp();
     const target = add('dark', PYLON + 10, 'heavy-mob', 'heavy-minion');
     const movement = state.entities.get(target)?.getComponent(Movement);
@@ -341,12 +240,67 @@ describe('TurretController', () => {
       { x: AT.x + PYLON + 10, y: AT.y },
       velocity,
       PROJECTILES.get('turret-heavy-bolt').movementProfile.maxSpeed,
+      ARC_LAUNCH_DELAY_TICKS,
     );
 
+    expect(PROJECTILES.get('turret-heavy-bolt').isArc).toBe(true);
     expect(velocity.y).toBeGreaterThan(0);
     expect(commands).toEqual([{ type: 'attack-aim', actorId: turret.id, aim: expected }]);
     expect(expected.y).toBeGreaterThan(AT.y);
   });
+
+  it('leads a straight shot with no launch delay, as before DEC-342', () => {
+    const straight = { get: (id: string) => ({ ...PROJECTILES.get(id), isArc: false }) };
+    const { state, turret, add, decide } = setUp(CLEAR, straight);
+    const target = add('dark', PYLON + 10, 'heavy-mob', 'heavy-minion');
+    const movement = state.entities.get(target)?.getComponent(Movement);
+    movement?.steer({ x: 0, y: 1 });
+    movement?.advance();
+    const velocity = movement?.velocity ?? { x: 0, y: 0 };
+
+    expect(decide().commands).toEqual([
+      {
+        type: 'attack-aim',
+        actorId: turret.id,
+        aim: predictiveAim(
+          AT,
+          { x: AT.x + PYLON + 10, y: AT.y },
+          velocity,
+          PROJECTILES.get('turret-heavy-bolt').movementProfile.maxSpeed,
+        ),
+      },
+    ]);
+  });
+
+  it.each(['turret', 'spawner-tower', 'buff-tower'])(
+    'aims a %s shot inside the range cap of each of its ammo at the fastest Legend running away at top speed from the edge of its reach (the lead margin)',
+    (carrierId) => {
+      const fastest = LEGEND_CLASSES.all().reduce((best, legend) =>
+        legend.movementProfile.maxSpeed > best.movementProfile.maxSpeed ? legend : best,
+      );
+      const carrier = STRUCTURE_DEFINITIONS.get(carrierId);
+      const reach = TURRETS.profiles.get(carrier.aiProfile ?? '').range + carrier.footprintRadius;
+      const caps = (carrier.ammo ?? []).map(
+        (ammoId) => PROJECTILES.get(TURRETS.ammo.get(ammoId).attack.projectile.projectileId).range,
+      );
+      const { state, add, decide } = setUp(CLEAR, PROJECTILES, carrierId);
+      const target = add('dark', reach, fastest.id, fastest.id);
+      const movement = state.entities.get(target)?.getComponent(Movement);
+      const topSpeed = fastest.movementProfile.maxSpeed / TICK_RATE;
+      movement?.steer({ x: 1, y: 0 });
+      // A Legend reaches its top speed only after many seconds of running.
+      for (let tick = 0; tick < 10_000 && (movement?.speed ?? topSpeed) < topSpeed; tick += 1) {
+        movement?.advance();
+      }
+
+      const aim = decide().commands.find((command) => command.type === 'attack-aim')?.aim ?? null;
+
+      expect(movement?.speed).toBeCloseTo(topSpeed);
+      expect(aim).not.toBeNull();
+      expect(caps.length).toBeGreaterThan(0);
+      expect(distance(AT, aim ?? AT)).toBeLessThanOrEqual(Math.min(...caps));
+    },
+  );
 
   it('keeps its memory and sends nothing while it is dead', () => {
     const { turret, add, decide } = setUp();

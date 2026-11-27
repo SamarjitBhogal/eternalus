@@ -37,11 +37,24 @@ export type ProjectileFalloff = {
 };
 
 /**
- * What a ranged attack fires: a projectile definition id and its damage fall-off (`null`: none).
+ * A shot's blast (DEC-342): where it lands it damages every enemy unit whose circle meets a circle
+ * of `radius` metres. `radius` must be positive; `edgeMultiplier` in [0, 1].
+ */
+export type ProjectileSplash = {
+  /** Blast radius in metres. */
+  readonly radius: number;
+  /** Share of the damage a unit at the blast's edge takes; the share rises straight to 1 at the centre. */
+  readonly edgeMultiplier: number;
+};
+
+/**
+ * What a ranged attack fires: a projectile definition id, its damage fall-off (`null`: none) and,
+ * for a shot that bursts where it lands, its blast. Absent `splash`: the shot hits one body.
  */
 export type ProjectileLaunch = {
   readonly projectileId: string;
   readonly falloff: ProjectileFalloff | null;
+  readonly splash?: ProjectileSplash;
 };
 
 /**

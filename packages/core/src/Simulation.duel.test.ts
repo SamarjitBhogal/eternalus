@@ -46,18 +46,22 @@ const legendOf = (sim: Simulation, snapshot: Snapshot, team: PlayableTeam) => {
   return { id, legend };
 };
 
-/** Steps until `done` holds (at most `limit` ticks), the light Legend walking at the dark one and hitting it. */
+/**
+ * Steps until `done` holds (at most `limit` ticks), the light Legend walking at the dark one and
+ * hitting it. One snapshot per tick: a whole-map snapshot is the test's largest cost.
+ */
 const fightUntil = (sim: Simulation, done: (snapshot: Snapshot) => boolean, limit = 6000) => {
-  for (let i = 0; i < limit && !done(sim.snapshot()); i += 1) {
-    const snapshot = sim.snapshot();
+  let snapshot = sim.snapshot();
+  for (let i = 0; i < limit && !done(snapshot); i += 1) {
     const { id: light, legend: from } = legendOf(sim, snapshot, 'light');
     const { id: dark, legend: to } = legendOf(sim, snapshot, 'dark');
     const direction = { x: Math.sign((to.transform?.x ?? 0) - (from.transform?.x ?? 0)), y: 0 };
     sim.enqueueCommand({ type: 'move', actorId: light, direction });
     sim.enqueueCommand({ type: 'attack-target', actorId: light, targetId: dark });
     sim.step();
+    snapshot = sim.snapshot();
   }
-  return sim.snapshot();
+  return snapshot;
 };
 
 /** Steps both Legends at each other, without attacking, until they are `distance` apart or less. */

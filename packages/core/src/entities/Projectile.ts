@@ -36,7 +36,12 @@ export class Projectile extends Entity {
       new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'projectile'),
     );
     this.addComponent(
-      new ProjectileFlight(definition.range, definition.slowFrom, definition.endDuration),
+      new ProjectileFlight(
+        definition.range,
+        definition.slowFrom,
+        definition.endDuration,
+        definition.isArc === true,
+      ),
     );
     this.addComponent(new TeamMembership(team));
   }

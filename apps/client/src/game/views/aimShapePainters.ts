@@ -8,6 +8,7 @@ import {
   AIM_OVERLAY_OUTLINE_WIDTH,
 } from './AimOverlayView.constants';
 import type { ShapePainters } from './AimOverlayView.types';
+import { ellipsePoints } from './ellipsePoints';
 
 /** Fills a closed outline and strokes it. */
 function paint(corners: readonly Vec2[], renderer: Renderer): void {
@@ -25,16 +26,7 @@ function paint(corners: readonly Vec2[], renderer: Renderer): void {
 export const AIM_SHAPE_PAINTERS: ShapePainters = {
   hit: () => undefined,
   circle: ({ radius }, { circleCentre }, renderer) => {
-    paint(
-      Array.from({ length: AIM_CIRCLE_SEGMENTS }, (_, corner) => {
-        const angle = (2 * Math.PI * corner) / AIM_CIRCLE_SEGMENTS;
-        return {
-          x: circleCentre.x + radius * Math.cos(angle),
-          y: circleCentre.y + radius * Math.sin(angle),
-        };
-      }),
-      renderer,
-    );
+    paint(ellipsePoints(circleCentre, radius, radius, AIM_CIRCLE_SEGMENTS), renderer);
   },
   path: ({ width }, { origin, direction, pathLength }, renderer) => {
     if (pathLength === null || (direction.x === 0 && direction.y === 0)) return;

@@ -1,4 +1,4 @@
-import type { ProjectileEndingLook } from './ProjectileView.types';
+import type { ProjectileBodyLook, ProjectileEndingLook } from './ProjectileView.types';
 
 /** Size of a projectile's team-coloured dot, in world units. */
 // TUNE: placeholder look for ranged attacks (PR 1); close is enough
@@ -21,12 +21,23 @@ export const PROJECTILE_STREAK_WIDTH = 2;
  * `ProjectileView.test.ts` checks the keys against core's projectile ids
  * (`DisplayContent.projectileIds`, ADR 0023), and `ProjectileView` throws on an id not listed.
  */
-// TUNE: placeholder looks (DEC-306): a bolt fizzles into a mist (the turrets' too), the arrow drops
+// TUNE: placeholder looks (DEC-306, DEC-341 (4)): a bolt fizzles into a mist, the arrow drops, the turret bolts lodge, the orb bursts
 export const PROJECTILE_ENDING_LOOKS: Readonly<Record<string, ProjectileEndingLook>> = {
   'magus-bolt': 'fizzle',
   arrow: 'drop',
-  'turret-bolt': 'fizzle',
-  'turret-heavy-bolt': 'fizzle',
+  'turret-bolt': 'lodge',
+  'turret-heavy-bolt': 'lodge',
+  'tower-orb': 'burst',
+};
+
+/**
+ * The body look of each projectile definition id; an id with no entry is a `'streak'`.
+ * `ProjectileView.test.ts` checks the keys against core's projectile ids
+ * (`DisplayContent.projectileIds`, ADR 0023).
+ */
+// TUNE: placeholder looks (DEC-302): the tower orb is a circle, every other shot a streak
+export const PROJECTILE_BODY_LOOKS: Readonly<Record<string, ProjectileBodyLook>> = {
+  'tower-orb': 'orb',
 };
 
 /** Colour of the shadow under a dropping shot. */
@@ -78,3 +89,52 @@ export const PROJECTILE_MIST_OPACITY = 0.6;
 /** The share of its ending (0 to 1) after which a dropped shot starts to fade out. */
 // TUNE: placeholder look (DEC-306)
 export const PROJECTILE_DROP_FADE_FROM = 0.6;
+
+/**
+ * The range (metres) at which an arc shot's arc is as high as `PROJECTILE_ARC_RISE`; a nearer shot
+ * rises by the share `range / PROJECTILE_ARC_REFERENCE_RANGE` of it (DEC-341 (4)), a farther one
+ * by no more than the full rise.
+ */
+// TUNE: no reference value
+export const PROJECTILE_ARC_REFERENCE_RANGE = 30;
+
+/**
+ * How high an arc shot is as it leaves its shooter, per definition id, in world units; an id with
+ * no entry starts at `PROJECTILE_ARC_LAUNCH_HEIGHT`.
+ */
+// TUNE: no reference value
+export const PROJECTILE_ARC_LAUNCH_HEIGHTS: Readonly<Record<string, number>> = {
+  'turret-bolt': 2, // a wall turret's pylon top
+  'turret-heavy-bolt': 2, // a wall turret's pylon top
+  'tower-orb': 4, // a tower's gem
+};
+
+/** Half the width of an arc shot's oval shadow, in world units. */
+// TUNE: no reference value
+export const PROJECTILE_ARC_SHADOW_RADIUS_X = 0.7;
+
+/** Half the height of an arc shot's oval shadow, in world units (flatter than it is wide). */
+// TUNE: no reference value
+export const PROJECTILE_ARC_SHADOW_RADIUS_Y = 0.35;
+
+/** How solid an arc shot's shadow is at launch, 0 to 1. */
+// TUNE: no reference value
+export const PROJECTILE_ARC_SHADOW_OPACITY_START = 0.08;
+
+/** How solid an arc shot's shadow is at its mark, 0 to 1. */
+// TUNE: no reference value
+export const PROJECTILE_ARC_SHADOW_OPACITY_END = 0.5;
+
+/** Corners of the polygon that draws an oval shadow. */
+export const PROJECTILE_ARC_SHADOW_SEGMENTS = 20;
+
+/** Corners of the polygon that draws a burst circle. */
+export const PROJECTILE_BURST_SEGMENTS = 32;
+
+/** How solid a burst circle is as it starts, 0 to 1; it fades to 0 as it is gone. */
+// TUNE: no reference value
+export const PROJECTILE_BURST_OPACITY = 0.5;
+
+/** The body of an orb, in world units. */
+// ponytail: team-coloured circle until the owner's orb sprites (DEC-302)
+export const PROJECTILE_ORB_BODY_SIZE = 1;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { loadTurrets } from '../content/structures/loadTurrets';
 import { Collider } from '../components/Collider';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
@@ -70,6 +71,8 @@ const withHouse = (house: MapObject) => {
     },
     undefined,
     loadWeapons(30),
+    null,
+    loadTurrets(30).ammo,
   );
   const state = new GameState(createDefaultGameConfig(), 1);
   const caster = factory.create('warrior', 'warrior', { position: { x: 0, y: 0 }, team: 'light' });

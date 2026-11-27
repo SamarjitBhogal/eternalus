@@ -45,4 +45,16 @@ describe('ProjectileFlight', () => {
 
     expect(flight.endTicksLeft).toBe(3);
   });
+
+  it('shortens its range to an aim point, keeps slowFrom within it, and never lengthens it', () => {
+    const flight = new ProjectileFlight(100, 80, 4, true);
+
+    flight.shortenTo(60);
+    expect([flight.range, flight.slowFrom, flight.isArc]).toEqual([60, 60, true]);
+    flight.shortenTo(90);
+    expect([flight.range, flight.slowFrom]).toEqual([60, 60]);
+    flight.shortenTo(-5);
+    expect([flight.range, flight.slowFrom]).toEqual([0, 0]);
+    expect(new ProjectileFlight(100, 80, 4).isArc).toBe(false);
+  });
 });

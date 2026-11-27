@@ -43,6 +43,10 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       breakability: { kind: 'always' },
       hasMapFootprint: true, // DEC-185: reach to the fort's walls; one pool, DEC-185 B
       hasFortBox: true, // DEC-185: a chase closes in on a unit inside the fort
+      // DEC-302, DEC-342: the tower shoots orbs from its gem; its health, aura and waves are as before.
+      controller: 'turret',
+      aiProfile: 'lane-tower',
+      ammo: ['tower-orb'],
     },
     {
       id: 'buff-tower',
@@ -53,6 +57,10 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       breakability: { kind: 'always' },
       hasMapFootprint: true, // DEC-185: reach to the fort's walls; one pool, DEC-185 B
       hasFortBox: true, // DEC-185: a chase closes in on a unit inside the fort
+      // DEC-302, DEC-342: the tower shoots orbs from its gem; its health, aura and waves are as before.
+      controller: 'turret',
+      aiProfile: 'lane-tower',
+      ammo: ['tower-orb'],
     },
     {
       id: 'gate',

@@ -1,4 +1,5 @@
 import { ContentCatalogue } from '../ContentCatalogue';
+import { MAP_FEATURE_DEFINITIONS } from '../maps/mapFeatureDefinitions';
 import type { AuthoredTurretProfile } from './turret.types';
 
 /**
@@ -25,5 +26,45 @@ export const WALL_TURRET = {
   heavyKinds: HEAVY_TARGET_KINDS,
 } as const satisfies AuthoredTurretProfile;
 
+/**
+ * How far from a lane tower's centre it takes a target, in metres.
+ * Owner ruling DEC-366 (card "ORB range"): 30 m from the tower centre.
+ */
+export const LANE_TOWER_REACH_FROM_CENTRE = 30;
+
+/**
+ * The footprint radius both lane towers share, from the map's feature definitions. The profile is
+ * one for both towers, so a map that gives them different footprints must split it.
+ */
+const LANE_TOWER_FOOTPRINT = ((): number => {
+  const radii = ['spawner-tower', 'buff-tower'].map(
+    (id) => MAP_FEATURE_DEFINITIONS[id]?.footprintRadius,
+  );
+  const [first] = radii;
+  if (first === undefined || radii.some((radius) => radius !== first)) {
+    throw new Error('The lane towers need one footprint radius to share the lane-tower profile.');
+  }
+  return first;
+})();
+
+/**
+ * The lane towers' targeting (DEC-302, DEC-342): the defend-ally override and window of the wall
+ * turret, then the nearest enemy. The controller measures from the tower's edge, so the range is
+ * the reach the owner gives from the tower's centre, less the footprint radius.
+ */
+export const LANE_TOWER = {
+  id: 'lane-tower',
+  range: LANE_TOWER_REACH_FROM_CENTRE - LANE_TOWER_FOOTPRINT,
+  // DEC-366 (card "ORB targets"): "As the wall turrets", so the window and the override are the
+  // wall turret's; a change to them changes both.
+  defendAllySeconds: WALL_TURRET.defendAllySeconds,
+  overrides: WALL_TURRET.overrides,
+  priority: ['nearest-enemy'], // DEC-366 (card "ORB targets")
+  heavyKinds: HEAVY_TARGET_KINDS,
+} as const satisfies AuthoredTurretProfile;
+
 /** Every turret profile as authored; `loadTurrets` loads them. */
-export const TURRET_PROFILES = new ContentCatalogue<AuthoredTurretProfile>([WALL_TURRET]);
+export const TURRET_PROFILES = new ContentCatalogue<AuthoredTurretProfile>([
+  WALL_TURRET,
+  LANE_TOWER,
+]);

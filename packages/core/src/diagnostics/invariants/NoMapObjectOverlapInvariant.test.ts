@@ -71,7 +71,7 @@ describe('NoMapObjectOverlapInvariant', () => {
     expect(invariant.check(state)).toEqual([]);
   });
 
-  it('passes a shot inside a shape that holds its own launch point (DEC-334), and flags one that does not', () => {
+  it('passes a straight shot inside a shape that holds its own launch point (DEC-334), flags one that does not, and passes an arc shot over a wall (DEC-342)', () => {
     const config = createDefaultGameConfig();
     const state = new GameState(config, 1);
     const units = loadDefaultContent(config.tickRate);
@@ -99,12 +99,13 @@ describe('NoMapObjectOverlapInvariant', () => {
       entities: state.entities,
       definitions: MAP_OBJECT_DEFINITIONS,
     });
-    const bolt = loadProjectiles(config.tickRate).get('turret-bolt');
+    const projectiles = loadProjectiles(config.tickRate);
     const ammo = loadTurrets(config.tickRate).ammo.get('bolt-default');
-    /** A bolt at `at`, launched at `origin`. */
-    const shotAt = (id: string, at: Vec2, origin: Vec2): Projectile => {
-      const shot = new Projectile(id, bolt.id);
-      shot.spawn({ definition: bolt, position: at, team: 'light' });
+    /** A shot of `projectileId` at `at`, launched at `origin`; an arrow flies straight. */
+    const shotAt = (id: string, at: Vec2, origin: Vec2, projectileId = 'arrow'): Projectile => {
+      const definition = projectiles.get(projectileId);
+      const shot = new Projectile(id, definition.id);
+      shot.spawn({ definition, position: at, team: 'light' });
       shot.addComponent(
         new ProjectilePayload({
           ownerId: 'turret',
@@ -128,5 +129,10 @@ describe('NoMapObjectOverlapInvariant', () => {
     expect(invariant.check(state)).toEqual([
       expect.objectContaining({ entityId: 'entering', details: { objectId: 'wall' } }),
     ]);
+
+    // An arc shot flies above the walls (DEC-342): over a wall it overlaps nothing.
+    state.entities.remove('entering', 'consumed');
+    shotAt('arcing', { x: 3, y: 7 }, { x: -20, y: 7 }, 'turret-bolt');
+    expect(invariant.check(state)).toEqual([]);
   });
 });

@@ -43,6 +43,23 @@ describe('ContentValidator', () => {
     );
   });
 
+  it('problemsOf returns each broken rule message for one definition, and none for a clean one', () => {
+    const validator = new ContentValidator([new NoMagusRule(), new AlwaysTwoProblemsRule()]);
+    const catalogue = new ContentCatalogue([LEGEND_CLASSES.get('magus')]);
+
+    expect(validator.problemsOf(LEGEND_CLASSES.get('magus'), catalogue)).toEqual([
+      'magus is not allowed',
+      'first problem',
+      'second problem',
+    ]);
+    expect(
+      new ContentValidator([new NoMagusRule()]).problemsOf(
+        LEGEND_CLASSES.get('warrior'),
+        catalogue,
+      ),
+    ).toEqual([]);
+  });
+
   it('passes everything when it has no rules', () => {
     expect(() => {
       new ContentValidator([]).validate(LEGEND_CLASSES);

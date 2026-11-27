@@ -28,18 +28,27 @@ describe('loadProjectiles', () => {
     expect(endDuration).toBe(15);
   });
 
+  it('rejects an arc shot that slows before its range (createProjectileRules)', () => {
+    const broken = () => loadProjectiles(30, [{ ...TEST_SHOT, isArc: true }]);
+
+    expect(broken).toThrow(ContentValidationError);
+    expect(broken).toThrow('Projectile "test-shot": an arc shot needs slowFrom equal to range.');
+    expect(() => loadProjectiles(30, [{ ...TEST_SHOT, isArc: true, slowFrom: 500 }])).not.toThrow();
+  });
+
   it('keeps an end duration of at least one tick', () => {
     expect(
       loadProjectiles(30, [{ ...TEST_SHOT, endDuration: 0.001 }]).get('test-shot').endDuration,
     ).toBe(1);
   });
 
-  it('ships the bolt, the arrow and the two turret bolts', () => {
+  it('ships the bolt, the arrow, the two turret bolts and the tower orb', () => {
     expect(loadProjectiles(30).ids).toEqual([
       'magus-bolt',
       'arrow',
       'turret-bolt',
       'turret-heavy-bolt',
+      'tower-orb',
     ]);
   });
 

@@ -35,4 +35,15 @@ describe('predictiveAim', () => {
       y: 30,
     });
   });
+
+  it('adds the delay to every flight time, so an arc shot that lands at the aim point meets the target', () => {
+    // 20 m away, moving 1 m/tick across, shot at 4 m/tick, 3 ticks before it moves: the first
+    // guess is 20 / 4 + 3 = 8 ticks ahead, at (20, 8); refined with the flight to it.
+    const refinedTime = Math.sqrt(20 * 20 + 8 * 8) / 4 + 3;
+
+    expect(predictiveAim(ORIGIN, { x: 20, y: 0 }, { x: 0, y: 1 }, 4, 3)).toEqual({
+      x: 20,
+      y: refinedTime,
+    });
+  });
 });

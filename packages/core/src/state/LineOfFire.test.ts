@@ -222,6 +222,18 @@ describe('LineOfFire', () => {
     expect(shortShots.isClear(state, from, far)).toBe(false);
   });
 
+  it('is clear behind a wall for an arc shot, which flies over it, but not past its range (DEC-342)', () => {
+    const arcShots = new LineOfFire({ get: (id) => ({ ...PROJECTILES.get(id), isArc: true }) });
+    const { state, add, shooter } = world([box(5, -5, 0.5, 10)]);
+    const from = shooter({ x: 0, y: 0 });
+    const behind = add({ at: { x: 10, y: 0 }, radius: 1 });
+    const beyond = add({ at: { x: 300, y: 0 }, radius: 1 });
+
+    expect(lineOfFire.isClear(state, from, behind)).toBe(false);
+    expect(arcShots.isClear(state, from, behind)).toBe(true);
+    expect(arcShots.isClear(state, from, beyond)).toBe(false);
+  });
+
   it('tests the attack it is given, not the one the attacker has loaded (BTD-1)', () => {
     const SHORT: RangedAttack = {
       ...RANGED,
