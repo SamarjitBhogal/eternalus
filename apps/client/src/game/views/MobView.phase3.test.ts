@@ -23,7 +23,7 @@ const MINION: EntitySnapshot = {
   team: 'light',
   transform: { x: 0, y: 0, radius: 0.4, facing: { x: 0, y: 1 } },
   health: { current: 150, max: 150 },
-  jump: null,
+  elevation: null,
   progression: null,
   aether: null,
   area: null,

@@ -72,13 +72,13 @@ describe('Simulation: the Legend jump (DEC-390)', () => {
     sim.step();
     sim.step();
 
-    expect(legendOf(sim)?.jump?.height).toBeGreaterThan(0);
+    expect(legendOf(sim)?.elevation?.height).toBeGreaterThan(0);
     // Still moving up (−y), the takeoff direction, though the input now points down.
     expect(legendOf(sim)?.transform?.y).toBeLessThan(before);
   });
 
   it('is back on the ground once the key is released and the last jump lands', () => {
-    expect(legendOf(run(60))?.jump).toEqual({ height: 0 });
+    expect(legendOf(run(60))?.elevation).toEqual({ height: 0 });
   });
 
   it('gives the same hash for the same seed and jump commands, and another without the jump', () => {

@@ -59,7 +59,7 @@ export class EntitySnapshotter {
               radius: transform.radius,
               facing: { x: transform.facing.x, y: transform.facing.y },
             },
-      jump: jump === undefined ? null : { height: jump.height },
+      elevation: jump === undefined ? null : { height: jump.height },
       health: health === undefined ? null : { current: health.current, max: health.max },
       progression:
         progression === undefined

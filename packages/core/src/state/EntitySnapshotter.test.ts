@@ -57,13 +57,13 @@ describe('EntitySnapshotter', () => {
     const jump = new Jump();
     jumper.addComponent(jump);
     const snapshotter = new EntitySnapshotter(4, CURVES);
-    expect(snapshotter.snapshotOf(jumper).jump).toEqual({ height: 0 });
+    expect(snapshotter.snapshotOf(jumper).elevation).toEqual({ height: 0 });
 
     jump.takeOff({ x: 1, y: 0 });
     jump.advance({ airTicks: 4, peakHeight: 2 });
 
-    expect(snapshotter.snapshotOf(jumper).jump).toEqual({ height: 1.5 });
-    expect(snapshotter.snapshotOf(new Bare('entity-2', 'bare-definition')).jump).toBeNull();
+    expect(snapshotter.snapshotOf(jumper).elevation).toEqual({ height: 1.5 });
+    expect(snapshotter.snapshotOf(new Bare('entity-2', 'bare-definition')).elevation).toBeNull();
   });
 
   it('names the map object a body stands for, and leaves the key out for every other entity', () => {

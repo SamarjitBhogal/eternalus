@@ -20,7 +20,7 @@ const unit = (weight: MinionWeight, team: EntitySnapshot['team'] = 'light'): Ent
     radius: { light: 0.4, medium: 0.5, heavy: 0.8 }[weight],
   },
   health: { current: 100, max: 100 },
-  jump: null,
+  elevation: null,
   progression: null,
   aether: null,
   area: null,

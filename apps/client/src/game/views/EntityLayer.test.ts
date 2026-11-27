@@ -27,7 +27,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   team: 'dark',
   transform: { x, y, radius: 0.4, facing },
   health: null,
-  jump: null,
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
@@ -116,7 +116,7 @@ describe('EntityLayer', () => {
     );
     const lifted = (id: string, height: number): EntitySnapshot => ({
       ...unit(id, 0, 0),
-      jump: { height },
+      elevation: { height },
     });
 
     layer.show(

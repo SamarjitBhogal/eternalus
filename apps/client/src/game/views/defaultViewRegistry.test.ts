@@ -21,7 +21,7 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
   team: 'light',
   transform: { x: 0, y: 0, radius: 0.5, facing: { x: 1, y: 0 } },
   health: null,
-  jump: null,
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
@@ -51,7 +51,7 @@ describe('createDefaultViewRegistry', () => {
       drawMinimap: () => undefined,
       visualRadiusOf: () => 3,
     };
-    const jumping = { ...entity('warrior', 'legend'), jump: { height: 1.5 } };
+    const jumping = { ...entity('warrior', 'legend'), elevation: { height: 1.5 } };
     const renderer = new RecordingRenderer();
 
     const top = createDefaultViewRegistry(undefined, legend)

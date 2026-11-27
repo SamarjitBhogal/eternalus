@@ -36,10 +36,11 @@ export type EntitySnapshot = {
     readonly facing: { readonly x: number; readonly y: number };
   } | null;
   /**
-   * A Legend's height above the ground in metres (`Jump`, DEC-390): above 0 only in the air;
-   * `null` for every entity that cannot jump.
+   * The drawn height above the ground in metres, from any lift (today only a Legend's `Jump`,
+   * DEC-390; named for what the view draws, DEC-420): above 0 only in the air; `null` for every
+   * entity that nothing can lift.
    */
-  readonly jump: { readonly height: number } | null;
+  readonly elevation: { readonly height: number } | null;
   readonly health: { readonly current: number; readonly max: number } | null;
   /** A Legend's level and XP (`Progression`, DEC-224); `null` for every entity that does not level. */
   readonly progression: ProgressionSnapshot | null;

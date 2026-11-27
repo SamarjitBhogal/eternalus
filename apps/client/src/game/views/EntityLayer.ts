@@ -104,7 +104,7 @@ export class EntityLayer implements WorldLayer {
 
   /** Height above the ground (a jump, DEC-390); 0 for an entity that cannot leave it. */
   private static heightOf(entity: EntitySnapshot): number {
-    return entity.jump?.height ?? 0;
+    return entity.elevation?.height ?? 0;
   }
 
   private static mix(from: number, to: number, alpha: number): number {

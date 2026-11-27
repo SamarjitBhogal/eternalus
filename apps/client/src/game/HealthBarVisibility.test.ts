@@ -56,7 +56,7 @@ const entity = (
   team,
   transform: { x: 0, y: 0, radius: 0.4, facing: { x: 1, y: 0 } },
   health: { current, max: 10 },
-  jump: null,
+  elevation: null,
   progression: null,
   aether: null,
   area: null,

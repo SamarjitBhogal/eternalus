@@ -15,7 +15,7 @@ const legend = (height: number | null): EntitySnapshot => ({
   team: 'light',
   transform: { x: 4, y: 10, radius: 0.5, facing: { x: 1, y: 0 } },
   health: { current: 600, max: 600 },
-  jump: height === null ? null : { height },
+  elevation: height === null ? null : { height },
   progression: null,
   aether: null,
   area: null,
@@ -28,7 +28,7 @@ const stateOf = (entity: EntitySnapshot): EntityDrawState => ({
   entity,
   position: { x: 4, y: 10 },
   facing: { x: 1, y: 0 },
-  height: entity.jump?.height ?? 0,
+  height: entity.elevation?.height ?? 0,
   isFocused: false,
 });
 

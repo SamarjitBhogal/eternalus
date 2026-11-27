@@ -14,7 +14,7 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
   team: null,
   transform: null,
   health: null,
-  jump: null,
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
