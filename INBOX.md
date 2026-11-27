@@ -806,7 +806,7 @@ Reply inline (`Decision: …`).
     and the throne are part of the Stronghold's body (`MapObject.partOf`) and have no health of
     their own; the inner ring and the room walls keep their own health and break on their own.
 
-- [ ] **HC-Q122 — After the Stronghold falls, what happens to its outer walls and its throne?
+- [x] **HC-Q122 — After the Stronghold falls, what happens to its outer walls and its throne?
       (`feat/palace-stronghold-pool`, follow-up to HC-Q104, DEC-386 (1); critic r1 Q104-1).**
       Card for Owner Calls v101, 2026-11-26, by COMBAT-WEAPONS-ABILITIES-70 (number from
       PR-REVIEW-COORDINATION-49). The enemy Stronghold falls, and the match goes on: the
@@ -824,6 +824,10 @@ Reply inline (`Decision: …`).
       `MapObject.partOf`, `WorldObjectStore.removed` (`isRuined`). PR #98's
       `StructureRuins.fallen` reads `partOf` and gives each piece fort tuning, so the #98 merge
       needs a rule per structure definition whatever the answer (DEC-341 merge note).
+  - Answered 2026-11-27 (DEC-408, Owner Calls v103): "B: the fort rule: the struck piece
+    falls, the others break on their own". It comes with the merge where PR #98
+    (`StructureRuins`) meets this branch; the second of the two to reach phase/3 proves it with
+    a test. Until then the pieces stay as ruins.
 
 - [ ] **FYI, and one better-than-design item: the Stronghold's fort box
       (`feat/palace-stronghold-pool`, critic r1 Q104-3 and Q104-11, 2026-11-26;
@@ -885,7 +889,7 @@ Reply inline (`Decision: …`).
     flags, so the fire's own body and the forest camp's home still stopped shots; now a shot not
     aimed at them flies over both (HC-Q115, HC-Q116).
 
-- [ ] **HC-Q115 — Does an arrow fly over the middle of a camp fire too? (`feat/shots-over-lava`,
+- [x] **HC-Q115 — Does an arrow fly over the middle of a camp fire too? (`feat/shots-over-lava`,
       follow-up to HC-Q105, DEC-386 correction 2026-11-26).** Asked on Owner Calls v100,
       2026-11-26, by COMBAT-WEAPONS-ABILITIES-67. Each forest camp has an unseen home at the middle
       of its camp fire. It takes no damage, and a body that takes no damage stopped every shot
@@ -894,14 +898,20 @@ Reply inline (`Decision: …`).
       the camp still stops there, with no damage; (B) the arrow stops in the middle of the fire, as
       before. Code names: `canShotsFlyOver` on the `forest-camp-*` structure definitions
       (`structureCatalogue.ts`), `Collider.canShotsFlyOver`, `AreaHitQuery.stopsShot`.
+  - Answered 2026-11-27 (DEC-409 (1), Owner Calls v103): "A: the arrow flies over the whole
+    fire (being built, recommended)". Built as A; nothing changes.
 
-- [ ] **HC-Q116 — Do the fires in the palace kitchens also light arrows? (`feat/shots-over-lava`,
+- [x] **HC-Q116 — Do the fires in the palace kitchens also light arrows? (`feat/shots-over-lava`,
       follow-up to HC-Q105).** Asked 2026-11-26 by COMBAT-WEAPONS-ABILITIES-67. Options: (A, today,
       recommended) a kitchen hearth is furniture: it stops arrows and does not light them; (B) a
       hearth works like a camp fire: shots fly over it, and an arrow catches fire there. Note: the
       HC-Q105 card said that the camp fires were the only fires on the map. That was wrong: each
       palace kitchen has a hearth. Not built either way; today's behaviour stays until you answer.
       Code names: `<team>-palace-interior-kitchen-hearth` (`MapPalaceRoomsBuilder`).
+  - Answered 2026-11-27 (DEC-409 (2), Owner Calls v103): "if theres a visual "wall" in the
+    hearth, then the wall would stop it. if its a bare fire, it makes sense that it would also
+    light an arrow." The hearth is a stone block with its fire inside it, so the stone stops
+    the arrow. Nothing changes.
 
 - [ ] **HC-B53 — Better than the design, not built: one place describes a body to the shot rule
       (`feat/shots-over-lava`, #169, critic finding R3-2, 2026-11-26; COMBAT-WEAPONS-ABILITIES-70).**
@@ -954,7 +964,7 @@ Reply inline (`Decision: …`).
       was at most 1 level. Options: (A, built) keep 2 levels; (B) cap it at 1 level, as the boss
       reward is capped (DEC-237). Also: when a minion lands the last hit, no one gets the XP.
 
-- [ ] **HC-Q118 — What type of weapon are the Colossus's Bastions? (`feat/start-weapons`, PR 3
+- [x] **HC-Q118 — What type of weapon are the Colossus's Bastions? (`feat/start-weapons`, PR 3
       W3, Owner Calls v100).** You said yes to the Bastions at 120 damage every 1.6 s (DEC-387).
       They are not built yet, because each weapon has one weapon type and reference 07 gives the
       Bastions none. Until you answer, the Colossus starts with the Wuuthrad battle axe. The type
@@ -962,6 +972,9 @@ Reply inline (`Decision: …`).
       Bastions are walls on the arms; (B) Glove, like the Raptor Talons. Either way the Bastions
       are one weapon file and one line in the Colossus spec. Code names: `WeaponClass` in
       `content/weapons/weapons.types.ts`; DEC-387 (7).
+  - Answered 2026-11-27 (DEC-407, Owner Calls v103): "A: a new weapon type, Shield" and the
+    Bastions are dual-wielded, like the dual blades. Built in `feat/shots-over-lava` (fold
+    unit U1): `content/weapons/bastions.ts`, and the Colossus starts with them.
 
 - [ ] **HC-B48 — Better than the design, sign-off asked: 3 code ideas from the critic
       (`feat/start-weapons`, PR 3, critic rounds 1 to 3, 2026-11-26;

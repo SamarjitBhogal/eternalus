@@ -92,6 +92,8 @@ export class MapPalaceRoomsBuilder extends MapDecorationBuilder {
   }
 
   private kitchenBedroom(x: number, team: PlayableTeam, accent: string): void {
+    // DEC-409 (2): the stone block holds the fire, so the stone stops a shot before the fire
+    // can light it; a bare fire would carry `canShotsCross` and `canLightShots` (DEC-360).
     this.beginObject(`${team}-palace-interior-kitchen-hearth`, 'furniture');
     this.blockRect(`${team}-palace-interior-kitchen-hearth`, x - 68, 477, 12, 9, P.hearthStone);
     this.rect(`${team}-palace-interior-kitchen-fire`, x - 65, 480, 6, 3, P.hearthFire);

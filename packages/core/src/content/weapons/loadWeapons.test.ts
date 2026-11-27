@@ -105,6 +105,7 @@ describe('loadWeapons', () => {
       'long-sword',
       'great-sword',
       'dual-blades',
+      'bastions',
     ]);
   });
 
@@ -140,12 +141,13 @@ describe('loadWeapons', () => {
     expect(sweep('dual-blades')).toEqual([100, 1]);
     expect(sweep('great-sword')).toEqual([140, 2]);
     expect(sweep('long-sword')).toEqual([120, 2]);
-    // DEC-387: 0.45 s, 1.2 s and 0.9 s at 30 ticks per second (GameConfig.tickRate)
+    expect(sweep('bastions')).toEqual([70, 1]);
+    // DEC-387: 0.45 s, 1.2 s, 0.9 s and 1.6 s at 30 ticks per second (GameConfig.tickRate)
     expect(
-      ['dual-blades', 'great-sword', 'long-sword'].map(
+      ['dual-blades', 'great-sword', 'long-sword', 'bastions'].map(
         (id) => weapons.get(id).attacks[0]?.interval,
       ),
-    ).toEqual([14, 36, 27]);
+    ).toEqual([14, 36, 27, 48]);
   });
 
   it.each([0, -10, 181, 360, Number.NaN])('rejects a sweep arc of %s degrees', (arcDegrees) => {

@@ -78,7 +78,8 @@ export class WorldObjectStore {
    * object of a retired structure's body (a lane tower's fort, a wall turret's pylon, the
    * Stronghold's outer walls and throne) stays standing and blocking, with no health left to take:
    * it is a ruin from then on (DEC-341, HC-Q91; fort pieces become ruins that block, DEC-219 (a),
-   * DEC-227 Q-C).
+   * DEC-227 Q-C). For a lane tower's fort (DEC-219 (a)) and the Stronghold's outer walls and
+   * throne (DEC-408) this is an interim: PR #98's `StructureRuins` brings the fort rule.
    */
   public removed(entityId: string): void {
     const object = this.entityObjects.get(entityId);

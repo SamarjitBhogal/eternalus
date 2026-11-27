@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -647,6 +647,8 @@ object (`<camp>-fire`), through `MapDecorationBuilder.beginObject`. So the note 
 object has neither") no longer holds for camp fires. The fire's body follows the shot rule in the
 2026-11-26 correction note in 10 §7. The map still decides nothing about shots: it only sets the
 flags. The palace kitchen hearths (`MapPalaceRoomsBuilder`) carry no flag (`INBOX.md` HC-Q116).
+2026-11-27: DEC-409 (2) keeps this: each hearth's stone block holds its fire, so the stone stops a
+shot before the fire can light it.
 
 ## Related
 

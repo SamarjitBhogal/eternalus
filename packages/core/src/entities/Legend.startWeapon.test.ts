@@ -97,6 +97,7 @@ describe('a Legend spawns with its spec weapon (DEC-387)', () => {
     ['warrior', 'paladin', 'great-sword', 85],
     ['warrior', 'assassin', 'raptor-talons', 45],
     ['sentinel', 'juggernaut', 'wuuthrad', 90],
+    ['sentinel', 'colossus', 'bastions', 120],
   ])('a %s of spec %s hits with %s for %d', (classId, specId, weaponId, damage) => {
     const { amounts, fight } = setUp(classId, specId);
 
@@ -161,6 +162,14 @@ describe('a Legend spawns with its spec weapon (DEC-387)', () => {
     expect(WEAPONS.get('dual-blades')).toMatchObject({
       allowedClasses: ['warrior'],
       uniqueTo: 'warrior',
+    });
+  });
+
+  it('makes the Bastions a shield for the Sentinel only (DEC-407)', () => {
+    expect(WEAPONS.get('bastions')).toMatchObject({
+      weaponClass: 'shield',
+      allowedClasses: ['sentinel'],
+      uniqueTo: 'sentinel',
     });
   });
 });

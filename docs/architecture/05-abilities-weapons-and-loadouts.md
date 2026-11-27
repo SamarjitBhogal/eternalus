@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -619,7 +619,7 @@ units with no attack (`cannot-attack`).
 
 ```ts
 // Sketch: packages/core/src/content/weapons/WeaponDefinition.types.ts
-export type WeaponClass = 'glove' | 'bow' | 'sword' | 'spear' | 'battle-axe' | 'staff';
+export type WeaponClass = 'glove' | 'bow' | 'sword' | 'spear' | 'battle-axe' | 'staff' | 'shield';
 export type AttackStrategyId = 'melee' | 'melee-sweep' | 'ranged-projectile' | 'beam'; // 'beam' reserved (04 §4)
 export type WeaponAttack = {
   readonly strategy: AttackStrategyId;
@@ -712,18 +712,18 @@ status.
 `ProjectileFlight` holds whether a shot is lit; the hash, `EntitySnapshot.projectile` and the
 client's look of the shot follow it.
 
-| Weapon (`id`)                               | Class      | Attacks (`TUNE`, reference 07)                                                          | Unique to | Status                  |
-| ------------------------------------------- | ---------- | --------------------------------------------------------------------------------------- | --------- | ----------------------- |
-| Raptor Talons (`raptor-talons`)             | glove      | melee physical; `onHit: bleed`                                                          | —         | MVP                     |
-| Obsidian bow (`obsidian-bow`, name pending) | bow        | ranged magical projectile; `onHit: sundered` (stacks)                                   | —         | MVP                     |
-| A Fine Line (`a-fine-line`)                 | staff      | melee physical + ranged magical, both `pierce`                                          | —         | MVP                     |
-| Staff (`magus-staff`)                       | staff      | melee physical, ranged magical; `grants: ['spell-potency']`                             | magus     | MVP                     |
-| Long sword (`long-sword`)                   | sword      | melee physical (DEC-387 W1)                                                             | —         | MVP (DEC-387)           |
-| Great sword (`great-sword`)                 | sword      | melee physical; heavier, harder and wider than the long sword (DEC-387 W4)              | —         | MVP (DEC-387)           |
-| Wuuthrad (`wuuthrad`)                       | battle-axe | melee physical, long reach; heavy: `concussion`; `damageMultipliers.sentinel`           | —         | MVP-if-time             |
-| Lightbringer (`lightbringer`)               | sword      | melee magical + physical; heavy (cooldown): stun, concussion, blind; parry: blind, stun | —         | MVP-if-time             |
-| Dual blades (`dual-blades`)                 | sword      | fast melee (DEC-387 W2); throwable (a persistent projectile, retrieve or regenerate)    | warrior   | MVP; throw MVP-if-time  |
-| Barricades (`barricades`)                   | —          | movement lock, `mass` change, moving collider, knockback absorption                     | sentinel  | post-MVP ("needs work") |
+| Weapon (`id`)                                    | Class      | Attacks (`TUNE`, reference 07)                                                          | Unique to | Status                 |
+| ------------------------------------------------ | ---------- | --------------------------------------------------------------------------------------- | --------- | ---------------------- |
+| Raptor Talons (`raptor-talons`)                  | glove      | melee physical; `onHit: bleed`                                                          | —         | MVP                    |
+| Obsidian bow (`obsidian-bow`, name pending)      | bow        | ranged magical projectile; `onHit: sundered` (stacks)                                   | —         | MVP                    |
+| A Fine Line (`a-fine-line`)                      | staff      | melee physical + ranged magical, both `pierce`                                          | —         | MVP                    |
+| Staff (`magus-staff`)                            | staff      | melee physical, ranged magical; `grants: ['spell-potency']`                             | magus     | MVP                    |
+| Long sword (`long-sword`)                        | sword      | melee physical (DEC-387 W1)                                                             | —         | MVP (DEC-387)          |
+| Great sword (`great-sword`)                      | sword      | melee physical; heavier, harder and wider than the long sword (DEC-387 W4)              | —         | MVP (DEC-387)          |
+| Wuuthrad (`wuuthrad`)                            | battle-axe | melee physical, long reach; heavy: `concussion`; `damageMultipliers.sentinel`           | —         | MVP-if-time            |
+| Lightbringer (`lightbringer`)                    | sword      | melee magical + physical; heavy (cooldown): stun, concussion, blind; parry: blind, stun | —         | MVP-if-time            |
+| Dual blades (`dual-blades`)                      | sword      | fast melee (DEC-387 W2); throwable (a persistent projectile, retrieve or regenerate)    | warrior   | MVP; throw MVP-if-time |
+| Bastions (`bastions`; reference 07's Barricades) | shield     | heavy, slow melee, dual-wielded; post-MVP: lock, `mass`, moving collider, knockback     | sentinel  | MVP (DEC-407)          |
 
 **Implementation status (SCRUM-183 / SCRUM-287, first slice).** `content/weapons/` holds
 `WeaponDefinition` (`id`, `displayName`, `weaponClass`, `attacks`, `allowedClasses`, `uniqueTo`;
@@ -832,7 +832,8 @@ HC-Q115).** The shot rule above names walk-on outlines. In the code, `AreaHitQue
 a shot not aimed at a body fly over more bodies than that: the rule is in the 2026-11-26
 correction note in 10 §7. So a forest camp no longer stops every shot, and the text above that
 names it as a body that takes no damage does not hold for it. The owner is asked to confirm the
-reading (`INBOX.md` HC-Q115). `LineOfFire` uses the same rule.
+reading (`INBOX.md` HC-Q115). `LineOfFire` uses the same rule. 2026-11-27: he confirmed it
+(DEC-409 (1)).
 
 **Implementation status, 2026-11-26 (branch `feat/start-weapons`, lane A PR 3; DEC-387).** A Legend
 spawns with the weapon of its spec. `LegendSpecDefinition.primaryWeaponId` (`string | null`) is the
@@ -848,8 +849,10 @@ class default stays as the fallback and the `defaultLoadout` of a class is uncha
 each of class `sword` with a melee sweep: `long-sword` and `great-sword` (open to every class) and
 `dual-blades` (Warrior only). Raptor Talons and the Obsidian Bow have an attack `onHit` step: one
 stack of `bleed` and of the new `sundered` status (`damageTaken`, added per stack; its numbers live
-in `content/status-effects/sundered.ts`) on each hit. The Colossus' Bastions are not built:
-reference 07 names no weapon class for them (DEC-387 (7), `INBOX.md` HC-Q118). The table above
+in `content/status-effects/sundered.ts`) on each hit. The Colossus' Bastions were not built here:
+reference 07 names no weapon class for them (DEC-387 (7), `INBOX.md` HC-Q118). 2026-11-27
+(DEC-407): they are built, of the new weapon class `shield`, Sentinel only, and the Colossus
+starts with them (`content/weapons/bastions.ts`). The table above
 records the dual blades (the id `dual-blades` and the class `sword`: DEC-57 "two swords", DEC-64,
 card W2), the long sword and the great sword (cards W1 and W4); the dual blades' throw is not built
 and stays MVP-if-time. One difference from the design text remains, and it is acceptable: the start
@@ -1107,13 +1110,13 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
 - **Add a loadout slot**: one field on `Loadout`, one `LoadoutRule`, one DTO migration
   ([14](14-persistence-and-resources.md)), one `LoadoutScreen` row.
 
-| Item                                                                                                                                                                       | Status                                                                              |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| The framework (§2–§9), 3 abilities + ultimate per class, aether, charge rules, XP scaling, `Loadout` + validator + auto-build, `AbilityBar` glyphs                         | **MVP**                                                                             |
-| Veil, Blade Runner (both varieties), Rip & Tear, Slam, Imbue (both varieties), Shockwave; one ultimate per class (Fury; Berserk or Meteor Fall; Death Ray or Nova); Revive | **MVP** (third abilities and ultimate picks: INBOX; proposals in more-abilities.md) |
-| Raptor Talons, obsidian bow, A Fine Line, Magus staff, dual blades, long sword, great sword (DEC-387); gadget slots Z/C                                                    | **MVP**                                                                             |
-| Wuuthrad, Lightbringer, Dual blades (throw), Mortar, Soul Orb, secondary weapon, passive slot, in-match loadout changes, Ultimate Plus, combos, `summon`                   | **MVP-if-time**                                                                     |
-| Ability tree, class-switch penalty, Barricades, Eagle Eye, Firestorm, `reveal`, armour set, skins, weapon abilities (`WeaponDefinition.abilityIds` reuses `Ability`)       | **post-MVP**                                                                        |
+| Item                                                                                                                                                                                                                                            | Status                                                                              |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| The framework (§2–§9), 3 abilities + ultimate per class, aether, charge rules, XP scaling, `Loadout` + validator + auto-build, `AbilityBar` glyphs                                                                                              | **MVP**                                                                             |
+| Veil, Blade Runner (both varieties), Rip & Tear, Slam, Imbue (both varieties), Shockwave; one ultimate per class (Fury; Berserk or Meteor Fall; Death Ray or Nova); Revive                                                                      | **MVP** (third abilities and ultimate picks: INBOX; proposals in more-abilities.md) |
+| Raptor Talons, obsidian bow, A Fine Line, Magus staff, dual blades, long sword, great sword (DEC-387), Bastions (DEC-407); gadget slots Z/C                                                                                                     | **MVP**                                                                             |
+| Wuuthrad, Lightbringer, Dual blades (throw), Mortar, Soul Orb, secondary weapon, passive slot, in-match loadout changes, Ultimate Plus, combos, `summon`                                                                                        | **MVP-if-time**                                                                     |
+| Ability tree, class-switch penalty, the Bastions' movement lock, `mass` change, moving collider and knock-back absorption, Eagle Eye, Firestorm, `reveal`, armour set, skins, weapon abilities (`WeaponDefinition.abilityIds` reuses `Ability`) | **post-MVP**                                                                        |
 
 ## 18. Implementation status
 

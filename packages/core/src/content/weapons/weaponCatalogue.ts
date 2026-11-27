@@ -1,4 +1,5 @@
 import { ContentCatalogue } from '../ContentCatalogue';
+import { BASTIONS } from './bastions';
 import { DUAL_BLADES } from './dualBlades';
 import { GREAT_SWORD } from './greatSword';
 import { LONG_SWORD } from './longSword';
@@ -20,4 +21,5 @@ export const WEAPONS = new ContentCatalogue<AuthoredWeaponDefinition>([
   LONG_SWORD,
   GREAT_SWORD,
   DUAL_BLADES,
+  BASTIONS,
 ]);

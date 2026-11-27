@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -592,7 +592,9 @@ so the collapse of the palace map object does not kill the Stronghold. The Stron
 DEC-386 (1) correction).** Three changes to the note above. (1) After the Stronghold falls, the
 match goes on (ADR 0021, DEC-71), so its outer walls and throne stay as ruins that block and never
 break for the rest of the match. No owner answer covers this: `INBOX.md` HC-Q122 asks it, and this
-is the interim until he answers. (2) The palace floor is not part of the Stronghold (DEC-344 (4)):
+is the interim until he answers. 2026-11-27: he answered with the fort rule (DEC-408); it comes
+with the merge where PR #98 (`StructureRuins`) meets this branch, and this interim stays until
+then. (2) The palace floor is not part of the Stronghold (DEC-344 (4)):
 the Stronghold's definition has no `hasMapFootprint`, and its `Footprint` is its outer walls and
 throne only, all solid (`Footprint.ofBody`, `map/structureBodyParts`). So a hit on the floor never
 takes the Stronghold's health, and a locked attack on the Stronghold lands on an outer wall or the

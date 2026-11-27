@@ -92,7 +92,7 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       baseHealth: 1, // never damaged: a camp is only its group's home
       footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
       breakability: { kind: 'never' },
-      canShotsFlyOver: true, // HC-Q105, HC-Q115: unseen inside its camp fire, which shots fly over
+      canShotsFlyOver: true, // DEC-409 (1): unseen inside its camp fire, which shots fly over
     },
     {
       id: 'forest-camp-medium',
@@ -101,7 +101,7 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       baseHealth: 1, // never damaged: a camp is only its group's home
       footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
       breakability: { kind: 'never' },
-      canShotsFlyOver: true, // HC-Q105, HC-Q115: unseen inside its camp fire, which shots fly over
+      canShotsFlyOver: true, // DEC-409 (1): unseen inside its camp fire, which shots fly over
     },
     {
       id: 'forest-camp-heavy',
@@ -110,6 +110,6 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       baseHealth: 1, // never damaged: a camp is only its group's home
       footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
       breakability: { kind: 'never' },
-      canShotsFlyOver: true, // HC-Q105, HC-Q115: unseen inside its camp fire, which shots fly over
+      canShotsFlyOver: true, // DEC-409 (1): unseen inside its camp fire, which shots fly over
     },
   ]);

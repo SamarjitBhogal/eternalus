@@ -14,8 +14,7 @@ export const COLOSSUS = {
   roleLabel: null,
   description: 'Heaviest, slowest, strongest — a walking tank that specialises in fortifications.',
   roleRatings: null,
-  // The class's weapon until the Bastions have a weapon class: DEC-387 (W3), INBOX.md HC-Q118
-  primaryWeaponId: null,
+  primaryWeaponId: 'bastions', // DEC-407; DEC-387 (W3); DEC-57
   detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
   kit: null, // the class default kit; no Legend has its own yet
 } as const satisfies LegendSpecDefinition;
