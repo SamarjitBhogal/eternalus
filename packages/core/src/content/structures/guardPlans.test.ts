@@ -102,7 +102,7 @@ describe('GUARD_PLANS', () => {
     expect(unknown).toEqual([]);
   });
 
-  it('levels tower guards, forest-camp mobs, the capture point boss group and every checkpoint defender, but not the corner boss (DEC-165, DEC-260, DEC-350)', () => {
+  it('levels tower guards, forest-camp mobs, the corner boss, the capture point boss group and every checkpoint defender (DEC-165, DEC-260, DEC-350, DEC-402)', () => {
     const levellers = Object.entries(GUARD_PLANS)
       .filter(([, plan]) => plan.canLevel)
       .map(([id]) => id);
@@ -110,6 +110,7 @@ describe('GUARD_PLANS', () => {
     expect(levellers.sort()).toEqual([
       'buff-tower',
       'capture-point',
+      'corner-camp',
       'forest-camp-heavy',
       'forest-camp-light',
       'forest-camp-medium',

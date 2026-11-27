@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -541,7 +541,9 @@ snapshot's `mapFeatureId`, not by position. Interim differences:
   feature's definition id; the planned `Cathedral` building (§1) cannot share that id, so its PR
   changes the spawn link (or renames the gem's id, which no save stores yet, ADR 0023). Its
   `CathedralGemState` (the Cathedral's holder from `capture-point-owner-changed`, and its glow) is
-  in the snapshot, and `CathedralGemView` draws it in the holder's colour (DEC-291). The gem system
+  in the snapshot, and `CathedralGemView` draws it in the holder's colour (DEC-291). To find the
+  holder, the gem system takes the capture zone whose area covers the gem's position; the next PR
+  that changes the gem matches the zone by its `MapFeatureLink` instead (DEC-403). The gem system
   is off in a Duel until the follow-up PR builds the owner's Duel design (DEC-346). The `Cathedral`
   building is not an entity yet: its `Spawner` and `Aura` (§1, §6), the gem's look over time and
   the summon-greater-boss action are not built.
