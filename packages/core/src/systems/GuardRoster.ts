@@ -16,7 +16,6 @@ import type { GuardSlot } from '../state/GuardStore.types';
 import type { Team } from '../teams/teams.types';
 import { guardOutward } from '../state/guardOutward';
 import { compareById } from '../utils/compareById';
-import type { Vec2 } from '../utils/geometry.types';
 import { CheckpointGuardRespawn } from './CheckpointGuardRespawn';
 import { countDefenders } from './checkpointDefenders';
 import { cos, sin } from '../utils/deterministicMath';
@@ -122,9 +121,7 @@ export class GuardRoster {
    * while no team did, DEC-257). The leash is the zone's reach from its centre (DEC-257). The posts never refill and
    * outlive an owner change (DEC-261). A checkpoint with no defender row adds nothing. Only the
    * defenders that fit under the point's `defenderLimit` are added, in table order (DEC-350). Post
-   * ids carry the tick, as a checkpoint can be reached again. Posts keep clear of every structure
-   * standing in the zone, so no defender rests against the Cathedral gem, which strikes whoever
-   * touches it (07 §1).
+   * ids carry the tick, as a checkpoint can be reached again.
    */
   public defend(state: GameState, pointId: EntityId, checkpoint: number, team: Team): void {
     const plan = this.defenders[checkpoint];
@@ -156,33 +153,12 @@ export class GuardRoster {
       canLevel: plan.canLevel,
       checkpoint,
       idPrefix: defenceId,
-      keepOut: GuardRoster.structuresWithin(state, transform.position, transform.radius),
     });
-  }
-
-  /** The bodies of the structures whose centres lie within `radius` of `center`. */
-  private static structuresWithin(
-    state: GameState,
-    center: Vec2,
-    radius: number,
-  ): { readonly center: Vec2; readonly radius: number }[] {
-    const bodies: { readonly center: Vec2; readonly radius: number }[] = [];
-    state.entities.forEach((entity) => {
-      const body = entity instanceof Structure ? entity.findComponent(Transform) : undefined;
-      if (body === undefined) return;
-      const dx = body.position.x - center.x;
-      const dy = body.position.y - center.y;
-      if (dx * dx + dy * dy <= radius * radius) {
-        bodies.push({ center: body.position, radius: body.radius });
-      }
-    });
-    return bodies;
   }
 
   /** Lays out one post per row entry of `posts.table` on a ring around `posts.home`. */
   private addPosts(state: GameState, posts: PostLayout): void {
     const { home, team, table, ring, homeRadius, leashRadius, firstTick, checkpoint } = posts;
-    const keepOut = posts.keepOut ?? [];
     const center = home.getComponent(Transform).position;
     const total = table.reduce((sum, row) => sum + row.count, 0);
     const edge = homeRadius + leashRadius;
@@ -197,7 +173,7 @@ export class GuardRoster {
         const at =
           firstTick === null
             ? { x: center.x + ring * cos(turn), y: center.y + ring * sin(turn) }
-            : clearGuardPost(state, center, turn, ring, edge, body, keepOut);
+            : clearGuardPost(state, center, turn, ring, edge, body);
         state.guards.add(
           {
             id: `${prefix}:${String(post)}`,

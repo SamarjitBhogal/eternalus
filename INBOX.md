@@ -193,6 +193,9 @@ Reply inline (`Decision: …`).
       target instead?
       **(5) changed by `feat/boss-brain` (2026-11-27):** before the telegraph, the boss now turns
       to face the player its brain chose. Point (9) of the brain item asks you to confirm this.
+  - **(5) and the telegraph in (3) answered 2026-11-26 by DEC-371 E9** (Owner Calls v98). The cone
+    keeps pointing where the boss faces (as built), and the telegraph of both sweeps is 0.5 s.
+    Built in PR #164. The recover and the cooldown in (3) stay open.
 
 - [ ] **The Greater Boss's charge (Aryan Walanj, 2026-11-20, `feat/cathedral-boss-moves`).**
       balancing.md gives only the heavy move (0.45 × refHealth, 464, every 2.5 s), so these are

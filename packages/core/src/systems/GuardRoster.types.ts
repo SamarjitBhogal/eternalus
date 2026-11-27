@@ -3,7 +3,6 @@ import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
 import type { Team } from '../teams/teams.types';
 import type { GuardSlot } from '../state/GuardStore.types';
-import type { Vec2 } from '../utils/geometry.types';
 
 /**
  * How a guard plan's posts come back after their guards are lost (architecture 18 §7, 07 §6),
@@ -36,8 +35,6 @@ export type PostLayout = {
   readonly checkpoint?: number;
   /** The posts' id prefix; the home's id by default. */
   readonly idPrefix?: string;
-  /** Circles no post's guard may touch (the structures inside a defended zone); none by default. */
-  readonly keepOut?: readonly { readonly center: Vec2; readonly radius: number }[];
 };
 
 /** A guard plan's activation kinds (`activation.at`, architecture 18 §7.1). */

@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { clearCheckpointDefenders } from '../../__fixtures__/clearCheckpointDefenders';
 import { DamagePipeline } from '../../combat/DamagePipeline';
 import type { DamageResult } from '../../combat/DamagePipeline.types';
 import { Collider } from '../../components/Collider';
@@ -38,9 +37,6 @@ const match = (roster: readonly RosterSlot[] = [], duel?: DuelOptions) => {
     roster,
     ...(duel === undefined ? {} : { duel }),
   });
-  // The Cathedral is a capture zone: a Legend on the gem wakes its checkpoint defenders, whose
-  // hits would kill it before the gem does (they have their own tests).
-  clearCheckpointDefenders(simulation);
   const feature = map.features.find(({ definitionId }) => definitionId === 'cathedral');
   const gem = simulation.snapshot().entities.find(({ kind }) => kind === 'cathedral-gem');
   if (feature === undefined || gem === undefined) throw new Error('No Cathedral gem');

@@ -618,9 +618,7 @@ without a new controller. Only the home changes, and it is data on the spawning 
   a camp mob that attacks it, but does not seek one out (§6.1, 11 §4.2; DEC-166).
 - **Zone defenders (checkpoint assist spawns).** `CaptureSystem` announces `checkpoint-reached`,
   and `SpawnSystem`'s `GuardRoster` adds that checkpoint's posts from its defender table
-  (`CHECKPOINT_DEFENDERS`, 07 §7), filled on the next tick like any other post. The posts keep
-  clear of every structure standing in the zone, so no defender rests against the Cathedral gem,
-  which strikes whoever touches it (07 §1). Only a push with
+  (`CHECKPOINT_DEFENDERS`, 07 §7), filled on the next tick like any other post. Only a push with
   a Legend on the zone wakes them (the event's `presentLegendIds`, DEC-259), so a horde marching
   through a capture point does not. The home is the `CapturePoint`. Defenders fight for the team
   that owns the capture point when the checkpoint is reached (owner, 2026-10-27), and are neutral

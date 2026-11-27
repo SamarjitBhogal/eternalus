@@ -33,7 +33,8 @@ const GREATER_BOSS_SWEEP = {
   knockback: 3, // TUNE: the Sentinel's Slam knockback (balancing.md), the only one in the docs
   // TUNE: balancing.md gives only the heavy moves' interval, used here too (INBOX)
   cooldownSeconds: GREATER_BOSS_HEAVY_INTERVAL,
-  telegraphSeconds: 1, // TUNE: no reference value (INBOX)
+  // DEC-371 E9: "half-second warning. shouldnt be easy"; the wide sweep shares it
+  telegraphSeconds: 0.5,
   recoverSeconds: 1, // TUNE: no reference value (INBOX)
 } as const satisfies BossMoveDefinition;
 

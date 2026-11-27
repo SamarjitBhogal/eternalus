@@ -23,6 +23,8 @@ const PROFILE = GREATER_BOSS_PROFILE;
 const [SLAM, SWEEP, , BEAM] = PROFILE.moves;
 /** The moves the boss may use only once it is hurt (DEC-417). */
 const HURT_MOVES: readonly string[] = PROFILE.hurtPhase.moveIds;
+/** The moves of the brain's crowd branch (DEC-371 E7). */
+const CROWD_MOVES: readonly string[] = PROFILE.brain.crowd.moveIds;
 /** Each move of the profile by id, for checking a landing against its own numbers. */
 const MOVES = new Map<string, (typeof PROFILE.moves)[number]>(
   PROFILE.moves.map((move) => [move.id, move]),
@@ -46,6 +48,8 @@ type Recording = {
   readonly spawnTick: number;
   readonly entrances: number[];
   readonly telegraphs: number[];
+  /** At each telegraph: how many Warriors stood within the brain's crowd radius of the boss. */
+  readonly crowds: number[];
   readonly landings: number[];
   /** The move of each landing, in the same order. */
   readonly landed: string[];
@@ -89,12 +93,20 @@ const record = (
   const centre = feature.position;
   const entrances: number[] = [];
   const telegraphs: number[] = [];
+  const crowds: number[] = [];
   const landings: number[] = [];
   const landed: string[] = [];
   const hits: Recording['hits'] = [];
   const phaseChanges: Recording['phaseChanges'] = [];
   simulation.on('boss-entrance', () => entrances.push(simulation.tick));
-  simulation.on('boss-telegraph', () => telegraphs.push(simulation.tick));
+  simulation.on('boss-telegraph', ({ bossId: boss }) => {
+    telegraphs.push(simulation.tick);
+    const warriors = simulation.snapshot().entities.filter(({ kind }) => kind === 'warrior');
+    crowds.push(
+      warriors.filter(({ id }) => gapBetween(simulation, boss, id) <= PROFILE.brain.crowdRadius)
+        .length,
+    );
+  });
   simulation.on('boss-move-executed', ({ move }) => {
     landings.push(simulation.tick);
     landed.push(move);
@@ -148,6 +160,7 @@ const record = (
     spawnTick,
     entrances,
     telegraphs,
+    crowds,
     landings,
     landed,
     states,
@@ -169,9 +182,10 @@ const AROUND: readonly Vec2[] = [
 
 /**
  * A fight: `count` Light Warriors (at most three) inside the slam's reach of the boss, replaced as
- * they die, so it keeps striking. None of them hurts the boss.
+ * they die, so it keeps striking. None of them hurts the boss; `isHurt` puts the boss in its hurt
+ * phase through the developer command (DEC-417) as the Warriors arrive.
  */
-const fight = (seed = 1, count = 2): Recording => {
+const fight = (seed = 1, count = 2, isHurt = false): Recording => {
   const gap = SLAM.radius - 0.5;
   const spot = (centre: Vec2): Vec2 => ({ x: centre.x - gap, y: centre.y });
   let centreSeen: Vec2 = { x: 0, y: 0 };
@@ -180,6 +194,10 @@ const fight = (seed = 1, count = 2): Recording => {
       centreSeen = centre;
       for (const { x, y } of AROUND.slice(0, count)) {
         spawnWarrior(simulation, { x: centre.x + x * gap, y: centre.y + y * gap });
+      }
+      if (isHurt) {
+        const entityId = theBoss(simulation).id;
+        simulation.enqueueCommand({ type: 'dev-set-boss-phase', entityId, phase: 'hurt' });
       }
     },
     {
@@ -279,10 +297,13 @@ const ALLOWED_NEXT: Readonly<Record<string, string>> = {
 describe('the Greater Boss on BossController: roam and slam (scenario, 11 §4.6)', () => {
   let quiet: Recording;
   let fought: Recording;
+  /** Three Warriors around a hurt boss: the wide sweep opens only once it is hurt (DEC-417). */
+  let hurtCrowd: Recording;
 
   beforeAll(() => {
     quiet = record(() => undefined, { isQuiet: true });
     fought = fight();
+    hurtCrowd = fight(1, 3, true);
   }, 240_000);
 
   it('roams when it has no target: never idle longer than one roam cadence, and never attacks', () => {
@@ -326,6 +347,22 @@ describe('the Greater Boss on BossController: roam and slam (scenario, 11 §4.6)
       const move = moveOf(fought.landed[at]);
       expect(landing - (fought.telegraphs[at] ?? NaN)).toBe(ticks(move.telegraphSeconds));
     });
+  });
+
+  it('warns half a second before each sweep lands (DEC-371 E9)', () => {
+    const sweeps = [fought, hurtCrowd]
+      .flatMap((run) =>
+        run.landings.map((landing, at) => ({
+          id: run.landed[at],
+          warning: landing - (run.telegraphs[at] ?? NaN),
+        })),
+      )
+      .filter(({ id }) => id === 'greater-boss-sweep' || id === 'greater-boss-wide-sweep');
+
+    expect(new Set(sweeps.map(({ id }) => id))).toEqual(
+      new Set(['greater-boss-sweep', 'greater-boss-wide-sweep']),
+    );
+    for (const { warning } of sweeps) expect(warning).toBe(ticks(0.5));
   });
 
   it("hits for the landed move's damage, only on landing ticks", () => {
@@ -541,9 +578,16 @@ describe('the Greater Boss brain picks its move for the situation (scenario, DEC
     punished = punish();
   }, 240_000);
 
-  it('sweeps a crowd in melee, and never beams it', () => {
-    expect(crowded.landed).toContain(SWEEP.id);
-    expect(crowded.landed).not.toContain(BEAM.id);
+  it('sweeps a crowd in melee, and never beams it while the crowd stands', () => {
+    // The knockbacks push the Warriors out of reach later in the run; a beam at them then is the
+    // far branch (DEC-371 E7), so only the moves picked amid the crowd count here.
+    const amidCrowd = crowded.landed.filter(
+      (_, at) => (crowded.crowds[at] ?? 0) >= PROFILE.brain.crowdCount,
+    );
+
+    expect(amidCrowd).toContain(SWEEP.id);
+    expect(amidCrowd).not.toContain(BEAM.id);
+    expect(amidCrowd.filter((id) => !CROWD_MOVES.includes(id))).toEqual([]);
   });
 
   it('opens on a Legend out of melee range with the beam, aimed at it', () => {
