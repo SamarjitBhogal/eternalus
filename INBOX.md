@@ -3517,6 +3517,12 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Done
 
+- 2026-11-27 — **Your answers HC-B54 and HC-B50: a unit plans again when the map changes
+  (DEC-379, DEC-392)** (`fix/bot-replan-on-map-change`, a follow-up to PR #84): your v98 answer
+  on the bot path cache stands over DEC-373 (HC-B54 A), and stuck detours follow the same rule
+  (HC-B50 B). A bot's cached waypoint and a stuck unit's detour waypoint both keep the map's
+  version, and a new version plans the way again. Replaces DEC-373. Decision: DEC-379, DEC-392.
+
 - 2026-11-26 — **Minion M6c interpretations approved as built (DEC-376)**
   (`feat/minion-m6c-defender-followups`, PR #173): you approved (a) to (g) as built (the 10 m from
   where the last defender fell, the damage-biased share with an even split when Legends dealt
