@@ -12,8 +12,9 @@ import type { DamageSource } from '../state/GameEvents.types';
 import type { GameState } from '../state/GameState';
 import type { OwedXp } from '../state/RespawnQueue.types';
 import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
+import { CheckpointAwards } from './CheckpointAwards';
 import type { System, SystemContext } from './System.types';
-import type { Award, ProgressionContent } from './ProgressionSystem.types';
+import type { Award, PersonalAward, ProgressionContent } from './ProgressionSystem.types';
 
 /**
  * Turns kills into XP and levels (architecture 05 §13). It listens to `entity-died`, prices the kill
@@ -23,7 +24,9 @@ import type { Award, ProgressionContent } from './ProgressionSystem.types';
  * team instead of the killer, lifting none more than the reward's `maxLevels` (DEC-237); a Legend
  * the cap leaves nothing to pay gets no award. A cleared camp (`camp-cleared`) pays the Legend
  * that killed its last mob the camp's `xpSources.campCleared` entry; a camp without one (a corner
- * camp) pays no bonus. Self-kills and ally kills pay nothing (O5). Each
+ * camp) pays no bonus. A cleared checkpoint set (`checkpoint-cleared`) pays its XP shared among
+ * the clearing team's Legends near its last defender, biased toward the damage each dealt to the
+ * set (`CheckpointAwards`, 07 §7). Self-kills and ally kills pay nothing (O5). Each
  * level gained raises max health by the class's share of its base health (O3) and max aether,
  * heals and refills by the raise only while the Legend is alive (O4), and emits `level-up`.
  * With `content.legendsStartAtMaxLevel` (a Duel, SCRUM-444) each Legend that spawns is raised to its
@@ -40,6 +43,8 @@ export class ProgressionSystem implements System {
   public readonly name = 'progression';
 
   private readonly pending: Award[] = [];
+  /** The checkpoint XP buffer; `null` when the match has no match XP (DEC-380 (1)). */
+  private readonly checkpoints: CheckpointAwards | null;
 
   /**
    * @param state - The match whose events this system listens to: the award events unless
@@ -50,7 +55,12 @@ export class ProgressionSystem implements System {
     state: GameState,
     private readonly content: ProgressionContent,
   ) {
-    if (content.hasMatchXp !== false) {
+    // No match XP (DEC-380 (1)): no award listener, and no checkpoint damage is tracked.
+    const hasMatchXp = content.hasMatchXp !== false;
+    this.checkpoints = hasMatchXp
+      ? new CheckpointAwards(state, content.xpSources.checkpointCleared)
+      : null;
+    if (hasMatchXp) {
       this.listenForAwards(state);
     }
     if (content.legendsStartAtMaxLevel === true) {
@@ -178,6 +188,7 @@ export class ProgressionSystem implements System {
 
   /** Gives this tick's XP, in the order it was earned, and applies each level gained. */
   public update({ state }: SystemContext): void {
+    this.pending.push(...(this.checkpoints?.flush(state) ?? []));
     for (const award of this.pending.splice(0)) {
       if (award.kind === 'respawn') {
         const recipient = state.entities.get(award.recipientId);
@@ -186,7 +197,7 @@ export class ProgressionSystem implements System {
         }
         continue;
       }
-      if (award.kind === 'kill' || award.kind === 'camp-cleared') {
+      if (ProgressionSystem.isPersonal(award)) {
         // O4 pays a Legend killed earlier: still in the store this tick, or waiting to respawn.
         const killer = state.entities.get(award.killerId);
         if (killer !== undefined) {
@@ -214,6 +225,13 @@ export class ProgressionSystem implements System {
     }
   }
 
+  /** Whether `award` is paid to one Legend by id (a kill, a camp bonus, a checkpoint share). */
+  private static isPersonal(award: Award): award is PersonalAward {
+    return (
+      award.kind === 'kill' || award.kind === 'camp-cleared' || award.kind === 'checkpoint-cleared'
+    );
+  }
+
   /** What a waiting Legend is owed for `award`. */
   private static owed(award: Exclude<Award, { readonly kind: 'respawn' }>): OwedXp {
     return {
@@ -221,9 +239,7 @@ export class ProgressionSystem implements System {
       victimId: award.victimId,
       victimTeam: award.victimTeam,
       xp: award.xp,
-      ...(award.kind !== 'kill' &&
-        award.kind !== 'camp-cleared' &&
-        award.maxLevels !== undefined && { maxLevels: award.maxLevels }),
+      ...('maxLevels' in award && { maxLevels: award.maxLevels }),
     };
   }
 
@@ -235,7 +251,7 @@ export class ProgressionSystem implements System {
     }
     const curve = this.content.curves.get(progression.curveId);
     const capped =
-      award.kind === 'kill' || award.kind === 'camp-cleared' || award.maxLevels === undefined
+      ProgressionSystem.isPersonal(award) || award.maxLevels === undefined
         ? award
         : {
             ...award,

@@ -20,8 +20,9 @@ export type ProgressionContent = {
    */
   readonly legendsStartAtMaxLevel?: boolean;
   /**
-   * When `false`, nothing earns match XP: no kill, destroyed structure, cleared camp or respawn
-   * pays any (a Duel, `DUEL_RULES.hasMatchXp`, DEC-380 (1)). Absent means XP is earned as normal.
+   * When `false`, nothing earns match XP: no kill, destroyed structure, cleared camp, cleared
+   * checkpoint set or respawn pays any (a Duel, `DUEL_RULES.hasMatchXp`, DEC-380 (1)). Absent
+   * means XP is earned as normal.
    */
   readonly hasMatchXp?: boolean;
 };
@@ -37,6 +38,9 @@ type KillAward = {
 
 /** One cleared camp waiting for this system's pass: the bonus to its last mob's killer. */
 type CampAward = Omit<KillAward, 'kind'> & { readonly kind: 'camp-cleared' };
+
+/** One Legend's share of a cleared checkpoint set's XP (07 §7), paid like a kill. */
+type CheckpointAward = Omit<KillAward, 'kind'> & { readonly kind: 'checkpoint-cleared' };
 
 /**
  * One team-wide award: `xp` for every Legend of `team`, for a structure it destroyed (DEC-186) or a
@@ -64,5 +68,8 @@ type RespawnAward = {
   readonly maxLevels?: number;
 };
 
+/** An award paid to one Legend by id (its killer, or its share), owed while it waits to respawn. */
+export type PersonalAward = KillAward | CampAward | CheckpointAward;
+
 /** One award this system gives, waiting for its pass. */
-export type Award = KillAward | CampAward | TeamAward | RespawnAward;
+export type Award = KillAward | CampAward | CheckpointAward | TeamAward | RespawnAward;
