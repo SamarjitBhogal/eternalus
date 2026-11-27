@@ -39,6 +39,7 @@ const BOLT: EntitySnapshot = {
   capture: null,
   statuses: null,
   projectile: null,
+  gem: null,
 };
 
 const ARROW: EntitySnapshot = { ...BOLT, definitionId: 'arrow' };

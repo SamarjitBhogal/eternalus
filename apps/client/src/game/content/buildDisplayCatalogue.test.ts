@@ -325,6 +325,10 @@ describe('buildDisplayCatalogue', () => {
     );
   });
 
+  it('carries the core lane minions (the developer menu mob picker)', () => {
+    expect(build().laneMinions).toBe(CONTENT.laneMinions);
+  });
+
   it('carries the core team names', () => {
     const teamNames = { light: 'Lux', dark: 'Umbra' };
     expect(build({ content: { teamNames } }).teamNames).toBe(teamNames);

@@ -49,6 +49,8 @@ export type DefaultSystemPipelineOptions = {
   readonly validator?: SlotReadiness;
   /** Where a Duel's Legends start and return to after each kill; omitted outside a Duel. */
   readonly duelStarts?: Readonly<Record<PlayableTeam, Vec2>>;
+  /** Whether `SpawnSystem` runs (SCRUM-445); `true` when omitted, `false` in a Duel's arena. */
+  readonly spawnsMobs?: boolean;
   /**
    * The neighbour index and AI the horde systems (architecture 11, 18) need; without them nothing
    * decides, marches, steers or spawns on lanes.
@@ -71,4 +73,9 @@ export type DefaultSystemPipelineOptions = {
    * structures from.
    */
   readonly structures?: Pick<ContentCatalogue<StructureDefinition>, 'get'>;
+  /**
+   * How long an enemy hit still earns a gem kill (DEC-346): the assist window, from the scoring
+   * `Simulation` loads once for the match.
+   */
+  readonly assistWindowTicks: number;
 };

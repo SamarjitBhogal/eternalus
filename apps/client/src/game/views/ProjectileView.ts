@@ -47,7 +47,7 @@ export class ProjectileView extends DefaultEntityView {
   };
 
   /** Draws the flying shot, or its ending look once it has ended. */
-  public override draw(state: EntityDrawState, renderer: Renderer): void {
+  public override draw(state: EntityDrawState, renderer: Renderer): undefined {
     const ending = state.entity.projectile?.ending ?? null;
     if (ending !== null) {
       this.endings[this.lookOf(state)](state, ending, renderer);

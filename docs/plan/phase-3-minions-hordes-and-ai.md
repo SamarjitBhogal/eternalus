@@ -177,6 +177,10 @@ Owner: _ (sim lane A). Week 7. Depends on 3.3 and 3.5.
       on it replaces the five boss-by-id lists (`INBOX.md` HC-B12, DEC-283 (2)):
       `XP_SOURCES.teamKills`, `BOSS_MINION_DAMAGE_TAKEN`, `ZONE_LOCKING_MOBS` and the meter's
       `bossDamagePerPercent` and `bossKill`.
+- [ ] **Corner boss into the `Boss` family** (DEC-236): the corner camp's `corner-boss` moves
+      from its interim `GuardController` stand-in (a `heavy-mob` guard) to the `Boss` family with
+      `BossController`. Owner: _. Done when: no guard plan posts a boss, and the boss reaches an
+      intruder anywhere in the ring.
 - [ ] **Mini-boss rules** (`TUNE`: spawn at the quarter mark on the outer lanes with support
       mobs; its capture point cannot be captured while it lives; on defeat the team gets a
       permanent buff and ability XP). The final-hit consumable is an open question (INBOX).

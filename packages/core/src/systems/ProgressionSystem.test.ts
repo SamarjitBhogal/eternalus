@@ -1,22 +1,30 @@
 import { describe, expect, it } from 'vitest';
 
+import { DamagePipeline } from '../combat/DamagePipeline';
+import { KillCredit } from '../combat/KillCredit';
 import { Aether } from '../components/Aether';
 import { Health } from '../components/Health';
 import { Progression } from '../components/Progression';
+import { TeamMembership } from '../components/TeamMembership';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { WARRIOR } from '../content/legends/warrior';
+import { LIGHT_MINION } from '../content/mobs/lightMinion';
+import { CATHEDRAL_GEM } from '../content/structures/cathedralGem';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import { ULTIMATE_CHARGE } from '../content/progression/ultimateCharge';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import type { Entity } from '../entities/Entity';
+import type { Legend } from '../entities/Legend';
 import { EntityFactory } from '../entities/EntityFactory';
 import type { GameEventType } from '../state/GameEvents.types';
 import { GameState } from '../state/GameState';
 import { StateHasher } from '../state/StateHasher';
 import type { Team } from '../teams/teams.types';
+import { IdGenerator } from '../utils/IdGenerator';
 import { ProgressionSystem } from './ProgressionSystem';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 
@@ -29,17 +37,21 @@ const CURVES = new ContentCatalogue<LevelCurveDefinition>([
 const XP_SOURCES = {
   legendKill: { base: 150, perVictimLevel: 25 },
   structureDestroyed: 300,
+  campCleared: { 'forest-camp-light': 50 },
   teamKills: { 'capture-point-boss': { xp: 500, maxLevels: 2 } },
+  checkpointCleared: { xp: { 1: 60 }, shareRadius: 10, evenShare: 0.6 },
 };
 
 const setUp = () => {
   const state = new GameState(CONFIG, 1);
+  const ids = new IdGenerator();
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     UNITS,
-    undefined,
+    ids,
     loadWeapons(CONFIG.tickRate),
   );
+  const structures = new EntityFactory(createDefaultEntityRegistry(), STRUCTURE_DEFINITIONS, ids);
   const spawn = (kind: string, definitionId: string, team: Team): Entity => {
     const entity = factory.create(kind, definitionId, { position: { x: 0, y: 0 }, team });
     state.entities.add(entity);
@@ -72,7 +84,20 @@ const setUp = () => {
   const destroyStructure = (team: Team, kind = 'spawner-tower') => {
     state.events.emit('structure-destroyed', { entityId: 'entity-gone', kind, team, lane: null });
   };
-  return { state, spawn, kill, run, payloads, destroyStructure };
+  const clearCamp = (killer: Entity | null) => {
+    const camp = structures.create('camp', 'forest-camp-light', {
+      position: { x: 0, y: 0 },
+      team: 'neutral',
+    });
+    state.entities.add(camp);
+    state.events.emit('camp-cleared', {
+      entityId: camp.id,
+      team: killer?.findComponent(TeamMembership)?.team ?? null,
+      killerId: killer?.id ?? null,
+    });
+    return camp;
+  };
+  return { state, spawn, kill, run, payloads, destroyStructure, clearCamp };
 };
 
 describe('ProgressionSystem', () => {
@@ -148,6 +173,27 @@ describe('ProgressionSystem', () => {
     expect(payloads('level-up').map((payload) => (payload as { level: number }).level)).toEqual([
       2, 3, 4,
     ]);
+  });
+
+  it.each([
+    ['10 s after its hit, earns the kill XP', 10 * 30, 175],
+    ['after the window, earns none', 30 * 30 + 1, 0],
+  ])('the enemy whose hit a gem death is credited to, %s (DEC-346)', (_, wait, xp) => {
+    const { state, spawn, run } = setUp();
+    const damage = new DamagePipeline(undefined, new KillCredit(30 * 30, CATHEDRAL_GEM.statusIds));
+    const enemy = spawn('warrior', 'warrior', 'light');
+    const victim = spawn('magus', 'magus', 'dark');
+    damage.apply(state, victim.id, 1, { attackerId: enemy.id, kind: 'weapon', definitionId: 'x' });
+    for (let at = 0; at < wait; at += 1) state.advanceTick();
+
+    damage.apply(state, victim.id, 1_000_000, {
+      attackerId: null,
+      kind: 'status',
+      definitionId: 'gem-burn',
+    });
+    run();
+
+    expect(enemy.getComponent(Progression).xp).toBe(xp);
   });
 
   it('ignores kills with no attacker and attackers that do not level', () => {
@@ -270,6 +316,75 @@ describe('ProgressionSystem', () => {
     });
   });
 
+  describe('camp cleared (balancing.md "Camps")', () => {
+    it('pays the Legend that killed the last mob the clear bonus, and nobody else', () => {
+      const { spawn, run, payloads, clearCamp } = setUp();
+      const clearer = spawn('warrior', 'warrior', 'light');
+      const mate = spawn('magus', 'magus', 'light');
+      const dark = spawn('warrior', 'warrior', 'dark');
+
+      const camp = clearCamp(clearer);
+      run();
+
+      expect(clearer.getComponent(Progression).xp).toBe(50);
+      expect(mate.getComponent(Progression).xp).toBe(0);
+      expect(dark.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual([
+        {
+          entityId: clearer.id,
+          amount: 50,
+          victimId: camp.id,
+          victimTeam: 'neutral',
+          cause: 'camp-cleared',
+        },
+      ]);
+    });
+
+    it('pays no bonus when a minion or no known killer lands the last hit', () => {
+      const { spawn, run, payloads, clearCamp } = setUp();
+      const warrior = spawn('warrior', 'warrior', 'light');
+
+      clearCamp(spawn('light-mob', 'light-minion', 'light'));
+      clearCamp(null);
+      run();
+
+      expect(warrior.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual([]);
+    });
+
+    it("pays the last mob's kill XP and the clear bonus, and fills the meter for the kill (DEC-272)", () => {
+      // One system holds both the camp bonus and the ultimate meter (the phase/3 merge joins them).
+      const { spawn, kill, run, payloads, clearCamp } = setUp();
+      const clearer = spawn('warrior', 'warrior', 'light');
+      const mob = spawn('light-mob', 'light-minion', 'neutral');
+
+      kill(clearer, mob);
+      const camp = clearCamp(clearer);
+      run();
+
+      expect(payloads('xp-gained')).toEqual([
+        {
+          entityId: clearer.id,
+          amount: LIGHT_MINION.xpValue,
+          victimId: mob.id,
+          victimTeam: 'neutral',
+          cause: 'kill',
+        },
+        {
+          entityId: clearer.id,
+          amount: 50,
+          victimId: camp.id,
+          victimTeam: 'neutral',
+          cause: 'camp-cleared',
+        },
+      ]);
+      const point = 1 / ULTIMATE_CHARGE.fullMeter; // a mob kill gives 1 point (DEC-272)
+      expect(payloads('ultimate-charged')).toEqual([
+        { entityId: clearer.id, amount: point, charge: point, cause: 'mob-kill' },
+      ]);
+    });
+  });
+
   describe('team kill (DEC-237)', () => {
     it("pays every Legend of the killer's team, capped at two levels, and none to the killer alone", () => {
       const { spawn, kill, run, payloads } = setUp();
@@ -362,6 +477,128 @@ describe('ProgressionSystem', () => {
           cause: 'team-kill',
         },
       ]);
+    });
+  });
+
+  describe('a Legend waiting to respawn (DEC-186 "pay on respawn")', () => {
+    /** Takes `legend` out of the store into the respawn queue, as `RespawnSystem` and `DeathSystem` do. */
+    const wait = (state: GameState, legend: Entity, team: 'light' | 'dark') => {
+      state.respawns.add(legend as Legend, team, 300);
+      state.entities.withdraw(legend.id, 'died');
+    };
+    const respawn = (state: GameState, legend: Entity) => {
+      const [entry] = state.respawns.takeDue(300);
+      state.entities.add(legend);
+      state.events.emit('legend-respawned', {
+        entityId: legend.id,
+        team: 'light',
+        position: { x: 0, y: 0 },
+        owedXp: entry?.owedXp ?? [],
+      });
+    };
+
+    it('owes it the structure XP while it waits and pays it, with its level-up, as it returns', () => {
+      const { state, spawn, run, payloads, destroyStructure } = setUp();
+      const waiting = spawn('warrior', 'warrior', 'light');
+      const living = spawn('magus', 'magus', 'light');
+      wait(state, waiting, 'light');
+
+      destroyStructure('dark');
+      run();
+
+      expect(waiting.getComponent(Progression).xp).toBe(0);
+      expect(living.getComponent(Progression).xp).toBe(300);
+      let owed: unknown[] = [];
+      state.respawns.forEach(({ owedXp }) => (owed = [...owedXp]));
+      expect(owed).toEqual([
+        { cause: 'structure-destroyed', victimId: 'entity-gone', victimTeam: 'dark', xp: 300 },
+      ]);
+
+      respawn(state, waiting);
+
+      // The listener only buffers; the pass of the next tick pays.
+      expect(waiting.getComponent(Progression).xp).toBe(0);
+      run();
+
+      expect(waiting.getComponent(Progression)).toMatchObject({ xp: 300, level: 3 });
+      expect(payloads('xp-gained').at(-1)).toEqual({
+        entityId: waiting.id,
+        amount: 300,
+        victimId: 'entity-gone',
+        victimTeam: 'dark',
+        cause: 'respawn',
+      });
+      expect(payloads('level-up').slice(-2)).toEqual([
+        { entityId: waiting.id, level: 2 },
+        { entityId: waiting.id, level: 3 },
+      ]);
+    });
+
+    it('owes it a kill its hit landed after it died, and a boss its team killed, capped as it returns', () => {
+      const { state, spawn, kill, run } = setUp();
+      const waiting = spawn('warrior', 'warrior', 'light');
+      const mate = spawn('magus', 'magus', 'light');
+      const minion = spawn('light-mob', 'light-minion', 'dark');
+      const boss = spawn('heavy-mob', 'capture-point-boss', 'neutral');
+      wait(state, waiting, 'light');
+
+      kill(waiting, minion);
+      kill(mate, boss);
+      run();
+      respawn(state, waiting);
+      run();
+
+      // The minion's XP, then the boss's 500 capped at two levels up (250 XP in all on this curve).
+      expect(waiting.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
+      expect(mate.getComponent(Progression).xp).toBe(250);
+      expect(
+        state
+          .xpAwardsThisTick()
+          .filter((award) => award.entityId === waiting.id)
+          .map((award) => [award.amount, award.victimId, award.cause]),
+      ).toEqual([
+        [LIGHT_MINION.xpValue, minion.id, 'respawn'],
+        [250 - LIGHT_MINION.xpValue, boss.id, 'respawn'],
+      ]);
+    });
+
+    it("owes it a camp's clear bonus when its hit killed the last mob after it died (O4)", () => {
+      const { state, spawn, run, payloads, clearCamp } = setUp();
+      const waiting = spawn('warrior', 'warrior', 'light');
+      wait(state, waiting, 'light');
+
+      const camp = clearCamp(waiting);
+      run();
+
+      let owed: unknown[] = [];
+      state.respawns.forEach(({ owedXp }) => (owed = [...owedXp]));
+      expect(owed).toEqual([
+        { cause: 'camp-cleared', victimId: camp.id, victimTeam: 'neutral', xp: 50 },
+      ]);
+
+      respawn(state, waiting);
+      run();
+
+      expect(waiting.getComponent(Progression).xp).toBe(50);
+      expect(payloads('xp-gained').at(-1)).toMatchObject({
+        entityId: waiting.id,
+        amount: 50,
+        victimId: camp.id,
+        cause: 'respawn',
+      });
+    });
+
+    it('pays nothing to a waiting Legend of the other team', () => {
+      const { state, spawn, run, destroyStructure } = setUp();
+      const waiting = spawn('warrior', 'warrior', 'dark');
+      wait(state, waiting, 'dark');
+
+      destroyStructure('dark');
+      run();
+
+      let owed = -1;
+      state.respawns.forEach(({ owedXp }) => (owed = owedXp.length));
+      expect(owed).toBe(0);
     });
   });
 });

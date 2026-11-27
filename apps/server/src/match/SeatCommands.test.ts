@@ -24,6 +24,7 @@ const unit = (
   capture: null,
   statuses: null,
   projectile: null,
+  gem: null,
 });
 
 const intent = (over: Partial<InputIntent>): InputIntent => ({

@@ -4,12 +4,12 @@ import type { CancelTask, TickScheduler } from './TickScheduler.types';
 export class FakeTickScheduler implements TickScheduler {
   /** The interval each live task was scheduled with. */
   public readonly intervals: number[] = [];
-  private readonly tasks = new Set<() => void>();
+  private readonly tasks = new Map<() => void, number>();
 
   /** Keeps `task` until it is cancelled. */
   public every(intervalMs: number, task: () => void): CancelTask {
     this.intervals.push(intervalMs);
-    this.tasks.add(task);
+    this.tasks.set(task, intervalMs);
     return () => {
       this.tasks.delete(task);
     };
@@ -22,8 +22,15 @@ export class FakeTickScheduler implements TickScheduler {
 
   /** Runs every live task once, as one interval elapsing. */
   public tick(): void {
-    [...this.tasks].forEach((task) => {
+    [...this.tasks.keys()].forEach((task) => {
       task();
+    });
+  }
+
+  /** Runs the live tasks scheduled every `intervalMs` once: only that interval elapses. */
+  public tickEvery(intervalMs: number): void {
+    [...this.tasks].forEach(([task, interval]) => {
+      if (interval === intervalMs) task();
     });
   }
 }

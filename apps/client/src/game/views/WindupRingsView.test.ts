@@ -29,6 +29,7 @@ const LEGEND: EntitySnapshot = {
   capture: null,
   statuses: null,
   projectile: null,
+  gem: null,
 };
 
 /** The wind-up `ticksActive` ticks in, of the 9 it lasts. */

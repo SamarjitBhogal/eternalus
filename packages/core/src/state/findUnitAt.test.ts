@@ -25,6 +25,7 @@ const entity = (
   capture: null,
   statuses: null,
   projectile: null,
+  gem: null,
 });
 
 const PLAYER = entity('player', 'legend', 'light', 100);

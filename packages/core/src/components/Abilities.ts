@@ -62,4 +62,17 @@ export class Abilities {
   public endCasts(): readonly CastInProgress[] {
     return this.casts.splice(0);
   }
+
+  /**
+   * Ends the cooldown of every slot but the ultimate's (FR-117): a Legend back from death, or a
+   * Duel round's survivor (DEC-411 (1)), has its other abilities ready, and the ultimate keeps its
+   * cooldown and charge (DEC-295 (1)).
+   */
+  public endCooldownsButUltimate(): void {
+    for (const runtime of this.slots) {
+      if (runtime.slot !== ULTIMATE_SLOT) {
+        runtime.cooldownUntilTick = 0;
+      }
+    }
+  }
 }

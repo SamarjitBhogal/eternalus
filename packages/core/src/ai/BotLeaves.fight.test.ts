@@ -16,6 +16,7 @@ import { allReady } from '../state/__fixtures__/stubReadiness';
 import { SeededRandom } from '../utils/SeededRandom';
 import type { BotTurn } from './BotLegendController.types';
 import { BotLeaves } from './BotLeaves';
+import { NO_PATH } from './BotMovement.constants';
 import { Perception } from './perception/Perception';
 import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
@@ -80,6 +81,7 @@ const fightTurn = (attack: UnitAttack, collisions: CollisionQuery | null): BotTu
     targetId: null,
     nextCastTick: 0,
     isHalted: false,
+    ...NO_PATH,
   };
   return {
     state,

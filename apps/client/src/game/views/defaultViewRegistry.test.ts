@@ -2,6 +2,7 @@ import type { EntitySnapshot } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { CapturePointView } from './CapturePointView';
+import { CathedralGemView } from './CathedralGemView';
 import { DefaultEntityView } from './DefaultEntityView';
 import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { LegendView } from './LegendView';
@@ -24,6 +25,7 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
   capture: null,
   statuses: null,
   projectile: null,
+  gem: null,
 });
 
 describe('createDefaultViewRegistry', () => {
@@ -40,6 +42,7 @@ describe('createDefaultViewRegistry', () => {
     expect(registry.viewFor(entity('pillar', 'obstacle'))).not.toBeInstanceOf(MobView);
     expect(registry.viewFor(entity('capture-point', 'zone'))).toBeInstanceOf(CapturePointView);
     expect(registry.viewFor(entity('arrow', 'projectile'))).toBeInstanceOf(ProjectileView);
+    expect(registry.viewFor(entity('cathedral-gem', 'structure'))).toBeInstanceOf(CathedralGemView);
   });
 
   it('passes unknown kinds to the reporter it is given', () => {

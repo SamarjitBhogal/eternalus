@@ -128,6 +128,28 @@ describe('StatusEffectApplier', () => {
     expect(dummy.getComponent(StatusEffects).active).toHaveLength(0);
   });
 
+  it('takes stacks off with one event: status-stacks-lost while some stay, status-expired at none', () => {
+    const { state, dummy, events, applier } = setUp();
+    const lost: GameEventMap['status-stacks-lost'][] = [];
+    state.events.on('status-stacks-lost', (payload) => lost.push(payload));
+    applier.apply(state, dummy.id, 'enraged', 'entity-9');
+    applier.apply(state, dummy.id, 'enraged', 'entity-9'); // 2 stacks: one per structure per lane
+    const before = events.length;
+
+    expect(applier.removeStacks(state, dummy.id, 'enraged', 1)).toBe(true);
+    expect(lost).toEqual([
+      { entityId: dummy.id, statusId: 'enraged', sourceId: 'entity-9', stacks: 1 },
+    ]);
+    expect(events).toHaveLength(before);
+
+    expect(applier.removeStacks(state, dummy.id, 'enraged', 1)).toBe(true);
+    expect(events.slice(before)).toEqual([
+      ['expired', { entityId: dummy.id, statusId: 'enraged', sourceId: 'entity-9' }],
+    ]);
+    expect(lost).toHaveLength(1);
+    expect(applier.removeStacks(state, dummy.id, 'enraged', 1)).toBe(false);
+  });
+
   it.each(['stun', 'crushed'])(
     'follows %s that runs out with control-immune, credited to the same source',
     (hardControlId) => {
@@ -244,6 +266,30 @@ describe('StatusEffectApplier', () => {
       applier.remove(state, caster.id, 'fury');
 
       expect(slot?.abilityId).toBe('other-dash');
+    });
+
+    it('empties the slot when the last stack of a stacking status is taken off', () => {
+      const { state, caster } = casterState();
+      const shipped = loadStatusEffects(CONFIG.tickRate, 2);
+      /** Fury that stacks up to 2, as a minion level does. */
+      const surge = {
+        ...shipped.get('fury'),
+        id: 'surge',
+        stacking: 'intensity' as const,
+        maxStacks: 2,
+      };
+      const applier = new StatusEffectApplier(new ContentCatalogue([...shipped.all(), surge]));
+      const slot = caster.getComponent(Abilities).slot('granted');
+      applier.apply(state, caster.id, 'surge', caster.id);
+      applier.apply(state, caster.id, 'surge', caster.id);
+
+      applier.removeStacks(state, caster.id, 'surge', 1);
+
+      expect(slot?.abilityId).toBe('fury-dash');
+
+      applier.removeStacks(state, caster.id, 'surge', 1);
+
+      expect(slot?.abilityId).toBeNull();
     });
 
     describe('while two statuses grant an ability', () => {

@@ -103,6 +103,23 @@ describe('EntityStore', () => {
     expect(idsOf(store)).toEqual(['entity-2']);
   });
 
+  it('withdraws an entity without retiring it, records the removal, and takes it back', () => {
+    const store = storeWith('entity-1', 'entity-2');
+    const walker = new Walker('entity-3', 'walker-definition');
+    walker.spawn(undefined);
+    store.add(walker);
+
+    const withdrawn = store.withdraw('entity-3', 'died');
+
+    expect(withdrawn).toBe(walker);
+    expect(walker.hasComponent(Movement)).toBe(true);
+    expect(store.has('entity-3')).toBe(false);
+    expect(store.removedThisTick()).toEqual([{ entityId: 'entity-3', cause: 'died' }]);
+    store.add(walker);
+    expect(idsOf(store)).toEqual(['entity-1', 'entity-2', 'entity-3']);
+    expect(() => store.withdraw('entity-9', 'died')).toThrow(/entity-9/);
+  });
+
   it('reports an entity as deploying only while it has the Deploying component', () => {
     const store = storeWith('entity-1');
     const entity = store.get('entity-1');

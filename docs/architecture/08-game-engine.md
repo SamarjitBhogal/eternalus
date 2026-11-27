@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-26
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -12,6 +12,7 @@ paths:
     'apps/client/src/game/views/**',
     'apps/client/src/game/Match.ts',
     'apps/client/src/game/HealthBarVisibility.ts',
+    'apps/client/src/game/LegendBodies.ts',
   ]
 related:
   [
@@ -123,7 +124,7 @@ export interface Renderer {
   resize(cssWidth: number, cssHeight: number, dpr: number): void;
   beginFrame(): void; // clears 'entities' and 'overlay'; 'terrain' only where chunks are dirty
   layer(name: RenderLayer): void; // subsequent draw calls go to this layer
-  drawSprite(sprite: SpriteRef, x: number, y: number, options?: SpriteOptions): void;
+  drawSprite(sprite: SpriteRef, feet: WorldPoint, size: number): boolean;
   drawPolygon(points: readonly Vec2Like[], style: PolygonStyle): void;
   drawText(text: string, x: number, y: number, style: TextStyle): void;
   drawGlyph(glyph: GlyphSpec, x: number, y: number, colour: string): void; // minimap markers
@@ -245,7 +246,9 @@ flowchart LR
   order (`apps/client/AGENTS.md`): terrain layer → entities sorted by interpolated `y` → overlay.
 - `ViewRegistry` (Registry pattern) maps entity `kind` → `EntityView`; `DefaultEntityView` draws
   a definition sprite for kinds without a bespoke view. Views read snapshots through `import type`
-  only and never mutate state (rule 6).
+  only and never mutate state (rule 6). The `EntityView.draw` contract returns
+  `number | undefined`: a view may report its rendered height above its anchor for health-bar
+  placement. An undefined height uses the snapshot radius.
 - Interpolation: views draw `prev + (current - prev) × alpha` for position. The facing uses the
   same blend, scaled back to length 1 (`EntityLayer.turn`), and snaps at the midpoint when the two
   facings are opposite (a zero blend takes `current`). Entities that appeared this tick draw at `current` (no ghost from the
@@ -262,6 +265,10 @@ flowchart LR
   the status's time passes, read from the snapshot (`EntitySnapshot.statuses`); the look is in
   `WindupRingsView.constants.ts`. `main.tsx` passes the registry's `statusIds` to the display
   catalogue's boot check, which refuses a status core does not have (ADR 0023).
+- Fallen Legend bodies: `LegendBodies` (`game/`) reads `entity-removed` with the cause `died`
+  through `Simulation.on` and keeps where each Legend last stood, from the latest snapshot; the
+  view draws those bodies greyed out for the rest of the match (DEC-295). Presentation only: core
+  keeps no bodies, and a respawned Legend is a living entity again.
 - `MinimapView` runs at a lower cadence into the `'minimap'` layer (`06-map-and-minimap.md` §8).
 
 ## 9. Performance budget and how it is measured
@@ -309,6 +316,13 @@ The design keeps the move cheap:
 
 ## 11. Implementation status
 
+The selected player's Legend uses atlas frames for idle, movement, and basic attacks.
+The renderer prepares destination-size frames lazily in a bounded cache and returns whether
+it drew the sprite. The Legend view falls back to the standard drawing when the atlas is
+unavailable. The health bar sits above the height a view reports it drew, else above the view's
+`visualRadiusOf`, else above the footprint. Only the human player's Legend draws a sprite; the
+owner ships this in Phase 3 (DEC-374).
+
 HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
 
 - `Match` receives a prepared world (`MatchDeps.world`: the map from `setup.seed`, generated in
@@ -336,6 +350,53 @@ Game-loop plan GL-5 (`feat/results-flow`): `Match.tick` calls the match observer
 after the tick on which `MatchBridge` publishes `match-ended`; the world keeps running (DEC-92)
 until `MatchState` leaves the phase ([13](13-game-interface.md) §2). A pause overlay still pauses
 the loop, but not the timer that leaves the phase (DEC-134).
+
+**2026-11-11 — DEC-238 visual stand-ins.**
+
+[DEC-238](../reference/game-design/13-owner-decisions-log.md#batch-2026-11-10-pr-90-review-visuals) approves these provisional visuals.
+
+### 2026-11-07 — Fantasy minion presentation
+
+The minion kind registrations select separate light, medium and heavy `MinionView` profiles.
+Local polygon figures are built once per weight and faction and drawn through `Renderer` at
+interpolated positions. Light scouts carry paired blades, medium foot soldiers carry a sword
+and kite shield, and broad armored heavies carry a maul. Silver armor, crests and cyan accents
+identify Light; dark armor, horns, goblin faces and violet accents identify Dark. Neutral units
+use a woodland palette. Visual scale follows snapshot radius; physical radii, balance values,
+AI and commands are unchanged. The existing outlined faction footprint and focused-unit ring
+remain readable beneath and above the figure respectively. Unregistered mob kinds retain the
+family fallback, and minimap marker rendering remains independent of the detailed figures.
+
+### 2026-11-07 — Unit size hierarchy
+
+Minion figure scale and fallback troop-marker scale are presentation constants. All Legend
+classes on both teams share a display diameter slightly larger than the largest shipped
+minion silhouette; the player uses that same hero presentation, with a close focus ring.
+`entityVisualState.ts` supplies view-only radius overrides for the existing marker painters,
+without modifying snapshots or changing collision, movement, combat or spawning. The values
+live in `MinionView.constants.ts` and `entityViews.constants.ts`; a render regression compares
+all three minion weights against all shipped hero classes for both factions. Minimap markers
+and the camera retain their existing scales.
+
+### 2026-11-08 — Wider follow view and local atmosphere
+
+The default player camera shows a wider world area, configured by `FOLLOW_VIEW_WIDTH` and
+`FOLLOW_VIEW_HEIGHT` in `Match.constants.ts`; tracking, manual zoom and overview keep their
+existing behavior. `BiomeAtmosphereView` reads explicitly tagged presentation geometry and
+interpolated tick time from `Match`. Molten surfaces pulse subtly; local snowfall, ash, embers
+and haze fade toward the region boundary and appear only while the camera follows a player
+inside that biome. Free/overview views suppress local weather, and the minimap receives no
+atmospheric overlay. Effects use a bounded particle count from the view's companion constants,
+create no gameplay entities and use no timers or gameplay RNG.
+
+### 2026-11-16 — Clean Phase 3 presentation follow-up
+
+The follow-up is based directly on Phase 3. Code-drawn unit figures and the display hierarchy
+retain the phase-facing chevrons; biome weather remains a renderer-only layer. Generated
+character atlases and their resource-budget extensions, and the parallel ability prototype,
+are deferred to preserved feature work outside this branch. No independent ability stack or
+new raster-art loading path is registered here. The PR gate and requested owner confirmation
+remain explicit handoff items; this status note grants neither.
 
 ## Related
 

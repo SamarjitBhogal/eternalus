@@ -122,6 +122,7 @@ describe('Simulation', () => {
         capture: null,
         statuses: [],
         projectile: null,
+        gem: null,
       },
     ]);
   });

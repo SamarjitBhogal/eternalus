@@ -19,6 +19,7 @@ import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
 import { StateHasher } from '../state/StateHasher';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
+import { MinionLevelSystem } from './MinionLevelSystem';
 import { VeterancySystem } from './VeterancySystem';
 
 const setUp = (config = createDefaultGameConfig()) => {
@@ -27,7 +28,9 @@ const setUp = (config = createDefaultGameConfig()) => {
   const units = loadDefaultContent(30);
   const factory = new EntityFactory(createDefaultEntityRegistry(), units);
   const statuses = new StatusEffectApplier(loadStatusEffects(30, 2));
-  const system = new VeterancySystem(state, statuses, units, loadMinionVeterancy(config.tickRate));
+  const rules = loadMinionVeterancy(config.tickRate);
+  const system = new VeterancySystem(state, statuses, rules);
+  const levels = new MinionLevelSystem(state, statuses, units, rules);
   const add = (team: 'light' | 'dark' | 'neutral', x: number, mobId = 'light-minion') => {
     const entity = factory.create('light-mob', mobId, { team, position: { x, y: 20 } });
     state.entities.add(entity);
@@ -69,12 +72,13 @@ const setUp = (config = createDefaultGameConfig()) => {
   };
   /**
    * Puts a new `mobId` of `unitTeam` on a post of `team` (a tower guard; a camp mob on a `neutral`
-   * post).
+   * post) whose plan can level (`canLevel`) or not.
    */
   const guard = (
     team: 'light' | 'dark' | 'neutral',
     mobId: string,
     unitTeam: 'light' | 'dark' | 'neutral' = 'light',
+    canLevel = true,
   ) => {
     const entity = add(unitTeam, 48, mobId);
     state.guards.add({
@@ -92,6 +96,7 @@ const setUp = (config = createDefaultGameConfig()) => {
       leashRadius: 6,
       leashTolerance: 1,
       respawnTicks: 30,
+      canLevel,
     });
     state.guards.fill(state.guards.size - 1, entity.id);
     return entity;
@@ -104,6 +109,7 @@ const setUp = (config = createDefaultGameConfig()) => {
     });
     space.commit();
     system.update({ state, logger: new NullLogger() });
+    levels.update({ state, logger: new NullLogger() });
   };
   return { state, system, killer, neighbour, far, enemy, add, kill, guard, step };
 };
@@ -116,6 +122,18 @@ const statusesOf = (entity: {
     ?.active.map(({ definition, stacks }) => [definition.id, stacks]) ?? [];
 
 describe('VeterancySystem', () => {
+  it('announces a level every two mob kills (minion-level-earned), applied by MinionLevelSystem', () => {
+    const { state, killer, kill, step } = setUp();
+    const earned: string[] = [];
+    state.events.on('minion-level-earned', ({ entityId }) => earned.push(entityId));
+    kill();
+    step();
+    expect(earned).toEqual([]);
+    kill();
+    step();
+    expect(earned).toEqual([killer.id]);
+  });
+
   it('levels a horde minion up every two mob kills: more health, a veteran stack', () => {
     const { killer, kill, step } = setUp();
     kill();
@@ -137,6 +155,7 @@ describe('VeterancySystem', () => {
     kill();
     kill();
     step();
+    step(); // the aura reads the level `MinionLevelSystem` applied on the first pass
 
     expect(statusesOf(neighbour)).toContainEqual(['rallied', 1]);
     expect(statusesOf(far)).toEqual([]);
@@ -193,17 +212,19 @@ describe('VeterancySystem', () => {
     kill(true, neighbour.id);
     kill(true, neighbour.id);
     step();
+    step(); // the aura reads the levels applied on the first pass
 
     expect(statusesOf(killer)).toContainEqual(['veteran', MINION_VETERANCY.maxLevel]);
     expect(statusesOf(killer)).toContainEqual(['rallied', 1]);
     expect(killer.getComponent(StatusEffects).multiplier('damageDealt')).toBeCloseTo(1.365, 6);
   });
 
-  it('levels a tower guard from its own kills, but not a camp mob (DEC-165)', () => {
+  it('levels a tower guard and a neutral camp mob whose posts can level, but no guard whose post cannot (DEC-165, DEC-260)', () => {
     const { guard, kill, step } = setUp();
     const towerGuard = guard('light', 'light-guard');
-    const campMob = guard('neutral', 'light-camp-mob');
-    for (const id of [towerGuard.id, towerGuard.id, campMob.id, campMob.id]) {
+    const campMob = guard('neutral', 'light-camp-mob', 'neutral');
+    const fixed = guard('light', 'light-guard', 'light', false);
+    for (const id of [towerGuard.id, towerGuard.id, campMob.id, campMob.id, fixed.id, fixed.id]) {
       kill(true, id);
     }
     step();
@@ -211,20 +232,23 @@ describe('VeterancySystem', () => {
     expect(towerGuard.getComponent(Veterancy).level).toBe(1);
     expect(towerGuard.getComponent(Health).max).toBeCloseTo(165);
     expect(statusesOf(towerGuard)).toContainEqual(['veteran', 1]);
-    expect(campMob.findComponent(Veterancy)).toBeUndefined();
-    expect(campMob.getComponent(Health).max).toBe(150);
+    expect(campMob.getComponent(Veterancy).level).toBe(1);
+    expect(statusesOf(campMob)).toContainEqual(['veteran', 1]);
+    expect(fixed.findComponent(Veterancy)).toBeUndefined();
+    expect(fixed.getComponent(Health).max).toBe(150);
   });
 
-  it('rallies a friendly tower guard in range of a levelled minion, but not a camp mob (DEC-165)', () => {
+  it('rallies a friendly guard in range of a levelled minion only when its post can level (DEC-165, DEC-260)', () => {
     const { guard, kill, step } = setUp();
     const towerGuard = guard('light', 'light-guard');
-    const campMob = guard('neutral', 'light-camp-mob');
+    const fixed = guard('light', 'light-guard', 'light', false);
     kill();
     kill();
     step();
+    step(); // the aura reads the level applied on the first pass
 
     expect(statusesOf(towerGuard)).toContainEqual(['rallied', 1]);
-    expect(statusesOf(campMob)).toEqual([]);
+    expect(statusesOf(fixed)).toEqual([]);
   });
 
   it('counts a killed enemy tower guard and a killed camp mob as kills (DEC-165, owner 2026-11-04)', () => {
@@ -287,6 +311,7 @@ describe('VeterancySystem', () => {
       progress: 0,
     });
     step();
+    step(); // the aura reads the level applied on the first pass
 
     expect(killer.getComponent(Veterancy).level).toBe(1);
     expect(statusesOf(late)).toContainEqual(['rallied', 1]);

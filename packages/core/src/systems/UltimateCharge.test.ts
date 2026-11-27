@@ -22,9 +22,9 @@ const TABLE: UltimateChargeDefinition = {
   deathLoss: 15,
 };
 
-const setUp = () => {
+const setUp = (startCharge?: number) => {
   const { state, factory, caster: legend } = casterState();
-  const charges = new UltimateCharge(state, TABLE);
+  const charges = new UltimateCharge(state, TABLE, startCharge);
   const spawn = (kind: string, definitionId: string, team: Team): Entity => {
     const entity = factory.create(kind, definitionId, { position: { x: 0, y: 0 }, team });
     state.entities.add(entity);
@@ -248,6 +248,32 @@ describe('UltimateCharge', () => {
     pay();
 
     expect(chargeOf(legend)).toBe(1);
+  });
+
+  it('pays a start share once to each spawned Legend, nothing to a mob or without a share (DEC-380 (1))', () => {
+    const withShare = setUp(0.5);
+    const without = setUp();
+    const spawned = [withShare, without].map(({ state, spawn }) => {
+      const units = [
+        spawn('warrior', 'warrior', 'dark'),
+        spawn('light-mob', 'light-minion', 'dark'),
+      ];
+      for (const { id, kind } of units) {
+        state.events.emit('entity-spawned', { entityId: id, kind, team: 'dark' });
+      }
+      return units;
+    });
+    withShare.pay();
+    without.pay();
+    withShare.pay(); // a second pass pays nothing more
+
+    const [legend, mob] = spawned[0] ?? [];
+    expect(legend === undefined ? Number.NaN : withShare.chargeOf(legend)).toBe(0.5);
+    expect(mob?.findComponent(Abilities)).toBeUndefined(); // a mob has no meter to fill
+    expect(withShare.announced()).toEqual([
+      { entityId: legend?.id, amount: 0.5, charge: 0.5, cause: 'start' },
+    ]);
+    expect(without.announced()).toEqual([]);
   });
 
   it('never fills on its own: a thousand passes with no event change nothing', () => {

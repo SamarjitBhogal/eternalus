@@ -29,6 +29,7 @@ const UNIT: EntitySnapshot = {
   capture: null,
   statuses: null,
   projectile: null,
+  gem: null,
 };
 
 /** The points of the one path the chevron draws for `facing`. */

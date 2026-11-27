@@ -10,10 +10,11 @@ export type StructureKind =
   | 'gate'
   | 'turret'
   | 'camp'
-  | 'cathedral';
+  | 'cathedral'
+  | 'cathedral-gem';
 
 /**
- * A static thing with health: a building, wall, gate, turret, camp or the Cathedral.
+ * A static thing with health: a building, wall, gate, turret, camp or the Cathedral gem.
  * Shield fractions, breakability, spawn tables and auras are added with the structures in Phase 2.
  */
 export type StructureDefinition = EntityDefinitionBase & {
@@ -79,7 +80,7 @@ export type OpeningWaveDefinition = Pick<SpawnWaveDefinition, 'mobId' | 'weightC
 };
 
 /** One row of a guard plan: which guard, how many, and how a lost SpawnerTower shrinks it. */
-type GuardTableEntry = {
+export type GuardTableEntry = {
   readonly mobId: string;
   readonly count: number;
   /**
@@ -101,6 +102,28 @@ type GuardPlanBase = {
    * between two decisions plus the farthest it stands from a target in reach.
    */
   readonly leashTolerance: number;
+  /**
+   * Whether the plan's guards level from their kills and are rallied by the veterancy aura
+   * (`VeterancySystem`, 18 MS-16): tower guards (DEC-165), forest-camp mobs (DEC-260) and the
+   * capture point boss group (DEC-350).
+   */
+  readonly canLevel: boolean;
+};
+
+/**
+ * The defenders one capture-point checkpoint spawns (architecture 07 §7, 18 §7.1): held by
+ * `GuardController` with the capture point as home, for the team that owns the point when the
+ * checkpoint is reached (`neutral` while no team does). Their leash is the zone's reach (owner,
+ * 18 §10 item 4), so it is not content; they never respawn.
+ */
+export type CheckpointDefenderPlanDefinition = {
+  readonly table: readonly Omit<GuardTableEntry, 'shrink'>[];
+  /** Posts stand on a ring this far from the zone's centre. */
+  readonly postGap: number;
+  /** As `GuardPlanDefinition.leashTolerance`. */
+  readonly leashTolerance: number;
+  /** As `GuardPlanDefinition.canLevel` (DEC-260: owned and neutral defenders level). */
+  readonly canLevel: boolean;
 };
 
 /**
@@ -142,3 +165,14 @@ type AuthoredGuardRespawn =
 /** `AuthoredGuardRespawn` as loaded: the respawn time in ticks. */
 type GuardRespawn =
   { readonly kind: 'each' | 'group'; readonly ticks: number } | { readonly kind: 'never' };
+
+/**
+ * What the Cathedral gem does to whoever hits it (DEC-292, DEC-346), by status id: the statuses
+ * it lands on them (from the environment: the gem is no team's), and how long it glows after.
+ */
+export type CathedralGemDefinition = {
+  /** Landed on a hitter, in order (a stun and its tick damage). */
+  readonly statusIds: readonly string[];
+  /** The gem glows for this status's duration plus `extraTicks` after each hit. */
+  readonly glow: { readonly statusId: string; readonly extraTicks: number };
+};

@@ -54,6 +54,7 @@ export type {
   DisplayContent,
 } from './content/loadDisplayContent';
 export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';
+export { CORNER_CAMP_RING } from './content/structures/cornerCampRing';
 export type {
   MapDecoration,
   MapDecorationLayer,
@@ -66,6 +67,7 @@ export type {
   MinimapColourRole,
   MinimapGlyph,
   MinimapGlyphShape,
+  BiomeKind,
 } from './content/maps/maps.types';
 export type { VerdictLines } from './content/narrative/verdictLines.types';
 export type { BotRole, BotRosterDefinition, EnemyRoverRule } from './content/teams/botRoster.types';
@@ -107,6 +109,7 @@ export type {
   AbilitySlotSnapshot,
   CaptureSnapshot,
   EntitySnapshot,
+  GemSnapshot,
   MatchSnapshot,
   ProjectileSnapshot,
   Snapshot,
@@ -144,4 +147,5 @@ export type { MatchNavigation } from './map/MatchPathfinderFactory.types';
 export type { MapObject, MapObjectKind, MapObjectSnapshot } from './content/maps/mapObjects.types';
 export { findBuildingAt } from './map/findBuildingAt';
 export { findMapObjectAt } from './map/findMapObjectAt';
+export { findGemAt } from './state/findGemAt';
 export { findUnitAt } from './state/findUnitAt';

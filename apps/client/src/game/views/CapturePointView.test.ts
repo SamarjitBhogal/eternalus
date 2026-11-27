@@ -38,6 +38,7 @@ const zone = (
   capture,
   statuses: null,
   projectile: null,
+  gem: null,
 });
 
 const capture = (overrides: Partial<CaptureSnapshot> = {}): CaptureSnapshot => ({

@@ -9,6 +9,7 @@ import { Transform } from '../components/Transform';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { loadScoring } from '../content/match/loadScoring';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
@@ -30,6 +31,9 @@ import { StatusEffectSystem } from './StatusEffectSystem';
 import type { System, SystemContext } from './System.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
+
+/** The match's assist window, as `Simulation` passes it (DEC-346). */
+const ASSIST_WINDOW_TICKS = loadScoring(createDefaultGameConfig().tickRate).assistWindowTicks;
 
 const CONFIG = createDefaultGameConfig();
 const statusSystem = (applier: StatusEffectApplier) =>
@@ -79,6 +83,7 @@ const setUp = () => {
 /** The whole default tick of `state` as one system, so `run` can drive it. */
 const tickPipeline = (state: GameState): System => {
   const pipeline = new DefaultSystemPipeline({
+    assistWindowTicks: ASSIST_WINDOW_TICKS,
     invariants: new DefaultInvariantRunner({
       debug: RELEASE_DEBUG_CONFIG,
       logger: new NullLogger(),

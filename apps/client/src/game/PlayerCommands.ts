@@ -1,6 +1,8 @@
 import {
   type AttackMode,
   type EntityId,
+  type EntitySnapshot,
+  findGemAt,
   findMapObjectAt,
   findUnitAt,
   type MapObject,
@@ -13,6 +15,7 @@ import type { AbilityCasts } from './AbilityCasts';
 import type { Projection } from './engine/input/Projection.types';
 import type { IntentSource } from './Match.types';
 import type { PlayerActions } from './PlayerActions';
+import type { ViewRegistry } from './views/ViewRegistry';
 
 /** The parts of a snapshot an attack target is picked from: its units and map objects. */
 type TargetSnapshot = Pick<Snapshot, 'entities' | 'mapObjects'>;
@@ -37,6 +40,9 @@ export class PlayerCommands implements PlayerActions {
   /** The attack mode of `attackTargetId`'s command: a change of mode queues a new command. */
   private attackMode: AttackMode = 'basic';
 
+  /** Whether the Legend was in the last snapshot: a Legend back from a respawn returns stopped. */
+  private wasPlayerPresent = false;
+
   /** Whether the canvas gestures own the main button's press (`setPointerClaimed`). */
   private isPointerClaimed = false;
 
@@ -48,6 +54,7 @@ export class PlayerCommands implements PlayerActions {
     private readonly simulation: Pick<Simulation, 'enqueueCommand'>,
     private readonly camera: Projection,
     private readonly mapObjects: readonly MapObject[],
+    private readonly views: ViewRegistry,
     private readonly casts: AbilityCasts,
   ) {}
 
@@ -69,6 +76,13 @@ export class PlayerCommands implements PlayerActions {
    */
   public apply(actorId: EntityId, snapshot: TargetSnapshot): boolean {
     const { move, isAttacking, isMeleeAttacking, aim, triggered } = this.input.read(this.camera);
+    const isPlayerPresent = snapshot.entities.some((entity) => entity.id === actorId);
+    if (isPlayerPresent && !this.wasPlayerPresent) {
+      // A Legend back from a respawn has no movement and no target: send the held input again.
+      this.lastMove = { x: 0, y: 0 };
+      this.attackTargetId = null;
+    }
+    this.wasPlayerPresent = isPlayerPresent;
     const isHeld = isAttacking === true && !this.isPointerClaimed;
     const isConsumed = this.casts.apply(actorId, { triggered, aim, isAttacking: isHeld });
     const isMeleeHeld = isMeleeAttacking === true && !this.isPointerClaimed;
@@ -98,7 +112,7 @@ export class PlayerCommands implements PlayerActions {
    * @returns Whether a unit was under the point; it wins over a roof (`MatchViewControls.clickAt`).
    */
   public attackUnitAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): boolean {
-    const targetId = findUnitAt(snapshot.entities, actorId, point);
+    const targetId = findUnitAt(snapshot.entities, actorId, point, this.visualRadiusFor);
     if (targetId === null) {
       return false;
     }
@@ -141,10 +155,17 @@ export class PlayerCommands implements PlayerActions {
     this.attackMode = mode;
   }
 
-  /** The unit under `point`, else the map object there: a unit is drawn on top of a building. */
+  private readonly visualRadiusFor = (entity: EntitySnapshot): number =>
+    this.views.viewFor(entity).visualRadiusOf?.(entity) ?? entity.transform?.radius ?? 0;
+
+  /**
+   * The unit under `point`, else the Cathedral gem there (DEC-292), else the map object there: a
+   * unit is drawn on top of the gem, and the gem on top of the building.
+   */
   private targetAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): EntityId | null {
     return (
-      findUnitAt(snapshot.entities, actorId, point) ??
+      findUnitAt(snapshot.entities, actorId, point, this.visualRadiusFor) ??
+      findGemAt(snapshot.entities, point) ??
       findMapObjectAt(this.mapObjects, snapshot.mapObjects ?? [], point)
     );
   }

@@ -53,6 +53,14 @@ describe('connectBusToStore', () => {
     expect(store.getState().view.isMinimapShown).toBe(false);
   });
 
+  it('copies developer-menu into its slice and clears it on the next match-setup', () => {
+    const { bus, store } = connected();
+    bus.emit('developer-menu', { isOpen: true, origins: [] });
+    expect(store.getState().developerMenu.isOpen).toBe(true);
+    bus.emit('match-setup', null);
+    expect(store.getState().developerMenu.isOpen).toBe(false);
+  });
+
   it('copies session events into the session slice', () => {
     const { bus, store } = connected();
     bus.emit('session-phase', { phase: 'menu', reason: 'select-timeout' });
@@ -96,6 +104,7 @@ describe('connectBusToStore', () => {
       contrastMode: 'minimums',
       uiEnhancements: [],
       hud: TEST_HUD_CATALOGUE,
+      laneMinions: [],
       teamNames: { light: 'Lux', dark: 'Umbra' },
       botRoster: {
         id: 'test',
@@ -265,7 +274,9 @@ describe('connectBusToStore', () => {
         durationSeconds: null,
         versus: null,
         duel: null,
+        opponentGraceMs: null,
         duelHud: null,
+        isReconnecting: false,
       });
     }
   });
@@ -279,6 +290,22 @@ describe('connectBusToStore', () => {
     expect(store.getState().match.duelHud).toEqual(duel);
     bus.emit('match-setup', null);
     expect(store.getState().match.duelHud).toBeNull();
+  });
+
+  it('copies the Duel opponent presence', () => {
+    const { bus, store } = connected();
+    bus.emit('duel-opponent-presence', { graceMs: 10_000 });
+    expect(store.getState().match.opponentGraceMs).toBe(10_000);
+    bus.emit('duel-opponent-presence', { graceMs: null });
+    expect(store.getState().match.opponentGraceMs).toBeNull();
+  });
+
+  it('copies whether the Duel connection is reconnecting', () => {
+    const { bus, store } = connected();
+    bus.emit('duel-connection', { isReconnecting: true });
+    expect(store.getState().match.isReconnecting).toBe(true);
+    bus.emit('duel-connection', { isReconnecting: false });
+    expect(store.getState().match.isReconnecting).toBe(false);
   });
 
   it('copies the settings state', () => {
