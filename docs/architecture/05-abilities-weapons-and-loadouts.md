@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -1316,7 +1316,7 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     meter, not a loss (§6; `UltimateCharge`), so the meter still moves only on an event
     (DISC-44). Erudition holds all three (`content/status-effects/erudition.ts`). Basic attacks do
     not change: a status's `onHit` steps (`HitEffects`) read 1 for both ability stats.
-  - **How a step applies a status (§3; HC-B51, built, waiting for the owner's sign-off).**
+  - **How a step applies a status (§3; HC-B51, built, signed off as DEC-419).**
     `CastContext` does not carry the `StatusEffectApplier`. A step calls
     `CastContext.applyStatus(targetId, step)`, which credits the caster and stretches the time
     (`StatusEffectApplier.durationFor`), so no step can miss the stretch.

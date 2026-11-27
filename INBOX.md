@@ -742,18 +742,6 @@ Reply inline (`Decision: …`).
     The DEC-337 (4) card was answered on the same page: "B: stretch them by 20% too", so a
     knock-back step now stretches its statuses; they still need no flag.
 
-- [ ] **HC-B51 — Better than the design, your sign-off: one way for an ability step to put on a
-      status (`feat/magus-passives`, PR #166 critic, 2026-11-26; eternalus-157).** Nothing that
-      the player sees changes. Built under your standing rule (DEC-223). Keep it, or undo it.
-  - Before: a step got the status code itself and a separate "how long" helper. A step that
-    forgot the helper put on a status without the Erudition stretch, and nothing caught it.
-  - Now: a step can only call `CastContext.applyStatus(target, step)`. It credits the caster
-    and always stretches the time (a status with `hasFixedDuration` keeps its time). The buff,
-    debuff and knock-back steps use it.
-  - Why now: `feat/sentinel-kit-room` and PR #175 change the same knock-back and debuff code,
-    and PR #162 changes the debuff code. Their old calls no longer compile after this PR, so a
-    merge cannot drop the stretch without notice.
-
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
@@ -3845,6 +3833,11 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-27 — **Your pick on HC-B51, one way for an ability step to put on a status**
+  (`feat/magus-passives`, PR #166): "A: keep it (built, recommended)", recorded as DEC-419. A step
+  puts on a status only through `CastContext.applyStatus`, which credits the caster and always
+  stretches the time. Architecture 05 §18 now says signed off.
 
 - 2026-11-27 — **Your answer on HC-Q117: Avalanche at a wall (DEC-404)** (`feat/class-passives`):
   "A: Avalanche breaks the wall segment or gate at once and goes through. The Sentinel loses no
