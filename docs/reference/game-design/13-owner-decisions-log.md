@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,15 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-26 (the bot path cache's "one leg late")
+
+The acting owner's (SamarjitBhogal) answer of 2026-11-26 to `INBOX.md` "Bot path cache (PR #84)",
+given in the PR #84 review session. DEC-373 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-373 | **The bot path cache is accepted as built: a way that opens is found at most one leg late** (closes `INBOX.md` "Bot path cache (PR #84)"). Asked "(a) accept as built; (b) store the grid's version with the cache and search again when it changes", the acting owner chose (a). The cache holds no grid version: at runtime the grid only opens cells, so a bot never walks into a closed cell, and a way that opens while it walks a cached leg is found when it reaches that waypoint. If a runtime change ever closes cells, store the grid's version with the cache (option (b)). | architecture 11 §6 |
 
 ## Batch 2026-11-23 (Owner Calls page: the Cathedral gem's open rules)
 

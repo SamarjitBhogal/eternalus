@@ -35,12 +35,6 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **Bot path cache (PR #84, 2026-11-23): accept "one leg late"? Sign-off needed.** Built: a
-      bot brain reuses its cached A\* waypoint while the way to the same place stays blocked (doc 11
-      §6). The grid only opens cells at runtime, so a way that opens while the bot walks a cached leg
-      is found when the bot reaches that waypoint, at most one leg late. Options: (a) accept as
-      built; (b) store the grid's version with the cache and search again when it changes (one more
-      number in brain memory, one more search after each opening). Say which.
 - [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only
       its group's home (`CAMP_BODY`: "a camp is only its group's home"): the camp's mobs are what
@@ -3459,6 +3453,10 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-26 — **Bot path cache: "one leg late" accepted (DEC-373)** (`feat/minion-bot-path-cache`,
+  PR #84): you chose (a), accept as built. The cache holds no grid version; a way that opens while
+  a bot walks a cached leg is found at most one leg late. Doc 11 §6 states it. Decision: DEC-373.
 
 - 2026-11-23 — **Your answers on the five Cathedral gem cards (DEC-346)** (`feat/cathedral-gem-hittable`,
   PR #132): recorded as DEC-346. The gem blocks movement (an unbreakable plinth under it) and a
