@@ -25,19 +25,38 @@ const FLOOR: Polygon = [
   { x: 15, y: 5 },
 ];
 
-type BodySpec = { readonly at: Vec2; readonly team: Team; readonly floor?: Polygon };
+/** A solid wall of a body's outline, away from the landing point. */
+const WALL: Polygon = [
+  { x: 40, y: -5 },
+  { x: 45, y: -5 },
+  { x: 45, y: 5 },
+  { x: 40, y: 5 },
+];
 
-/** A body with health and a collider circle of radius 1, or a walk-on outline when `floor` is set. */
+type BodySpec = {
+  readonly at: Vec2;
+  readonly team: Team;
+  readonly floor?: Polygon;
+  readonly wall?: Polygon;
+};
+
+/**
+ * A body with health and a collider circle of radius 1, or a walk-on outline when `floor` is set,
+ * with the solid polygon `wall` when that is set too.
+ */
 class Body extends Entity {
   public readonly kind = 'dummy';
   public readonly family = 'structure';
   protected installComponents(context: unknown): void {
-    const { at, team, floor } = context as BodySpec;
+    const { at, team, floor, wall } = context as BodySpec;
     this.addComponent(new Transform(at, 1));
     this.addComponent(new Health(100));
     this.addComponent(new TeamMembership(team));
     this.addComponent(new Collider({ kind: 'circle', radius: 1 }, 'unit'));
-    if (floor !== undefined) this.addComponent(new Footprint([floor], { isWalkOn: true }));
+    if (floor !== undefined) {
+      const solid = wall === undefined ? [] : [wall];
+      this.addComponent(new Footprint([floor], { isWalkOn: true, solid }));
+    }
   }
 }
 
@@ -107,5 +126,22 @@ describe('ArcLanding', () => {
     expect(landOn()).toBeNull();
     expect(landOn('someone-else')).toBeNull();
     expect(landOn('palace')).toBe('palace');
+  });
+
+  it('lands on an outline only on the polygons a straight shot would stop on (AreaHitQuery.shotPolygonsOf)', () => {
+    const { add, landOn } = setUp();
+    // A walk-on floor under the point and a solid wall away from it, in one outline.
+    add('gatehouse', { at: { x: 0, y: 0 }, team: 'dark', floor: FLOOR, wall: WALL });
+
+    expect(landOn()).toBeNull();
+    expect(landOn('gatehouse')).toBe('gatehouse');
+  });
+
+  it('lands on a solid outline polygon under the point when the shot is not aimed at the body', () => {
+    const { add, landOn } = setUp();
+    // A fort: its solid wall holds the point, its walk-on court is away from it.
+    add('fort', { at: { x: 0, y: 0 }, team: 'dark', floor: WALL, wall: FLOOR });
+
+    expect(landOn()).toBe('fort');
   });
 });

@@ -9,18 +9,21 @@ import type { ShotBody } from './ProjectileSystem.types';
 /**
  * Where an arc shot lands (DEC-342): which body is under it when it reaches its aim point. The
  * candidates are the bodies a shot stops on (`AreaHitQuery.stopsShot`, so a walk-on outline only
- * when the shot aims at it) whose outline, or collider circle, meets the shot's circle there. A
- * body that takes no damage now (`EntityStore.takesNoDamage`: a wall, a gate, a forest camp, and,
- * on purpose, the Cathedral gem) is not a candidate: nothing lands on it, so a unit beside it
- * still takes the hit. The shot's target wins if it is a candidate, else the first candidate in
- * store order. A turret's shot names no target: a turret aims at a point (`attack-aim`), and the
- * enemy walk-on outlines that `AreaHitQuery.aimedBodyOf` could name for that point (the enemy
- * palace and gates) are far out of every turret's reach. So under a turret's shot a tie goes to
- * store order. Stateless.
+ * when the shot aims at it) whose collider circle, or outline polygons that a straight shot stops
+ * on (`AreaHitQuery.shotPolygonsOf`), meet the shot's circle there. A body that takes no damage
+ * now (`EntityStore.takesNoDamage`: a wall, a gate, a forest camp, and, on purpose, the Cathedral
+ * gem) is not a candidate: nothing lands on it, so a unit beside it still takes the hit. The
+ * shot's target wins if it is a candidate, else the first candidate in store order. A turret's
+ * shot names no target: a turret aims at a point (`attack-aim`), and the enemy walk-on outlines
+ * that `AreaHitQuery.aimedBodyOf` could name for that point (the enemy palace and gates) are far
+ * out of every turret's reach. So under a turret's shot a tie goes to store order. Stateless.
  */
 export class ArcLanding {
-  /** @param areas - The match's one hit rule for areas (`Simulation`'s): `stopsShot`. */
-  public constructor(private readonly areas: Pick<AreaHitQuery, 'stopsShot'>) {}
+  /**
+   * @param areas - The match's one hit rule for areas (`Simulation`'s): `stopsShot` and
+   *   `shotPolygonsOf`.
+   */
+  public constructor(private readonly areas: Pick<AreaHitQuery, 'stopsShot' | 'shotPolygonsOf'>) {}
 
   /**
    * @param bodies - The live bodies, in store order (`ProjectileSystem`'s gather).
@@ -40,7 +43,7 @@ export class ArcLanding {
       if (
         !this.areas.stopsShot(entities, payload, body) ||
         entities.takesNoDamage(body.entity.id) ||
-        !this.isUnder(body, point, radius)
+        !this.isUnder(payload, body, point, radius)
       ) {
         continue;
       }
@@ -50,11 +53,23 @@ export class ArcLanding {
     return first;
   }
 
-  /** Whether the body's outline, or its collider circle without one, meets the circle at `point`. */
-  private isUnder({ transform, outline }: ShotBody, point: Vec2, radius: number): boolean {
+  /**
+   * Whether the body's collider circle, or the polygons of its outline that a straight shot stops
+   * on (`AreaHitQuery.shotPolygonsOf`: one rule for both kinds of shot), meet the circle at
+   * `point`.
+   */
+  private isUnder(
+    payload: ProjectilePayload,
+    body: ShotBody,
+    point: Vec2,
+    radius: number,
+  ): boolean {
+    const { transform, outline } = body;
     if (outline === null) {
       return distance(point, transform.position) <= radius + transform.radius;
     }
-    return outline.polygons.some((polygon) => doesDiscReachPolygon(point, radius, polygon));
+    return this.areas
+      .shotPolygonsOf(payload, body)
+      .some((polygon) => doesDiscReachPolygon(point, radius, polygon));
   }
 }
