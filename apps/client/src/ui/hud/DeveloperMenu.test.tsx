@@ -11,7 +11,7 @@ const STATE: DeveloperMenuState = {
   humanLegendId: 'entity-9',
   followedLegendId: null,
   legends: [],
-  controllerIds: { player: 'player', rover: 'rover' },
+  controllerIds: { player: 'player', rover: 'rover', laner: 'bot-legend' },
 };
 
 const render = (state: DeveloperMenuState): string =>

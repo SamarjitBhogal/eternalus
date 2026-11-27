@@ -8,7 +8,7 @@ const initialState: DeveloperMenuState = {
   humanLegendId: null,
   followedLegendId: null,
   legends: [],
-  controllerIds: { player: '', rover: '' },
+  controllerIds: { player: '', rover: '', laner: '' },
 };
 
 /** The developer menu's state, fed by `developer-menu`; reset by every `match-setup`. */

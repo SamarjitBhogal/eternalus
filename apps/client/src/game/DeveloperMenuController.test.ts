@@ -127,7 +127,11 @@ describe('DeveloperMenuController', () => {
     controller.toggle();
     expect(states.map((state) => state.isOpen)).toEqual([true, false]);
     expect(states[0]?.origins).toEqual([{ id: 'gate-a', label: 'gate-a (gate)' }]);
-    expect(states[0]?.controllerIds).toEqual({ player: 'player', rover: 'rover' });
+    expect(states[0]?.controllerIds).toEqual({
+      player: 'player',
+      rover: 'rover',
+      laner: 'bot-legend',
+    });
   });
 
   it('does not open, and publishes nothing, while the menu is not enabled', () => {
@@ -234,7 +238,8 @@ describe('DeveloperMenuController', () => {
     const ids = states[0]?.controllerIds;
     const rejected: string[] = [];
     simulation.on('command-rejected', ({ reason }) => rejected.push(reason));
-    for (const controllerId of [ids?.rover ?? '', ids?.player ?? '']) {
+    const sent = [ids?.rover ?? '', ids?.player ?? '', ids?.laner ?? '', ids?.player ?? ''];
+    for (const controllerId of sent) {
       bus.emit('ui-intent', {
         kind: 'dev-command',
         command: { type: 'dev-set-controller', entityId: humanId, controllerId },

@@ -31,6 +31,13 @@ export type DeveloperMenuState = {
   readonly followedLegendId: string | null;
   /** The Legends in the match, for sim mode's Follow picker. */
   readonly legends: readonly DeveloperMenuOption[];
-  /** The controller ids sim mode's buttons send: the human's (`player`) and the Rover's (core's). */
-  readonly controllerIds: { readonly player: string; readonly rover: string };
+  /**
+   * The controller ids sim mode's controls send (core's): the human's (`player`), and the bots' a
+   * developer can pick, the Rover's and the lane bot's.
+   */
+  readonly controllerIds: {
+    readonly player: string;
+    readonly rover: string;
+    readonly laner: string;
+  };
 };

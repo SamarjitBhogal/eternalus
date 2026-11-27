@@ -8,9 +8,10 @@ import styles from './DeveloperMenu.module.css';
 
 /**
  * The developer menu's "Sim mode" section (13 §4, FR-099): Remove human hands the human's Legend
- * to the bots (the match runs on with no human); Take control puts the human on the Legend whose
- * id is typed. Each emits one `dev-set-controller`; core validates it. With no human, Follow makes
- * the camera follow the Legend picked from the match's Legends, None releases it (client-only
+ * to the bot picked in the Bot select, or with "Game picks" to the bot its team lacks (`null`,
+ * DEC-356); the match runs on with no human. Take control puts the human on the Legend whose id is
+ * typed. Each emits one `dev-set-controller`; core validates it. With no human, Follow makes the
+ * camera follow the Legend picked from the match's Legends, None releases it (client-only
  * `dev-follow`, no `Command`).
  */
 export function DeveloperSimMode({
@@ -23,7 +24,9 @@ export function DeveloperSimMode({
   'humanLegendId' | 'followedLegendId' | 'legends' | 'controllerIds'
 >): ReactElement {
   const [controlId, setControlId] = useState('');
+  const [botId, setBotId] = useState('');
   const controlFieldId = useId();
+  const botFieldId = useId();
   const followFieldId = useId();
   const labels = STRINGS.developerMenu;
   // A dead or removed Legend leaves the list; keep its option so the select shows what is followed.
@@ -31,6 +34,21 @@ export function DeveloperSimMode({
   return (
     <fieldset className={styles.group}>
       <legend>{labels.simMode}</legend>
+      <div className={styles.field}>
+        <label htmlFor={botFieldId}>{labels.bot}</label>
+        <select
+          id={botFieldId}
+          disabled={humanLegendId === null}
+          value={botId}
+          onChange={(event) => {
+            setBotId(event.currentTarget.value);
+          }}
+        >
+          <option value="">{labels.botGamePicks}</option>
+          <option value={controllerIds.laner}>{labels.botLaner}</option>
+          <option value={controllerIds.rover}>{labels.botRover}</option>
+        </select>
+      </div>
       <Button
         isDisabled={humanLegendId === null}
         onClick={() => {
@@ -40,7 +58,7 @@ export function DeveloperSimMode({
               command: {
                 type: 'dev-set-controller',
                 entityId: humanLegendId,
-                controllerId: controllerIds.rover,
+                controllerId: botId === '' ? null : botId,
               },
             });
           }

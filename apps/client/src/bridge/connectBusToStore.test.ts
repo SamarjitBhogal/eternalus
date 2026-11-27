@@ -49,7 +49,7 @@ describe('connectBusToStore', () => {
       humanLegendId: null,
       followedLegendId: null,
       legends: [],
-      controllerIds: { player: 'player', rover: 'rover' },
+      controllerIds: { player: 'player', rover: 'rover', laner: 'bot-legend' },
     });
     expect(store.getState().developerMenu.isOpen).toBe(true);
     bus.emit('match-setup', null);
