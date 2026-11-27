@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-27
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -188,13 +188,17 @@ export class GameEvents {
 
 Events are synchronous, emitted during the tick and delivered to listeners in subscription order;
 listeners that need to change state defer the change to their own system's pass (Nystrom's Observer
-plus a deferred queue, research §2). `GameEvents` keeps the most recent events in a `RingBuffer`
-(`recentEvents()`, capacity in `GameEvents.constants.ts`) for invariant reports. Payload objects for
-high-frequency events (`damage-applied`) may be pooled (Recommendation, profile first).
+plus a deferred queue, research §2). One exception (DEC-406): an `entity-spawned` listener may
+finish, at once, the setup of the entity that the event names. A roster spawns in the `Simulation`
+constructor, before any pass, so a deferred change would show the entity unfinished on the first
+tick. The table lists each such listener. `GameEvents` keeps the most recent events in a
+`RingBuffer` (`recentEvents()`, capacity in `GameEvents.constants.ts`) for invariant reports.
+Payload objects for high-frequency events (`damage-applied`) may be pooled (Recommendation, profile
+first).
 
 | Event                               | Payload                                                                       | Emitted by                                                                                              | Typical listeners                                                                                                                                                 |
 | ----------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `entity-spawned`                    | `{ entityId, kind, team }`                                                    | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster; `RespawnSystem` for a returning Legend | `SnapshotSystem`, views, `Scoring` (a row per Legend)                                                                                                             |
+| `entity-spawned`                    | `{ entityId, kind, team }`                                                    | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster; `RespawnSystem` for a returning Legend | `SnapshotSystem`, views, `Scoring` (a row per Legend); `ProgressionSystem` raises a Duel Legend to max level at once (05 §18, DEC-406)                            |
 | `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`                                  | `DeathSystem` only                                                                                      | `HordeSystem`, `ProjectilePool`, invariants                                                                                                                       |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }`                        | `DamagePipeline`                                                                                        | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage)                                                                          |
 | `damage-blocked`                    | `{ targetId, source: DamageSource }`                                          | `DamagePipeline` (a step took the hit to 0)                                                             | `CathedralGemSystem` (DEC-292)                                                                                                                                    |
@@ -494,7 +498,11 @@ each closed by the session or phase named:
   a log of the external commands and replay checkpoints, both outside the hashed state); no
   `dispose()` yet.
 - `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
-  `AttackTargetHandler`). `cast-ability`, `intent` and `dev-set-controller` are routed to
+  `AttackTargetHandler`). `jump { actorId, isHeld }` (2026-11-27, DEC-390; not in the §3 sketch)
+  has `JumpHandler`, which sets the held jump key through `EntityStore.holdJump` (rejected
+  `cannot-jump` for an entity without `Jump`); `JumpSystem`, before `MovementSystem`, flies each jump
+  and starts the held ones on the ground; a stun (`cannot-move`) ends a jump in the air at once
+  (DEC-420). `cast-ability`, `intent` and `dev-set-controller` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
 - `dev-spawn-legend` (2026-11-13) is built as `{ team, definitionId }` (a bot Legend at the
@@ -507,7 +515,8 @@ each closed by the session or phase named:
   `SnapshotSystem` exists; `Snapshot` carries
   `tick`, `match`, `entities`, `hordes` and `teams` (the team counters, since minion plan M1),
   and `EntitySnapshot` its identity, `team`, `transform`
-  (`x`, `y`, `radius`, `facing`), `health` (`current`, `max`), `progression` (a Legend's `level`,
+  (`x`, `y`, `radius`, `facing`), `health` (`current`, `max`), `elevation` (a Legend's jump
+  `height` above the ground, DEC-390; named for what the view draws, DEC-420), `progression` (a Legend's `level`,
   the `xp` inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the
   level curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
   `area` (a zone's polygons), `capture` (a capture point's state and presence) and `gem` (the

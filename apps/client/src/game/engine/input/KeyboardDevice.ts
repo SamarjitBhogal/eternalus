@@ -1,12 +1,16 @@
 import { isEditableTarget } from './isEditableTarget';
 import type { InputDevice, MutableInputSnapshot } from './InputDevice.types';
-import { FOCUS_LOSS_EVENTS, NEVER_PREVENTED_CODES } from './KeyboardDevice.constants';
+import {
+  FOCUS_LOSS_EVENTS,
+  MODAL_SELECTOR,
+  NEVER_PREVENTED_CODES,
+} from './KeyboardDevice.constants';
 
 /**
  * The keyboard adapter. Tracks held keys by `KeyboardEvent.code` (the physical key, so
  * bindings survive keyboard layouts), ignores auto-repeat, prevents the browser default only
- * for bound keys, ignores keys typed into text fields, and releases everything when the window
- * loses focus or is hidden.
+ * for bound keys, ignores keys typed into text fields or pressed inside a modal dialog, and
+ * releases everything when the window loses focus or is hidden.
  */
 export class KeyboardDevice implements InputDevice {
   private readonly held = new Set<string>();
@@ -54,7 +58,7 @@ export class KeyboardDevice implements InputDevice {
   }
 
   private readonly onKeyDown = (event: Event): void => {
-    if (isEditableTarget(event)) return;
+    if (isEditableTarget(event) || KeyboardDevice.isInModal(event)) return;
     const keyEvent = event as KeyboardEvent;
     const code = KeyboardDevice.codeOf(keyEvent);
     const isBrowserShortcut =
@@ -74,6 +78,27 @@ export class KeyboardDevice implements InputDevice {
   private readonly onFocusLost = (): void => {
     this.releaseAll();
   };
+
+  /**
+   * Whether the key came from inside an open modal dialog: its controls own every key there (Space
+   * and Enter press the focused button), even a key the game binds. Its `keyup` still releases a
+   * held key.
+   */
+  private static isInModal(event: Event): boolean {
+    const { target } = event;
+    return (
+      target !== null &&
+      KeyboardDevice.canSearchAncestors(target) &&
+      target.closest(MODAL_SELECTOR) !== null
+    );
+  }
+
+  /** Whether the target is an element, which can search its ancestors (`closest`). */
+  private static canSearchAncestors(
+    target: EventTarget,
+  ): target is EventTarget & Pick<Element, 'closest'> {
+    return 'closest' in target && typeof target.closest === 'function';
+  }
 
   /** Mobile virtual keyboards report an empty `code`; fall back to `key` for them. */
   private static codeOf(event: KeyboardEvent): string {

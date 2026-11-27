@@ -61,6 +61,11 @@ export class AStarPathfinder {
     return this.foundCost;
   }
 
+  /** The grid's version (`WorldMap.version`): it changes whenever a waypoint may change. */
+  public get version(): number {
+    return this.grid.version;
+  }
+
   /** Whether a walker can go straight from `start` to `end` without crossing blocked ground. */
   public isLineClear(start: Vec2, end: Vec2): boolean {
     return this.grid.isLineClear(start.x, start.y, end.x, end.y);
