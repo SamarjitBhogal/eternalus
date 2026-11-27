@@ -14,6 +14,7 @@ import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
+import { PositiveSpriteWidthRule } from './validation/PositiveSpriteWidthRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
 import { SpecClassExistsRule } from './validation/SpecClassExistsRule';
@@ -33,6 +34,7 @@ export const createDefaultContentRules = (
   new KebabCaseIdRule(),
   new PositiveStatsRule(),
   new PositiveAetherRule(),
+  new PositiveSpriteWidthRule(),
   new KnownLevelCurveRule(curves),
   new LevelScalingRule(),
   new KnownWeaponRule(weapons),

@@ -137,6 +137,19 @@ describe('PlayerCommands', () => {
     expect(commands.attackUnitAt(ACTOR, { x: 10, y: 8 }, snapshot)).toBe(true);
   });
 
+  it("picks a Sentinel's 13 m sprite inside half its width, 6.5 m (DEC-424)", () => {
+    const legendView = new LegendSpriteView({
+      sizeOf: () => ({ width: 13, top: 12 }),
+      frameOf: () => ({ atlasId: 'colossus-sprites', frame: 0 }),
+    });
+    const { commands } = setUp(createDefaultViewRegistry(undefined, legendView));
+    const foe = { ...unit('foe', 'dark', 10, 10), family: 'legend' };
+    const snapshot = snapshotOf([PLAYER, foe]);
+
+    expect(commands.attackUnitAt(ACTOR, { x: 10, y: 3 }, snapshot)).toBe(false);
+    expect(commands.attackUnitAt(ACTOR, { x: 10, y: 4 }, snapshot)).toBe(true);
+  });
+
   it('queues one attack per target while held, and again after a release or a stop', () => {
     const { input, queued, tick, enqueueCommand } = setUp();
     input.isAttacking = true;

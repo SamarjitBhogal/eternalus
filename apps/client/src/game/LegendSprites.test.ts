@@ -11,12 +11,12 @@ import { describe, expect, it } from 'vitest';
 
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import { shapesOf } from './__fixtures__/sheetShapes';
+import { SHIPPED_SPRITE_WIDTHS } from './__fixtures__/spriteWidths';
 import { spriteTopOf } from './engine/render/spriteMeasures';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
 import type { LegendSpriteSheet } from './legendSpriteSheets.types';
 import { LegendSprites } from './LegendSprites';
-import { LEGEND_VISUAL_DIAMETER } from './views/entityViews.constants';
 import { LegendSpriteView } from './views/LegendSpriteView';
 import { LegendView } from './views/LegendView';
 
@@ -32,12 +32,12 @@ const sheetsOf = (
 ): ReadonlyMap<string, LegendSpriteSheet> =>
   new Map(sheets.flatMap(([specId, sheet]) => (sheet === undefined ? [] : [[specId, sheet]])));
 
-/** A Legend whose snapshot names no sub-class, alive, facing south. */
+/** A Warrior whose snapshot names no sub-class, alive, facing south. */
 const PLAIN: EntitySnapshot = {
   id: 'hero',
-  kind: 'knight',
+  kind: 'warrior',
   family: 'legend',
-  definitionId: 'knight',
+  definitionId: 'warrior',
   team: 'light',
   transform: { x: 10, y: 20, radius: 0.75, facing: { x: 0, y: 1 } },
   health: { current: 800, max: 800 },
@@ -102,6 +102,7 @@ function spritesWith(
   const logger = new MemoryLogger();
   const sprites = new LegendSprites({
     legendSheets: sheets,
+    legendSpriteWidths: SHIPPED_SPRITE_WIDTHS,
     tickRate: TICK_RATE,
     simulation,
     renderer: new RecordingRenderer(grids),
@@ -142,7 +143,7 @@ describe('LegendSprites', () => {
     ).toEqual([['WARN', 'client.views', { atlasId: 'knight-sprites' }]]);
   });
 
-  it('draws the sprite with its feet on the position, at the shared Legend width', () => {
+  it("draws the sprite with its feet on the position, at its class's width", () => {
     const { logger, sprites } = spritesWith(sheetsOf(['knight', KNIGHT_SHEET]), KNIGHT_GRID);
     const renderer = new RecordingRenderer();
     sprites.view?.draw(
@@ -159,7 +160,11 @@ describe('LegendSprites', () => {
     expect(sprites.view).toBeInstanceOf(LegendSpriteView);
     expect(renderer.calls[0]).toEqual({
       op: 'drawSprite',
-      args: [{ atlasId: 'knight-sprites', frame: 0 }, { x: 10, y: 20 }, LEGEND_VISUAL_DIAMETER],
+      args: [
+        { atlasId: 'knight-sprites', frame: 0 },
+        { x: 10, y: 20 },
+        SHIPPED_SPRITE_WIDTHS.warrior,
+      ],
     });
     expect(logger.records).toEqual([]);
   });
@@ -192,17 +197,75 @@ describe('LegendSprites', () => {
 
   it("puts each Legend's bar on its own sheet's sprite top, from the sheet's data", () => {
     const { sprites } = spritesWith(sheetsOf(['knight', KNIGHT_SHEET], ['oracle', ORACLE_SHEET]));
-    const top = (atlasId: string): number | undefined => {
+    const top = (atlasId: string, classId: string): number | undefined => {
       const shape = BOTH_GRIDS[atlasId];
-      return shape === undefined ? undefined : spriteTopOf(shape, LEGEND_VISUAL_DIAMETER);
+      const width = SHIPPED_SPRITE_WIDTHS[classId];
+      return shape === undefined || width === undefined ? undefined : spriteTopOf(shape, width);
     };
 
     expect([sprites.view?.visualTopOf?.(HERO), sprites.view?.visualTopOf?.(BOT)]).toEqual([
-      top('knight-sprites'),
-      top('oracle-sprites'),
+      top('knight-sprites', 'warrior'),
+      top('oracle-sprites', 'magus'),
     ]);
-    expect(top('knight-sprites')).not.toBeCloseTo(top('oracle-sprites') ?? 0);
+    expect(top('knight-sprites', 'warrior')).not.toBeCloseTo(top('oracle-sprites', 'warrior') ?? 0);
     sprites.destroy();
+  });
+
+  it("draws each Legend at its class's width, with a click area of half of it (DEC-424)", () => {
+    const sentinel: EntitySnapshot = {
+      ...HERO,
+      id: 'tank',
+      kind: 'sentinel',
+      definitionId: 'sentinel',
+      specId: 'colossus',
+    };
+    const { sprites } = spritesWith(
+      sheetsOf(
+        ['knight', KNIGHT_SHEET],
+        ['oracle', ORACLE_SHEET],
+        ['colossus', LEGEND_SPRITE_SHEETS.colossus],
+      ),
+      shapesOf('knight-sprites', 'oracle-sprites', 'colossus-sprites'),
+    );
+    const width = (entity: EntitySnapshot): unknown => {
+      const renderer = new RecordingRenderer();
+      sprites.view?.draw(
+        {
+          entity,
+          position: { x: 0, y: 0 },
+          facing: { x: 0, y: 1 },
+          isFocused: false,
+          frameTick: 0,
+        },
+        renderer,
+      );
+      const call = renderer.calls.find(({ op }) => op === 'drawSprite');
+      return call?.op === 'drawSprite' ? call.args[2] : undefined;
+    };
+    const legends = [HERO, BOT, sentinel];
+
+    expect(legends.map(width)).toEqual([5.2, 7.8, 13]);
+    expect(legends.map((entity) => sprites.view?.visualRadiusOf?.(entity))).toEqual([
+      2.6, 3.9, 6.5,
+    ]);
+    sprites.destroy();
+  });
+
+  it('draws the disc for a Legend whose class has no sprite width', () => {
+    const { bus, simulation } = busSimulation();
+    const sprites = new LegendSprites({
+      legendSheets: sheetsOf(['knight', KNIGHT_SHEET]),
+      legendSpriteWidths: { magus: 7.8 },
+      tickRate: TICK_RATE,
+      simulation,
+      renderer: new RecordingRenderer(KNIGHT_GRID),
+      logger: new MemoryLogger(),
+    });
+
+    expect(drawnFrame(sprites, HERO)).toBeUndefined();
+    expect(sprites.view?.visualRadiusOf?.(HERO)).toBe(new LegendView().visualRadiusOf());
+    sprites.destroy();
+    expect(bus.listenerCount()).toBe(0);
   });
 
   it("draws the disc for a Legend whose sheet did not load, while the player's draws a sprite", () => {

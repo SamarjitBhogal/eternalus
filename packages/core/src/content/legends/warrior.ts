@@ -25,6 +25,7 @@ export const WARRIOR = {
   passiveOptions: [],
   defaultAction: null,
   referenceHeight: 2.1, // TUNE: ~7 ft (Master Chief)
+  spriteWidth: 5.2, // TUNE: tuneable after game testing (DEC-424: the body ratio of DEC-06; DEC-238's size)
   footprintRadius: 0.5, // DEC-06
   visionRadius: 25, // TUNE:
   movementProfile: {

@@ -74,10 +74,12 @@ describe('LegendSpriteView', () => {
     expect(asked).toEqual([9.5, 15]);
   });
 
-  it('gives the sprite top for the health bar and keeps the 2.6 m click radius (DEC-238)', () => {
+  it('gives the sprite top for the health bar and half the sprite width for clicks (DEC-424)', () => {
     const view = new LegendSpriteView(SPRITES);
 
     expect(view.visualTopOf(entity)).toBe(5.1);
+    expect(view.visualRadiusOf(entity)).toBe(6.8 / 2);
+    // `LegendView`'s own draw asks without an entity: its disc keeps DEC-238's radius.
     expect(view.visualRadiusOf()).toBe(LEGEND_VISUAL_DIAMETER / 2);
   });
 
@@ -90,6 +92,7 @@ describe('LegendSpriteView', () => {
 
     expect(drawn.calls).toEqual(ordinary.calls);
     expect(view.visualTopOf(entity)).toBe(LEGEND_VISUAL_DIAMETER / 2);
+    expect(view.visualRadiusOf(entity)).toBe(LEGEND_VISUAL_DIAMETER / 2);
   });
 
   it('draws a Legend with a sheet but no frame (dead) as the ordinary Legend view', () => {

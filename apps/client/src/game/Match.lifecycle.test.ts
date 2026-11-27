@@ -15,6 +15,7 @@ import type { BridgeEventMap, MatchClock } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import { shapesOf } from './__fixtures__/sheetShapes';
 import { sheetsFor } from './__fixtures__/sheetsFor';
+import { SHIPPED_SPRITE_WIDTHS } from './__fixtures__/spriteWidths';
 import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
@@ -379,6 +380,7 @@ describe('Match lifecycle', () => {
     const match = new Match({
       ...deps,
       legendSheets: sheetsFor('knight'),
+      legendSpriteWidths: SHIPPED_SPRITE_WIDTHS,
       renderer: new RecordingRenderer(shapesOf('knight-sprites')),
     });
     match.start();
@@ -422,6 +424,7 @@ describe('Match lifecycle', () => {
     const match = new Match({
       ...deps,
       legendSheets: sheetsFor('oracle', 'knight', 'juggernaut'),
+      legendSpriteWidths: SHIPPED_SPRITE_WIDTHS,
       renderer: new RecordingRenderer(
         shapesOf('oracle-sprites', 'knight-sprites', 'juggernaut-sprites'),
       ),

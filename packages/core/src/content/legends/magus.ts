@@ -38,6 +38,7 @@ export const MAGUS = {
   passiveOptions: ['studious', 'necromancy'],
   defaultAction: 'revive',
   referenceHeight: 3, // TUNE: ~10 ft (Hades)
+  spriteWidth: 7.8, // TUNE: tuneable after game testing (DEC-424: the body ratio of DEC-06; the Warrior's x 1.5)
   footprintRadius: 0.75, // DEC-06
   visionRadius: 25, // TUNE:
   movementProfile: {

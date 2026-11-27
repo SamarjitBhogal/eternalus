@@ -1,6 +1,7 @@
 import type {
   EntityId,
   InputIntent,
+  LegendClassId,
   Logger,
   MapDefinition,
   MapFeatureKind,
@@ -94,6 +95,11 @@ export type MatchDeps = {
    * its sub-class. Left out in an online Duel: every Legend is a disc.
    */
   readonly legendSheets?: ReadonlyMap<string, LegendSpriteSheet> | undefined;
+  /**
+   * Each Legend class's sprite width by class id (core content `spriteWidth`, DEC-424;
+   * `legendSpriteWidthsOf`). A Legend whose class has none is a disc.
+   */
+  readonly legendSpriteWidths?: Readonly<Record<LegendClassId, number>> | undefined;
   readonly simulation: MatchSimulation;
   /** Set for an online Duel: replaces the local `PlayerCommands` and the snapshot's human Legend. */
   readonly remote?: RemotePlayer;

@@ -16,6 +16,7 @@ import { MINI_MAP_DESIGN_FRAME, MINI_MAP_RING } from '../bridge/minimapRing';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import { shapesOf } from './__fixtures__/sheetShapes';
 import { sheetsFor } from './__fixtures__/sheetsFor';
+import { SHIPPED_SPRITE_WIDTHS } from './__fixtures__/spriteWidths';
 import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import type { Projection } from './engine/input/Projection.types';
@@ -139,6 +140,7 @@ const setUp = (content?: Content, withMapObjects = false, sprites: SpriteSetUp =
   const logger = new MemoryLogger();
   const match = new Match({
     legendSheets,
+    legendSpriteWidths: SHIPPED_SPRITE_WIDTHS,
     simulation,
     world,
     tickRate: config.tickRate,

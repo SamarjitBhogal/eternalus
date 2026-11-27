@@ -1,4 +1,10 @@
-import { type GameConfig, makeLogRecord, SEVERITY, Simulation } from '@eternalus/core';
+import {
+  type GameConfig,
+  type LegendClassId,
+  makeLogRecord,
+  SEVERITY,
+  Simulation,
+} from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
@@ -17,7 +23,8 @@ import type { SessionClock } from './engine/time/SessionClock.types';
 import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
 import { Match } from './Match';
-import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, LOG_RING_CAPACITY } from './Match.constants';
+import { followViewFor } from './followViewFor';
+import { LOG_RING_CAPACITY } from './Match.constants';
 import { matchLegendSheets } from './matchLegendSheets';
 import { matchAssetGroups } from './session/matchAssetGroups';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
@@ -39,6 +46,11 @@ export type BrowserMatchDeps = {
   readonly window: HostWindow & Pick<Window, 'requestAnimationFrame' | 'cancelAnimationFrame'>;
   readonly document: HostDocument;
   readonly gameConfig: GameConfig;
+  /**
+   * Each Legend class's sprite width by class id (core content `spriteWidth`, DEC-424;
+   * `legendSpriteWidthsOf`): the sprites' widths and the player's camera.
+   */
+  readonly legendSpriteWidths: Readonly<Record<LegendClassId, number>>;
   /** `?dev=1` (13 §4): the developer menu exists in every match this factory builds. */
   readonly isDeveloperMenuEnabled?: boolean;
   readonly bus: TypedEventBus<BridgeEventMap>;
@@ -83,14 +95,15 @@ function readEvidence(simulation: Simulation, ring: RingBufferSink): MatchEviden
  * setup's bots and the player's human slot) as its roster, the `Match` on the same world and its
  * `MatchHost`, then starts the host, which owns everything from then on. The renderer gets the
  * atlases of every Legend's sprite sheet (`matchLegendSheets`), which `match-loading` loaded and
- * the session releases (13 §2), and the `Match` gets the sheets (DEC-378 (2)). The match log
+ * the session releases (13 §2), and the `Match` gets the sheets (DEC-378 (2)) and each class's
+ * sprite width; the camera's view zooms out with the player's own sprite width (DEC-424). The match log
  * records the seed first.
  * @throws What the renderer or `Match` threw, after destroying every adapter already built
  *   (0 listeners, 0 pending frames).
  */
 export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
   return (request, viewport) => {
-    const { window, gameConfig, settings, resources } = deps;
+    const { window, gameConfig, settings, resources, legendSpriteWidths } = deps;
     const legendSheets = matchLegendSheets(request.setup);
     // Core spawns the roster's human slot, the player's Rover, at the team's Stronghold: a map
     // without one throws in `Simulation`, below.
@@ -105,8 +118,13 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
     if (renderer === null) {
       throw new Error('This browser cannot draw on a 2D canvas.');
     }
-    // The match points the camera at the player's Legend, so its start point does not matter.
-    const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
+    // The match points the camera at the player's Legend, so its start point does not matter. The
+    // view zooms out with the player's own sprite width (DEC-424).
+    const player = request.setup.allies.find(({ isPlayer }) => isPlayer);
+    const view = followViewFor(
+      player === undefined ? undefined : legendSpriteWidths[player.classId],
+    );
+    const camera = new Camera({ x: 0, y: 0 }, view.width, view.height);
     const ring = new RingBufferSink(LOG_RING_CAPACITY);
     const logger = createMatchLogger(deps, ring);
     const { seed } = request.setup;
@@ -128,6 +146,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
       });
       match = new Match({
         legendSheets,
+        legendSpriteWidths,
         simulation,
         world: request.world,
         tickRate: gameConfig.tickRate,

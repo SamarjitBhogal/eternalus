@@ -17,6 +17,7 @@ import { LevelScalingRule } from './validation/LevelScalingRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
+import { PositiveSpriteWidthRule } from './validation/PositiveSpriteWidthRule';
 import { SpecClassExistsRule } from './validation/SpecClassExistsRule';
 
 describe('createDefaultContentRules', () => {
@@ -27,6 +28,7 @@ describe('createDefaultContentRules', () => {
       KebabCaseIdRule,
       PositiveStatsRule,
       PositiveAetherRule,
+      PositiveSpriteWidthRule,
       KnownLevelCurveRule,
       LevelScalingRule,
       KnownWeaponRule,

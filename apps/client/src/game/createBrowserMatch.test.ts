@@ -26,6 +26,7 @@ import { prepareMatchWorld } from './prepareMatchWorld';
 import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { MatchRequest, RunningMatch } from './SessionController.types';
 import { rosterSlots } from './session/rosterSlots';
+import { SHIPPED_SPRITE_WIDTHS } from './__fixtures__/spriteWidths';
 
 const CONFIG = createDefaultGameConfig();
 const SEED = 3;
@@ -57,6 +58,7 @@ function setUp(
     window,
     document,
     gameConfig: CONFIG,
+    legendSpriteWidths: SHIPPED_SPRITE_WIDTHS,
     isDeveloperMenuEnabled,
     bus,
     settings: { bindings: null },
@@ -174,6 +176,45 @@ describe('createBrowserMatch', () => {
         ['sprite-atlas:oracle-sprites'],
       ]);
       expect(warnings).toEqual([]);
+    });
+
+    it("zooms the camera out with the player's class: its sprite is the same size on screen (DEC-424)", () => {
+      /** The player's sprite width in screen pixels, from the first frames of a match as `specId`. */
+      const drawnWidth = (classId: string, specId: string): unknown => {
+        const drawImage = vi.fn();
+        const canvas = new FakeViewportCanvas(1280, 720, {
+          ...FakeViewportCanvas.silentContext(),
+          drawImage,
+        });
+        const atlas = new SpriteAtlasAsset({ width: 384, height: 640, close: vi.fn() }, 6, 10, 0.1);
+        const resources = {
+          atlases: vi.fn((group: string) =>
+            group === `sprite-atlas:${specId}-sprites` ? { [`${specId}-sprites`]: atlas } : {},
+          ),
+        };
+        const { window, factory, viewport, request } = setUp(canvas, [], resources);
+        const matchRequest = request();
+        const running = factory(
+          {
+            ...matchRequest,
+            setup: { ...matchRequest.setup, allies: [{ ...COLOSSUS, classId, specId }] },
+            roster: [{ ...PLAYER_SLOT, definitionId: classId, specId }],
+          },
+          viewport,
+        );
+        window.runFrame(0);
+        window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
+        running.destroy();
+        return (drawImage.mock.calls[0] as unknown[] | undefined)?.[7];
+      };
+      const widths = [
+        drawnWidth('warrior', 'knight'),
+        drawnWidth('magus', 'oracle'),
+        drawnWidth('sentinel', 'colossus'),
+      ];
+
+      // A 5.2 m sprite on the 96 m view of a 1280 px canvas is 69 px wide; so are 7.8 m and 13 m.
+      expect(widths).toEqual([69, 69, 69]);
     });
   });
 

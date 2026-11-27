@@ -1,4 +1,10 @@
-import { createDefaultGameConfig, type Logger, makeLogRecord, SEVERITY } from '@eternalus/core';
+import {
+  createDefaultGameConfig,
+  loadDisplayContent,
+  type Logger,
+  makeLogRecord,
+  SEVERITY,
+} from '@eternalus/core';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
@@ -27,6 +33,7 @@ import { createCoreCatalogue } from './game/content/coreCatalogue';
 import { PLACEHOLDER_PLAYER_NAME } from './game/content/placeholderSetup';
 import { createBrowserDuelMatch } from './game/createBrowserDuelMatch';
 import { createBrowserMatch, type BrowserMatchDeps } from './game/createBrowserMatch';
+import { legendSpriteWidthsOf } from './game/legendSpriteWidthsOf';
 import { createMatchSeed } from './game/createMatchSeed';
 import { readDeveloperFlags } from './game/developerFlags';
 import { isAppleUserAgent } from './game/isAppleUserAgent';
@@ -148,6 +155,8 @@ const browserMatchDeps: BrowserMatchDeps = {
   window,
   document,
   gameConfig,
+  // Each class's sprite width (core content, DEC-424): the sprites and the player's camera.
+  legendSpriteWidths: legendSpriteWidthsOf(loadDisplayContent().legends),
   bus: eventBus,
   settings,
   clock: sessionClock,

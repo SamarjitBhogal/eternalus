@@ -11,7 +11,6 @@ import { LegendAnimation } from './LegendAnimation';
 import type { LegendSpriteSheet } from './legendSpriteSheets.types';
 import type { LegendSpritesDeps } from './LegendSprites.types';
 import type { EntityView } from './views/EntityView.types';
-import { LEGEND_VISUAL_DIAMETER } from './views/entityViews.constants';
 import { LegendSpriteView } from './views/LegendSpriteView';
 import type { LegendSpriteSize, LegendSpriteSource } from './views/LegendSpriteView.types';
 
@@ -45,6 +44,9 @@ export class LegendSprites implements LegendSpriteSource {
 
   private readonly renderer: LegendSpritesDeps['renderer'];
 
+  /** Each class's sprite width by class id (DEC-424). */
+  private readonly widths: Readonly<Record<string, number>>;
+
   /**
    * Keeps each sheet of `legendSheets` whose atlas the renderer holds, and logs one WARN for each
    * sheet whose atlas did not load (the resource controller has already warned about the file);
@@ -53,6 +55,7 @@ export class LegendSprites implements LegendSpriteSource {
   public constructor(deps: LegendSpritesDeps) {
     const {
       legendSheets = new Map<string, LegendSpriteSheet>(),
+      legendSpriteWidths = {},
       tickRate,
       simulation,
       renderer,
@@ -60,6 +63,7 @@ export class LegendSprites implements LegendSpriteSource {
     } = deps;
     this.tickRate = tickRate;
     this.renderer = renderer;
+    this.widths = legendSpriteWidths;
     for (const [specId, sheet] of legendSheets) {
       if (renderer.hasSprite({ atlasId: sheet.atlasId, frame: 0 })) {
         this.loaded.set(specId, sheet);
@@ -108,14 +112,17 @@ export class LegendSprites implements LegendSpriteSource {
     this.unsubscribe();
   }
 
-  /** The sprite size of a Legend with a loaded sheet, or `null` (the disc). */
+  /**
+   * The sprite size of a Legend with a loaded sheet: its class's width (DEC-424) and the top that
+   * the renderer measures from the sheet's data; `null` (the disc) without a sheet or a width.
+   */
   public sizeOf(entity: EntitySnapshot): LegendSpriteSize | null {
     const sheet = this.sheetOf(entity);
-    const width = LEGEND_VISUAL_DIAMETER;
-    const top =
-      sheet === undefined
-        ? null
-        : this.renderer.spriteTop({ atlasId: sheet.atlasId, frame: 0 }, width);
+    const width = this.widths[entity.definitionId];
+    if (sheet === undefined || width === undefined) {
+      return null;
+    }
+    const top = this.renderer.spriteTop({ atlasId: sheet.atlasId, frame: 0 }, width);
     return top === null ? null : { width, top };
   }
 
