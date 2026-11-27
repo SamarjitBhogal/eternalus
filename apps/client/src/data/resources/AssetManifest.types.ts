@@ -21,8 +21,7 @@ export type AssetType = 'ui-image' | 'font' | 'sprite-atlas';
  * `selection-alternate` for one layout's class step, `selection-primary-raster` and
  * `selection-raster` for the plates the `figma-raster` effects renderer draws); `match` in
  * `match-loading`. Each `atlas-<sub-class>` group holds one Legend sprite sheet; `match-loading`
- * loads the sheet of every Legend in the match, the player's first, after `match`
- * (`matchAssetGroups`; DEC-378 (2)).
+ * loads the sheet of every Legend in the match after `match` (`matchAssetGroups`; DEC-378 (2)).
  */
 export type AssetGroup =
   | 'boot'

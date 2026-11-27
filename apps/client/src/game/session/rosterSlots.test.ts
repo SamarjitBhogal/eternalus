@@ -52,7 +52,7 @@ describe('rosterSlots', () => {
     ]);
   });
 
-  it('carries a Legend’s spec id to its slot so the kit is the Legend’s, and none without one', () => {
+  it('carries a Legend’s spec id to its slot, and none without one', () => {
     const slots = rosterSlots(
       {
         allies: [

@@ -55,7 +55,7 @@ describe('MatchLoadingState', () => {
     ]);
   });
 
-  it("loads every roster Legend's sheet group after the match group, the player's first, each once", () => {
+  it("loads every roster Legend's sheet group after the match group, each once", () => {
     const context = new FakeSessionContext();
     context.lockedRosters = filledRostersFixture({
       player: 'colossus',
@@ -64,9 +64,15 @@ describe('MatchLoadingState', () => {
     });
     new MatchLoadingState().enter(context);
 
-    expect(context.calls.loadAssets.map(([groups]) => groups)).toEqual([
-      ['match', 'atlas-colossus', 'atlas-oracle', 'atlas-juggernaut'],
-    ]);
+    const loads = context.calls.loadAssets.map(([groups]) => groups);
+    const [first, ...sheets] = loads[0] ?? [];
+
+    expect(loads).toHaveLength(1);
+    expect(first).toBe('match');
+    expect(new Set(sheets)).toEqual(
+      new Set(['atlas-colossus', 'atlas-oracle', 'atlas-juggernaut']),
+    );
+    expect(sheets).toHaveLength(3);
   });
 
   it('opens the match when the sprite sheet fails to load: the sheet stays unloaded', async () => {

@@ -14,12 +14,12 @@ import { describe, expect, it, vi } from 'vitest';
 import type { BridgeEventMap } from '../bridge/events';
 import { MINI_MAP_DESIGN_FRAME, MINI_MAP_RING } from '../bridge/minimapRing';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { sheetsFor } from './__fixtures__/sheetsFor';
 import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import type { Projection } from './engine/input/Projection.types';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
-import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
 import type { LegendSpriteSheet } from './legendSpriteSheets.types';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
@@ -32,9 +32,6 @@ const SEED = 1;
 const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
 /** The player as a Knight (a warrior sub-class), so its snapshot names the Knight's sheet. */
 const KNIGHT_PLAYER: PlayerChoice = { ...PLAYER, specId: 'knight' };
-/** The sheets by sub-class id that the match factory would pass for `specIds` (DEC-378 (2)). */
-const sheetsFor = (...specIds: readonly string[]): ReadonlyMap<string, LegendSpriteSheet> =>
-  new Map(Object.entries(LEGEND_SPRITE_SHEETS).filter(([specId]) => specIds.includes(specId)));
 const KNIGHT_GRID = { 'knight-sprites': { columns: 6, rows: 10 } };
 /** The dark Rover bot, an Oracle (a magus sub-class). */
 const ORACLE_BOT: RosterSlot = {

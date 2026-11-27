@@ -13,11 +13,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { matchResultFixture } from '../bridge/__fixtures__/matchResultFixtures';
 import type { BridgeEventMap, MatchClock } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { sheetsFor } from './__fixtures__/sheetsFor';
 import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
-import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, MS_PER_SECOND } from './Match.constants';
 import type { MatchObserver, PreparedWorld } from './Match.types';
@@ -29,9 +29,6 @@ const TICK_MS = MS_PER_SECOND / CONFIG.tickRate;
 const STILL: InputIntent = { move: { x: 0, y: 0 }, aim: null, triggered: [] };
 const PLAYER: PlayerChoice = { legend: 'magus', team: 'dark' };
 const WARRIOR: PlayerChoice = { legend: 'warrior', team: 'light' };
-/** The sheets by sub-class id that the match factory would pass for `specIds` (DEC-378 (2)). */
-const sheetsFor = (...specIds: readonly string[]) =>
-  new Map(Object.entries(LEGEND_SPRITE_SHEETS).filter(([specId]) => specIds.includes(specId)));
 
 /** Freezes `value` and everything inside it, so any write to the world throws. */
 function deepFreeze<T>(value: T): T {
@@ -400,7 +397,7 @@ describe('Match lifecycle', () => {
     expect(dropped).toEqual(types);
   });
 
-  it('adds one sprite listener for every Legend in the match, and drops it on destroy', () => {
+  it('adds one sprite listener for all the Legends in the match, and drops it on destroy', () => {
     const bots: readonly RosterSlot[] = [
       {
         pilot: 'bot',

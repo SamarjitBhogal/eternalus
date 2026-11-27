@@ -5,17 +5,17 @@ import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
 import { matchLegendSheets } from './matchLegendSheets';
 
 describe('matchLegendSheets', () => {
-  it("puts the player's sheet first even when the player is not the first entry", () => {
-    const { allies, enemies } = filledRostersFixture({
+  it("has each Legend's sheet once, the player's and the bots', in no set order", () => {
+    const rosters = filledRostersFixture({
       player: 'oracle',
-      allies: ['assassin', 'knight'],
-      enemies: ['knight'],
+      allies: ['assassin', 'knight', null],
+      enemies: ['knight', 'no-such-legend'],
     });
 
-    // The allies reversed: the Knight bot, the Zealot bot, then the player's Oracle.
-    const sheets = matchLegendSheets({ allies: [...allies].reverse(), enemies });
+    const sheets = matchLegendSheets(rosters);
 
-    expect([...sheets.keys()]).toEqual(['oracle', 'knight', 'assassin']);
+    expect(new Set(sheets.keys())).toEqual(new Set(['oracle', 'assassin', 'knight']));
+    expect(sheets.size).toBe(3);
     expect(sheets.get('oracle')).toBe(LEGEND_SPRITE_SHEETS.oracle);
   });
 

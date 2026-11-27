@@ -18,19 +18,19 @@ describe('matchAssetGroups', () => {
     expect(matchAssetGroups(filledRostersFixture({ player: 'no-such-legend' }))).toEqual(['match']);
   });
 
-  it("loads every Legend's sheet group after the match group, the player's first, each once", () => {
+  it("loads every Legend's sheet group after the match group, each once", () => {
     const rosters = filledRostersFixture({
       player: 'oracle',
       allies: ['knight', null, 'oracle'],
       enemies: ['colossus', 'knight', 'no-such-legend', 'necromancer'],
     });
 
-    expect(matchAssetGroups(rosters)).toEqual([
-      'match',
-      'atlas-oracle',
-      'atlas-knight',
-      'atlas-colossus',
-      'atlas-necromancer',
-    ]);
+    const [first, ...sheets] = matchAssetGroups(rosters);
+
+    expect(first).toBe('match');
+    expect(new Set(sheets)).toEqual(
+      new Set(['atlas-oracle', 'atlas-knight', 'atlas-colossus', 'atlas-necromancer']),
+    );
+    expect(sheets).toHaveLength(4);
   });
 });

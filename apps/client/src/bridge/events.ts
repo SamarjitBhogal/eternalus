@@ -130,8 +130,8 @@ export type SessionReason =
  * When assets load (13 §2): `selection` holds what both class layouts and the Legend step show, the
  * layout groups the rest (14 §14); the `-raster` groups hold only plates, loaded only on the
  * `'figma-raster'` effects renderer (DEC-54). Each `atlas-<sub-class>` group holds one Legend
- * sprite sheet; `match-loading` loads the sheet of every Legend in the match, the player's first,
- * after `match` (DEC-378 (2)). Restated in `data/resources/AssetManifest.types.ts`.
+ * sprite sheet; `match-loading` loads the sheet of every Legend in the match after `match`
+ * (DEC-378 (2)). Restated in `data/resources/AssetManifest.types.ts`.
  */
 export type AssetGroup =
   | 'boot'
