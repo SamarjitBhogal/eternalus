@@ -71,4 +71,17 @@ describe('HealthBarView', () => {
     expect(fills({ ...unit, health: null })).toEqual([]);
     expect(fills({ ...unit, transform: null })).toEqual([]);
   });
+
+  it('uses the rendered height for clearance above a sprite', () => {
+    const renderer = new RecordingRenderer();
+    const visibleHeight = 3;
+    new HealthBarView().draw(
+      { entity: unit, position: { x: 0, y: 20 }, facing: EAST, isFocused: false },
+      'enemy',
+      renderer,
+      visibleHeight,
+    );
+    const track = renderer.calls.find((call) => call.op === 'fillPolygon');
+    expect(track?.args[0][2]?.y).toBeCloseTo(20 - visibleHeight - HEALTH_BAR_GAP);
+  });
 });
