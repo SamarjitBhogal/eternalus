@@ -3468,11 +3468,19 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Done
 
+- 2026-11-27 — **Your answer on HC-B58: the corner boss levels (DEC-402)**
+  (`fix/corner-boss-levels`): "A: the corner boss levels, like the other neutral mobs". The
+  `corner-camp` guard plan now has `canLevel: true`, so the corner boss gains veteran levels from
+  its kills of minions, guards and camp mobs, as the other neutral mobs do. This changes (d) of
+  DEC-376 (next entry). Your design doc: architecture 18 (the minion XP rules and the M6c
+  paragraph). Decision: DEC-402.
+
 - 2026-11-26 — **Minion M6c interpretations approved as built (DEC-376)**
   (`feat/minion-m6c-defender-followups`, PR #173): you approved (a) to (g) as built (the 10 m from
   where the last defender fell, the damage-biased share with an even split when Legends dealt
   none, the clearing team by the last killer, no corner-boss levelling, `rallied` for levelling
   guards, no XP for a set emptied by cancels, and the owner-change pass rule). Decision: DEC-376.
+  (d) is changed by DEC-402 (2026-11-27): the corner boss levels.
 
 - 2026-11-26 — **Camp rewards: the clearing Legend is the last killer; the three critic refactors
   are dropped (DEC-375)** (`feat/camp-rewards`, PR #153): you chose "as built" for who gets the

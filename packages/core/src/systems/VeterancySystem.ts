@@ -69,7 +69,7 @@ export class VeterancySystem implements System {
   /**
    * Lane minions level from their kills and are rallied by the aura, and so does a guard whose
    * post's plan says it can (`canLevel`: tower guards, DEC-165; forest-camp mobs and checkpoint
-   * defenders, DEC-260; the capture point boss group, DEC-350).
+   * defenders, DEC-260; the capture point boss group, DEC-350; the corner boss, DEC-402).
    */
   private static isLeveller(state: GameState, id: EntityId): boolean {
     return state.hordes.hordeOf(id) !== undefined || state.guards.slotOf(id)?.canLevel === true;

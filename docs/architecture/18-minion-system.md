@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-27
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -126,7 +126,8 @@ shipped at 0, so off); Tower Guardians wait for ranged attacks and the owner's n
 (`INBOX.md`). Owner rules for minion XP: each veteran level adds to damage, it does not compound
 (DEC-164); tower guards level up and get the rally aura like horde minions, and a kill of a lane
 minion, a tower guard or a camp mob counts toward the killer's level; camp mobs never level and
-get no aura (DEC-165, changed by DEC-260: forest-camp mobs level). Pull request M6 adds the
+get no aura (DEC-165, changed by DEC-260: forest-camp mobs level, and by DEC-402: the corner boss
+levels). Pull request M6 adds the
 forest camps: a `Camp`
 structure per camp feature, the camp groups in `content/structures/guardPlans.ts` (a `group` plan
 activated when the countdown ends), camp mobs held by `GuardController`, and `camp-cleared`
@@ -137,7 +138,8 @@ MVP-if-time), on the light, medium and heavy assist mobs (DEC-260), laid out by
 `GuardRoster.defend` on `checkpoint-reached`; a lost point's living defenders stay (DEC-261).
 Pull request M6c makes a guard a leveller when its plan's `canLevel` says so (tower guards,
 DEC-165; forest-camp mobs and checkpoint defenders, DEC-260; the capture point boss group,
-DEC-350; not the corner boss), adds the defender limit per capture point and the cancelling of a
+DEC-350; not the corner boss, which levels since DEC-402), adds the defender limit per capture
+point and the cancelling of a
 lost owner's waiting defenders (DEC-350), and announces `checkpoint-cleared` for its XP (07 §7).
 Pull request M10 adds the zone level-up (07 §7, DEC-258): `ZoneLevelUpSystem` and
 `minion-levels-granted`, applied with kill levels (`minion-level-earned`) by `MinionLevelSystem`
