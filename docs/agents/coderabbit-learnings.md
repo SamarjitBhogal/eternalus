@@ -4,7 +4,7 @@ description: Generated log of every learning CodeRabbit announced on this repo's
 audience: [humans]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-22
 tags: [agents, review, coderabbit]
 related: ['docs/decisions/0018-coderabbit-runs-the-pr-review-skill.md', 'docs/agents/tool-setup.md']
 ---
@@ -23,7 +23,7 @@ directly, or one CodeRabbit inferred without announcing it does not show here.
 
 ## 2026-10-28 · PR #48 · `.coderabbit.yaml:8-9`
 
-Learnt from `SamarjitBhogal` ([comment](https://github.com/SamarjitBhogal/eternalus/pull/48#discussion_r4396961598)).
+Learnt from `SamarjitBhogal` ([comment](https://github.com/eternalus-dev-tmp/eternalus/pull/48#discussion_r4396961598)).
 
 ```text
 Within repository "SamarjitBhogal/eternalus": When reviewing pull requests in this repository, post only `blocker` findings as actionable inline comments. Put `should-fix` and `nit` findings in the review summary as nitpicks so non-blocking findings do not trigger change requests.
@@ -31,7 +31,7 @@ Within repository "SamarjitBhogal/eternalus": When reviewing pull requests in th
 
 ## 2026-10-28 · PR #48 · `.coderabbit.yaml:9-9`
 
-Learnt from `SamarjitBhogal` ([comment](https://github.com/SamarjitBhogal/eternalus/pull/48#discussion_r4397085952)).
+Learnt from `SamarjitBhogal` ([comment](https://github.com/eternalus-dev-tmp/eternalus/pull/48#discussion_r4397085952)).
 
 ```text
 Within repository "SamarjitBhogal/eternalus": When reviewing approval policy in SamarjitBhogal/eternalus, distinguish the PR target: CodeRabbit approval is sufficient for task PRs into phase/*, while phase PRs into main must retain a human Code Owner approval. Do not require a separate human approval for task PRs into phase/* or recommend disabling automatic approval solely to enforce such a requirement.
@@ -39,7 +39,7 @@ Within repository "SamarjitBhogal/eternalus": When reviewing approval policy in 
 
 ## 2026-10-30 · PR #40 · `docs/plan/PROGRESS.md:944-944`
 
-Learnt from `SamarjitBhogal` ([comment](https://github.com/SamarjitBhogal/eternalus/pull/40#discussion_r4420015597)).
+Learnt from `SamarjitBhogal` ([comment](https://github.com/eternalus-dev-tmp/eternalus/pull/40#discussion_r4420015597)).
 
 ```text
 Within repository "SamarjitBhogal/eternalus", only for files matching one of ["docs/plan/PROGRESS.md"]: When reviewing docs/plan/PROGRESS.md, distinguish new session entries from historical entries carried into a PR, including through a stacked branch. Do not request formatting rewrites of historical entries merely because they appear as additions in the diff. Earlier entries must not be rewritten, reordered or deleted; broken-link fixes are the only permitted in-place edits. Any necessary correction must be appended as a new entry. Apply the heading and under-15-line requirements to new session entries.
@@ -47,7 +47,7 @@ Within repository "SamarjitBhogal/eternalus", only for files matching one of ["d
 
 ## 2026-10-30 · PR #44 · `docs/plan/PROGRESS.md:944-971`
 
-Learnt from `SamarjitBhogal` ([comment](https://github.com/SamarjitBhogal/eternalus/pull/44#discussion_r4420050508)).
+Learnt from `SamarjitBhogal` ([comment](https://github.com/eternalus-dev-tmp/eternalus/pull/44#discussion_r4420050508)).
 
 ```text
 Within repository "SamarjitBhogal/eternalus", only for files matching one of ["docs/plan/PROGRESS.md"]: When reviewing docs/plan/PROGRESS.md, preserve historical entries, including entries from earlier sessions carried through stacked branches. Do not request retrospective heading or length changes to those entries. Apply the documented heading and under-15-line requirements to newly authored entries. Corrections to historical entries must be appended as new entries; fixing a broken link is the only permitted in-place edit.
@@ -55,7 +55,7 @@ Within repository "SamarjitBhogal/eternalus", only for files matching one of ["d
 
 ## 2026-10-30 · PR #45 · `docs/plan/PROGRESS.md:944-972`
 
-Learnt from `SamarjitBhogal` ([comment](https://github.com/SamarjitBhogal/eternalus/pull/45#discussion_r4420068327)).
+Learnt from `SamarjitBhogal` ([comment](https://github.com/eternalus-dev-tmp/eternalus/pull/45#discussion_r4420068327)).
 
 ```text
 Within repository "SamarjitBhogal/eternalus", only for files matching one of ["docs/plan/PROGRESS.md"]: When reviewing docs/plan/PROGRESS.md, distinguish newly written entries from historical entries inherited from earlier sessions or stacked branches. Apply heading and length checks to newly written entries; do not request retrospective formatting or content rewrites of historical entries. Corrections to historical entries must be appended as new entries, except that broken links may be fixed in place.
@@ -63,7 +63,7 @@ Within repository "SamarjitBhogal/eternalus", only for files matching one of ["d
 
 ## 2026-10-30 · PR #44 · `packages/core/src/ai/MinionController.ts:0-0`
 
-Learnt from `SamarjitBhogal` ([comment](https://github.com/SamarjitBhogal/eternalus/pull/44#discussion_r4420112638)).
+Learnt from `SamarjitBhogal` ([comment](https://github.com/eternalus-dev-tmp/eternalus/pull/44#discussion_r4420112638)).
 
 ```text
 Within repository "SamarjitBhogal/eternalus", only for files matching one of ["packages/core/src/ai/MinionController.ts","packages/core/src/systems/PathingSystem.ts","packages/core/src/state/formationSlot.ts"]: When reviewing formation-slot indexing in MinionController.isAtSlot or PathingSystem.update, verify that the leader receives index -1 and each follower's index counts all preceding non-leader members in memberIds, including members skipped for steering. PathingSystem may use an O(n) running count instead of calling followerIndex for each member, provided both calculations preserve this rule.
@@ -71,7 +71,7 @@ Within repository "SamarjitBhogal/eternalus", only for files matching one of ["p
 
 ## 2026-10-30 · PR #47 · `docs/plan/PROGRESS.md:944-971`
 
-Learnt from `SamarjitBhogal` ([comment](https://github.com/SamarjitBhogal/eternalus/pull/47#discussion_r4420120981)).
+Learnt from `SamarjitBhogal` ([comment](https://github.com/eternalus-dev-tmp/eternalus/pull/47#discussion_r4420120981)).
 
 ```text
 Within repository "SamarjitBhogal/eternalus", only for files matching one of ["docs/plan/PROGRESS.md"]: When reviewing docs/plan/PROGRESS.md, distinguish new session entries from historical entries carried through stacked branches. Do not request retrospective heading, length, or content rewrites of historical entries. Preserve historical entries unchanged except for broken-link fixes; record corrections in a new appended entry. Apply the documented heading shape and under-15-line limit to new session entries.
@@ -79,7 +79,7 @@ Within repository "SamarjitBhogal/eternalus", only for files matching one of ["d
 
 ## 2026-10-30 · PR #46 · `docs/plan/PROGRESS.md:944-944`
 
-Learnt from `SamarjitBhogal` ([comment](https://github.com/SamarjitBhogal/eternalus/pull/46#discussion_r4420176071)).
+Learnt from `SamarjitBhogal` ([comment](https://github.com/eternalus-dev-tmp/eternalus/pull/46#discussion_r4420176071)).
 
 ```text
 Within repository "SamarjitBhogal/eternalus", only for files matching one of ["docs/plan/PROGRESS.md"]: When reviewing docs/plan/PROGRESS.md, preserve historical entries, including entries from earlier sessions carried through stacked branches. Do not request retrospective heading or length changes. Apply the documented heading format and under-15-line limit to new session entries. Corrections to historical entries must use a new appended entry; fixing a broken link is the only permitted edit to an old entry.
@@ -87,7 +87,7 @@ Within repository "SamarjitBhogal/eternalus", only for files matching one of ["d
 
 ## 2026-10-30 · PR #39 · `packages/core/AGENTS.md:33-33`
 
-Learnt from `SamarjitBhogal` ([comment](https://github.com/SamarjitBhogal/eternalus/pull/39#discussion_r4420225307)).
+Learnt from `SamarjitBhogal` ([comment](https://github.com/eternalus-dev-tmp/eternalus/pull/39#discussion_r4420225307)).
 
 ```text
 Within repository "SamarjitBhogal/eternalus", only for files matching one of ["packages/core/AGENTS.md","packages/core/src/ai/**"]: When reviewing the ai/ import boundary in packages/core/AGENTS.md or code under packages/core/src/ai/, allow imports of content/ types. Check that content values reach controllers through GameState or injection rather than direct imports. Do not flag type-only content/ imports as an import-boundary violation.
@@ -95,8 +95,24 @@ Within repository "SamarjitBhogal/eternalus", only for files matching one of ["p
 
 ## 2026-10-30 · PR #44 · `docs/architecture/11-game-ai.md:0-0`
 
-Learnt from `SamarjitBhogal` ([comment](https://github.com/SamarjitBhogal/eternalus/pull/44#discussion_r4420371232)).
+Learnt from `SamarjitBhogal` ([comment](https://github.com/eternalus-dev-tmp/eternalus/pull/44#discussion_r4420371232)).
 
 ```text
 Within repository "SamarjitBhogal/eternalus", only for files matching one of ["packages/core/src/ai/**","packages/core/AGENTS.md","docs/architecture/02-code-structure.md","docs/architecture/11-game-ai.md"]: When reviewing AI imports or their documented allow-lists, permit type-only imports from content/ and teams/ in packages/core/src/ai/. Keep this allowance consistent in packages/core/AGENTS.md, docs/architecture/02-code-structure.md §2, and docs/architecture/11-game-ai.md §1. Do not treat this type-only allowance as permission for value imports from those folders.
+```
+
+## 2026-11-13 · PR #96 · `docs/reference/bugs.md:0-0`
+
+Learnt from `SamarjitBhogal` ([comment](https://github.com/eternalus-dev-tmp/eternalus/pull/96#discussion_r4559888097)).
+
+```text
+Within repository "SamarjitBhogal/eternalus", only for files matching one of ["docs/reference/bugs.md","docs/plan/bugs.md","docs/reference/game-design/13-owner-decisions-log.md"]: When reviewing structure-health descriptions or BUG-7, account for DEC-217: the Stronghold palace and gates keep their own health. Do not assume that all structures lack their own health.
+```
+
+## 2026-11-22 · PR #130 · `packages/core/src/content/mobs/heavyAssistMob.ts:13-13`
+
+Learnt from `SamarjitBhogal` ([comment](https://github.com/eternalus-dev-tmp/eternalus/pull/130#discussion_r4659525264)).
+
+```text
+Within repository "SamarjitBhogal/eternalus", only for files matching one of ["packages/core/src/content/mobs/heavyAssistMob.ts","packages/core/src/content/mobs/lightAssistMob.ts","packages/core/src/content/mobs/mediumAssistMob.ts"]: Reference 04 already describes light, medium and heavy assist mobs. The checkpoint-defender display names `Light Assist Mob`, `Medium Assist Mob` and `Heavy Assist Mob` are singular, title-cased forms of those terms; do not treat those forms alone as new names needing separate product-owner approval.
 ```
