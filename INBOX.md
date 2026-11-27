@@ -13,6 +13,21 @@ review comments under "Feedback". Answered decisions are recorded in
 
 ## Decisions needed from Sam
 
+- [ ] **Boss body parts: the built defaults (DEC-381, `feat/boss-hit-area` on PR #160,
+      2026-11-27).** You said: build defaults, then ask with options. Built: the Greater Boss's
+      body outline (from #161's colossus art) counts for clicks and attack reach. A hit from behind
+      does 15% more damage. A projectile on the head does 25% more. When both hold, only the larger
+      applies. "Behind" is the side the art shows the boss's back. A bleed or burn tick gets no
+      bonus. A melee hit gets no head bonus. Each number is `TUNE` in
+      `content/mobs/bodyPartBonus.ts`. The Owner Calls cards DEC-381 (1) to (7) ask about each one.
+      Open after the cards, for the agents (no answer needed): (a) no projectile deals damage yet.
+      When ranged attacks (#148, `feat/ranged-attacks`) and this branch are both on phase/3, the
+      later PR passes the projectile's impact point to `DamagePipeline.apply` in `WeaponImpact`.
+      Until then only the tests reach the head bonus. (b) Play test: players now hit the boss from
+      up to about 20 m (the outline's edge). The boss's own reach stays 1.5 m past its 2.5 m
+      circle (DEC-371 E2 keeps these numbers). (c) The outlines fit the idle art. When #161's art
+      lands (Unit 2), check that its other frames draw on the same anchor.
+
 - [ ] **Minion strength port (PR #82, 2026-11-25): sign off `LaneProgressOf`.** Built: `combat/`
       reads lane progress through a new port, `LaneProgressOf = (laneId, team, position) => number
 | null` (`MinionStrengthStep.types.ts`), which `LaneFlowFields.progress` implements and
