@@ -42,12 +42,17 @@ export class CombatHitbox {
   }
 
   /**
-   * Whether the world point `point` is behind a unit at `position`: on the side the side-view art
-   * shows its back, the right when it faces left and the left when it faces right, as `polygonAt`
-   * mirrors it. A point straight above or below it is not behind.
+   * Whether the world point `point` is in the zone behind a unit at `position`: at most the half
+   * angle whose cosine is `cosHalfAngle` from the direction the side-view art shows its back (the
+   * right when it faces left, the left when it faces right, as `polygonAt` mirrors it). 0 is the
+   * whole rear half. A point straight above or below the unit is never behind.
    */
-  public isBehind(point: Vec2, position: Vec2, facing: Vec2): boolean {
-    return (point.x - position.x) * CombatHitbox.mirrorOf(facing) > 0;
+  public isBehind(point: Vec2, position: Vec2, facing: Vec2, cosHalfAngle: number): boolean {
+    const dx = point.x - position.x;
+    const dy = point.y - position.y;
+    const along = dx * CombatHitbox.mirrorOf(facing);
+    // along ≥ cos × distance, squared so there is no root (ADR 0012).
+    return along > 0 && along * along >= cosHalfAngle * cosHalfAngle * (dx * dx + dy * dy);
   }
 
   /** -1 when the unit faces right, so the left-facing outline flips; else 1. */

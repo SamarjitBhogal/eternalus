@@ -16,10 +16,11 @@ review comments under "Feedback". Answered decisions are recorded in
 - [ ] **Boss body parts: the built defaults (DEC-381, `feat/boss-hit-area` on PR #160,
       2026-11-27).** You said: build defaults, then ask with options. Built: the Greater Boss's
       body outline (from #161's colossus art) counts for clicks and attack reach. A hit from behind
-      does 15% more damage. A projectile on the head does 25% more. When both hold, only the larger
+      (a 120-degree zone) does 15% more damage. A projectile on the head does 25% more. When both hold, only the larger
       applies. "Behind" is the side the art shows the boss's back. A bleed or burn tick gets no
       bonus. A melee hit gets no head bonus. Each number is `TUNE` in
-      `content/mobs/bodyPartBonus.ts`. The Owner Calls cards DEC-381 (1) to (7) ask about each one.
+      `content/mobs/bodyPartBonus.ts`. Sam answered cards (1) to (5) on 2026-11-27 (DEC-381 row); (6)
+      and (7) are open.
       Open after the cards, for the agents (no answer needed): (a) no projectile deals damage yet.
       When ranged attacks (#148, `feat/ranged-attacks`) and this branch are both on phase/3, the
       later PR passes the projectile's impact point to `DamagePipeline.apply` in `WeaponImpact`.

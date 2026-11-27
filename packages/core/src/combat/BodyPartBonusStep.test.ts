@@ -56,13 +56,18 @@ const hit = (attackerId: string | null, targetId: string, impactPoint?: Vec2): D
 describe('BodyPartBonusStep', () => {
   const step = new BodyPartBonusStep(BODY_PART_BONUS);
 
-  it('adds the back-hit bonus to a hit from the rear half, and none from the front half', () => {
+  it('adds the back-hit bonus in the 120-degree zone behind (DEC-381 (2) B), and none outside it', () => {
     const { state, boss, legend, standAt } = setUp();
 
     standAt({ x: 30, y: 0 });
     expect(step.adjust(hit(legend, boss), state)).toBeCloseTo(100 * BODY_PART_BONUS.backHit);
-    standAt({ x: 1, y: 30 });
+    // 59 degrees off the back is in the zone; 60.5 degrees and the side are out of it.
+    standAt({ x: 30, y: 50 });
     expect(step.adjust(hit(legend, boss), state)).toBeCloseTo(100 * BODY_PART_BONUS.backHit);
+    standAt({ x: 30, y: 53 });
+    expect(step.adjust(hit(legend, boss), state)).toBe(100);
+    standAt({ x: 1, y: 30 });
+    expect(step.adjust(hit(legend, boss), state)).toBe(100);
     standAt({ x: -30, y: 0 });
     expect(step.adjust(hit(legend, boss), state)).toBe(100);
     standAt({ x: 0, y: 30 });
@@ -77,6 +82,14 @@ describe('BodyPartBonusStep', () => {
     expect(step.adjust(hit(legend, boss), state)).toBeCloseTo(100 * BODY_PART_BONUS.backHit);
     standAt({ x: 0, y: -30 });
     expect(step.adjust(hit(legend, boss), state)).toBe(100);
+  });
+
+  it('reads the width of the zone behind from content: 180 degrees is the whole rear half', () => {
+    const { state, boss, legend, standAt } = setUp();
+    const rearHalf = new BodyPartBonusStep({ ...BODY_PART_BONUS, backZoneDegrees: 180 });
+    standAt({ x: 1, y: 30 });
+
+    expect(rearHalf.adjust(hit(legend, boss), state)).toBeCloseTo(100 * BODY_PART_BONUS.backHit);
   });
 
   it('gives a status tick no back-hit bonus, as a tick is no hit from a side', () => {
@@ -127,7 +140,7 @@ describe('BodyPartBonusStep', () => {
   it('applies only the larger bonus when both hold', () => {
     const { state, boss, legend, standAt } = setUp();
     standAt({ x: 30, y: 0 });
-    const backLarger = new BodyPartBonusStep({ backHit: 1.5, headShot: 1.2 });
+    const backLarger = new BodyPartBonusStep({ backHit: 1.5, headShot: 1.2, backZoneDegrees: 120 });
 
     expect(step.adjust(hit(legend, boss, HEAD), state)).toBeCloseTo(
       100 * Math.max(BODY_PART_BONUS.backHit, BODY_PART_BONUS.headShot),
@@ -164,9 +177,21 @@ describe('BodyPartBonusStep', () => {
   });
 
   it.each([
-    [{ backHit: 0.9, headShot: 1.25 }, /'backHit' needs a finite multiplier of at least 1/],
-    [{ backHit: 1.15, headShot: Number.NaN }, /'headShot' needs a finite multiplier/],
-  ])('rejects a bonus that is not a finite multiplier of at least 1 (%o)', (bonus, message) => {
+    [
+      { backHit: 0.9, headShot: 1.25, backZoneDegrees: 120 },
+      /'backHit' needs a finite multiplier of at least 1/,
+    ],
+    [
+      { backHit: 1.15, headShot: Number.NaN, backZoneDegrees: 120 },
+      /'headShot' needs a finite multiplier/,
+    ],
+    [{ backHit: 1.15, headShot: 1.25, backZoneDegrees: 0 }, /'backZoneDegrees' needs an angle/],
+    [{ backHit: 1.15, headShot: 1.25, backZoneDegrees: 190 }, /'backZoneDegrees' needs an angle/],
+    [
+      { backHit: 1.15, headShot: 1.25, backZoneDegrees: Number.NaN },
+      /'backZoneDegrees' needs an angle/,
+    ],
+  ])('rejects a multiplier below 1 or a zone outside (0, 180] degrees (%o)', (bonus, message) => {
     expect(() => new BodyPartBonusStep(bonus)).toThrow(message);
   });
 });

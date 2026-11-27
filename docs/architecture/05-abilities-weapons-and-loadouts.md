@@ -569,7 +569,8 @@ The order is fixed and every multiplier is data: attacker statuses (`imbue`, `en
 strength-by-distance curve), target statuses (`sundered`, `marked`, `hexed`), the target's
 `damageMultipliers` keyed by the attacker's `damageClass`
 ([07 §4](07-structures-obstacles-and-destructibles.md#4-gates)), a big boss's body-part bonus
-(a hit from an attacker behind it, on the side its art shows its back, but no status tick; or a
+(a hit from an attacker in the zone behind it, `backZoneDegrees` wide and centred on the side its
+art shows its back, but no status tick; or a
 projectile's impact point on its head outline; only the larger when both hold; DEC-381), `Collider.isUnbreakable` (rejects), then `Health.applyDamage`.
 `DeathResolver` turns an overflow into `entity-died {
 entityId, killer: DamageSource }` and records the cause for `DeathSystem` (rule B). A death by

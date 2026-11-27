@@ -46,7 +46,7 @@ it('finds a point on the head on the side the unit faces, and never without a he
   expect(new CombatHitbox(body).isOnHead({ x: 6, y: 19 }, position, left)).toBe(false);
 });
 
-it('finds behind on the side the art shows its back, also when the unit faces up or down', () => {
+it('finds behind in the zone on the side the art shows its back, also when the unit faces up or down', () => {
   const hitbox = new CombatHitbox([
     { x: -2, y: 1 },
     { x: 1, y: 2 },
@@ -56,10 +56,18 @@ it('finds behind on the side the art shows its back, also when the unit faces up
   const down = { x: 0, y: 1 };
   const upRight = { x: 0.3, y: -0.95 };
 
-  expect(hitbox.isBehind({ x: 15, y: 20 }, position, down)).toBe(true);
-  expect(hitbox.isBehind({ x: 10, y: 15 }, position, down)).toBe(false);
-  expect(hitbox.isBehind({ x: 5, y: 20 }, position, down)).toBe(false);
-  expect(hitbox.isBehind({ x: 5, y: 25 }, position, upRight)).toBe(true);
-  expect(hitbox.isBehind({ x: 15, y: 15 }, position, upRight)).toBe(false);
-  expect(hitbox.isBehind({ x: 10, y: 25 }, position, upRight)).toBe(false);
+  const rearHalf = 0;
+  const cone120 = 0.5;
+
+  expect(hitbox.isBehind({ x: 15, y: 20 }, position, down, rearHalf)).toBe(true);
+  expect(hitbox.isBehind({ x: 10, y: 15 }, position, down, rearHalf)).toBe(false);
+  expect(hitbox.isBehind({ x: 5, y: 20 }, position, down, rearHalf)).toBe(false);
+  expect(hitbox.isBehind({ x: 5, y: 25 }, position, upRight, rearHalf)).toBe(true);
+  expect(hitbox.isBehind({ x: 15, y: 15 }, position, upRight, rearHalf)).toBe(false);
+  expect(hitbox.isBehind({ x: 10, y: 25 }, position, upRight, rearHalf)).toBe(false);
+  // 60 degrees each side of the back: (3, 5) is 59 degrees off it, (3, 5.3) 60.5 degrees.
+  expect(hitbox.isBehind({ x: 13, y: 25 }, position, down, cone120)).toBe(true);
+  expect(hitbox.isBehind({ x: 13, y: 25.3 }, position, down, cone120)).toBe(false);
+  expect(hitbox.isBehind({ x: 11, y: 30 }, position, down, rearHalf)).toBe(true);
+  expect(hitbox.isBehind({ x: 11, y: 30 }, position, down, cone120)).toBe(false);
 });
