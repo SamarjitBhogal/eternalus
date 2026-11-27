@@ -163,7 +163,7 @@ export class StatusEffects {
   /**
    * What `stat` would be multiplied by with one more instance of `definition` (one stack) beside
    * the active ones, by the same fold as `multiplier`. It changes nothing. `BuffEffect` measures
-   * the body that a cast would grow with it (DEC-382, `INBOX.md` HC-Q113, HC-B62).
+   * the body that a cast would grow with it (DEC-382, `INBOX.md` HC-Q113, DEC-426 (b)).
    */
   public multiplierWith(
     stat: StatusStat,

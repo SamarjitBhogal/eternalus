@@ -50,3 +50,16 @@ Phase 4 / sprint 4.2 · `chore/veil-hamstring-step-c` (becomes the head of PR #1
   (a general "answers blocked hits" flag in place of the gem check in `EntityStore.ignoresHits`)
   and the whiff attack frames (`LegendAnimation`) go to the owner in `INBOX.md`. Then lane A folds
   and pushes #150.
+- Addendum 2026-11-27 ~17:35Z (COMBAT-ABILITIES-LANE-2-37), after the commits above:
+  - Full `npm run check` on `b4f4ae9a` (the three fix commits), `CHECK_EXIT=0`, clean tree (slot B
+    17:13:50Z to 17:27:58Z): core 419 files / 2799 tests, protocol 1 / 33, client 347 / 2425,
+    server 29 / 164, "Documentation check passed." Log `stepC/chain-fix.log`.
+  - Critic round 2 (architecture-reviewer; merge 1b, `970f7a2d`, the fixes): PASS WITH FINDINGS,
+    no blockers, every round 1 finding closed. Ponytail on the fixes: one finding, rejected (lane
+    A's exact text; `stepC/ponytail-round2-fixes.md`).
+  - Round 2 fixes in the next commits: N1, the Duel's seat input also sends `attack-aim`
+    (06 §10); N3, DEC-184 quoted word for word (06 §10); N6, `StatusEffects.multiplierWith` cites
+    DEC-426 (b); N2 (one method draws the wedge) and the two round 1 items go to the owner as
+    `INBOX.md` HC-B69, not built. N4: commit subjects use `docs(docs):` from now on.
+  - N5, a second fail-first break: `return super.draw(...)` in the sprite view's fallback turns
+    "draws the swing wedge once when it falls back to the Legend view" red. Restored.

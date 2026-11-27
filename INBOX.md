@@ -772,6 +772,29 @@ Reply inline (`Decision: …`).
     (`content/abilities/knockback.ts`, `TUNE`). (7) build it in PR 6 now, red where the wall
     cannot stand: built (HC-S15). (8) the check keeps its own rule. (9) the list forgets a broken
     wall: it falls out of (3).
+- [ ] **HC-B69 — Better than the design, not built, sign-off asked: three follow-ups from the
+      #150 Step C merge critic (`chore/veil-hamstring-step-c`, 2026-11-27;
+      COMBAT-ABILITIES-LANE-2-36, -37).** Nothing blocks the PR. Option A (recommended): build
+      all three as follow-up PRs after the stack lands. Option B: keep the code as it is.
+      (1) **One rule marks a body that answers a hit it takes no damage from.** The Cathedral gem
+      takes no damage, but a hit on it still lands, so the gem strikes the hitter (DEC-292). Other
+      bodies that take no damage (a wall before its rule, a forest camp) ignore hits. Today the
+      code knows the gem by its own part: the hit rule asks "is this the Cathedral gem?". A
+      second such body would need an edit there. A flag on the breakability rule ("a hit on it
+      lands") would make it data. Code: `EntityStore.ignoresHits` checks `CathedralGemState`
+      (a `ponytail:` comment names the ceiling); DEC-333 has a 2026-11-27 note.
+      (2) **A missed swing shows the attack animation too.** The player's Legend sprite plays its
+      attack frames only when a weapon hit lands. A swing that hits nothing shows the swing wedge
+      but no attack frames, and a shot that misses shows none either. Start the frames when the
+      attack starts, hit or miss. Code: `apps/client/src/game/LegendAnimation.ts` listens to
+      `damage-applied`; a sweep's start tick is `EntitySnapshot.swing.atTick`.
+      (3) **One method draws a Legend's swing wedge.** Today two methods draw it: the plain Legend
+      view and the sprite view, and a test keeps it to one wedge. A base method that draws the
+      wedge and then calls one overridable "draw the figure" method makes "once" true by design.
+      The player sees no change. It waits for the fold, because lane A has the same text (#123
+      stack) and a change here now would make the two branches conflict. Code:
+      `apps/client/src/game/views/LegendView.ts` (`draw`, `drawBody`),
+      `LegendSpriteView.ts` (`draw`); critic round 2 finding N2.
 - [x] **HC-B62 — Better than the design, not built, sign-off asked: five follow-ups from the
       PR 6 gate on your answers (lane B PR 6, #175, gate v98 round 1, 2026-11-27;
       COMBAT-ABILITIES-LANE-2-31, -32).** Only (3) changes what the player sees, and only in a rare

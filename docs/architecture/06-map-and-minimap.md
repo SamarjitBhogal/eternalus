@@ -495,10 +495,10 @@ approved them, `INBOX.md` HC-T1), and this note gives the detail:
   In local matches, the explorer's click picks Legends and mobs by the hit radius reported by
   their registered view (`findUnitAt`). The held attack picks nothing, so it has no drawn-size
   rule: the 2026-11-27 merge of `feat/vanguard-kit` into `feat/vanguard-veil-hamstring` dropped
-  the held-attack drawn-size pick of `50f9a082`, because DEC-184 forbids an attack only on a
-  target under the cursor. Health bars use the same display extent.
-  Movement collision and attack reach still use simulation geometry. When Duel intent moves into
-  core, its targeting needs the shared drawn-size rule as well.
+  the held-attack drawn-size pick of `50f9a082`, because DEC-184 says "A click must not attack
+  only when a target is under the cursor." Health bars use the same display extent.
+  Movement collision and attack reach still use simulation geometry. The Duel's seat input
+  (`SeatCommands`, server) also sends `attack-aim`, so it needs no drawn-size rule.
   A click on the building the player's Legend stands in toggles
   nothing (its roof is already cut away), so it attacks (DEC-153). The owner selected "Allow attack"
   (option text: "A plain click on the world attacks even with the explorer shown; only drags and
