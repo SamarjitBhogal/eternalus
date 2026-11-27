@@ -3834,6 +3834,14 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Done
 
+- 2026-11-27 — **Your answers on HC-Q132: Avalanche, three cases (DEC-425)** (`feat/class-passives`):
+  (1) "B: the building loses 5%; the Sentinel is not stunned and loses no health"; (2) "A: full
+  speed until Avalanche ends (6 s) — tuneable post game-testing"; (3) "A: it bounces back 3 m and
+  is not stunned". During Avalanche, a hit on a tower or the Stronghold takes 5% of its health, and
+  the Sentinel is not stunned and loses no health. After a wall breaks, the Sentinel keeps full
+  speed until Avalanche ends (6 s, a tuning value). A wall that cannot break bounces it back 3 m,
+  with no stun. Not built yet: Avalanche comes with the Sentinel ultimates. Decision: DEC-425.
+
 - 2026-11-27 — **Your pick on HC-B51, one way for an ability step to put on a status**
   (`feat/magus-passives`, PR #166): "A: keep it (built, recommended)", recorded as DEC-419. A step
   puts on a status only through `CastContext.applyStatus`, which credits the caster and always
@@ -3844,6 +3852,9 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   health". During Avalanche, a hit on a breakable wall segment or gate breaks it at once, and the
   Sentinel goes through. That hit costs the Sentinel no health. Outside Avalanche, the DEC-367 rules
   apply. Not built yet: Avalanche comes with the Sentinel ultimates. Decision: DEC-404.
+  Still open (the card did not ask): tower and Stronghold hits during Avalanche; the speed after
+  the breach; a hit on a wall that cannot break. Owner Calls card HC-Q132 asked them: see the
+  DEC-425 entry.
 
 - 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
   recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a

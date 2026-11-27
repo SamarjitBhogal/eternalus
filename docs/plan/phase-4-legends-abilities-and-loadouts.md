@@ -70,10 +70,9 @@ Owner: _ (sim lane A). Week 7. Follows [04-entity-architecture.md](../architectu
       Heretic Necromancy, Catalyst and Oracle Erudition). Tests: each spec holds its passive's
       status after the first tick, and a Duel round reset puts it back on. The box stays unticked
       for the rest of Wrecking Run (above).
-      **Status (2026-11-26):** all PR 8 cards are answered (DEC-330,
-      DEC-367). Erudition and Necromancy are built on `feat/magus-passives` (DEC-330 (5)); a
-      Wrecking Run hits PR builds W3, W4 and DEC-367 and updates the docs that DEC-367 names.
-      Owner of the hits PR: _.
+      **Status (2026-11-26):** all PR 8 cards are answered (DEC-330, DEC-367). Erudition and
+      Necromancy are built on `feat/magus-passives` (DEC-330 (5)); a Wrecking Run hits PR builds
+      W3, W4 and DEC-367 and updates the docs that DEC-367 names. Owner of the hits PR: _.
 - [ ] **`LegendSpecDefinition` extension point** (D11: sub-classes as data-driven
       specializations; MVP since ADR 0018: the specs ship as display and setup data, and the phase
       that builds their gameplay is open, `INBOX.md` HC-Q17). Owner: _. Test: an empty spec is
