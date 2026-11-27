@@ -7,6 +7,7 @@ import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { CombatClock } from '../components/CombatClock';
 import { LastEnemyHit } from '../components/LastEnemyHit';
+import { LastLegendHits } from '../components/LastLegendHits';
 import { Health } from '../components/Health';
 import { Jump } from '../components/Jump';
 import { Movement } from '../components/Movement';
@@ -108,12 +109,13 @@ export class StateHasher {
         waiting.push([
           team,
           returnsAtTick,
-          owedXp.map(({ cause, victimId, victimTeam, xp, maxLevels }) => [
+          owedXp.map(({ cause, victimId, victimTeam, xp, maxLevels, levels }) => [
             cause,
             victimId,
             victimTeam,
             xp,
             maxLevels ?? null,
+            levels ?? null,
           ]),
           StateHasher.fieldsOf(legend),
         ]);
@@ -287,6 +289,11 @@ export class StateHasher {
     const jump = entity.findComponent(Jump);
     if (jump !== undefined && (jump.isHeld || jump.isAirborne)) {
       fields.push(['jump', ...jump.fields]);
+    }
+    // Names the Legend a boss's last-hitter levels go to (DEC-416).
+    const lastLegendHits = entity.findComponent(LastLegendHits);
+    if (lastLegendHits !== undefined) {
+      fields.push(['last-legend-hits', ...lastLegendHits.fields]);
     }
     return fields;
   }

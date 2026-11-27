@@ -39,7 +39,7 @@ const XP_SOURCES = {
   campCleared: { 'forest-camp-light': 50 },
   teamKills: {
     'capture-point-boss': { xp: 500, maxLevels: 2 },
-    'greater-boss': { levels: 5 },
+    'greater-boss': { levels: 2.5, lastHitterLevels: 5 },
   },
   checkpointCleared: { xp: { 1: 60 }, shareRadius: 10, evenShare: 0.6 },
 };
@@ -410,33 +410,83 @@ describe('ProgressionSystem', () => {
       expect(warrior.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
     });
 
-    it("lifts every Legend of the killer's team exactly 5 levels for the Greater Boss, none of the other", () => {
-      const { spawn, kill, run, payloads } = setUp(LONG_CURVES);
+    it('gives the killing Legend 5 levels and its team 2.5, each keeping its share of the level, none to the other team (DEC-371 E8a, E8b)', () => {
+      const { spawn, kill, run } = setUp(LONG_CURVES);
       const curve = LONG_CURVES.get('legend');
       const killer = spawn('warrior', 'warrior', 'light');
+      killer.getComponent(Progression).addXp(150, curve);
       const mate = spawn('magus', 'magus', 'light');
-      mate.getComponent(Progression).addXp(150, curve);
+      const halfway = spawn('warrior', 'warrior', 'light');
+      halfway.getComponent(Progression).addXp(150, curve);
       const dark = spawn('warrior', 'warrior', 'dark');
 
       kill(killer, spawn('heavy-mob', 'greater-boss', 'neutral'));
       run();
 
-      // From level 1 (0 XP) to level 6 (500); from level 2 halfway (150) to level 7 (600).
-      expect(killer.getComponent(Progression)).toMatchObject({ xp: 500, level: 6 });
-      expect(mate.getComponent(Progression)).toMatchObject({ xp: 600, level: 7 });
+      // Halfway through level 2 (150) + 5 levels: halfway through level 7 (650), not its start.
+      expect(killer.getComponent(Progression)).toMatchObject({ xp: 650, level: 7 });
+      // Level 1 (0) + 2.5: halfway through level 3 (250); level 2.5 + 2.5: level 5 (400).
+      expect(mate.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
+      expect(halfway.getComponent(Progression)).toMatchObject({ xp: 400, level: 5 });
       expect(dark.getComponent(Progression)).toMatchObject({ xp: 0, level: 1 });
-      expect(payloads('level-up')).toHaveLength(10);
+    });
+
+    it("gives the 5 to its team's Legend that hit the boss last when a minion lands the last hit, and only 2.5 when none did (DEC-416)", () => {
+      const { state, spawn, run } = setUp(LONG_CURVES);
+      const damage = new DamagePipeline(
+        [],
+        new KillCredit(30 * 30, CATHEDRAL_GEM.statusIds, ['greater-boss']),
+      );
+      const first = spawn('warrior', 'warrior', 'light');
+      const last = spawn('magus', 'magus', 'light');
+      const dark = spawn('warrior', 'warrior', 'dark');
+      const lightMinion = spawn('light-mob', 'light-minion', 'light');
+      const darkMinion = spawn('light-mob', 'light-minion', 'dark');
+      const boss = spawn('heavy-mob', 'greater-boss', 'neutral');
+      const other = spawn('heavy-mob', 'greater-boss', 'neutral');
+      const hit = (attacker: Entity, target: Entity) =>
+        damage.apply(state, target.id, 1, {
+          attackerId: attacker.id,
+          kind: 'weapon',
+          definitionId: 'x',
+        });
+      hit(first, boss);
+      hit(last, boss);
+      hit(dark, boss);
+      hit(lightMinion, boss);
+      hit(first, other);
+
+      damage.kill(state, boss.id, {
+        attackerId: lightMinion.id,
+        kind: 'weapon',
+        definitionId: 'x',
+      });
+      damage.kill(state, other.id, {
+        attackerId: darkMinion.id,
+        kind: 'weapon',
+        definitionId: 'x',
+      });
+      run();
+
+      // The light minion's kill: 5 to the light Legend that hit last, 2.5 to the other one.
+      // The dark minion's kill: no dark Legend hit that boss, so the dark team gets 2.5 each.
+      expect(last.getComponent(Progression)).toMatchObject({ xp: 500, level: 6 });
+      expect(first.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
+      expect(dark.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
     });
 
     it('stops the Greater Boss lift at the level cap', () => {
       const { spawn, kill, run } = setUp(LONG_CURVES);
       const warrior = spawn('warrior', 'warrior', 'light');
       warrior.getComponent(Progression).addXp(700, LONG_CURVES.get('legend'));
+      const mate = spawn('magus', 'magus', 'light');
+      mate.getComponent(Progression).addXp(850, LONG_CURVES.get('legend'));
 
       kill(warrior, spawn('heavy-mob', 'greater-boss', 'neutral'));
       run();
 
       expect(warrior.getComponent(Progression)).toMatchObject({ xp: 900, level: 10 });
+      expect(mate.getComponent(Progression)).toMatchObject({ xp: 900, level: 10 });
     });
 
     it('caps two levels up from partway through level 2', () => {
@@ -565,6 +615,42 @@ describe('ProgressionSystem', () => {
         [LIGHT_MINION.xpValue, minion.id, 'respawn'],
         [250 - LIGHT_MINION.xpValue, boss.id, 'respawn'],
       ]);
+    });
+
+    it("owes it the Greater Boss's levels while it waits and pays them, keeping its share of the level, as it returns (DEC-371 E8c)", () => {
+      const { state, spawn, kill, run } = setUp(LONG_CURVES);
+      const curve = LONG_CURVES.get('legend');
+      const waiting = spawn('warrior', 'warrior', 'light');
+      waiting.getComponent(Progression).addXp(150, curve);
+      const shooter = spawn('magus', 'magus', 'light');
+      wait(state, waiting, 'light');
+      wait(state, shooter, 'light');
+
+      // The dead shooter's projectile lands the last hit: it is the last hitter, owed 5.
+      kill(shooter, spawn('heavy-mob', 'greater-boss', 'neutral'));
+      run();
+      const owed: unknown[] = [];
+      state.respawns.forEach(({ owedXp }) => owed.push(...owedXp));
+      expect(owed).toMatchObject([
+        { cause: 'team-kill', levels: 2.5 },
+        { cause: 'team-kill', levels: 5 },
+      ]);
+
+      // Both return on the same tick.
+      for (const { legend, owedXp } of state.respawns.takeDue(300)) {
+        state.entities.add(legend);
+        state.events.emit('legend-respawned', {
+          entityId: legend.id,
+          team: 'light',
+          position: { x: 0, y: 0 },
+          owedXp,
+        });
+      }
+      run();
+
+      // Halfway through level 2 + 2.5 levels: level 5 (400); level 1 + 5: level 6 (500).
+      expect(waiting.getComponent(Progression)).toMatchObject({ xp: 400, level: 5 });
+      expect(shooter.getComponent(Progression)).toMatchObject({ xp: 500, level: 6 });
     });
 
     it("owes it a camp's clear bonus when its hit killed the last mob after it died (O4)", () => {

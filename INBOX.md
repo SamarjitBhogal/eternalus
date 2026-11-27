@@ -156,13 +156,17 @@ Reply inline (`Decision: …`).
       `TUNE`), as at the entrance. Should it stun, slow or knock back (the MiniBoss's roar is a
       "concussion aura")?
 
-- [ ] **The Greater Boss's kill reward: killer only or whole team? (Aryan Walanj, 2026-11-20,
+- [x] **The Greater Boss's kill reward: killer only or whole team? (Aryan Walanj, 2026-11-20,
       `feat/cathedral-boss-moves`).** DEC-237: "Killing the middle boss puts you up 5 levels from
       wherever you are, flat". Built as `XP_SOURCES.teamKills['greater-boss'] = { levels: 5 }`:
       every Legend of the killer's team (killed by a minion too) goes up exactly 5 levels, up to the
       level cap; the other team gets nothing; it replaces balancing.md's 1,500 XP. Who it goes to
       is `TUNE`: DEC-237 says "you". Should it be the killer only, or the whole team (as
       built, like the mini-boss's)? And should a Legend dead at the kill get it on respawn?
+  - **Answered 2026-11-27 by DEC-371 E8a to E8c and DEC-416** (Owner Calls v103). Every Legend of
+    the killer's team goes up 2.5 levels and the last hitter 5 in all, each keeping its share of
+    its level; after a minion's or a tower's last hit, the 5 goes to that team's Legend that hit
+    the boss last. A Legend dead at the kill gets its share when it respawns. Built in PR #164.
 
 - [ ] **Better than design: the BossController (Aryan Walanj, 2026-11-16, critic on
       `feat/cathedral-boss-controller`).** (B1) Bind the boss to a zone owned by the Cathedral's

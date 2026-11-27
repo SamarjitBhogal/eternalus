@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Health } from '../components/Health';
+import { LastLegendHits } from '../components/LastLegendHits';
 import { TeamMembership } from '../components/TeamMembership';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadScoring } from '../content/match/loadScoring';
@@ -37,14 +38,15 @@ const BURN = { attackerId: null, kind: 'status', definitionId: 'gem-burn' } as c
 
 /**
  * @param steps - The damage steps; `[]` lets an ally's hit land, so only `KillCredit` judges it.
+ * @param lastLegendHitIds - The definitions whose last Legend hitter per team is kept.
  */
-const setUp = (steps?: readonly DamageStep[]) => {
+const setUp = (steps?: readonly DamageStep[], lastLegendHitIds: readonly string[] = []) => {
   const state = new GameState(createDefaultGameConfig(), 1);
   const scoring = loadScoring(state.config.tickRate);
   const score = new Scoring(state, createDefaultScoringRules(scoring));
   const damage = new DamagePipeline(
     steps,
-    new KillCredit(scoring.assistWindowTicks, CATHEDRAL_GEM.statusIds),
+    new KillCredit(scoring.assistWindowTicks, CATHEDRAL_GEM.statusIds, lastLegendHitIds),
   );
   const deaths: GameEventMap['entity-died'][] = [];
   state.events.on('entity-died', (event) => deaths.push(event));
@@ -149,6 +151,27 @@ describe('KillCredit (DEC-346)', () => {
     burnToDeath(victim);
 
     expect(deaths).toEqual([{ entityId: victim, killer: BURN }]);
+  });
+
+  it("keeps each team's last Legend hitter on a listed boss, not a minion's hit or an unlisted target (DEC-416)", () => {
+    const { state, spawn, legend, hit } = setUp(undefined, ['boss-definition']);
+    const boss = spawn('mob', 'boss', 'neutral');
+    const camp = spawn('mob', 'camp', 'neutral');
+    const light = legend('light');
+    const lightLast = legend('light');
+    const dark = legend('dark');
+    const minion = spawn('mob', 'light-mob', 'light');
+
+    hit(light, boss);
+    hit(lightLast, boss);
+    hit(dark, boss);
+    hit(minion, boss);
+    hit(light, camp);
+
+    const hits = state.entities.get(boss)?.findComponent(LastLegendHits);
+    expect(hits?.of('light')).toBe(lightLast);
+    expect(hits?.of('dark')).toBe(dark);
+    expect(state.entities.get(camp)?.findComponent(LastLegendHits)).toBeUndefined();
   });
 
   it('leaves every other killer as it is: a hit with an attacker, and other status damage', () => {

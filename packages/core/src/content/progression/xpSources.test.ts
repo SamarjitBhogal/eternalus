@@ -46,8 +46,8 @@ describe('legend XP design intent (DEC-190)', () => {
     }
   });
 
-  it('the Greater Boss pays 5 levels flat (DEC-237)', () => {
-    expect(XP_SOURCES.teamKills['greater-boss']).toEqual({ levels: 5 });
+  it('the Greater Boss pays its team 2.5 levels and its last hitter 5 in all (DEC-371 E8b)', () => {
+    expect(XP_SOURCES.teamKills['greater-boss']).toEqual({ levels: 2.5, lastHitterLevels: 5 });
   });
 
   it('a mini-boss team-kill reward lifts at most 2 levels (DEC-237)', () => {

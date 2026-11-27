@@ -44,8 +44,8 @@ export type XpSourcesDefinition = {
   };
   /**
    * The mobs whose kill pays every Legend of the killer's team instead of the killer, by mob
-   * definition id: `xp` each, but never more than lifts a Legend `maxLevels` levels, or exactly
-   * `levels` levels whatever the XP (DEC-237).
+   * definition id: `xp` each, but never more than lifts a Legend `maxLevels` levels, or `levels`
+   * levels whatever the XP (DEC-237), with a last hitter's `lastHitterLevels` (DEC-371 E8b).
    */
   readonly teamKills: Readonly<Record<string, TeamKillReward>>;
 };
@@ -58,6 +58,15 @@ type TeamKillReward =
       readonly maxLevels: number;
     }
   | {
-      /** Lifts each Legend exactly this many levels (up to the curve's cap), "flat" (DEC-237). */
+      /**
+       * Lifts each Legend this many levels from where it stands, keeping its share of its level
+       * (up to the curve's cap), "flat" (DEC-237, DEC-371 E8a).
+       */
       readonly levels: number;
+      /**
+       * The levels the team's last hitter gets in all, instead of `levels` (DEC-371 E8b): the
+       * killing Legend, or for a last hit by a minion or a tower its team's Legend that hit last
+       * (DEC-416).
+       */
+      readonly lastHitterLevels?: number;
     };

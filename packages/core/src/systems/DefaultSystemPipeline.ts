@@ -105,10 +105,17 @@ export class DefaultSystemPipeline extends SystemPipeline {
             map.flowFieldCorridorHalfWidth,
           );
     // Minion strength reads lane progress from the lane fields (05 §9, `balancing.md`).
-    // A death by the gem counts for the victim's last enemy damager in the assist window (DEC-346).
+    // A death by the gem counts for the victim's last enemy damager in the assist window (DEC-346);
+    // a boss whose kill pays a last hitter keeps each team's last Legend hitter (DEC-416).
     const damage = new DamagePipeline(
       createDefaultDamageSteps(flowFields?.progress.bind(flowFields) ?? null),
-      new KillCredit(assistWindowTicks, CATHEDRAL_GEM.statusIds),
+      new KillCredit(
+        assistWindowTicks,
+        CATHEDRAL_GEM.statusIds,
+        Object.entries(progression.xpSources.teamKills)
+          .filter(([, reward]) => 'lastHitterLevels' in reward)
+          .map(([mobId]) => mobId),
+      ),
     );
     const world = state.world?.grid ?? null;
     const features = state.world?.definition.features ?? [];

@@ -566,11 +566,11 @@ snapshot's `mapFeatureId`, not by position. Interim differences:
   reached and no defenders come. Its health and hit are multiples of the shared
   `refHealth(level)` and its movement and reach the shared `HEAVY_MOB_BASE`
   (`content/mobs/bossReference.ts`, DEC-371 E6), as the capture point boss's. Minions deal it a
-  quarter of their hit (`BOSS_MINION_DAMAGE_TAKEN`); its kill lifts the killer's team 5 levels
-  (DEC-237, DEC-371 E8, `XP_SOURCES.teamKills`). The blast kills every unit with no kill credit
-  and the cut-scene's reach is 50 m (DEC-415). Every move number is `TUNE`; the questions are in
-  `INBOX.md` (the Greater Boss items). In a Duel the action does nothing (DEC-36), so the gem
-  stays and no boss comes.
+  quarter of their hit (`BOSS_MINION_DAMAGE_TAKEN`); its kill lifts the killer's team 2.5 levels
+  and the last hitter 5 (DEC-237, DEC-371 E8, DEC-416, `XP_SOURCES.teamKills`). The blast kills
+  every unit with no kill credit and the cut-scene's reach is 50 m (DEC-415). Every move number
+  is `TUNE`; the questions are in `INBOX.md` (the Greater Boss items). In a Duel the action does
+  nothing (DEC-36), so the gem stays and no boss comes.
 
 **2026-11-09 (`feat/bosses-p3`, corner camp boss, interim; updated 2026-11-17).** DEC-236
 approves corner camps for Phase 3, with the corner boss on `GuardController` as an interim

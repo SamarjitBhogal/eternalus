@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -551,8 +551,8 @@ that carries `WinObjective` (the sovereign); `MatchResult.timeline` and `achieve
 their producers); the other §5 counters and `TeamStats` fields; a condition for `forfeit` or
 `aborted` (the ids exist); the timeline actions other than `enter-phase` and
 `summon-greater-boss`; the Greater Boss turning its killer into an Eternal (§7;
-`BossController` with its six moves and entrance roar, and DEC-237's flat 5-level team reward, are
-built); `dev-set-phase`; the announcer; the other invariants of §12.
+`BossController` with its six moves and entrance roar, and its team reward (DEC-237, DEC-371 E8,
+DEC-416), are built); `dev-set-phase`; the announcer; the other invariants of §12.
 
 The gem eruption (§3) is built (2026-11-22, `feat/cathedral-eruption-boss`): the default
 timeline's `gem-eruption` entry, at `mid-game`'s fraction and right after it (DEC-81), runs

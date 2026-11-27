@@ -945,8 +945,11 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   built for the capture point boss and the corner boss (DEC-237): a mob in `XP_SOURCES.teamKills` pays every Legend of
   its killer's playable team, not the killer alone, and each Legend gets at most the XP that lifts
   it `maxLevels` levels (`Progression.xpToReach`); a reward of `levels`
-  instead (the Greater Boss's flat 5, 2026-11-20) lifts each Legend exactly that many levels, up to
-  the cap, whatever the XP; `level-matches-xp` checks that the killer is on
+  instead lifts each Legend that many levels from where it stands inside its level, up to the cap,
+  whatever the XP (`Progression.xpToAdvance`, DEC-371 E8a), and its `lastHitterLevels` goes to the
+  last hitter in all: the killing Legend, or its team's Legend whose hit landed last
+  (`LastLegendHits`, kept by `KillCredit`, DEC-416) (the Greater Boss: 2.5 and 5, DEC-371 E8b);
+  `level-matches-xp` checks that the killer is on
   the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
   `xp-granted` reward path. Camp XP is built: `camp-cleared` pays the camp's entry in
   `XP_SOURCES.campCleared`, keyed by camp definition id (forest camps only; a corner camp's boss

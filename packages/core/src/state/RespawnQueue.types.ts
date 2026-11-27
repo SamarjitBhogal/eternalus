@@ -15,6 +15,8 @@ export type OwedXp = {
   readonly xp: number;
   /** How far a team-kill award may lift the Legend (DEC-237), applied when it is paid. */
   readonly maxLevels?: number;
+  /** How far a flat team-kill award lifts the Legend (DEC-371 E8a), applied when it is paid. */
+  readonly levels?: number;
 };
 
 /**
