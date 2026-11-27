@@ -310,17 +310,14 @@ export class EntityStore {
 
   /**
    * Turns `id` to face `targetId` (`facingPointOf`), as `CombatSystem` turns an attacker. Lets
-   * `commands/` aim a boss move without importing `components/`.
-   *
-   * @returns `false`, leaving the facing as it was, when either has no position.
+   * `commands/` aim a boss move without importing `components/`. Leaves the facing as it was when
+   * either has no position.
    */
-  public turnToward(id: EntityId, targetId: EntityId): boolean {
+  public turnToward(id: EntityId, targetId: EntityId): void {
     const transform = this.entities.get(id)?.findComponent(Transform);
-    if (transform === undefined || !this.facingPointOf(id, targetId, this.aim)) {
-      return false;
+    if (transform !== undefined && this.facingPointOf(id, targetId, this.aim)) {
+      transform.lookAt(this.aim);
     }
-    transform.lookAt(this.aim);
-    return true;
   }
 
   /** The boss's phase (`BossPhase`, DEC-417): `healthy` until its first change. */
@@ -330,14 +327,12 @@ export class EntityStore {
 
   /**
    * Puts the entity in `phase` on `tick` (`BossPhase`, added on the first change). Lets
-   * `commands/` set it without importing `components/`.
-   *
-   * @returns `false` for an unknown entity.
+   * `commands/` set it without importing `components/`. Does nothing for an unknown entity.
    */
-  public setBossPhase(id: EntityId, phase: BossPhaseId, tick: number): boolean {
+  public setBossPhase(id: EntityId, phase: BossPhaseId, tick: number): void {
     const entity = this.entities.get(id);
     if (entity === undefined) {
-      return false;
+      return;
     }
     let current = entity.findComponent(BossPhase);
     if (current === undefined) {
@@ -345,7 +340,6 @@ export class EntityStore {
       entity.addComponent(current);
     }
     current.enter(phase, tick);
-    return true;
   }
 
   /** Each attacker's damage to `id` from `sinceTick` on (`ThreatLedger`), in attacker id order. */

@@ -46,7 +46,8 @@ export class UtilityScorer<Consideration extends string> {
         return option;
       }
     }
-    return options[Math.max(0, scores.findLastIndex((score) => score > 0))] ?? null;
+    const lastScoring = scores.findLastIndex((score) => score > 0);
+    return options[Math.max(0, lastScoring)] ?? null;
   }
 
   /** The weighted sum of one option's considerations. */

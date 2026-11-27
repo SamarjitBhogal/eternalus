@@ -32,10 +32,10 @@ export class BossDamageSystem implements System {
       const boss = state.entities.get(targetId);
       const profile = boss === undefined ? undefined : this.profileOf(state, boss);
       if (boss === undefined || profile === undefined) return;
-      BossDamageSystem.phaseOf(boss).recordHit(state.tick);
+      BossDamageSystem.ensure(boss, BossPhase).recordHit(state.tick);
       if (source.attackerId === null) return;
       const sinceTick = state.tick - rate.toTicks(profile.brain.threatSeconds);
-      BossDamageSystem.ledgerOf(boss).record(
+      BossDamageSystem.ensure(boss, ThreatLedger).record(
         source.attackerId,
         amount + absorbed,
         state.tick,
@@ -70,23 +70,13 @@ export class BossDamageSystem implements System {
     return binding?.controllerId === 'boss' ? this.profiles[binding.profileId] : undefined;
   }
 
-  /** The boss's `BossPhase`, added on its first hit or change (`healthy`). */
-  private static phaseOf(boss: Entity): BossPhase {
-    let phase = boss.findComponent(BossPhase);
-    if (phase === undefined) {
-      phase = new BossPhase();
-      boss.addComponent(phase);
+  /** The boss's component of `type`, added on first use (`BossPhase` starts `healthy`). */
+  private static ensure<T extends object>(boss: Entity, type: new () => T): T {
+    let component = boss.findComponent(type);
+    if (component === undefined) {
+      component = new type();
+      boss.addComponent(component);
     }
-    return phase;
-  }
-
-  /** The boss's `ThreatLedger`, added on its first hit (as `OutOfCombatHealingSystem`'s clock). */
-  private static ledgerOf(boss: Entity): ThreatLedger {
-    let ledger = boss.findComponent(ThreatLedger);
-    if (ledger === undefined) {
-      ledger = new ThreatLedger();
-      boss.addComponent(ledger);
-    }
-    return ledger;
+    return component;
   }
 }

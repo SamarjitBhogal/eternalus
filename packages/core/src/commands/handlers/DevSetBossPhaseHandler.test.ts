@@ -45,7 +45,8 @@ describe('DevSetBossPhaseHandler', () => {
 
     expect(state.entities.bossPhaseOf(boss.id)).toBe('healthy');
     expect(handle(boss.id, 'hurt')).toBeNull();
-    expect(boss.getComponent(BossPhase).fields).toEqual(['hurt', 5]);
+    expect(boss.getComponent(BossPhase).phase).toBe('hurt');
+    expect(boss.getComponent(BossPhase).changedTick).toBe(5);
     expect(state.entities.bossPhaseOf(boss.id)).toBe('hurt');
     expect(changes).toEqual([{ bossId: boss.id, from: 'healthy', to: 'hurt' }]);
   });
