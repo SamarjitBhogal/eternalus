@@ -107,6 +107,9 @@ describe('StatusEffects', () => {
     expect(statuses.multiplierWith('moveSpeed', veteran)).toBe(1);
     expect(statuses.multiplier('damageDealt')).toBeCloseTo(1.1);
     expect(statuses.active).toHaveLength(1);
+
+    statuses.apply(ENRAGED, 'b', 1); // a `mul` the entity holds stays in the fold
+    expect(statuses.multiplierWith('damageDealt', veteran)).toBeCloseTo(1.2 * 1.15);
   });
 
   it('never reaches 0 by stacking slows', () => {

@@ -770,8 +770,8 @@ Reply inline (`Decision: …`).
       `CollisionQuery`, so each new method of it changes all seven. One `FakeCollisionQuery` class
       beside the port (02 §8) would hold them. Test code only.
       (5) **Named options in place of trailing optional parameters.** `Movement.advance` and
-      `StatusEffects.apply` take trailing optional numbers, and some callers pass `undefined` to
-      reach the last one. An options object (`{ durationTicks, steering }`) reads better and
+      `StatusEffects.apply` take trailing optional parameters (a scale, a duration, a steering
+      form), and some callers pass `undefined` to reach the last one. An options object (`{ durationTicks, steering }`) reads better and
       stays stable when the next field comes.
       Built in PR 6 from the same review, under the standing rule to build the better design now
       (DEC-223, DEC-232); the player sees no change, sign-off asked: (a) the Berserk room check

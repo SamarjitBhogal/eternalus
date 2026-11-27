@@ -1461,8 +1461,8 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     body has no room. `BuffEffect.casterBlockedBy` refuses the cast with a new reason, `no-room`
     (a reason the §6 sketch does not list). It asks the caster's `StatusEffects` for the `size`
     the caster would have with the status the step applies (`multiplierWith`, the one fold of the
-    status modifiers), so the 1.3 is not copied and two `size` modifiers add up as they do on the
-    body. Its room test is `BodySizeSystem`'s
+    status modifiers), so the 1.3 is not copied and two `size` modifiers combine as they do on the
+    body (`add`s sum, `mul`s multiply). Its room test is `BodySizeSystem`'s
     (`state/placeWithRoom`: the push-out, then `hasRoom`), so a Sentinel beside one wall can still
     cast. A refused cast spends nothing, so the meter stays full; the cast works once the
     Sentinel stands where it has room. The player snapshot shows the reason, and the HUD shows

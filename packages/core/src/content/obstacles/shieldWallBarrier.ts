@@ -26,6 +26,6 @@ export const SHIELD_WALL_BARRIER = {
   ],
   health: 800, // TUNE: balancing.md:188
   isBurnable: false,
-  // Nothing can carry it. TUNE: DEC-382 (R4 A) (carry is not built, 07 §9)
+  // Nothing can carry it. TUNE: a build reading; the R4 card (DEC-382) does not name carrying (carry is not built, 07 §9)
   weight: Number.POSITIVE_INFINITY,
 } as const satisfies ObstacleDefinition;

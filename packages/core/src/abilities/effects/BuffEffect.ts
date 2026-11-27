@@ -54,6 +54,11 @@ export class BuffEffect implements AbilityEffect<BuffSpec> {
    * when the status does not grow the body, when the caster holds it already (a recast refreshes
    * it, and the body does not grow again), and without walls. A refused cast spends nothing, so
    * the meter stays full.
+   *
+   * @remarks ponytail: the early return for a held status fits a `refresh` status that does not
+   * end on a hit (Berserk, the only status that grows the body). A size status that stacks
+   * (`intensity`) or ends on a hit would grow the body again on a recast with no room check.
+   * Upgrade when one comes: ask `StatusEffects` for the size after a reapply by the stacking rule.
    */
   public casterBlockedBy(
     spec: BuffSpec,
