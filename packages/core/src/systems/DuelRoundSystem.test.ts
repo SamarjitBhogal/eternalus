@@ -210,7 +210,7 @@ describe('DuelRoundSystem', () => {
     expect(bar.castsInProgress).toEqual([]);
   });
 
-  it("readies the fallen Legend's abilities but its ultimate; the survivor keeps its cooldowns (FR-117)", () => {
+  it("readies both Legends' abilities but their ultimates (FR-117, DEC-411 (1))", () => {
     const { add, hit, run } = setUp();
     const light = add('light', true);
     const dark = add('dark', true);
@@ -231,8 +231,8 @@ describe('DuelRoundSystem', () => {
       (['ability-1', 'ability-4'] as const).map((slot) => bar.slot(slot)?.cooldownUntilTick),
     );
     expect(cooldowns).toEqual([
-      [900, 900], // light survived: "reset ... upon death" (FR-117) is not its case
-      [0, 900], // dark fell: its other abilities are ready, the ultimate keeps its cooldown
+      [0, 900], // light survived: its other abilities are ready too (DEC-411 (1))
+      [0, 900], // dark fell: its other abilities are ready (FR-117), the ultimate keeps its cooldown
     ]);
   });
 

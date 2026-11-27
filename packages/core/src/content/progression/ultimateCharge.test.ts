@@ -20,4 +20,14 @@ describe('ULTIMATE_CHARGE', () => {
     expect(prices.length).toBeGreaterThan(0);
     expect(prices.filter((points) => points < ULTIMATE_CHARGE.fullMeter)).toEqual([]);
   });
+
+  it('fills the meter for the corner boss as for the capture point boss (DEC-412)', () => {
+    const rates = (id: string): readonly (number | undefined)[] => [
+      ULTIMATE_CHARGE.bossDamagePerPercent[id],
+      ULTIMATE_CHARGE.bossKill[id],
+    ];
+
+    expect(rates('corner-boss')).not.toContain(undefined);
+    expect(rates('corner-boss')).toEqual(rates('capture-point-boss'));
+  });
 });

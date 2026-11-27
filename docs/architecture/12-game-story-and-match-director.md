@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -479,8 +479,8 @@ Update, 2026-11-26 (`feat/vanguard-kit`, #136, DEC-380 (1)): a Duel's progressio
 slice, `DUEL_RULES.progression` (`DuelProgressionRules`): the max-level start above
 (`legendsStartAtMaxLevel`) and the ultimate meter's start share (`ultimateStartCharge`, half a
 meter, paid when each Legend spawns; FR-059's list of sources is under revision for it). The round
-reset keeps both meters (DEC-295 (1)) and readies the fallen Legend's other abilities (FR-117);
-the survivor keeps its cooldowns.
+reset keeps both meters (DEC-295 (1)) and readies both Legends' other abilities (FR-117 for the
+fallen Legend, DEC-411 (1) for the survivor).
 
 Implementation status, 2026-11-25 (branch `feat/duel-arena-only-legends`; the owner's feedback on
 the Duel demo of 2026-11-20, Jira SCRUM-445, SCRUM-446 and SCRUM-450, and the owner's answers

@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,20 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-27 (Owner Calls v103: Duel round reset, corner boss meter, Esc key)
+
+The owner's answers of 2026-11-27 on the coordinator's Owner Calls page (version 103), pasted in
+chat to PR-REVIEW-COORDINATION-51 at about 07:00Z. His words are kept verbatim outside the
+repository in `eternalus-agent-work/pr-review-coordination/owner-answers-2026-11-27/answers-v103.md`.
+Recorded with `feat/vanguard-kit` (PR #136, combat lane A; COMBAT-WEAPONS-ABILITIES-77).
+DEC-411 to DEC-413 are this batch (numbers given by the coordinator, PR-REVIEW-COORDINATION-51).
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-411 | **After a Duel round, both Legends get their abilities back; the Duel's rules stay one record; a status that ends at death is a follow-up PR** (answers `INBOX.md` HC-B52). (1) Verbatim: "B: both Legends". The round reset (`DuelRoundSystem`) readies every ability but the ultimate for both Legends, the survivor too, not only for the Legend that died (FR-117). Both keep their ultimate meters (DEC-295 (1)). Built in #136. (2) Verbatim: "A: keep it (built, recommended)". `DUEL_RULES.progression` (`DuelProgressionRules`) stays the one record for the Duel's level and meter rules. No change. (3) Verbatim: "A: follow-up PR after #136 (recommended)". A Legend's statuses end when it dies: `RespawnSystem` ends them through `StatusEffectApplier`, so each end emits `status-expired`, and `LegendReset` loses its own loop. A small follow-up PR after #136 builds it (combat lane A). Docs: the doc 12 Duel note. |
+| DEC-412 | **The corner boss fills the ultimate meter like the capture point boss** (answers `INBOX.md` HC-Q121). Verbatim: "A: like the capture point boss (recommended)". A kill of the corner boss fills the killer's meter, and each 1% of its health gives 1 point (`content/progression/ultimateCharge.ts`: `bossKill` and `bossDamagePerPercent` name `corner-boss` with the capture point boss's numbers). Built in #136. Docs: 05 §6 "Content" names both bosses.                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| DEC-413 | **The Esc key reads both of its flags from the store, as built** (answers the `INBOX.md` item "Better than design: the Esc key reads both of its flags from the store", #123 merge critic round 2, BTD-1). Verbatim: "A: keep it (built)". `usePauseMenuKey` reads `selectAimingSlot` and `selectIsDuel` at the key press, and `pressPauseMenuKey` takes them as one named object. Built in #123. No change.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
 ## Batch 2026-11-26 (minion M6c: the seven interpretations)
 

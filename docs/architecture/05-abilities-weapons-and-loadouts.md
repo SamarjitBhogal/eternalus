@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -802,8 +802,8 @@ export type LevelScalingDefinition = {
 }; // TUNE
 ```
 
-`ProgressionSystem` listens to `entity-died`, `structure-destroyed`, `camp-cleared` and
-`checkpoint-cleared`, and its `UltimateCharge`
+`ProgressionSystem` listens to `entity-died`, `structure-destroyed` and `camp-cleared`, its
+`CheckpointAwards` helper to `damage-applied` and `checkpoint-cleared`, and its `UltimateCharge`
 helper to `entity-died`, `damage-applied` (objective damage), `checkpoint-reached` and
 `assist-earned` (scoring's assist window, so the meter keeps no window of its own; DEC-283 (3),
 HC-B7), and, in a mode with a start share, `entity-spawned`. It defers the awards to its own pass, applies XP from
@@ -982,7 +982,7 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   a guard home with none of its own posts holding a guard (checkpoint-defender posts on the same
   home do not count). The bonus goes only to the Legend that killed the camp's last mob, and to
   nobody when a minion or turret lands that hit (DEC-375). Not built yet:
-  the share radius and damage bias, assists, checkpoint XP, the Eternal's flat 5 levels (DEC-237)
+  assists, the Eternal's flat 5 levels (DEC-237)
   (their systems do not exist), basic-attack and ability potency per level and `upgradeIds`.
   Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
@@ -1144,8 +1144,9 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     (`systems/UltimateCharge.constants.ts`), so whole points worth a full meter make exactly 1
     (a plain sum of 12/100 and 5/100 steps can stop at 0.9999999999999999). A mob kill pays by the mob's weight class, as scoring's `minionKill` does; camp mobs
     pay too (DEC-273). Boss damage pays each boss's own rate per 1% of its max health, by mob
-    id (`bossDamagePerPercent`; the capture point boss, DEC-272); a boss kill pays its own number
-    to the killer, by mob id (`bossKill`; the capture point boss fills the meter, DEC-283 (1)), in
+    id (`bossDamagePerPercent`; the capture point boss, DEC-272; the corner boss, DEC-412); a boss
+    kill pays its own number to the killer, by mob id (`bossKill`; the capture point boss and the
+    corner boss fill the meter, DEC-283 (1), DEC-412), in
     place of its weight class, and is announced with the cause `boss-kill`. There is no `class-switch` (post-MVP). `ProgressionContent`
     injects it.
   - **Sources.** `entity-died`: a killer on another team than the victim gains the Legend or mob
