@@ -13,6 +13,25 @@ review comments under "Feedback". Answered decisions are recorded in
 
 ## Decisions needed from Sam
 
+- [ ] **Minion strength port (PR #82, 2026-11-25): sign off `LaneProgressOf`.** Built: `combat/`
+      reads lane progress through a new port, `LaneProgressOf = (laneId, team, position) => number
+| null` (`MinionStrengthStep.types.ts`), which `LaneFlowFields.progress` implements and
+      `DefaultSystemPipeline` injects. It keeps `combat/` from importing `map/` (core folder
+      rules); DEC-280 fixes what it returns (`t` from the home gate, 0, to the enemy gate, 1). No DEC
+      names the port itself (CodeRabbit, PR #82). Approve as built, or say what to change. HC-B45
+      below asks whether the polyline fallback should become a second implementation of it.
+
+- [ ] **HC-B45 — Better than the design, not built, sign-off asked: minion strength depends only
+      on its lane-progress port** (PR #82 critic, 2026-11-22). Today `MinionStrengthStep` knows two
+      ways to measure `t`: the injected `LaneProgressOf` (the lane flow field, DEC-280) and a
+      built-in fallback to the `LaneRoutes` polyline; `createDefaultDamageSteps`, `DamagePipeline`
+      and the step default the port to `null`, so a composition root that forgets to inject falls
+      back to the polyline without a sign. Proposal: make the polyline a `LaneProgressOf` too, let
+      `DefaultSystemPipeline` compose "field, else polyline", make the parameter required, and test
+      the wiring by injection instead of the `vi.mock` in `DefaultSystemPipeline.strength.test.ts`
+      (the only `vi.mock` in core). No gameplay number or behaviour changes. Approve (built in its
+      own PR) or drop.
+
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
