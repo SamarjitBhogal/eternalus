@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-27
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -188,13 +188,17 @@ export class GameEvents {
 
 Events are synchronous, emitted during the tick and delivered to listeners in subscription order;
 listeners that need to change state defer the change to their own system's pass (Nystrom's Observer
-plus a deferred queue, research §2). `GameEvents` keeps the most recent events in a `RingBuffer`
-(`recentEvents()`, capacity in `GameEvents.constants.ts`) for invariant reports. Payload objects for
-high-frequency events (`damage-applied`) may be pooled (Recommendation, profile first).
+plus a deferred queue, research §2). One exception (DEC-406): an `entity-spawned` listener may
+finish, at once, the setup of the entity that the event names. A roster spawns in the `Simulation`
+constructor, before any pass, so a deferred change would show the entity unfinished on the first
+tick. The table lists each such listener. `GameEvents` keeps the most recent events in a
+`RingBuffer` (`recentEvents()`, capacity in `GameEvents.constants.ts`) for invariant reports.
+Payload objects for high-frequency events (`damage-applied`) may be pooled (Recommendation, profile
+first).
 
 | Event                               | Payload                                                                       | Emitted by                                                                                              | Typical listeners                                                                                                                                                 |
 | ----------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `entity-spawned`                    | `{ entityId, kind, team }`                                                    | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster; `RespawnSystem` for a returning Legend | `SnapshotSystem`, views, `Scoring` (a row per Legend)                                                                                                             |
+| `entity-spawned`                    | `{ entityId, kind, team }`                                                    | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster; `RespawnSystem` for a returning Legend | `SnapshotSystem`, views, `Scoring` (a row per Legend); `ProgressionSystem` raises a Duel Legend to max level at once (05 §18, DEC-406)                            |
 | `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`                                  | `DeathSystem` only                                                                                      | `HordeSystem`, `ProjectilePool`, invariants                                                                                                                       |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }`                        | `DamagePipeline`                                                                                        | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage)                                                                          |
 | `damage-blocked`                    | `{ targetId, source: DamageSource }`                                          | `DamagePipeline` (a step took the hit to 0)                                                             | `CathedralGemSystem` (DEC-292)                                                                                                                                    |
