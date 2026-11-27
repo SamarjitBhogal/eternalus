@@ -88,6 +88,31 @@ Reply inline (`Decision: …`).
       radius and length? (9) The boss's old melee `attack` stays in its definition, unused.
       (10) Can a stun or other `cannot-cast` status stop a boss move? Today nothing stops one.
 
+- [ ] **The Greater Boss's brain and hurt phase (E7-BOSS-BRAIN, 2026-11-27, `feat/boss-brain`;
+      DEC-371 E7, DEC-417).** No reference gives these numbers, so each is `TUNE`
+      (`content/ai/bosses/greaterBoss.ts`, `brain` and `hurtPhase`); please confirm or replace.
+      (1) Damage dealt to the boss counts as recent for 5 s. (2) Melee range is 4 m (the slam's
+      radius). When the nearest enemy is farther away, the boss reaches for it with the beam or
+      the charge. (3) Punish: a Legend in melee range that dealt at least 40% of the recent damage
+      gets the beam, the charge or the slam. This answers the "bias toward the highest recent
+      damage dealer" of the BossController item's point (6). (4) Crowd: 3 or more enemies within
+      6 m (the sweeps' radius) get the wide sweep, the sweep or the slam. (5) Inside a branch the
+      boss scores each move on reach, crowd and damage, with these weights: punish 1, 0, 2; crowd
+      0, 2, 1; far 1, 0, 1; fallback 0, 0, 1. (6) The boss turns hurt below half its health; that
+      opens the wide sweep and the charge. (7) The hurt cue: two rings grow to 14 boss radii and
+      fade in 1.5 s, then a purple glow 3.2 boss radii wide and 6 orbiting light motes stay for
+      the rest of the phase (`apps/client/src/game/views/BossPhaseCueView.constants.ts`).
+      (8) Should the boss roar when it turns hurt, to mark the moment? Today the boss roars only
+      when it enters the match. During the fight it never picks the roar, because the roar does
+      no damage and a kiting player could keep the boss roaring in place.
+      (9) Built, please confirm (a reviewer marked it better than the design): before a move, the
+      boss stops and turns to face the player its brain chose, so a sweep, beam or charge goes at
+      that player. Before this change, every move went the way the boss last walked.
+      (10) A code-structure idea, no change in play (not built): give the boss code its own small
+      reader for boss facts. Today each boss feature adds one more method to the shared entity
+      store (`EntityStore`, 362 lines). Two open PRs (#160, #164) change that file too, so the
+      split waits until they merge.
+
 - [ ] **The Greater Boss's sweep (Aryan Walanj, 2026-11-20, `feat/cathedral-boss-moves`).**
       balancing.md gives the sweep "cone knockback" (the MiniBoss row) and the GreaterBoss's light
       moves 0.15 × refHealth (155), nothing else, so these are `TUNE`

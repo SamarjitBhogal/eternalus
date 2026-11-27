@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-27
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -194,6 +194,7 @@ anything that only changes how the client shows or paces the simulation is a cli
 | Spawn mobs from an origin                        | `dev-spawn-mobs { team, definitionId, count, origin }` (structure id, `{ lane, t }` or cursor), spawned as one horde ([18](18-minion-system.md) §3.5) | `maxUnitsPerTeam` (144, `TUNE`): clipped, `spawn-suppressed` counted in `TeamState`, never a crash | **MVP**                       |
 | Sim mode: remove or add the human                | `dev-set-controller { entityId, controllerId }` (DISC-56)                                                                                             | at most one `player` controller (`SinglePlayerBrainInvariant`)                                     | **MVP**                       |
 | Invariant level; timeline jump                   | `dev-set-assert-level { level, heavyEvery? }`; `dev-set-phase { phase }` (forward only)                                                               | —                                                                                                  | **MVP**; jump **MVP-if-time** |
+| Boss phase                                       | `dev-set-boss-phase { entityId, phase }` (DEC-417)                                                                                                    | only a living boss (`controller: 'boss'`); its own phase again changes nothing                     | **MVP**                       |
 | Pre-match config overrides                       | edits `GameConfig` on the menu's developer panel before `Simulation` exists                                                                           | `validateGameConfig` problems shown inline                                                         | **MVP**                       |
 | Overlays, time scale, pause, step                | `dev-toggle { toggle: 'perf-overlay' \| 'diagnostics-overlay' \| 'time-scale' … }` → `GameLoop.setTimeScale`                                          | client-only; the simulation never knows                                                            | **MVP**                       |
 | Hash now, dump replay, save as fixture, spectate | `dev-toggle` → `Simulation.hash()`, `exportReplay()`, `spectatedLegendId`                                                                             | read-only / client-only                                                                            | **MVP**                       |
@@ -576,6 +577,11 @@ difference is registered in
 [reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md).
 
 ## 10. Implementation status
+
+Boss phase (2026-11-27, DEC-417): core builds `dev-set-boss-phase { entityId, phase }`
+(`DevSetBossPhaseHandler`, replayable like every developer command). Its developer-menu button
+waits for the developer menu, which this line does not have yet; it is added in the same branch
+once the menu is merged in.
 
 Built (Sprint 1, sessions D and F): the bridge (`bridge/`), the session shell and menu screens,
 and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver`, `InputMapper`,

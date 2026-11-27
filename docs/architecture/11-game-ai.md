@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-27
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -261,7 +261,16 @@ with a seeded weighted pick. "Never stands still" (game doc): `roam` picks a new
 zone every cadence. Zone-restricted: the brain's `zoneId` binds it to a `CapturePoint` area and
 it leashes back like a guard. Targets anyone: the filter is `team !== 'neutral'` with a bias
 toward the highest recent damage dealer. `CaptureSystem`, not AI, blocks capture while a bound
-boss lives.
+boss lives. A situation tree picks the kind of move before the utility pick (DEC-371 E7): an
+`ActiveSelector` over `punish` (the top recent damage dealer, a Legend in melee range), `crowd`
+(many enemies close by), `far` (the nearest enemy out of melee range) and a fallback (a close
+move in range; with none, no move, and the boss chases), each branch with its own moves and
+weights in the boss's data. The brain never picks the roar: it does no damage, so a roar in place
+of a chase would let a kiting Legend hold the boss still. The boss roars only at its entrance.
+Some moves open only in a later phase of the fight (DEC-417): the boss turns `hurt` below a share
+of its health, announced by a typed event, and the client plays a phase cue in place of a
+cut-scene. A move halts the boss and turns it to the brain's target before the telegraph, so the
+move aims where the brain chose.
 
 ### 4.7 RoverController (MVP, enemy Rover)
 
@@ -381,20 +390,31 @@ work named:
 - `BossController` (§4.6) drives the Greater Boss only (sprint 3.6, owner 2026-11-15); no
   `MiniBoss` exists on this line yet, and every other mob keeps its controller. Its profile is a
   `BossProfileDefinition` (`content/ai/bosses/greaterBoss.ts`: entrance, roam cadence, arrival,
-  zone margin, moves), its memory the FSM (`entrance`, then `roam → telegraph → execute → recover
-→ roam`, one state per decision), timers, roam point and a ready tick per move. Its zone is its
+  zone margin, moves, `brain` (the situation tree's thresholds, branches and weights) and
+  `hurtPhase` (the health share and the moves it opens)), its memory the FSM (`entrance`, then
+  `roam → telegraph → execute → recover → roam`, one state per decision), timers, roam point and
+  a ready tick per move. Its zone is its
   Cathedral capture zone guard post's circle (home edge plus leash, the 25 m centre zone); the boss still
   spawns through the guard plan (07's Implementation status), but `PathingSystem` steers only
-  `GuardController`'s guards, so the boss steers itself with `move`. Differences from §4.6, each
-  closed by the work named: the six moves (balancing.md: two sweeps, slam, beam, charge, roar)
-  rotate in profile order, one after another (2026-11-20, so every move comes up), and the next
-  move waits, the boss chasing, until a target is in its range and it is off cooldown; the
-  rotation's place is the brain's `next` memory (the utility pick and the seeded weighted pick
-  are not built); the target is
-  the nearest non-neutral unit inside the zone, with no damage-dealer bias (no window or weight in
-  the docs; `INBOX.md`); a move is not cast through `cast-ability` and an `AbilityEffect`
-  (abilities are Phase 4) but through the interim `boss-move { actorId, moveId }` command:
-  `BossMoveHandler` accepts it only from a boss and only for a move of its own profile, records a
+  `GuardController`'s guards, so the boss steers itself with `move`. As §4.6 designs, the
+  situation tree (`ai/BossMoveChooser.ts`, DEC-371 E7, 2026-11-27) picks among the six moves
+  (balancing.md: two sweeps, slam, beam, charge, roar); it closes the 2026-11-20 rotation
+  interim. The damage-dealer bias is the `punish` branch: a Legend in `meleeRange` that dealt at
+  least `punishShare` of the damage of the last
+  `threatSeconds` (`ThreatLedger`, written by `BossDamageSystem`). Inside a branch,
+  `UtilityScorer` scores the open, ready moves in range on `reach`, `crowd` and `damage` and
+  makes a seeded weighted pick on the brain's own stream. With no move found, the boss walks
+  toward the nearest non-neutral unit inside the zone (clamped to the zone), else to a roam
+  point. The hurt phase (DEC-417): `BossDamageSystem` puts the boss in `hurt` (`BossPhase`,
+  `boss-phase-changed`) on its first tick below `hurtPhase.healthShare`; only then can the
+  brain pick `hurtPhase.moveIds`. The client draws the phase cue
+  (`game/views/BossPhaseCueView.ts`, under the entities). The brain's and the hurt phase's
+  numbers are `TUNE` (`INBOX.md`). The developer command `dev-set-boss-phase` sets the phase;
+  its developer-menu button waits for the developer menu on this line. Differences from §4.6,
+  each closed by the work named: a move is not cast through `cast-ability` and an `AbilityEffect`
+  (abilities are Phase 4) but through the interim `boss-move { actorId, moveId, targetId? }` command:
+  `BossMoveHandler` accepts it only from a boss and only for a move of its own profile, halts the
+  boss at once (`EntityStore.halt`), turns it toward `targetId` when the command names one, records a
   `BossMoveCast` landing the move's telegraph later and emits `boss-telegraph`, and
   `BossMoveSystem` lands it on that tick exactly (`boss-move-executed`), so the telegraph's lead
   time does not depend on the AI cadence. Moves and the profile are authored in seconds and turned
@@ -409,8 +429,9 @@ work named:
   `width / 2` of its line (`unitsAlong`); `line` (the beam, 2026-11-20) hits every unit on a line
   `length` long and `width` wide from the boss, which does not move, and walls do not stop it.
   The second sweep is the sweep with a wider cone. `roar` lands with no effect (only
-  `boss-move-executed`): balancing.md gives the GreaterBoss's roar none. The facing is the boss's own at landing: it last walked toward its
-  target and stands still through the telegraph. The entrance roar is
+  `boss-move-executed`): balancing.md gives the GreaterBoss's roar none. The facing is the one
+  `boss-move` turned it to: the boss stands still through the telegraph, so the move lands
+  toward the brain's target. The entrance roar is
   `boss-entrance` from `SpawnSystem` on its spawn pass and an `entranceSeconds` pause with no
   gameplay effect: balancing.md gives the GreaterBoss's roar none. The pause counts from the
   boss's first decision, at most one cadence after the spawn tick. Its numbers are `TUNE`
