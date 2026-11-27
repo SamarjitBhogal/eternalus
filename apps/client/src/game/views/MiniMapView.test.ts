@@ -71,6 +71,11 @@ const createFakeContext = (): DrawContext => ({
   strokeStyle: '',
   lineWidth: 1,
   lineJoin: 'miter',
+  font: '',
+  textAlign: 'start',
+  textBaseline: 'alphabetic',
+  fillText: vi.fn(),
+  strokeText: vi.fn(),
 });
 
 /** Where a point lies against the ellipse filling `area`: 1 on it, below 1 inside. */

@@ -31,6 +31,11 @@ const createFakeContext = (): DrawContext => ({
   strokeStyle: '',
   lineWidth: 1,
   lineJoin: 'miter',
+  font: '',
+  textAlign: 'start',
+  textBaseline: 'alphabetic',
+  fillText: vi.fn(),
+  strokeText: vi.fn(),
 });
 
 describe('MinimapProjection', () => {

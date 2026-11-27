@@ -8,7 +8,11 @@ export type SettingsIntent = Extract<
   { readonly kind: 'update-binding' | 'reset-bindings' | 'update-settings' }
 >;
 
-/** Settings as storage returns them: bindings still carry plain-string actions. */
-export type SavedSettings = Omit<SettingsSliceState, 'bindings'> & {
+/**
+ * Settings as storage returns them: bindings still carry plain-string actions, and a save from
+ * before the `hud` group has none (DEC-125).
+ */
+export type SavedSettings = Omit<SettingsSliceState, 'bindings' | 'hud'> & {
   readonly bindings: readonly SavedBinding[];
+  readonly hud?: SettingsSliceState['hud'];
 };

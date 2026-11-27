@@ -88,6 +88,11 @@ export class RecordingRenderer implements Renderer {
     this.calls.push({ op: 'drawGlyph', args });
   }
 
+  /** Records the call. */
+  public drawText(...args: Parameters<Renderer['drawText']>): void {
+    this.calls.push({ op: 'drawText', args });
+  }
+
   /** Records the call and returns the point unchanged. */
   public toScreen(...args: Parameters<Renderer['toScreen']>): ReturnType<Renderer['toScreen']> {
     this.calls.push({ op: 'toScreen', args });

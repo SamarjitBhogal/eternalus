@@ -19,6 +19,7 @@ paths:
     'apps/client/src/game/matchLegendSheets*',
     'apps/client/src/game/followViewFor*',
     'apps/client/src/game/legendSpriteWidthsOf*',
+    'apps/client/src/game/DamageBadges.ts',
   ]
 related:
   [
@@ -277,6 +278,15 @@ flowchart LR
   through `Simulation.on` and keeps where each Legend last stood, from the latest snapshot; the
   view draws those bodies greyed out for the rest of the match (DEC-295). Presentation only: core
   keeps no bodies, and a respawned Legend is a living entity again.
+- Damage numbers (W5, DEC-410): `DamageBadges` (`game/`) reads `damage-applied` through
+  `Simulation.on`, as `HealthBarVisibility` does. It decides which hits show (by default the hits
+  the player's Legend deals and takes; the `settingsSlice.hud` setting "show every hit" shows all)
+  and which badge kind each part of a hit gets. `DamageBadgeLayer` draws each badge as a shape with
+  its number on top of the scene (the overlay role of §4). The look of each kind is one entry in a
+  registry beside the layer, and its numbers are `// TUNE:` constants there. `Match` injects the
+  badges into the layer, because views read only snapshots. It gives `DamageBadges` a reader of
+  the current settings and the layer `isReducedMotion` (the Reduce motion setting or the system's
+  `prefers-reduced-motion`, 13 §7).
 - `MinimapView` runs at a lower cadence into the `'minimap'` layer (`06-map-and-minimap.md` §8).
 
 ## 9. Performance budget and how it is measured
@@ -486,6 +496,16 @@ draws a ground shadow at the position, then the Legend raised by its height, so 
 rises too. `EntityLayer.show` interpolates the height like the position
 (`EntityDrawState.height`). The mini map marker stays at the ground position. The team and focus
 rings are part of the Legend view, so they rise with it.
+
+### 2026-11-27 — Damage numbers (DEC-410)
+
+The renderer has no `layer()` call yet, so `DamageBadgeLayer` is the last `WorldLayer` that
+`Match` gives `SceneView`; drawn last, it takes §4's overlay role for its text. `Renderer.drawText`
+takes a world centre and a `TextStyle` (height in world units, outline in CSS pixels), not the
+sketch's `x, y`. Status ticks already carry `source.kind 'status'` and the status id, so the badge
+kind is a client map by status id and core did not change. An online Duel shows no damage
+numbers: `RemoteSimulation.on` never fires (the server sends snapshots only), as for the health
+bars.
 
 ## Related
 

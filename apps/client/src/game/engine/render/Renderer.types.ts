@@ -24,6 +24,18 @@ export type GlyphShape = 'dot' | 'square' | 'diamond' | 'ring';
 export type GlyphSpec = { readonly shape: GlyphShape; readonly size: number };
 
 /**
+ * How a line of world text looks: its font family and weight, its height in world units (it scales
+ * with the zoom), its fill colour and an outline in CSS pixels that keeps it readable on any ground.
+ */
+export type TextStyle = {
+  readonly font: string;
+  readonly weight: number;
+  readonly size: number;
+  readonly color: string;
+  readonly outline: { readonly color: string; readonly width: number };
+};
+
+/**
  * One frame of a sprite atlas: the atlas's manifest id and the cell index, row by row from the
  * top-left cell (0). Views name frames; the renderer holds the bitmaps.
  */

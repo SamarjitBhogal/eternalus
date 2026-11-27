@@ -38,6 +38,13 @@ describe('validateSettingsDto', () => {
     expect(validateSettingsDto(record, KNOWN_ACTIONS)).toEqual({ ok: true, dto: record });
   });
 
+  it('accepts a record with the hud group, and one saved before it existed (DEC-410)', () => {
+    const record = { ...VALID, hud: { shouldShowEveryHit: true } };
+
+    expect(validateSettingsDto(record, KNOWN_ACTIONS)).toEqual({ ok: true, dto: record });
+    expect('hud' in VALID).toBe(false);
+  });
+
   it.each([
     ['a non-object', 'settings', 'not an object'],
     ['a future version', { ...VALID, schemaVersion: 2 }, 'schemaVersion: unsupported version 2'],
@@ -102,6 +109,12 @@ describe('validateSettingsDto', () => {
       'a non-boolean toggle',
       { ...VALID, accessibility: { ...VALID.accessibility, reduceMotion: 'yes' } },
       'accessibility.reduceMotion: invalid value',
+    ],
+    ['a hud group that is not an object', { ...VALID, hud: 3 }, 'hud: not an object'],
+    [
+      'a non-boolean hud toggle',
+      { ...VALID, hud: { shouldShowEveryHit: 'yes' } },
+      'hud.shouldShowEveryHit: invalid value',
     ],
   ])('rejects %s and names the field', (_case, value, reason) => {
     expect(reasonFor(value)).toBe(reason);

@@ -42,6 +42,11 @@ export class SettingsController {
     return this.settings?.bindings ?? null;
   }
 
+  /** The published settings, or `null` before `start()` has published them. */
+  public get current(): SettingsSliceState | null {
+    return this.settings;
+  }
+
   /** Stops handling intents and clears the reduce-motion mark. */
   public destroy(): void {
     this.stopListening?.();

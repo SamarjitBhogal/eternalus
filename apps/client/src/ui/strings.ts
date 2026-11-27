@@ -195,6 +195,7 @@ export const STRINGS = {
     renderScale: 'Render scale',
     reduceMotion: 'Reduce motion',
     colourBlindMode: 'Colour-blind mode',
+    showEveryHit: 'Damage numbers for every hit',
   },
   /**
    * The confirmation before leaving an online Duel: leaving forfeits (DEC-250 (4)), the opponent

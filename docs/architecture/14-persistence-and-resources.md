@@ -533,8 +533,8 @@ reads through the shared `readOrQuarantine`. Interim gaps, to settle before
 `IndexedDbStorageAdapter` (S2) fixes v1 on disk:
 
 - Settings are one `SettingsDtoV1` record per profile keyed by `profileId`, not §7's
-  `SettingsGroupDtoV1` keyed by `[profileId, group]`; the groups are `audio`, `video` and
-  `accessibility` (the Sprint 1 contract's `settingsSlice`), with no `developer` or `storage`
+  `SettingsGroupDtoV1` keyed by `[profileId, group]`; the groups are `audio`, `video`,
+  `accessibility` (the Sprint 1 contract's `settingsSlice`) and `hud` (DEC-410, below), with no `developer` or `storage`
   group yet. Changing the key path after IndexedDB ships needs a new store and a `transform`.
 - One profile (`LOCAL_PROFILE_ID`) until the profiles store exists.
 - The validation helpers (`isRecord`, `groupProblem`, field checks) are private to
@@ -557,6 +557,10 @@ reads through the shared `readOrQuarantine`. Interim gaps, to settle before
   bump, and the settings record stays at version 1. The wording of §13's recipe row waits for him
   in `INBOX.md` HC-T1 (T-226). **Appended 2026-11-02:** he approved it (HC-T1, DEC-142); §13's row
   "A field or a settings group" now says the rule.
+- **The `hud` group (2026-11-27, DEC-410).** `SettingsDtoV1` has an optional `hud` group
+  (`{ shouldShowEveryHit }`, W5c) inside version 1, by DEC-125: a record saved before it still
+  reads, and the game gives it the default. A `hud` value of the wrong shape quarantines the
+  record, as any other bad group does.
 
 Resources (`feat/hud-and-character-select`, 2026-10-24; the owner's art and the Cinzel font,
 DEC-51). §1 and §11 say this since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1); the

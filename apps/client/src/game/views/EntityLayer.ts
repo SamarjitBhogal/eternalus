@@ -5,6 +5,7 @@ import type { WorldPoint } from '../engine/render/Renderer.types';
 import type { HealthBarRule } from './EntityLayer.types';
 import type { EntityDrawState } from './EntityView.types';
 import { HealthBarView } from './HealthBarView';
+import { lerpPoint } from './lerpPoint';
 import type { WorldLayer } from './SceneView.types';
 import type { ViewRegistry } from './ViewRegistry';
 
@@ -53,7 +54,7 @@ export class EntityLayer implements WorldLayer {
       if (entity.mapObjectId !== undefined || now === null) return [];
       const earlier = before.get(entity.id);
       const then = earlier?.transform ?? now;
-      const position = EntityLayer.lerp(then, now, alpha);
+      const position = lerpPoint(then, now, alpha);
       const facing = EntityLayer.turn(then.facing, now.facing, alpha);
       const height = EntityLayer.mix(
         EntityLayer.heightOf(earlier ?? entity),
@@ -102,10 +103,6 @@ export class EntityLayer implements WorldLayer {
     }
   }
 
-  private static lerp(from: WorldPoint, to: WorldPoint, alpha: number): WorldPoint {
-    return { x: EntityLayer.mix(from.x, to.x, alpha), y: EntityLayer.mix(from.y, to.y, alpha) };
-  }
-
   /** Height above the ground (a jump, DEC-390); 0 for an entity that cannot leave it. */
   private static heightOf(entity: EntitySnapshot): number {
     return entity.elevation?.height ?? 0;
@@ -120,7 +117,7 @@ export class EntityLayer implements WorldLayer {
    * the midpoint (a zero blend takes `to`).
    */
   private static turn(from: WorldPoint, to: WorldPoint, alpha: number): WorldPoint {
-    const { x, y } = EntityLayer.lerp(from, to, alpha);
+    const { x, y } = lerpPoint(from, to, alpha);
     const size = Math.hypot(x, y);
     return size === 0 ? to : { x: x / size, y: y / size };
   }

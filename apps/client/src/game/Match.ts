@@ -9,6 +9,8 @@ import {
 import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
 import { BiomeAtmosphereView } from './views/BiomeAtmosphereView';
+import { DamageBadges } from './DamageBadges';
+import { DamageBadgeLayer } from './views/DamageBadgeLayer';
 import { GameLoop } from './engine/loop/GameLoop';
 import { DeveloperMenuController } from './DeveloperMenuController';
 import { HealthBarVisibility } from './HealthBarVisibility';
@@ -63,6 +65,11 @@ export class Match implements LoopTarget {
 
   private readonly bodies: LegendBodies;
 
+  /** Which damage numbers are on screen (W5, DEC-410); it listens to the simulation's events. */
+  private readonly damageBadges: DamageBadges;
+
+  private readonly badgeLayer: DamageBadgeLayer;
+
   /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */
   private readonly objects: WorldObjectsView;
   private readonly atmosphere: BiomeAtmosphereView;
@@ -105,6 +112,16 @@ export class Match implements LoopTarget {
     this.legendSprites = new LegendSprites(deps);
     this.healthBars = new HealthBarVisibility(simulation);
     this.bodies = new LegendBodies(simulation);
+    this.damageBadges = new DamageBadges(
+      simulation,
+      () => deps.settings?.()?.hud.shouldShowEveryHit ?? false,
+      tickRate,
+    );
+    this.badgeLayer = new DamageBadgeLayer(
+      () => this.damageBadges.badges,
+      () => deps.isReducedMotion?.() ?? false,
+      tickRate,
+    );
     const views = createDefaultViewRegistry((kind) => {
       logger.log(
         makeLogRecord(
@@ -134,6 +151,7 @@ export class Match implements LoopTarget {
       new LegendBodyLayer(this.bodies.bodies),
       this.entities,
       this.atmosphere,
+      this.badgeLayer,
     ]);
     const centre = (): WorldPoint => this.miniMapCentre();
     this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING, centre) };
@@ -149,6 +167,7 @@ export class Match implements LoopTarget {
       map,
     });
     this.healthBars.observe(this.current, this.playerId);
+    this.damageBadges.observe(this.current, this.playerId);
     this.bodies.observe(this.current);
     this.bridge = new MatchBridge({
       ...bridge,
@@ -237,6 +256,7 @@ export class Match implements LoopTarget {
     this.current = this.deps.simulation.snapshot();
     this.legendSprites.observe(this.current);
     this.healthBars.observe(this.current, this.playerId);
+    this.damageBadges.observe(this.current, this.playerId);
     this.bodies.observe(this.current);
     this.roofs.playerAt(this.livingPlayerAt());
     if (this.bridge.afterTick(this.current, this.playerId)) {
@@ -253,6 +273,7 @@ export class Match implements LoopTarget {
     renderer.clear(BACKGROUND_COLOR);
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
+    this.badgeLayer.show(this.previous, this.current, alpha);
     this.objects.show(this.current.mapObjects ?? []);
     this.atmosphere.show(
       this.livingPlayerAt(),
@@ -280,6 +301,7 @@ export class Match implements LoopTarget {
     this.loop.destroy();
     this.healthBars.destroy();
     this.bodies.destroy();
+    this.damageBadges.destroy();
     this.developerMenu.destroy();
     this.bridge.destroy();
   }

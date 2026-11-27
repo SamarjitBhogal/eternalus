@@ -6,7 +6,7 @@ import { type SettingsPatch, settingsSlice } from '../../bridge/slices/settingsS
 import { STRINGS } from '../strings';
 import styles from './SettingsScreenOptions.module.css';
 
-const { selectAccessibility, selectAudio, selectVideo } = settingsSlice.selectors;
+const { selectAccessibility, selectAudio, selectHud, selectVideo } = settingsSlice.selectors;
 const VOLUMES = ['master', 'music', 'effects'] as const;
 // TUNE: render-scale choices and the 5 % volume step (below) are provisional UI options.
 const RENDER_SCALES: readonly number[] = [0.5, 0.75, 1];
@@ -19,7 +19,10 @@ function update(patch: SettingsPatch): void {
   emitIntent({ kind: 'update-settings', patch });
 }
 
-/** The Audio, Video and Accessibility tabs: sliders and toggles bound to `settingsSlice`. */
+/**
+ * The Audio, Video and Accessibility tabs: sliders and toggles bound to `settingsSlice`. The Video
+ * tab also holds "Damage numbers for every hit" (W5c, DEC-410).
+ */
 export function SettingsScreenOptions({
   tab,
 }: {
@@ -28,6 +31,7 @@ export function SettingsScreenOptions({
   const audio = useAppSelector(selectAudio);
   const video = useAppSelector(selectVideo);
   const accessibility = useAppSelector(selectAccessibility);
+  const hud = useAppSelector(selectHud);
 
   if (tab === 'audio') {
     return (
@@ -78,6 +82,16 @@ export function SettingsScreenOptions({
               </option>
             ))}
           </select>
+        </label>
+        <label className={styles.field}>
+          <span>{STRINGS.settings.showEveryHit}</span>
+          <input
+            type="checkbox"
+            checked={hud.shouldShowEveryHit}
+            onChange={(event) => {
+              update({ hud: { shouldShowEveryHit: event.currentTarget.checked } });
+            }}
+          />
         </label>
       </div>
     );

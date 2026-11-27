@@ -32,6 +32,7 @@ import { MatchHost } from './MatchHost';
 import type { HostDocument, HostWindow } from './MatchHost.types';
 import { withPlayerTeam } from './withPlayerTeam';
 import type { SettingsController } from './settings/SettingsController';
+import type { MatchDeps } from './Match.types';
 import type { MatchFactory } from './SessionController.types';
 
 /** What the browser match factory is built from; `main.tsx` passes window, document and the page singletons. */
@@ -54,8 +55,13 @@ export type BrowserMatchDeps = {
   /** `?dev=1` (13 §4): the developer menu exists in every match this factory builds. */
   readonly isDeveloperMenuEnabled?: boolean;
   readonly bus: TypedEventBus<BridgeEventMap>;
-  /** The player's bindings when the match starts; later changes arrive as `settings` events. */
-  readonly settings: Pick<SettingsController, 'bindings'>;
+  /**
+   * The player's bindings when the match starts (later changes arrive as `settings` events), and
+   * the current settings the match reads while it runs (the damage numbers, W5c).
+   */
+  readonly settings: Pick<SettingsController, 'bindings' | 'current'>;
+  /** The system's `prefers-reduced-motion` (13 §7), read each frame; `main.tsx` asks `matchMedia`. */
+  readonly prefersReducedMotion: () => boolean;
   /** Stamps the match's log records (the engine clock; core never reads time). */
   readonly clock: SessionClock;
   /**
@@ -77,6 +83,20 @@ export function createMatchLogger(deps: BrowserMatchDeps, ring: RingBufferSink):
       ...deps.sinks.map((sink) => ({ sink, minSeverity: SEVERITY.WARN })),
     ],
   );
+}
+
+/**
+ * The settings a running match reads (W5c, DEC-410): the HUD group, and whether motion is reduced
+ * by the in-game Reduce motion setting or by the system's `prefers-reduced-motion` (13 §7).
+ */
+export function matchSettingReaders(
+  deps: Pick<BrowserMatchDeps, 'settings' | 'prefersReducedMotion'>,
+): Required<Pick<MatchDeps, 'settings' | 'isReducedMotion'>> {
+  return {
+    settings: () => deps.settings.current,
+    isReducedMotion: () =>
+      deps.settings.current?.accessibility.reduceMotion === true || deps.prefersReducedMotion(),
+  };
 }
 
 /** What an error report needs from the match (ADR 0025 §3, §4): it only reads the simulation. */
@@ -157,6 +177,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         logger,
         observer: request.observer,
         isDeveloperMenuEnabled: deps.isDeveloperMenuEnabled === true,
+        ...matchSettingReaders(deps),
         bridge: {
           bus: deps.bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
