@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-27
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -841,6 +841,12 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   Still bound but unhandled: `toggle-perf-overlay` (no overlay exists), `sprint`, `interact`,
   `turret-toggle-control`, `turret-switch-ammo` (`INBOX.md`). `toggle-developer-menu` is handled
   since the developer menu (#107): F1 opens it once `?dev=1` enabled it.
+
+- **Jump (2026-11-27, DEC-390).** `InputAction` (`bridge/Binding.types.ts`) also has `jump`
+  (Space, held), which the §6.1 table predates. `InputMapper` reports it as `InputIntent.isJumping`, and `PlayerCommands` sends
+  the `jump` command only when the held state changes. `KeyboardDevice` ignores a key pressed
+  inside an open modal dialog ([09](09-hardware-abstraction.md) §11). The label is `Jump` in
+  `ui/strings.ts`.
 
 ## Related
 

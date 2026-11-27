@@ -2,6 +2,7 @@ import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
 import { MapFeatureLink } from '../components/MapFeatureLink';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Progression } from '../components/Progression';
@@ -33,6 +34,7 @@ export class EntitySnapshotter {
   public snapshotOf(entity: Entity): EntitySnapshot {
     const transform = entity.findComponent(Transform);
     const health = entity.findComponent(Health);
+    const jump = entity.findComponent(Jump);
     const progression = entity.findComponent(Progression);
     const aether = entity.findComponent(Aether);
     const capture = entity.findComponent(Capturable);
@@ -57,6 +59,7 @@ export class EntitySnapshotter {
               radius: transform.radius,
               facing: { x: transform.facing.x, y: transform.facing.y },
             },
+      elevation: jump === undefined ? null : { height: jump.height },
       health: health === undefined ? null : { current: health.current, max: health.max },
       progression:
         progression === undefined

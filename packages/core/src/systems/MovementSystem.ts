@@ -1,3 +1,4 @@
+import { Jump } from '../components/Jump';
 import { Movement } from '../components/Movement';
 import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
@@ -9,7 +10,9 @@ import type { System, SystemContext } from './System.types';
  * to the position and the entity faces the way it moved (DEC-192; a still entity keeps its
  * facing). Statuses scale the top speed (`moveSpeed`) or hold the entity in place
  * (`cannot-move`); while the match holds units idle (`state.match.isIdleHeld`, the countdown)
- * every entity is held the same way. Allocates nothing per entity (architecture 10 §2).
+ * every entity is held the same way. An airborne entity (`Jump`, DEC-390) moves and faces by its
+ * takeoff velocity (momentum), while its `Movement` still follows the input for the next takeoff.
+ * Allocates nothing per entity (architecture 10 §2).
  */
 export class MovementSystem implements System {
   public readonly name = 'movement';
@@ -28,8 +31,11 @@ export class MovementSystem implements System {
             ? 0
             : (statuses?.multiplier('moveSpeed') ?? 1);
         movement.advance(speedScale);
-        transform.moveBy(movement.velocity);
-        transform.face(movement.velocity);
+        const jump = entity.findComponent(Jump);
+        // No steering in the air: the takeoff velocity holds until landing (DEC-420).
+        const velocity = jump?.isAirborne === true ? jump.velocity : movement.velocity;
+        transform.moveBy(velocity);
+        transform.face(velocity);
       }
     });
   }

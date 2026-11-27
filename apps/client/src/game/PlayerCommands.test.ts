@@ -23,10 +23,18 @@ class ScriptedIntent implements IntentSource {
 
   public isAttacking = false;
 
+  public isJumping = false;
+
   public aim: Vec2 | null = null;
 
   public read(): InputIntent {
-    return { move: this.move, isAttacking: this.isAttacking, aim: this.aim, triggered: [] };
+    return {
+      move: this.move,
+      isAttacking: this.isAttacking,
+      isJumping: this.isJumping,
+      aim: this.aim,
+      triggered: [],
+    };
   }
 }
 
@@ -56,6 +64,7 @@ const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => (
   team,
   transform: { x, y, radius: 1, facing: { x: 1, y: 0 } },
   health: { current: 10, max: 10 },
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
@@ -278,5 +287,32 @@ describe('PlayerCommands', () => {
     tick([PLAYER]);
 
     expect([queued('move'), queued('attack-target')]).toEqual([2, 2]);
+  });
+
+  it('queues jump only when the held state of the jump key changes (DEC-390)', () => {
+    const { input, enqueueCommand, tick } = setUp();
+    tick();
+    input.isJumping = true;
+    tick();
+    tick();
+    input.isJumping = false;
+    tick();
+
+    expect(enqueueCommand.mock.calls.map(([command]) => command)).toEqual([
+      { type: 'jump', actorId: ACTOR, isHeld: true },
+      { type: 'jump', actorId: ACTOR, isHeld: false },
+    ]);
+  });
+
+  it('sends a held jump key again when the Legend returns from a respawn', () => {
+    const { input, queued, tick } = setUp();
+    input.isJumping = true;
+    tick();
+    tick([]);
+    expect(queued('jump')).toBe(1);
+
+    tick([PLAYER]);
+
+    expect(queued('jump')).toBe(2);
   });
 });
