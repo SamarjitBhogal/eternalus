@@ -54,21 +54,20 @@ describe('createDefaultViewRegistry', () => {
     const jumping = { ...entity('warrior', 'legend'), elevation: { height: 1.5 } };
     const renderer = new RecordingRenderer();
 
-    const top = createDefaultViewRegistry(undefined, legend)
-      .viewFor(jumping)
-      .draw(
-        {
-          entity: jumping,
-          position: { x: 0, y: 0 },
-          facing: { x: 1, y: 0 },
-          height: 1.5,
-          isFocused: false,
-        },
-        renderer,
-      );
+    const view = createDefaultViewRegistry(undefined, legend).viewFor(jumping);
+    const state = {
+      entity: jumping,
+      position: { x: 0, y: 0 },
+      facing: { x: 1, y: 0 },
+      height: 1.5,
+      isFocused: false,
+      frameTick: 0,
+    };
+
+    view.draw(state, renderer);
 
     expect(renderer.calls.map((call) => call.op)).toEqual(['drawWorldGlyph']);
-    expect(top).toBe(3 + 1.5);
+    expect(view.visualTopOf?.(state)).toBe(3 + 1.5);
   });
 
   it('passes unknown kinds to the reporter it is given', () => {

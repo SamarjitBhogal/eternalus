@@ -15,6 +15,7 @@ import type { MatchObserver } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import type { DuelMatchRequest } from './SessionController.types';
+import { SHIPPED_SPRITE_WIDTHS } from './__fixtures__/spriteWidths';
 
 const CONFIG = createDefaultGameConfig();
 
@@ -25,6 +26,7 @@ function setUp(canvas = new FakeViewportCanvas()) {
     window,
     document,
     gameConfig: CONFIG,
+    legendSpriteWidths: SHIPPED_SPRITE_WIDTHS,
     bus: new TypedEventBus<BridgeEventMap>(),
     settings: { bindings: null },
     clock: new FakeSessionClock(),

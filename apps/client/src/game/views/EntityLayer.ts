@@ -10,7 +10,8 @@ import type { ViewRegistry } from './ViewRegistry';
 
 /**
  * The scene layer that draws every entity of the latest snapshot through the `ViewRegistry`
- * (architecture 08 §8), in the main view and on the mini map (06 §8). In the main view positions,
+ * (architecture 08 §8), in the main view and on the mini map (06 §8). Each view gets the frame
+ * time with the other draw data (`EntityDrawState.frameTick`). In the main view positions,
  * facings and jump heights (DEC-390) are interpolated between the previous and current snapshot by
  * `alpha`; an entity that appeared this tick draws where it is (no ghost from the origin). It draws
  * back to front by `y`. A mini map dot sits at the snapshot position (DEC-187 (C)).
@@ -46,6 +47,7 @@ export class EntityLayer implements WorldLayer {
     focusId: string | null,
   ): void {
     const before = new Map(previous?.entities.map((entity) => [entity.id, entity]) ?? []);
+    const frameTick = current.tick + alpha;
     this.states = current.entities.flatMap((entity) => {
       const now = entity.transform;
       if (entity.mapObjectId !== undefined || now === null) return [];
@@ -58,7 +60,7 @@ export class EntityLayer implements WorldLayer {
         EntityLayer.heightOf(entity),
         alpha,
       );
-      return [{ entity, position, facing, height, isFocused: entity.id === focusId }];
+      return [{ entity, position, facing, height, isFocused: entity.id === focusId, frameTick }];
     });
   }
 
@@ -68,16 +70,18 @@ export class EntityLayer implements WorldLayer {
    */
   public draw(renderer: Renderer): void {
     const ordered = [...this.states].sort((a, b) => a.position.y - b.position.y);
-    const heights = ordered.map((state) => this.views.viewFor(state.entity).draw(state, renderer));
-    ordered.forEach((state, index) => {
+    for (const state of ordered) {
+      this.views.viewFor(state.entity).draw(state, renderer);
+    }
+    for (const state of ordered) {
       const side = this.healthBarOf(state.entity);
       if (side !== null) {
-        // A sprite reports how tall it drew; any other view falls back to its artwork radius.
+        // The top of the art, else its radius; `HealthBarView` falls back to the footprint.
         const view = this.views.viewFor(state.entity);
-        const above = heights[index] ?? view.visualRadiusOf?.(state.entity);
+        const above = view.visualTopOf?.(state) ?? view.visualRadiusOf?.(state.entity);
         this.healthBars.draw(state, side, renderer, above);
       }
-    });
+    }
   }
 
   /**

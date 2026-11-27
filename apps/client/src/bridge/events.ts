@@ -129,7 +129,9 @@ export type SessionReason =
 /**
  * When assets load (13 §2): `selection` holds what both class layouts and the Legend step show, the
  * layout groups the rest (14 §14); the `-raster` groups hold only plates, loaded only on the
- * `'figma-raster'` effects renderer (DEC-54). Restated in `data/resources/AssetManifest.types.ts`.
+ * `'figma-raster'` effects renderer (DEC-54). A `sprite-atlas:<asset id>` group holds one sprite
+ * sheet (one group family, DEC-398); `match-loading` loads the sheet of every Legend in the match
+ * after `match` (DEC-378 (2)). Restated in `data/resources/AssetManifest.types.ts`.
  */
 export type AssetGroup =
   | 'boot'
@@ -139,14 +141,7 @@ export type AssetGroup =
   | 'selection-raster'
   | 'selection-primary-raster'
   | 'match'
-  | 'atlas-assassin'
-  | 'atlas-knight'
-  | 'atlas-paladin'
-  | 'atlas-colossus'
-  | 'atlas-juggernaut'
-  | 'atlas-catalyst'
-  | 'atlas-oracle'
-  | 'atlas-necromancer';
+  | `sprite-atlas:${AssetId}`;
 
 /**
  * URLs of a group's loaded images and the draw boxes its entries declare (both `{}` after

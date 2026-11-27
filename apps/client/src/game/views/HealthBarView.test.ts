@@ -33,7 +33,7 @@ const unit: EntitySnapshot = {
 const fills = (entity: EntitySnapshot): unknown[] => {
   const renderer = new RecordingRenderer();
   new HealthBarView().draw(
-    { entity, position: { x: 0, y: 0 }, facing: EAST, isFocused: false },
+    { entity, position: { x: 0, y: 0 }, facing: EAST, isFocused: false, frameTick: 0 },
     'enemy',
     renderer,
   );
@@ -50,7 +50,7 @@ describe('HealthBarView', () => {
     const renderer = new RecordingRenderer();
     const foe = { ...unit, health: { current: 3, max: 10 } };
     new HealthBarView().draw(
-      { entity: foe, position: { x: 10, y: 20 }, facing: EAST, isFocused: false },
+      { entity: foe, position: { x: 10, y: 20 }, facing: EAST, isFocused: false, frameTick: 0 },
       'enemy',
       renderer,
     );
@@ -68,21 +68,24 @@ describe('HealthBarView', () => {
     expect(fill?.[2]?.x).toBeCloseTo(10 - width / 2 + width * 0.3);
   });
 
+  it('lifts the track above a drawn sprite: the artwork radius replaces the footprint radius', () => {
+    const renderer = new RecordingRenderer();
+    new HealthBarView().draw(
+      { entity: unit, position: { x: 10, y: 20 }, facing: EAST, isFocused: false, frameTick: 0 },
+      'enemy',
+      renderer,
+      4,
+    );
+    const [track] = renderer.calls.flatMap((call) =>
+      call.op === 'fillPolygon' ? [call.args[0]] : [],
+    );
+
+    expect(track?.[2]?.y).toBeCloseTo(20 - 4 - HEALTH_BAR_GAP);
+    expect(track?.[0]?.y).toBeCloseTo(20 - 4 - HEALTH_BAR_GAP - HEALTH_BAR_HEIGHT);
+  });
+
   it('draws nothing for an entity without health or without a place', () => {
     expect(fills({ ...unit, health: null })).toEqual([]);
     expect(fills({ ...unit, transform: null })).toEqual([]);
-  });
-
-  it('uses the rendered height for clearance above a sprite', () => {
-    const renderer = new RecordingRenderer();
-    const visibleHeight = 3;
-    new HealthBarView().draw(
-      { entity: unit, position: { x: 0, y: 20 }, facing: EAST, isFocused: false },
-      'enemy',
-      renderer,
-      visibleHeight,
-    );
-    const track = renderer.calls.find((call) => call.op === 'fillPolygon');
-    expect(track?.args[0][2]?.y).toBeCloseTo(20 - visibleHeight - HEALTH_BAR_GAP);
   });
 });

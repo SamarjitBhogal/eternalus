@@ -16,11 +16,19 @@ export function rosterSlots(
   difficulties: BotRosterDefinition['difficulties'],
 ): readonly RosterSlot[] {
   return [...rosters.allies, ...rosters.enemies].map(
-    ({ team, classId, isPlayer, isRover }): RosterSlot => {
+    ({ team, classId, specId, isPlayer, isRover }): RosterSlot => {
       const role: BotRole = isRover ? 'rover' : 'laner';
+      const kit = specId === null ? {} : { specId };
       return isPlayer
-        ? { pilot: 'human', team, definitionId: classId, role }
-        : { pilot: 'bot', team, definitionId: classId, role, difficulty: difficulties[role] };
+        ? { pilot: 'human', team, definitionId: classId, role, ...kit }
+        : {
+            pilot: 'bot',
+            team,
+            definitionId: classId,
+            role,
+            difficulty: difficulties[role],
+            ...kit,
+          };
     },
   );
 }

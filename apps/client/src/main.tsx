@@ -1,5 +1,10 @@
-import { SpriteAtlasLoader } from './data/resources/loaders/SpriteAtlasLoader';
-import { createDefaultGameConfig, type Logger, makeLogRecord, SEVERITY } from '@eternalus/core';
+import {
+  createDefaultGameConfig,
+  loadDisplayContent,
+  type Logger,
+  makeLogRecord,
+  SEVERITY,
+} from '@eternalus/core';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
@@ -21,12 +26,14 @@ import { ASSET_LICENCES } from './data/resources/assetLicences';
 import { ASSET_MANIFEST } from './data/resources/AssetManifest';
 import { describeCredits } from './data/resources/describeCredits';
 import { FontLoader } from './data/resources/loaders/FontLoader';
+import { SpriteAtlasLoader } from './data/resources/loaders/SpriteAtlasLoader';
 import { UiImageLoader } from './data/resources/loaders/UiImageLoader';
 import { ResourceController } from './data/resources/ResourceController';
 import { createCoreCatalogue } from './game/content/coreCatalogue';
 import { PLACEHOLDER_PLAYER_NAME } from './game/content/placeholderSetup';
 import { createBrowserDuelMatch } from './game/createBrowserDuelMatch';
 import { createBrowserMatch, type BrowserMatchDeps } from './game/createBrowserMatch';
+import { legendSpriteWidthsOf } from './game/legendSpriteWidthsOf';
 import { createMatchSeed } from './game/createMatchSeed';
 import { readDeveloperFlags } from './game/developerFlags';
 import { isAppleUserAgent } from './game/isAppleUserAgent';
@@ -148,6 +155,8 @@ const browserMatchDeps: BrowserMatchDeps = {
   window,
   document,
   gameConfig,
+  // Each class's sprite width (core content, DEC-424): the sprites and the player's camera.
+  legendSpriteWidths: legendSpriteWidthsOf(loadDisplayContent().legends),
   bus: eventBus,
   settings,
   clock: sessionClock,

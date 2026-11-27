@@ -1,9 +1,5 @@
-import {
-  FULL_TURN,
-  GLYPH_OUTLINE_WIDTH,
-  OUTLINED_GLYPHS,
-  SPRITE_FRAME_CACHE_LIMIT,
-} from './Canvas2dRenderer.constants';
+import { atlasWithFrame } from './atlasWithFrame';
+import { FULL_TURN, GLYPH_OUTLINE_WIDTH, OUTLINED_GLYPHS } from './Canvas2dRenderer.constants';
 import type {
   DrawContext,
   DrawSurface,
@@ -20,6 +16,7 @@ import type {
   WorldPoint,
   WorldRect,
 } from './Renderer.types';
+import { spriteHeight, spriteTopOf } from './spriteMeasures';
 
 /**
  * The Canvas 2D implementation of the `Renderer` port and the only class that touches
@@ -28,7 +25,6 @@ import type {
  * more of the world's height without showing more of its width.
  */
 export class Canvas2dRenderer implements Renderer {
-  private readonly frames = new Map<string, OffscreenCanvas>();
   private readonly context: DrawContext;
   private screenWidth = 0;
   private screenHeight = 0;
@@ -40,7 +36,10 @@ export class Canvas2dRenderer implements Renderer {
   /** How each glyph shape is traced. A new shape is one entry here, never a branch in code. */
   private readonly glyphTracers: Readonly<Record<GlyphShape, GlyphTracer>>;
 
-  /** Creates a renderer that draws through the given context. */
+  /**
+   * Creates a renderer that draws through the given context, with the sprite atlases of its match
+   * by manifest id (08 §6: constructor injection; the renderer never fetches).
+   */
   public constructor(
     context: DrawContext,
     private atlases: Readonly<Record<string, SpriteAtlas>> = {},
@@ -65,7 +64,10 @@ export class Canvas2dRenderer implements Renderer {
     };
   }
 
-  /** Creates a renderer for a canvas, or returns `null` if 2D drawing is unavailable. */
+  /**
+   * Creates a renderer for a canvas with the given sprite atlases, or returns `null` if 2D drawing
+   * is unavailable.
+   */
   public static fromCanvas(
     canvas: DrawSurface,
     atlases: Readonly<Record<string, SpriteAtlas>> = {},
@@ -74,54 +76,48 @@ export class Canvas2dRenderer implements Renderer {
     return context === null ? null : new Canvas2dRenderer(context, atlases);
   }
 
-  /** Installs decoded atlases and discards prepared frames from any previous atlas. */
-  public setAtlases(atlases: Readonly<Record<string, SpriteAtlas>>): void {
-    this.atlases = atlases;
-    this.frames.clear();
+  /** Whether `drawSprite` can draw `sprite`: an injected atlas holds the frame. */
+  public hasSprite(sprite: SpriteRef): boolean {
+    return atlasWithFrame(this.atlases, sprite) !== undefined;
   }
 
-  /** Draws one atlas frame when its image is ready. */
-  public drawSprite(sprite: SpriteRef, feet: WorldPoint, size: number): boolean {
-    const atlas = this.atlases[sprite.atlasId];
-    if (
-      atlas === undefined ||
-      typeof OffscreenCanvas === 'undefined' ||
-      !Number.isInteger(sprite.frame) ||
-      sprite.frame < 0 ||
-      sprite.frame >= atlas.columns * atlas.rows ||
-      size <= 0
-    )
-      return false;
-    const width = Math.max(1, Math.round(size * this.scaleX));
-    const height = Math.max(1, Math.round(size * this.scaleY));
-    const key = `${sprite.atlasId}:${String(sprite.frame)}:${String(width)}:${String(height)}`;
-    let frame = this.frames.get(key);
-    if (frame === undefined) {
-      frame = new OffscreenCanvas(width, height);
-      const context = frame.getContext('2d');
-      if (context === null) return false;
-      context.imageSmoothingEnabled = false;
-      const cellWidth = atlas.image.width / atlas.columns;
-      const cellHeight = atlas.image.height / atlas.rows;
-      context.drawImage(
-        atlas.image,
-        (sprite.frame % atlas.columns) * cellWidth,
-        Math.floor(sprite.frame / atlas.columns) * cellHeight,
-        cellWidth,
-        cellHeight,
-        0,
-        0,
-        width,
-        height,
-      );
-      // Bound zoom/resizing variants; evicting prepared frames never releases the source atlas.
-      if (this.frames.size >= SPRITE_FRAME_CACHE_LIMIT) this.frames.clear();
-      this.frames.set(key, frame);
+  /**
+   * Draws one atlas frame `width` world units wide and as tall as the cell's shape gives, with the
+   * feet of the cell (the atlas's `groundOffset`) on `feet`. One `drawImage` scales the source cell
+   * with smoothing off (nearest neighbour), so pixel art stays sharp at every zoom; the context's
+   * smoothing setting is restored afterwards. The screen box is rounded to whole pixels (08 §4).
+   * Draws nothing when `hasSprite(sprite)` is false.
+   */
+  public drawSprite(sprite: SpriteRef, feet: WorldPoint, width: number): void {
+    const atlas = atlasWithFrame(this.atlases, sprite);
+    if (atlas === undefined) {
+      return;
     }
+    const cellWidth = atlas.image.width / atlas.columns;
+    const cellHeight = atlas.image.height / atlas.rows;
+    const drawWidth = Math.round(width * this.scaleX);
+    const drawHeight = Math.round(spriteHeight(atlas, width) * this.scaleY);
     const at = this.toScreen(feet);
+    const isSmoothing = this.context.imageSmoothingEnabled;
     this.context.imageSmoothingEnabled = false;
-    this.context.drawImage(frame, Math.round(at.x - width / 2), Math.round(at.y - height));
-    return true;
+    this.context.drawImage(
+      atlas.image,
+      (sprite.frame % atlas.columns) * cellWidth,
+      Math.floor(sprite.frame / atlas.columns) * cellHeight,
+      cellWidth,
+      cellHeight,
+      Math.round(at.x - drawWidth / 2),
+      Math.round(at.y - spriteTopOf(atlas, width) * this.scaleY),
+      drawWidth,
+      drawHeight,
+    );
+    this.context.imageSmoothingEnabled = isSmoothing;
+  }
+
+  /** How far the top of `sprite` stands above its feet at `width`; `null` without the sprite. */
+  public spriteTop(sprite: SpriteRef, width: number): number | null {
+    const atlas = atlasWithFrame(this.atlases, sprite);
+    return atlas === undefined ? null : spriteTopOf(atlas, width);
   }
 
   /** Sets the drawing area in device pixels and how many device pixels make one CSS pixel. */
@@ -229,9 +225,12 @@ export class Canvas2dRenderer implements Renderer {
     };
   }
 
-  /** Releases prepared frames; the resource controller owns the source bitmaps. */
+  /**
+   * Releases the renderer: it drops its atlas references (the resource controller owns and closes
+   * the bitmaps), so a destroyed renderer draws no sprite.
+   */
   public destroy(): void {
-    this.frames.clear();
+    this.atlases = {};
     this.screenWidth = 0;
     this.screenHeight = 0;
   }

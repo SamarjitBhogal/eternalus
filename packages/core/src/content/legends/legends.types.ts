@@ -74,6 +74,11 @@ export type LegendDefinition = UnitDefinition & {
   /** Reference height in metres, for art and hit-box tuning (not used by physics). */
   readonly referenceHeight: number;
   /**
+   * How wide the client draws the class's sprite, in metres (not used by the simulation). The
+   * click area is half of it, and the player's camera scales with it (DEC-424).
+   */
+  readonly spriteWidth: number;
+  /**
    * The one field of the design's `defaultLoadout: LoadoutTemplate` (04 §5) built so far: the weapon
    * the Legend spawns with (05 §12 `primaryWeaponId`, MVP). A Legend's damage comes from it.
    */

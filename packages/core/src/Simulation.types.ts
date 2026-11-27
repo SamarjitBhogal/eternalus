@@ -72,6 +72,12 @@ type RosterSlotBase = {
   readonly definitionId: string;
   /** A `laner` gets a lane at setup; the `rover` takes none and starts at its Stronghold (MS-20). */
   readonly role: BotRole;
+  /**
+   * The Legend (spec) of that class (DEC-198, ADR 0026 (PR #123)). The Legend keeps it and its
+   * snapshot names it, so the client draws its sprite (DEC-378 (2)). It gives no stats; absent =
+   * the slot names none.
+   */
+  readonly specId?: string;
 };
 
 /**

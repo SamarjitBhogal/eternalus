@@ -24,6 +24,7 @@ export const SENTINEL = {
   passiveOptions: ['wrecking-run'],
   defaultAction: null,
   referenceHeight: 4.6, // TUNE: ~15 ft (an elephant)
+  spriteWidth: 13, // TUNE: tuneable after game testing (DEC-424: the body ratio of DEC-06; the Warrior's x 2.5)
   footprintRadius: 1.25, // DEC-06
   visionRadius: 25, // TUNE:
   movementProfile: {

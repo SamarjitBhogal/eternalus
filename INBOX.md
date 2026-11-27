@@ -69,6 +69,49 @@ Reply inline (`Decision: …`).
     `fix/hook-project-dir` (PR #155): the rule is in `docs/process/guardrails.md` §4 and
     `docs/process/sdlc.md` §6, and the DEC-331 row cites DEC-352 in place of the pending waiver.
 
+- [x] **Better than design: five Legend sprite items (#170 pre-PR critic, 2026-11-25).** Not
+      built in #170; each would be a small follow-up PR if you agree. Owner Calls cards
+      PR170 (8) to (12) ask the same. (BTD1) Feet in the atlas data: each sheet's ground line
+      goes into the atlas data, and the renderer stands the sprite on it. The views then pass
+      only the unit's position, and `LegendSpriteView` loses its `groundOffset`. (BTD2) One
+      atlas group family: today a new Legend sheet needs a new group name in four files
+      (`AssetManifest.types.ts`, `bridge/events.ts`, `assetsSlice.ts`, `legendSpriteSheets.ts`)
+      and its own manifest group. One group family (load a sheet by its manifest id) needs one
+      manifest line and one table row. The manifest test then checks the real group files;
+      today it gives each sheet a pretend file of its own. (BTD3) A uniform grid: the manifest
+      entry carries `columns` and `rows`, and `SpriteAtlasLoader` checks them, in place of
+      architecture 14 §11's `'image'` type plus a JSON frame table. (BTD4) Scaling at draw time:
+      one `drawImage` with smoothing off scales the cell to the current zoom. Architecture 08 §4
+      pre-scales the frames when the atlas loads, which cannot give 1:1 copies at every zoom.
+      (BTD5) The frame time in `EntityDrawState`: the sprite view reads the frame tick that
+      `Match.render` sets through `LegendSprites.setFrameTick`, a hidden order dependency
+      on `render()`. Decision: …
+      Answered 2026-11-27 (DEC-398): "yes" to each of cards PR170 (8) to (12). BTD3 (card 10) and
+      BTD4 (card 11) were built as answered; BTD1 (card 8), BTD2 (card 9) and BTD5 (card 12) are
+      built in the #170 follow-up PR (`fix/legend-sprites-dec378`), and architecture 08 §4, §8 and
+      14 §11 now say it.
+
+- [x] **Better than design: two more Legend sprite items (#170 critic round 2, 2026-11-26).** Not
+      built in #170. Owner Calls cards PR170 (13) and (14) ask the same. (BTD7)
+      `visualRadiusOf?` serves two queries: the hit radius for pointer targeting and the anchor
+      for the health bar (the top of the art). They are equal for discs and differ for standing
+      sprites. Split it into `visualRadiusOf?` and `visualTopOf?`. It touches PR #90 and
+      PR #170. (BTD8) Architecture 14 §11 plans `get<T>(id): T`, which is an unchecked cast by
+      design. One typed accessor per asset type (as `atlases(group)` in #170) removes the cast.
+      This changes the design text, not the code. Decision: …
+      Answered 2026-11-27 (DEC-398 / DEC-424): BTD7 (card PR170 (13)) "A: keep two separate
+      sizes"; `visualTopOf?` and `visualRadiusOf?` are built in the #170 follow-up PR. BTD8 (card
+      PR170 (14)) "A: one checked lookup per kind of file"; architecture 14 §11 now says it.
+
+- [x] **Licence class of the Magus sprite sheets (#170 pre-PR critic S11, 2026-11-25).** A
+      contributor made the six Magus sheets (Catalyst, Oracle, Heretic; 1x and 2x) with AI from
+      your card art. The manifest gives them the licence `owner` ("Owner-made for Eternalus").
+      ADR 0028 gives contributor-made art its own class. Keep `owner`, or move them to a
+      contributor class (`user-authorised-art` or a new one)? Owner Calls card PR170 (7) asks
+      the same. Decision: …
+      Answered 2026-11-27 (DEC-398): "A: keep them under your licence (as built)". The Magus
+      sheets keep the licence `owner`; nothing changes.
+
 - [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only
       its group's home (`CAMP_BODY`: "a camp is only its group's home"): the camp's mobs are what
@@ -3376,6 +3419,7 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
+- [ ] DEC-298 (5), (7) — Selected-subclass portrait follow-up. Carry the credited Juggernaut portrait with its notice intact for the class-project MVP and replace it after delivery. Build the selected, forward-facing character cutouts using the Oracle reference and propose their actual encoded bytes for review. DEC-378 (4) (2026-11-26) adds the five non-Magus sprite sheets of PR #170 (Zealot, Templar, Paladin, Colossus, Bulwark; 1x and 2x): they ship for the class project, and they are replaced after the MVP too.
 - [ ] **Build DEC-420 (4), (7) and (9): no ability casts in the air, the Fury dash on Q, one
       movement path (2026-11-27).** Owners: (4) the session that merges the second of PR #183
       (the jump) and PR #123 (the ability framework) into phase/3; (7) and (9) the session that
@@ -4131,5 +4175,3 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   `docs/inbox-decisions-2026-10-03`.
 - 2026-09-30 — Phase 0 documentation + harness written on `docs/phase-0-foundation`
   (merged as PR #3; see `docs/changelog/2026-09-30-phase-0-foundation.md`).
-
-- [ ] DEC-298 (5), (7) — Selected-subclass portrait follow-up. Carry the credited Juggernaut portrait with its notice intact for the class-project MVP and replace it after delivery. Build the selected, forward-facing character cutouts using the Oracle reference and propose their actual encoded bytes for review.

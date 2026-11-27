@@ -1,8 +1,10 @@
-import type { AssetManifestEntry } from './AssetManifest.types';
-
-/** Checks URL/Figma provenance or a registered attachment with a documented permission record. */
+/**
+ * Checks URL/Figma provenance or a registered attachment with a documented permission record.
+ * `entry.attachmentReferenceId` is any string here, not only a registered id: the check is the
+ * boundary that also rejects an unknown one.
+ */
 export function hasAssetProvenance(
-  entry: Pick<AssetManifestEntry, 'source' | 'attachmentReferenceId'>,
+  entry: { readonly source: string; readonly attachmentReferenceId?: string },
   references: Readonly<Record<string, unknown>>,
   documents: Readonly<Record<string, string>>,
 ): boolean {

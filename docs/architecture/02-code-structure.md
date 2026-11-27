@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-14
+last-reviewed: 2026-11-27
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -104,13 +104,13 @@ client/src/
   game/settings/              SettingsController: settings intents → settings event + persistence
   bridge/                     store.ts, eventBus.ts, events.ts, Binding.types.ts, chordKey.ts, catalogue.types.ts, hud.types.ts, selectionRules.ts, matchSetupRules.ts, legendNames.ts, minimapRing.ts, slices/*, selectors/*
   data/persistence/           PersistenceController, repositories/*, StorageAdapter, adapters, schema/, dto/*
-  data/resources/             ResourceController, AssetManifest (+ one file per asset group), loaders/ (AssetLoader port + adapters), AssetCache
+  data/resources/             ResourceController, AssetManifest (+ one file per asset group; a group family is one group, 14 §11), loaders/ (AssetLoader port + adapters), AssetCache
   data/logging/               SinkLogger, ConsoleSink, RingBufferSink, ErrorReporter, ReportWriter (port + adapters), ErrorReport.types.ts
   ui/screens/                 BootScreen, MainMenuScreen, LoadoutScreen, ProfileScreen, SettingsScreen, ...
   ui/hud/                     HealthBar, AetherBar, AbilityBar, MinimapPanel, MatchClock, Scoreboard, ...
   ui/components/              reusable presentational components, e.g. <KeyGlyph action="..."/>
   styles/                     global.css: tokens + reset only
-  assets/                     licensed or team-made asset files, one folder per asset group, licences/ (the typed manifest is data/resources/AssetManifest.ts, 14 §11)
+  assets/                     licensed or team-made asset files, one folder per asset group (a group family is one group, 14 §11), licences/ (the typed manifest is data/resources/AssetManifest.ts, 14 §11)
 ```
 
 | Folder                                       | Responsibility                                                                                                                                          | May import                                                                                    | Key classes and files                                                                                                                                                                                                                                                                                                                    |
@@ -220,35 +220,35 @@ changes the shape of the world, it is config. If a player may change it, it is a
 
 ## 9. Single place of change
 
-| Registry                    | File                                                                                 | One line adds                                                                                                                  |
-| --------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `EntityRegistry`            | `core/src/entities/defaultEntityRegistry.ts`                                         | A concrete entity class for an `EntityKind`                                                                                    |
-| `StrategyRegistry`          | `core/src/entities/strategies/defaultStrategyRegistry.ts`                            | A movement, targeting, attack or pick-up strategy                                                                              |
-| Damage steps                | `core/src/combat/defaultDamageSteps.ts`                                              | A rule every hit runs through, at its position                                                                                 |
-| `AbilityRegistry`           | `core/src/abilities/defaultAbilityRegistry.ts`                                       | An `AbilityEffect` or `AbilityRestriction` class                                                                               |
-| `ControllerRegistry`        | `core/src/ai/defaultControllerRegistry.ts`                                           | A `Controller` for a `ControllerId`                                                                                            |
-| Content catalogues          | `core/src/content/<family>/<family>Catalogue.ts`                                     | A definition (legend, mob, ability, weapon, ...)                                                                               |
-| Breakability rules          | `core/src/content/structures/breakability.ts` (`BREAKABILITY_EVALUATORS`)            | An evaluator for a `BreakabilityRule` kind                                                                                     |
-| Guard respawn rules         | `core/src/systems/GuardRoster.ts` (`respawns`)                                       | A `GuardRespawnRule` for a guard plan's `respawn` kind                                                                         |
-| `SystemPipeline` order      | `core/src/systems/DefaultSystemPipeline.ts`                                          | A system, at its position in the tick                                                                                          |
-| `GameEventMap`              | `core/src/state/GameEvents.types.ts`                                                 | An event name and payload type                                                                                                 |
-| `Command` union             | `core/src/commands/Command.types.ts`                                                 | A command (the handler registry then demands its handler)                                                                      |
-| Command handlers            | `core/src/commands/defaultCommandHandlers.ts`                                        | A handler for a command type                                                                                                   |
-| Diagnostic events           | `core/src/diagnostics/DiagnosticEvent.types.ts`                                      | A diagnostic event name and its attributes                                                                                     |
-| Built-in invariants         | `core/src/diagnostics/defaultInvariants.ts`                                          | An invariant                                                                                                                   |
-| `MatchTimeline`             | `core/src/config/GameConfig` `timeline`                                              | A scheduled match event                                                                                                        |
-| `MatchPhaseRegistry`        | `core/src/match/defaultMatchPhases.ts`                                               | A match phase class                                                                                                            |
-| `TimelineActionRegistry`    | `core/src/match/defaultTimelineActions.ts`                                           | A timeline action handler and its `ACTION_RULES` line (`config/validateGameConfig.ts`)                                         |
-| Victory conditions          | `core/src/match/defaultVictoryConditions.ts`                                         | A `VictoryCondition` (a way to win or lose)                                                                                    |
-| Scoring rules               | `core/src/match/defaultScoringRules.ts`                                              | A hit or death rule for an entity family, a listener rule for another event, or a tick scorer for what each tick earns (12 §5) |
-| `ViewRegistry`              | `client/src/game/views/defaultViewRegistry.ts`                                       | A view for an entity family or kind                                                                                            |
-| Draw order                  | `client/src/game/views/SceneView.ts`                                                 | A layer in the frame                                                                                                           |
-| Keybindings                 | `client/src/game/input/keybindings.ts`                                               | An `InputAction` with its default chords                                                                                       |
-| Redux slices                | `client/src/bridge/store.ts` (`combineSlices`)                                       | A slice                                                                                                                        |
-| Bridge events               | `client/src/bridge/events.ts`                                                        | A game → UI or UI → game message                                                                                               |
-| Repositories and migrations | `client/src/data/persistence/PersistenceController.ts`, `schema/migrations.ts`       | A persisted record type / a schema step                                                                                        |
-| Asset manifest              | `client/src/data/resources/AssetManifest.ts` (concatenates one file per asset group) | An asset: its files (`file`, optional `file2x`), per-use `renditions` and, for an image placed at a baked slot, its draw `box` |
-| Screens                     | `client/src/ui/App.tsx` (phase → screen)                                             | A screen                                                                                                                       |
+| Registry                    | File                                                                                                                      | One line adds                                                                                                                  |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `EntityRegistry`            | `core/src/entities/defaultEntityRegistry.ts`                                                                              | A concrete entity class for an `EntityKind`                                                                                    |
+| `StrategyRegistry`          | `core/src/entities/strategies/defaultStrategyRegistry.ts`                                                                 | A movement, targeting, attack or pick-up strategy                                                                              |
+| Damage steps                | `core/src/combat/defaultDamageSteps.ts`                                                                                   | A rule every hit runs through, at its position                                                                                 |
+| `AbilityRegistry`           | `core/src/abilities/defaultAbilityRegistry.ts`                                                                            | An `AbilityEffect` or `AbilityRestriction` class                                                                               |
+| `ControllerRegistry`        | `core/src/ai/defaultControllerRegistry.ts`                                                                                | A `Controller` for a `ControllerId`                                                                                            |
+| Content catalogues          | `core/src/content/<family>/<family>Catalogue.ts`                                                                          | A definition (legend, mob, ability, weapon, ...)                                                                               |
+| Breakability rules          | `core/src/content/structures/breakability.ts` (`BREAKABILITY_EVALUATORS`)                                                 | An evaluator for a `BreakabilityRule` kind                                                                                     |
+| Guard respawn rules         | `core/src/systems/GuardRoster.ts` (`respawns`)                                                                            | A `GuardRespawnRule` for a guard plan's `respawn` kind                                                                         |
+| `SystemPipeline` order      | `core/src/systems/DefaultSystemPipeline.ts`                                                                               | A system, at its position in the tick                                                                                          |
+| `GameEventMap`              | `core/src/state/GameEvents.types.ts`                                                                                      | An event name and payload type                                                                                                 |
+| `Command` union             | `core/src/commands/Command.types.ts`                                                                                      | A command (the handler registry then demands its handler)                                                                      |
+| Command handlers            | `core/src/commands/defaultCommandHandlers.ts`                                                                             | A handler for a command type                                                                                                   |
+| Diagnostic events           | `core/src/diagnostics/DiagnosticEvent.types.ts`                                                                           | A diagnostic event name and its attributes                                                                                     |
+| Built-in invariants         | `core/src/diagnostics/defaultInvariants.ts`                                                                               | An invariant                                                                                                                   |
+| `MatchTimeline`             | `core/src/config/GameConfig` `timeline`                                                                                   | A scheduled match event                                                                                                        |
+| `MatchPhaseRegistry`        | `core/src/match/defaultMatchPhases.ts`                                                                                    | A match phase class                                                                                                            |
+| `TimelineActionRegistry`    | `core/src/match/defaultTimelineActions.ts`                                                                                | A timeline action handler and its `ACTION_RULES` line (`config/validateGameConfig.ts`)                                         |
+| Victory conditions          | `core/src/match/defaultVictoryConditions.ts`                                                                              | A `VictoryCondition` (a way to win or lose)                                                                                    |
+| Scoring rules               | `core/src/match/defaultScoringRules.ts`                                                                                   | A hit or death rule for an entity family, a listener rule for another event, or a tick scorer for what each tick earns (12 §5) |
+| `ViewRegistry`              | `client/src/game/views/defaultViewRegistry.ts`                                                                            | A view for an entity family or kind                                                                                            |
+| Draw order                  | `client/src/game/views/SceneView.ts`                                                                                      | A layer in the frame                                                                                                           |
+| Keybindings                 | `client/src/game/input/keybindings.ts`                                                                                    | An `InputAction` with its default chords                                                                                       |
+| Redux slices                | `client/src/bridge/store.ts` (`combineSlices`)                                                                            | A slice                                                                                                                        |
+| Bridge events               | `client/src/bridge/events.ts`                                                                                             | A game → UI or UI → game message                                                                                               |
+| Repositories and migrations | `client/src/data/persistence/PersistenceController.ts`, `schema/migrations.ts`                                            | A persisted record type / a schema step                                                                                        |
+| Asset manifest              | `client/src/data/resources/AssetManifest.ts` (concatenates one file per asset group; a group family is one group, 14 §11) | An asset: its files (`file`, optional `file2x`), per-use `renditions` and, for an image placed at a baked slot, its draw `box` |
+| Screens                     | `client/src/ui/App.tsx` (phase → screen)                                                                                  | A screen                                                                                                                       |
 
 ## 10. I am adding X → it goes in Y
 
@@ -328,7 +328,7 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
   `selection-primary/`, `selection-alternate/`, `selection-raster/`,
   `selection-primary-raster/`, `match/`) plus `licences/` (the Cinzel OFL and the Phosphor Icons
   MIT texts, DEC-51). The typed manifest is not in `assets/`: it is
-  `data/resources/AssetManifest.ts`, which concatenates one file per group
+  `data/resources/AssetManifest.ts`, which concatenates one file per group (a group family is one group, 14 §11)
   (`data/resources/<group>Assets.ts`), so adding an asset is one line in its group's file with
   its `licence` and `source`, plus the file. The generated `assets/manifest.json` of
   [14](14-persistence-and-resources.md) §11 stays planned. The loaders are

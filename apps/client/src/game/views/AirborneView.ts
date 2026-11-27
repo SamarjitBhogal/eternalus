@@ -6,8 +6,9 @@ import type { EntityDrawState, EntityView } from './EntityView.types';
 
 /**
  * Draws a jumping entity (DEC-390): a shadow on the ground at its position, then the wrapped view
- * raised by its height (interpolated by `EntityLayer.show`, like the position), so its health bar
- * rises too. On the ground and on the mini map the wrapped view draws unchanged.
+ * raised by its height (interpolated by `EntityLayer.show`, like the position). Its health bar top
+ * (`visualTopOf`) rises by the same height. On the ground and on the mini map the wrapped view
+ * draws unchanged.
  */
 export class AirborneView implements EntityView {
   private readonly inner: EntityView;
@@ -22,18 +23,26 @@ export class AirborneView implements EntityView {
     return this.inner.minimapLayer ?? 0;
   }
 
-  /** Draws the shadow and the raised entity; returns the entity's top above the ground. */
-  public draw(state: EntityDrawState, renderer: Renderer): number | undefined {
+  /** Draws the shadow and the raised entity. */
+  public draw(state: EntityDrawState, renderer: Renderer): void {
     const height = state.height ?? 0;
-    if (height <= 0) return this.inner.draw(state, renderer);
-    const radius = this.visualRadiusOf(state.entity);
+    if (height <= 0) {
+      this.inner.draw(state, renderer);
+      return;
+    }
     renderer.drawWorldGlyph(
-      { shape: 'dot', size: radius * 2 },
+      { shape: 'dot', size: this.visualRadiusOf(state.entity) * 2 },
       state.position,
       AIRBORNE_SHADOW_COLOR,
     );
     const raised = { x: state.position.x, y: state.position.y - height };
-    return (this.inner.draw({ ...state, position: raised }, renderer) ?? radius) + height;
+    this.inner.draw({ ...state, position: raised }, renderer);
+  }
+
+  /** The wrapped view's top, else the artwork radius, raised by the frame's jump height. */
+  public visualTopOf(state: EntityDrawState): number {
+    const top = this.inner.visualTopOf?.(state) ?? this.visualRadiusOf(state.entity);
+    return top + Math.max(state.height ?? 0, 0);
   }
 
   /** Draws the wrapped view's marker at the ground position. */

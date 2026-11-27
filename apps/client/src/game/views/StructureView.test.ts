@@ -35,6 +35,7 @@ describe('StructureView', () => {
       position: { x: 0, y: 0 },
       facing: { x: 1, y: 0 },
       isFocused: false,
+      frameTick: 0,
     };
 
     view.draw(gate, renderer);

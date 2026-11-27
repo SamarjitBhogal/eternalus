@@ -1,16 +1,19 @@
 import type { SessionPhase, UiIntent } from '../../../bridge/events';
 import type { SessionContext, SessionState } from '../../SessionController.types';
+import { matchAssetGroups } from '../matchAssetGroups';
 
 /** Menu: the home screen and its sub-routes; "Start match" builds the setup and starts loading. */
 export class MenuState implements SessionState {
   public readonly phase: SessionPhase = 'menu';
 
   /**
-   * Releases the match's assets (`leave-match` skips results; a no-op once released), drops any
-   * previous setup and shows the home route.
+   * Releases the match's assets (`matchAssetGroups`; `leave-match` skips results; a no-op once
+   * released), drops any previous setup and shows the home route.
    */
   public enter(context: SessionContext): void {
-    context.releaseAssets('match');
+    for (const group of matchAssetGroups(context.rosters())) {
+      context.releaseAssets(group);
+    }
     context.clearMatchSetup();
     context.bus.emit('menu-route', { route: 'home' });
   }

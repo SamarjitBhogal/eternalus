@@ -8,7 +8,10 @@ import type { LoadableFace } from './loaders/FontLoader.types';
 import { UiImageLoader } from './loaders/UiImageLoader';
 import { ResourceController } from './ResourceController';
 
-/** Byte totals per group at a pixel ratio of 1 and 2: the HC-Q15 budgets accepted by OD-7. */
+/**
+ * Byte totals per group at a pixel ratio of 1 and 2: the accepted budgets (HC-Q15, OD-7; the
+ * Legend sprite sheets: ADR 0027, DEC-378 (3)).
+ */
 const BUDGETS: readonly (readonly [AssetGroup, number, number])[] = [
   ['boot', 25_888, 25_888],
   // OD-44: the three Legend minis (49,506 / 118,376 B) move from selection-primary to selection (DEC-109).
@@ -19,6 +22,16 @@ const BUDGETS: readonly (readonly [AssetGroup, number, number])[] = [
   ['selection-primary-raster', 1_041_660, 281_268],
   // OD-28: the battle axe with the owner's Noise grain, +206 B (1x) and +1,322 B (2x) on OD-7's 141,440 / 358,580.
   ['match', 141_646, 359_902],
+  // The Legend sprite sheets, accepted as written, lossless (ADR 0027, DEC-378 (3)). A match
+  // loads the sheet of every Legend in it (DEC-378 (2)).
+  ['sprite-atlas:assassin-sprites', 150_240, 519_994],
+  ['sprite-atlas:knight-sprites', 202_298, 700_854],
+  ['sprite-atlas:paladin-sprites', 234_572, 826_646],
+  ['sprite-atlas:colossus-sprites', 245_878, 873_836],
+  ['sprite-atlas:juggernaut-sprites', 264_830, 934_970],
+  ['sprite-atlas:catalyst-sprites', 399_098, 1_391_908],
+  ['sprite-atlas:oracle-sprites', 426_890, 1_487_658],
+  ['sprite-atlas:necromancer-sprites', 345_032, 1_210_002],
 ];
 
 /** The shipped manifest behind the browser adapters, with fake images and font faces. */
@@ -50,7 +63,7 @@ function shippedResources(pixelRatio: number) {
 }
 
 describe('ResourceController with the shipped manifest', () => {
-  it('totals each group at the budgets accepted for HC-Q15 (OD-7), at both densities', () => {
+  it('totals each group at the accepted budgets (HC-Q15, OD-7; ADR 0027), at both densities', () => {
     const atDpr1 = shippedResources(1).resources;
     const atDpr2 = shippedResources(2).resources;
 
@@ -61,6 +74,12 @@ describe('ResourceController with the shipped manifest', () => {
     ]);
 
     expect(totals).toEqual(BUDGETS);
+  });
+
+  it('has one budget row for each group in the manifest, so a new sheet needs one (ADR 0027)', () => {
+    const manifestGroups = new Set(ASSET_MANIFEST.assets.map((entry) => entry.group));
+
+    expect([...manifestGroups].sort()).toEqual(BUDGETS.map(([group]) => group).sort());
   });
 
   it('registers the Cinzel face with the boot group', async () => {

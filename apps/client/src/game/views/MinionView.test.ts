@@ -31,7 +31,10 @@ const draw = (entity: EntitySnapshot, isFocused = false): RecordingRenderer => {
   const renderer = new RecordingRenderer();
   createDefaultViewRegistry()
     .viewFor(entity)
-    .draw({ facing: { x: 1, y: 0 }, entity, position: { x: 30, y: 40 }, isFocused }, renderer);
+    .draw(
+      { facing: { x: 1, y: 0 }, entity, position: { x: 30, y: 40 }, isFocused, frameTick: 0 },
+      renderer,
+    );
   return renderer;
 };
 const points = (renderer: RecordingRenderer) =>

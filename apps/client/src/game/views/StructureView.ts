@@ -7,7 +7,7 @@ import type { EntityView } from './EntityView.types';
  */
 export class StructureView implements EntityView {
   /** Draws nothing; the map layer shows the building. */
-  public draw(): undefined {
+  public draw(): void {
     // ponytail: the map draws structures until sprint 2.8 gives them health bars.
   }
 

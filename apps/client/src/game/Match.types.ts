@@ -1,6 +1,7 @@
 import type {
   EntityId,
   InputIntent,
+  LegendClassId,
   Logger,
   MapDefinition,
   MapFeatureKind,
@@ -15,6 +16,7 @@ import type { Camera } from './engine/Camera';
 import type { Projection } from './engine/input/Projection.types';
 import type { FrameScheduler } from './engine/loop/FrameScheduler.types';
 import type { Renderer } from './engine/render/Renderer';
+import type { LegendSpriteSheet } from './legendSpriteSheets.types';
 import type { PlayerActions } from './PlayerActions';
 
 /**
@@ -87,7 +89,17 @@ type RemotePlayer = {
 
 /** Everything a `Match` is wired from (architecture 08 §7). */
 export type MatchDeps = {
-  readonly playerSpecId?: string | null;
+  /**
+   * The sprite sheets of the match's Legends by sub-class id, in a local match
+   * (`matchLegendSheets`, called by the match factory; DEC-378 (2)). Each Legend's snapshot names
+   * its sub-class. Left out in an online Duel: every Legend is a disc.
+   */
+  readonly legendSheets?: ReadonlyMap<string, LegendSpriteSheet> | undefined;
+  /**
+   * Each Legend class's sprite width by class id (core content `spriteWidth`, DEC-424;
+   * `legendSpriteWidthsOf`). A Legend whose class has none is a disc.
+   */
+  readonly legendSpriteWidths?: Readonly<Record<LegendClassId, number>> | undefined;
   readonly simulation: MatchSimulation;
   /** Set for an online Duel: replaces the local `PlayerCommands` and the snapshot's human Legend. */
   readonly remote?: RemotePlayer;

@@ -261,6 +261,7 @@ export type EntitySnapshot = {
   readonly family: EntityFamily;
   readonly definitionId: string;
   readonly mapFeatureId?: string; // a structure's or zone's map feature (MapFeatureLink; DEC-212, DEC-231)
+  readonly specId?: string; // a Legend's sub-class from its roster slot, so the client draws its sprite (DEC-378 (2), DEC-397)
   readonly team: Team | null;
   readonly transform: {
     readonly x: number;
@@ -514,7 +515,9 @@ each closed by the session or phase named:
 - `GameState.snapshot()` builds the snapshot, each entity through `EntitySnapshotter`, until
   `SnapshotSystem` exists; `Snapshot` carries
   `tick`, `match`, `entities`, `hordes` and `teams` (the team counters, since minion plan M1),
-  and `EntitySnapshot` its identity, `team`, `transform`
+  and `EntitySnapshot` its identity (with a Legend's sub-class, `specId`, when its roster slot
+  names one: DEC-378 (2); the Legend keeps it, and the replay's roster carries it, so
+  `StateHasher` does not hash it), `team`, `transform`
   (`x`, `y`, `radius`, `facing`), `health` (`current`, `max`), `elevation` (a Legend's jump
   `height` above the ground, DEC-390; named for what the view draws, DEC-420), `progression` (a Legend's `level`,
   the `xp` inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the
