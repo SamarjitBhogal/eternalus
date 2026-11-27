@@ -137,6 +137,7 @@ describe('DefaultSystemPipeline', () => {
       'stuck',
       'pathing',
       'combat',
+      'developer-destruction',
       'map-destruction',
       'progression',
       'veterancy',

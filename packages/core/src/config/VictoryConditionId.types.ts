@@ -3,4 +3,5 @@
  * without importing `match/` (02 §2). `objective-lost` and `kill-count` (the Duel's first to N kills) have a
  * condition; `forfeit` and `aborted` are declared for the conditions that come with the forfeit command.
  */
-export type VictoryConditionId = 'objective-lost' | 'kill-count' | 'forfeit' | 'aborted';
+export type VictoryConditionId =
+  'objective-lost' | 'kill-count' | 'forfeit' | 'aborted' | 'dev-forced';

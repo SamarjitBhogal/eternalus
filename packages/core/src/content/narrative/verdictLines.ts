@@ -22,4 +22,9 @@ export const VERDICT_LINES = {
     defeat: 'Your rival reached the kill target first.',
     draw: 'Both of you reached the kill target together.',
   },
+  'dev-forced': {
+    victory: 'Developer menu triggered a victory.',
+    defeat: 'Developer menu triggered a defeat.',
+    draw: 'Developer menu ended the match.',
+  },
 } as const satisfies VerdictLines;

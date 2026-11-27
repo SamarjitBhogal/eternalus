@@ -8,6 +8,7 @@ import { developerMenuSlice } from '../../bridge/slices/developerMenuSlice';
 import type { PlayableTeam } from '../../bridge/domain.types';
 import { STRINGS } from '../strings';
 import { DeveloperLegends } from './DeveloperLegends';
+import { DeveloperMatchTools } from './DeveloperMatchTools';
 import styles from './DeveloperMenu.module.css';
 import { DeveloperRemoveEntity } from './DeveloperRemoveEntity';
 import { DeveloperSpawnMobs } from './DeveloperSpawnMobs';
@@ -56,6 +57,7 @@ function DeveloperPanel({ origins }: Pick<DeveloperMenuState, 'origins'>): React
           ))}
         </select>
       </div>
+      <DeveloperMatchTools />
       <DeveloperSpawnMobs team={team} origins={origins} />
       <DeveloperLegends team={team} />
       <DeveloperRemoveEntity />

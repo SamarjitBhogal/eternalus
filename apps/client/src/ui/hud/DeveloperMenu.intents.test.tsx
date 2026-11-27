@@ -92,6 +92,40 @@ afterEach(() => {
 });
 
 describe('DeveloperMenu buttons', () => {
+  it('sends one replayable command per match tool and confirms destruction', () => {
+    const { container, intents, stop } = mount();
+    click(container, 'Teleport');
+    expect(intents).toEqual([]);
+    type(container, 'World X', '20');
+    type(container, 'World Y', '40');
+    click(container, 'Teleport');
+    click(container, 'Spawn boss');
+    click(container, 'Level up');
+    click(container, 'Destroy all buildings');
+    expect(intents).toHaveLength(3);
+    click(container, 'Confirm destruction');
+    click(container, 'Win game');
+    click(container, 'Lose game');
+    stop();
+    expect(intents).toEqual([
+      { kind: 'dev-command', command: { type: 'dev-teleport', to: { x: 20, y: 40 } } },
+      {
+        kind: 'dev-command',
+        command: {
+          type: 'dev-spawn',
+          kind: 'heavy-mob',
+          definitionId: 'corner-boss',
+          team: 'neutral',
+          at: { x: 20, y: 40 },
+          count: 1,
+        },
+      },
+      { kind: 'dev-command', command: { type: 'dev-level-up' } },
+      { kind: 'dev-command', command: { type: 'dev-destroy-buildings' } },
+      { kind: 'dev-command', command: { type: 'dev-end-match', outcome: 'win' } },
+      { kind: 'dev-command', command: { type: 'dev-end-match', outcome: 'lose' } },
+    ]);
+  });
   it('Spawn sends exactly one dev-spawn-mobs with the chosen team, mob, count and origin', () => {
     const { container, intents, stop } = mount();
     pick(container, 'Team', 'dark');

@@ -38,6 +38,9 @@ type StatusPayload = {
  * Ids of things that have no type yet (lanes, hordes, statuses, abilities) are plain strings.
  */
 export type GameEventMap = {
+  readonly 'dev-level-up-requested': { readonly entityId: EntityId };
+  readonly 'dev-building-destruction-requested': null;
+  readonly 'dev-match-end-requested': { readonly outcome: 'win' | 'lose' };
   readonly 'entity-spawned': {
     readonly entityId: EntityId;
     readonly kind: string;
@@ -161,7 +164,7 @@ export type GameEventMap = {
     readonly victimId: EntityId;
     readonly victimTeam: Team;
     /** `respawn`: XP owed while the Legend waited, paid as it returns (DEC-186). */
-    readonly cause: 'kill' | 'structure-destroyed' | 'team-kill' | 'respawn';
+    readonly cause: 'kill' | 'structure-destroyed' | 'team-kill' | 'respawn' | 'dev-level-up';
   };
   readonly 'team-changed': {
     readonly entityId: EntityId;

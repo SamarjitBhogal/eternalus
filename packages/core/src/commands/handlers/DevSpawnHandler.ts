@@ -1,3 +1,5 @@
+import { Combat } from '../../components/Combat';
+import { Vision } from '../../components/Vision';
 import { Legend } from '../../entities/Legend';
 import { Unit } from '../../entities/Unit';
 import { Zone } from '../../entities/Zone';
@@ -49,6 +51,10 @@ export class DevSpawnHandler implements CommandHandler<'dev-spawn'> {
     }
     // A unit faces the enemy Stronghold until it first moves or attacks (DEC-216 (6)).
     const startFacing = state.world?.startFacing(team, at);
+    const isGuard = 'controller' in definition && definition.controller === 'guard';
+    if (isGuard && state.world !== null && !state.world.grid.isWalkableAt(at.x, at.y)) {
+      return 'invalid-position';
+    }
     // TODO(sholtzman): hand spawns to SpawnSystem (03 §8 deferral) once it exists.
     for (let spawned = 0; spawned < count; spawned += 1) {
       const entity = factory.create(kind, definitionId, {
@@ -57,6 +63,26 @@ export class DevSpawnHandler implements CommandHandler<'dev-spawn'> {
         ...startFacing,
       });
       state.entities.add(entity);
+      if (entity instanceof Unit && isGuard) {
+        const index = state.guards.size;
+        state.guards.add({
+          id: entity.id,
+          homeId: entity.id,
+          team,
+          mobId: definitionId,
+          row: 0,
+          indexInRow: 0,
+          postX: at.x,
+          postY: at.y,
+          homeX: at.x,
+          homeY: at.y,
+          homeRadius: 0,
+          leashRadius: entity.getComponent(Vision).radius,
+          leashTolerance: entity.findComponent(Combat)?.attack.reach ?? 0,
+          respawnTicks: 0,
+        });
+        state.guards.fill(index, entity.id);
+      }
       state.events.emit('entity-spawned', { entityId: entity.id, kind, team });
     }
     return null;

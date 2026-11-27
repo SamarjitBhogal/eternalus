@@ -31,6 +31,17 @@ describe('DeveloperMenu', () => {
     expect(html).toContain('aria-label="Developer menu"');
     expect(html).toContain('Light Minion');
     expect(html).toContain('gate-a (gate)');
-    expect(buttonNames(html)).toEqual(['Spawn', 'Add', 'Remove Legend', 'Remove']);
+    expect(buttonNames(html)).toEqual([
+      'Teleport',
+      'Spawn boss',
+      'Level up',
+      'Destroy all buildings',
+      'Win game',
+      'Lose game',
+      'Spawn',
+      'Add',
+      'Remove Legend',
+      'Remove',
+    ]);
   });
 });

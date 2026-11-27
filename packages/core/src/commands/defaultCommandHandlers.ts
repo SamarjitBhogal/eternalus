@@ -1,6 +1,7 @@
 import type { CommandHandlers } from './CommandHandler.types';
 import type { DefaultCommandHandlerDeps } from './defaultCommandHandlers.types';
 import { AttackTargetHandler } from './handlers/AttackTargetHandler';
+import { DevMatchToolsHandler } from './handlers/DevMatchToolsHandler';
 import { DevRemoveEntityHandler } from './handlers/DevRemoveEntityHandler';
 import { DevRemoveLegendHandler } from './handlers/DevRemoveLegendHandler';
 import { DevSpawnHandler } from './handlers/DevSpawnHandler';
@@ -21,6 +22,7 @@ export const createDefaultCommandHandlers = ({
 }: DefaultCommandHandlerDeps): CommandHandlers => {
   const unsupported = new UnsupportedCommandHandler();
   const removeEntity = new DevRemoveEntityHandler();
+  const matchTools = new DevMatchToolsHandler();
   return {
     move: new MoveHandler(),
     stop: new StopHandler(),
@@ -33,5 +35,9 @@ export const createDefaultCommandHandlers = ({
     'dev-remove-entity': removeEntity,
     'dev-remove-legend': new DevRemoveLegendHandler(removeEntity),
     'dev-set-controller': unsupported, // TODO(sholtzman): with the controller registry (AI)
+    'dev-teleport': matchTools,
+    'dev-level-up': matchTools,
+    'dev-destroy-buildings': matchTools,
+    'dev-end-match': matchTools,
   };
 };

@@ -85,6 +85,10 @@ type CommandPayloads = {
   readonly 'dev-remove-legend': { readonly entityId: EntityId };
   /** Developer menu: hand an entity to another controller (sim mode). */
   readonly 'dev-set-controller': { readonly entityId: EntityId; readonly controllerId: string };
+  readonly 'dev-teleport': { readonly to: Vec2 };
+  readonly 'dev-level-up': unknown;
+  readonly 'dev-destroy-buildings': unknown;
+  readonly 'dev-end-match': { readonly outcome: 'win' | 'lose' };
 };
 
 /** The name of a command. */

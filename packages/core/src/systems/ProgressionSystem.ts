@@ -34,6 +34,7 @@ export class ProgressionSystem implements System {
   public readonly name = 'progression';
 
   private readonly pending: Award[] = [];
+  private readonly developerLevelUps: string[] = [];
 
   /**
    * @param state - The match whose `entity-died` events this system listens to.
@@ -43,6 +44,9 @@ export class ProgressionSystem implements System {
     state: GameState,
     private readonly content: ProgressionContent,
   ) {
+    state.events.on('dev-level-up-requested', ({ entityId }) => {
+      this.developerLevelUps.push(entityId);
+    });
     state.events.on('entity-died', ({ entityId, killer }) => {
       const victim = state.entities.get(entityId);
       const killerId = killer.attackerId;
@@ -121,6 +125,10 @@ export class ProgressionSystem implements System {
 
   /** Gives this tick's XP, in the order it was earned, and applies each level gained. */
   public update({ state }: SystemContext): void {
+    for (const entityId of this.developerLevelUps.splice(0)) {
+      const entity = state.entities.get(entityId);
+      if (entity !== undefined) this.grantDeveloperLevel(entity, state);
+    }
     for (const award of this.pending.splice(0)) {
       if (award.kind === 'respawn') {
         const recipient = state.entities.get(award.recipientId);
@@ -189,6 +197,32 @@ export class ProgressionSystem implements System {
       return;
     }
     const gained = this.award(recipient, progression, capped, state);
+    this.applyLevelRaises(recipient, progression, gained, state);
+  }
+
+  private grantDeveloperLevel(recipient: Entity, state: GameState): void {
+    const progression = recipient.findComponent(Progression);
+    const team = state.entities.teamOf(recipient.id);
+    if (progression === undefined || !isPlayableTeam(team)) return;
+    const curve = this.content.curves.get(progression.curveId);
+    const amount = progression.xpToReach(progression.level + 1, curve);
+    if (amount === 0) return;
+    state.events.emit('xp-gained', {
+      entityId: recipient.id,
+      amount,
+      victimId: recipient.id,
+      victimTeam: team,
+      cause: 'dev-level-up',
+    });
+    this.applyLevelRaises(recipient, progression, progression.addXp(amount, curve), state);
+  }
+
+  private applyLevelRaises(
+    recipient: Entity,
+    progression: Progression,
+    gained: number,
+    state: GameState,
+  ): void {
     const definition = this.legendOf(recipient);
     for (let step = gained - 1; step >= 0; step -= 1) {
       if (definition !== undefined) {

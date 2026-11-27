@@ -124,7 +124,7 @@ describe('loadDisplayContent', () => {
     const { verdictLines } = loadDisplayContent();
 
     expect(verdictLines).toBe(VERDICT_LINES);
-    expect(Object.keys(verdictLines)).toEqual(['objective-lost', 'kill-count']);
+    expect(Object.keys(verdictLines)).toEqual(['objective-lost', 'kill-count', 'dev-forced']);
   });
 
   it("names each team's sovereign Emperor by default (DEC-74)", () => {

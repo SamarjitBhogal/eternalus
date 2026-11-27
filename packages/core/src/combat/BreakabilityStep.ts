@@ -10,7 +10,10 @@ export class BreakabilityStep implements DamageStep {
   public readonly name = 'breakability';
 
   /** Returns 0 when the target's collider is unbreakable, the amount otherwise. */
-  public adjust({ targetId, amount }: DamageHit, state: GameState): number {
+  public adjust({ targetId, amount, source }: DamageHit, state: GameState): number {
+    if (source.kind === 'environment' && source.definitionId === 'dev-destroy-buildings') {
+      return amount;
+    }
     return state.entities.get(targetId)?.findComponent(Collider)?.isUnbreakable === true
       ? 0
       : amount;

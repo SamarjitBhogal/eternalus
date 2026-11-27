@@ -1,4 +1,5 @@
 import type { GameState } from '../state/GameState';
+import { DeveloperVerdictCondition } from './conditions/DeveloperVerdictCondition';
 import { KillCountCondition } from './conditions/KillCountCondition';
 import { ObjectiveLostCondition } from './conditions/ObjectiveLostCondition';
 import type { VictoryCondition } from './VictoryCondition.types';
@@ -8,6 +9,7 @@ import type { VictoryCondition } from './VictoryCondition.types';
  * file that names them. Each condition that listens to events subscribes to `state` here.
  */
 export const createDefaultVictoryConditions = (state: GameState): readonly VictoryCondition[] => [
+  new DeveloperVerdictCondition(state),
   new ObjectiveLostCondition(state),
   new KillCountCondition(),
 ];

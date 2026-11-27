@@ -1,4 +1,5 @@
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { DeveloperDestructionSystem } from './DeveloperDestructionSystem';
 import { createDefaultDamageSteps } from '../combat/defaultDamageSteps';
 import { KillCredit } from '../combat/KillCredit';
 import { Footprint } from '../components/Footprint';
@@ -139,6 +140,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             ),
           ]),
       new CombatSystem(damage),
+      new DeveloperDestructionSystem(state, damage),
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),

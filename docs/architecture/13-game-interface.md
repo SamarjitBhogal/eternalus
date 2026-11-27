@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -202,6 +202,13 @@ anything that only changes how the client shows or paces the simulation is a cli
 
 The menu has no reference to `GameState`; its test spies on `Simulation.enqueueCommand` and
 expects exactly one `Command` per gameplay button (plan Phase 5, sprint 5.5).
+
+In a solo match, Match tools accepts world coordinates for teleporting the player's living Legend
+or spawning a neutral corner camp boss. Teleport checks the destination against the walkability
+grid and moves immediately. Level up grants the XP needed for the next level through the normal
+progression system. Destroy all buildings asks for confirmation, then uses the damage and death
+systems to destroy structures and building objects. Win game and Lose game open the ordinary
+results screen with a developer verdict. Replays record all six controls as commands.
 
 ## 5. The bridge
 
