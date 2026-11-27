@@ -46,7 +46,7 @@ import { VeterancySystem } from './VeterancySystem';
 import { ZoneLevelUpSystem } from './ZoneLevelUpSystem';
 import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
-import { CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
+import { CHECKPOINT_DEFENDER_LIMIT, CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
 import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
 import { TickRate } from '../utils/TickRate';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
@@ -82,11 +82,6 @@ export class DefaultSystemPipeline extends SystemPipeline {
     assistWindowTicks,
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
-    // A death by the gem counts for the victim's last enemy damager in the assist window (DEC-346).
-    const damage = new DamagePipeline(
-      createDefaultDamageSteps(),
-      new KillCredit(assistWindowTicks, CATHEDRAL_GEM.statusIds),
-    );
     const veterancy = loadMinionVeterancy(tickRate);
     const loadedStatuses = loadStatusEffects(
       tickRate,
@@ -101,6 +96,12 @@ export class DefaultSystemPipeline extends SystemPipeline {
             state.world.definition,
             map.flowFieldCorridorHalfWidth,
           );
+    // Minion strength reads lane progress from the lane fields (05 §9, `balancing.md`).
+    // A death by the gem counts for the victim's last enemy damager in the assist window (DEC-346).
+    const damage = new DamagePipeline(
+      createDefaultDamageSteps(flowFields?.progress.bind(flowFields) ?? null),
+      new KillCredit(assistWindowTicks, CATHEDRAL_GEM.statusIds),
+    );
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
       new StatusEffectSystem(damage, statuses),
@@ -147,6 +148,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
                     formationId: RANKS_FORMATION.id,
                     guards: loadGuardPlans(tickRate, hordes.guards),
                     defenders: CHECKPOINT_DEFENDERS,
+                    defenderLimit: CHECKPOINT_DEFENDER_LIMIT,
                   }),
                 ]
               : []),

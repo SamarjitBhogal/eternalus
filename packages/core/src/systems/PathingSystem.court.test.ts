@@ -126,6 +126,7 @@ describe('PathingSystem in a fort court (DEC-217 (15))', () => {
       leashRadius: 20,
       leashTolerance: 2,
       respawnTicks: 3600,
+      canLevel: false,
     });
     state.guards.fill(0, guard.id);
 

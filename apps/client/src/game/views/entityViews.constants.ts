@@ -22,7 +22,16 @@ export const LEGEND_OUTLINE_COLOR = '#ffffff';
 export const LEGEND_BODY_COLOR = 'rgba(128, 128, 128, 0.55)';
 
 /** How much wider than the Legend its outline is. */
-export const LEGEND_OUTLINE_SCALE = 1.25;
+export const LEGEND_OUTLINE_SCALE = 1.1;
+
+/** Shared Legend display diameter, approved for the stand-in art by DEC-238. */
+export const LEGEND_VISUAL_DIAMETER = 5.2;
+
+/** Keep the selected hero's ring close to the enlarged body rather than enlarging it as a halo. */
+export const LEGEND_FOCUS_RING_SCALE = 1.18;
+
+/** Enlarges fallback troop markers and footprints beneath minion figures (DEC-238). */
+export const MOB_VISUAL_SCALE = 1.4;
 
 /** Colour of the outline that keeps mobs visible on their own team's ground (the Stronghold). */
 export const MOB_OUTLINE_COLOR = '#1b1b1b';

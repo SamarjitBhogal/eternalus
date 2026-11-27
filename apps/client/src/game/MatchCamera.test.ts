@@ -17,6 +17,21 @@ const setUp = (pixelRatio = 1) => {
 };
 
 describe('MatchCamera', () => {
+  it('starts the following camera farther out at a 96 by 54 world view', () => {
+    expect(setUp().view.visibleArea()).toMatchObject({ width: 96, height: 54 });
+  });
+  it('exposes weather only while following the player, restoring it after free views', () => {
+    const { view } = setUp();
+    expect(view.isPlayerFollowing).toBe(true);
+    view.lookAt({ x: 900, y: 400 });
+    expect(view.isPlayerFollowing).toBe(false);
+    view.playerMoved();
+    expect(view.isPlayerFollowing).toBe(true);
+    view.overview();
+    expect(view.isPlayerFollowing).toBe(false);
+    view.leaveExplorer();
+    expect(view.isPlayerFollowing).toBe(true);
+  });
   it('shows what the following camera shows, and eases it towards the player', () => {
     const { camera, view } = setUp();
     expect(view.visibleArea()).toEqual(camera.visibleArea(MAP.width, MAP.height));

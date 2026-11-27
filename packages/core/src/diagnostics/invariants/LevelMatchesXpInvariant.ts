@@ -6,14 +6,15 @@ import type { GameState } from '../../state/GameState';
 import type { Invariant, Violation } from '../Invariant.types';
 
 /**
- * `level-matches-xp` (architecture 05 §16, 15 §3): (1) every `Progression`'s level is the one its XP
- * gives on its curve; and every `xp-gained` of this tick (2) is backed by an `entity-died` this tick
- * whose killer is the recipient (a structure award, DEC-186, instead needs the structure gone; a
- * team-kill award, DEC-237, a killer on the recipient's team; XP owed while waiting to respawn,
- * DEC-186, a recipient that is back in the store), (3)
- * is the only award for that kill, and (4) is not for a self-kill or an ally kill (O5). It keeps
- * no scratch: everything comes from the state and this tick's events.
- * Runs every tick, since rules 2–4 read this tick's events.
+ * `level-matches-xp` (architecture 05 §16, 15 §3): (1) every `Progression`'s level is the one its
+ * XP gives on its curve; and every `xp-gained` of this tick (2) is backed by an `entity-died` this
+ * tick whose killer is the recipient (a structure award, DEC-186, instead needs the structure gone;
+ * a team-kill award, DEC-237, a killer on the recipient's team; a camp award, a guard home with no
+ * guard left; a checkpoint award, 07 §7, a capture point with a defender set announced cleared; XP
+ * owed while waiting to respawn, DEC-186, a recipient that is back in the store), (3) is the only
+ * award for that kill, and (4) is not for a self-kill or an ally kill (O5). It keeps no scratch:
+ * everything comes from the state and this tick's events. Runs every tick, since rules 2–4 read
+ * this tick's events.
  */
 export class LevelMatchesXpInvariant implements Invariant {
   public readonly id = 'level-matches-xp';
@@ -107,6 +108,25 @@ export class LevelMatchesXpInvariant implements Invariant {
             ),
           );
         }
+      } else if (award.cause === 'camp-cleared') {
+        // The camp itself stands; what backs the bonus is a camp whose every post is empty.
+        if (!LevelMatchesXpInvariant.isCampCleared(state, victimId)) {
+          violations.push(
+            this.violation(
+              entityId,
+              `Entity "${entityId}" gained camp XP for "${victimId}", which is no cleared camp.`,
+            ),
+          );
+        }
+      } else if (award.cause === 'checkpoint-cleared') {
+        if (!LevelMatchesXpInvariant.hasClearedSet(state, victimId)) {
+          violations.push(
+            this.violation(
+              entityId,
+              `Entity "${entityId}" gained checkpoint XP for "${victimId}", which has no cleared defender set.`,
+            ),
+          );
+        }
       } else if (state.killerOf(victimId)?.attackerId !== entityId) {
         violations.push(
           this.violation(
@@ -131,6 +151,32 @@ export class LevelMatchesXpInvariant implements Invariant {
 
   private violation(entityId: string, message: string): Violation {
     return { invariantId: this.id, severity: this.severity, message, entityId, details: {} };
+  }
+
+  /**
+   * Whether `campId` is a guard home with at least one post of its own plan and none of them
+   * holding a guard. Checkpoint-defender posts on the same home are not part of the camp, as in
+   * `GroupGuardRespawn`.
+   */
+  private static isCampCleared(state: GameState, campId: string): boolean {
+    let posts = 0;
+    let held = 0;
+    state.guards.forEach(({ homeId, guardId, checkpoint }) => {
+      const isCampPost = homeId === campId && checkpoint === undefined;
+      posts += isCampPost ? 1 : 0;
+      held += isCampPost && guardId !== null ? 1 : 0;
+    });
+    return posts > 0 && held === 0;
+  }
+
+  /** Whether `pointId` has a defender set announced cleared (`CheckpointGuardRespawn`). */
+  private static hasClearedSet(state: GameState, pointId: string): boolean {
+    let cleared = 0;
+    state.guards.forEach(({ homeId, defenceId }) => {
+      cleared +=
+        homeId === pointId && defenceId !== undefined && state.guards.isCleared(defenceId) ? 1 : 0;
+    });
+    return cleared > 0;
   }
 
   /** The level `xp` gives on `curve`, recomputed independently of `Progression`. */
