@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -150,7 +150,7 @@ export type Command =
   | {
       readonly type: 'dev-set-controller';
       readonly entityId: EntityId;
-      readonly controllerId: ControllerId;
+      readonly controllerId: ControllerId | null; // null: the bot the Legend's team lacks
     }
   | { readonly type: 'dev-set-assert-level'; readonly level: AssertLevel };
 ```
@@ -496,11 +496,13 @@ each closed by the session or phase named:
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
 - `dev-set-controller` (2026-11-13, FR-099) has `DevSetControllerHandler`: `controllerId` `player`
   makes a Legend of `playerTeam` the human's (no `ControllerBinding`, no brain; the seat moves,
-  DEC-294), the Rover's id binds the Rover to a bot Legend (on the human's Legend: no human left;
-  `humanLegendId` null). A Legend the human leaves becomes the bot its team lacks: the Rover if the
-  team has no Rover bot, otherwise a `bot-legend` laner on the free lane (`assignLanes` with
-  `occupied`); the chooser is `state/missingRoleChooser.ts`, built by `Simulation` from content
-  (owner's answer on PR #112, 2026-11-23). A refused command changes nothing. Refused `unknown-entity`,
+  DEC-294); a bot's id (`rover`, or `bot-legend` on the lane with the fewest of its team's lane
+  bots, past `legendsPerLane` if every lane is full) binds that bot, and `null` binds the bot the
+  Legend's team lacks: the Rover if the team has no Rover bot, otherwise a `bot-legend` laner on
+  the free lane (`assignLanes` with `occupied`). On the human's Legend, a bot id or `null` leaves
+  no human (`humanLegendId` null; DEC-356). The Legend a seat move leaves also becomes the bot its
+  team lacks. Both choosers are in `state/missingRoleChooser.ts`, built by `Simulation` from
+  content. A refused command changes nothing. Refused `unknown-entity`,
   `not-a-legend`, `not-player-team` (DEC-173), `unknown-controller` or, in a Duel,
   `not-supported`. `MatchRecord.reseatHuman` is the second writer of `humanLegendId`; each seat
   move emits `human-reseated`, which `Scoring` folds into the rows' `controller`. A bot re-bound loses its brain memory.

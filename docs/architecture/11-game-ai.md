@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -336,7 +336,10 @@ debug hack. Soak tests ([15-diagnostics](./15-diagnostics-and-runtime-testing.md
 headless in Node for thousands of ticks; balancing runs many seeds and compares `MatchResult`s;
 the developer menu's "remove/add user-controlled Legend" (requirements: "sim game") is a
 `dev-set-controller` command `{ entityId, controllerId }` applied by `CommandApplySystem`, so the
-switch is recorded in the replay like everything else.
+switch is recorded in the replay like everything else. `controllerId` is `player` (the human
+plays the Legend), a bot's id (that bot plays it; for a lane bot the game picks the lane) or
+`null` (the bot its team lacks, 18 §8); a Legend the human leaves for another Legend also becomes
+the bot its team lacks (DEC-356).
 
 ## 8. Testability
 
@@ -374,8 +377,10 @@ and utility better
 `dev-set-controller` (2026-11-13, FR-099) is applied by `DevSetControllerHandler` from the queue, not
 by a `CommandApplySystem`; it moves the `ControllerBinding` and drops the brain (03, status). The
 human's controller id is `player` (§2); taking control while a human exists swaps the seat (DEC-294).
-A Legend the human leaves takes the role its team lacks (the Rover, else a laner on the free lane;
-`state/missingRoleChooser.ts`, injected by `Simulation`), and `AiSystem` gives it a fresh brain.
+A Legend the human leaves takes the bot the developer picks (the Rover, or a laner on the lane
+the game picks), or with no pick the role its team lacks (the Rover, else a laner on the free lane;
+DEC-356). Both choosers are in `state/missingRoleChooser.ts`, injected by `Simulation`, and
+`AiSystem` gives the Legend a fresh brain.
 
 Minion plan pull request M2a builds §1–§3, §5 and §6 with these differences, each closed by the
 work named:

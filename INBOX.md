@@ -59,13 +59,16 @@ Reply inline (`Decision: …`).
       byte for byte, so one selector remains whichever merges first.
 
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-sim-mode`) — developer menu, slice 3
-      (sim mode, FR-099) built; decisions for the owner.** (a) `dev-set-controller` knows two
-      controller ids: `player` and the Rover's (base doc: 11 section 7 gives the human its team's Rover
-      role, DISC-51; the 13 section 4 row has only `{ entityId, controllerId }`); any other is refused `unknown-controller` (a new
-      reject reason). A profile or `bot-legend` picker is out. (b) Making a Legend the human while
-      another one is: the old human becomes a Rover bot (the simplest seat swap). (c) A bot
-      re-bound (or a human given to the Rover) starts a fresh brain: its memory, lane included, is
-      dropped (base doc: 11 section 2 defines brain memory as controller-specific plain data). (d) `humanLegendId` gets a second writer, `MatchRecord.reseatHuman`, which throws on
+      (sim mode, FR-099) built; decisions for the owner.** (a) `dev-set-controller` takes
+      `player`, a bot's controller id (the Rover's, or `bot-legend` on a lane the game picks) or
+      `null` (the bot the Legend's team lacks); the Sim mode section has a Bot select (Game picks,
+      Lane bot, Rover) next to Remove human (DEC-356 (1)). Any other id is refused
+      `unknown-controller` (a new reject reason). A difficulty picker is out. (b) Making a Legend
+      the human while another one is: the old human becomes the bot its team lacks (DEC-356 (2)).
+      (c) A re-bound bot starts a fresh brain: its old memory is dropped, and a lane bot's memory
+      is the lane the game picks (DEC-356 (2); base doc: 11 section 2 defines brain memory as
+      controller-specific plain data). A bot that already plays the chosen controller keeps its
+      brain. (d) `humanLegendId` gets a second writer, `MatchRecord.reseatHuman`, which throws on
       a move to the current seat; hashed state is unchanged without the command (follows from
       DEC-294, which keeps the seat swap). (e) FR-099 is only PARTIALLY met: "a Match with no PlayerController runs to a
       `MatchResult`" cannot be observed in `Simulation`, because no content marks a `WinObjective`,
@@ -79,8 +82,14 @@ Reply inline (`Decision: …`).
       names; (h) `Take control` could use the same select as Follow. Decision: DEC-294 (2026-11-20, Owner Calls page) answers (b): "Keep the swap;
       update mechanics-ideas §6 in this PR" (note: "make sure this is architecturally-sound"). The
       human's controller id is now `player` (PR #112 review S1), and a Legend off `playerTeam` is
-      refused (`not-player-team`, review B1). (a), (c) and (d) follow the base docs named above; (f) follows answer (4); (e) is a status; (g) and (h)
-      are open proposals. Only the owner's confirmation remains open.
+      refused (`not-player-team`, review B1). DEC-356 (2026-11-23 and 2026-11-26, Owner Calls
+      page) answers (a), (c) and (f), and gives the old human of (b) the bot its team lacks, not
+      the Rover. (d) follows the base docs named above; (e) is a status. Open: the proposals (g)
+      and (h); (i) two readings of DEC-356 (1) for the owner to confirm: a picked Rover can be a
+      team's second Rover, and a picked lane bot goes past `legendsPerLane` when every lane is
+      full (in the default 10v10 this is always so when the human leaves the Rover role); (j)
+      better than design (critic, DEC-139): one bot chooser with `null` for the missing role,
+      in a file named for both choosers (`simModeBots.ts`).
 
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-legends`) — developer menu, slice 2
       (add/remove Legends, FR-097) built; decisions for the owner.** (a) `dev-spawn-legend` takes
