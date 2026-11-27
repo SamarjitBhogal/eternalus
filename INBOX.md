@@ -110,8 +110,16 @@ Reply inline (`Decision: …`).
       that player. Before this change, every move went the way the boss last walked.
       (10) A code-structure idea, no change in play (not built): give the boss code its own small
       reader for boss facts. Today each boss feature adds one more method to the shared entity
-      store (`EntityStore`, 362 lines). Two open PRs (#160, #164) change that file too, so the
+      store (`EntityStore`, 356 lines). Two open PRs (#160, #164) change that file too, so the
       split waits until they merge.
+      (11) A code-structure idea, no change in play (not built; a reviewer marked it better than
+      the design): list the boss's phases as data, each with its health share and the moves it
+      opens. A third phase, or a phase for the MiniBoss, would then be a data edit. Today the code
+      knows only two phases, healthy and hurt.
+      (12) A code-structure idea, no change in play (not built; a reviewer marked it better than
+      the design): one place for a phase change. Today the damage system and the developer menu
+      each set the phase and then announce it. One shared step could do both, so the two cannot
+      drift apart.
 
 - [ ] **The Greater Boss's sweep (Aryan Walanj, 2026-11-20, `feat/cathedral-boss-moves`).**
       balancing.md gives the sweep "cone knockback" (the MiniBoss row) and the GreaterBoss's light
@@ -156,6 +164,10 @@ Reply inline (`Decision: …`).
       with no effect (range: the whole 25 m zone; telegraph 1 s, recover 1 s, cooldown 2.5 s, all
       `TUNE`), as at the entrance. Should it stun, slow or knock back (the MiniBoss's roar is a
       "concussion aura")?
+      **(1) and (2) answered by DEC-371 E7 (2026-11-27, `feat/boss-brain`):** the fixed rotation
+      is gone. The boss's brain now picks each move for the situation, so there is no order to
+      choose. (3) stays open. During the fight the boss never picks the roar; point (8) of the
+      brain item above asks if it should roar when it turns hurt.
 
 - [ ] **The Greater Boss's kill reward: killer only or whole team? (Aryan Walanj, 2026-11-20,
       `feat/cathedral-boss-moves`).** DEC-237: "Killing the middle boss puts you up 5 levels from

@@ -265,12 +265,9 @@ boss lives. A situation tree picks the kind of move before the utility pick (DEC
 `ActiveSelector` over `punish` (the top recent damage dealer, a Legend in melee range), `crowd`
 (many enemies close by), `far` (the nearest enemy out of melee range) and a fallback (a close
 move in range; with none, no move, and the boss chases), each branch with its own moves and
-weights in the boss's data. The brain never picks the roar: it does no damage, so a roar in place
-of a chase would let a kiting Legend hold the boss still. The boss roars only at its entrance.
-Some moves open only in a later phase of the fight (DEC-417): the boss turns `hurt` below a share
-of its health, announced by a typed event, and the client plays a phase cue in place of a
-cut-scene. A move halts the boss and turns it to the brain's target before the telegraph, so the
-move aims where the brain chose.
+weights in the boss's data. Some moves open only in a later phase of the fight (DEC-417): the
+boss turns `hurt` below a share of its health, announced by a typed event, and the client plays a
+phase cue in place of a cut-scene.
 
 ### 4.7 RoverController (MVP, enemy Rover)
 
@@ -409,7 +406,11 @@ work named:
   `boss-phase-changed`) on its first tick below `hurtPhase.healthShare`; only then can the
   brain pick `hurtPhase.moveIds`. The client draws the phase cue
   (`game/views/BossPhaseCueView.ts`, under the entities). The brain's and the hurt phase's
-  numbers are `TUNE` (`INBOX.md`). The developer command `dev-set-boss-phase` sets the phase;
+  numbers are `TUNE` (`INBOX.md`). The brain never picks the roar: it does no damage, so a roar
+  in place of a chase would let a kiting Legend hold the boss still, and the boss roars only at
+  its entrance (`INBOX.md`, the brain item's (8), asks whether it roars when it turns `hurt`).
+  The halt and the turn toward the target before a move (below) wait for the owner's sign-off
+  (`INBOX.md`, the brain item's (9)). The developer command `dev-set-boss-phase` sets the phase;
   its developer-menu button waits for the developer menu on this line. Differences from §4.6,
   each closed by the work named: a move is not cast through `cast-ability` and an `AbilityEffect`
   (abilities are Phase 4) but through the interim `boss-move { actorId, moveId, targetId? }` command:
