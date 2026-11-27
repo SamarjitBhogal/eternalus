@@ -25,18 +25,27 @@ import { isSummonBlocked, summonPosition } from '../summonPlacement';
  * as `despawned`, and one that is destroyed frees its place at once, also in the tick it breaks. A
  * body whose outline would overlap a wall or reach past the map's edge is not placed: the cast is
  * refused (`no-target`) before it spends anything (`aimBlockedBy`, which `CastValidator` asks).
- * The overlay draws the outline where the body will stand (`describe`). The body stays when the
- * caster dies. Only obstacles are summoned so far (the content it is given).
+ * The overlay draws the outline where the body will stand (`describe`). Each unit the new wall
+ * pushes against something solid (`SummonResult.pinnedIds`) takes the impact damage of a
+ * knock-back into a wall, once, credited to the caster under the cast's id, through the match's
+ * one `DamagePipeline`, so friendly fire and the status multipliers apply (DEC-382, `INBOX.md`
+ * HC-B43 (6)). The body stays when the caster dies. Only obstacles are summoned so far (the
+ * content it is given).
  */
 export class SummonEffect implements AbilityEffect<SummonSpec> {
   public readonly kind = 'summon';
 
-  /** @param definitions - The bodies a step may place, for their outline (`content/obstacles/`). */
+  /**
+   * @param definitions - The bodies a step may place, for their outline (`content/obstacles/`).
+   * @param impactDamage - What a unit the new wall pins takes: the knock-back tuning's
+   *   `impactDamage` (`content/abilities/knockback.ts`).
+   */
   public constructor(
     private readonly definitions: {
       has(id: string): boolean;
       get(id: string): Pick<ObstacleDefinition, 'footprint'>;
     },
+    private readonly impactDamage: number,
   ) {}
 
   /** A summon names a known body, a distance of 0 or more and a whole cap of at least 1. */
@@ -90,8 +99,8 @@ export class SummonEffect implements AbilityEffect<SummonSpec> {
 
   /**
    * Removes the caster's oldest standing bodies over the cap, then places the new one, owned by
-   * the caster. A body destroyed earlier in this tick still waits for `DeathSystem` to remove it,
-   * so it does not count: it frees its place at once.
+   * the caster, and hits each unit it pins. A body destroyed earlier in this tick still waits for
+   * `DeathSystem` to remove it, so it does not count: it frees its place at once.
    */
   public apply(spec: SummonSpec, cast: CastContext): void {
     const { state, casterId, direction } = cast;
@@ -101,12 +110,19 @@ export class SummonEffect implements AbilityEffect<SummonSpec> {
       cast.summoner.despawn(state, oldest);
     }
     const centre = cast.placement.to;
-    cast.summoner.summon(
+    const { pinnedIds } = cast.summoner.summon(
       state,
       definitionId,
       { position: summonPosition(centre, direction, spec.distance), facing: direction },
       casterId,
     );
+    for (const targetId of pinnedIds) {
+      cast.damage.apply(state, targetId, this.impactDamage, {
+        attackerId: casterId,
+        kind: 'ability',
+        definitionId: cast.abilityId,
+      });
+    }
   }
 
   /**

@@ -9,6 +9,7 @@ import { SHIELD_WALL_BARRIER } from '../../content/obstacles/shieldWallBarrier';
 import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { EntitySummoner } from '../../entities/EntitySummoner';
+import type { GameEventMap } from '../../state/GameEvents.types';
 import { GameState } from '../../state/GameState';
 import type { PlacedWalls } from '../../state/PlacedWalls.types';
 import type { Polygon } from '../../utils/geometry.types';
@@ -64,7 +65,7 @@ const placing = () => {
       definitionId,
       { position: { x: 0, y: 3 }, facing: { x: 1, y: 0 } },
       ownerId,
-    );
+    ).bodyId;
   return { state, caster, summoner, despawned, place };
 };
 
@@ -86,7 +87,7 @@ const casterOn = (walls: PlacedWalls) => {
 };
 
 describe('SummonEffect', () => {
-  const effect = new SummonEffect(OBSTACLE_DEFINITIONS);
+  const effect = new SummonEffect(OBSTACLE_DEFINITIONS, 40);
 
   it('has the kind it is registered under', () => {
     expect(effect.kind).toBe('summon');
@@ -106,7 +107,7 @@ describe('SummonEffect', () => {
   });
 
   it('describes nothing for a body with no outline', () => {
-    const plain = new SummonEffect({ has: () => true, get: () => ({}) });
+    const plain = new SummonEffect({ has: () => true, get: () => ({}) }, 40);
 
     expect(plain.describe(WALL)).toEqual([]);
   });
@@ -185,6 +186,33 @@ describe('SummonEffect', () => {
 
     expect(despawned).toEqual([]);
     expect(standing(state)).toEqual(['entity-101', 'entity-102', 'entity-103']);
+  });
+
+  it('deals each pinned enemy the impact damage, 40, credited to the caster; a pinned ally takes none (DEC-382, HC-B43 (6))', () => {
+    const { state, factory, caster } = casterState();
+    const spawn = (team: 'light' | 'dark', x: number) => {
+      const unit = factory.create('warrior', 'warrior', { position: { x, y: 3 }, team });
+      state.entities.add(unit);
+      return unit;
+    };
+    const enemy = spawn('dark', 1);
+    const ally = spawn('light', -1);
+    const hits: GameEventMap['damage-applied'][] = [];
+    state.events.on('damage-applied', (hit) => hits.push(hit));
+
+    castSteps(state, caster.id, [WALL], {
+      summoner: new RecordingSummoner([enemy.id, ally.id]),
+    });
+
+    expect(hits).toEqual([
+      {
+        targetId: enemy.id,
+        amount: 40,
+        absorbed: 0,
+        source: { attackerId: caster.id, kind: 'ability', definitionId: 'test-cast' },
+      },
+    ]);
+    expect(ally.getComponent(Health).current).toBe(ally.getComponent(Health).max);
   });
 
   it('refuses an aim whose outline the walls call blocked, asking about the outline it would place', () => {

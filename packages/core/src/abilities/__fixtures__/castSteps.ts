@@ -60,15 +60,16 @@ export const castSteps = (
     summoner = new RecordingSummoner(),
   }: CastOptions = {},
 ): void => {
+  const knockback = loadKnockback(state.config.tickRate);
   const registry = testAbilityRegistry(
     [
       new DamageEffect(),
       new DebuffEffect(STATUS_EFFECTS),
-      new KnockbackEffect(loadKnockback(state.config.tickRate)),
+      new KnockbackEffect(knockback),
       new DashEffect(),
       new BuffEffect(STATUS_EFFECTS),
       new ProjectileEffect(PROJECTILES),
-      new SummonEffect(OBSTACLE_DEFINITIONS),
+      new SummonEffect(OBSTACLE_DEFINITIONS, knockback.impactDamage),
       new ExecuteEffect(),
     ],
     new ContentCatalogue([fakeAbility({ id: 'test-cast', effects, scaling })]),

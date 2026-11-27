@@ -30,7 +30,7 @@ import { SelfTargeting } from './targeting/SelfTargeting';
  *
  * @param abilities - The loaded abilities (`loadAbilities`).
  * @param tickRate - Ticks per second (`GameConfig.tickRate`), for the knock-back's travel time
- *   (`loadKnockback`).
+ *   (`loadKnockback`). The knock-back's impact damage also goes to the summon step.
  * @param statuses - The statuses a debuff or a buff may name, and a buff's `size` modifiers; the
  *   shipped ones by default.
  * @param projectiles - The projectiles a shot step may name; the shipped ones by default.
@@ -47,13 +47,14 @@ export const createDefaultAbilityRegistry = (
   bodies: ConstructorParameters<typeof SummonEffect>[0] = OBSTACLE_DEFINITIONS,
 ): AbilityRegistry => {
   const registry = new AbilityRegistry(abilities);
+  const knockback = loadKnockback(tickRate);
   registry.registerEffect(new DamageEffect());
   registry.registerEffect(new DebuffEffect(statuses));
-  registry.registerEffect(new KnockbackEffect(loadKnockback(tickRate)));
+  registry.registerEffect(new KnockbackEffect(knockback));
   registry.registerEffect(new DashEffect());
   registry.registerEffect(new BuffEffect(statuses));
   registry.registerEffect(new ProjectileEffect(projectiles));
-  registry.registerEffect(new SummonEffect(bodies));
+  registry.registerEffect(new SummonEffect(bodies, knockback.impactDamage));
   registry.registerEffect(new ExecuteEffect());
   registry.registerShape(new CircleShape());
   registry.registerShape(new PathShape());

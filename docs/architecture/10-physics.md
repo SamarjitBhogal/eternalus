@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -415,8 +415,11 @@ asks it once per push, at the cast, for the whole push, and deals the knock-back
 `impactDamage` (`content/abilities/knockback.ts`) when it is true. Known limit: the test is the
 straight sweep at the cast, not the travel, so the hit lands up to the travel time early, and a
 walk or another push during the travel does not change it (the `ponytail` remark on
-`KnockbackEffect`). The push-out of a unit under a new wall (`EntitySummoner`) deals no impact
-damage yet: it needs the wall's owner, which comes with HC-B43 (3).
+`KnockbackEffect`). The push-out of a unit under a new wall (`EntitySummoner`) deals the same
+damage to each unit it cannot free: `hasRoom` is false where the push ends. Here the map's edge
+counts, because `pushOut` clamps to the bounds and so leaves the unit inside the new wall. The
+summoner returns these units, and `SummonEffect` deals the damage, credited to the wall's caster
+(05 §18).
 
 ## Related
 

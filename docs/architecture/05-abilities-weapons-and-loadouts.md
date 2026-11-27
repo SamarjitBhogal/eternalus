@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -1170,9 +1170,9 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     (03 §8, DEC-241). A target whose knock-back a wall stops short (a map object, a wall, a
     placed wall or a structure; not the map's edge) takes the knock-back's `impactDamage` (40),
     once per push, credited to the caster, through the `DamagePipeline` (DEC-382, `INBOX.md`
-    HC-B43 (6); the test is `CollisionQuery.hitsWall`, [10](10-physics.md)). The push-out of a
-    unit under a new Shield Wall does not deal it yet. Every knock-back target gets `staggered`
-    (cannot cast);
+    HC-B43 (6); the test is `CollisionQuery.hitsWall`, [10](10-physics.md)). A unit that the
+    push-out of a new Shield Wall cannot free takes the same damage (the Shield Wall bullet
+    below). Every knock-back target gets `staggered` (cannot cast);
     `knockup` (shown as "Airborne") stops moving, attacking and casting. An airborne target can
     still be pushed: DEC-208's stacking is kept over `more-abilities.md` §7's "cannot be pushed
     further" (`INBOX.md` HC-Q53). The 0.2 s landing stagger and `control-immune` wait for status
@@ -1493,7 +1493,13 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     (`CollisionQuery.pushOut`, which `BodySizeSystem` also uses; DEC-363), so no unit starts a
     move inside a wall, with one exception. A push never moves a unit into a map object or
     another wall (DEC-364, DEC-365), and it does not search for free ground. So a unit can stay
-    partly inside the new wall; it can walk out (10 §12, `INBOX.md` HC-S14).
+    partly inside the new wall; it can walk out (10 §12, `INBOX.md` HC-S14). Such a unit is
+    pinned: something solid stopped the push (a map object, a wall, a structure or the map's
+    edge), so it still has no room where the push ends (`CollisionQuery.hasRoom`). `summon`
+    returns the pinned units (`SummonResult.pinnedIds`), and the step deals each one the
+    knock-back's `impactDamage` once, credited to the caster under the cast's id, through the
+    `DamagePipeline`, so friendly fire and the status multipliers apply (DEC-382, `INBOX.md`
+    HC-B43 (6)).
   - **A step's aim check.** An effect may have `aimBlockedBy` (optional on `AbilityEffect`);
     `CastValidator` asks every step of the ability after the targeting, so a refused cast spends
     nothing. An effect may also have `casterBlockedBy`, a check without the aim (Berserk's

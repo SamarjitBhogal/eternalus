@@ -80,7 +80,7 @@ describe('EntitySummoner', () => {
       spawned.push(`${entityId} ${kind} ${team}`),
     );
 
-    const id = summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN, CASTER);
+    const { bodyId: id } = summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN, CASTER);
 
     const body = state.entities.get(id);
     expect(spawned).toEqual([`${id} obstacle neutral`]);
@@ -123,10 +123,12 @@ describe('EntitySummoner', () => {
     const inside = warriorAt(12.8, 10);
     const beside = warriorAt(11, 10);
 
-    summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN, CASTER);
+    const { pinnedIds } = summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN, CASTER);
 
     expect(inside.getComponent(Transform).position.x).toBeCloseTo(12.5 - 0.5, 5);
     expect(beside.getComponent(Transform).position).toEqual({ x: 11, y: 10 });
+    // Both stand free of every wall, so the push pinned neither (DEC-382, HC-B43 (6)).
+    expect(pinnedIds).toEqual([]);
   });
 
   it('leaves a mob walking out of its structure where it stands: walls do not stop it (DEC-133)', () => {
@@ -139,13 +141,14 @@ describe('EntitySummoner', () => {
     expect(deploying.getComponent(Transform).position).toEqual({ x: 12.8, y: 10 });
   });
 
-  it('stops a push at another wall, short of it', () => {
+  it('stops a push at another wall, short of it, and returns the unit as pinned (DEC-382, HC-B43 (6))', () => {
     const { state, summoner, warriorAt } = setUp();
     const trapped = warriorAt(13.4, 10);
 
-    summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN, CASTER);
+    const { pinnedIds } = summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN, CASTER);
 
     expect(trapped.getComponent(Transform).position.x).toBeLessThan(14 - 0.5);
+    expect(pinnedIds).toEqual([trapped.id]);
   });
 
   it('takes a body out as despawned and announces it', () => {
@@ -154,7 +157,7 @@ describe('EntitySummoner', () => {
     state.events.on('entity-removed', ({ entityId, cause }) =>
       removed.push(`${entityId} ${cause}`),
     );
-    const id = summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN, CASTER);
+    const { bodyId: id } = summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN, CASTER);
 
     summoner.despawn(state, id);
 
