@@ -65,7 +65,12 @@ export class EntityLayer implements WorldLayer {
     const heights = ordered.map((state) => this.views.viewFor(state.entity).draw(state, renderer));
     ordered.forEach((state, index) => {
       const side = this.healthBarOf(state.entity);
-      if (side !== null) this.healthBars.draw(state, side, renderer, heights[index] ?? undefined);
+      if (side !== null) {
+        // A sprite reports how tall it drew; any other view falls back to its artwork radius.
+        const view = this.views.viewFor(state.entity);
+        const above = heights[index] ?? view.visualRadiusOf?.(state.entity);
+        this.healthBars.draw(state, side, renderer, above);
+      }
     });
   }
 

@@ -28,4 +28,6 @@ export interface EntityView {
    * without one is on layer 0.
    */
   readonly minimapLayer?: number;
+  /** Radius of the artwork for pointer targeting and health-bar placement. */
+  visualRadiusOf?(entity: EntitySnapshot): number;
 }

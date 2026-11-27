@@ -1,6 +1,9 @@
 /** Integration value of a cell the flood fill never reached (`Uint16Array` maximum). */
 export const UNREACHED = 0xffff;
 
+/** Cell index of a lane end that lies outside the world (`FlowField.goal` and `start`). */
+export const NO_CELL = -1;
+
 /** Direction value of a cell with no way on: the goal, a blocked or an unreached cell. */
 export const NO_DIRECTION = -1;
 

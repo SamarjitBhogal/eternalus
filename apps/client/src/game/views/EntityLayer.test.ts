@@ -254,7 +254,7 @@ describe('EntityLayer', () => {
     // The foe's bar is centred over the foe, just above it.
     const track = polygons[2]?.[0];
     expect(((track?.[0]?.x ?? 0) + (track?.[1]?.x ?? 0)) / 2).toBeCloseTo(10);
-    expect(track?.[2]?.y).toBeLessThan(20);
+    expect(track?.[2]?.y).toBeLessThan(20 - 0.5 * 1.4);
     // The bars come after all three units, so no unit hides one.
     expect(calls.findIndex((call) => call.op === 'fillPolygon')).toBe(calls.length - 4);
   });
