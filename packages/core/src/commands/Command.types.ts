@@ -29,6 +29,8 @@ export type Aim = { readonly point: Vec2; readonly targetId: EntityId | null };
 export type InputIntent = {
   /** Whether the existing basic-attack binding is held. */
   readonly isAttacking?: boolean;
+  /** Whether the jump binding is held (DEC-390). */
+  readonly isJumping?: boolean;
   readonly move: Vec2;
   readonly aim: Vec2 | null;
   readonly triggered: readonly AbilitySlot[];
@@ -41,6 +43,11 @@ export type InputIntent = {
 type CommandPayloads = {
   readonly move: { readonly actorId: EntityId; readonly direction: Vec2 };
   readonly stop: { readonly actorId: EntityId };
+  /**
+   * Holds or releases a Legend's jump key (DEC-390): a held key lifts the Legend from the ground
+   * and again on each landing. Sent only when the held state changes, like `move`.
+   */
+  readonly jump: { readonly actorId: EntityId; readonly isHeld: boolean };
   readonly 'attack-target': { readonly actorId: EntityId; readonly targetId: EntityId };
   readonly 'cast-ability': {
     readonly actorId: EntityId;
@@ -114,6 +121,7 @@ export type CommandRejectReason =
   | 'invalid-direction'
   | 'not-movable'
   | 'cannot-attack'
+  | 'cannot-jump'
   | 'invalid-target'
   | 'not-supported'
   | 'human-legend'

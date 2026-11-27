@@ -6,13 +6,14 @@ import { ContentValidationError } from './ContentValidationError';
  *
  * @param what - The content the message names ("aggro rules").
  * @param values - Each value as its label (definition id and field) and its authored value.
- * @param unit - The authored unit the message prints: `s` for a time, `per s` for a rate.
+ * @param unit - The authored unit the message prints: `s` for a time, `per s` for a rate, `m` for
+ *   a length.
  * @throws ContentValidationError naming every value that is negative or not finite.
  */
 export const assertNonNegativeFinite = (
   what: string,
   values: readonly (readonly [label: string, value: number])[],
-  unit: 's' | 'per s' = 's',
+  unit: 's' | 'per s' | 'm' = 's',
 ): void => {
   const problems = values
     .filter(([, value]) => !(Number.isFinite(value) && value >= 0))

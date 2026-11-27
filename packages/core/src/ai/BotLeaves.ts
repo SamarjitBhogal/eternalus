@@ -293,6 +293,7 @@ export class BotLeaves {
       pathGoalY: typeof memory.pathGoalY === 'number' ? memory.pathGoalY : null,
       pathStepX: typeof memory.pathStepX === 'number' ? memory.pathStepX : null,
       pathStepY: typeof memory.pathStepY === 'number' ? memory.pathStepY : null,
+      pathVersion: typeof memory.pathVersion === 'number' ? memory.pathVersion : null,
     };
   }
 }
