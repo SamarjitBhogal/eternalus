@@ -139,6 +139,7 @@ describe('DefaultSystemPipeline', () => {
       'pathing',
       'combat',
       'map-destruction',
+      'gem-eruption',
       'progression',
       'veterancy',
       'structure',

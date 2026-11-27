@@ -11,11 +11,24 @@ import { CHECKPOINT_DEFENDERS, GUARD_PLANS } from './guardPlans';
 import { ZONE_DEFINITIONS } from '../zones/zoneCatalogue';
 import { STRUCTURE_DEFINITIONS } from './structureCatalogue';
 
+/**
+ * Mobs that only ever stand in the centre zone: the guards of a `gem-eruption` plan (the Greater
+ * Boss). They are no other plan's target, since no other guard post reaches the centre zone
+ * (`greaterBossSpawn.scenario.test.ts` checks it on the map).
+ */
+const CENTRE_ONLY = new Set(
+  Object.values(GUARD_PLANS)
+    .filter(({ activation }) => activation.at === 'gem-eruption')
+    .flatMap(({ table }) => table.map(({ mobId }) => mobId)),
+);
+
 describe('GUARD_PLANS', () => {
   it('gives every guard a leash tolerance of one decision walk plus its farthest stance (DEC-144)', () => {
     const { tickRate } = createDefaultGameConfig();
     const largestTarget = Math.max(
-      ...[...LEGEND_CLASSES.all(), ...MOB_DEFINITIONS.all()].map((unit) => unit.footprintRadius),
+      ...[...LEGEND_CLASSES.all(), ...MOB_DEFINITIONS.all()]
+        .filter(({ id }) => !CENTRE_ONLY.has(id))
+        .map((unit) => unit.footprintRadius),
     );
     for (const plan of Object.values(GUARD_PLANS)) {
       for (const { mobId } of plan.table) {
@@ -75,7 +88,7 @@ describe('GUARD_PLANS', () => {
     const largestTarget = (isNeutral: boolean): number =>
       Math.max(
         ...[...LEGEND_CLASSES.all(), ...MOB_DEFINITIONS.all()]
-          .filter(({ id }) => !isNeutral || !neutralMobs.has(id))
+          .filter(({ id }) => (!isNeutral || !neutralMobs.has(id)) && !CENTRE_ONLY.has(id))
           .map((unit) => unit.footprintRadius),
       );
     for (const [homeId, plan] of Object.entries(GUARD_PLANS)) {
@@ -102,7 +115,7 @@ describe('GUARD_PLANS', () => {
     expect(unknown).toEqual([]);
   });
 
-  it('levels tower guards, forest-camp mobs, the capture point boss group and every checkpoint defender, but not the corner boss (DEC-165, DEC-260, DEC-350)', () => {
+  it('levels tower guards, forest-camp mobs, the corner boss, the capture point boss group and every checkpoint defender (DEC-165, DEC-260, DEC-350, DEC-402)', () => {
     const levellers = Object.entries(GUARD_PLANS)
       .filter(([, plan]) => plan.canLevel)
       .map(([id]) => id);
@@ -110,6 +123,7 @@ describe('GUARD_PLANS', () => {
     expect(levellers.sort()).toEqual([
       'buff-tower',
       'capture-point',
+      'corner-camp',
       'forest-camp-heavy',
       'forest-camp-light',
       'forest-camp-medium',

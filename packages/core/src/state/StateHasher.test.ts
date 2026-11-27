@@ -214,6 +214,16 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(dealt);
   });
 
+  it('changes once the gem erupts, and not before', () => {
+    const { state } = stateWithSoldier();
+    const before = hasher.hash(state);
+    expect(hasher.hash(state)).toBe(before);
+
+    state.match.eruptGem('greater-boss');
+
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
   it('changes with a last enemy hit and with each of its fields (DEC-346)', () => {
     const { state, soldier } = stateWithSoldier();
     const bare = hasher.hash(state);

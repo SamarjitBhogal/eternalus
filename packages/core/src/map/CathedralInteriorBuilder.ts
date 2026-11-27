@@ -117,15 +117,10 @@ export class CathedralInteriorBuilder extends MapDecorationBuilder {
    */
   private gemPlinth(): void {
     const radius = STRUCTURE_DEFINITIONS.get('cathedral').footprintRadius;
-    this.beginObject('cathedral-interior-gem-plinth', 'cathedral');
-    this.blockEllipse(
-      'cathedral-interior-gem-plinth',
-      G.cathedral.x,
-      G.cathedral.y,
-      radius,
-      radius,
-      P.ivoryStone,
-    );
+    const { carriedObjectId: plinthObjectId } = STRUCTURE_DEFINITIONS.get('cathedral');
+    if (plinthObjectId === undefined) throw new Error('The Cathedral gem carries no plinth');
+    this.beginObject(plinthObjectId, 'cathedral');
+    this.blockEllipse(plinthObjectId, G.cathedral.x, G.cathedral.y, radius, radius, P.ivoryStone);
     this.endObject();
   }
 

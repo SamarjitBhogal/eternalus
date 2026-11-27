@@ -1,4 +1,4 @@
-import type { GuardTableEntry } from '../content/structures/structures.types';
+import type { GuardPlanDefinition, GuardTableEntry } from '../content/structures/structures.types';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
 import type { Team } from '../teams/teams.types';
@@ -28,10 +28,28 @@ export type PostLayout = {
   readonly leashRadius: number;
   readonly leashTolerance: number;
   readonly respawnTicks: number;
-  readonly firstTick: number;
+  /** The tick the posts are first filled, or `null`: not until `GuardRoster.activate`. */
+  readonly firstTick: number | null;
   readonly canLevel: boolean;
   /** The checkpoint whose defenders hold these posts; absent for the home's own guard plan. */
   readonly checkpoint?: number;
   /** The posts' id prefix; the home's id by default. */
   readonly idPrefix?: string;
+};
+
+/** A guard plan's activation kinds (`activation.at`, architecture 18 §7.1). */
+export type ActivationKind = GuardPlanDefinition['activation']['at'];
+
+/** The loaded activation of kind `K`. */
+export type ActivationOf<K extends ActivationKind> = Extract<
+  GuardPlanDefinition['activation'],
+  { readonly at: K }
+>;
+
+/**
+ * Each activation kind's first tick for its plan's posts, or `null` for posts that wait for
+ * `GuardRoster.activate`: the registry a new kind adds its line to (rule 12).
+ */
+export type FirstTickRules = {
+  readonly [K in ActivationKind]: (state: GameState, activation: ActivationOf<K>) => number | null;
 };

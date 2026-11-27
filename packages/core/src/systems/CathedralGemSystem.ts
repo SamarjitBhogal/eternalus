@@ -20,14 +20,17 @@ import type { System, SystemContext } from './System.types';
  * too ("hurts any entity", DEC-292); a death by them is credited to the unit's last enemy damager
  * (`KillCredit`, DEC-346). Its holder follows the capture point it stands in. Bots and neutrals
  * never pick the gem as a target: perception sees units only, and a lane's objectives are
- * playable-team structures only (`LaneStructures`). Runs after `CaptureSystem`, so a
- * change of hands this tick shows this tick.
+ * playable-team structures only (`LaneStructures`). Runs after `CaptureSystem`, so a change of
+ * hands this tick shows this tick. When the gem erupts (`greater-boss-summoned`) it is removed
+ * (`despawned`).
  */
 export class CathedralGemSystem implements System {
   public readonly name = 'cathedral-gem';
   private readonly hits: { readonly gemId: EntityId; readonly attackerId: EntityId }[] = [];
   private readonly handovers: { readonly pointId: EntityId; readonly to: Team }[] = [];
   private readonly glowTicks: number;
+  /** Set by `greater-boss-summoned`; the next pass removes the gem. */
+  private hasErupted = false;
 
   /**
    * @param state - The match whose events this system listens to.
@@ -57,10 +60,20 @@ export class CathedralGemSystem implements System {
     state.events.on('capture-point-owner-changed', ({ pointId, to }) => {
       this.handovers.push({ pointId, to });
     });
+    state.events.on('greater-boss-summoned', () => {
+      this.hasErupted = true;
+    });
   }
 
-  /** Ages each gem's glow, hands it over, then answers this tick's hits. */
+  /**
+   * Removes an erupted gem first, then ages each gem's glow, hands it over, then answers this
+   * tick's hits.
+   */
   public update({ state }: SystemContext): void {
+    if (this.hasErupted) {
+      this.hasErupted = false;
+      this.removeGems(state);
+    }
     state.entities.forEach((entity) => {
       const gem = entity.findComponent(CathedralGemState);
       if (gem === undefined) return;
@@ -80,6 +93,23 @@ export class CathedralGemSystem implements System {
     for (const { pointId, to } of this.handovers) {
       const area = state.entities.get(pointId)?.findComponent(ZoneArea);
       if (at !== undefined && area?.contains(at) === true) gem.hold(to);
+    }
+  }
+
+  /**
+   * The gem erupts through the roof (12 §3, reference 04): removed (`despawned`) with its plinth
+   * on this system's pass after `greater-boss-summoned`, so this tick's hits on it strike no one
+   * and nothing blocks the centre, where the Greater Boss appears.
+   */
+  private removeGems(state: GameState): void {
+    const gems: EntityId[] = [];
+    state.entities.forEach((entity) => {
+      if (entity.findComponent(CathedralGemState) !== undefined) gems.push(entity.id);
+    });
+    this.hits.length = 0;
+    for (const entityId of gems) {
+      state.entities.remove(entityId, 'despawned');
+      state.events.emit('entity-removed', { entityId, cause: 'despawned' });
     }
   }
 
