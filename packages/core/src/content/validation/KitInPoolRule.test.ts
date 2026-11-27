@@ -55,4 +55,8 @@ describe('KitInPoolRule', () => {
       }),
     ).toEqual([]);
   });
+
+  it('does not check the passive (PassiveInOptionsRule does)', () => {
+    expect(rule.check({ ...ORACLE, passiveId: 'wrecking-run' })).toEqual([]);
+  });
 });

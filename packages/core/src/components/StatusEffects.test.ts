@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { CONCUSSION } from '../content/status-effects/concussion';
+import type { AuthoredStatusEffect } from '../content/status-effects/statusEffects.types';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import type { StatusEffectRuntime } from './StatusEffectRuntime';
 import { StatusEffects } from './StatusEffects';
@@ -15,6 +16,12 @@ const slow = (id: string, value: number) =>
   loadStatusEffects(30, 2, [
     { ...CONCUSSION, id, modifiers: [{ stat: 'moveSpeed', op: 'mul', value }] },
   ]).get(id);
+
+/** Concussion loaded under another id, with the given modifiers (damageDealt ones by lost health). */
+const scaledStatus = (
+  id: string,
+  modifiers: readonly AuthoredStatusEffect['modifiers'][number][],
+) => loadStatusEffects(30, 2, [{ ...CONCUSSION, id, modifiers }]).get(id);
 
 describe('StatusEffects', () => {
   it('expires a status on the exact tick its duration ends', () => {
@@ -109,6 +116,49 @@ describe('StatusEffects', () => {
       sourceId: 'b',
       periodTicks: null,
       expiresTick: 1_061,
+    });
+  });
+
+  describe('a modifier scaled by lost health (byLostHealth)', () => {
+    const NECROMANCY = LOADED.get('necromancy');
+    const apply = (status: typeof NECROMANCY) => {
+      const statuses = new StatusEffects();
+      statuses.apply(status, 'a', 0);
+      return statuses;
+    };
+
+    it('grows in a straight line from nothing at full health to the full value at fullAt', () => {
+      const statuses = apply(NECROMANCY);
+
+      expect(statuses.multiplier('damageDealt', 1)).toBe(1);
+      expect(statuses.multiplier('damageDealt', 0.15)).toBeCloseTo(1.3);
+      expect(statuses.multiplier('damageDealt', 0)).toBeCloseTo(1.3);
+      expect(statuses.multiplier('damageDealt', 0.575)).toBeCloseTo(1.15);
+      expect(statuses.multiplier('damageDealt', 1.2)).toBe(1); // never below full health's 1
+      expect(statuses.multiplier('damageTaken', 0.575)).toBeCloseTo(0.925);
+    });
+
+    it('counts an omitted health fraction as full health', () => {
+      expect(apply(NECROMANCY).multiplier('damageDealt')).toBe(1);
+    });
+
+    it('scales an `add` modifier’s bonus the same way, once per stack', () => {
+      const status = scaledStatus('rage', [
+        { stat: 'damageDealt', op: 'add', value: 0.2, byLostHealth: { fullAt: 0 } },
+      ]);
+      const statuses = apply(status);
+
+      expect(statuses.multiplier('damageDealt', 1)).toBe(1);
+      expect(statuses.multiplier('damageDealt', 0.5)).toBeCloseTo(1.1);
+      expect(statuses.multiplier('damageDealt', 0)).toBeCloseTo(1.2);
+    });
+
+    it('still multiplies in a fixed modifier on the same stat', () => {
+      const statuses = apply(NECROMANCY);
+      statuses.apply(ENRAGED, 'b', 0);
+
+      expect(statuses.multiplier('damageDealt', 1)).toBeCloseTo(1.15);
+      expect(statuses.multiplier('damageDealt', 0)).toBeCloseTo(1.3 * 1.15);
     });
   });
 });

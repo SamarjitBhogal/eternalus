@@ -44,7 +44,10 @@ export type Placement = {
   readonly facing?: Vec2;
   /** The ground a zone covers, as polygons in world units (zones only, `ZoneArea`). */
   readonly area?: readonly Polygon[];
-  /** The Legend spec whose kit a Legend equips (`RosterSlot.specId`); absent = its class's kit. */
+  /**
+   * The Legend spec whose kit and passive a Legend equips (`RosterSlot.specId`); absent = its
+   * class's `defaultKit` and `defaultPassiveId` (`passiveOf`, DEC-361).
+   */
   readonly specId?: string;
 };
 

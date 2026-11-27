@@ -16,6 +16,13 @@ const perTick = (definition: UnitDefinition, tickRate: number, rate: TickRate): 
     ...definition.movementProfile,
     maxSpeed: definition.movementProfile.maxSpeed / tickRate,
     acceleration: definition.movementProfile.acceleration / (tickRate * tickRate),
+    ...(definition.movementProfile.momentum && {
+      momentum: {
+        walkSpeed: definition.movementProfile.momentum.walkSpeed / tickRate,
+        rampDuration: rate.toTicks(definition.movementProfile.momentum.rampDuration),
+        grip: definition.movementProfile.momentum.grip / (tickRate * tickRate),
+      },
+    }),
   },
   ...(definition.attack && {
     attack: {
@@ -27,8 +34,8 @@ const perTick = (definition: UnitDefinition, tickRate: number, rate: TickRate): 
 
 /**
  * Loads every shipped unit definition (Legends, then mobs), validates it once and converts its
- * speeds and attack intervals from per second to per tick, so the simulation only ever sees ticks (architecture 03 §11,
- * 02 §6).
+ * speeds, accelerations, momentum numbers and attack intervals from per second to per tick, so the
+ * simulation only ever sees ticks (architecture 03 §11, 02 §6).
  *
  * @param tickRate - Ticks per second (`GameConfig.tickRate`).
  * @param curves - The level curves Legends may name; the shipped set by default.

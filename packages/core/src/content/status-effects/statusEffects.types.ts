@@ -1,7 +1,20 @@
 import type { AbilityEffectSpec, AuthoredEffectSpec } from '../abilities/AbilityDefinition.types';
 
-/** A number a status scales: each reader asks `StatusEffects.multiplier(stat)` for one value. `aetherCost` multiplies what a cast costs (read by the cast path in the next slice). */
-export type StatusStat = 'moveSpeed' | 'attackSpeed' | 'damageDealt' | 'damageTaken' | 'aetherCost';
+/**
+ * A number a status scales: each reader asks `StatusEffects.multiplier(stat)` for one value.
+ * `aetherCost` multiplies what a cast costs. The caster's `abilityPotency` multiplies its
+ * abilities' damage, `abilityDuration` the statuses its abilities apply, and `ultimateGain` the
+ * points its ultimate meter earns (Erudition, DEC-337).
+ */
+export type StatusStat =
+  | 'moveSpeed'
+  | 'attackSpeed'
+  | 'damageDealt'
+  | 'damageTaken'
+  | 'aetherCost'
+  | 'abilityPotency'
+  | 'abilityDuration'
+  | 'ultimateGain';
 
 /**
  * A yes/no rule a status imposes. `cannot-cast` waits for `AbilitySystem` (phase 4);
@@ -38,10 +51,17 @@ type StatusStacking = 'refresh' | 'intensity';
  * 0.7 for a 30% slow, so stacks compound. `add` adds `value` to its bonus, so stacks do not:
  * 0.1 at 3 stacks is ×1.3 (veteran, DEC-164). A stat is (1 + every `add`) × every `mul`.
  */
-type StatModifier = {
+export type StatModifier = {
   readonly stat: StatusStat;
   readonly op: 'mul' | 'add';
   readonly value: number;
+  /**
+   * Scales the modifier by the health its holder has lost (Necromancy, DEC-338): none of it at
+   * full health, all of it at `fullAt` (a fraction of max health) or less, in a straight line
+   * between. A `mul` of 1.3 is then ×1 to ×1.3. Absent = always all of it. Only `damageDealt` and
+   * `damageTaken` may carry it: their reader (`StatusModifierStep`) is the one that knows the health.
+   */
+  readonly byLostHealth?: { readonly fullAt: number };
 };
 
 /**
@@ -72,6 +92,12 @@ type StatusEffectBase = {
    * while it lasts (Fury's dash, DEC-270); absent = none.
    */
   readonly grants?: string;
+  /**
+   * Whether the status keeps its time when an ability applies it: `abilityDuration` (Erudition)
+   * does not stretch it, because its time matches a step of its ability (Fury's wind-up hold,
+   * DEC-361); absent = false.
+   */
+  readonly hasFixedDuration?: boolean;
 };
 
 /**

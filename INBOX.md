@@ -562,6 +562,8 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-20 (DEC-307): "MVP-if-time: after the abilities (PR 8), Wrecking Run first",
     with a note: momentum exists but needs a physics feel (turns that slide, a Shield Wall-type
     ability that stops a Sentinel, barging through objects and buildings).
+  - Built 2026-11-23 (DEC-330, `feat/magus-passives`): Erudition (was Studious) and Necromancy,
+    with the owner's numbers; the sub-class sets the passive.
 - [x] **HC-Q74 — Magus staff: keep a melee attack when it turns ranged? (combat audit,
       COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).** Your weapon
       ruling (DEC-64): "Mages all have staves, which have ranged attacks (default) and melee
@@ -635,6 +637,110 @@ Reply inline (`Decision: …`).
       content data (BTD-B), one shared intent rule for the client and the Duel server (BTD-E),
       one reusable "first source with the id" definition lookup for `Simulation` and about ten
       tests (BTD-H).
+
+- [x] **HC-B29 — Better than the design, sign-off asked: three parts of the Sentinel's
+      Wrecking Run (`feat/class-passives`, PR 8 critic round 1 and lane B review F1, 2026-11-22;
+      GAME-LOOP-AND-POST-GAME-56 and -57).** Parts (1) and (2) are built under your standing rule
+      (DEC-223) and tested. Part (3) is not built, so it asks you to depart from that rule ("do
+      not allow tech debt where we can eliminate it"): it pays only when a third movement rule
+      comes. Nothing waits on you; name a part to change it. Your answer goes in the PR 8 answers
+      (DEC-330).
+      (1) The Sentinel speeds up slowly but slides out of a turn quickly. It reaches walk speed in
+      about 1 s and top speed 20 s later (balancing.md), but it slides out of a turn in about 1 s.
+      The physics design (10 §2) gives every unit one limit on how fast its velocity changes, in
+      every direction. With one limit, a reverse at top speed slides about 13.5 m, which is longer
+      than every option on the PR 8 grip card (W2). So the Sentinel has a second rate, its slide
+      rate, and its time to top speed is "time to walk speed + ramp", not "top speed ÷
+      acceleration". On sign-off, 10 §2 gets the steps for a unit with momentum. Alternative: one
+      limit for everything. At 3 m/s² the Sentinel reaches top speed in 3 s (no ramp) and a
+      reverse slides 13.5 m. A limit slow enough for the 20 s ramp makes a reverse slide over
+      90 m. Code: the slide rate is `grip` in `content/legends/sentinel.ts`.
+      (2) No change for the player: Wrecking Run is part of the Sentinel's movement numbers, not a
+      status. The ability design (05 §7) applies every passive as a permanent buff status. The
+      classes doc (`docs/reference/game-design/01-classes-and-subclasses.md`, below the passives
+      table) says: "Wrecking Run is the in-fiction name for the Sentinel movement profile below."
+      So its speed numbers sit with the Sentinel's movement numbers, which the movement code reads
+      every tick. The other parts of Wrecking Run (the stun and self damage of a hit at full
+      speed, and barging through walls) get a passive entry when they are built. On sign-off,
+      05 §7 says that a passive can also be a block of movement numbers, and balancing.md's
+      "`wrecking-run.rampSeconds`" becomes the ramp duration in those numbers. Alternative: a
+      `wrecking-run` buff status that carries the speed numbers. Code:
+      `movementProfile.momentum` (`rampDuration`).
+      (3) No change for the player: one shared form for the movement rules is not built. Today
+      there are two rules (turn at once and keep speed; momentum), and the movement code picks one
+      with a "has momentum?" check in four places. A shared interface with one class per rule
+      removes those checks (04 §4, strategies). Recommended: not yet, because it pays when a third
+      rule comes. Alternative: build it in PR 8. Code: `components/Movement`.
+  - Answered 2026-11-23 (DEC-330): (1) "Keep the two rates (built)". (2) "Keep them with the
+    movement numbers (built)". (3) "Not yet: build it when a third rule comes", with a note: the
+    Magus will float on its wings and switch between floating and walking stances, and the
+    Harbinger flies almost all the time (post-MVP); "Please ensure this is, at least, documented."
+    10 §2 ("Movement with momentum", "Movement rules") and 05 §7 now say all three
+    (`feat/class-passives`, the PR 8 follow-up).
+
+- [x] **HC-B33 — Defect, your call on when to fix it: a unit pressed into a wide corner does
+      not stop cleanly, and PR 8 makes it show on the Sentinel (`feat/class-passives`, PR 8 probe
+      D3 and gate round 3, 2026-11-22; GAME-LOOP-AND-POST-GAME-59 to -61).** What the player sees:
+      a unit that walks into a corner whose walls meet at more than 90° (for example 120° or 135°)
+      does not stop cleanly. With PR 8, a Sentinel stays in the corner, but its facing swings by
+      37° to 68°, 11 to 16 times a second (at 150°, every tick: 30 times a second). A push (a
+      knock-back) into such a corner makes it jump about 15 cm each tick while the push lasts. It
+      never gets out of the corner. Other units do not turn, but they shake by up to about 5 cm.
+      Before PR 8, the Sentinel had no momentum and faced steadily in the same corner, so PR 8
+      adds the part that players see. Why: the wall code slides what is left of a move off one
+      wall and then off the next. In a wide corner, this moves the unit a hair out along one wall,
+      and on the next tick it walks back. Fix: slide the whole move against every wall it meets
+      at once, so a unit pressed into a corner stops dead. PR 8 already uses this rule for the
+      Sentinel's speed; the fix moves it into one shared helper that the wall code also uses
+      (critic BTD-6).
+      (A) Recommended: fix the wall code in a small PR of its own before PR 8 merges. Reason:
+      your standing rule (DEC-223: "do not allow tech debt where we can eliminate it"), and PR 8
+      adds the twitch that players see.
+      (B) Fix it after PR 8 merges. This departs from DEC-223. Reason: the fix changes the walls
+      for every unit, so it needs its own PR and tests either way.
+      A row in `docs/plan/bugs.md` needs a Jira task first, and agents cannot make one. Your
+      answer goes in the PR 8 answers (DEC-330). Code: `physics/CollisionResolver.slide` and
+      `components/Momentum.slideOff`; 10 §12 names the defect. Evidence:
+      `eternalus-agent-work/abilities/pr8-passives/probe/probe-obtuse-fix3.txt` and
+      `probe-obtuse-r3-arch.txt`; the 150° and push numbers are from the gate round 3 correctness
+      critic.
+  - Answered 2026-11-23 (DEC-330): "A: fix it in a small PR before PR 8 merges". Built on
+    `fix/wide-corner-slide`, a PR into `feat/class-passives` (2026-11-23, GAME-LOOP-AND-POST-GAME-64):
+    the resolver and `Momentum` share one slide rule, `utils/slideOff.ts` (10 §7). A Sentinel
+    pressed into a 120° or 135° corner now settles and faces one way, and a push into the corner no
+    longer moves it (numbers: `docs/plan/progress/2026-11-23-0900-fix-wide-corner-slide.md`).
+
+- [ ] **HC-B40 — Better than the design, your sign-off: eight small changes that the Magus
+      passives critic proposes (`feat/magus-passives`, architecture critic rounds 1 and 2,
+      2026-11-23; eternalus-149, eternalus-150, eternalus-151).** Nothing that the player sees
+      changes. Seven are built under your standing rule (DEC-223), recorded as DEC-361. One (3) is
+      a follow-up, because two open PRs change the same code. Sign off, or name the ones to undo.
+  - (1) Built. Who puts a passive on. 05 §7 said that the Legend does it when it spawns. The
+    Legend cannot reach the status code, so `AbilitySystem` does it first in its pass, and a Duel
+    round reset makes it due again (DEC-338 (4)). 05 §7 now says so.
+  - (2) Built. A default passive per class (`defaultPassiveId`: Sentinel Wrecking Run; Vanguard
+    and Magus none). A spec's `passiveId: null` now means "the class default", as `kit: null`
+    does (`passiveOf`). A Legend with no spec (a developer spawn) now gets the class default.
+  - (3) Not built: a follow-up after PRs #162 and #163 merge. A passive's cast and a hit's cast
+    both use the `default-action` slot (the basic attack, later Revive). Proposal: a cast says
+    where it comes from (a bar slot, a passive or a hit). #162 and #163 rewrite `HitEffects`.
+  - (4) Built. One check per rule: `PassiveInOptionsRule` checks the passive, and
+    `KitInPoolRule` checks only the kit.
+  - (5) Built. At boot, `checkStatusLinks` rejects a passive step that is not a `buff` of a status
+    that lasts until removed, and a buff that waits or has a time of its own.
+  - (6) Built. A status can say that it is never stretched (`hasFixedDuration`). Fury's wind-up
+    has it, because its time matches the dash step. The knock-back statuses need no flag: a
+    knock-back step does not stretch them (DEC-337 (4), on its own card).
+  - (7) Built (round 2). Code only: `castStatsOf` is the one read of a caster's ability stats;
+    `AbilitySystem` and the test fixture both use it, so a test cannot drift from the code.
+  - (8) Built (round 2). Code only: `StatusEffectApplier.durationFor` holds the stretch rule
+    beside the status data. It replaces the methods `durationOf` and `hasFixedDuration`; the
+    status field `hasFixedDuration` stays.
+  - **Answered 2026-11-26 in DEC-361** (Owner Calls page v98): "A: sign off all seven (built)".
+    (3) stays a follow-up, so this item stays open for (3) only; (3) is built after PRs #162 and
+    #163 merge.
+    The DEC-337 (4) card was answered on the same page: "B: stretch them by 20% too", so a
+    knock-back step now stretches its statuses; they still need no flag.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
@@ -2645,6 +2751,8 @@ Reply inline (`Decision: …`).
     too. I see this could be a whole WI. For now we start building out the selection screen. Next
     sprint we do the rest." Recorded in DEC-70. **Waits for:** the next sprint's plan tasks for
     sub-class gameplay, which agents propose, and the backlog row's move.
+  - Part built 2026-11-23 (DEC-330, `feat/magus-passives`): the spec's `passiveId` is the second
+    gameplay field a match reads, after `kit` (architecture 17 R2).
 - [ ] **HC-Q18 — Making roster changes cheap: four decisions (not urgent; they save time later;
       OD-38).** An audit renamed a sub-class title, a Legend name, a class display name and a
       Legend id on scratch copies to see what each change touches. The cheap fixes are now built in
@@ -3578,6 +3686,8 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       the code).
   - (1) `passiveOptions`: a class chooses between passives (Magus: Studious or Necromancy),
     while 04 §5 has a single `passiveId`.
+    Update 2026-11-23 (DEC-330): a spec now has one `passiveId`, taken from its class's
+    `passiveOptions` (Studious is now Erudition).
   - (2) `obstacleType`: `ObstacleDefinition.kind` stays `'obstacle'` (the entity class) and
     tree/rock/bridge go to `obstacleType`. It fixes the conflict between 04 §1/§5 and 07 §9.
   - (3) `Collider` fields: 04 §3 → 10 §4's `isStatic`/`isEnabled`/`isUnbreakable`.
@@ -3723,6 +3833,28 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-27 — **Your answers on HC-Q132: Avalanche, three cases (DEC-425)** (`feat/class-passives`):
+  (1) "B: the building loses 5%; the Sentinel is not stunned and loses no health"; (2) "A: full
+  speed until Avalanche ends (6 s) — tuneable post game-testing"; (3) "A: it bounces back 3 m and
+  is not stunned". During Avalanche, a hit on a tower or the Stronghold takes 5% of its health, and
+  the Sentinel is not stunned and loses no health. After a wall breaks, the Sentinel keeps full
+  speed until Avalanche ends (6 s, a tuning value). A wall that cannot break bounces it back 3 m,
+  with no stun. Not built yet: Avalanche comes with the Sentinel ultimates. Decision: DEC-425.
+
+- 2026-11-27 — **Your pick on HC-B51, one way for an ability step to put on a status**
+  (`feat/magus-passives`, PR #166): "A: keep it (built, recommended)", recorded as DEC-419. A step
+  puts on a status only through `CastContext.applyStatus`, which credits the caster and always
+  stretches the time. Architecture 05 §18 now says signed off.
+
+- 2026-11-27 — **Your answer on HC-Q117: Avalanche at a wall (DEC-404)** (`feat/class-passives`):
+  "A: Avalanche breaks the wall segment or gate at once and goes through. The Sentinel loses no
+  health". During Avalanche, a hit on a breakable wall segment or gate breaks it at once, and the
+  Sentinel goes through. That hit costs the Sentinel no health. Outside Avalanche, the DEC-367 rules
+  apply. Not built yet: Avalanche comes with the Sentinel ultimates. Decision: DEC-404.
+  Still open (the card did not ask): tower and Stronghold hits during Avalanche; the speed after
+  the breach; a hit on a wall that cannot break. Owner Calls card HC-Q132 asked them: see the
+  DEC-425 entry.
 
 - 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
   recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a

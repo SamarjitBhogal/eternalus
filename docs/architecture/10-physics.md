@@ -4,17 +4,19 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-23
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
     'packages/core/src/physics/**',
     'packages/core/src/components/Movement*',
+    'packages/core/src/components/Momentum*',
     'packages/core/src/components/Collider*',
     'packages/core/src/components/Carry*',
     'packages/core/src/systems/MovementSystem*',
     'packages/core/src/systems/CollisionSystem*',
     'packages/core/src/utils/deterministicMath*',
+    'packages/core/src/utils/slideOff*',
   ]
 related:
   [
@@ -76,8 +78,9 @@ export class Movement {
 }
 ```
 
-While `state.match.isIdleHeld` is set (the countdown, 12 §2) `MovementSystem` treats every
-entity as `cannot-move`: the speed scale is 0 and no entity walks. Integration per tick
+While `state.match.isIdleHeld` is set (the countdown, 12 §2) `MovementSystem` holds every
+entity still at once (`Movement.hold`), a unit with momentum too: no entity walks, and each keeps
+its heading, so it walks on when the hold ends. Integration per tick
 (`MovementSystem`, `dt = 1 / 30` s), in entity id order:
 
 1. `dv = desiredVelocity − velocity`; clamp `|dv|` to `acceleration × dt` (acceleration-limited:
@@ -92,6 +95,41 @@ entity as `cannot-move`: the speed scale is 0 and no entity walks. Integration p
 Arrival is a steering concern: `PathingSystem` scales the desired speed down inside a slowing
 radius so units stop on their target without overshooting (Reynolds' arrival).
 
+**Movement with momentum** (the Sentinel's Wrecking Run; DEC-307, DEC-330). A unit whose
+`movementProfile` has `momentum` uses two rates in place of the one clamp of step 1, because one
+clamp cannot give a slow build-up and a quick slide out of a turn (DEC-330, `INBOX.md` HC-B29 (1)):
+
+1. The part of `velocity` along the heading builds up at `acceleration` to `walkSpeed`, then at
+   `(maxSpeed − walkSpeed) / rampDuration` to the top speed. The time to top speed is
+   `walkSpeed / acceleration + rampDuration`, not `maxSpeed / acceleration`.
+2. The rest of `velocity` (sideways, backward, or all of it when the unit does not steer) slides
+   off at `grip`, a fixed amount per tick. A part that points against the heading brakes to zero
+   at `grip` before the unit builds up again. So a turn slides and loses speed, and a reverse
+   slides to a stop. `grip` is like the friction of step 3, which also acts only on velocity the
+   unit does not drive, but `grip` takes off a fixed amount per tick, where step 3 multiplies.
+3. A status lowers only the top speed the unit drives to. Speed above that top slides off at
+   `grip`: a slow takes effect over a short slide, and a stun takes away the drive, so the unit
+   slides to a stop (DEC-330, card F3). `speedLimit` and the countdown hold still cut the speed at
+   once.
+4. A wall takes the part of `velocity` that runs into it (§6, §7: the velocity goes onto the
+   contact tangent). A unit that steers into a wall builds along it, up to the top speed times the
+   part of the heading that the wall leaves.
+
+The numbers are a block of movement numbers in the Legend's content (`movementProfile.momentum`,
+`content/legends/sentinel.ts`), not a status (05 §7; DEC-330, HC-B29 (2)).
+
+**Movement rules.** Each unit moves by one rule. Two rules exist: a unit turns at once and keeps
+its speed, or it has momentum (above). Two more rules are planned, post-MVP (DEC-330, HC-B29 (3)):
+
+- **Magus stances.** The Magus hovers on its wings. It switches between two stances, floating and
+  walking, and each stance moves by its own rules.
+- **Harbinger flight.** The Harbinger flies. It spends most of its time above the map and can
+  land, as jets and helicopters do in Battlefield. Flight uses the height that §1 reserves.
+
+While a unit has at most two rules to choose from, `Movement` picks one by whether the unit has
+momentum. A third rule brings one interface with one class per rule (04 §4, strategies), and
+`Movement` then holds one of them.
+
 **Momentum and knockback.** A push that is not a dash or a knock-back is an impulse `J` (a `Vec2`,
 in mass × units/s) added to `pendingImpulse`; the velocity change is `J / mass`. Dashes and
 knock-backs are forced motion instead: `Movement.push` spreads a displacement over a number of
@@ -99,10 +137,10 @@ ticks, and `MovementSystem` adds each tick's share to the walking step, so colli
 alike. A knock-back's content distance is for a target of base mass, a heavier target moves
 less, and knock-backs that reach one target in the same tick add up as vectors (DEC-208; ADR
 0026 decision 4). That gives the game doc's
-class feel from content alone: the **Sentinel** has low `acceleration`, one of the highest
+class feel from content alone: the **Sentinel** has momentum (above), one of the highest
 `maxSpeed`s and a high `mass`, so it starts slowly, keeps its momentum, and barely moves when hit;
-the game doc's "up to 1 minute of running straight to get to full speed" is simply
-`maxSpeed / acceleration ≈ 60 s` (TUNE). Knockback reduction (the Eternal form) is a multiplier
+the game doc's "up to 1 minute of running straight to get to full speed" is its ramp
+(`rampDuration`, TUNE; the owner's build-up is DEC-330, card W1). Knockback reduction (the Eternal form) is a multiplier
 on incoming impulses in `StatusEffects`, not a special case in physics. The wall sprint-through
 rule (`07-structures-obstacles-and-destructibles.md` §3) reads `speed >= maxSpeed ×
 fullSpeedFraction`; physics only reports speed.
@@ -204,6 +242,14 @@ Overlap tests are therefore not enough:
   map bounds; the earliest time of impact `t ∈ [0, 1]` wins; the mover is placed at
   `previous + (position − previous) × t` minus a small skin (TUNE) and its velocity is projected
   onto the tangent (or the projectile is resolved as a hit).
+- **Several walls in one move** (a corner): at each wall the move meets, what is left of the
+  whole move slides off every wall that the move has met so far, at once. The result is the vector
+  closest to the move that runs into none of those walls: the move itself, its slide along one of
+  them, or zero. So a unit pressed into a corner of any angle stops dead. Sliding off each wall in
+  turn is not enough: in a corner wider than 90°, it moves a unit a hair out along one wall, and
+  back, every tick. One helper, `slideOffInto` (`utils/slideOff.ts`), holds this rule for a move
+  and for the velocity of a unit with momentum (§2), so the two agree on every wall (DEC-330,
+  `INBOX.md` HC-B33).
 - **Anomaly detection** (the requirements doc's runtime check): after resolution the segment is
   re-cast; if it still crosses an unbreakable collider, `CollisionSystem` emits
   `collision-anomaly { entityId, tick, from, to, colliderId }`. The
@@ -353,6 +399,46 @@ collider is unbreakable (DEC-317 (5)) are hit only by a shot fired at their enti
 `CollisionSystem` skips the `projectile` layer. A shot with nothing in its path is slowed by
 `Movement.limitSpeed` (`physics/flightSpeed`, from `slowFrom`) so it stops exactly at its `range`;
 it then ends and hits nothing until it is removed (`ProjectileFlight`, DEC-306).
+
+**2026-11-22, updated 2026-11-23 (branch `feat/class-passives`, PR 8; DEC-307, DEC-330).** A unit whose `movementProfile` has
+`momentum` (only the Sentinel: Wrecking Run) drives through `components/Momentum`, which its
+`Movement` owns. Its velocity changes in three stages. The part along the heading builds up at
+`acceleration` to `walkSpeed`, then at `(maxSpeed − walkSpeed) / rampDuration` to `maxSpeed`. The
+rest (sideways, or all of it when the unit does not steer) slides off at `grip`, and a part that
+points against the heading brakes to zero at `grip` before the unit builds up again. A turn thus
+slides and loses speed, with no jump at 90°, and a reverse slides to a stop. A backward part
+shorter than `CONTACT_EPSILON` is roundoff from a wall, not a reverse, so it does not brake.
+`CollisionResolver.move` fills a list with the unit normal of each wall and map edge that the move
+touched (`contacts`), and `CollisionSystem` gives that list to `Movement.hitBlock`. A unit with
+momentum then drops the part of its velocity that runs into those walls (`slideOffInto`, a
+frictionless contact), as §6 and §7 project a unit's velocity onto the contact tangent: a head-on
+hit stops it, a glancing hit keeps its slide along the wall, and a press into a corner stops it.
+When the unit steers into the walls that its last move touched, it builds along them, up to
+`maxSpeed` times the part of the heading that is left (as fast as a unit without momentum slides
+there). It keeps a small push into the walls, so the next move touches them again. The touched walls
+are simulation state: `StateHasher` hashes them (`Movement.wallNormals`), and `Movement.stop`
+forgets them. A status lowers only the top speed that `Momentum.drive` builds to, and the speed above
+it slides off at `grip` (§2 step 3; DEC-330, card F3): a stun takes away the drive, so the unit
+slides `speed² / (2 × grip)` to a stop in `speed / grip`, and a slow bites in `(speed − top) / grip`.
+Every `cannot-move` status takes the drive away in the same way: a knock-up too, and the hold of Grab
+(`crushed`) until the Grab PR sets its own rule. When `enraged` ends, the speed above `maxSpeed`
+slides off at `grip` in the same way. The card names only the stun and the slow, so these two parts
+are a reading (DEC-330 (2)). `limitSpeed` and the
+countdown hold (`Movement.hold`) still cut the speed at once. A unit without momentum
+still turns at once and keeps its speed. `CollisionResolver` and `Momentum` share one slide rule
+(§7, `slideOffInto`; DEC-330, `INBOX.md` HC-B33, option A), so a Sentinel pressed into a corner
+faces one way. When a Sentinel runs along one face into such a corner, its momentum can carry it a
+little out along the other face, and its heading brings it back, then it settles
+(`systems/CollisionSystem.test.ts`). The owner signed off the three
+parts that differed from the design (DEC-330, `INBOX.md` HC-B29), and §2 now states them: the two
+rates (§2 "Movement with momentum"), the numbers as a block of movement numbers (05 §7), and one
+`Movement` with a "has momentum?" check until a third movement rule comes (§2 "Movement rules"). The
+`wrecking-run` id in the Sentinel's `passiveOptions` has no ability entry yet. The numbers, the ramp duration among them, are in `content/legends/sentinel.ts`
+(`TUNE`); `MomentumWalkSpeedRule` rejects a `walkSpeed` at or above `maxSpeed` when content loads. A
+bot Sentinel at top speed that decides at its controller's cadence slides past the point where it
+halts by less than its braking distance (`maxSpeed² / (2 × grip)`), turns back once and stops inside
+its arrival distance (`ai/BotMovement.test.ts`). Not built yet: the stun and self damage of a hit at
+full speed, barging through objects and walls (07 §3), and a Shield Wall that stops a Sentinel.
 
 ## Related
 

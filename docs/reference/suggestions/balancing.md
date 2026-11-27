@@ -4,7 +4,7 @@ description: Proposed tuning values, formulas and balance knobs for the MVP (hor
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-23
 tags: [reference, suggestions, balancing, content, testing]
 paths: ['packages/core/src/content/**', 'packages/core/src/config/**']
 related:
@@ -142,7 +142,7 @@ Range 14 m. Targeting (`Recommendation:`, after the published turret rules cited
 `Recommendation:`
 
 - "Full speed" means `speed ≥ 0.95 × sprintMaxSpeed` (a content threshold, so a near-miss is not a coin flip).
-- Sprint ramp: 20 s for the MVP map (options: 30 s; 60 s as in the doc). Reason: at a 9 m/s sprint maximum, a 20 s ramp needs about 120 m of straight runway, a 60 s ramp about 360 m, which is more than half of a lane on a map the size of the traced draft. The ramp is `wrecking-run.rampSeconds`, so the doc's value is one edit away once the map size is final.
+- Sprint ramp: 20 s for the MVP map (options: 30 s; 60 s as in the doc). Reason: at a 9 m/s sprint maximum, a 20 s ramp needs about 120 m of straight runway, a 60 s ramp about 360 m, which is more than half of a lane on a map the size of the traced draft. The ramp is `rampDuration` in the Sentinel's `movementProfile.momentum` (`content/legends/sentinel.ts`; DEC-330), so the doc's value is one edit away once the map size is final.
 - Self damage: 50% of _max_ health (a Sentinel under half health dies on the wall; option: 50% of _current_ health, never lethal).
 - Segment damage: 50% of the segment's current total health (base plus bars), through the normal `DamagePipeline` so bars drain first.
 - Only walls and gates can be breached, and only when breakable. Sprinting into an unbreakable wall: bounce (knockback 3 m, concussion 2 s, 10% self damage). Sprinting into any other structure: no breach, concussion 1.5 s, 10% self damage.
@@ -195,7 +195,7 @@ The game doc gives each MVP class only two abilities (Warrior: Veil, Blade Runne
 | Magus    | Nova (ultimate)                    | meter    | 0      | expand 2 s (stun 0.5 s, knockback 1 m) → pull 1.5 s → burst 300 magical + concussion 3 s, blind 1.5 s for enemies facing you within 6 m; burst damage × 1.5 at point-blank |
 | Magus    | Revive (class default action)      | 45 s     | 30     | channel 2 s within 3 m of an intact ally corpse (≤ 15 s old); revived at 40% health; that ally cannot be revived again for 60 s                                            |
 
-Ultimate meter (`TUNE` "kills, assists and objective damage fill your ultimate; it does not fill passively; you lose a small N% on death"): Legend kill +25, assist +12, minion kill +1, structure damage +1 per 2% of the structure's base health, boss damage +1 per 1%, death −15; a 10 s post-cast lockout stops back-to-back ultimates after a lock extension. Erudition (the "Studious" passive) applies as +20% duration, +10% potency, +25% meter gain.
+Ultimate meter (`TUNE` "kills, assists and objective damage fill your ultimate; it does not fill passively; you lose a small N% on death"): Legend kill +25, assist +12, minion kill +1, structure damage +1 per 2% of the structure's base health, boss damage +1 per 1%, death −15; a 10 s post-cast lockout stops back-to-back ultimates after a lock extension. Erudition (the "Studious" passive) applies as +20% duration, +10% potency, +25% meter gain (DEC-330; basic attacks do not change). Necromancy (DEC-330): up to +30% damage dealt and up to 15% less damage taken, with basic attacks and abilities alike; nothing at full health, the full bonus at 15% health or less, in a straight line between.
 
 ## XP curve and level cap — MVP
 

@@ -13,17 +13,23 @@ export type KitSubject = {
   readonly pool: readonly string[];
   /** The kit under check: a class's `defaultKit`, a spec's own `kit` (`null` = it has none). */
   readonly kit: AbilityKit | null;
+  /** The class's `passiveOptions`. */
+  readonly passiveOptions: readonly string[];
+  /** A spec's own `passiveId` or the class's `defaultPassiveId`; `null` for none. */
+  readonly passiveId: string | null;
   /** Whether the definition is the class itself (it owns the pool) and not a spec. */
   readonly isClass: boolean;
   /** What the messages call the kit. */
   readonly kitName: string;
+  /** What the messages call the passive. */
+  readonly passiveName: string;
 };
 
 /**
- * Reads the ability fields of a Legend class (`defaultKit`) or a Legend spec (`kit`), the one
- * place that knows both shapes, so the ability rules treat them alike. Returns `null` for any
- * other definition (a mob) and for a spec whose class is not loaded (`SpecClassExistsRule` flags
- * that).
+ * Reads the ability fields of a Legend class (`defaultKit`, `passiveOptions`, `defaultPassiveId`)
+ * or a Legend spec (`kit`, `passiveId`), the one place that knows both shapes, so the ability
+ * rules treat them alike. Returns `null` for any other definition (a mob) and for a spec whose
+ * class is not loaded (`SpecClassExistsRule` flags that).
  *
  * @param definition - A unit definition or a Legend spec.
  * @param legends - The loaded Legend classes, for a spec's class pool.
@@ -33,23 +39,31 @@ export const kitSubjectOf = (
   legends: Pick<ContentCatalogue<LegendDefinition>, 'has' | 'get'>,
 ): KitSubject | null => {
   if ('classId' in definition) {
-    return legends.has(definition.classId)
-      ? {
-          classId: definition.classId,
-          pool: legends.get(definition.classId).abilityPool,
-          kit: definition.kit,
-          isClass: false,
-          kitName: 'kit',
-        }
-      : null;
+    if (!legends.has(definition.classId)) {
+      return null;
+    }
+    const legend = legends.get(definition.classId);
+    return {
+      classId: definition.classId,
+      pool: legend.abilityPool,
+      kit: definition.kit,
+      passiveOptions: legend.passiveOptions,
+      passiveId: definition.passiveId,
+      isClass: false,
+      kitName: 'kit',
+      passiveName: 'passiveId',
+    };
   }
   return LEGEND_KINDS.has(definition)
     ? {
         classId: definition.id,
         pool: definition.abilityPool,
         kit: definition.defaultKit,
+        passiveOptions: definition.passiveOptions,
+        passiveId: definition.defaultPassiveId,
         isClass: true,
         kitName: 'defaultKit',
+        passiveName: 'defaultPassiveId',
       }
     : null;
 };
