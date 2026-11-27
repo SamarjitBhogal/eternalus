@@ -1,0 +1,136 @@
+.king {
+  --metal: #b6a489;
+  --shadow: #4b3f36;
+  --cloth: #593136;
+  --light: #ffd28b;
+  position: absolute;
+  aspect-ratio: 1 / 1.12;
+  isolation: isolate;
+  transform: translate(-50%, -88%);
+  filter: drop-shadow(0 0 2px #16141b);
+}
+.dark {
+  --metal: #9790a8;
+  --shadow: #33283d;
+  --cloth: #35263f;
+  --light: #cabbff;
+}
+.king span {
+  position: absolute;
+  display: block;
+}
+.ground {
+  inset: 84% 12% 7%;
+  border-radius: 50%;
+  background: #0f0e14;
+}
+.cape {
+  inset: 32% 10% 11%;
+  background: linear-gradient(105deg, #16141b, var(--cloth) 53%, #16141b);
+  clip-path: polygon(24% 0, 76% 0, 100% 100%, 61% 91%, 47% 100%, 27% 92%, 0 100%);
+}
+.legs {
+  inset: 60% 29% 12%;
+  background: linear-gradient(
+    90deg,
+    var(--shadow),
+    var(--metal),
+    #1b1b22 50%,
+    var(--metal),
+    var(--shadow)
+  );
+  clip-path: polygon(
+    12% 0,
+    88% 0,
+    91% 78%,
+    100% 94%,
+    88% 100%,
+    59% 100%,
+    51% 29%,
+    46% 29%,
+    40% 100%,
+    0 100%,
+    0 93%,
+    10% 78%
+  );
+}
+.shoulders {
+  inset: 33% 13% 47%;
+  background: linear-gradient(var(--metal), var(--shadow) 58%, #16151c);
+  clip-path: polygon(
+    12% 0,
+    32% 12%,
+    68% 12%,
+    88% 0,
+    100% 63%,
+    88% 100%,
+    72% 82%,
+    28% 82%,
+    12% 100%,
+    0 63%
+  );
+}
+.plate {
+  inset: 35% 27% 31%;
+  background: linear-gradient(
+    120deg,
+    var(--metal),
+    var(--shadow) 50%,
+    #191820 51%,
+    var(--metal) 95%
+  );
+  clip-path: polygon(11% 0, 89% 0, 100% 26%, 78% 60%, 86% 82%, 50% 100%, 14% 82%, 22% 60%, 0 26%);
+}
+.insignia {
+  inset: 43% 46% 44%;
+  background: var(--light);
+  clip-path: polygon(50% 0, 100% 35%, 60% 100%, 40% 100%, 0 35%);
+}
+.helm {
+  inset: 17% 36% 60%;
+  background: linear-gradient(108deg, var(--metal), var(--shadow) 49%, #191820 50%, var(--metal));
+  clip-path: polygon(20% 0, 80% 0, 100% 32%, 88% 77%, 50% 100%, 12% 77%, 0 32%);
+}
+.visor {
+  inset: 26% 38% 69%;
+  background: #14131a;
+  border-bottom: 2px solid var(--light);
+  clip-path: polygon(0 0, 50% 49%, 100% 0, 86% 75%, 51% 100%, 14% 75%);
+}
+.crown {
+  inset: 10% 34% 73%;
+  background: linear-gradient(var(--light), var(--shadow));
+  clip-path: polygon(
+    0 16%,
+    27% 52%,
+    32% 12%,
+    44% 44%,
+    50% 0,
+    56% 44%,
+    68% 12%,
+    73% 52%,
+    100% 16%,
+    85% 100%,
+    15% 100%
+  );
+}
+.sword {
+  inset: 49% 18% 8% 70%;
+  transform: rotate(-14deg);
+  background: linear-gradient(90deg, var(--shadow), var(--metal) 49%, #f2ecda 51%, var(--shadow));
+  clip-path: polygon(
+    39% 0,
+    61% 0,
+    61% 17%,
+    100% 15%,
+    96% 24%,
+    70% 27%,
+    68% 85%,
+    50% 100%,
+    32% 85%,
+    30% 27%,
+    4% 24%,
+    0 15%,
+    39% 17%
+  );
+}

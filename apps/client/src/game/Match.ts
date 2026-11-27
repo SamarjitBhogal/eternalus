@@ -2,6 +2,7 @@ import {
   CORNER_CAMP_RING,
   type EntityId,
   type EntitySnapshot,
+  findBuildingAt,
   makeLogRecord,
   type Snapshot,
 } from '@eternalus/core';
@@ -38,6 +39,7 @@ import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';
 import { SceneView } from './views/SceneView';
+import { SovereignView } from './views/SovereignView';
 import { WorldObjectsView } from './views/WorldObjectsView';
 
 /**
@@ -112,6 +114,16 @@ export class Match implements LoopTarget {
     );
     this.healthBars = new HealthBarVisibility(simulation);
     this.bodies = new LegendBodies(simulation);
+    const { scenery, buildings } = presentation;
+    this.roofs = new BuildingRoofs(buildings);
+    const { hidden: hiddenRoofs } = this.roofs;
+    const sovereignView =
+      deps.sovereignArtwork === undefined
+        ? undefined
+        : new SovereignView(deps.sovereignArtwork, (point) => {
+            const building = findBuildingAt(buildings, point);
+            return building === undefined || hiddenRoofs.has(building.id);
+          });
     const views = createDefaultViewRegistry(
       (kind) => {
         logger.log(
@@ -126,15 +138,13 @@ export class Match implements LoopTarget {
         (entity) => this.legendAnimation.frame(entity, this.frameTick),
         LEGEND_VISUAL_DIAMETER,
       ),
+      sovereignView,
     );
     this.entities = new EntityLayer(views, isDead, this.healthBars.healthBarOf);
     this.camera = new MatchCamera(camera, map);
     this.commands =
       deps.remote?.createActions(this.camera) ??
       new PlayerCommands(input, simulation, this.camera, mapObjects, views);
-    const { scenery, buildings } = presentation;
-    this.roofs = new BuildingRoofs(buildings);
-    const { hidden: hiddenRoofs } = this.roofs;
     const shown = (): WorldRect => this.camera.visibleArea();
     this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
     const { isDestroyed } = this.objects;
@@ -273,7 +283,9 @@ export class Match implements LoopTarget {
       (this.current.tick + alpha) / this.deps.tickRate,
       this.camera.isPlayerFollowing,
     );
+    this.deps.sovereignArtwork?.beginFrame();
     scene.draw(renderer);
+    this.deps.sovereignArtwork?.endFrame();
     miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight);
   }
 
@@ -290,6 +302,7 @@ export class Match implements LoopTarget {
    * camera are injected, so their owner (`MatchHost`) destroys them.
    */
   public destroy(): void {
+    this.deps.sovereignArtwork?.destroy();
     this.legendAnimation.destroy();
     this.loop.destroy();
     this.healthBars.destroy();

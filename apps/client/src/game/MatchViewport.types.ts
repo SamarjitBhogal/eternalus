@@ -42,6 +42,8 @@ export type ViewportChrome = {
 /** What `GameCanvas` hands the session when its canvas mounts (architecture 13 §1). */
 export type MatchViewport = {
   readonly canvas: ViewportCanvas;
+  /** Non-interactive, canvas-aligned surface for the CSS Sovereign art. */
+  readonly sovereignLayer?: HTMLElement;
   readonly chrome: ViewportChrome;
   /**
    * Whether the developer explorer (drag, wheel, overview) is on when the match starts: `?dev=1`

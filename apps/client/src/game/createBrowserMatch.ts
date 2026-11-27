@@ -25,6 +25,7 @@ import type { HostDocument, HostWindow } from './MatchHost.types';
 import { withPlayerTeam } from './withPlayerTeam';
 import type { SettingsController } from './settings/SettingsController';
 import type { MatchFactory } from './SessionController.types';
+import { SovereignArtwork } from './SovereignArtwork';
 
 /** What the browser match factory is built from; `main.tsx` passes window, document and the page singletons. */
 export type BrowserMatchDeps = {
@@ -114,6 +115,9 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         roster: request.roster,
       });
       match = new Match({
+        ...(viewport.sovereignLayer === undefined
+          ? {}
+          : { sovereignArtwork: new SovereignArtwork(viewport.sovereignLayer, viewport.canvas) }),
         playerSpecId,
         simulation,
         world: request.world,

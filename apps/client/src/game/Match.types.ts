@@ -16,6 +16,7 @@ import type { Projection } from './engine/input/Projection.types';
 import type { FrameScheduler } from './engine/loop/FrameScheduler.types';
 import type { Renderer } from './engine/render/Renderer';
 import type { PlayerActions } from './PlayerActions';
+import type { SovereignArtwork } from './SovereignArtwork';
 
 /**
  * Where the player's intent comes from each tick (movement axes, aim, abilities). The input
@@ -87,6 +88,10 @@ type RemotePlayer = {
 
 /** Everything a `Match` is wired from (architecture 08 §7). */
 export type MatchDeps = {
+  readonly sovereignArtwork?: Pick<
+    SovereignArtwork,
+    'beginFrame' | 'draw' | 'endFrame' | 'destroy'
+  >;
   readonly playerSpecId?: string | null;
   readonly simulation: MatchSimulation;
   /** Set for an online Duel: replaces the local `PlayerCommands` and the snapshot's human Legend. */

@@ -13,13 +13,17 @@ import { ViewRegistry } from './ViewRegistry';
  * `createDefault<Registry>()`). The one place a view is registered.
  *
  * @param onUnknownKind - Told once per kind drawn with the default view.
+ * @param legend - The match's Legend sprite view, if provided.
+ * @param sovereign - The match's CSS Sovereign view, if it has a portrait surface.
  */
 export const createDefaultViewRegistry = (
   onUnknownKind?: (kind: string) => void,
   legend?: EntityView,
+  sovereign?: EntityView,
 ): ViewRegistry => {
   const registry = new ViewRegistry(new DefaultEntityView(), onUnknownKind);
   registry.registerFamily('legend', legend ?? new LegendView());
+  if (sovereign !== undefined) registry.registerFamily('sovereign', sovereign);
   registry.registerFamily('mob', new MobView());
   registry.registerKind('light-mob', new MinionView('light'));
   registry.registerKind('medium-mob', new MinionView('medium'));
