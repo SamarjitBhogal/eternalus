@@ -39,6 +39,17 @@ review comments under "Feedback". Answered decisions are recorded in
     `DefaultSystemPipeline.laneProgressOf` composes "field, else polyline", the port is required
     (`DamagePipeline` has no default steps), and the wiring test injects fake sources.
 
+- [ ] **HC-B68 — Better than the design, not built, sign-off asked: three tidy-ups to the
+      2-level limit tests (DEC-423)** (critic on `feat/corner-camp-clear-bonus`, 2026-11-27). No
+      gameplay number or behaviour changes. (a) One `Progression` method, for example
+      `cappedXp(xp, maxLevels, curve)`, holds the level-limit cap; `ProgressionSystem` and both
+      level-limit tests in `xpSources.test.ts` call it, so a test cannot drift from the game.
+      (b) The DEC-423 test takes each camp and its mini boss from `GUARD_PLANS` instead of naming
+      `corner-boss` and `corner-camp`, so a new camp is tested without a test edit. (c)
+      Architecture 05 §13 (Progression) states DEC-423 as a design rule: the 2-level limit of a
+      mini boss kill includes the camp clear bonus (your design text). Approve all three (built in
+      one follow-up PR after the demo), name the ones you want, or drop.
+
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
@@ -3600,6 +3611,17 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-27 — **Your answer HC-Q131: the 2-level limit of a mini boss kill includes the corner
+  camp's clear bonus (DEC-423)** (`feat/corner-camp-clear-bonus`, with DEC-393): nothing changes
+  in play. A new test in `xpSources.test.ts` fails if a later tuning lets the corner boss's XP
+  plus the corner camp's bonus give a Legend a third level. Decision: DEC-423.
+
+- 2026-11-27 — **Your answers HC-B55 and PR153 (1b), (2b) and (2c): the corner camp pays the clear
+  bonus too (DEC-393)** (`feat/corner-camp-clear-bonus`, a follow-up to PR #153): DEC-375 stands
+  (only the Legend that killed the camp's last mob gets the bonus), and the corner camp now pays
+  it like a forest camp. Its mini boss still pays its XP to the whole team. Your "near the camp"
+  defaults (PR153 (1b)) are recorded; under DEC-375 they change nothing. Decision: DEC-393.
 
 - 2026-11-27 — **Your answers HC-B54 and HC-B50: a unit plans again when the map changes
   (DEC-379, DEC-392)** (`fix/bot-replan-on-map-change`, a follow-up to PR #84): your v98 answer

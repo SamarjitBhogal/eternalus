@@ -68,4 +68,24 @@ describe('legend XP design intent (DEC-190)', () => {
       });
     }
   });
+
+  it('the corner boss’s team XP plus the corner camp’s clear bonus lifts at most 2 levels, at every level (owner, DEC-423)', () => {
+    const { xp, maxLevels } = XP_SOURCES.teamKills['corner-boss'] ?? { xp: 0, maxLevels: 0 };
+    const bonus = XP_SOURCES.campCleared['corner-camp'] ?? 0;
+    // A missing content entry must fail here, not pass as 0 (ADR 0023).
+    expect({ isBossPaid: xp > 0, isBonusPaid: bonus > 0 }).toEqual({
+      isBossPaid: true,
+      isBonusPaid: true,
+    });
+    for (const level of levels) {
+      // One XP short of the next level is the worst start: the capped team XP then ends at the
+      // start of `level + maxLevels`, and ProgressionSystem pays the clear bonus uncapped on top.
+      const progression = new Progression(LEGEND_LEVEL_CURVE.id);
+      progression.addXp(xpAtLevel(level + 1) - 1, LEGEND_LEVEL_CURVE);
+      const paid = Math.min(xp, progression.xpToReach(level + maxLevels, LEGEND_LEVEL_CURVE));
+      const gained =
+        progression.addXp(paid, LEGEND_LEVEL_CURVE) + progression.addXp(bonus, LEGEND_LEVEL_CURVE);
+      expect(gained, `level ${String(level)}`).toBeLessThanOrEqual(maxLevels);
+    }
+  });
 });

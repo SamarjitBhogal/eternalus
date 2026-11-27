@@ -172,7 +172,7 @@ describe('ProgressionSystem camp reward through the guard roster (balancing.md "
     expect(violations).toEqual([]);
   });
 
-  it('pays no clear bonus for a corner camp: its boss already pays the team (DEC-237)', () => {
+  it('pays the clear bonus for a corner camp too, on top of its boss’s team XP (owner, DEC-393)', () => {
     const { state, step, campMobIds, legend, violations } = campMatch({
       kind: 'corner-camp',
       definitionId: 'corner-camp',
@@ -198,7 +198,10 @@ describe('ProgressionSystem camp reward through the guard roster (balancing.md "
 
     step();
     expect(clears).toBe(1);
-    expect(legend.getComponent(Progression).xp).toBe(afterKill);
+    // A missing content entry must fail here, not turn the bonus into 0 (ADR 0023).
+    const bonus = XP_SOURCES.campCleared['corner-camp'] ?? 0;
+    expect(bonus).toBeGreaterThan(0);
+    expect(legend.getComponent(Progression).xp).toBe(afterKill + bonus);
     expect(violations).toEqual([]);
   });
 });

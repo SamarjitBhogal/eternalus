@@ -21,8 +21,8 @@ import type { Award, PersonalAward, ProgressionContent } from './ProgressionSyst
  * team (DEC-186), and a boss in `xpSources.teamKills` pays every Legend of its killer's playable
  * team instead of the killer, lifting none more than the reward's `maxLevels` (DEC-237); a Legend
  * the cap leaves nothing to pay gets no award. A cleared camp (`camp-cleared`) pays the Legend
- * that killed its last mob the camp's `xpSources.campCleared` entry; a camp without one (a corner
- * camp) pays no bonus. A cleared checkpoint set (`checkpoint-cleared`) pays its XP shared among
+ * that killed its last mob the camp's `xpSources.campCleared` entry; a camp without one pays no
+ * bonus. A cleared checkpoint set (`checkpoint-cleared`) pays its XP shared among
  * the clearing team's Legends near its last defender, biased toward the damage each dealt to the
  * set (`CheckpointAwards`, 07 §7). Self-kills and ally kills pay nothing (O5). Each
  * level gained raises max health by the class's share of its base health (O3) and max aether,
