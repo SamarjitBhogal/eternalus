@@ -7,6 +7,7 @@ import type { StructureDefinition } from './content/structures/structures.types'
 import type { DamageSource, GameEventMap } from './state/GameEvents.types';
 import {
   COUNTDOWN,
+  config,
   LIGHT_TURRET,
   outside,
   setUp,
@@ -141,5 +142,46 @@ describe('Simulation wall turret pylons (DEC-375)', () => {
     };
 
     expect(fall()).toBe(fall());
+  });
+});
+
+/**
+ * A match after the countdown where a dark Legend of `kind` stands `gap` from a light turret and
+ * sends real `attack-target` commands at it for three seconds. Returns the health of the turret
+ * and of its pylon, the pylon's full health, and the pylon's condition.
+ */
+const attackTurret = (kind: string, gap: number) => {
+  const match = setUp({ structures: BREAKABLE });
+  const { simulation, state, run, turretOf } = match;
+  const feature = LIGHT_TURRET ?? TURRET_FEATURES[0];
+  if (feature === undefined) throw new Error('The generated map has no turret.');
+  run(COUNTDOWN + 1);
+  const actorId = spawnDark(match, kind, kind, outside(feature, gap));
+  const turretId = turretOf(feature)?.id ?? '';
+  const pylonId = state.worldObjects?.mountOf(turretId) ?? '';
+  if (pylonId === '') throw new Error('The turret has no pylon.');
+  const pylonFull = simulation.snapshot().mapObjects?.find(({ id }) => id === feature.id)?.health
+    ?.max;
+  simulation.enqueueCommand({ type: 'attack-target', actorId, targetId: turretId });
+  run(config.tickRate * 3);
+  const pylon = simulation.snapshot().mapObjects?.find(({ id }) => id === feature.id);
+  return { turret: turretOf(feature)?.health, pylon, pylonFull };
+};
+
+describe('Simulation Legend attacks on a wall turret and its pylon (DEC-388)', () => {
+  it("hits the turret and its pylon with a melee Legend's attack command, since its sweep reaches both", () => {
+    const { turret, pylon, pylonFull } = attackTurret('warrior', 0.5);
+
+    expect(turret?.current).toBeLessThan(turret?.max ?? 0);
+    expect(pylonFull).toBeDefined();
+    expect(pylon?.health?.current).toBeLessThan(pylonFull ?? 0);
+  });
+
+  it("hits only the turret with a ranged Legend's attack command, since its bolt stops at the turret", () => {
+    const { turret, pylon, pylonFull } = attackTurret('magus', 3);
+
+    expect(turret?.current).toBeLessThan(turret?.max ?? 0);
+    expect(pylonFull).toBeDefined();
+    expect(pylon?.health?.current).toBe(pylonFull);
   });
 });
