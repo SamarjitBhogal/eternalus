@@ -27,6 +27,7 @@ import { ASSET_LICENCES } from './data/resources/assetLicences';
 import { ASSET_MANIFEST } from './data/resources/AssetManifest';
 import { describeCredits } from './data/resources/describeCredits';
 import { FontLoader } from './data/resources/loaders/FontLoader';
+import { SpriteAtlasLoader } from './data/resources/loaders/SpriteAtlasLoader';
 import { UiImageLoader } from './data/resources/loaders/UiImageLoader';
 import { ResourceController } from './data/resources/ResourceController';
 import { createCoreCatalogue } from './game/content/coreCatalogue';
@@ -139,6 +140,11 @@ const loadouts = new LoadoutController({
 const resources = new ResourceController({
   manifest: ASSET_MANIFEST,
   loaders: [
+    new SpriteAtlasLoader(async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Atlas request failed: ' + String(response.status));
+      return createImageBitmap(await response.blob());
+    }),
     new UiImageLoader({ createImage: () => new Image() }),
     new FontLoader<FontFace>({
       createFace: (family, source, descriptors) => new FontFace(family, source, descriptors),
@@ -160,6 +166,7 @@ const catalogue = createCoreCatalogue({
 // The Duel server's address (ADR 0016): read here only, like every other build-time setting.
 const duelServerUrl: unknown = import.meta.env.VITE_DUEL_SERVER_URL;
 const browserMatchDeps: BrowserMatchDeps = {
+  resources,
   window,
   document,
   gameConfig,

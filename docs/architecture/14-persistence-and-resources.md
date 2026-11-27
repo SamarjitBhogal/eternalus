@@ -539,6 +539,8 @@ blocked, abort, `versionchange`) run against a hand-written fake of the used sub
 (`__fixtures__/FakeIdb*.ts`); `fake-indexeddb` replaces it in `feat/loadout-per-legend`
 (DEC-354 (4)).
 
+ADR 0028 (DEC-298) registers contributor-confirmed art using attachmentReferenceId and the user-authorised-art licence. hasAssetProvenance checks each reference against its documented record. Sprite atlases use the sprite-atlas asset type in separate per-Legend groups.
+
 Built in Sprint 1 (session F), settings only: `PersistenceController` with `open`,
 `loadSettings`, `saveSettings` and `close` (the Sprint 1 brief's facade, in place of §2's
 `persistence.settings` repository and `status`); the `StorageAdapter` port with `open`,
@@ -583,9 +585,7 @@ detail:
   `load(group, onProgress)` with byte progress from the manifest, `isLoaded`, `progress`,
   `urls(group)` (the URLs the DOM shows), `boxes(group)` (the draw boxes the manifest declares)
   and `release(group)`. The device pixel ratio is read once, so each image's
-  1x or 2x file is fixed for the session. Not built yet: `get`, `AssetCache` and the canvas
-  `ImageBitmap` path (no sprite atlas exists; Phase 6, sprint 6.3), and the audio and JSON loaders
-  (no such assets).
+  1x or 2x file is fixed for the session. SpriteAtlasLoader decodes ImageBitmap atlases and ResourceController.atlases exposes the loaded grids. The local match requests and releases one group for its selected Legend. Not built yet: get, AssetCache, and audio and JSON loaders.
   An asset that fails to load never rejects its group: it is warned about through an injected
   callback and listed in the load's outcome, and a failed rendition falls back to the entry's own
   file; §12's typed error is not built. Progress counts an entry's loaded files once the entry is
@@ -596,7 +596,7 @@ detail:
   URL, bytes and hash), its per-use `renditions`, a `licence` and a `source`. An image placed at the
   spot it was baked for (a plate, a weapon art) also carries its draw `box` (origin and size in px
   of the 1920 × 1080 frame), on the entry or on a rendition. `AssetType` is `'ui-image' | 'font'`.
-  The seven groups (`boot`, `selection`, `selection-primary`, `selection-alternate`,
+  The shared groups (`boot`, `selection`, `selection-primary`, `selection-alternate`,
   `selection-raster`, `selection-primary-raster`, `match`) let a session load only its layout's art
   and, with the `'css'` effects renderer, no Figma plates (`game/session/selectionAssetGroups.ts`).
   The build emits every asset as its own file and inlines none into the JavaScript

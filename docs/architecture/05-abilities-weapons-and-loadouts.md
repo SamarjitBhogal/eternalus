@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -586,7 +586,8 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 which gives the same result as §9's late check; 07 §3), `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
 `INBOX.md`), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8), `MinionStrengthStep`
 (the minion strength-by-distance curve, its base-stat point moved toward the enemy for each lane
-tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16) and
+tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16; `createDefaultDamageSteps(progressOf)`
+injects the lane flow fields' progress, gate to gate by path cost, DEC-280, see 18's status note) and
 `BossMinionDamageStep` (a boss takes only its share of a lane minion's hit, balancing.md; the
 shares are `BOSS_MINION_DAMAGE_TAKEN` in `content/mobs/minionModifiers.ts`). Interim differences:
 no `DamageType` yet (nothing reads it; it joins `DamageHit` and
@@ -785,7 +786,7 @@ export type LevelScalingDefinition = {
 ```
 
 `ProgressionSystem` listens to `entity-died`, `damage-applied` (assist window, objective damage),
-`structure-destroyed` and `checkpoint-cleared`, defers the awards to its own pass, applies XP from
+`structure-destroyed`, `camp-cleared` and `checkpoint-cleared`, defers the awards to its own pass, applies XP from
 `content/progression/xpSources.ts` (per-source amounts, share radius, damage bias;
 `Recommendation:` balancing.md), emits `level-up { entityId, level }`, raises the `Health` base
 max and `Abilities.maxAether` by the class's `LevelScalingDefinition`, and applies the
@@ -970,9 +971,16 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   its killer's playable team, not the killer alone, and each Legend gets at most the XP that lifts
   it `maxLevels` levels (`Progression.xpToReach`); `level-matches-xp` checks that the killer is on
   the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
-  `xp-granted` reward path. Not built yet: the share radius and damage bias, assists, checkpoint and
-  camp XP, the Eternal's flat 5 levels (DEC-237) (their systems do not exist),
-  basic-attack and ability potency per level, `upgradeIds` and the ultimate charge rules. Numbers are
+  `xp-granted` reward path. Camp XP is built: `camp-cleared` pays the camp's entry in
+  `XP_SOURCES.campCleared`, keyed by camp definition id (forest camps only; a corner camp's boss
+  pays `teamKills` instead) (`cause: 'camp-cleared'`), one tick after the last mob's kill XP, and
+  is owed like a kill when its Legend waits to respawn; `level-matches-xp` checks that the camp is
+  a guard home with none of its own posts holding a guard (checkpoint-defender posts on the same
+  home do not count). The bonus goes only to the Legend that killed the camp's last mob, and to
+  nobody when a minion or turret lands that hit (DEC-375). Not built yet:
+  the share radius and damage bias, assists, checkpoint XP, the Eternal's flat 5 levels (DEC-237)
+  (their systems do not exist), basic-attack and ability potency per level, `upgradeIds` and the
+  ultimate charge rules. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
   soak metric can change them) and live in `content/progression/`.
 - **Legend respawn (`fix/legend-respawn`, GL-12, DEC-295).** FR-051 and DEC-80, with the

@@ -9,6 +9,8 @@ export type DrawContext = Pick<
   | 'beginPath'
   | 'clip'
   | 'closePath'
+  | 'drawImage'
+  | 'imageSmoothingEnabled'
   | 'ellipse'
   | 'fill'
   | 'fillRect'

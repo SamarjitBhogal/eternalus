@@ -11,6 +11,12 @@ import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { CAMP_KINDS, FORTIFIED_KINDS } from './MapSceneryBuilder.constants';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 import { MapFortificationBuilder } from './MapFortificationBuilder';
+import { MapCampBuilder } from './MapCampBuilder';
+import { NeutralCampBuilder } from './NeutralCampBuilder';
+import { laneCampThemes } from './campThemes';
+import { MapBiomeBuilder } from './MapBiomeBuilder';
+import { MapBiomeVegetationBuilder } from './MapBiomeVegetationBuilder';
+import { sceneryBiomeAt } from './sceneryBiome';
 import { MapLandscapeBuilder } from './MapLandscapeBuilder';
 import { MapMountainBuilder } from './MapMountainBuilder';
 import { MapStrongholdBuilder } from './MapStrongholdBuilder';
@@ -100,18 +106,33 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
 
   /** Adds every decoration, in sketch coordinates and draw order. */
   private dress(): void {
+    this.pieces.push(...new MapBiomeBuilder().build(this.map));
     this.pieces.push(
       ...new MapLandscapeBuilder(this.map, (point) => this.isClear(point), this.lakes).build(),
     );
     this.isMirrored = true;
     this.forest();
     this.isMirrored = undefined;
-    this.pieces.push(...new MapMountainBuilder().build(this.map.seed));
+    this.pieces.push(...new MapMountainBuilder().build(this.map));
     this.pieces.push(...new MapVillageBuilder(this.map).build());
+    const themes = laneCampThemes(this.map);
     this.map.features.forEach((feature) => {
-      if (CAMP_KINDS.has(feature.kind)) this.camp(feature.position, `${feature.id}-camp`);
-      if (FORTIFIED_KINDS.has(feature.kind))
+      const mirrorWidth = feature.position.x > this.map.width / 2 ? this.map.width : undefined;
+      const theme = themes.get(feature.id);
+      if (FORTIFIED_KINDS.has(feature.kind)) {
         this.pieces.push(...new MapFortificationBuilder().build(feature));
+        if (theme !== undefined)
+          this.pieces.push(
+            ...new MapCampBuilder().build(feature, theme, mirrorWidth).map((piece) => ({
+              ...piece,
+              object: { id: feature.id, kind: 'fort' as const, isFootprint: false },
+            })),
+          );
+      } else if (feature.kind === 'corner-camp') {
+        this.pieces.push(...new MapCampBuilder().build(feature, theme ?? 'corner', mirrorWidth));
+      } else if (CAMP_KINDS.has(feature.kind)) {
+        this.pieces.push(...new NeutralCampBuilder().build(feature, mirrorWidth));
+      }
     });
     const cathedral = this.map.features.find((f) => f.kind === 'cathedral');
     if (cathedral !== undefined)
@@ -153,17 +174,12 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
         const size = 8 + (n % 10);
         this.beginObject(id, n % 7 === 0 ? 'rock' : 'tree');
         if (n % 7 === 0) {
-          this.blob(`${id}-boulder-shadow`, point.x + 3, point.y + 4, size, size * 0.65, P.shadow);
-          this.blob(`${id}-boulder`, point.x, point.y, size, size * 0.65, P.stoneDark);
-          this.blockLastShape();
-          this.blob(
-            `${id}-boulder-light`,
-            point.x - 2,
-            point.y - 2,
-            size * 0.6,
-            size * 0.35,
-            P.stone,
-          );
+          this.boulder(id, point, size);
+          continue;
+        }
+        const biome = sceneryBiomeAt(point);
+        if (biome !== undefined) {
+          this.pieces.push(...new MapBiomeVegetationBuilder().build(id, point, size, n, biome));
           continue;
         }
         if (n % 3 !== 0) {
@@ -211,36 +227,10 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
     }
   }
 
-  private camp(point: Vec2, id: string): void {
-    this.endObject();
-    this.rect(`${id}-clearing`, point.x - 23, point.y - 18, 46, 36, P.road, 'ground');
-    for (const side of [-1, 1]) {
-      const x = point.x + side * 15;
-      this.beginObject(`${id}-tent-${String(side)}`, 'camp');
-      this.blockPolygon(
-        `${id}-tent-${String(side)}`,
-        [
-          { x, y: point.y - 12 },
-          { x: x + 9, y: point.y + 6 },
-          { x: x - 9, y: point.y + 6 },
-        ],
-        P.gold,
-      );
-      this.polygon(
-        `${id}-tent-shade-${String(side)}`,
-        [
-          { x, y: point.y - 12 },
-          { x, y: point.y + 6 },
-          { x: x - 9, y: point.y + 6 },
-        ],
-        P.bark,
-      );
-    }
-    this.endObject();
-    this.beginObject(`${id}-fire`, 'furniture');
-    this.blockRect(`${id}-fire-stone`, point.x - 4, point.y - 4, 8, 8, P.stoneDark);
-    this.rect(`${id}-fire`, point.x - 2, point.y - 2, 4, 4, P.lavaLight);
-    this.endObject();
-    this.blockRect(`${id}-supplies`, point.x - 7, point.y + 12, 7, 5, P.bark);
+  private boulder(id: string, point: Vec2, size: number): void {
+    this.blob(`${id}-boulder-shadow`, point.x + 3, point.y + 4, size, size * 0.65, P.shadow);
+    this.blob(`${id}-boulder`, point.x, point.y, size, size * 0.65, P.stoneDark);
+    this.blockLastShape();
+    this.blob(`${id}-boulder-light`, point.x - 2, point.y - 2, size * 0.6, size * 0.35, P.stone);
   }
 }

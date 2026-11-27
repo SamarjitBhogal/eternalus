@@ -156,4 +156,28 @@ describe('MinionStrengthStep', () => {
       ),
     ).toBe(10);
   });
+
+  it('reads t from the injected lane progress, and falls back to the polyline where it cannot say', () => {
+    const { state, minion, legend, walk } = setUp();
+    let reported: number | null = 0.5;
+    const step = new MinionStrengthStep(CURVE, (laneId, team) =>
+      laneId === 'lane-0' && team === 'light' ? reported : null,
+    );
+    const dealt = () =>
+      step.adjust(
+        {
+          targetId: legend,
+          amount: 100,
+          source: { attackerId: minion, kind: 'weapon', definitionId: 'x' },
+        },
+        state,
+      );
+    walk(20);
+    expect(dealt()).toBeCloseTo(100);
+    reported = 0;
+    walk(100);
+    expect(dealt()).toBeCloseTo(150);
+    reported = null;
+    expect(dealt()).toBeCloseTo(100);
+  });
 });
