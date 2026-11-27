@@ -74,9 +74,9 @@ export class ProgressionSystem implements System {
   }
 
   /**
-   * Buffers every award this match pays: a kill (`entity-died`), a destroyed structure, a cleared
-   * camp and XP owed to a Legend that has respawned. Not called when the match has no match XP
-   * (DEC-380 (1)).
+   * Buffers every award except a checkpoint share (`CheckpointAwards`): a kill (`entity-died`), a
+   * destroyed structure, a cleared camp and XP owed to a Legend that has respawned. Not called
+   * when the match has no match XP (DEC-380 (1)).
    */
   private listenForAwards(state: GameState): void {
     state.events.on('entity-died', ({ entityId, killer }) => {

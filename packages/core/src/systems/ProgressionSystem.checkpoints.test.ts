@@ -188,6 +188,7 @@ describe('ProgressionSystem checkpoint XP through the guard roster (07 §7)', ()
     const solo = legend(CENTER.x);
     for (const id of defend(1)) hit(solo, id);
     step();
+    expect(state.defenderDamage.size).toBe(0);
     step();
 
     expect(awards).toEqual([]);
