@@ -91,6 +91,35 @@ Reply inline (`Decision: …`).
       fire), which `kill` would keep, and scalers (statuses, minion strength, boss share), which it
       skips.
 
+- [ ] **The Greater Boss kill on the scoreboard (PR #164 critic, 2026-11-27).** Today the
+      scoreboard shows no kill and no points for any boss kill (`MobDeathRule` skips
+      `SCORING.bossIds`). DEC-79 says only that bosses "give no personal points"; it does not say
+      whether the kill counts. DEC-416 quotes you: "if the legend is credited with the kill in the
+      scoreboard, they should get the 5." **A** (recommended): keep it as built; a boss kill shows
+      no kill and no points. **B**: the scoreboard shows the boss kill, with 0 points, for the
+      Legend that gets the 5 levels. B also overrides DEC-79's "A non-Legend last hit gives no
+      kill": when a minion or a tower lands the last hit, the kill shows for its team's Legend
+      that hit the boss last. With B, the critic's better design is one last-hitter rule that the
+      scoreboard and the 5 levels both read, so both name the same Legend.
+
+- [ ] **Better than design: `KillCredit` has two jobs (PR #164 critic, 2026-11-27).** For
+      sign-off; not built. `combat/KillCredit` decides who a death by the Cathedral gem counts for
+      (DEC-346), and it also keeps each team's last Legend hitter on a boss (`LastLegendHits`,
+      DEC-416). Proposal: `DamagePipeline` takes a list of hit recorders; the last-Legend-hitter
+      memory becomes its own recorder, and `KillCredit` keeps only the gem credit. Nothing a
+      player sees changes. It changes the `DamagePipeline` constructor that #160 and #164 use, so
+      it waits for both to merge.
+
+- [ ] **Better than design: one "is this a Legend?" test (PR #164 critic round 2, 2026-11-27).**
+      For sign-off; not built. Core answers "is this unit a Legend?" in two ways: a
+      `family === 'legend'` test in seven places (`KillCredit`, `CheckpointAwards` twice,
+      `match/Scoring`, `state/AllyDamageTally`, `OutOfCombatHealingSystem`, `TeamKillAwards`) and
+      `ProgressionSystem.legendOf` (the definition's kind). The Greater Boss award uses both: it
+      pays by `legendOf` and names the last hitter by family. The two agree for every unit a match
+      builds today, but nothing keeps them aligned. Proposal: one type guard (for example
+      `entities/isLegend.ts`, `entity is Legend`) that every place uses. Nothing a player sees
+      changes.
+
 - [ ] **The Greater Boss's BossController: slam and entrance roar (Aryan Walanj, 2026-11-16,
       `feat/cathedral-boss-controller`).** Built per architecture 11 §4.6 for the Greater Boss
       only: `entrance → roam → telegraph → execute → recover → roam`, the slam, and the roar as
@@ -450,7 +479,7 @@ Reply inline (`Decision: …`).
       keep them aligned; one interim block on the mob, shaped like 04's planned
       `BossDefinition.rewards`, would make sprint 3.6 a move. (3) **The XP cap in its own type.** A
       `TeamKillAward` with a required `maxLevels` (or `Progression.cappedXp`) instead of the
-      optional field `ProgressionSystem.grant` branches on. (4) **A `GuardStore` query**
+      optional field `TeamKillAwards.cappedXp` branches on. (4) **A `GuardStore` query**
       (`postsOf(homeId)`) instead of `CaptureSystem.lockOf`'s hand-rolled scan of every post.
 
 - [ ] **A named `GuardPlanSource` type (`feat/capture-point-boss` critic round 2 finding 8,
@@ -3409,6 +3438,10 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       (`granted`, PR #136) moves from Space to Q. (9) Jump momentum, the dash and knockback move
       a Legend through one shared path; build the "held in place" check (the countdown hold or
       `cannot-move`) once there, as `JumpSystem` and `MovementSystem` now each have their own.
+      The knockback is `Movement.pushBy` (#164): today a push moves a Legend in the air once and
+      the Legend keeps its takeoff velocity (`MovementSystem`). That is today's behaviour, not an
+      owner ruling: the shared path keeps it until doc 10 §3's impulse model or an owner call
+      changes it.
       Traps: #136 binds `granted: Space` on its own line of `keybindings.ts`, so the merge shows
       no text conflict and leaves two actions on Space; `InputMapper.test.ts` uses `KeyQ` as its
       unbound sample key (move the sample to another unbound key; keep the test). **Owner answer

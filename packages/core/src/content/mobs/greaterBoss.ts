@@ -24,8 +24,8 @@ export const GREATER_BOSS_LIGHT_HIT = Math.round(0.15 * REF_HEALTH);
  * and reach are the heavy minion's (`HEAVY_MOB_BASE`, DEC-371 E2). It has no movement strategy:
  * its controller steers it with `move` commands, so `PathingSystem` leaves it alone. It takes a
  * quarter of a minion's hit (`BOSS_MINION_DAMAGE_TAKEN`), and its kill lifts the killer's team 2.5
- * levels and the last hitter 5 (`XP_SOURCES.teamKills`, DEC-237, DEC-371 E8, DEC-416). Its `attack` is never used: the controller gives it no
- * attack target, only moves.
+ * levels and the last hitter 5 (`XP_SOURCES.teamKills`, DEC-237, DEC-371 E8, DEC-416). Its
+ * `attack` is never used: the controller gives it no attack target, only moves.
  */
 export const GREATER_BOSS = {
   id: 'greater-boss',

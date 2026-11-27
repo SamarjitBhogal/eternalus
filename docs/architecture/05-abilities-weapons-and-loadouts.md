@@ -16,6 +16,7 @@ paths:
     'packages/core/src/content/progression/**',
     'packages/core/src/components/Progression.ts',
     'packages/core/src/systems/ProgressionSystem.ts',
+    'packages/core/src/systems/TeamKillAwards*',
   ]
 related:
   [

@@ -653,6 +653,33 @@ describe('ProgressionSystem', () => {
       expect(shooter.getComponent(Progression)).toMatchObject({ xp: 500, level: 6 });
     });
 
+    it('owes the 5 to the waiting killer, not to a living mate whose hit the boss remembers (DEC-371 E8c, DEC-416)', () => {
+      const { state, spawn, run } = setUp(LONG_CURVES);
+      const damage = new DamagePipeline(
+        [],
+        new KillCredit(30 * 30, CATHEDRAL_GEM.statusIds, ['greater-boss']),
+      );
+      const earlier = spawn('warrior', 'warrior', 'light');
+      const shooter = spawn('magus', 'magus', 'light');
+      const boss = spawn('heavy-mob', 'greater-boss', 'neutral');
+      damage.apply(state, boss.id, 1, {
+        attackerId: earlier.id,
+        kind: 'weapon',
+        definitionId: 'x',
+      });
+      wait(state, shooter, 'light');
+
+      // `KillCredit` cannot record the waiting shooter's hit, so the boss still remembers `earlier`.
+      damage.kill(state, boss.id, { attackerId: shooter.id, kind: 'weapon', definitionId: 'x' });
+      run();
+
+      const owed: unknown[] = [];
+      state.respawns.forEach(({ owedXp }) => owed.push(...owedXp));
+      expect(owed).toMatchObject([{ cause: 'team-kill', levels: 5 }]);
+      // Level 1 + 2.5 levels: halfway through level 3 (250).
+      expect(earlier.getComponent(Progression)).toMatchObject({ xp: 250, level: 3 });
+    });
+
     it("owes it a camp's clear bonus when its hit killed the last mob after it died (O4)", () => {
       const { state, spawn, run, payloads, clearCamp } = setUp();
       const waiting = spawn('warrior', 'warrior', 'light');

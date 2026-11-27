@@ -60,6 +60,7 @@ import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { loadZoneLevelUp } from '../content/zones/loadZoneLevelUp';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { SystemPipeline } from './SystemPipeline';
+import { TeamKillAwards } from './TeamKillAwards';
 
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
@@ -112,9 +113,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
       new KillCredit(
         assistWindowTicks,
         CATHEDRAL_GEM.statusIds,
-        Object.entries(progression.xpSources.teamKills)
-          .filter(([, reward]) => 'lastHitterLevels' in reward)
-          .map(([mobId]) => mobId),
+        TeamKillAwards.lastHitterBossIds(progression.xpSources.teamKills),
       ),
     );
     const world = state.world?.grid ?? null;

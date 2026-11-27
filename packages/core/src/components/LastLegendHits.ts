@@ -1,5 +1,6 @@
 import type { EntityId } from '../state/EntityStore.types';
 import type { Team } from '../teams/teams.types';
+import { compareById } from '../utils/compareById';
 
 /**
  * The last Legend of each team whose hit landed on this entity (DEC-416). A boss whose kill pays a
@@ -12,7 +13,7 @@ export class LastLegendHits {
 
   /** The fields that change the match's future, for `StateHasher`, in team order. */
   public get fields(): readonly string[] {
-    return [...this.byTeam].sort(([a], [b]) => a.localeCompare(b)).flat();
+    return [...this.byTeam].sort(([a], [b]) => compareById(a, b)).flat();
   }
 
   /** Records that the hit of `legendId`, a Legend of `team`, landed last for that team. */
