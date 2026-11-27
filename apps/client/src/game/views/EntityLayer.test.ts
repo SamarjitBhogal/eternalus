@@ -32,6 +32,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   team: 'dark',
   transform: { x, y, radius: 0.4, facing },
   health: null,
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
@@ -141,6 +142,33 @@ describe('EntityLayer', () => {
     layer.draw(new RecordingRenderer());
 
     expect(spy.drawn.map((state) => state.position)).toEqual([{ x: 2.5, y: 1 }]);
+  });
+
+  it('interpolates a jump height like the position; a new entity starts at its height (DEC-390)', () => {
+    const spy = new SpyView();
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      () => false,
+      () => null,
+    );
+    const lifted = (id: string, height: number): EntitySnapshot => ({
+      ...unit(id, 0, 0),
+      elevation: { height },
+    });
+
+    layer.show(
+      snapshot(1, [lifted('a', 0.4), unit('mob', 5, 0)]),
+      snapshot(2, [lifted('a', 1.2), unit('mob', 5, 0), lifted('new', 1)]),
+      0.25,
+      null,
+    );
+    layer.draw(new RecordingRenderer());
+
+    expect(spy.drawn.map((state) => [state.entity.id, state.height])).toEqual([
+      ['a', 0.6],
+      ['mob', 0],
+      ['new', 1],
+    ]);
   });
 
   it('turns the facing between the last two snapshots by alpha, as a unit vector (08 §8)', () => {
@@ -339,5 +367,31 @@ describe('EntityLayer', () => {
     );
 
     expect(track?.[2]?.y).toBeCloseTo(20 - LEGEND_VISUAL_DIAMETER * 0.9 - HEALTH_BAR_GAP);
+  });
+
+  it("raises a jumping sprite Legend's bar by the interpolated jump height (DEC-390)", () => {
+    const sprites = {
+      sizeOf: () => ({ width: LEGEND_VISUAL_DIAMETER, top: LEGEND_VISUAL_DIAMETER * 0.9 }),
+      frameOf: () => ({ atlasId: 'knight-sprites', frame: 0 }),
+    };
+    const layer = new EntityLayer(
+      createDefaultViewRegistry(undefined, new LegendSpriteView(sprites)),
+      () => false,
+      () => 'enemy',
+    );
+    const foe = (height: number): EntitySnapshot => ({
+      ...member('foe', 'legend', 10),
+      transform: { x: 10, y: 20, radius: 0.75, facing: EAST },
+      elevation: { height },
+    });
+    // Half way from 1 m to 2 m: the sprite and its bar both stand 1.5 m up.
+    layer.show(snapshot(1, [foe(1)]), snapshot(2, [foe(2)]), 0.5, null);
+    const renderer = new RecordingRenderer();
+    layer.draw(renderer);
+    const [track] = renderer.calls.flatMap((call) =>
+      call.op === 'fillPolygon' ? [call.args[0]] : [],
+    );
+
+    expect(track?.[2]?.y).toBeCloseTo(20 - LEGEND_VISUAL_DIAMETER * 0.9 - 1.5 - HEALTH_BAR_GAP);
   });
 });

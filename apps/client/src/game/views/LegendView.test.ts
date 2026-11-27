@@ -26,6 +26,7 @@ const WARRIOR: EntitySnapshot = {
   team: 'light',
   transform: { facing: { x: 1, y: 0 }, x: 0, y: 0, radius: 0.5 },
   health: { current: 600, max: 600 },
+  elevation: null,
   progression: null,
   aether: null,
   area: null,

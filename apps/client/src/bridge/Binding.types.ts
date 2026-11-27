@@ -11,6 +11,7 @@ export type InputAction =
   | 'move-down'
   | 'move-left'
   | 'move-right'
+  | 'jump'
   | 'attack'
   | 'ability-1'
   | 'ability-2'

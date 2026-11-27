@@ -260,9 +260,9 @@ flowchart LR
 - `ViewRegistry` (Registry pattern) maps entity `kind` → `EntityView`; `DefaultEntityView` draws
   a definition sprite for kinds without a bespoke view. Views read snapshots through `import type`
   only and never mutate state (rule 6).
-- Each view gets one `EntityDrawState` per entity: the snapshot, the interpolated position and
-  facing, whether the player controls it, and the frame time (`frameTick`: the snapshot's tick
-  plus `alpha`). A view that animates picks its frame by the frame time, so no view reads time
+- Each view gets one `EntityDrawState` per entity: the snapshot, the interpolated position,
+  facing and jump height (DEC-390, §11), whether the player controls it, and the frame time
+  (`frameTick`: the snapshot's tick plus `alpha`). A view that animates picks its frame by the frame time, so no view reads time
   from `Match` (DEC-398, card PR170 (12)).
 - Interpolation: views draw `prev + (current - prev) × alpha` for position. The facing uses the
   same blend, scaled back to length 1 (`EntityLayer.turn`), and snaps at the midpoint when the two
@@ -383,9 +383,10 @@ Legend sprites (PR #170, `feat/character-sprites-phase3`, 2026-11-25):
   Legend looks the same size on screen for every class (`followViewFor`). A Legend drawn as a
   disc keeps `LEGEND_VISUAL_DIAMETER`.
 - `EntityView` has two optional sizes. `visualRadiusOf?` (PR #90) is the click area
-  (`PlayerCommands`). `visualTopOf?` is how far the top of the art stands above the position: the
-  health bar (`EntityLayer`). The bar uses `visualTopOf`, else `visualRadiusOf`, else the
-  footprint radius. `LegendSpriteView` gives the sprite top from `visualTopOf` and half the
+  (`PlayerCommands`). `visualTopOf?` is how far the top of the art stands above the ground
+  position in the frame's draw state: the health bar (`EntityLayer`). `AirborneView` adds a
+  jumping Legend's height (DEC-390), so the bar rises with the Legend. The bar uses
+  `visualTopOf`, else `visualRadiusOf`, else the footprint radius. `LegendSpriteView` gives the sprite top from `visualTopOf` and half the
   sprite's width from `visualRadiusOf` (DEC-424), so a click picks a Legend only inside that
   circle; a Warrior keeps DEC-238's 2.6 m. `draw` returns `void`. Card PR170 (13), option A
   (DEC-424), keeps the two sizes.
@@ -477,6 +478,14 @@ character atlases and their resource-budget extensions, and the parallel ability
 are deferred to preserved feature work outside this branch. No independent ability stack or
 new raster-art loading path is registered here. The PR gate and requested owner confirmation
 remain explicit handoff items; this status note grants neither.
+
+### 2026-11-27 — Legend jump (DEC-390)
+
+`defaultViewRegistry` wraps the Legend family view in `AirborneView`. For a Legend in the air it
+draws a ground shadow at the position, then the Legend raised by its height, so the health bar
+rises too. `EntityLayer.show` interpolates the height like the position
+(`EntityDrawState.height`). The mini map marker stays at the ground position. The team and focus
+rings are part of the Legend view, so they rise with it.
 
 ## Related
 

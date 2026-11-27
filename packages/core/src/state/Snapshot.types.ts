@@ -10,8 +10,8 @@ import type { Polygon } from '../utils/geometry.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
- * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`, `Capturable`
- * or `CathedralGemState`), never a made-up default.
+ * (no `Transform`, `Jump`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`,
+ * `Capturable` or `CathedralGemState`), never a made-up default.
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
@@ -41,6 +41,12 @@ export type EntitySnapshot = {
     readonly radius: number;
     readonly facing: { readonly x: number; readonly y: number };
   } | null;
+  /**
+   * The drawn height above the ground in metres, from any lift (today only a Legend's `Jump`,
+   * DEC-390; named for what the view draws, DEC-420): above 0 only in the air; `null` for every
+   * entity that nothing can lift.
+   */
+  readonly elevation: { readonly height: number } | null;
   readonly health: { readonly current: number; readonly max: number } | null;
   /** A Legend's level and XP (`Progression`, DEC-224); `null` for every entity that does not level. */
   readonly progression: ProgressionSnapshot | null;

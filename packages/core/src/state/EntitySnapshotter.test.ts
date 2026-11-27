@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Capturable } from '../components/Capturable';
+import { Jump } from '../components/Jump';
 import { MapFeatureLink } from '../components/MapFeatureLink';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { ZoneArea } from '../components/ZoneArea';
@@ -56,6 +57,20 @@ describe('EntitySnapshotter', () => {
       lockedBy: null,
       presence: { light: 0, dark: 0, neutral: 0 },
     });
+  });
+
+  it("snapshots a jumper's height, and null for an entity that cannot jump (DEC-390)", () => {
+    const jumper = new Bare('entity-1', 'bare-definition');
+    const jump = new Jump();
+    jumper.addComponent(jump);
+    const snapshotter = new EntitySnapshotter(4, CURVES);
+    expect(snapshotter.snapshotOf(jumper).elevation).toEqual({ height: 0 });
+
+    jump.takeOff({ x: 1, y: 0 });
+    jump.advance({ airTicks: 4, peakHeight: 2 });
+
+    expect(snapshotter.snapshotOf(jumper).elevation).toEqual({ height: 1.5 });
+    expect(snapshotter.snapshotOf(new Bare('entity-2', 'bare-definition')).elevation).toBeNull();
   });
 
   it('names the map object a body stands for, and leaves the key out for every other entity', () => {

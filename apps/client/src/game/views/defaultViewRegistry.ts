@@ -1,3 +1,4 @@
+import { AirborneView } from './AirborneView';
 import type { EntityView } from './EntityView.types';
 import { CapturePointView } from './CapturePointView';
 import { CathedralGemView } from './CathedralGemView';
@@ -21,7 +22,7 @@ export const createDefaultViewRegistry = (
   legend?: EntityView,
 ): ViewRegistry => {
   const registry = new ViewRegistry(new DefaultEntityView(), onUnknownKind);
-  registry.registerFamily('legend', legend ?? new LegendView());
+  registry.registerFamily('legend', new AirborneView(legend ?? new LegendView()));
   registry.registerFamily('mob', new MobView());
   registry.registerKind('light-mob', new MinionView('light'));
   registry.registerKind('medium-mob', new MinionView('medium'));

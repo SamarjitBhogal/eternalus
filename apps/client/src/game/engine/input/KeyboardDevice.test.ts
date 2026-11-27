@@ -85,6 +85,23 @@ describe('KeyboardDevice', () => {
     expect(heldKeys(device).size).toBe(0);
   });
 
+  it('ignores keys pressed inside a modal dialog, such as Space on a pause-menu button', () => {
+    const { device, target } = attachedKeyboard();
+    const inDialog = keyEvent('keydown', { code: 'Space', key: ' ' });
+    const inCanvas = keyEvent('keydown', { code: 'KeyW', key: 'w' });
+    const closestIn = (match: object | null) => ({
+      closest: (selector: string) => (selector === '[aria-modal="true"]' ? match : null),
+    });
+    Object.defineProperty(inDialog, 'target', { value: closestIn({}) });
+    Object.defineProperty(inCanvas, 'target', { value: closestIn(null) });
+
+    target.dispatchEvent(inDialog);
+    target.dispatchEvent(inCanvas);
+
+    expect(inDialog.defaultPrevented).toBe(false);
+    expect([...heldKeys(device)]).toEqual(['KeyW']);
+  });
+
   it('never prevents Tab, F5, F12 or Ctrl/Meta shortcuts, even when bound', () => {
     const { target } = attachedKeyboard();
     const events = [

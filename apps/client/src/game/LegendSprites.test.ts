@@ -17,6 +17,7 @@ import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
 import type { LegendSpriteSheet } from './legendSpriteSheets.types';
 import { LegendSprites } from './LegendSprites';
+import type { EntityDrawState } from './views/EntityView.types';
 import { LegendSpriteView } from './views/LegendSpriteView';
 import { LegendView } from './views/LegendView';
 
@@ -41,6 +42,7 @@ const PLAIN: EntitySnapshot = {
   team: 'light',
   transform: { x: 10, y: 20, radius: 0.75, facing: { x: 0, y: 1 } },
   health: { current: 800, max: 800 },
+  elevation: null,
   aether: null,
   progression: null,
   area: null,
@@ -83,13 +85,21 @@ function busSimulation(): {
   return { bus, simulation: { tick: 0, on: bus.on.bind(bus) } };
 }
 
+/** `entity`'s draw state at (10, 20) on frame time `frameTick`. */
+function stateOf(entity: EntitySnapshot, frameTick = 0): EntityDrawState {
+  return {
+    entity,
+    position: { x: 10, y: 20 },
+    facing: { x: 0, y: 1 },
+    isFocused: false,
+    frameTick,
+  };
+}
+
 /** The frame the sprites' view draws for `entity` at `frameTick`, read from the `drawSprite` call. */
 function drawnFrame(sprites: LegendSprites, entity: EntitySnapshot = HERO, frameTick = 0): unknown {
   const renderer = new RecordingRenderer();
-  sprites.view?.draw(
-    { entity, position: { x: 10, y: 20 }, facing: { x: 0, y: 1 }, isFocused: false, frameTick },
-    renderer,
-  );
+  sprites.view?.draw(stateOf(entity, frameTick), renderer);
   return renderer.calls.find((call) => call.op === 'drawSprite')?.args[0];
 }
 
@@ -203,10 +213,10 @@ describe('LegendSprites', () => {
       return shape === undefined || width === undefined ? undefined : spriteTopOf(shape, width);
     };
 
-    expect([sprites.view?.visualTopOf?.(HERO), sprites.view?.visualTopOf?.(BOT)]).toEqual([
-      top('knight-sprites', 'warrior'),
-      top('oracle-sprites', 'magus'),
-    ]);
+    expect([
+      sprites.view?.visualTopOf?.(stateOf(HERO)),
+      sprites.view?.visualTopOf?.(stateOf(BOT)),
+    ]).toEqual([top('knight-sprites', 'warrior'), top('oracle-sprites', 'magus')]);
     expect(top('knight-sprites', 'warrior')).not.toBeCloseTo(top('oracle-sprites', 'warrior') ?? 0);
     sprites.destroy();
   });

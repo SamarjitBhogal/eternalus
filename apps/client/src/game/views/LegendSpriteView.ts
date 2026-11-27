@@ -53,7 +53,7 @@ export class LegendSpriteView extends LegendView {
    * How far the sprite's top stands above the entity's position, so the health bar sits above
    * the sprite. A Legend without a sprite gives `LegendView`'s radius.
    */
-  public visualTopOf(entity: EntitySnapshot): number {
-    return this.sprites.sizeOf(entity)?.top ?? super.visualRadiusOf();
+  public visualTopOf(state: EntityDrawState): number {
+    return this.sprites.sizeOf(state.entity)?.top ?? super.visualRadiusOf();
   }
 }

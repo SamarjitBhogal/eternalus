@@ -18,6 +18,7 @@ const entity: EntitySnapshot = {
   transform: { x: 1, y: 2, radius: 0.75, facing: { x: 0, y: 1 } },
   health: { current: 800, max: 800 },
   aether: null,
+  elevation: null,
   progression: null,
   area: null,
   capture: null,
@@ -77,7 +78,7 @@ describe('LegendSpriteView', () => {
   it('gives the sprite top for the health bar and half the sprite width for clicks (DEC-424)', () => {
     const view = new LegendSpriteView(SPRITES);
 
-    expect(view.visualTopOf(entity)).toBe(5.1);
+    expect(view.visualTopOf(state)).toBe(5.1);
     expect(view.visualRadiusOf(entity)).toBe(6.8 / 2);
     // `LegendView`'s own draw asks without an entity: its disc keeps DEC-238's radius.
     expect(view.visualRadiusOf()).toBe(LEGEND_VISUAL_DIAMETER / 2);
@@ -91,7 +92,7 @@ describe('LegendSpriteView', () => {
     new LegendView().draw(state, ordinary);
 
     expect(drawn.calls).toEqual(ordinary.calls);
-    expect(view.visualTopOf(entity)).toBe(LEGEND_VISUAL_DIAMETER / 2);
+    expect(view.visualTopOf(state)).toBe(LEGEND_VISUAL_DIAMETER / 2);
     expect(view.visualRadiusOf(entity)).toBe(LEGEND_VISUAL_DIAMETER / 2);
   });
 

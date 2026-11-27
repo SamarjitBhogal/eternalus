@@ -1,6 +1,6 @@
 ---
 title: 'Progress 2026-11-27: #170 follow-up (the owner answers DEC-397, DEC-398, DEC-424)'
-description: 'Phase 3, sholtzman + Claude Code: the DEC-378 line merges phase/3 8ad77bfd, builds the PR170 card answers (feet in the sheet data, one sheet group family, the frame time in the draw state, a sprite width per class with its camera), amends ADR 0018 and records DEC-397, DEC-398 and DEC-424.'
+description: 'Phase 3, sholtzman + Claude Code: the DEC-378 line merges phase/3 8ad77bfd and 5f93e2a5, builds the PR170 card answers (feet in the sheet data, one sheet group family, the frame time in the draw state, a sprite width per class with its camera), amends ADR 0018 and records DEC-397, DEC-398 and DEC-424.'
 audience: [humans, agents]
 status: active
 owner: sholtzman
@@ -15,6 +15,12 @@ Phase 3 · fix/legend-sprites-dec378 (the #170 follow-up PR) · sholtzman + Clau
 - What was done:
   - Merge: phase/3 at `8ad77bfd` (#129 map-feature-link, #149 rule-7 docs, #177 duel max-level
     gate) merged into the DEC-378 line. The merge commit lists each conflict and its resolution.
+  - Merge: phase/3 at `5f93e2a5` (#183 Legend jump, DEC-390, DEC-420; #184 bot replan on a map
+    change, DEC-379, DEC-392) merged into this line. The five text conflicts keep both sides. One clash in meaning: #183's `AirborneView` gave the
+    Legend's top as the return value of `draw`, which this line replaced with `visualTopOf?`. Now
+    `visualTopOf?` takes the frame's draw state, and `AirborneView` adds the jump height to the
+    wrapped view's top. So the bar sits on the sprite top and rises with a jump. The merge commit
+    lists each resolution.
   - Card PR170 (8) (DEC-398): the feet position is the sheet's own data. `SpriteAtlasEntry`
     has `groundOffset`, and `SpriteAtlasLoader` rejects a value outside 0 to 1. The renderer
     stands each sprite on its feet (`drawSprite(sprite, feet, width)`) and measures its top

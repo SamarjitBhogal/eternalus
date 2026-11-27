@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-27
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -395,6 +395,10 @@ session or phase named:
 - `Boss` and `MiniBoss` are not built (Phase 3 sprint 3.6). The capture point mini-boss is a
   `heavy-mob` until then; the interim is recorded in
   [18's implementation status note](18-minion-system.md#minion-system).
+
+- Legends also install `Jump` (2026-11-27, DEC-390), which is not in the §3 table: the held jump
+  key, the tick in the air, the height and the takeoff velocity. `JumpSystem` flies it and
+  `LegendReset` clears it on a respawn.
 
 ## Related
 

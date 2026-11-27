@@ -13,6 +13,11 @@ export type EntityDrawState = {
   readonly position: WorldPoint;
   /** The way the entity faces: a unit vector, interpolated like `position` (DEC-192). */
   readonly facing: WorldPoint;
+  /**
+   * Height above the ground in world units, interpolated like `position` (a jump, DEC-390).
+   * Absent or 0 on the ground.
+   */
+  readonly height?: number;
   /** True for the entity the player controls (highlighted). */
   readonly isFocused: boolean;
   /**
@@ -38,13 +43,14 @@ export interface EntityView {
   readonly minimapLayer?: number;
   /**
    * Radius of the artwork for pointer targeting (`PlayerCommands`). The health bar uses it too
-   * when the view gives no `visualTopOf`.
+   * when the view gives no `visualTopOf`, and `AirborneView` sizes a jump shadow by it.
    */
   visualRadiusOf?(entity: EntitySnapshot): number;
   /**
-   * How far the top of the artwork stands above the entity's position, for the health bar
-   * (`EntityLayer`). A standing sprite is taller than its click area. Left out, the bar uses
+   * How far the top of the artwork stands above the entity's ground position in this frame, for
+   * the health bar (`EntityLayer`). A standing sprite is taller than its click area, and a Legend
+   * in the air stands higher by its jump height (`AirborneView`, DEC-390). Left out, the bar uses
    * `visualRadiusOf`.
    */
-  visualTopOf?(entity: EntitySnapshot): number;
+  visualTopOf?(state: EntityDrawState): number;
 }

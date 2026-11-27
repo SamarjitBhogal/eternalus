@@ -33,19 +33,19 @@ describe('ChaseWatch', () => {
   it('heads for a waypoint, judging progress toward it, until it drops it or comes in reach', () => {
     const watch = new ChaseWatch();
     watch.observe('enemy', 10, false, at(0));
-    watch.headFor(3, 4, 5, 60);
+    watch.headFor(3, 4, 5, 60, 7);
 
     expect(watch.waypoint).toEqual({ x: 3, y: 4 });
     expect(watch.waypointFor('enemy')).toEqual({ x: 3, y: 4 });
     expect(watch.waypointFor('other')).toBeNull();
-    expect(watch.fields).toEqual(['enemy', 5, 60, true, 3, 4, false]);
+    expect(watch.fields).toEqual(['enemy', 5, 60, true, 3, 4, 7, false]);
     expect(watch.observe('enemy', 4, false, at(100))).toBe(false);
     expect(watch.observe('enemy', 4, false, at(160))).toBe(true);
     watch.dropWaypoint(8, 160);
     expect(watch.waypoint).toBeNull();
-    expect(watch.fields).toEqual(['enemy', 8, 160, false, 3, 4, false]);
+    expect(watch.fields).toEqual(['enemy', 8, 160, false, 3, 4, 7, false]);
 
-    watch.headFor(3, 4, 5, 170);
+    watch.headFor(3, 4, 5, 170, 7);
     watch.observe('enemy', 5, true, at(171));
     expect(watch.waypoint).toBeNull();
   });
@@ -60,7 +60,7 @@ describe('ChaseWatch', () => {
     expect(watch.fields.at(-1)).toBe(true);
     expect(watch.observe('enemy', 10, false, at(1))).toBe(false);
     expect(watch.isPlanDue).toBe(true);
-    watch.headFor(3, 4, 5, 2);
+    watch.headFor(3, 4, 5, 2, 0);
     expect(watch.isPlanDue).toBe(false);
 
     watch.requestPlan();
@@ -73,5 +73,19 @@ describe('ChaseWatch', () => {
     watch.requestPlan();
     watch.observe('other', 8, true, at(5));
     expect(watch.isPlanDue).toBe(false);
+  });
+
+  it('calls its waypoint stale once the map version differs from the one it was planned on (DEC-392)', () => {
+    const watch = new ChaseWatch();
+    watch.observe('enemy', 10, false, at(0));
+    // No waypoint: a straight chase follows the map live, so nothing is stale.
+    expect(watch.isWayStale(3)).toBe(false);
+
+    watch.headFor(3, 4, 5, 60, 2);
+
+    expect(watch.isWayStale(2)).toBe(false);
+    expect(watch.isWayStale(3)).toBe(true);
+    watch.dropWaypoint(8, 61);
+    expect(watch.isWayStale(3)).toBe(false);
   });
 });

@@ -32,10 +32,11 @@ const STUB_PATHS: PathQuery = {
   },
   // Blocked past x 50, except the line to the stub's own waypoint.
   isLineClear: (_start, end) => end.x <= 50 || (end.x === 60 && end.y === 34),
+  version: 0,
 };
 
 /** A pathfinder stub that never finds a way. */
-const NO_WAY: PathQuery = { waypoint: () => false, isLineClear: () => false };
+const NO_WAY: PathQuery = { waypoint: () => false, isLineClear: () => false, version: 0 };
 
 /** A turn for a bot at `position` on the blocked-lane map, with or without pathfinding. */
 const turnAt = (
@@ -77,7 +78,7 @@ class StuckBot extends Entity {
   public readonly family = 'legend';
   protected installComponents(): void {
     const watch = new ChaseWatch();
-    watch.headFor(47.5, 32.5, 13, 0);
+    watch.headFor(47.5, 32.5, 13, 0, 0);
     this.addComponent(watch);
   }
 }
@@ -260,6 +261,7 @@ describe('BotLeaves.moveTo path cache (11 §6)', () => {
         return STUB_PATHS.waypoint(start, goal, out);
       },
       isLineClear: (start, end) => isClear && STUB_PATHS.isLineClear(start, end),
+      version: 0,
     };
     return { calls, paths };
   };
@@ -353,6 +355,18 @@ describe('BotLeaves.moveTo path cache (11 §6)', () => {
     const opened: PathQuery = { ...paths, isLineClear: () => true };
     decide(opened, { x: 42, y: 21 }, { x: 80, y: 20 }, first.next);
     expect(calls.searches).toBe(2);
+  });
+
+  it('searches again when the map changed since the search (DEC-379)', () => {
+    const { calls, paths } = counting();
+    const first = decide(paths, { x: 40, y: 20 }, { x: 80, y: 20 });
+    expect(first.next).toMatchObject({ pathVersion: 0 });
+
+    const changed: PathQuery = { ...paths, version: 1 };
+    const second = decide(changed, { x: 42, y: 21 }, { x: 80, y: 20 }, first.next);
+
+    expect(calls.searches).toBe(2);
+    expect(second.next).toMatchObject({ pathVersion: 1 });
   });
 
   it('forgets the path on arrival', () => {
