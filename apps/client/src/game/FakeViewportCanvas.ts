@@ -75,6 +75,11 @@ export class FakeViewportCanvas extends FakeBrowserTarget implements ViewportCan
       strokeStyle: '',
       lineWidth: 1,
       lineJoin: 'miter',
+      font: '',
+      textAlign: 'start',
+      textBaseline: 'alphabetic',
+      fillText: ignore,
+      strokeText: ignore,
     };
   }
 }

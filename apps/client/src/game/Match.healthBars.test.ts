@@ -1,18 +1,17 @@
 import {
   createDefaultGameConfig,
   type EntitySnapshot,
-  type GameEventHandler,
   type GameEventMap,
-  type GameEventType,
   type InputIntent,
   NullLogger,
   Simulation,
-  type Unsubscribe,
+  type Snapshot,
 } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { withFirstTickHit } from './__fixtures__/withFirstTickHit';
 import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
@@ -73,42 +72,18 @@ const barsDrawn = (renderer: RecordingRenderer, side: HealthBarSide): number =>
     (call) => call.op === 'fillPolygon' && call.args[1] === HEALTH_BAR_FILL_COLORS[side],
   ).length;
 
-/**
- * `simulation` with one made-up `damage-applied` event: after its first `step()`, the first dark
- * Legend hits the player. The event reaches the listeners `on` registered, as a real hit would.
- */
-const withFirstTickHit = (simulation: Simulation): MatchSimulation => {
-  const injected = new TypedEventBus<GameEventMap>();
-  let hasHit = false;
+/** After the first step, the first dark Legend hits the player for 1. */
+const darkLegendHitsPlayer = ({
+  entities,
+  match,
+}: Snapshot): GameEventMap['damage-applied'] | undefined => {
+  const attacker = entities.find(({ team, family }) => team === 'dark' && family === 'legend');
+  if (attacker === undefined || match.humanLegendId === null) return undefined;
   return {
-    get tick() {
-      return simulation.tick;
-    },
-    step: () => {
-      simulation.step();
-      const { entities, match } = simulation.snapshot();
-      const attacker = entities.find(({ team, family }) => team === 'dark' && family === 'legend');
-      if (hasHit || attacker === undefined || match.humanLegendId === null) return;
-      hasHit = true;
-      injected.emit('damage-applied', {
-        targetId: match.humanLegendId,
-        amount: 1,
-        absorbed: 0,
-        source: { attackerId: attacker.id, kind: 'weapon', definitionId: 'test-weapon' },
-      });
-    },
-    snapshot: () => simulation.snapshot(),
-    enqueueCommand: (command) => {
-      simulation.enqueueCommand(command);
-    },
-    on: <K extends GameEventType>(type: K, handler: GameEventHandler<K>): Unsubscribe => {
-      const offInjected = injected.on(type, handler);
-      const offSimulation = simulation.on(type, handler);
-      return () => {
-        offInjected();
-        offSimulation();
-      };
-    },
+    targetId: match.humanLegendId,
+    amount: 1,
+    absorbed: 0,
+    source: { attackerId: attacker.id, kind: 'weapon', definitionId: 'test-weapon' },
   };
 };
 
@@ -154,7 +129,9 @@ describe('Match health bars (DEC-195)', () => {
   });
 
   it("gives a unit that hits on the very first tick its bar, because the first snapshot's units count", () => {
-    const { match, simulation, renderer } = setUp(withFirstTickHit);
+    const { match, simulation, renderer } = setUp((simulation) =>
+      withFirstTickHit(simulation, darkLegendHitsPlayer),
+    );
     const at = match.snapshot.entities.find(({ id }) => id === match.playerEntityId)?.transform;
     if (at === null || at === undefined) throw new Error('No player');
     simulation.enqueueCommand({

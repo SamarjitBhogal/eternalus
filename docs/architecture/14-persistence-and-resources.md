@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-27
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -546,6 +546,10 @@ reads through the shared `readOrQuarantine`. Interim gaps, to settle before
   bump, and the settings record stays at version 1. The wording of §13's recipe row waits for him
   in `INBOX.md` HC-T1 (T-226). **Appended 2026-11-02:** he approved it (HC-T1, DEC-142); §13's row
   "A field or a settings group" now says the rule.
+- **The `hud` group (2026-11-27, DEC-410).** `SettingsDtoV1` has an optional `hud` group
+  (`{ shouldShowEveryHit }`, W5c) inside version 1, by DEC-125: a record saved before it still
+  reads, and the game gives it the default. A `hud` value of the wrong shape quarantines the
+  record, as any other bad group does.
 
 Resources (`feat/hud-and-character-select`, 2026-10-24; the owner's art and the Cinzel font,
 DEC-51). §1 and §11 say this since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1); the

@@ -5,6 +5,7 @@ import type { WorldPoint } from '../engine/render/Renderer.types';
 import type { HealthBarRule } from './EntityLayer.types';
 import type { EntityDrawState } from './EntityView.types';
 import { HealthBarView } from './HealthBarView';
+import { lerpPoint } from './lerpPoint';
 import type { WorldLayer } from './SceneView.types';
 import type { ViewRegistry } from './ViewRegistry';
 
@@ -50,7 +51,7 @@ export class EntityLayer implements WorldLayer {
       const now = entity.transform;
       if (entity.mapObjectId !== undefined || now === null) return [];
       const then = before.get(entity.id)?.transform ?? now;
-      const position = EntityLayer.lerp(then, now, alpha);
+      const position = lerpPoint(then, now, alpha);
       const facing = EntityLayer.turn(then.facing, now.facing, alpha);
       return [{ entity, position, facing, isFocused: entity.id === focusId }];
     });
@@ -92,16 +93,12 @@ export class EntityLayer implements WorldLayer {
     }
   }
 
-  private static lerp(from: WorldPoint, to: WorldPoint, alpha: number): WorldPoint {
-    return { x: from.x + (to.x - from.x) * alpha, y: from.y + (to.y - from.y) * alpha };
-  }
-
   /**
    * The facing `alpha` of the way from `from` to `to`, kept a unit vector. Opposite facings snap at
    * the midpoint (a zero blend takes `to`).
    */
   private static turn(from: WorldPoint, to: WorldPoint, alpha: number): WorldPoint {
-    const { x, y } = EntityLayer.lerp(from, to, alpha);
+    const { x, y } = lerpPoint(from, to, alpha);
     const size = Math.hypot(x, y);
     return size === 0 ? to : { x: x / size, y: y / size };
   }

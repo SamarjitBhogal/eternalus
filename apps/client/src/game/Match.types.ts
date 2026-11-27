@@ -10,6 +10,7 @@ import type {
 } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
+import type { SettingsSliceState } from '../bridge/slices/settingsSlice';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
 import type { Camera } from './engine/Camera';
 import type { Projection } from './engine/input/Projection.types';
@@ -99,6 +100,11 @@ export type MatchDeps = {
   readonly renderer: Renderer;
   readonly camera: Camera;
   readonly input: IntentSource;
+  /**
+   * The player's current settings, read while the match runs: the damage numbers follow "show
+   * every hit" (W5c) and Reduce motion (UE-03). `null` (or left out) means the defaults.
+   */
+  readonly settings?: () => Pick<SettingsSliceState, 'accessibility' | 'hud'> | null;
   /** Whether the developer menu exists in this match (`?dev=1`, 13 §4); off when left out. */
   readonly isDeveloperMenuEnabled?: boolean;
   /** Where client-side problems are reported (e.g. a kind drawn with the default view). */

@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-27
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -841,6 +841,11 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   Still bound but unhandled: `toggle-perf-overlay` (no overlay exists), `sprint`, `interact`,
   `turret-toggle-control`, `turret-switch-ammo` (`INBOX.md`). `toggle-developer-menu` is handled
   since the developer menu (#107): F1 opens it once `?dev=1` enabled it.
+- **The `hud` settings group (2026-11-27, DEC-410).** `settingsSlice.hud` exists with one field,
+  `shouldShowEveryHit` (W5c: show the damage number of every hit, not only the player's). It is
+  persisted (14 §13 and §14: an optional group, no version bump). The settings screen has no HUD tab, so
+  the toggle sits on the Video tab. `minimapVisible` is not in the group yet (the bullet above).
+  `Match` reads the group through `SettingsController.current`, which the match factories pass in.
 
 ## Related
 

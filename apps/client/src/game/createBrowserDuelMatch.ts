@@ -58,6 +58,7 @@ export function createBrowserDuelMatch(deps: BrowserMatchDeps): DuelMatchFactory
         input,
         logger,
         observer: request.observer,
+        settings: () => settings.current,
         bridge: {
           bus: deps.bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

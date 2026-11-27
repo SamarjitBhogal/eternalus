@@ -58,7 +58,7 @@ function setUp(
     gameConfig: CONFIG,
     isDeveloperMenuEnabled,
     bus,
-    settings: { bindings: null },
+    settings: { bindings: null, current: null },
     clock: new FakeSessionClock(),
     sinks,
     ...(resources === undefined ? {} : { resources }),

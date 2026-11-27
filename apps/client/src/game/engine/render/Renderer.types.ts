@@ -22,6 +22,18 @@ export type GlyphShape = 'dot' | 'square' | 'diamond' | 'ring';
 
 /** A marker: its shape and its size (width and height). */
 export type GlyphSpec = { readonly shape: GlyphShape; readonly size: number };
+
+/**
+ * How a line of world text looks: its font family and weight, its height in world units (it scales
+ * with the zoom), its fill colour and an outline in CSS pixels that keeps it readable on any ground.
+ */
+export type TextStyle = {
+  readonly font: string;
+  readonly weight: number;
+  readonly size: number;
+  readonly color: string;
+  readonly outline: { readonly color: string; readonly width: number };
+};
 /** Immutable atlas frame reference; bitmap ownership stays outside views. */
 export type SpriteRef = { readonly atlasId: string; readonly frame: number };
 /** A decoded uniform atlas injected into the renderer by the match factory. */

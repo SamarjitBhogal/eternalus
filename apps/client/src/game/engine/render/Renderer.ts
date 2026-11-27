@@ -1,4 +1,11 @@
-import type { GlyphSpec, ScreenRect, SpriteRef, WorldPoint, WorldRect } from './Renderer.types';
+import type {
+  GlyphSpec,
+  ScreenRect,
+  SpriteRef,
+  TextStyle,
+  WorldPoint,
+  WorldRect,
+} from './Renderer.types';
 
 /**
  * The display port (architecture 09 §4): everything views may ask of the screen. Views call
@@ -31,6 +38,8 @@ export interface Renderer {
   drawWorldGlyph(glyph: GlyphSpec, center: WorldPoint, color: string): void;
   /** Draws a marker centred on a world position, sized in CSS pixels (minimap markers). */
   drawGlyph(glyph: GlyphSpec, center: WorldPoint, color: string): void;
+  /** Draws one line of text centred on a world position: outline first, then the fill. */
+  drawText(text: string, center: WorldPoint, style: TextStyle): void;
   /** Converts a world position to a screen position in device pixels. */
   toScreen(point: WorldPoint): WorldPoint;
   /** Releases the renderer. Owners must call this. */

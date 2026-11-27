@@ -17,6 +17,7 @@ import type {
   ScreenRect,
   SpriteAtlas,
   SpriteRef,
+  TextStyle,
   WorldPoint,
   WorldRect,
 } from './Renderer.types';
@@ -219,6 +220,24 @@ export class Canvas2dRenderer implements Renderer {
   public drawGlyph(glyph: GlyphSpec, center: WorldPoint, color: string): void {
     const half = (glyph.size / 2) * this.pixelRatio;
     this.paintGlyph(glyph, center, { width: half, height: half }, color);
+  }
+
+  /**
+   * Draws one line of text centred on a world position: outline first, then the fill. Its height
+   * is in world units (it scales with the zoom); the outline width is in CSS pixels.
+   */
+  public drawText(text: string, center: WorldPoint, style: TextStyle): void {
+    const at = this.toScreen(center);
+    const { context } = this;
+    context.font = `${String(style.weight)} ${String(style.size * this.scaleY)}px ${style.font}`;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.lineJoin = 'round';
+    context.strokeStyle = style.outline.color;
+    context.lineWidth = style.outline.width * this.pixelRatio;
+    context.strokeText(text, at.x, at.y);
+    context.fillStyle = style.color;
+    context.fillText(text, at.x, at.y);
   }
 
   /** Converts a world position to a screen position in device pixels. */

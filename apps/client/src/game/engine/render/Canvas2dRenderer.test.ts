@@ -43,13 +43,15 @@ type DrawMethod =
   | 'ellipse'
   | 'fill'
   | 'fillRect'
+  | 'fillText'
   | 'lineTo'
   | 'moveTo'
   | 'rect'
   | 'restore'
   | 'save'
   | 'stroke'
-  | 'strokeRect';
+  | 'strokeRect'
+  | 'strokeText';
 
 /** A pretend canvas plus a spy for each drawing tool. */
 type FakeContext = {
@@ -69,6 +71,7 @@ const createFakeContext = (): FakeContext => {
     ellipse: vi.fn(),
     fill: vi.fn(),
     fillRect: vi.fn(),
+    fillText: vi.fn(),
     lineTo: vi.fn(),
     moveTo: vi.fn(),
     rect: vi.fn(),
@@ -76,6 +79,7 @@ const createFakeContext = (): FakeContext => {
     save: vi.fn(),
     stroke: vi.fn(),
     strokeRect: vi.fn(),
+    strokeText: vi.fn(),
     drawImage: vi.fn(),
     imageSmoothingEnabled: true,
   };
@@ -85,6 +89,9 @@ const createFakeContext = (): FakeContext => {
     strokeStyle: '',
     lineWidth: 1,
     lineJoin: 'miter',
+    font: '',
+    textAlign: 'start',
+    textBaseline: 'alphabetic',
   };
   return { context, spies };
 };
@@ -161,6 +168,37 @@ describe('Canvas2dRenderer', () => {
     // Line width stays 3 pixels no matter how zoomed in the world is.
     expect(context.lineWidth).toBe(3);
     expect(context.strokeStyle).toBe('#00ff00');
+  });
+
+  it('draws text centred on its screen point, sized in world units, outline under the fill', () => {
+    const { context, spies } = createFakeContext();
+    const renderer = createFittedRenderer(context);
+    renderer.resize(1000, 500, 2);
+    renderer.drawText(
+      '125',
+      { x: 10, y: 20 },
+      {
+        font: 'Cinzel, serif',
+        weight: 700,
+        size: 2,
+        color: '#ffffff',
+        outline: { color: '#000000', width: 1.5 },
+      },
+    );
+
+    // 2 world units x 5 = 10 px high; (10, 20) is (250 + 50, 100) on screen.
+    expect(context.font).toBe('700 10px Cinzel, serif');
+    expect(context.textAlign).toBe('center');
+    expect(context.textBaseline).toBe('middle');
+    expect(spies.strokeText).toHaveBeenCalledWith('125', 300, 100);
+    expect(spies.fillText).toHaveBeenCalledWith('125', 300, 100);
+    // The outline is 1.5 CSS px at pixel ratio 2, and goes under the fill.
+    expect(context.lineWidth).toBe(3);
+    expect(spies.strokeText.mock.invocationCallOrder[0]).toBeLessThan(
+      spies.fillText.mock.invocationCallOrder[0] ?? 0,
+    );
+    expect(context.fillStyle).toBe('#ffffff');
+    expect(context.strokeStyle).toBe('#000000');
   });
 
   it('draws nothing for an empty shape or path', () => {

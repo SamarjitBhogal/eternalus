@@ -1,39 +1,8 @@
-import type {
-  EntitySnapshot,
-  GameEventHandler,
-  GameEventMap,
-  GameEventType,
-  Snapshot,
-  Unsubscribe,
-} from '@eternalus/core';
+import type { EntitySnapshot, GameEventMap, Snapshot } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
+import { FakeGameEvents } from './__fixtures__/FakeGameEvents';
 import { HealthBarVisibility } from './HealthBarVisibility';
-
-/** Stands in for `Simulation.on`: keeps the handlers, so a test emits the events by hand. */
-class FakeEvents {
-  public readonly handlers: { [K in GameEventType]?: GameEventHandler<K>[] } = {};
-
-  public unsubscribed = 0;
-
-  public readonly on = <K extends GameEventType>(
-    type: K,
-    handler: GameEventHandler<K>,
-  ): Unsubscribe => {
-    const list: GameEventHandler<K>[] = this.handlers[type] ?? [];
-    list.push(handler);
-    this.handlers[type] = list as (typeof this.handlers)[K];
-    return () => {
-      this.unsubscribed += 1;
-    };
-  };
-
-  public emit<K extends GameEventType>(type: K, payload: GameEventMap[K]): void {
-    for (const handler of this.handlers[type] ?? []) {
-      handler(payload);
-    }
-  }
-}
 
 /** The source of a hit by `attackerId` (`null`: no attacker, e.g. the environment). */
 const hit = (attackerId: string | null): GameEventMap['damage-applied']['source'] => ({
@@ -88,7 +57,7 @@ const snapshotOf = (entities: EntitySnapshot[], humanLegendId: string | null = '
 
 /** A visibility rule over `entities`, with its fake event source. */
 const setUp = (entities = [PLAYER, ENEMY, ALLY, CAMP, TOWER], humanLegendId?: string | null) => {
-  const events = new FakeEvents();
+  const events = new FakeGameEvents();
   const bars = new HealthBarVisibility(events);
   bars.observe(snapshotOf(entities, humanLegendId));
   const damage = (targetId: string, attackerId: string | null) => {
@@ -159,7 +128,7 @@ describe('HealthBarVisibility (DEC-195)', () => {
     // The dark seat: the snapshot's human is the light player, the caller names its own Legend.
     const OPPONENT = entity('rival', 'legend', 'light');
     const DARK_PLAYER = entity('mine', 'legend', 'dark');
-    const events = new FakeEvents();
+    const events = new FakeGameEvents();
     const bars = new HealthBarVisibility(events);
     bars.observe(snapshotOf([OPPONENT, DARK_PLAYER, ENEMY], 'rival'), 'mine');
     const damage = (targetId: string) => {

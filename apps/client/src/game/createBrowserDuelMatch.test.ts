@@ -26,7 +26,7 @@ function setUp(canvas = new FakeViewportCanvas()) {
     document,
     gameConfig: CONFIG,
     bus: new TypedEventBus<BridgeEventMap>(),
-    settings: { bindings: null },
+    settings: { bindings: null, current: null },
     clock: new FakeSessionClock(),
     sinks: [],
   });

@@ -36,8 +36,11 @@ export type BrowserMatchDeps = {
   /** `?dev=1` (13 §4): the developer menu exists in every match this factory builds. */
   readonly isDeveloperMenuEnabled?: boolean;
   readonly bus: TypedEventBus<BridgeEventMap>;
-  /** The player's bindings when the match starts; later changes arrive as `settings` events. */
-  readonly settings: Pick<SettingsController, 'bindings'>;
+  /**
+   * The player's bindings when the match starts (later changes arrive as `settings` events), and
+   * the current settings the match reads while it runs (the damage numbers, W5c).
+   */
+  readonly settings: Pick<SettingsController, 'bindings' | 'current'>;
   /** Stamps the match's log records (the engine clock; core never reads time). */
   readonly clock: SessionClock;
   /**
@@ -125,6 +128,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         logger,
         observer: request.observer,
         isDeveloperMenuEnabled: deps.isDeveloperMenuEnabled === true,
+        settings: () => settings.current,
         bridge: {
           bus: deps.bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

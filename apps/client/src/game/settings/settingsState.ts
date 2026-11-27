@@ -4,8 +4,9 @@ import { withDefaults } from '../input/keybindings';
 import type { SavedSettings, SettingsIntent } from './settingsState.types';
 
 /**
- * The settings to start with: the saved ones with every missing binding defaulted, or all
- * defaults when nothing was saved (or the save was quarantined).
+ * The settings to start with: the saved ones with every missing binding defaulted (and the
+ * default `hud` group for a save from before it, DEC-410), or all defaults when nothing was saved
+ * (or the save was quarantined).
  */
 export function settingsWithDefaults(saved: SavedSettings | null): SettingsSliceState {
   const defaults = settingsSlice.getInitialState();
@@ -35,6 +36,7 @@ export function applySettingsIntent(
         audio: { ...settings.audio, ...intent.patch.audio },
         video: { ...settings.video, ...intent.patch.video },
         accessibility: { ...settings.accessibility, ...intent.patch.accessibility },
+        hud: { ...settings.hud, ...intent.patch.hud },
       };
   }
 }
