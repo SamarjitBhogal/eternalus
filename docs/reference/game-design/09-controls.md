@@ -37,14 +37,16 @@ Top-down, single-character control. Defaults from both sources (all **MVP**):
 | Pick up / throw                 | not specified                  | `interact`                                        | game doc (default interactives)       |
 | Turret: assume / exit control   | P                              | `turret-toggle`                                   | game doc (Turrets)                    |
 | Turret: switch ammo type        | T                              | `turret-ammo`                                     | game doc (Turrets)                    |
+| Fury dash                       | Q (during Fury)                | `granted` (PR #136)                               | DEC-420 (owner, 2026-11-27)           |
 | Fury dash direction             | WASD (or joystick) during Fury | reuses move actions                               | game doc (Fury)                       |
 | View Details (character select) | V                              | `view-details`                                    | DEC-103 (owner, 2026-10-29)           |
 
 Defaults are data in `apps/client/src/game/input/keybindings.ts`; the table is the initial
-content of that file, not a spec for code paths. Unspecified defaults (sprint, interact, Fury's
-"[button]") are naming/binding to-dos (`12-open-questions.md`); `Recommendation:` Shift for
-sprint, E or F for interact, and Space for the Fury dash, chosen to avoid the number row and
-Z/C.
+content of that file, not a spec for code paths. Unspecified defaults (sprint, interact) are
+naming/binding to-dos (`12-open-questions.md`); `Recommendation:` Shift for sprint and E or F
+for interact, chosen to avoid the number row and Z/C. The Fury dash key is decided (DEC-420,
+2026-11-27): Space always jumps, so the dash takes Q, because Tab is not open (the browser moves
+the focus) and Shift is sprint.
 
 The game doc's pitch calls the MVP "point-and-click" while both sources fix WASD movement; read
 it as WASD movement with mouse-click attacks and targeting.

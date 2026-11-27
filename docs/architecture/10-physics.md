@@ -315,9 +315,9 @@ in §1's `Transform.height`. The height is only drawn: no physics reads it, and 
 `Transform.height` for a real altitude (the Flying class, post-MVP). While a Legend is in the air,
 `MovementSystem` moves it by the velocity it had at takeoff, and `CollisionSystem` sweeps that move
 against walls and footprints, so a jump crosses nothing that a walk cannot. Units do not block
-units yet (above), so a jump passes through units as a walk does. The snapshot group is
-`jump: { height }`; `INBOX.md` HC-B64 asks whether to name it for what the view draws
-(`elevation`).
+units yet (above), so a jump passes through units as a walk does. A stun (`cannot-move`) ends a
+jump in the air at once; a slow does not change it (DEC-420). The snapshot group is
+`elevation: { height }`, named for what the view draws (DEC-420).
 
 ## Related
 
