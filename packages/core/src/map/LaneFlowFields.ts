@@ -1,8 +1,9 @@
 import type { MapDefinition, MapLane } from '../content/maps/maps.types';
 import type { PlayableTeam } from '../teams/teams.types';
-import { distance, distanceToPath } from '../utils/geometry';
+import { distance, distanceToPath, lerpPoint } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
 import { FlowField } from './FlowField';
+import { NO_CELL } from './FlowField.constants';
 import { FlowFieldBuilder } from './FlowFieldBuilder';
 import type { WorldMap } from './WorldMap';
 import { CELL_EDGE_SLACK } from './WorldMap.constants';
@@ -58,6 +59,15 @@ export class LaneFlowFields {
   }
 
   /**
+   * How far `point` lies along lane `laneId` for `team` (`FlowField.progressAt`): 0 at the team's
+   * own end of the lane, 1 at the enemy end; `null` when there is no such lane or the field cannot
+   * say. Implements `combat/`'s `LaneProgressOf` port for minion strength (05 §9).
+   */
+  public progress(laneId: string, team: PlayableTeam, point: Vec2): number | null {
+    return this.field(laneId, team)?.progressAt(point) ?? null;
+  }
+
+  /**
    * Queues for a rebuild every field whose corridor holds one of `cells` (the changed cells
    * `WorldMap.stampFootprint` and `clearFootprint` return). A field already queued stays in its
    * place; one being rebuilt is queued again, since its fill may have read the old cells.
@@ -103,19 +113,23 @@ export class LaneFlowFields {
       (feature) => feature.kind === 'stronghold' && feature.team === team,
     )?.position;
     const mask = LaneFlowFields.corridorOf(grid, path, corridorHalfWidth, home, start);
-    // Nudged back along the lane, so an end on a cell edge picks the cell its mirror twin picks.
-    const before = path[path.length - 2] ?? end;
-    const goal = grid.cellAt({
-      x: end.x + (before.x - end.x) * CELL_EDGE_SLACK,
-      y: end.y + (before.y - end.y) * CELL_EDGE_SLACK,
-    });
     return new FlowField(
       grid,
       lane.id,
       team,
       mask,
-      goal === null ? -1 : goal.row * grid.cols + goal.col,
+      LaneFlowFields.endCell(grid, end, path[path.length - 2] ?? end),
+      LaneFlowFields.endCell(grid, start, path[1] ?? start),
     );
+  }
+
+  /**
+   * The cell index of a lane end, nudged inward toward its neighbouring path point so an end on a
+   * cell edge picks the cell its mirror twin picks; `NO_CELL` when it lies outside the world.
+   */
+  private static endCell(grid: WorldMap, end: Vec2, toward: Vec2): number {
+    const cell = grid.cellAt(lerpPoint(end, toward, CELL_EDGE_SLACK));
+    return cell === null ? NO_CELL : cell.row * grid.cols + cell.col;
   }
 
   /** 1 for every cell whose centre lies near `path` or inside the home disc out to the gate. */
