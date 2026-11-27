@@ -1458,8 +1458,11 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **The `summon` spec.** `{ definitionId, distance, maxActive }`: the body stands `distance`
     metres from the caster's centre along the cast's direction, facing that way, and a caster holds
     at most `maxActive` bodies of the definition. A new one first removes the caster's oldest as
-    `despawned`; a body that leaves the world for any cause frees its place (DEC-330 (7)). The
-    ledger is `GameState.summons` (`state/SummonLedger`), which `StateHasher` hashes. §3's `count`,
+    `despawned`; a body that leaves the world for any cause, or breaks, frees its place (DEC-330
+    (7)). Each body carries its caster in the `Summoned` component (DEC-382, HC-B43 (3) B), which
+    the summoner adds before the body joins the match and `StateHasher` hashes. The step counts
+    the caster's standing bodies of the definition from the store, oldest first in store order,
+    and skips a dead one (HC-B43 (9) B); no separate list exists. §3's `count`,
     `lifetimeSeconds` and `controllerId` are not built: no ability needs them yet (the wall is
     permanent until broken, DEC-330 (7)). The body stays when its caster dies or leaves.
   - **Placing.** `abilities/` may not import `entities/` (02 §2), so the step places through a
@@ -1485,9 +1488,13 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **Aim overlay.** `describe` gives one display step with the display-only shape `outline`
     (`PlacedOutline` in `content/loadDisplayContent.ts`: the outline's corners and its
     distance). The client paints it where the wall will stand: its middle `distance` ahead of
-    the caster toward the pointer, turned to face that way (`aimShapePainters.ts`). Known limit:
-    the overlay does not show where the cast is refused. A placement preview from core comes
-    with lane B PR 7 (`INBOX.md` HC-S15).
+    the caster toward the pointer, turned to face that way (`aimShapePainters.ts`). The outline
+    turns red where the cast would be refused (DEC-382, HC-B43 (7) B): the client asks
+    `Simulation.isSummonBlocked` (the `MatchDeps.isSummonBlocked` port), which runs
+    `abilities/summonPlacement.ts`, the same rule `aimBlockedBy` refuses the cast with. The
+    preview asks from where the Legend is drawn, as a dash's reach does. A Duel draws no range
+    overlay, so it has no port. The client still turns the outline itself, a copy of
+    `placePolygon` (`INBOX.md` HC-S15).
   - **Not built.** DEC-307's stop of a charging Sentinel comes with PR 8; the wall blocks walking
     and dashes like a map wall. `NoMapObjectOverlapInvariant` does not check placed walls
     (`INBOX.md` HC-S14, scheduled with PR 8).

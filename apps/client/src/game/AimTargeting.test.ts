@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { HudSlotId } from '../bridge/Binding.types';
 import { AimTargeting } from './AimTargeting';
-import type { DashReach } from './Match.types';
+import type { DashReach, SummonBlocked } from './Match.types';
 
 const ABILITIES = loadDisplayContent(createDefaultGameConfig().tickRate).abilities;
 const CASTER: EntitySnapshot = {
@@ -105,6 +105,50 @@ describe('AimTargeting', () => {
 
     expect(slam?.steps.every(({ reach: reached }) => reached === null)).toBe(true);
     expect(onCaster?.direction).toEqual({ x: 0, y: 0 });
+  });
+
+  it('asks the simulation whether the Shield Wall outline can stand where it is drawn (DEC-382, HC-B43 (7))', () => {
+    const asked: unknown[] = [];
+    const blocked: SummonBlocked = (corners, origin, direction, distance) => {
+      asked.push([corners, origin, direction, distance]);
+      return true;
+    };
+    const wall = ABILITIES.find(({ id }) => id === 'shield-wall')?.steps[0]?.shape;
+
+    const refused = new AimTargeting(ABILITIES, CASTER.id, undefined, blocked).targetOf(
+      snapshotWith('shield-wall'),
+      'ability-1',
+      { x: 100, y: 20 },
+      DRAWN_AT,
+    );
+    const unchecked = new AimTargeting(ABILITIES, CASTER.id).targetOf(
+      snapshotWith('shield-wall'),
+      'ability-1',
+      { x: 100, y: 20 },
+      DRAWN_AT,
+    );
+
+    expect(wall?.kind).toBe('outline');
+    expect(asked).toEqual([
+      [wall?.kind === 'outline' ? wall.corners : null, DRAWN_AT, { x: 1, y: 0 }, 3],
+    ]);
+    expect(refused?.steps.map(({ isRefused }) => isRefused)).toEqual([true]);
+    expect(unchecked?.steps.map(({ isRefused }) => isRefused)).toEqual([false]);
+  });
+
+  it('never asks about or refuses a step that places no outline', () => {
+    const blocked: SummonBlocked = () => {
+      throw new Error('asked');
+    };
+
+    const dash = new AimTargeting(ABILITIES, CASTER.id, undefined, blocked).targetOf(
+      snapshotWith('blade-runner'),
+      'ability-1',
+      { x: 100, y: 20 },
+      DRAWN_AT,
+    );
+
+    expect(dash?.steps.every(({ isRefused }) => !isRefused)).toBe(true);
   });
 
   it('is null with no slot selected (quick cast), no pointer point, no place, an empty slot, an unknown ability or no Legend', () => {

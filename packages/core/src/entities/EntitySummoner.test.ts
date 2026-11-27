@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Deploying } from '../components/Deploying';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
+import { Summoned } from '../components/Summoned';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
@@ -68,6 +69,8 @@ const setUp = () => {
 
 /** The Shield Wall barrier 3 m east of (10, 10), its long side north to south. */
 const EAST_OF_TEN = { position: { x: 13, y: 10 }, facing: { x: 1, y: 0 } };
+/** The caster the tests place for. */
+const CASTER = 'entity-99';
 
 describe('EntitySummoner', () => {
   it('adds the body facing its way, with its outline and health, and announces it as neutral', () => {
@@ -77,7 +80,7 @@ describe('EntitySummoner', () => {
       spawned.push(`${entityId} ${kind} ${team}`),
     );
 
-    const id = summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN);
+    const id = summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN, CASTER);
 
     const body = state.entities.get(id);
     expect(spawned).toEqual([`${id} obstacle neutral`]);
@@ -93,10 +96,22 @@ describe('EntitySummoner', () => {
     ]);
   });
 
+  it('gives the body its owner before it announces it (DEC-382, HC-B43 (3))', () => {
+    const { state, summoner } = setUp();
+    const owners: (string | undefined)[] = [];
+    state.events.on('entity-spawned', ({ entityId }) =>
+      owners.push(state.entities.get(entityId)?.findComponent(Summoned)?.ownerId),
+    );
+
+    summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN, CASTER);
+
+    expect(owners).toEqual([CASTER]);
+  });
+
   it('makes its outline a wall: the walls call it blocked and its cells unwalkable', () => {
     const { state, grid, changed, summoner } = setUp();
 
-    summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN);
+    summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN, CASTER);
 
     expect(state.walls?.isBlocked(EAST_OF_TEN_BOX)).toBe(true);
     expect(grid.isWalkableAt(13, 10)).toBe(false);
@@ -108,7 +123,7 @@ describe('EntitySummoner', () => {
     const inside = warriorAt(12.8, 10);
     const beside = warriorAt(11, 10);
 
-    summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN);
+    summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN, CASTER);
 
     expect(inside.getComponent(Transform).position.x).toBeCloseTo(12.5 - 0.5, 5);
     expect(beside.getComponent(Transform).position).toEqual({ x: 11, y: 10 });
@@ -119,7 +134,7 @@ describe('EntitySummoner', () => {
     const deploying = warriorAt(12.8, 10);
     deploying.addComponent(new Deploying({ x: 0, y: 10 }));
 
-    summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN);
+    summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN, CASTER);
 
     expect(deploying.getComponent(Transform).position).toEqual({ x: 12.8, y: 10 });
   });
@@ -128,7 +143,7 @@ describe('EntitySummoner', () => {
     const { state, summoner, warriorAt } = setUp();
     const trapped = warriorAt(13.4, 10);
 
-    summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN);
+    summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN, CASTER);
 
     expect(trapped.getComponent(Transform).position.x).toBeLessThan(14 - 0.5);
   });
@@ -139,7 +154,7 @@ describe('EntitySummoner', () => {
     state.events.on('entity-removed', ({ entityId, cause }) =>
       removed.push(`${entityId} ${cause}`),
     );
-    const id = summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN);
+    const id = summoner.summon(state, 'shield-wall-barrier', EAST_OF_TEN, CASTER);
 
     summoner.despawn(state, id);
 

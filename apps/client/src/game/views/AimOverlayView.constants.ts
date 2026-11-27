@@ -35,5 +35,15 @@ export const AIM_CONE_CIRCLE_COLORS: AimAreaColors = {
   outline: '#93c5fd',
 };
 
+/**
+ * An area the cast refuses where it is drawn (a Shield Wall that cannot stand there): red
+ * (DEC-382, HC-B43 (7)).
+ */
+// TUNE: placeholder shades; HC-B43 (7) names only "red"
+export const AIM_REFUSED_COLORS: AimAreaColors = {
+  fill: 'rgba(220, 38, 38, 0.25)',
+  outline: '#dc2626',
+};
+
 /** A cone this wide (degrees) is the whole circle of its reach (core `ConeShape`). */
 export const AIM_FULL_TURN_DEGREES = 360;

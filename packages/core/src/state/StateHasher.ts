@@ -12,6 +12,7 @@ import { ProjectilePayload } from '../components/ProjectilePayload';
 import { Progression } from '../components/Progression';
 import { Veterancy } from '../components/Veterancy';
 import { StatusEffects } from '../components/StatusEffects';
+import { Summoned } from '../components/Summoned';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { INITIAL_FACING } from '../components/Transform.constants';
@@ -114,17 +115,6 @@ export class StateHasher {
         brains.push([id, brain.controllerId, brain.profileId, brain.memory, brain.rngState]);
       });
       parts.push(['ai', ...brains]);
-    }
-    // Placed bodies (Shield Walls) are appended only once a caster has one, for the same reason.
-    if (state.summons.size > 0) {
-      const owners: unknown[] = [];
-      state.summons.forEach((ownerId, placed) => {
-        owners.push([
-          ownerId,
-          ...placed.flatMap(({ definitionId, entityId }) => [definitionId, entityId]),
-        ]);
-      });
-      parts.push(['summons', ...owners]);
     }
     if (state.worldObjects !== undefined) parts.push(state.worldObjects.snapshot());
     return fnv1a(JSON.stringify(parts));
@@ -308,6 +298,12 @@ export class StateHasher {
     const clock = entity.findComponent(CombatClock);
     if (clock !== undefined) {
       fields.push(['combat-clock', ...clock.fields]);
+    }
+    // A placed body's caster decides which body the caster's next cast removes (Shield Wall,
+    // DEC-382 (HC-B43 (3))). Only a placed body adds it, so a match without one hashes as before.
+    const summoned = entity.findComponent(Summoned);
+    if (summoned !== undefined) {
+      fields.push(['summoned', summoned.ownerId]);
     }
     return fields;
   }

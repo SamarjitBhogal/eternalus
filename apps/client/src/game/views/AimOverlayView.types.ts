@@ -15,12 +15,15 @@ export type AimShapeOf = {
 
 /**
  * One effect step of the selected ability, as the overlay draws it: its area (`null` for a step
- * with none, a dash's own row) and, for a dash, how far the dash really goes (a wall or the map's
- * edge stops it); `null` for a step that is no dash.
+ * with none, a dash's own row), for a dash how far the dash really goes (a wall or the map's edge
+ * stops it; `null` for a step that is no dash), and whether the cast is refused where the area is
+ * drawn (a placed outline that cannot stand there, DEC-382, HC-B43 (7); `false` for every other
+ * step).
  */
 export type AimStep = {
   readonly shape: AimShape | null;
   readonly reach: number | null;
+  readonly isRefused: boolean;
 };
 
 /**
@@ -39,7 +42,8 @@ export type AimTarget = {
  * Where an area is drawn for this aim: the caster and its body radius (a cone's reach counts from
  * the body edge, DEC-319), the unit direction toward the pointer (the zero vector while the pointer
  * is on the caster), the centre a circle takes (the caster, or the end of a dash that came before
- * it) and the length of a path (a dash's distance), `null` before any dash.
+ * it), the length of a path (a dash's distance), `null` before any dash, and whether the cast is
+ * refused where the step drawn now stands (`AimStep.isRefused`; the outline painter reads it).
  */
 export type AimFrame = {
   readonly origin: Vec2;
@@ -47,6 +51,7 @@ export type AimFrame = {
   readonly direction: Vec2;
   readonly circleCentre: Vec2;
   readonly pathLength: number | null;
+  readonly isRefused: boolean;
 };
 
 /**

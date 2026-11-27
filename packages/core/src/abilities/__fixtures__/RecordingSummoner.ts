@@ -7,17 +7,23 @@ import type { SummonPlacement, Summoner } from '../../state/Summoner.types';
  * and each one taken out, and puts nothing in the state.
  */
 export class RecordingSummoner implements Summoner {
-  /** Every body asked for, in order. */
+  /** Every body asked for, in order, with the caster that owns it. */
   public readonly summoned: {
     readonly definitionId: string;
     readonly placement: SummonPlacement;
+    readonly ownerId: EntityId;
   }[] = [];
   /** Every body taken out, in order. */
   public readonly despawned: EntityId[] = [];
 
   /** Records the body and names it. */
-  public summon(_state: GameState, definitionId: string, placement: SummonPlacement): EntityId {
-    this.summoned.push({ definitionId, placement });
+  public summon(
+    _state: GameState,
+    definitionId: string,
+    placement: SummonPlacement,
+    ownerId: EntityId,
+  ): EntityId {
+    this.summoned.push({ definitionId, placement, ownerId });
     return `summoned-${String(this.summoned.length)}`;
   }
 

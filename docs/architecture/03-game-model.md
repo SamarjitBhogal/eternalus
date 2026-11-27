@@ -553,12 +553,13 @@ event exists (05 §10, DEC-314). `StateHasher` hashes a shot's payload fields
 DEC-314); a match with no shot keeps its hash.
 
 **Implementation status, 2026-11-23 (branch `feat/sentinel-kit`, lane B PR 6; the Sentinel
-kit).** `GameState` has two more parts. `walls` is the `PlacedWalls` port beside `collisions`: the
-walls placed during the match (a Shield Wall; [10](10-physics.md) §12). `summons` is the
-`SummonLedger`: the bodies each caster placed that still stand. `EntitySnapshot` may carry
-`outline`, a placed body's outline (a Shield Wall), left out for every other entity. `StateHasher`
-also hashes the ledger and the form and heading of a steering status (Fear), each only when present, so a
-match without them keeps its hash; the radius it hashes is the scaled one (Berserk). Details:
+kit).** `GameState` has one more part. `walls` is the `PlacedWalls` port beside `collisions`: the
+walls placed during the match (a Shield Wall; [10](10-physics.md) §12). A placed body carries its
+caster in the `Summoned` component (DEC-382). `EntitySnapshot` may carry `outline`, a placed
+body's outline (a Shield Wall), left out for every other entity. `StateHasher` also hashes a
+placed body's caster and the form and heading of a steering status (Fear), each only when
+present, so a match without them keeps its hash; the radius it hashes is the scaled one
+(Berserk). Details:
 [05 §18](05-abilities-weapons-and-loadouts.md#18-implementation-status), "Berserk", "Shield
 Wall" and "Rip & Tear and Fear".
 

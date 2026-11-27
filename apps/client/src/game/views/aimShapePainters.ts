@@ -8,6 +8,7 @@ import {
   AIM_FULL_TURN_DEGREES,
   AIM_OVERLAY_COLORS,
   AIM_OVERLAY_OUTLINE_WIDTH,
+  AIM_REFUSED_COLORS,
 } from './AimOverlayView.constants';
 import type { AimAreaColors, ShapePainters } from './AimOverlayView.types';
 
@@ -40,7 +41,8 @@ function arcCorners(centre: Vec2, radius: number, from: number, sweep: number): 
  * circle of its range in lighter blue (DEC-206 (3)); a cone's reach counts from the caster's body
  * edge (DEC-319). An `outline` is the body a step places (Shield Wall), drawn where it will stand:
  * its middle the outline's distance ahead of the caster toward the pointer, turned to face the
- * pointer as core's `placePolygon` turns it; nothing with the pointer on the caster. A `hit` shape
+ * pointer as core's `placePolygon` turns it, in the refused colours where the cast is refused
+ * (`AimFrame.isRefused`); nothing with the pointer on the caster. A `hit` shape
  * (a status's on-hit step, Fury, or a shot's, Hamstring) is never aimed, so it draws nothing.
  */
 export const AIM_SHAPE_PAINTERS: ShapePainters = {
@@ -62,7 +64,7 @@ export const AIM_SHAPE_PAINTERS: ShapePainters = {
       renderer,
     );
   },
-  outline: ({ corners, distance }, { origin, direction }, renderer) => {
+  outline: ({ corners, distance }, { origin, direction, isRefused }, renderer) => {
     if (direction.x === 0 && direction.y === 0) return;
     const centre = { x: origin.x + direction.x * distance, y: origin.y + direction.y * distance };
     paint(
@@ -71,6 +73,7 @@ export const AIM_SHAPE_PAINTERS: ShapePainters = {
         y: centre.y + x * direction.y + y * direction.x,
       })),
       renderer,
+      isRefused ? AIM_REFUSED_COLORS : AIM_OVERLAY_COLORS,
     );
   },
   cone: ({ reach, arcDegrees }, { origin, casterRadius, direction }, renderer) => {

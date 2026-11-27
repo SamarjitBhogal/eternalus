@@ -1,4 +1,5 @@
 import { Footprint } from '../components/Footprint';
+import { Summoned } from '../components/Summoned';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { EntityId } from '../state/EntityStore.types';
@@ -11,8 +12,9 @@ import { isCollisionMover } from './isCollisionMover';
 
 /**
  * Puts a summoned body into the match through the match's one `EntityFactory` (architecture 05 §3
- * `summon`): the definition at the placement, facing its way, added to the store and announced
- * (`entity-spawned`, on its team or `neutral`). A body with a solid outline (`Footprint`, not
+ * `summon`): the definition at the placement, facing its way, with its owner (`Summoned`, added
+ * before the body joins the store), added to the store and announced (`entity-spawned`, on its
+ * team or `neutral`). A body with a solid outline (`Footprint`, not
  * walk-on: a Shield Wall) becomes a wall at once (`GameState.walls`), and every unit its outline
  * overlaps is pushed out of the walls by the match's one push-out rule
  * (`GameState.collisions.pushOut`, which `BodySizeSystem` also uses; DEC-363), so no unit starts a
@@ -28,14 +30,20 @@ export class EntitySummoner implements Summoner {
   public constructor(private readonly factory: Pick<EntityFactory, 'create' | 'definitions'>) {}
 
   /**
-   * Builds, places, adds and announces the body, and makes a solid outline a wall.
+   * Builds, places, owns, adds and announces the body, and makes a solid outline a wall.
    *
    * @throws Error when the factory knows no definition `definitionId` (`SummonEffect.validate`
    *   checks every id an ability names at boot, so this is a factory given other content).
    */
-  public summon(state: GameState, definitionId: string, placement: SummonPlacement): EntityId {
+  public summon(
+    state: GameState,
+    definitionId: string,
+    placement: SummonPlacement,
+    ownerId: EntityId,
+  ): EntityId {
     const { kind } = this.factory.definitions.get(definitionId);
     const body = this.factory.create(kind, definitionId, placement);
+    body.addComponent(new Summoned(ownerId));
     state.entities.add(body);
     const outline = body.findComponent(Footprint);
     if (outline !== undefined && !outline.isWalkOn && state.walls !== null) {

@@ -87,6 +87,19 @@ export type MatchSimulation = Pick<
  */
 export type DashReach = (origin: Vec2, direction: Vec2, distance: number, radius: number) => number;
 
+/**
+ * Whether a body with the outline `corners` (metres, +x along its facing) cannot stand `distance`
+ * metres from `origin` along the unit `direction`, facing that way: the simulation's own rule
+ * (`Simulation.isSummonBlocked`, the one a `summon` step refuses a cast with), so the range
+ * overlay shows where a Shield Wall cast is refused (DEC-382, HC-B43 (7)).
+ */
+export type SummonBlocked = (
+  corners: readonly Vec2[],
+  origin: Vec2,
+  direction: Vec2,
+  distance: number,
+) => boolean;
+
 /** How an online Duel differs from a local match for `Match` (ADR 0016 point 1). */
 type RemotePlayer = {
   /** The player's Legend from the server's `match-found`; never `snapshot.match.humanLegendId`. */
@@ -120,6 +133,12 @@ export type MatchDeps = {
    * clamp from the server or a client-side copy of the walls.
    */
   readonly dashReach?: DashReach;
+  /**
+   * Whether a placed body (a Shield Wall) cannot stand where the range overlay draws it: the local
+   * simulation's `isSummonBlocked`. Absent online, as `dashReach` is: a Duel draws no range overlay
+   * (`createBrowserDuelMatch` gives it no abilities), so no outline is drawn there at all.
+   */
+  readonly isSummonBlocked?: SummonBlocked;
   /** Hears the match crash or end (the request's observer). */
   readonly observer: MatchObserver;
   /** Where the match's `MatchBridge` publishes, and what (architecture 08 §7). */

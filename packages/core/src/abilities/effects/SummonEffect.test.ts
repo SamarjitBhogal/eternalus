@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
+import { Health } from '../../components/Health';
 import type { SummonSpec } from '../../content/abilities/AbilityDefinition.types';
+import { ContentCatalogue } from '../../content/ContentCatalogue';
 import { OBSTACLE_DEFINITIONS } from '../../content/obstacles/obstacleCatalogue';
+import type { ObstacleDefinition } from '../../content/obstacles/obstacles.types';
+import { SHIELD_WALL_BARRIER } from '../../content/obstacles/shieldWallBarrier';
+import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
+import { EntityFactory } from '../../entities/EntityFactory';
+import { EntitySummoner } from '../../entities/EntitySummoner';
 import { GameState } from '../../state/GameState';
 import type { PlacedWalls } from '../../state/PlacedWalls.types';
 import type { Polygon } from '../../utils/geometry.types';
+import { IdGenerator } from '../../utils/IdGenerator';
 import { casterState } from '../__fixtures__/casterState';
 import { castSteps } from '../__fixtures__/castSteps';
 import { RecordingSummoner } from '../__fixtures__/RecordingSummoner';
@@ -30,6 +38,43 @@ const wallsThatSay = (isBlocked: boolean) => {
     remove: () => undefined,
   };
   return { walls, asked };
+};
+
+/** The Shield Wall barrier and a second body like it, so a test can place two definitions. */
+const BODIES = new ContentCatalogue<ObstacleDefinition>([
+  SHIELD_WALL_BARRIER,
+  { ...SHIELD_WALL_BARRIER, id: 'other-barrier' },
+]);
+
+/**
+ * The caster state with a real summoner, whose bodies take the ids `entity-101`, `entity-102`, ...
+ * in the order they are placed. `despawned` lists each body the summoner takes out; `place` puts a
+ * body for `ownerId` straight into the match (not through a cast).
+ */
+const placing = () => {
+  const { state, caster } = casterState();
+  const summoner = new EntitySummoner(
+    new EntityFactory(createDefaultEntityRegistry(), BODIES, new IdGenerator(100)),
+  );
+  const despawned: string[] = [];
+  state.events.on('entity-removed', ({ entityId }) => despawned.push(entityId));
+  const place = (ownerId: string, definitionId = WALL.definitionId): string =>
+    summoner.summon(
+      state,
+      definitionId,
+      { position: { x: 0, y: 3 }, facing: { x: 1, y: 0 } },
+      ownerId,
+    );
+  return { state, caster, summoner, despawned, place };
+};
+
+/** The ids of the Shield Wall barriers in the store, in store order. */
+const standing = (state: GameState): string[] => {
+  const ids: string[] = [];
+  state.entities.forEach((entity) => {
+    if (entity.definitionId === WALL.definitionId) ids.push(entity.id);
+  });
+  return ids;
 };
 
 /** The caster state's caster on a state with `walls`. */
@@ -80,7 +125,7 @@ describe('SummonEffect', () => {
     ]);
   });
 
-  it('places the body the distance ahead along the aim, facing it, and records it for the caster', () => {
+  it('places the body the distance ahead along the aim, facing it, owned by the caster', () => {
     const { state, caster } = casterState();
     const summoner = new RecordingSummoner();
 
@@ -90,34 +135,56 @@ describe('SummonEffect', () => {
       {
         definitionId: 'shield-wall-barrier',
         placement: { position: { x: 0, y: 3 }, facing: { x: 0, y: 1 } },
+        ownerId: caster.id,
       },
     ]);
-    expect(state.summons.placedBy(caster.id, 'shield-wall-barrier')).toEqual(['summoned-1']);
   });
 
   it('removes the oldest body over the cap before it places a new one', () => {
-    const { state, caster } = casterState();
-    const summoner = new RecordingSummoner();
+    const { state, caster, summoner, despawned } = placing();
 
     for (let cast = 0; cast < 3; cast += 1) castSteps(state, caster.id, [WALL], { summoner });
 
-    expect(summoner.despawned).toEqual(['summoned-1']);
+    expect(despawned).toEqual(['entity-101']);
+    expect(standing(state)).toEqual(['entity-102', 'entity-103']);
+  });
+
+  it('counts only the caster’s own standing bodies of its definition, oldest first (DEC-382, HC-B43 (3))', () => {
+    const { state, caster, summoner, despawned, place } = placing();
+    const a = place(caster.id);
+    const b = place('entity-50');
+    const other = place(caster.id, 'other-barrier');
+    const c = place(caster.id);
+
+    castSteps(state, caster.id, [WALL], { summoner });
+
+    expect(despawned).toEqual([a]);
+    expect([b, other, c].every((id) => state.entities.has(id))).toBe(true);
   });
 
   it('removes none when a body that left the world freed its place', () => {
-    const { state, caster } = casterState();
-    const summoner = new RecordingSummoner();
+    const { state, caster, summoner, despawned } = placing();
     castSteps(state, caster.id, [WALL], { summoner });
     castSteps(state, caster.id, [WALL], { summoner });
 
-    state.events.emit('entity-removed', { entityId: 'summoned-1', cause: 'died' });
+    state.entities.remove('entity-101', 'died');
     castSteps(state, caster.id, [WALL], { summoner });
 
-    expect(summoner.despawned).toEqual([]);
-    expect(state.summons.placedBy(caster.id, 'shield-wall-barrier')).toEqual([
-      'summoned-2',
-      'summoned-3',
-    ]);
+    expect(despawned).toEqual([]);
+    expect(standing(state)).toEqual(['entity-102', 'entity-103']);
+  });
+
+  it('removes none when a body broke this tick and still waits in the store (DEC-382, HC-B43 (9))', () => {
+    const { state, caster, summoner, despawned } = placing();
+    castSteps(state, caster.id, [WALL], { summoner });
+    castSteps(state, caster.id, [WALL], { summoner });
+    const broken = state.entities.get('entity-101')?.getComponent(Health);
+    broken?.applyDamage(broken.current);
+
+    castSteps(state, caster.id, [WALL], { summoner });
+
+    expect(despawned).toEqual([]);
+    expect(standing(state)).toEqual(['entity-101', 'entity-102', 'entity-103']);
   });
 
   it('refuses an aim whose outline the walls call blocked, asking about the outline it would place', () => {
