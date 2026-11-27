@@ -7,7 +7,6 @@ import { TypedEventBus } from '../../bridge/TypedEventBus';
 import { LoadoutController } from './LoadoutController';
 
 const WARRIOR_OPTIONS = {
-  classId: 'warrior',
   defaultWeaponId: 'raptor-talons',
   weapons: [
     { id: 'raptor-talons', displayName: 'Raptor Talons' },
@@ -131,7 +130,7 @@ describe('LoadoutController', () => {
     expect(fake.saved).toEqual([{ specId: 'paladin', primaryWeaponId: 'raptor-talons' }]);
   });
 
-  it("answers a Legend's saved loadout as its class's core loadout, or null", async () => {
+  it("answers a Legend's saved loadout as a core loadout with the class core found, or null", async () => {
     const { bus, controller } = await started(fakeStore());
     expect(controller.loadoutOf('knight')).toBeNull();
 
@@ -139,6 +138,7 @@ describe('LoadoutController', () => {
 
     expect(controller.loadoutOf('knight')).toEqual({
       classId: 'warrior',
+      specId: 'knight',
       primaryWeaponId: 'wuuthrad',
     });
     expect(controller.loadoutOf('paladin')).toBeNull();
@@ -174,19 +174,32 @@ describe('LoadoutController', () => {
     });
   });
 
-  it('lists every violation validateLoadout finds when it refuses a pick', async () => {
+  it('logs the class core found and the problems validateLoadout finds when it refuses a pick', async () => {
     const fake = fakeStore();
-    const { bus, logger } = await started(fake, {
-      ...OPTIONS,
-      'lost-legend': { classId: 'harbinger', defaultWeaponId: 'nope', weapons: [] },
-    });
-    bus.emit('ui-intent', saveIntent('lost-legend', 'nope'));
+    const { bus, logger } = await started(fake);
+    bus.emit('ui-intent', saveIntent('paladin', 'nope'));
     expect(fake.saved).toEqual([]);
     expect(logger.records.at(-1)?.attributes).toEqual({
-      specId: 'lost-legend',
-      classId: 'harbinger',
+      specId: 'paladin',
+      classId: 'warrior',
       primaryWeaponId: 'nope',
-      problems: 'class "harbinger" does not exist; weapon "nope" does not exist',
+      problems: 'weapon "nope" does not exist',
+    });
+  });
+
+  it('refuses, at WARN and without throwing, a Legend the screen offers but content does not have', async () => {
+    const fake = fakeStore();
+    const { bus, published, logger } = await started(fake, {
+      ...OPTIONS,
+      'lost-legend': { defaultWeaponId: 'nope', weapons: [] },
+    });
+    bus.emit('ui-intent', saveIntent('lost-legend', 'wuuthrad'));
+    expect(published).toHaveLength(1);
+    expect(fake.saved).toEqual([]);
+    expect(logger.records.at(-1)).toMatchObject({
+      severityText: 'WARN',
+      body: 'a loadout was not saved: the Legend does not exist',
+      attributes: { specId: 'lost-legend', primaryWeaponId: 'wuuthrad' },
     });
   });
 

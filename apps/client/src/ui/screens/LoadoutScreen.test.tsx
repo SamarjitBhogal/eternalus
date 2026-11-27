@@ -13,7 +13,6 @@ const FIRST_LEGEND = FIRST_CLASS?.specs[0]?.specId ?? '';
 const LOADOUTS: LoadoutsSliceState = {
   options: {
     [FIRST_LEGEND]: {
-      classId: FIRST_CLASS?.classId ?? '',
       defaultWeaponId: 'raptor-talons',
       weapons: [
         { id: 'raptor-talons', displayName: 'Raptor Talons' },

@@ -127,6 +127,11 @@ Reply inline (`Decision: …`).
       built with ERROR: `createPersistence` passes the fallback, and its `reportError` writes an
       ERROR `client.persistence` record, so the switch becomes an error report. Your choice of WARN
       or ERROR is still open; ERROR is in use. (3) and (4) stay open.
+      **Answered 2026-11-27 (owner, Owner Calls v103), DEC-418 (3):** "A: ERROR (as built)".
+      _Agent note (2026-11-27, DEC-418):_ (2) is closed. The code was already right:
+      `createPersistence` passes the fallback, and its `reportError` writes an ERROR
+      `client.persistence` record. A failed loadout save also logs at ERROR
+      (`LoadoutController`). Only the docs changed (architecture 14 §14). (3) and (4) stay open.
 
 - [ ] **`feat/loadout-per-legend` (DEC-354) — two layout calls before saves reach players.**
       (1) **The saved loadout record.** Architecture 14 §7 gives a nested `SavedLoadoutDtoV1`
@@ -144,6 +149,45 @@ Reply inline (`Decision: …`).
       this branch. Option B: move it with the weapon work of phase 4 Sprints 4.4 and 4.5, which
       adds a `defaultLoadout` per Legend. `Recommendation:` A, per your 2026-11-09 rule (build the
       best design now). It changes the public core API (`Loadout`, `autoBuildLoadout`).
+      **Answered 2026-11-27 (owner, Owner Calls v103), DEC-418:** (1) "B: use the design's record
+      now" (with a request for select-screen text and interim icons, below). (2) "A: move it into
+      the core in this PR". (3) The save-failure report: "A: ERROR (as built)", the same answer as
+      point (2) of the `IndexedDbStorageAdapter` item above.
+      _Agent note (2026-11-27, DEC-418):_ (1) and (2) are built in `feat/loadout-per-legend`.
+      (1) The `loadouts` record is `SavedLoadoutDtoV1`: `schemaVersion`, `id`, `profileId`,
+      `specId`, `name` (always `null`), `updatedAt` and the slots in `loadout`
+      (`primaryWeaponId`). The nested slots hold no class and no Legend, so there is no
+      `toLoadout` mapper of 14 §8. That waits for your sign-off (the better-than-design item below).
+      No released build saved loadouts, so the layout changed in place with no `schemaVersion`
+      bump. A dev browser that ran this branch holds flat records. The validator now
+      quarantines them, and the loadout falls back to the auto-build. (2) `Loadout.specId` is
+      `string | null`, `autoBuildLoadout` takes the Legend id, and the new `LegendOfClassRule`
+      checks that the Legend belongs to the class. The client never reads a Legend's class.
+      **Still open:** the class and Legend select screens do not show the descriptions yet. That
+      part of (1) waits for three owner questions on the Owner Calls page: the missing text, which
+      proficiency Vanguard and Sentinel show, and whether the game-doc focus lines may stand in
+      for the Zealot, Templar and Paladin descriptions. This item closes when the select-screen
+      text is built.
+
+- [ ] **Better than design: three loadout items (`feat/loadout-per-legend` pre-PR critic, DEC-418,
+      2026-11-27).** (1) A saved loadout keeps only its slots. Today the only slot is the weapon.
+      The record names the Legend once. Core finds the class from the Legend. The persistence
+      architecture doc (14) §7 says the saved record holds a nested copy of core's `Loadout`, with
+      the class and the Legend inside it. The same doc, §8, lists the mappers `toLoadout` and
+      `fromLoadout`. The code has no mappers. The client's `LoadoutController` builds the core
+      `Loadout` from the Legend and the slots. _Question for the owner:_ may we change doc 14 §3, §7
+      and §8 to match the code? _Recommendation (the agent's):_ yes, adopt it. The record stores
+      each fact once, so a saved class can never disagree with its Legend.
+      (2) Built in this change. The match now takes its Legend list from a new option,
+      `SimulationOptions.specs` (default `LEGEND_SPECS`), as it does for classes and weapons
+      (rule 11). No question is open.
+      (3) Today the client's `legendLoadout` (`loadoutState.ts`) calls `autoBuildLoadout` and then
+      copies the saved slots itself. The bot roster will need the same rule later.
+      The proposal: one core function, `loadoutOfLegend(specId, slots, content)` in
+      `loadoutApi.ts`, builds a Legend's loadout from its id and its saved slots. The phase 4 plan
+      schedules it. _Question for the owner:_ may we add this function to core? _Recommendation
+      (the agent's):_ yes, adopt it. The client and the bots then share one rule.
+      Decision: …
 
 - [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only

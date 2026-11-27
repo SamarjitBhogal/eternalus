@@ -27,6 +27,7 @@ import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from './content/ai/rover';
 import { LEGEND_KIND_IDS, LEGEND_KINDS } from './content/legends/legendKinds';
 import type { LegendDefinition } from './content/legends/legends.types';
+import { LEGEND_SPECS } from './content/legends/specs/legendSpecCatalogue';
 import type { MapDefinition } from './content/maps/maps.types';
 import type { MapObject } from './content/maps/mapObjects.types';
 import type { GameConfig } from './config/GameConfig.types';
@@ -50,6 +51,7 @@ import { loadWeapons } from './content/weapons/loadWeapons';
 import { ZONE_DEFINITIONS, ZONE_PLACEMENTS } from './content/zones/zoneCatalogue';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
+import type { LoadoutContent } from './loadout/LoadoutValidator.types';
 import { SpawnLoadoutPolicy } from './loadout/SpawnLoadoutPolicy';
 import { DUEL_RULES } from './content/duel/duelRules';
 import { duelMapObjects } from './match/duelArena';
@@ -141,6 +143,7 @@ export class Simulation {
     levelCurves,
     roster = [],
     weapons,
+    specs = LEGEND_SPECS,
     guardPlans,
     duel,
     structures = STRUCTURE_DEFINITIONS,
@@ -199,7 +202,10 @@ export class Simulation {
       createDefaultEntityRegistry(),
       Simulation.withStructures(definitions, structures),
       undefined,
-      { weapons: weaponSource, loadouts: Simulation.loadoutPolicy(units, weaponSource, logger) },
+      {
+        weapons: weaponSource,
+        loadouts: Simulation.loadoutPolicy(units, specs, weaponSource, logger),
+      },
     );
     const owners = Simulation.spawnStructures(this.state, factory, {
       structures,
@@ -752,11 +758,13 @@ export class Simulation {
 
   /**
    * The match's `SpawnLoadoutPolicy` (05 §12): loadouts checked against its Legend classes (the
-   * `units` whose kind is a Legend class) and `weapons`, a rejection logged at WARN as the
-   * `loadout-rejected` diagnostic event (DEC-354 (3)).
+   * `units` whose kind is a Legend class), the `specs` (the class of each Legend; DEC-418 (2)) and
+   * `weapons`, a rejection logged at WARN as the `loadout-rejected`
+   * diagnostic event (DEC-354 (3)).
    */
   private static loadoutPolicy(
     units: DefinitionSource,
+    specs: LoadoutContent['specs'],
     weapons: WeaponSource,
     logger: Logger,
   ): SpawnLoadoutPolicy {
@@ -769,19 +777,21 @@ export class Simulation {
       },
     };
     return new SpawnLoadoutPolicy(
-      { legends, weapons },
+      { legends, specs, weapons },
       ({ definitionId, given, problems, used }) => {
         logger.log(
           makeLogRecord(
             'WARN',
             'core.loadout',
-            'a spawn loadout was invalid; using the auto-build',
+            "a spawn loadout was invalid; using its Legend's auto-build, else the class default",
             {
               event: {
                 name: 'loadout-rejected',
                 attributes: {
                   definitionId,
+                  givenSpecId: given.specId,
                   givenWeaponId: given.primaryWeaponId,
+                  usedSpecId: used.specId,
                   usedWeaponId: used.primaryWeaponId,
                   problems: problems.map(({ message }) => message).join('; '),
                 },

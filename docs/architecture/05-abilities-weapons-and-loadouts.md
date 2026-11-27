@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -712,7 +712,7 @@ export type LoadoutSlot =
 export type AbilityChoice = { readonly abilityId: AbilityId; readonly varietyId: VarietyId | null };
 export type Loadout = {
   readonly classId: LegendId;
-  readonly specId: LegendSpecId | null; // the Legend (ADR 0018); a saved loadout is per Legend (DEC-354 (1)); its gameplay: HC-Q17
+  readonly specId: LegendSpecId | null; // the Legend (ADR 0018); a saved loadout is per Legend (DEC-354 (1)); `null` when the spawn names no Legend; its gameplay: HC-Q17
   readonly primaryWeaponId: WeaponId; // MVP
   readonly secondaryWeaponId: WeaponId | null; // MVP-if-time
   readonly passiveId: AbilityId | null; // MVP-if-time (Magus: Studious or Necromancy)
@@ -742,7 +742,7 @@ export function validateLoadout(
   loadout: Loadout,
   content: ContentCatalogue,
 ): readonly LoadoutProblem[]; // public API, default rules
-export function autoBuildLoadout(specId: LegendSpecId, content: ContentCatalogue): Loadout; // starts from the Legend, not the class (DEC-354 (1))
+export function autoBuildLoadout(specId: LegendSpecId, content: ContentCatalogue): Loadout; // starts from the Legend, not the class (DEC-354 (1)); core finds the class (DEC-418 (2))
 export function repairLoadout(
   saved: Loadout,
   content: ContentCatalogue,
@@ -751,14 +751,15 @@ export function repairLoadout(
 
 Default rules (`loadout/rules/*Rule.ts`, listed in `defaultLoadoutRules.ts`): `ContentExistsRule`
 (every id resolves; the others skip unresolved ids), `RequiredSlotsRule`, `ClassOwnsAbilityRule`
-(`classId` and slot kind match), `VarietyExistsRule`, `NoDuplicateAbilityRule`,
+(`classId` and slot kind match), `LegendOfClassRule` (the Legend belongs to `classId`), `VarietyExistsRule`, `NoDuplicateAbilityRule`,
 `WeaponAllowedRule` (`allowedClasses`, `uniqueTo`), `ArtifactClassRule`, `PassiveOwnedRule`. The
 same validator runs in core tests, in `EntityFactory` when a Legend spawns (a failure is a
 diagnostic event and the factory substitutes `autoBuildLoadout`, reference 08) and in the
 `LoadoutScreen` through the public API, so there is one definition of "valid"; bots use
 `autoBuildLoadout`, so there is one definition of "sensible". A saved loadout belongs to a Legend:
 the profile keeps one per Legend (`specId`), not per class, and the auto-build starts from that
-Legend (DEC-354 (1); [14](14-persistence-and-resources.md) §7). `repairLoadout` is what
+Legend (DEC-354 (1); [14](14-persistence-and-resources.md) §7). The caller names only the Legend.
+Core finds its class from content, so the client, the bots and replays use one rule (DEC-418 (2)). `repairLoadout` is what
 the client's `LoadoutController` calls when a saved loadout names content that no longer exists
 (DEC-354 (3)). Changing an
 ability or the ultimate in-match (**MVP-if-time**) goes through the `Loadout` component's
@@ -939,20 +940,23 @@ catalogue's weapon art, keyed by weapon id. A weapon without art shows an empty 
 ## 18. Implementation status
 
 - **Loadout (`feat/loadout-screen`, SCRUM-311, 2026-11-20).** `packages/core/src/loadout/` holds
-  §12 for the slots content can fill: `Loadout` is `classId` and `primaryWeaponId`; the other
+  §12 for the slots content can fill: `Loadout` is `classId`, `specId` and `primaryWeaponId`; the other
   fields join when their content does (no ability, artifact or passive definitions exist, and
   the secondary weapon is MVP-if-time). `LoadoutValidator` runs the injected rules
-  `ContentExistsRule` and `WeaponAllowedRule` (`allowedClasses` and `uniqueTo`;
-  `createDefaultLoadoutRules`) and reports every problem, with a `field` in place of the sketch's
+  `ContentExistsRule`, `LegendOfClassRule` and `WeaponAllowedRule` (`allowedClasses` and
+  `uniqueTo`; `createDefaultLoadoutRules`) and reports every problem, with a `field` in place of the sketch's
   `slot`: `LoadoutField` is `'class'` or a `LoadoutSlot` (only `'primary-weapon'` so far), and
   `repairLoadout` returns the `LoadoutSlot`s it replaced (DEC-354 (3)). `validateLoadout`,
-  `autoBuildLoadout` (from `defaultLoadout`), `repairLoadout` (auto-builds each broken slot) and
+  `autoBuildLoadout` (from the Legend's class `defaultLoadout`), `repairLoadout` (auto-builds each broken slot) and
   `loadoutContentOf` (the same rules over display content) are public; the client's weapon
   choices are the weapons `validateLoadout` accepts. `SpawnLoadoutPolicy` decides a spawn's
-  loadout: `Placement.loadout` when it passes for that class, else the auto-build, which is also
-  what a Legend given none (every bot) gets. Besides the rules it checks that the loadout is for
-  the spawned class (`class-matches-legend`), a check only a spawn can make. `Simulation` builds it
-  over the match's Legend classes and weapons, logs a rejection at WARN as the `loadout-rejected`
+  loadout: `Placement.loadout` when it passes for that class. Else it uses the auto-build of the
+  loadout's Legend when that Legend is of the spawned class, and the class default
+  (`specId: null`) in every other case. A Legend given no loadout gets the class default too.
+  Besides the rules it checks that the loadout is for the spawned class (`class-matches-legend`),
+  a check only a spawn can make. `Simulation` builds it over the match's Legend classes and
+  weapons and the Legends (`SimulationOptions.specs`, default `LEGEND_SPECS`), logs a
+  rejection at WARN as the `loadout-rejected`
   diagnostic event (`DiagnosticEventMap`, scope `core.loadout`; DEC-354 (3)) and injects it into
   `EntityFactory` as the `LoadoutResolver` port of its `LegendEquipment`, so `entities/` imports
   only loadout types. The human `RosterSlot` carries the player's saved loadout, so it is part of
@@ -960,9 +964,13 @@ catalogue's weapon art, keyed by weapon id. A weapon without art shows an empty 
   slot without its loadout diverges at the first checkpoint. The content rule
   `DefaultWeaponAllowedRule` checks at load that a class may carry its own `defaultLoadout` weapon
   (it shares `isWeaponAllowedFor` with `WeaponAllowedRule`). Since `feat/loadout-per-legend` the
-  client saves loadouts per Legend (`specId`, DEC-354 (1)), but core is still keyed by class:
-  `Loadout` has no `specId`, `autoBuildLoadout` takes the class id and returns the class's
-  `defaultLoadout`, and the client finds a Legend's class from content (`legendLoadoutOptions`).
+  client saves loadouts per Legend (`specId`, DEC-354 (1)), and core finds a Legend's class
+  (DEC-418 (2)): `Loadout` has `classId` and `specId: string | null`, `autoBuildLoadout` takes the
+  Legend id, `LegendOfClassRule` checks that the Legend belongs to the class, and the client never
+  reads a Legend's class. Each bot has a Legend (DEC-61, DEC-102), but core's bot roster slot
+  carries no Legend yet: the client's `rosterSlots` leaves it out of the bot's `RosterSlot`. So a
+  bot spawns with its class default (`specId: null`). The phase 4 plan (Sprint 4.5) schedules the
+  fix.
   The per-Legend start weapons (DEC-57) come with the weapon PR. No `Loadout` component yet: the
   Legend reads its weapon from the spawn context, and in-match changes (MVP-if-time) are not
   built.

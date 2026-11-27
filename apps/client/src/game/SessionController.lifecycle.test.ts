@@ -168,7 +168,7 @@ describe('SessionController match lifetime', () => {
     const session = setUp({
       playerLoadout: (specId) => {
         asked.push(specId);
-        return { classId: 'magus', primaryWeaponId: 'wuuthrad' };
+        return { classId: 'magus', specId: MAGUS_LEGEND, primaryWeaponId: 'wuuthrad' };
       },
     });
     await session.toMatch();
@@ -179,7 +179,7 @@ describe('SessionController match lifetime', () => {
     expect(asked).toEqual([MAGUS_LEGEND]);
     expect(request?.roster.find(({ pilot }) => pilot === 'human')).toMatchObject({
       definitionId: 'magus',
-      loadout: { classId: 'magus', primaryWeaponId: 'wuuthrad' },
+      loadout: { classId: 'magus', specId: MAGUS_LEGEND, primaryWeaponId: 'wuuthrad' },
     });
   });
 

@@ -10,6 +10,7 @@ import type { AuthoredGuardPlan } from './content/structures/structures.types';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
 import type { Loadout } from './loadout/Loadout.types';
+import type { LoadoutContent } from './loadout/LoadoutValidator.types';
 import type { StructureDefinition } from './content/structures/structures.types';
 import type { System } from './systems/System.types';
 import type { PlayableTeam } from './teams/teams.types';
@@ -50,6 +51,11 @@ export type SimulationOptions = {
   readonly roster?: readonly RosterSlot[];
   /** Where Legends find their weapons by id; `loadWeapons(config.tickRate)` when omitted. */
   readonly weapons?: WeaponSource;
+  /**
+   * Where Legends (sub-classes) are found by id, for the class of each Legend a spawn loadout
+   * names (DEC-418 (2)); `LEGEND_SPECS` when omitted.
+   */
+  readonly specs?: LoadoutContent['specs'];
   /**
    * Each guard home's plan by definition id, as authored; `GUARD_PLANS` when omitted. Tests and
    * tools only: it is not recorded in `ReplaySetup`, so a match built with other plans replays

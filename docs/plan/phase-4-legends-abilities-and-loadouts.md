@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -164,9 +164,19 @@ Owner: _ (sim lane). Week 8.
       1–2, armour set, abilities 1–3, per-class skin; validated against content and class
       restrictions; auto-build default per Legend: a `defaultLoadout` on each
       `LegendSpecDefinition`, from Sprint 4.4's start weapons (DEC-354 (1); sub-class gameplay,
-      `INBOX.md` HC-Q17)). Owner: _. Test: an invalid combination reports every violation; the
+      `INBOX.md` HC-Q17); core already finds a Legend's class from `Loadout.specId`, DEC-418 (2)). Owner: _. Test: an invalid combination reports every violation; the
       auto-build validates for every Legend. Done when: the
       same validator runs in core tests and the Phase 5 `LoadoutScreen`.
+- [ ] **Bots spawn with their Legend's loadout** (DEC-61, DEC-102): the bot's `RosterSlot`
+      carries the bot's Legend, so a bot spawns with its Legend's auto-build, not the class default
+      (architecture 05 §18). Owner: _. Test: a bot whose Legend has its own start weapon spawns
+      with that weapon. Done when: no bot spawns with `specId: null`.
+- [ ] **One core function builds a Legend's loadout from its slots**:
+      `loadoutOfLegend(specId, slots, content)` in `loadoutApi.ts` builds a Legend's loadout from
+      its id and its saved slots. The client's loadout state and the bot roster both use it. It
+      waits for the owner's sign-off of `INBOX.md` "Better than design: three loadout
+      items" (3). Owner: _. Test: the function returns the same loadout the client builds today
+      for a saved weapon. Done when: the client's `legendLoadout` calls it and copies no slots.
 - [ ] **`Progression` component + `ProgressionSystem`** (XP from kills, assists, structures,
       checkpoints, camps and boss events; level curve; scaling of ability potency, health and
       aether per level, `TUNE`; "Ability upgrades on hold beyond basic level scaling" per the

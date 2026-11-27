@@ -24,7 +24,7 @@ export type LoadoutControllerDeps = {
   readonly persistence: LoadoutStorage;
   /** Where load, save and repair outcomes are reported. */
   readonly logger: Logger;
-  /** What each Legend may take, and its class, from core content (`legendLoadoutOptions`). */
+  /** What each Legend may take, from core content (`legendLoadoutOptions`). */
   readonly options: LoadoutsSliceState['options'];
   /** What loadouts are validated, repaired and auto-built against (`loadoutContentOf`). */
   readonly content: LoadoutContent;

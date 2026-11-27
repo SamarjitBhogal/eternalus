@@ -8,9 +8,9 @@ const CONTENT = loadDisplayContent();
 describe('legendLoadoutOptions', () => {
   const options = legendLoadoutOptions(CONTENT);
 
-  it('gives every Legend its options, keyed by specId, with its class (DEC-354 (1))', () => {
+  it('gives every Legend its options, keyed by specId (DEC-354 (1)), and leaves its class to core (DEC-418 (2))', () => {
     expect(Object.keys(options)).toEqual(CONTENT.specs.map((spec) => spec.id));
-    for (const spec of CONTENT.specs) expect(options[spec.id]?.classId).toBe(spec.classId);
+    for (const spec of CONTENT.specs) expect(options[spec.id]).not.toHaveProperty('classId');
   });
 
   it("offers each Legend its class's weapons: the Magus's Staff to Magus Legends alone", () => {

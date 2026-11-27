@@ -1,4 +1,4 @@
-import type { PersistedLoadout } from './dto/LoadoutDto';
+import type { PersistedLoadout } from './dto/SavedLoadoutDto';
 import type { PersistedSettings } from './dto/SettingsDto';
 import { FallbackStorageAdapter } from './FallbackStorageAdapter';
 import { LOCAL_PROFILE_ID } from './PersistenceController.constants';

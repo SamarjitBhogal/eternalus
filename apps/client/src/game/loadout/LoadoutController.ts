@@ -3,15 +3,15 @@ import { type Loadout, makeLogRecord, validateLoadout } from '@eternalus/core';
 import type { UiIntent } from '../../bridge/events';
 import type { LoadoutsSliceState } from '../../bridge/slices/loadoutsSlice';
 import type { LoadoutControllerDeps, SavedLoadout } from './LoadoutController.types';
-import { resolveSavedLoadouts } from './loadoutState';
+import { legendLoadout, resolveSavedLoadouts } from './loadoutState';
 
 /**
  * The one writer of saved loadouts, keyed by the Legend's `specId` (DEC-354 (1)). Loads the
  * profile's loadouts at start, repairing every slot that breaks the loadout rules with the
  * auto-build and logging it (08, core `repairLoadout`), publishes them with the choices each Legend
  * offers, then turns each `save-loadout` intent for a known Legend that passes `validateLoadout`
- * (as the Legend's class) into a published change and a save; a refused one is logged with every
- * problem. A failed load or save is reported, never thrown.
+ * into a published change and a save; a refused one is logged with every problem. Core finds each
+ * Legend's class (DEC-418 (2)). A failed load or save is reported, never thrown.
  */
 export class LoadoutController {
   private readonly deps: LoadoutControllerDeps;
@@ -47,17 +47,16 @@ export class LoadoutController {
   }
 
   /**
-   * The loadout saved for the Legend `specId` (already repaired), as a core `Loadout` of its class,
-   * or `null` when no Legend is given or none is saved: the match then spawns the class default.
-   * `SessionController` reads it when it builds a match.
+   * The loadout saved for the Legend `specId` (already repaired), as a core `Loadout` (its class
+   * and Legend from core), or `null` when no Legend is given or none is saved: the match then
+   * spawns the class default. `SessionController` reads it when it builds a match.
    */
   public loadoutOf(specId: string | null): Loadout | null {
     if (specId === null) return null;
-    const options = this.deps.options[specId];
     const primaryWeaponId = this.state.saved[specId];
-    return options === undefined || primaryWeaponId === undefined
+    return primaryWeaponId === undefined
       ? null
-      : { classId: options.classId, primaryWeaponId };
+      : legendLoadout(this.deps.content, this.deps.options, specId, { primaryWeaponId });
   }
 
   /** Stops handling intents. */
@@ -69,19 +68,21 @@ export class LoadoutController {
   private readonly onIntent = (intent: UiIntent): void => {
     if (intent.kind !== 'save-loadout') return;
     const { specId, primaryWeaponId } = intent;
-    const classId = this.deps.options[specId]?.classId;
-    if (classId === undefined) {
+    const loadout = legendLoadout(this.deps.content, this.deps.options, specId, {
+      primaryWeaponId,
+    });
+    if (loadout === null) {
       this.report('WARN', 'a loadout was not saved: the Legend does not exist', {
         specId,
         primaryWeaponId,
       });
       return;
     }
-    const problems = validateLoadout({ classId, primaryWeaponId }, this.deps.content);
+    const problems = validateLoadout(loadout, this.deps.content);
     if (problems.length > 0) {
       this.report('WARN', 'a loadout was not saved: it breaks the loadout rules', {
         specId,
-        classId,
+        classId: loadout.classId,
         primaryWeaponId,
         problems: problems.map(({ message }) => message).join('; '),
       });

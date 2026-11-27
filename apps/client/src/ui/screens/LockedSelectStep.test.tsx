@@ -69,7 +69,6 @@ describe('LockedSelectStep', () => {
     const loadouts: LoadoutsSliceState = {
       options: {
         oracle: {
-          classId: 'magus',
           defaultWeaponId: 'magus-staff',
           weapons: [
             { id: 'wuuthrad', displayName: 'Wuuthrad' },

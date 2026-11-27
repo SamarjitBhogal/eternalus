@@ -17,7 +17,6 @@ import { LoadoutScreen } from './LoadoutScreen';
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const MAGUS_OPTIONS = {
-  classId: 'magus',
   defaultWeaponId: 'magus-staff',
   weapons: [
     { id: 'magus-staff', displayName: 'Staff' },
@@ -29,7 +28,6 @@ const MAGUS_OPTIONS = {
 const LOADOUTS: LoadoutsSliceState = {
   options: {
     knight: {
-      classId: 'warrior',
       defaultWeaponId: 'raptor-talons',
       weapons: [
         { id: 'raptor-talons', displayName: 'Raptor Talons' },
@@ -37,7 +35,6 @@ const LOADOUTS: LoadoutsSliceState = {
       ],
     },
     colossus: {
-      classId: 'sentinel',
       defaultWeaponId: 'sentinel-shield',
       weapons: [{ id: 'sentinel-shield', displayName: 'Sentinel Shield' }],
     },

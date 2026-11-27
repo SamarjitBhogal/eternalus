@@ -5,7 +5,6 @@ import { matchSetupSlice } from '../slices/matchSetupSlice';
 import { selectPlayerWeaponName } from './selectPlayerWeaponName';
 
 const WARRIOR_WEAPONS = {
-  classId: 'warrior',
   defaultWeaponId: 'raptor-talons',
   weapons: [
     { id: 'raptor-talons', displayName: 'Raptor Talons' },

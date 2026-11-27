@@ -5,10 +5,9 @@ type LoadoutWeaponOption = { readonly id: string; readonly displayName: string }
 
 /**
  * The primary weapons of one Legend and the one auto-build picks (08 "Pre-game configuration").
- * `classId` is the Legend's class: core validates and spawns a loadout by class.
+ * Core finds the Legend's class (DEC-418 (2)), so the screen never needs it.
  */
 export type LegendLoadoutOptions = {
-  readonly classId: string;
   readonly defaultWeaponId: string;
   readonly weapons: readonly LoadoutWeaponOption[];
 };

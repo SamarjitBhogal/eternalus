@@ -5,7 +5,6 @@ import { loadoutsSlice, type LoadoutsSliceState } from './loadoutsSlice';
 const STATE: LoadoutsSliceState = {
   options: {
     knight: {
-      classId: 'warrior',
       defaultWeaponId: 'raptor-talons',
       weapons: [
         { id: 'raptor-talons', displayName: 'Raptor Talons' },
@@ -38,7 +37,7 @@ describe('loadoutsSlice', () => {
 
   it('gives the options of a Legend, or null while they are unpublished', () => {
     expect(selectLegendOptions(wrap(STATE), 'knight')?.weapons).toHaveLength(2);
-    expect(selectLegendOptions(wrap(STATE), 'knight')?.classId).toBe('warrior');
+    expect(selectLegendOptions(wrap(STATE), 'knight')).toEqual(STATE.options.knight);
     expect(selectLegendOptions(wrap(STATE), 'oracle')).toBeNull();
   });
 

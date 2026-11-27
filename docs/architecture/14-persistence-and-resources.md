@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -511,9 +511,17 @@ export class ResourceController {
 
 **Loadouts (`feat/loadout-screen`, 2026-11-20; `feat/loadout-per-legend`, 2026-11-26).**
 `PersistenceController` also has `loadLoadouts(specIds)` and `saveLoadout(specId, loadout)` over
-`LoadoutRepository`, one `LoadoutDtoV1` (`primaryWeaponId`) per profile and Legend (`specId`,
-DEC-354 (1)) in the v1 `loadouts` store. Its key `id` is `loadoutKey(profileId, specId)`. No
-`name`, `updatedAt` or nested `loadout` of §7's `SavedLoadoutDtoV1` yet. `LoadoutRepository.load`
+`LoadoutRepository`, one `SavedLoadoutDtoV1` per profile and Legend (`specId`, DEC-354 (1)) in the
+v1 `loadouts` store, in the shape of §7 (DEC-418 (1)). Its key `id` is
+`loadoutKey(profileId, specId)`. `name` is always `null`, because a profile keeps one loadout per
+Legend and no design names a loadout. `updatedAt` is the repository's `now()` at save. The facade
+takes and returns `PersistedLoadout` (`primaryWeaponId`), and the repository maps it to and from
+the record's `loadout`. Two parts differ from §7 and §8. The nested `loadout: LoadoutDtoV1` holds
+only the slots (`primaryWeaponId`), with no class and no Legend. So there is no `toLoadout` or
+`fromLoadout` mapper: the client's `LoadoutController` builds the core `Loadout` from `specId` and
+the slots. This waits for the owner's sign-off as a better-than-design item (`INBOX.md`, "Better than
+design: three loadout items"). There is no `upgradeSavedLoadoutDto` either (no version
+bump, below). `LoadoutRepository.load`
 is §3's `getByProfileAndLegend`; `listByProfile`, `delete` and §5's indexes are not built,
 because the storage port has no index reads: the caller names the Legends. The DTO check is shape
 only. A weapon id content no longer has is not quarantined: the client's `LoadoutController`
@@ -521,8 +529,15 @@ repairs it with core's `repairLoadout` and logs it (§8), so
 `data/` needs no content and the screen learns which Legends were repaired. The owner signed off
 this place for the repair (DEC-354 (3)). Records saved per class before DEC-354 (1)
 (`local/warrior`) are not migrated and never read: no released build stored them, and class ids
-and Legend ids do not overlap. Core is still keyed by class
-([05](05-abilities-weapons-and-loadouts.md) §18, "Loadout").
+and Legend ids do not overlap. Core finds a Legend's class from content (DEC-418 (2);
+[05](05-abilities-weapons-and-loadouts.md) §18, "Loadout").
+
+No released build stored loadouts: `origin/main`, `origin/feat/loadout-screen` and
+`origin/phase/3-sprint-3-work` use `MemoryStorageAdapter`, and only `feat/loadout-per-legend`
+turns on IndexedDB. So the v1 layout changed in place, with no `schemaVersion` bump. A dev
+browser that ran this branch before DEC-418 holds flat records (the slots beside the header). The
+validator refuses them on `name`, `readOrQuarantine` quarantines them, and the loadout falls back
+to the auto-build.
 
 **IndexedDB (`feat/loadout-indexeddb`, 2026-11-20; `feat/loadout-screen`, 2026-11-25;
 `feat/loadout-per-legend`, 2026-11-26).** `IndexedDbStorageAdapter` (over `idbPromises.ts`, no
@@ -537,10 +552,9 @@ transaction; on `versionchange` the connection closes. Open failures are a `Stor
 `PersistenceController` wraps its adapter in `FallbackStorageAdapter`: when `open` fails, the
 fallback's `reportError` writes an ERROR `client.persistence` record, as §10 says, which becomes
 an error report, and storage continues on `MemoryStorageAdapter`, so nothing is saved past the
-session. `blocked` falls back at once. The owner has not yet chosen between ERROR and WARN for
-this record (`INBOX.md`); ERROR is in use. `createPersistence` lives in `game/` because it builds
-log records, and `data/` imports core types only (§1). No `degraded` status yet. §12's contract
-suite and the adapter's own cases (reads and writes, upgrade, newer version, blocked, abort,
+session. `blocked` falls back at once. The owner chose ERROR for this record (DEC-418 (3)).
+`createPersistence` lives in `game/` because it builds log records, and `data/` imports core
+types only (§1). No `degraded` status yet. §12's contract suite and the adapter's own cases (reads and writes, upgrade, newer version, blocked, abort,
 `versionchange`) run against `fake-indexeddb` (DEC-354 (4)), one fresh `IDBFactory` per test.
 
 ADR 0028 (DEC-298) registers contributor-confirmed art using attachmentReferenceId and the user-authorised-art licence. hasAssetProvenance checks each reference against its documented record. Sprite atlases use the sprite-atlas asset type in separate per-Legend groups.

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { legendLoadoutOptions } from './legendLoadoutOptions';
 import type { SavedLoadout } from './LoadoutController.types';
-import { resolveSavedLoadouts } from './loadoutState';
+import { legendLoadout, resolveSavedLoadouts } from './loadoutState';
 
 const DISPLAY = loadDisplayContent();
 const CONTENT = loadoutContentOf(DISPLAY);
@@ -46,14 +46,36 @@ describe('resolveSavedLoadouts', () => {
     });
   });
 
-  it('ignores a Legend whose class content does not have', () => {
+  it('ignores, without throwing, a Legend the screen offers but content does not have', () => {
     const options = {
       ...OPTIONS,
-      'lost-legend': { classId: 'harbinger', defaultWeaponId: 'x', weapons: [] },
+      'lost-legend': { defaultWeaponId: 'x', weapons: [] },
     };
     expect(resolveSavedLoadouts(CONTENT, options, saved({ 'lost-legend': 'wuuthrad' }))).toEqual({
       saved: {},
       repairs: new Map(),
     });
+  });
+});
+
+describe('legendLoadout', () => {
+  it("builds a Legend's core loadout with the class core finds (DEC-418 (2))", () => {
+    expect(legendLoadout(CONTENT, OPTIONS, 'oracle', { primaryWeaponId: 'wuuthrad' })).toEqual({
+      classId: 'magus',
+      specId: 'oracle',
+      primaryWeaponId: 'wuuthrad',
+    });
+  });
+
+  it('answers null for a Legend the screen does not offer or content does not have', () => {
+    const options = Object.fromEntries([
+      ...Object.entries(OPTIONS).filter(([specId]) => specId !== 'oracle'),
+      ['lost-legend', { defaultWeaponId: 'x', weapons: [] }],
+    ]);
+
+    expect(legendLoadout(CONTENT, options, 'oracle', { primaryWeaponId: 'wuuthrad' })).toBeNull();
+    expect(
+      legendLoadout(CONTENT, options, 'lost-legend', { primaryWeaponId: 'wuuthrad' }),
+    ).toBeNull();
   });
 });

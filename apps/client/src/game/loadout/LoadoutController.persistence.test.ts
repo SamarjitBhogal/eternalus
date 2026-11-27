@@ -9,8 +9,11 @@ import { describe, expect, it } from 'vitest';
 import type { BridgeEventMap } from '../../bridge/events';
 import type { LoadoutsSliceState } from '../../bridge/slices/loadoutsSlice';
 import { TypedEventBus } from '../../bridge/TypedEventBus';
+import { loadoutKey } from '../../data/persistence/dto/SavedLoadoutDto';
 import { MemoryStorageAdapter } from '../../data/persistence/MemoryStorageAdapter';
 import { PersistenceController } from '../../data/persistence/PersistenceController';
+import { LOCAL_PROFILE_ID } from '../../data/persistence/PersistenceController.constants';
+import { LOADOUT_STORE, STORAGE_SCHEMA } from '../../data/persistence/schema/migrations';
 import { legendLoadoutOptions } from './legendLoadoutOptions';
 import { LoadoutController } from './LoadoutController';
 
@@ -22,6 +25,7 @@ const SHIPPED = loadoutContentOf(DISPLAY);
 /** The shipped content after a release removed Wuuthrad. */
 const WITHOUT_WUUTHRAD = loadoutContentOf({
   legends: DISPLAY.legends,
+  specs: DISPLAY.specs,
   weapons: DISPLAY.weapons.filter((weapon) => weapon.id !== 'wuuthrad'),
 });
 
@@ -86,6 +90,7 @@ describe('LoadoutController over PersistenceController', () => {
     expect(second.published[0]?.saved).toEqual({ knight: 'wuuthrad', paladin: 'raptor-talons' });
     expect(second.controller.loadoutOf('knight')).toEqual({
       classId: 'warrior',
+      specId: 'knight',
       primaryWeaponId: 'wuuthrad',
     });
     expect(second.controller.loadoutOf('assassin')).toBeNull();
@@ -109,5 +114,24 @@ describe('LoadoutController over PersistenceController', () => {
       'a saved loadout broke the loadout rules; auto-build repaired it',
     ]);
     expect(second.warnings).toEqual([]);
+  });
+
+  it('quarantines a flat record saved before DEC-418 (1) and gives that Legend its auto-build', async () => {
+    const adapter = new MemoryStorageAdapter(); // a page that ran this branch before DEC-418 (1)
+    await adapter.open(STORAGE_SCHEMA);
+    await adapter.transaction([LOADOUT_STORE], 'readwrite', (tx) =>
+      tx.put(LOADOUT_STORE, {
+        schemaVersion: 1,
+        id: loadoutKey(LOCAL_PROFILE_ID, 'knight'),
+        profileId: LOCAL_PROFILE_ID,
+        specId: 'knight',
+        primaryWeaponId: 'wuuthrad',
+      }),
+    );
+
+    const session = await started(adapter, SHIPPED);
+    expect(session.published[0]?.saved).toEqual({});
+    expect(session.controller.loadoutOf('knight')).toBeNull();
+    expect(session.warnings).toEqual(['record quarantined']);
   });
 });

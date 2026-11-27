@@ -5,6 +5,7 @@ import type { LoadoutContent, LoadoutRule } from './LoadoutValidator.types';
 
 const CONTENT: LoadoutContent = {
   legends: { has: () => true, get: () => ({ defaultLoadout: { primaryWeaponId: 'w' } }) },
+  specs: { has: () => true, get: () => ({ classId: 'c' }) },
   weapons: { has: () => true, get: () => ({ allowedClasses: 'any', uniqueTo: null }) },
 };
 
@@ -23,13 +24,18 @@ describe('LoadoutValidator', () => {
     const validator = new LoadoutValidator([ruleFinding('a', 2), ruleFinding('b', 1)]);
 
     expect(
-      validator.validate({ classId: 'c', primaryWeaponId: 'w' }, CONTENT).map((p) => p.message),
+      validator
+        .validate({ classId: 'c', specId: 's', primaryWeaponId: 'w' }, CONTENT)
+        .map((p) => p.message),
     ).toEqual(['a 0', 'a 1', 'b 0']);
   });
 
   it('finds nothing with no rules', () => {
     expect(
-      new LoadoutValidator([]).validate({ classId: 'c', primaryWeaponId: 'w' }, CONTENT),
+      new LoadoutValidator([]).validate(
+        { classId: 'c', specId: 's', primaryWeaponId: 'w' },
+        CONTENT,
+      ),
     ).toEqual([]);
   });
 });

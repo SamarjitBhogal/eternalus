@@ -105,4 +105,19 @@ describe('SpawnContextReader', () => {
     expect(reader.weapons({})).toBeNull();
     expect(reader.weapons({ weapons: { has: 'nope' } })).toBeNull();
   });
+
+  it('reads a loadout only when its Legend is a string or null (DEC-418 (2))', () => {
+    const loadout = { classId: 'warrior', specId: 'knight', primaryWeaponId: 'wuuthrad' };
+
+    expect(reader.loadout({ loadout })).toEqual(loadout);
+    expect(reader.loadout({ loadout: { ...loadout, specId: null } })).toEqual({
+      ...loadout,
+      specId: null,
+    });
+    expect(
+      reader.loadout({ loadout: { classId: 'warrior', primaryWeaponId: 'wuuthrad' } }),
+    ).toBeNull();
+    expect(reader.loadout({ loadout: { ...loadout, specId: 7 } })).toBeNull();
+    expect(reader.loadout({})).toBeNull();
+  });
 });

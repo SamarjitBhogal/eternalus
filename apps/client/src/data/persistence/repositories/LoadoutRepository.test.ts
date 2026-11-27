@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { loadoutKey } from '../dto/LoadoutDto';
+import { loadoutKey } from '../dto/SavedLoadoutDto';
 import { MemoryStorageAdapter } from '../MemoryStorageAdapter';
 import { LOADOUT_STORE, QUARANTINE_STORE, STORAGE_SCHEMA } from '../schema/migrations';
 import { LoadoutRepository } from './LoadoutRepository';
@@ -8,7 +8,7 @@ import { LoadoutRepository } from './LoadoutRepository';
 const NOW = 1_760_000_000_000;
 const PROFILE = 'local';
 
-async function setup(): Promise<{
+async function setup(now: () => number = () => NOW): Promise<{
   adapter: MemoryStorageAdapter;
   repository: LoadoutRepository;
   warnings: string[];
@@ -16,13 +16,9 @@ async function setup(): Promise<{
   const adapter = new MemoryStorageAdapter();
   await adapter.open(STORAGE_SCHEMA);
   const warnings: string[] = [];
-  const repository = new LoadoutRepository(
-    adapter,
-    () => NOW,
-    (body, attributes) => {
-      warnings.push(`${body}: ${String(attributes.reason)}`);
-    },
-  );
+  const repository = new LoadoutRepository(adapter, now, (body, attributes) => {
+    warnings.push(`${body}: ${String(attributes.reason)}`);
+  });
   return { adapter, repository, warnings };
 }
 
@@ -73,7 +69,22 @@ describe('LoadoutRepository', () => {
       id: 'local/paladin',
       profileId: PROFILE,
       specId: 'paladin',
-      primaryWeaponId: 'wuuthrad',
+      name: null,
+      updatedAt: NOW,
+      loadout: { primaryWeaponId: 'wuuthrad' },
+    });
+  });
+
+  it('saves the record of architecture 14 §7: no name, dated by the injected clock at each save (DEC-418 (1))', async () => {
+    let clock = NOW;
+    const { adapter, repository } = await setup(() => clock);
+    await repository.save(PROFILE, 'knight', { primaryWeaponId: 'raptor-talons' });
+    clock = NOW + 5_000;
+    await repository.save(PROFILE, 'knight', { primaryWeaponId: 'wuuthrad' });
+    expect(await readRaw(adapter, LOADOUT_STORE, loadoutKey(PROFILE, 'knight'))).toMatchObject({
+      name: null,
+      updatedAt: NOW + 5_000,
+      loadout: { primaryWeaponId: 'wuuthrad' },
     });
   });
 
@@ -88,14 +99,42 @@ describe('LoadoutRepository', () => {
   it('quarantines a corrupt record, reports it and answers null', async () => {
     const { adapter, repository, warnings } = await setup();
     const id = loadoutKey(PROFILE, 'knight');
-    await storeRaw(adapter, { id, profileId: PROFILE, specId: 'knight', schemaVersion: 1 });
+    await storeRaw(adapter, {
+      id,
+      profileId: PROFILE,
+      specId: 'knight',
+      schemaVersion: 1,
+      name: null,
+      updatedAt: NOW,
+    });
     expect(await repository.load(PROFILE, 'knight')).toBeNull();
-    expect(warnings).toEqual(['record quarantined: primaryWeaponId: not a string']);
+    expect(warnings).toEqual(['record quarantined: loadout: not an object']);
     expect(await readRaw(adapter, LOADOUT_STORE, id)).toBeUndefined();
     expect(await readRaw(adapter, QUARANTINE_STORE, 1)).toMatchObject({
       store: LOADOUT_STORE,
       key: id,
       quarantinedAt: NOW,
+    });
+  });
+
+  it('quarantines a flat record saved before DEC-418 (1) and answers null, so the caller auto-builds', async () => {
+    const { adapter, repository, warnings } = await setup();
+    const id = loadoutKey(PROFILE, 'knight');
+    const flat = {
+      schemaVersion: 1,
+      id,
+      profileId: PROFILE,
+      specId: 'knight',
+      primaryWeaponId: 'wuuthrad',
+    };
+    await storeRaw(adapter, flat);
+    expect(await repository.loadAll(PROFILE, ['knight'])).toEqual(new Map());
+    expect(warnings).toEqual(['record quarantined: name: not a string or null']);
+    expect(await readRaw(adapter, LOADOUT_STORE, id)).toBeUndefined();
+    expect(await readRaw(adapter, QUARANTINE_STORE, 1)).toMatchObject({
+      store: LOADOUT_STORE,
+      key: id,
+      value: flat,
     });
   });
 
@@ -107,7 +146,9 @@ describe('LoadoutRepository', () => {
       id,
       profileId: PROFILE,
       specId: 'knight',
-      primaryWeaponId: 'removed-sword',
+      name: null,
+      updatedAt: NOW,
+      loadout: { primaryWeaponId: 'removed-sword' },
     });
     expect(await repository.load(PROFILE, 'knight')).toEqual({ primaryWeaponId: 'removed-sword' });
     expect(warnings).toEqual([]);

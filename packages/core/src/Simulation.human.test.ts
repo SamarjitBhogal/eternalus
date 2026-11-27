@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { ContentCatalogue } from './content/ContentCatalogue';
+import type { LegendSpecDefinition } from './content/legends/specs/legendSpecs.types';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import type { Logger } from './diagnostics/Logger.types';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
@@ -79,7 +80,7 @@ describe('Simulation: the human slot of the roster', () => {
         team: 'dark',
         definitionId: 'warrior',
         role: 'rover',
-        loadout: { classId: 'warrior', primaryWeaponId: 'wuuthrad' },
+        loadout: { classId: 'warrior', specId: 'knight', primaryWeaponId: 'wuuthrad' },
       },
       laner('dark'),
     ]);
@@ -97,7 +98,7 @@ describe('Simulation: the human slot of the roster', () => {
     ).toEqual(['raptor-talons']);
   });
 
-  it("logs an invalid loadout on the human slot as a diagnostic event and spawns the class's auto-build", () => {
+  it("logs an invalid loadout on the human slot as a diagnostic event and spawns its Legend's auto-build", () => {
     const logger = new MemoryLogger();
     const sim = build(
       [
@@ -106,7 +107,7 @@ describe('Simulation: the human slot of the roster', () => {
           team: 'dark',
           definitionId: 'warrior',
           role: 'rover',
-          loadout: { classId: 'warrior', primaryWeaponId: 'magus-staff' },
+          loadout: { classId: 'warrior', specId: 'knight', primaryWeaponId: 'magus-staff' },
         },
       ],
       logger,
@@ -122,11 +123,42 @@ describe('Simulation: the human slot of the roster', () => {
         eventName: 'loadout-rejected',
         attributes: {
           definitionId: 'warrior',
+          givenSpecId: 'knight',
           givenWeaponId: 'magus-staff',
+          usedSpecId: 'knight',
           usedWeaponId: 'raptor-talons',
           problems: 'class "warrior" may not carry weapon "magus-staff"',
         },
       },
+    ]);
+  });
+
+  it('rejects a loadout whose Legend is not in the injected specs, and spawns the class default', () => {
+    const logger = new MemoryLogger();
+    const sim = new Simulation({
+      config: configFor(),
+      seed: 5,
+      logger,
+      map: TWO_LANE_MAP,
+      specs: new ContentCatalogue<LegendSpecDefinition>([]),
+      roster: [
+        {
+          pilot: 'human',
+          team: 'dark',
+          definitionId: 'warrior',
+          role: 'rover',
+          loadout: { classId: 'warrior', specId: 'knight', primaryWeaponId: 'wuuthrad' },
+        },
+      ],
+    });
+    const { entities, match } = sim.snapshot();
+
+    // The shipped Legends would accept this loadout and keep the Wuuthrad.
+    expect(entities.find(({ id }) => id === match.humanLegendId)?.combat).toEqual({
+      weaponId: 'raptor-talons',
+    });
+    expect(logger.records.filter(({ scope }) => scope === 'core.loadout')).toMatchObject([
+      { eventName: 'loadout-rejected', attributes: { givenSpecId: 'knight', usedSpecId: null } },
     ]);
   });
 
@@ -390,7 +422,7 @@ describe('Simulation: the human slot of the roster', () => {
       team: 'dark',
       definitionId: 'warrior',
       role: 'rover',
-      loadout: { classId: 'warrior', primaryWeaponId: 'wuuthrad' },
+      loadout: { classId: 'warrior', specId: 'knight', primaryWeaponId: 'wuuthrad' },
     };
     const createTarget = ({ config, seed, roster }: ReplaySetup) =>
       new Simulation({

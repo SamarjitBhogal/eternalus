@@ -1,23 +1,31 @@
-import type { LoadoutDtoV1, PersistedLoadout } from '../dto/LoadoutDto';
-import { loadoutKey, validateLoadoutDto } from '../dto/LoadoutDto';
+import type { PersistedLoadout, SavedLoadoutDtoV1 } from '../dto/SavedLoadoutDto';
+import { loadoutKey, validateSavedLoadoutDto } from '../dto/SavedLoadoutDto';
 import { LOADOUT_STORE, QUARANTINE_STORE } from '../schema/migrations';
 import type { StorageAdapter, StorageTx } from '../StorageAdapter.types';
 import { readOrQuarantine } from './readOrQuarantine';
 import type { QuarantineReport, WarnReporter } from './readOrQuarantine.types';
 
 /**
- * Reads and writes the loadout a profile keeps for each Legend (`specId`, DEC-354 (1)). Every read
- * goes through `readOrQuarantine`: a corrupt record is quarantined and reported as missing, so the
- * caller falls back to the auto-build (architecture 14 §8). A well-formed record naming a weapon content no
- * longer has is returned as it is: `LoadoutController` repairs it with core's `repairLoadout`.
+ * Reads and writes the loadout a profile keeps for each Legend (`specId`, DEC-354 (1)) as a
+ * `SavedLoadoutDtoV1` (architecture 14 §7, DEC-418 (1)). Callers pass and get a
+ * `PersistedLoadout`, mapped from and to the record's `loadout` here (14 §3). Every read goes
+ * through `readOrQuarantine`: a corrupt record (a flat one saved before DEC-418 (1) included) is
+ * quarantined and reported as missing, so the caller falls back to the auto-build (architecture 14
+ * §8). A well-formed record naming a weapon content no longer has is returned as it is:
+ * `LoadoutController` repairs it with core's `repairLoadout`.
  */
 export class LoadoutRepository {
   private readonly adapter: StorageAdapter;
+  private readonly now: () => number;
   private readonly report: QuarantineReport;
 
-  /** `now` is wall-clock milliseconds, used only to date quarantined records. */
+  /**
+   * `now` is wall-clock milliseconds: it dates each saved loadout (`updatedAt`) and each
+   * quarantined record.
+   */
   public constructor(adapter: StorageAdapter, now: () => number, warn: WarnReporter) {
     this.adapter = adapter;
+    this.now = now;
     this.report = { now, warn };
   }
 
@@ -48,14 +56,19 @@ export class LoadoutRepository {
     });
   }
 
-  /** Replaces the loadout `profileId` keeps for `specId`. */
+  /**
+   * Replaces the loadout `profileId` keeps for `specId`, dated now. The record has no name: a
+   * profile keeps one loadout per Legend.
+   */
   public save(profileId: string, specId: string, loadout: PersistedLoadout): Promise<void> {
-    const dto: LoadoutDtoV1 = {
+    const dto: SavedLoadoutDtoV1 = {
       schemaVersion: 1,
       id: loadoutKey(profileId, specId),
       profileId,
       specId,
-      primaryWeaponId: loadout.primaryWeaponId,
+      name: null,
+      updatedAt: this.now(),
+      loadout: { primaryWeaponId: loadout.primaryWeaponId },
     };
     return this.adapter.transaction([LOADOUT_STORE], 'readwrite', (tx) =>
       tx.put(LOADOUT_STORE, dto),
@@ -72,10 +85,10 @@ export class LoadoutRepository {
       {
         store: LOADOUT_STORE,
         key: loadoutKey(profileId, specId),
-        validate: (raw) => validateLoadoutDto(raw),
+        validate: (raw) => validateSavedLoadoutDto(raw),
       },
       this.report,
     );
-    return dto === null ? null : { primaryWeaponId: dto.primaryWeaponId };
+    return dto === null ? null : { primaryWeaponId: dto.loadout.primaryWeaponId };
   }
 }

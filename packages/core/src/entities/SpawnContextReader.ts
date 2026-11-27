@@ -132,13 +132,17 @@ export class SpawnContextReader {
     return typeof mapFeatureId === 'string' ? mapFeatureId : null;
   }
 
-  /** The context's `Placement.loadout`, or `null` when it gives none or not a loadout. */
+  /**
+   * The context's `Placement.loadout`, or `null` when it gives none or not a loadout. Its Legend
+   * (`specId`) must be a string or `null`, as `Loadout` says.
+   */
   public loadout(context: unknown): Loadout | null {
     const { loadout } = SpawnContextReader.fields(context);
     if (!SpawnContextReader.isObject(loadout)) return null;
-    const { classId, primaryWeaponId } = loadout;
-    return typeof classId === 'string' && typeof primaryWeaponId === 'string'
-      ? { classId, primaryWeaponId }
+    const { classId, specId, primaryWeaponId } = loadout;
+    const isSpecId = specId === null || typeof specId === 'string';
+    return typeof classId === 'string' && isSpecId && typeof primaryWeaponId === 'string'
+      ? { classId, specId, primaryWeaponId }
       : null;
   }
 

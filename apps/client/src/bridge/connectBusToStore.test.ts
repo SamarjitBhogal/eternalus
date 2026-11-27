@@ -310,7 +310,6 @@ describe('connectBusToStore', () => {
     const loadouts = {
       options: {
         knight: {
-          classId: 'warrior',
           defaultWeaponId: 'a',
           weapons: [{ id: 'a', displayName: 'A' }],
         },
