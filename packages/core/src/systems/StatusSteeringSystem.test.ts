@@ -114,6 +114,22 @@ describe('StatusSteeringSystem', () => {
     expect(velocityOf(runner).x).toBeLessThan(0);
   });
 
+  it('stops a unit whose running Fear is reapplied as a cower (the reapply keeps the old heading)', () => {
+    const { state, dummy, fear, tick, velocityOf } = setUp();
+    fear(dummy, 'flee-source');
+    for (let step = 0; step < 10; step += 1) {
+      tick();
+      state.advanceTick();
+    }
+    expect(velocityOf(dummy).x).toBeLessThan(0);
+
+    fear(dummy, 'cower');
+    for (let step = 0; step < 30; step += 1) tick();
+
+    const { x, y } = velocityOf(dummy);
+    expect(Math.hypot(x, y)).toBe(0);
+  });
+
   it('steers nothing without a steering status, and leaves the own heading to walk by', () => {
     const { dummy, tick, velocityOf } = setUp();
     dummy.getComponent(Movement).steer({ x: 0, y: 1 });

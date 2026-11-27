@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { doesCircleOverlapPolygon } from '../utils/circlePolygon';
+import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
 import { CollisionResolver } from './CollisionResolver';
 import { StaticCollisionIndex } from './StaticCollisionIndex';
 
@@ -151,6 +152,12 @@ describe('CollisionResolver', () => {
       expect(wall().hitsWall({ x: 0, y: 0 }, EAST, 4, 0.5)).toBe(false);
       expect(wall().hitsWall({ x: 4.4, y: 0 }, { x: 0, y: 1 }, 8, 0.5)).toBe(false);
       expect(wall().hitsWall({ x: 4.4, y: 0 }, { x: -1, y: 0 }, 8, 0.5)).toBe(false);
+    });
+
+    it('counts a touch only when it comes more than CONTACT_EPSILON before the end of the move', () => {
+      // The circle touches the wall after 4.5 m.
+      expect(wall().hitsWall({ x: 0, y: 0 }, EAST, 4.5 + CONTACT_EPSILON / 2, 0.5)).toBe(false);
+      expect(wall().hitsWall({ x: 0, y: 0 }, EAST, 4.5 + CONTACT_EPSILON * 2, 0.5)).toBe(true);
     });
 
     it('is false where the edge of the bounds stops the move first: the edge is not a wall', () => {

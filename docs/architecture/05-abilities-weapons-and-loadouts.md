@@ -1170,7 +1170,7 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     decision 4); a knock-back's base mass and travel time are in
     `content/abilities/knockback.ts`, and `loadKnockback` converts the travel time to ticks at load
     (03 §8, DEC-241). A target whose knock-back a wall stops short (a map object, a wall, a
-    placed wall or a structure; not the map's edge) takes the knock-back's `impactDamage` (40),
+    placed wall or a structure; not the map's edge) takes the knock-back's `impactDamage`,
     once per push, credited to the caster, through the `DamagePipeline` (DEC-382, `INBOX.md`
     HC-B43 (6); the test is `CollisionQuery.hitsWall`, [10](10-physics.md)). A unit that the
     push-out of a new Shield Wall cannot free takes the same damage (the Shield Wall bullet
@@ -1441,7 +1441,7 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   ultimate (`content/abilities/berserk.ts`): targeting `self` and one `buff` step, as Fury. The
   status `content/status-effects/berserk.ts` lasts 12 s (`refresh`) and has four modifiers:
   `damageDealt` × 1.5, `damageTaken` × 0.7, `moveSpeed` × 1.2 and `size` × 1.3 (`TUNE`,
-  `balancing.md`). A fifth modifier, `acceleration` × 1.2, makes the Sentinel speed up 20% faster
+  `balancing.md`). A fifth modifier, `acceleration`, makes the Sentinel speed up faster
   too, so Berserk helps from a stop (DEC-382 (R5 B)). Where the code adds to §8:
   - **`acceleration` stat.** `StatusStat` has a seventh member, `acceleration`. `MovementSystem`
     passes `multiplier('acceleration')` to `Movement.advance`, which scales the speed-up toward a
@@ -1520,8 +1520,10 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     preview and the cast use one rule. `AimTargeting` copies the result into the step. The
     painter (`aimShapePainters.ts`) draws exactly that outline, red where it is refused, and
     draws nothing for `null`. The client keeps no copy of the turning rule. The preview asks
-    from where the Legend is drawn, as a dash's reach does. A Duel draws no range overlay, so it
-    has no port.
+    from where the Legend is drawn, as a dash's reach does. The cast is checked from the
+    simulation's position on the next tick. So near a wall, while the Legend moves, the colour can
+    be wrong by up to one tick of movement (a dash's reach has the same limit). A Duel draws no
+    range overlay, so it has no port.
   - **Not built.** DEC-307's stop of a charging Sentinel comes with PR 8; the wall blocks walking
     and dashes like a map wall. `NoMapObjectOverlapInvariant` does not check placed walls
     (`INBOX.md` HC-S14, scheduled with PR 8).
@@ -1536,7 +1538,7 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   under 30% health, 90 to those at or above it, an execute at or below 10%, a 1.5 m knock-back of
   those under 30%, one bleed stack, then `feared` on the enemies in the circle of the fan's range.
   DEC-382 holds the owner's answers to the cards "PR6 R1" to "PR6 R3" and "PR6 R6" (2026-11-26).
-  Its ability potency grows 8% per level (`scaling.amount.perLevel` 0.08, DEC-380 (2)).
+  Its ability potency grows per level by its `scaling.amount.perLevel` (DEC-380 (2)).
   Where the code differs from §3 and §8:
   - **`cone` (§3).** `{ kind: 'cone', reach, arcDegrees }` (`abilities/shapes/ConeShape.ts`): a fan
     from the caster along the cast's aim, `reach` metres past the caster's body edge (as a melee
@@ -1558,7 +1560,7 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     is spared (DEC-382 (R6 A); DEC-206 (1) says "every enemy in the fan"). An
     `execute` step with no `families` kills an enemy of any family.
   - **Fear (§8).** `feared` (`content/status-effects/feared.ts`): half speed, `cannot-attack`,
-    `cannot-cast`, soft control, 2 to 4 s (`durationSeconds` 2, `maxDurationSeconds` 4), and
+    `cannot-cast`, soft control, a time from its `durationSeconds` to its `maxDurationSeconds`, and
     `steering: ['flee-source', 'cower']`: each Fear runs away or cowers (DEC-382 (R3 D)). A
     status's `steering` lists the forms it may take; each form names a `StatusSteering` strategy
     (`entities/strategies/`, the `steering` key of the strategy registry).

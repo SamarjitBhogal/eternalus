@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { StatusEffectApplier } from '../../combat/StatusEffectApplier';
 import { StatusEffects } from '../../components/StatusEffects';
+import { Transform } from '../../components/Transform';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { loadStatusEffects } from '../../content/status-effects/loadStatusEffects';
 import { STATUS_EFFECTS } from '../../content/status-effects/statusEffectCatalogue';
@@ -121,6 +122,13 @@ describe('BuffEffect.casterBlockedBy (Berserk needs room, DEC-382, HC-Q113)', ()
     expect(roomSetUp([wallAt(1.5)]).check('berserk')).toBeNull();
     expect(roomSetUp([]).check('berserk')).toBeNull();
     expect(roomSetUp(null).check('berserk')).toBeNull();
+  });
+
+  it('measures the grown body from the built radius and the statuses, not from the scale now', () => {
+    const { sentinel, check } = roomSetUp(GAP);
+    sentinel.getComponent(Transform).resize(0.5); // a scale BodySizeSystem has not set back yet
+
+    expect(check('berserk')).toBe('no-room');
   });
 
   it('takes a status that does not grow the body, and a recast of one the caster holds already', () => {

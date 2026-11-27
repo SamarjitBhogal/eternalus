@@ -34,6 +34,11 @@ export class Transform {
     return this.baseRadius * this.currentScale;
   }
 
+  /** The footprint radius at `scale` times the built radius, without a resize (a size to test for room). */
+  public radiusAt(scale: number): number {
+    return this.baseRadius * scale;
+  }
+
   /** How many times the built radius the footprint is now (1 = as built). */
   public get scale(): number {
     return this.currentScale;

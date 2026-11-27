@@ -31,6 +31,14 @@ describe('Transform', () => {
     expect(transform.radius).toBe(1.25);
   });
 
+  it('gives the radius at a scale from the built one, whatever its scale now, and does not resize', () => {
+    const transform = new Transform({ x: 0, y: 0 }, 1.25);
+    transform.resize(2);
+
+    expect(transform.radiusAt(1.3)).toBeCloseTo(1.625, 12);
+    expect(transform.radius).toBe(2.5);
+  });
+
   it('rejects a scale that is not positive, and keeps the radius it had', () => {
     const transform = new Transform({ x: 0, y: 0 }, 0.5);
 

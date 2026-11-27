@@ -72,7 +72,7 @@ export class BuffEffect implements AbilityEffect<BuffSpec> {
     ) {
       return null;
     }
-    const radius = (transform.radius / transform.scale) * statuses.multiplier('size') * growth;
+    const radius = transform.radiusAt(statuses.multiplier('size') * growth);
     return placeWithRoom(state.collisions, transform.position, radius) === null ? 'no-room' : null;
   }
 
