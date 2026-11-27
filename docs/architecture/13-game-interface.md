@@ -583,11 +583,6 @@ difference is registered in
 
 ## 10. Implementation status
 
-Boss phase (2026-11-27, DEC-417): core builds `dev-set-boss-phase { entityId, phase }`
-(`DevSetBossPhaseHandler`, replayable like every developer command). Its developer-menu button
-waits for the developer menu, which this line does not have yet; it is added in the same branch
-once the menu is merged in.
-
 Built (Sprint 1, sessions D and F): the bridge (`bridge/`), the session shell and menu screens,
 and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver`, `InputMapper`,
 `KeyboardDevice` and `MouseDevice`, `SettingsController`, `settingsSlice`, `KeyGlyph`, `Prompt`,

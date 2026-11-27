@@ -420,8 +420,8 @@ work named:
   in place of a chase would let a kiting Legend hold the boss still, and the boss roars only at
   its entrance (`INBOX.md`, the brain item's (8), asks whether it roars when it turns `hurt`).
   The halt and the turn toward the target before a move (below) wait for the owner's sign-off
-  (`INBOX.md`, the brain item's (9)). The developer command `dev-set-boss-phase` sets the phase;
-  its developer-menu button waits for the developer menu on this line. Differences from §4.6,
+  (`INBOX.md`, the brain item's (9)). The developer command `dev-set-boss-phase` sets the phase
+  (the developer menu's Boss phase section, 13 §4). Differences from §4.6,
   each closed by the work named: a move is not cast through `cast-ability` and an `AbilityEffect`
   (abilities are Phase 4) but through the interim `boss-move { actorId, moveId, targetId? }` command:
   `BossMoveHandler` accepts it only from a boss and only for a move of its own profile, halts the
