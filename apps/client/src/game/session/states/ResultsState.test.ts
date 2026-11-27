@@ -108,4 +108,17 @@ describe('ResultsState', () => {
 
     expect(context.calls.transition).toEqual([]);
   });
+
+  it('starts no countdown after a Duel and stays until the player leaves (SCRUM-449)', () => {
+    const context = new FakeSessionContext();
+    context.hasCountdown = false;
+    const countdown: number[] = [];
+    context.bus.on('countdown', ({ remainingMs }) => countdown.push(remainingMs));
+    new ResultsState().enter(context);
+
+    context.clock.advance(RESULTS_COUNTDOWN_MS * 2);
+
+    expect(countdown).toEqual([]);
+    expect(context.calls.transition).toEqual([]);
+  });
 });
