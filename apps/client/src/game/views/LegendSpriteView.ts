@@ -46,12 +46,11 @@ export class LegendSpriteView extends LegendView {
 
   /**
    * How far the sprite's top stands above the entity's position, so the health bar sits above
-   * the sprite; the footprint radius for a Legend this view draws without a sprite.
+   * the sprite; `LegendView`'s radius for a Legend this view draws without a sprite, or when no
+   * entity is given (`LegendView.draw`).
    */
-  public visualRadiusOf(entity: EntitySnapshot): number {
-    const sprite = this.spriteOf(entity);
-    return sprite === null
-      ? (entity.transform?.radius ?? 0)
-      : this.width * (1 - sprite.groundOffset);
+  public override visualRadiusOf(entity?: EntitySnapshot): number {
+    const sprite = entity === undefined ? null : this.spriteOf(entity);
+    return sprite === null ? super.visualRadiusOf() : this.width * (1 - sprite.groundOffset);
   }
 }

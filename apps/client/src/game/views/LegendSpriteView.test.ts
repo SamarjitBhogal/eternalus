@@ -2,7 +2,7 @@ import type { EntitySnapshot } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
-import { FOCUS_RING_COLOR } from './entityViews.constants';
+import { FOCUS_RING_COLOR, LEGEND_VISUAL_DIAMETER } from './entityViews.constants';
 import { LegendSpriteView } from './LegendSpriteView';
 import { LEGEND_SPRITE_RING_SCALE } from './LegendSpriteView.constants';
 import { LegendView } from './LegendView';
@@ -56,7 +56,7 @@ describe('LegendSpriteView', () => {
     expect(view.visualRadiusOf(entity)).toBeCloseTo(6.8 * 0.75);
   });
 
-  it('draws any other Legend as the ordinary Legend view, with its footprint radius', () => {
+  it("draws any other Legend as the ordinary Legend view, with LegendView's radius", () => {
     const view = new LegendSpriteView(() => null, 6.8);
     const drawn = new RecordingRenderer();
     const ordinary = new RecordingRenderer();
@@ -64,7 +64,7 @@ describe('LegendSpriteView', () => {
     new LegendView().draw(state, ordinary);
 
     expect(drawn.calls).toEqual(ordinary.calls);
-    expect(view.visualRadiusOf(entity)).toBe(0.75);
+    expect(view.visualRadiusOf(entity)).toBe(LEGEND_VISUAL_DIAMETER / 2);
   });
 
   it('keeps the Legend minimap marker', () => {
