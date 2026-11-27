@@ -8,12 +8,13 @@ import { veterancyOf } from './veterancyOf';
 
 /**
  * Minion XP (game doc, MVP-if-time; architecture 18 MS-16): a lane minion (a horde member) or a
- * tower guard (DEC-165) that kills a lane minion, a tower guard or a camp mob counts the kill in
- * its `Veterancy`; every `killsPerLevel`-th kill announces a level (`minion-level-earned`), which
- * `MinionLevelSystem` applies with its effects (DEC-353 (a)). Every `aura.everyTicks`, each unit
- * with a level gives the aura status to the other friendly horde minions and tower guards
- * (DEC-165) within `aura.radius`. Kills come from `entity-died`, counted on this system's pass; it
- * runs after every system that deals damage and before `DeathSystem`.
+ * guard whose plan can level (tower guards, DEC-165; forest-camp mobs and checkpoint defenders,
+ * DEC-260; the capture point boss group, DEC-350) that kills a lane minion, a tower guard or a camp
+ * mob counts the kill in its `Veterancy`; every `killsPerLevel`-th kill announces a level
+ * (`minion-level-earned`), which `MinionLevelSystem` applies with its effects (DEC-353 (a)). Every
+ * `aura.everyTicks`, each unit with a level gives the aura status to the other friendly levellers
+ * within `aura.radius`. Kills come from `entity-died`, counted on this system's pass; it runs after
+ * every system that deals damage and before `DeathSystem`.
  */
 export class VeterancySystem implements System {
   public readonly name = 'veterancy';
@@ -66,14 +67,12 @@ export class VeterancySystem implements System {
   }
 
   /**
-   * DEC-165: lane minions and tower guards level from their kills and are rallied by the aura;
-   * camp mobs (neutral posts) do neither.
+   * Lane minions level from their kills and are rallied by the aura, and so does a guard whose
+   * post's plan says it can (`canLevel`: tower guards, DEC-165; forest-camp mobs and checkpoint
+   * defenders, DEC-260; the capture point boss group, DEC-350).
    */
   private static isLeveller(state: GameState, id: EntityId): boolean {
-    const post = state.guards.slotOf(id);
-    return (
-      state.hordes.hordeOf(id) !== undefined || (post !== undefined && post.team !== 'neutral')
-    );
+    return state.hordes.hordeOf(id) !== undefined || state.guards.slotOf(id)?.canLevel === true;
   }
 
   /** DEC-165: a lane minion, tower guard or camp mob counts as a kill for a leveller that kills it. */

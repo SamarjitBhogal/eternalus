@@ -31,6 +31,18 @@ export type XpSourcesDefinition = {
    */
   readonly campCleared: Readonly<Record<string, number>>;
   /**
+   * A cleared checkpoint set (07 §7): `xp[checkpoint]` shared among the clearing team's living
+   * Legends within `shareRadius` metres of where its last defender fell, `share_i = xp × (evenShare
+   * / n + (1 − evenShare) × damage_i / totalDamage)`, damage being what each of them dealt to the
+   * set's defenders. With no damage among them, an even split. A checkpoint with no entry pays
+   * nothing.
+   */
+  readonly checkpointCleared: {
+    readonly xp: Readonly<Record<number, number>>;
+    readonly shareRadius: number;
+    readonly evenShare: number;
+  };
+  /**
    * The mobs whose kill pays every Legend of the killer's team instead of the killer, by mob
    * definition id: `xp` each, but never more than lifts a Legend `maxLevels` levels (DEC-237).
    */

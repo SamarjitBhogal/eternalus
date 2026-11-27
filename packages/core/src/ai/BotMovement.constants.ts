@@ -4,4 +4,5 @@ export const NO_PATH = {
   pathGoalY: null,
   pathStepX: null,
   pathStepY: null,
+  pathVersion: null,
 } as const;

@@ -31,6 +31,8 @@ export type BotMemory = {
   readonly pathStepX: number | null;
   /** Path cache: y of the waypoint that search gave; `null` when none is cached. */
   readonly pathStepY: number | null;
+  /** Path cache: `PathQuery.version` when that search ran; `null` when none is cached. */
+  readonly pathVersion: number | null;
 };
 
 /** What the bot controllers read besides the state, injected so they hold no content. */
