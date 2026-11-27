@@ -15,6 +15,7 @@ describe('ResourceController world atlases', () => {
             type: 'sprite-atlas',
             columns: 6,
             rows: 10,
+            groundOffset: 0.1,
             group: 'match',
             file: { url: 'sheet.webp', bytes: 100, hash: 'test' },
             licence: 'owner',

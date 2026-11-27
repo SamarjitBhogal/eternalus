@@ -24,8 +24,8 @@ const entity: EntitySnapshot = {
 };
 const state = { entity, position: { x: 1, y: 2 }, isFocused: true, facing: { x: 0, y: 1 } };
 const FRAME = { atlasId: 'oracle-sprites', frame: 3 } as const;
-/** `FRAME` on a sheet whose feet stand a quarter of the cell above its bottom edge. */
-const SPRITE = { frame: FRAME, groundOffset: 0.25 } as const;
+/** `FRAME`, whose top stands 5.1 m above its feet (the renderer gives it from the sheet's data). */
+const SPRITE = { frame: FRAME, top: 5.1 } as const;
 
 describe('LegendSpriteView', () => {
   it('draws the frame with its feet on the position, then the team ring and the focus ring', () => {
@@ -33,11 +33,8 @@ describe('LegendSpriteView', () => {
     new LegendSpriteView(() => SPRITE, 6.8).draw(state, renderer);
     const glyphs = renderer.calls.flatMap((call) => (call.op === 'drawWorldGlyph' ? [call] : []));
 
-    // The cell's bottom edge is 0.25 x 6.8 below the feet, so the feet stand on (1, 2).
-    expect(renderer.calls[0]).toEqual({
-      op: 'drawSprite',
-      args: [FRAME, { x: 1, y: 2 + 6.8 * 0.25 }, 6.8],
-    });
+    // The view passes only the position and the width: the renderer stands the sprite on its feet.
+    expect(renderer.calls[0]).toEqual({ op: 'drawSprite', args: [FRAME, { x: 1, y: 2 }, 6.8] });
     expect(glyphs[0]?.args).toEqual([
       { shape: 'ring', size: 6.8 * LEGEND_SPRITE_RING_SCALE },
       { x: 1, y: 2 },
@@ -53,7 +50,7 @@ describe('LegendSpriteView', () => {
   it('gives the sprite top for the health bar and keeps the 2.6 m click radius (DEC-238)', () => {
     const view = new LegendSpriteView(() => SPRITE, 6.8);
 
-    expect(view.visualTopOf(entity)).toBeCloseTo(6.8 * 0.75);
+    expect(view.visualTopOf(entity)).toBe(5.1);
     expect(view.visualRadiusOf()).toBe(LEGEND_VISUAL_DIAMETER / 2);
   });
 

@@ -37,7 +37,21 @@ export type SpriteAtlas = {
   readonly image: ImageBitmap;
   readonly columns: number;
   readonly rows: number;
+  /**
+   * Where the feet stand in each cell: their height above the cell's bottom edge, as a share of
+   * the cell's height, from 0 to 1 (the sheet's manifest entry; 14 §11).
+   */
+  readonly groundOffset: number;
 };
 
 /** The grid part of an atlas: what `atlasWithFrame` checks a frame against. */
 export type AtlasGrid = Pick<SpriteAtlas, 'columns' | 'rows'>;
+
+/**
+ * What the renderer measures a sprite with (`spriteMeasures.ts`): the grid, the feet and the image's
+ * pixel size, which gives the shape of a cell.
+ */
+export type AtlasShape = AtlasGrid &
+  Pick<SpriteAtlas, 'groundOffset'> & {
+    readonly image: Pick<SpriteAtlas['image'], 'width' | 'height'>;
+  };

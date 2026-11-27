@@ -13,6 +13,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { matchResultFixture } from '../bridge/__fixtures__/matchResultFixtures';
 import type { BridgeEventMap, MatchClock } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { shapesOf } from './__fixtures__/sheetShapes';
 import { sheetsFor } from './__fixtures__/sheetsFor';
 import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
@@ -378,7 +379,7 @@ describe('Match lifecycle', () => {
     const match = new Match({
       ...deps,
       legendSheets: sheetsFor('knight'),
-      renderer: new RecordingRenderer({ 'knight-sprites': { columns: 6, rows: 10 } }),
+      renderer: new RecordingRenderer(shapesOf('knight-sprites')),
     });
     match.start();
 
@@ -421,11 +422,9 @@ describe('Match lifecycle', () => {
     const match = new Match({
       ...deps,
       legendSheets: sheetsFor('oracle', 'knight', 'juggernaut'),
-      renderer: new RecordingRenderer({
-        'oracle-sprites': { columns: 6, rows: 10 },
-        'knight-sprites': { columns: 6, rows: 10 },
-        'juggernaut-sprites': { columns: 6, rows: 10 },
-      }),
+      renderer: new RecordingRenderer(
+        shapesOf('oracle-sprites', 'knight-sprites', 'juggernaut-sprites'),
+      ),
     });
     match.start();
     deps.scheduler.advance(0);

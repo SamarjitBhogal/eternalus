@@ -10,6 +10,8 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { shapesOf } from './__fixtures__/sheetShapes';
+import { spriteTopOf } from './engine/render/spriteMeasures';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
 import type { LegendSpriteSheet } from './legendSpriteSheets.types';
@@ -21,9 +23,8 @@ import { LegendView } from './views/LegendView';
 const TICK_RATE = 30;
 const KNIGHT_SHEET = LEGEND_SPRITE_SHEETS.knight;
 const ORACLE_SHEET = LEGEND_SPRITE_SHEETS.oracle;
-const KNIGHT_GROUND_OFFSET = KNIGHT_SHEET?.groundOffset ?? Number.NaN;
-const KNIGHT_GRID = { 'knight-sprites': { columns: 6, rows: 10 } };
-const BOTH_GRIDS = { ...KNIGHT_GRID, 'oracle-sprites': { columns: 6, rows: 10 } };
+const KNIGHT_GRID = shapesOf('knight-sprites');
+const BOTH_GRIDS = shapesOf('knight-sprites', 'oracle-sprites');
 
 /** The sheets by sub-class id, as `matchLegendSheets` gives them. */
 const sheetsOf = (
@@ -141,7 +142,7 @@ describe('LegendSprites', () => {
     ).toEqual([['WARN', 'client.views', { atlasId: 'knight-sprites' }]]);
   });
 
-  it('draws the sprite at the shared Legend width with the sheet ground offset', () => {
+  it('draws the sprite with its feet on the position, at the shared Legend width', () => {
     const { logger, sprites } = spritesWith(sheetsOf(['knight', KNIGHT_SHEET]), KNIGHT_GRID);
     const renderer = new RecordingRenderer();
     sprites.view?.draw(
@@ -152,11 +153,7 @@ describe('LegendSprites', () => {
     expect(sprites.view).toBeInstanceOf(LegendSpriteView);
     expect(renderer.calls[0]).toEqual({
       op: 'drawSprite',
-      args: [
-        { atlasId: 'knight-sprites', frame: 0 },
-        { x: 10, y: 20 + LEGEND_VISUAL_DIAMETER * KNIGHT_GROUND_OFFSET },
-        LEGEND_VISUAL_DIAMETER,
-      ],
+      args: [{ atlasId: 'knight-sprites', frame: 0 }, { x: 10, y: 20 }, LEGEND_VISUAL_DIAMETER],
     });
     expect(logger.records).toEqual([]);
   });
@@ -190,22 +187,18 @@ describe('LegendSprites', () => {
     sprites.destroy();
   });
 
-  it("anchors each Legend's sprite with its own sheet's ground offset", () => {
+  it("puts each Legend's bar on its own sheet's sprite top, from the sheet's data", () => {
     const { sprites } = spritesWith(sheetsOf(['knight', KNIGHT_SHEET], ['oracle', ORACLE_SHEET]));
-    const anchorY = (entity: EntitySnapshot): unknown => {
-      const renderer = new RecordingRenderer();
-      sprites.view?.draw(
-        { entity, position: { x: 0, y: 0 }, facing: { x: 0, y: 1 }, isFocused: false },
-        renderer,
-      );
-      const call = renderer.calls.find(({ op }) => op === 'drawSprite');
-      return call?.op === 'drawSprite' ? call.args[1].y : undefined;
+    const top = (atlasId: string): number | undefined => {
+      const shape = BOTH_GRIDS[atlasId];
+      return shape === undefined ? undefined : spriteTopOf(shape, LEGEND_VISUAL_DIAMETER);
     };
 
-    expect([anchorY(HERO), anchorY(BOT)]).toEqual([
-      LEGEND_VISUAL_DIAMETER * KNIGHT_GROUND_OFFSET,
-      LEGEND_VISUAL_DIAMETER * (ORACLE_SHEET?.groundOffset ?? Number.NaN),
+    expect([sprites.view?.visualTopOf?.(HERO), sprites.view?.visualTopOf?.(BOT)]).toEqual([
+      top('knight-sprites'),
+      top('oracle-sprites'),
     ]);
+    expect(top('knight-sprites')).not.toBeCloseTo(top('oracle-sprites') ?? 0);
     sprites.destroy();
   });
 

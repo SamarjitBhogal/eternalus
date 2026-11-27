@@ -14,6 +14,7 @@ export const MAGUS_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
     group: 'atlas-catalyst',
     columns: 6,
     rows: 10,
+    groundOffset: 0.35, // TUNE: provisional; magus-sprite-provenance.md records no ground baseline
     licence: 'owner',
     source:
       'AI-generated from owner catalyst-card-art, Figma frame 58:271 (DEC-51); six-by-ten grid; lossless WebP; see docs/reference/magus-sprite-provenance.md',
@@ -34,6 +35,7 @@ export const MAGUS_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
     group: 'atlas-oracle',
     columns: 6,
     rows: 10,
+    groundOffset: 0.35, // TUNE: provisional; magus-sprite-provenance.md records no ground baseline
     licence: 'owner',
     source:
       'AI-generated from owner oracle-card-art, Figma frame 58:271 (DEC-51); six-by-ten grid; lossless WebP; see docs/reference/magus-sprite-provenance.md',
@@ -54,6 +56,7 @@ export const MAGUS_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
     group: 'atlas-necromancer',
     columns: 6,
     rows: 10,
+    groundOffset: 0.35, // TUNE: provisional; magus-sprite-provenance.md records no ground baseline
     licence: 'owner',
     source:
       'AI-generated from owner necromancer-card-art, Figma frame 58:271 (DEC-51); six-by-ten grid; lossless WebP; see docs/reference/magus-sprite-provenance.md',

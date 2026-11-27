@@ -41,6 +41,8 @@ export class LegendSprites {
 
   private readonly tickRate: number;
 
+  private readonly renderer: LegendSpritesDeps['renderer'];
+
   /** The tick the current frame shows (the snapshot's tick plus the frame's `alpha`). */
   private frameTick = 0;
 
@@ -58,6 +60,7 @@ export class LegendSprites {
       logger,
     } = deps;
     this.tickRate = tickRate;
+    this.renderer = renderer;
     for (const [specId, sheet] of legendSheets) {
       if (renderer.hasSprite({ atlasId: sheet.atlasId, frame: 0 })) {
         this.loaded.set(specId, sheet);
@@ -118,7 +121,8 @@ export class LegendSprites {
       return null;
     }
     const frame = this.animationOf(entity, sheet).frame(entity, this.frameTick);
-    return frame === null ? null : { frame, groundOffset: sheet.groundOffset };
+    const top = frame === null ? null : this.renderer.spriteTop(frame, LEGEND_VISUAL_DIAMETER);
+    return frame === null || top === null ? null : { frame, top };
   }
 
   /** The loaded sheet of a Legend's sub-class, or `undefined` for any other entity. */

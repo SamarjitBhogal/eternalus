@@ -9,14 +9,16 @@ import type { LegendSpriteFrame } from './LegendSpriteView.types';
 import { LegendView } from './LegendView';
 
 /**
- * Draws a Legend as an atlas sprite with its feet on the entity's position. A Legend that has no
- * sprite this frame (`spriteOf` gives `null`: no sheet, an atlas that did not load, or dead) keeps
- * the ordinary Legend view. Each Legend is decided on its own (DEC-378 (2)).
+ * Draws a Legend as an atlas sprite with its feet on the entity's position: the view passes only
+ * the position and the width, and the renderer stands the sprite on its feet (the sheet's own
+ * data; DEC-398, card PR170 (8)). A Legend that has no sprite this frame (`spriteOf` gives
+ * `null`: no sheet, an atlas that did not load, or dead) keeps the ordinary Legend view. Each
+ * Legend is decided on its own (DEC-378 (2)).
  */
 export class LegendSpriteView extends LegendView {
   /**
-   * @param spriteOf - The sprite to draw for an entity (its frame and its sheet's ground offset),
-   *   or `null` for the ordinary Legend view.
+   * @param spriteOf - The sprite to draw for an entity (its frame and its top above the feet), or
+   *   `null` for the ordinary Legend view.
    * @param width - The sprite's width in world units; the cells are square, so also its height.
    */
   public constructor(
@@ -34,8 +36,7 @@ export class LegendSpriteView extends LegendView {
       super.draw(state, renderer);
       return;
     }
-    const anchor = { x: position.x, y: position.y + this.width * sprite.groundOffset };
-    renderer.drawSprite(sprite.frame, anchor, this.width);
+    renderer.drawSprite(sprite.frame, position, this.width);
     const ring = { shape: 'ring', size: this.width * LEGEND_SPRITE_RING_SCALE } as const;
     renderer.drawWorldGlyph(ring, position, this.colorOf(entity.team));
     drawFacingChevron(state, renderer);
@@ -51,6 +52,6 @@ export class LegendSpriteView extends LegendView {
    */
   public visualTopOf(entity: EntitySnapshot): number {
     const sprite = this.spriteOf(entity);
-    return sprite === null ? this.visualRadiusOf() : this.width * (1 - sprite.groundOffset);
+    return sprite === null ? this.visualRadiusOf() : sprite.top;
   }
 }

@@ -7,10 +7,17 @@ export class SpriteAtlasLoader implements AssetLoader<SpriteAtlasAsset> {
   public readonly type = 'sprite-atlas';
   /** The injected decoder owns network access; tests supply in-memory bitmaps. */
   public constructor(private readonly decode: (url: string) => Promise<ImageBitmap>) {}
-  /** Validates frame geometry once at the asset boundary. */
+  /**
+   * Validates the frame geometry and the feet (`groundOffset`, 0 to 1) once at the asset
+   * boundary.
+   */
   public async load(entry: AssetManifestEntry, url: string): Promise<SpriteAtlasAsset> {
     if (entry.type !== this.type)
       throw new Error('SpriteAtlasLoader requires a sprite-atlas entry');
+    const { groundOffset } = entry;
+    if (!Number.isFinite(groundOffset) || groundOffset < 0 || groundOffset > 1) {
+      throw new Error(`Invalid sprite ground offset: ${entry.id}`);
+    }
     const image = await this.decode(url);
     if (
       entry.columns < 1 ||
@@ -23,7 +30,7 @@ export class SpriteAtlasLoader implements AssetLoader<SpriteAtlasAsset> {
       image.close();
       throw new Error(`Invalid sprite grid: ${entry.id}`);
     }
-    return new SpriteAtlasAsset(image, entry.columns, entry.rows);
+    return new SpriteAtlasAsset(image, entry.columns, entry.rows, groundOffset);
   }
   /** Releases decoded GPU/bitmap storage. */
   public release(atlas: SpriteAtlasAsset): void {

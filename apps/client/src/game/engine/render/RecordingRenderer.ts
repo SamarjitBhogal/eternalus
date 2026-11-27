@@ -1,21 +1,22 @@
 import { atlasWithFrame } from './atlasWithFrame';
 import type { Renderer } from './Renderer';
-import type { AtlasGrid } from './Renderer.types';
+import type { AtlasShape } from './Renderer.types';
 import type { RecordedCall } from './RecordingRenderer.types';
+import { spriteTopOf } from './spriteMeasures';
 
 /**
  * A `Renderer` that draws nothing and records every call, in order (architecture 09 §1: every
  * port has a recording fake). Tests use it to check what a view asked the screen to do
- * without a canvas. `toScreen` returns the point unchanged; `hasSprite` answers by the same rule
- * as `Canvas2dRenderer` (`atlasWithFrame`) for the atlas grids it is given. Narrow `calls` on
- * `op` to read a call's arguments with their types.
+ * without a canvas. `toScreen` returns the point unchanged; `hasSprite` and `spriteTop` answer by the same rules
+ * as `Canvas2dRenderer` (`atlasWithFrame`, `spriteTopOf`) for the atlas shapes it is given. Narrow
+ * `calls` on `op` to read a call's arguments with their types.
  */
 export class RecordingRenderer implements Renderer {
   /** Every call so far, oldest first. */
   public readonly calls: RecordedCall[] = [];
 
-  /** Creates a recorder that holds the given atlas grids by manifest id (none by default). */
-  public constructor(private readonly atlases: Readonly<Record<string, AtlasGrid>> = {}) {}
+  /** Creates a recorder that holds the given atlas shapes by manifest id (none by default). */
+  public constructor(private readonly atlases: Readonly<Record<string, AtlasShape>> = {}) {}
 
   /** Records the call. */
   public drawSprite(...args: Parameters<Renderer['drawSprite']>): void {
@@ -26,6 +27,14 @@ export class RecordingRenderer implements Renderer {
   public hasSprite(...args: Parameters<Renderer['hasSprite']>): boolean {
     this.calls.push({ op: 'hasSprite', args });
     return atlasWithFrame(this.atlases, args[0]) !== undefined;
+  }
+
+  /** Records the call and answers by `Canvas2dRenderer`'s rule for its atlas shapes. */
+  public spriteTop(...args: Parameters<Renderer['spriteTop']>): number | null {
+    this.calls.push({ op: 'spriteTop', args });
+    const [sprite, width] = args;
+    const atlas = atlasWithFrame(this.atlases, sprite);
+    return atlas === undefined ? null : spriteTopOf(atlas, width);
   }
 
   /** Records the call. */

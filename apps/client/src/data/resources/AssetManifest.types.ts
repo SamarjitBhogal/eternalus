@@ -141,6 +141,12 @@ export type SpriteAtlasEntry = EntryBase & {
   readonly columns: number;
   /** Rows of frames; the image height divides by it (`SpriteAtlasLoader` checks). */
   readonly rows: number;
+  /**
+   * Where the feet stand in each cell: their height above the cell's bottom edge, as a share of
+   * the cell's height, from 0 to 1 (`SpriteAtlasLoader` checks). The renderer stands the sprite on
+   * its feet, so a new sheet needs no number in the code (DEC-398, card PR170 (8)).
+   */
+  readonly groundOffset: number;
 };
 
 /** One asset of the manifest, including world animation atlases. */

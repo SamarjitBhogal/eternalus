@@ -122,7 +122,7 @@ describe('createBrowserMatch', () => {
     it("hands the atlas of the player's sheet to the renderer: the sprite view, no WARN", () => {
       const image = { width: 384, height: 640, close: vi.fn() };
       const { warnings, lookups } = startWith({
-        'colossus-sprites': new SpriteAtlasAsset(image, 6, 10),
+        'colossus-sprites': new SpriteAtlasAsset(image, 6, 10, 0.1),
       });
 
       expect(lookups).toEqual([['atlas-colossus']]);
@@ -141,8 +141,8 @@ describe('createBrowserMatch', () => {
       const ring = new RingBufferSink(LOG_RING_CAPACITY);
       const image = () => ({ width: 384, height: 640, close: vi.fn() });
       const byGroup: Readonly<Record<string, Readonly<Record<string, SpriteAtlasAsset>>>> = {
-        'atlas-colossus': { 'colossus-sprites': new SpriteAtlasAsset(image(), 6, 10) },
-        'atlas-oracle': { 'oracle-sprites': new SpriteAtlasAsset(image(), 6, 10) },
+        'atlas-colossus': { 'colossus-sprites': new SpriteAtlasAsset(image(), 6, 10, 0.1) },
+        'atlas-oracle': { 'oracle-sprites': new SpriteAtlasAsset(image(), 6, 10, 0.1) },
       };
       const resources = { atlases: vi.fn((group: string) => byGroup[group] ?? {}) };
       const { factory, viewport, request } = setUp(undefined, [ring], resources);

@@ -14,6 +14,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { BridgeEventMap } from '../bridge/events';
 import { MINI_MAP_DESIGN_FRAME, MINI_MAP_RING } from '../bridge/minimapRing';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { shapesOf } from './__fixtures__/sheetShapes';
 import { sheetsFor } from './__fixtures__/sheetsFor';
 import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
@@ -32,7 +33,7 @@ const SEED = 1;
 const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
 /** The player as a Knight (a warrior sub-class), so its snapshot names the Knight's sheet. */
 const KNIGHT_PLAYER: PlayerChoice = { ...PLAYER, specId: 'knight' };
-const KNIGHT_GRID = { 'knight-sprites': { columns: 6, rows: 10 } };
+const KNIGHT_GRID = shapesOf('knight-sprites');
 /** The dark Rover bot, an Oracle (a magus sub-class). */
 const ORACLE_BOT: RosterSlot = {
   pilot: 'bot',
@@ -559,7 +560,7 @@ describe('Match', () => {
   it("draws a bot Legend from its own sub-class's sheet, as the player's from its own", () => {
     const { match, renderer, logger } = setUp(undefined, false, {
       legendSheets: sheetsFor('knight', 'oracle'),
-      atlases: { ...KNIGHT_GRID, 'oracle-sprites': { columns: 6, rows: 10 } },
+      atlases: shapesOf('knight-sprites', 'oracle-sprites'),
       player: KNIGHT_PLAYER,
       bots: [ORACLE_BOT],
     });

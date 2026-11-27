@@ -299,8 +299,11 @@ describe('EntityLayer', () => {
   });
 
   it("puts a sprite Legend's bar on the sprite top, not on its 2.6 m click radius", () => {
-    // The feet stand a tenth of the cell above its bottom edge, so the sprite top is 0.9 cells up.
-    const sprite = { frame: { atlasId: 'knight-sprites', frame: 0 }, groundOffset: 0.1 };
+    // The sprite's top stands 0.9 of its width above the feet (the sheet's data gives it).
+    const sprite = {
+      frame: { atlasId: 'knight-sprites', frame: 0 },
+      top: LEGEND_VISUAL_DIAMETER * 0.9,
+    };
     const layer = new EntityLayer(
       createDefaultViewRegistry(
         undefined,

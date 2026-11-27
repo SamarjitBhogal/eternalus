@@ -25,6 +25,9 @@ export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
       'User-provided 8026e904-46be-4d2c-93ad-40812f27e23e.avif; permission to use and adapt confirmed by Gurshaan 2026-11-12; AI-generated 6-by-10 pixel atlas; see docs/reference/legend-sprite-provenance.md',
     columns: 6,
     rows: 10,
+    // The ground baseline at pixel 119 of each 128-pixel cell (legend-sprite-provenance.md,
+    // "Isolated-pose repair").
+    groundOffset: 9 / 128,
     file: {
       url: assassin,
       bytes: 150240,
@@ -46,6 +49,9 @@ export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
       'User-provided Gemini_Generated_Image_vpyd7fvpyd7fvpyd.jpeg; permission to use and adapt confirmed by Gurshaan 2026-11-12; AI-generated 6-by-10 pixel atlas; see docs/reference/legend-sprite-provenance.md',
     columns: 6,
     rows: 10,
+    // The ground baseline at pixel 119 of each 128-pixel cell (legend-sprite-provenance.md,
+    // "Isolated-pose repair").
+    groundOffset: 9 / 128,
     file: {
       url: knight,
       bytes: 202298,
@@ -67,6 +73,9 @@ export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
       'User-provided ayqniwg53.webp; permission to use and adapt confirmed by Gurshaan 2026-11-12; AI-generated 6-by-10 pixel atlas; see docs/reference/legend-sprite-provenance.md',
     columns: 6,
     rows: 10,
+    // The ground baseline at pixel 119 of each 128-pixel cell (legend-sprite-provenance.md,
+    // "Isolated-pose repair").
+    groundOffset: 9 / 128,
     file: {
       url: paladin,
       bytes: 234572,
@@ -88,6 +97,9 @@ export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
       'User-provided flat750x075f-pad750x1000f8f8f8.jpg; permission to use and adapt confirmed by Gurshaan 2026-11-12; AI-generated 6-by-10 pixel atlas; see docs/reference/legend-sprite-provenance.md',
     columns: 6,
     rows: 10,
+    // The ground baseline at pixel 119 of each 128-pixel cell (legend-sprite-provenance.md,
+    // "Isolated-pose repair").
+    groundOffset: 9 / 128,
     file: {
       url: colossus,
       bytes: 245878,
@@ -109,6 +121,9 @@ export const LEGEND_SPRITE_ASSETS: readonly AssetManifestEntry[] = [
       'User-provided 3a3b993770906ed01544422b12c6fb37.jpg, printed credit https://www.artstation.com/jsraphael; copyright 2021 Arackhan Wars, Nothing But Dreams; permission to use and adapt confirmed by Gurshaan 2026-11-12; AI-generated 6-by-10 pixel atlas; see docs/reference/legend-sprite-provenance.md',
     columns: 6,
     rows: 10,
+    // The ground baseline at pixel 119 of each 128-pixel cell (legend-sprite-provenance.md,
+    // "Isolated-pose repair").
+    groundOffset: 9 / 128,
     file: {
       url: juggernaut,
       bytes: 264830,

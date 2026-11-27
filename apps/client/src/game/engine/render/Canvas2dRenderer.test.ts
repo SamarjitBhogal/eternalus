@@ -3,8 +3,16 @@ import { describe, expect, it, type Mock, vi } from 'vitest';
 import { Canvas2dRenderer } from './Canvas2dRenderer';
 import type { DrawContext } from './Canvas2dRenderer.types';
 
-/** A 384 x 640 atlas of 6 x 10 cells, 64 x 64 px each (the shipped 1x Legend sheet's shape). */
-const ORACLE = { image: { width: 384, height: 640, close: vi.fn() }, columns: 6, rows: 10 };
+/**
+ * A 384 x 640 atlas of 6 x 10 cells, 64 x 64 px each (the shipped 1x Legend sheet's shape), whose
+ * feet stand on the cell's bottom edge.
+ */
+const ORACLE = {
+  image: { width: 384, height: 640, close: vi.fn() },
+  columns: 6,
+  rows: 10,
+  groundOffset: 0,
+};
 
 /** A renderer holding `atlases` on a 100 x 100 screen that shows a 10 x 10 world (scale 10). */
 const createSpriteRenderer = (
@@ -18,7 +26,7 @@ const createSpriteRenderer = (
 };
 
 describe('Canvas2dRenderer sprites', () => {
-  it('draws one frame from its source cell with smoothing off, its bottom centre on the anchor', () => {
+  it('draws one frame from its source cell with smoothing off, its feet on the given point', () => {
     const { context } = createFakeContext();
     const smoothingDuringDraw: boolean[] = [];
     const drawImage = vi.fn(() => {
@@ -39,7 +47,7 @@ describe('Canvas2dRenderer sprites', () => {
 
   it('takes the height from the shape of the cell, so a tall cell is not squashed', () => {
     const { context, spies } = createFakeContext();
-    const tall = { image: { width: 384, height: 1280, close: vi.fn() }, columns: 6, rows: 10 };
+    const tall = { ...ORACLE, image: { width: 384, height: 1280, close: vi.fn() } };
     createSpriteRenderer(context, { tall }).drawSprite(
       { atlasId: 'tall', frame: 0 },
       { x: 5, y: 5 },
@@ -48,6 +56,18 @@ describe('Canvas2dRenderer sprites', () => {
 
     // A 64 x 128 cell drawn 20 px wide is 40 px tall, and ends on the anchor.
     expect(spies.drawImage.mock.calls).toEqual([[tall.image, 0, 0, 64, 128, 40, 10, 20, 40]]);
+  });
+
+  it("stands the sprite on its feet: the sheet's ground offset, not the cell's bottom edge", () => {
+    const { context, spies } = createFakeContext();
+    const raised = { ...ORACLE, groundOffset: 0.25 };
+    const renderer = createSpriteRenderer(context, { raised });
+    renderer.drawSprite({ atlasId: 'raised', frame: 0 }, { x: 5, y: 5 }, 2);
+
+    // The 20 px cell's feet stand 5 px above its bottom edge, so it starts 15 px above (50, 50).
+    expect(spies.drawImage.mock.calls).toEqual([[raised.image, 0, 0, 64, 64, 40, 35, 20, 20]]);
+    expect(renderer.spriteTop({ atlasId: 'raised', frame: 0 }, 2)).toBe(1.5);
+    expect(renderer.spriteTop({ atlasId: 'missing', frame: 0 }, 2)).toBeNull();
   });
 
   it('has a sprite only for an injected atlas and a whole frame inside its grid', () => {

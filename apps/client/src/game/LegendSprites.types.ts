@@ -5,7 +5,8 @@ import type { LegendSpriteSheet } from './legendSpriteSheets.types';
 
 /**
  * What `LegendSprites` is built from. It is a narrow part of `MatchDeps`: the simulation gives it
- * events and the tick, and the renderer tells it which atlases are loaded.
+ * events and the tick, and the renderer tells it which atlases are loaded and how tall a sprite
+ * stands above its feet.
  */
 export type LegendSpritesDeps = {
   /**
@@ -15,6 +16,6 @@ export type LegendSpritesDeps = {
   readonly legendSheets?: ReadonlyMap<string, LegendSpriteSheet> | undefined;
   readonly tickRate: number;
   readonly simulation: Pick<Simulation, 'on' | 'tick'>;
-  readonly renderer: Pick<Renderer, 'hasSprite'>;
+  readonly renderer: Pick<Renderer, 'hasSprite' | 'spriteTop'>;
   readonly logger: Logger;
 };

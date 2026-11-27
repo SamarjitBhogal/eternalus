@@ -16,6 +16,7 @@ import type {
   WorldPoint,
   WorldRect,
 } from './Renderer.types';
+import { spriteHeight, spriteTopOf } from './spriteMeasures';
 
 /**
  * The Canvas 2D implementation of the `Renderer` port and the only class that touches
@@ -81,13 +82,13 @@ export class Canvas2dRenderer implements Renderer {
   }
 
   /**
-   * Draws one atlas frame with its bottom centre at `anchor`, `width` world units wide and as tall
-   * as the cell's shape gives. One `drawImage` scales the source cell with smoothing off (nearest
-   * neighbour), so pixel art stays sharp at every zoom; the context's smoothing setting is restored
-   * afterwards. The screen box is rounded to whole pixels (08 §4). Draws nothing when
-   * `hasSprite(sprite)` is false.
+   * Draws one atlas frame `width` world units wide and as tall as the cell's shape gives, with the
+   * feet of the cell (the atlas's `groundOffset`) on `feet`. One `drawImage` scales the source cell
+   * with smoothing off (nearest neighbour), so pixel art stays sharp at every zoom; the context's
+   * smoothing setting is restored afterwards. The screen box is rounded to whole pixels (08 §4).
+   * Draws nothing when `hasSprite(sprite)` is false.
    */
-  public drawSprite(sprite: SpriteRef, anchor: WorldPoint, width: number): void {
+  public drawSprite(sprite: SpriteRef, feet: WorldPoint, width: number): void {
     const atlas = atlasWithFrame(this.atlases, sprite);
     if (atlas === undefined) {
       return;
@@ -95,8 +96,8 @@ export class Canvas2dRenderer implements Renderer {
     const cellWidth = atlas.image.width / atlas.columns;
     const cellHeight = atlas.image.height / atlas.rows;
     const drawWidth = Math.round(width * this.scaleX);
-    const drawHeight = Math.round(((width * cellHeight) / cellWidth) * this.scaleY);
-    const at = this.toScreen(anchor);
+    const drawHeight = Math.round(spriteHeight(atlas, width) * this.scaleY);
+    const at = this.toScreen(feet);
     const isSmoothing = this.context.imageSmoothingEnabled;
     this.context.imageSmoothingEnabled = false;
     this.context.drawImage(
@@ -106,11 +107,17 @@ export class Canvas2dRenderer implements Renderer {
       cellWidth,
       cellHeight,
       Math.round(at.x - drawWidth / 2),
-      Math.round(at.y - drawHeight),
+      Math.round(at.y - spriteTopOf(atlas, width) * this.scaleY),
       drawWidth,
       drawHeight,
     );
     this.context.imageSmoothingEnabled = isSmoothing;
+  }
+
+  /** How far the top of `sprite` stands above its feet at `width`; `null` without the sprite. */
+  public spriteTop(sprite: SpriteRef, width: number): number | null {
+    const atlas = atlasWithFrame(this.atlases, sprite);
+    return atlas === undefined ? null : spriteTopOf(atlas, width);
   }
 
   /** Sets the drawing area in device pixels and how many device pixels make one CSS pixel. */

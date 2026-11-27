@@ -9,6 +9,7 @@ const entry: SpriteAtlasEntry = {
   group: 'match',
   columns: 6,
   rows: 10,
+  groundOffset: 0.25,
   licence: 'owner',
   source: 'Generated from owner art',
   file: { url: 'sheet.webp', bytes: 1, hash: 'test' },
@@ -20,7 +21,7 @@ describe('SpriteAtlasLoader', () => {
       loader = new SpriteAtlasLoader(decode);
     const atlas = await loader.load(entry, 'sheet.webp');
     expect(decode).toHaveBeenCalledWith('sheet.webp');
-    expect(atlas).toMatchObject({ columns: 6, rows: 10, image });
+    expect(atlas).toMatchObject({ columns: 6, rows: 10, groundOffset: 0.25, image });
     loader.release(atlas);
     expect(image.close).toHaveBeenCalledOnce();
   });
@@ -29,6 +30,19 @@ describe('SpriteAtlasLoader', () => {
       loader = new SpriteAtlasLoader(() => Promise.resolve(image));
     await expect(loader.load(entry, 'bad.webp')).rejects.toThrow('Invalid sprite grid');
     expect(image.close).toHaveBeenCalledOnce();
+  });
+  it('rejects a ground offset outside 0 to 1 at the boundary, without starting a decode', async () => {
+    const decode = vi.fn(() => Promise.resolve({ width: 384, height: 640, close: vi.fn() })),
+      loader = new SpriteAtlasLoader(decode);
+    for (const groundOffset of [-0.1, 1.5, Number.NaN]) {
+      await expect(loader.load({ ...entry, groundOffset }, 'sheet.webp')).rejects.toThrow(
+        'Invalid sprite ground offset: oracle-sprites',
+      );
+    }
+    await expect(loader.load({ ...entry, groundOffset: 1 }, 'sheet.webp')).resolves.toMatchObject({
+      groundOffset: 1,
+    });
+    expect(decode).toHaveBeenCalledOnce();
   });
   it('rejects a different asset type without starting a decode', async () => {
     const decode = vi.fn(() => Promise.resolve({ width: 384, height: 640, close: vi.fn() })),

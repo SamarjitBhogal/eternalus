@@ -37,7 +37,8 @@ describe('RecordingRenderer', () => {
   });
 
   it('has a sprite by the same rule as Canvas2dRenderer: a given grid that holds the frame', () => {
-    const renderer = new RecordingRenderer({ oracle: { columns: 6, rows: 10 } });
+    const oracle = { image: { width: 384, height: 640 }, columns: 6, rows: 10, groundOffset: 0.25 };
+    const renderer = new RecordingRenderer({ oracle });
     const has = (atlasId: string, frame: number): boolean => renderer.hasSprite({ atlasId, frame });
 
     expect([has('oracle', 0), has('oracle', 59)]).toEqual([true, true]);
@@ -49,5 +50,14 @@ describe('RecordingRenderer', () => {
     ]);
     expect(new RecordingRenderer().hasSprite({ atlasId: 'oracle', frame: 0 })).toBe(false);
     expect(renderer.calls[0]).toEqual({ op: 'hasSprite', args: [{ atlasId: 'oracle', frame: 0 }] });
+  });
+
+  it("answers spriteTop by Canvas2dRenderer's rule: the cell above the sheet's feet", () => {
+    const oracle = { image: { width: 384, height: 640 }, columns: 6, rows: 10, groundOffset: 0.25 };
+    const renderer = new RecordingRenderer({ oracle });
+
+    // A square cell drawn 4 m wide is 4 m tall; its feet stand a quarter up, so its top is 3 m up.
+    expect(renderer.spriteTop({ atlasId: 'oracle', frame: 0 }, 4)).toBe(3);
+    expect(renderer.spriteTop({ atlasId: 'missing', frame: 0 }, 4)).toBeNull();
   });
 });
