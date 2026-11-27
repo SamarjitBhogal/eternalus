@@ -16,13 +16,14 @@ import type { BotTurn } from './BotLegendController.types';
 import { BotLeaves } from './BotLeaves';
 import { allReady } from '../state/__fixtures__/stubReadiness';
 import { Perception } from './perception/Perception';
-import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
+import { SHIPPED_LINE_OF_FIRE, SHIPPED_REACH } from '../state/__fixtures__/shippedLineOfFire';
 
 const leaves = new BotLeaves({
   difficulties: { normal: NORMAL_BOT },
   retreatTo: RETREAT_STRUCTURES,
   readiness: allReady,
   lineOfFire: SHIPPED_LINE_OF_FIRE,
+  reach: SHIPPED_REACH,
 });
 
 /** A pathfinder stub: past x 50 it leads via (60, 34), otherwise straight to the goal. */

@@ -26,7 +26,8 @@ export type AttackContext = {
   readonly damage: DamageDealer;
   readonly hits: HitRunner | null;
   readonly factory: EntityFactory;
-  readonly areas: AreaHitQuery;
+  /** A sweep finds what it hits (`find`); a shot finds the body it aims at (`aimedBodyOf`). */
+  readonly areas: Pick<AreaHitQuery, 'find' | 'aimedBodyOf'>;
 };
 
 /**

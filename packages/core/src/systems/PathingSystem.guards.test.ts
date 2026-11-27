@@ -16,6 +16,7 @@ import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { MovementSystem } from './MovementSystem';
 import { PathingSystem } from './PathingSystem';
 import { FORMATIONS, logger, STRATEGIES } from './__fixtures__/pathingSystemSetup';
+import { ReachQuery } from '../state/ReachQuery';
 
 describe('PathingSystem', () => {
   describe('guards (18 §7)', () => {
@@ -56,7 +57,12 @@ describe('PathingSystem', () => {
           space.add(entity.id, x, y);
         });
         space.commit();
-        new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius).update({
+        new PathingSystem(
+          STRATEGIES,
+          FORMATIONS,
+          HORDE_STEERING.slotArrivalRadius,
+          new ReachQuery(),
+        ).update({
           state,
           logger,
         });

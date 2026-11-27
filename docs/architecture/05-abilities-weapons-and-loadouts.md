@@ -807,6 +807,12 @@ ignores an unknown attacker. A live attacker's hit does not change. `attackInTic
 `timeProblems` now live in `content/timesInTicks.ts` with `stepInTicks`, shared by the loaders of
 abilities, statuses, weapons and turret ammo.
 
+**Implementation status, 2026-11-23 (branch `refactor/query-injection`, DEC-344 (3), DEC-359).**
+The match builds one `AreaHitQuery`, one `ReachQuery` and one `TargetQuery` (`Simulation` and
+`DefaultSystemPipeline`) and injects them. No class builds its own. The pipeline builds new ones
+only when a caller (a test) leaves them out. Each user takes a narrow `Pick` of the methods it
+calls.
+
 ## 11. Artifacts (gadgets Z and C)
 
 An artifact is an `AbilityDefinition` with `slot: 'gadget'` (`ArtifactDefinition =

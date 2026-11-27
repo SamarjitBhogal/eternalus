@@ -18,6 +18,8 @@ import { cos, sin } from '../utils/deterministicMath';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { GameState } from './GameState';
 import { LineOfFire } from './LineOfFire';
+import { ReachQuery } from './ReachQuery';
+import { AreaHitQuery } from './AreaHitQuery';
 
 /*
  * The line-of-fire query against the match's real collision rule: `CollisionResolver.reach` on a
@@ -130,7 +132,7 @@ const world = (walls: readonly Polygon[] | null, collisions?: CollisionResolver)
   return { state, add, shooter };
 };
 
-const lineOfFire = new LineOfFire(PROJECTILES);
+const lineOfFire = new LineOfFire(PROJECTILES, new ReachQuery(), new AreaHitQuery());
 
 describe('LineOfFire', () => {
   it('is clear to a unit with nothing in the way', () => {
@@ -211,7 +213,11 @@ describe('LineOfFire', () => {
   });
 
   it('is blocked past the range its shot flies, with nothing in the way', () => {
-    const shortShots = new LineOfFire({ get: (id) => ({ ...PROJECTILES.get(id), range: 8 }) });
+    const shortShots = new LineOfFire(
+      { get: (id) => ({ ...PROJECTILES.get(id), range: 8 }) },
+      new ReachQuery(),
+      new AreaHitQuery(),
+    );
     const { state, add, shooter } = world([]);
     const from = shooter({ x: 0, y: 0 });
     // The shot touches the near unit 6.85 m out and the far one 8.85 m out (radius 1, shot 0.15).
@@ -227,10 +233,16 @@ describe('LineOfFire', () => {
       ...RANGED,
       projectile: { projectileId: 'short-bolt', falloff: null },
     };
-    const mixed = new LineOfFire({
-      get: (id) =>
-        id === 'short-bolt' ? { ...PROJECTILES.get('magus-bolt'), range: 8 } : PROJECTILES.get(id),
-    });
+    const mixed = new LineOfFire(
+      {
+        get: (id) =>
+          id === 'short-bolt'
+            ? { ...PROJECTILES.get('magus-bolt'), range: 8 }
+            : PROJECTILES.get(id),
+      },
+      new ReachQuery(),
+      new AreaHitQuery(),
+    );
     const { state, add, shooter } = world([]);
     const loadedLong = shooter({ x: 0, y: 0 });
     const loadedShort = shooter({ x: 0, y: 4 }, SHORT);

@@ -1,6 +1,6 @@
 import type { AbilityRegistry } from '../abilities/AbilityRegistry';
 import { CastInstance } from '../abilities/CastInstance';
-import { TargetQuery } from '../abilities/TargetQuery';
+import type { TargetQuery } from '../abilities/TargetQuery';
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { Command } from '../commands/Command.types';
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
@@ -32,23 +32,21 @@ import type { System, SystemContext } from './System.types';
 export class AbilitySystem implements System {
   public readonly name = 'abilities';
 
-  private readonly targets: TargetQuery;
-
   /**
    * @param registry - Where abilities are composed and effects found.
    * @param validator - The cast rules, the same the handler checks with (the match's
    *   `CastValidator`, through its `SlotReadiness` port).
    * @param damage - The match's one damage pipeline, for the effects.
    * @param statuses - The match's one status applier, for the effects.
+   * @param targets - The match's one target query, for the effects' targets.
    */
   public constructor(
     private readonly registry: AbilityRegistry,
     private readonly validator: Pick<SlotReadiness, 'blockedBy' | 'priceOf'>,
     private readonly damage: DamagePipeline,
     private readonly statuses: StatusEffectApplier,
-  ) {
-    this.targets = new TargetQuery(registry);
-  }
+    private readonly targets: Pick<TargetQuery, 'find'>,
+  ) {}
 
   /** Runs every queued cast of this tick, then the due steps of every cast in progress. */
   public update({ state }: SystemContext): void {

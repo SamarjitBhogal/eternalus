@@ -1,11 +1,9 @@
 import type { AiMemory, BotDifficultyDefinition } from '../content/ai/ai.types';
 import type { EntityId } from '../state/EntityStore.types';
-import { ReachQuery } from '../state/ReachQuery';
 import { compareById } from '../utils/compareById';
 import { sqrt } from '../utils/deterministicMath';
 import type { Vec2 } from '../utils/geometry.types';
 import { SeededRandom } from '../utils/SeededRandom';
-import type { MutableVec2 } from '../utils/vec2.types';
 import type { BtStatus } from './bt/BtNode.types';
 import type { BotMemory, BotLegendControllerContent, BotTurn } from './BotLegendController.types';
 import { BotMovement } from './BotMovement';
@@ -18,19 +16,19 @@ import { isPlayableTeam } from '../teams/playableTeams';
 /**
  * The conditions and actions every bot Legend tree is built from (architecture 11 §4.2):
  * surviving, choosing and fighting an enemy (and casting), attacking the lane's next enemy
- * structure, following the lead horde and walking. How the bot gets there (A\* round obstacles,
- * footprint edges, detours) is `BotMovement`'s. `BotLegendController` and `RoverController`
- * arrange the leaves into their trees. Stateless apart from scratch: what a bot remembers is its
- * brain.
+ * structure and walking. How the bot gets there (A\* round obstacles,
+ * footprint edges, detours) is `BotMovement`'s; following the lane is `BotLaneLeaves`'.
+ * `BotLegendController` and `RoverController` arrange the leaves into their trees. Stateless
+ * apart from scratch: what a bot remembers is its brain.
  */
 export class BotLeaves {
   private readonly scorers = new Map<string, UtilityScorer<'closeness' | 'weakness'>>();
-  private readonly anchor: MutableVec2 = { x: 0, y: 0 };
-  private readonly forward: MutableVec2 = { x: 0, y: 0 };
   private readonly movement = new BotMovement();
-  private readonly reach = new ReachQuery();
 
-  /** @param content - Difficulties and retreat points; the leaves hold no numbers. */
+  /**
+   * @param content - The difficulties, the retreat points and the bots' queries (`readiness`,
+   *   `lineOfFire`, `reach`); the leaves hold no numbers.
+   */
   public constructor(private readonly content: BotLegendControllerContent) {}
 
   /** Whether `profileId` names one of the injected difficulties. */
@@ -151,7 +149,7 @@ export class BotLeaves {
     const isHolding = BotLeaves.attackAndHold(
       turn,
       enemy,
-      this.reach.isInReach(state.entities, id, enemy),
+      this.content.reach.isInReach(state.entities, id, enemy),
       this.content.lineOfFire.isClear(state, id, enemy),
     );
     this.mayCast(turn, enemy, at);
@@ -205,49 +203,13 @@ export class BotLeaves {
     const isHolding = BotLeaves.attackAndHold(
       turn,
       objective.id,
-      this.reach.isInReach(state.entities, id, objective.id),
+      this.content.reach.isInReach(state.entities, id, objective.id),
       this.content.lineOfFire.isClear(state, id, objective.id),
     );
     if (isHolding || BotMovement.goRound(turn)) {
       return 'running';
     }
     return this.movement.closeIn(turn, objective, objective.radius);
-  }
-
-  /** Finds the anchor of the most advanced allied horde on `lane`. */
-  public findHorde(turn: BotTurn, lane: string): boolean {
-    const { state, team } = turn;
-    const routes = state.world?.routes ?? null;
-    let lead = -1;
-    state.hordes.forEach((horde) => {
-      // The progress is all that is read, so which of two equal hordes wins does not matter.
-      if (horde.team === team && horde.lane === lane && horde.progress > lead) {
-        lead = horde.progress;
-      }
-    });
-    if (routes === null || lead < 0) {
-      return false;
-    }
-    routes.pose(lane, team, lead, this.anchor, this.forward);
-    turn.destination = { x: this.anchor.x, y: this.anchor.y };
-    return true;
-  }
-
-  /** Finds the nearest point of `lane` to `point` (the lane corridor, 11 §4.2). */
-  public findLanePoint(turn: BotTurn, lane: string, point: Vec2): boolean {
-    const routes = turn.state.world?.routes ?? null;
-    if (routes === null || lane === '') {
-      return false;
-    }
-    routes.pose(
-      lane,
-      turn.team,
-      routes.distanceAlong(lane, turn.team, point),
-      this.anchor,
-      this.forward,
-    );
-    turn.destination = { x: this.anchor.x, y: this.anchor.y };
-    return true;
   }
 
   /**

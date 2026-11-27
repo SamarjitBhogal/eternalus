@@ -24,6 +24,9 @@ import {
 } from './__fixtures__/turretMatch';
 
 describe('Simulation wall turrets: launch shape (DEC-334)', () => {
+  /** The match's hit rule for areas; stateless, so a new one reads as the match's does. */
+  const areas = new AreaHitQuery();
+
   it.each([1, 2, 3, 4, 5, 6, 7, 8])(
     'launches each bolt inside no body outline that would stop it, so the body stop needs no launch rule (seed %i)',
     (seed) => {
@@ -54,7 +57,7 @@ describe('Simulation wall turrets: launch shape (DEC-334)', () => {
             outline,
           };
           expect(
-            AreaHitQuery.stopsShot(
+            areas.stopsShot(
               state.entities,
               { ownerId: turretId, team, targetId: null },
               body,

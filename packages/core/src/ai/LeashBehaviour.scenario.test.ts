@@ -8,6 +8,8 @@ import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { CombatSystem } from '../systems/CombatSystem';
 import { engagingOn, setUp } from './__fixtures__/minionControllerSetup';
+import { AreaHitQuery } from '../state/AreaHitQuery';
+import { ReachQuery } from '../state/ReachQuery';
 
 /*
  * The owner's HC-Q77 note, end to end: "Player do attack and hit enemy. Enemy hurt. Enemy fight
@@ -36,6 +38,8 @@ const scene = () => {
     progress: 40,
   });
   const combat = new CombatSystem({
+    areas: new AreaHitQuery(),
+    reach: new ReachQuery(),
     damage: new DamagePipeline(),
     factory: new EntityFactory(
       createDefaultEntityRegistry(),

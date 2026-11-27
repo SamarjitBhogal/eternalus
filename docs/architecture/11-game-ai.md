@@ -490,6 +490,11 @@ work named:
 - `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for a controller that
   needs it (M2c reads lane objectives from `state.laneStructures`).
 
+**Implementation status, 2026-11-23 (branch `refactor/query-injection`, DEC-344 (3)).**
+`ai/BotLaneLeaves` holds the lane leaves (`findHorde`, `findLanePoint`). The laner tree and the
+Rover both use them. The bots' content bag also carries `reach`, the match's one `ReachQuery`,
+next to `lineOfFire`.
+
 ## Related
 
 - [03-game-model](./03-game-model.md)

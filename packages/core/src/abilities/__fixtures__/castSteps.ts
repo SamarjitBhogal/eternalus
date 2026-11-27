@@ -17,6 +17,7 @@ import { DebuffEffect } from '../effects/DebuffEffect';
 import { KnockbackEffect } from '../effects/KnockbackEffect';
 import { TargetQuery } from '../TargetQuery';
 import { fakeAbility, testAbilityRegistry } from './fakeAbilities';
+import { AreaHitQuery } from '../../state/AreaHitQuery';
 
 /**
  * How `castSteps` casts: the aim point (1 m east of the caster by default), the caster's level and
@@ -65,7 +66,7 @@ export const castSteps = (
     {
       state,
       effects: registry,
-      targets: new TargetQuery(registry),
+      targets: new TargetQuery(registry, new AreaHitQuery()),
       damage,
       statuses: new StatusEffectApplier(loadStatusEffects(state.config.tickRate, 2)),
     },

@@ -13,7 +13,7 @@ import type { Shooter } from '../state/HitRunner.types';
 import type { AbilityRegistry } from './AbilityRegistry';
 import { CastInstance } from './CastInstance';
 import type { LandedHit } from './HitEffects.types';
-import { TargetQuery } from './TargetQuery';
+import type { TargetQuery } from './TargetQuery';
 
 /**
  * Runs the on-hit steps each time a basic attack lands (architecture 05 §8, §10): the attack's own
@@ -35,20 +35,18 @@ export class HitEffects {
   /** What `afterHit` reads for an attack with no `onHit` steps. */
   private static readonly NO_STEPS: readonly AbilityEffectSpec[] = [];
 
-  private readonly targets: TargetQuery;
-
   /**
    * @param registry - Where effect and shape strategies are found (the `AbilityRegistry`).
    * @param damage - The match's one damage pipeline, for the steps.
    * @param statuses - The match's one status applier, for the steps.
+   * @param targets - The match's one target query, for the steps' targets.
    */
   public constructor(
     private readonly registry: Pick<AbilityRegistry, 'effectFor' | 'shapeFor'>,
     private readonly damage: DamagePipeline,
     private readonly statuses: StatusEffectApplier,
-  ) {
-    this.targets = new TargetQuery(registry);
-  }
+    private readonly targets: Pick<TargetQuery, 'find'>,
+  ) {}
 
   /**
    * Runs the `onHit` steps of `attack`, then those of every status on `attackerId`, oldest status

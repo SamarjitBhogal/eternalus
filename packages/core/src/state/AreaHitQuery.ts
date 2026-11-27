@@ -36,7 +36,8 @@ import type { EntityId } from './EntityStore.types';
  *
  * It also holds the one rule for which bodies stop a shot (`stopsShot`), which `ProjectileSystem`
  * flies shots by and `LineOfFire` predicts them by. Ids come back in `compareById` order, so every
- * run hits in the same order. Stateless.
+ * run hits in the same order. Stateless: `Simulation` builds one for the match and injects it
+ * wherever the rule applies.
  *
  * ponytail: a walk over the store, not the `SpatialHash`, O(entities) per area. Only Legends
  * sweep and casts are rare. Ceiling: many sweepers (mob weapons); upgrade to a `SpatialHash`
@@ -51,7 +52,7 @@ export class AreaHitQuery {
    * (`EntityStore.takesNoDamage`) stops it too, and nothing lands on it. The one rule by which
    * `ProjectileSystem` flies a shot and `LineOfFire` predicts it.
    */
-  public static stopsShot(entities: EntityStore, shot: ShotAim, body: ShotStopBody): boolean {
+  public stopsShot(entities: EntityStore, shot: ShotAim, body: ShotStopBody): boolean {
     const { entity, health, membership, outline } = body;
     return (
       !health.isDead &&

@@ -27,6 +27,7 @@ import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { MovementSystem } from './MovementSystem';
 import { createDefaultProjectileImpacts } from './defaultProjectileImpacts';
 import { ProjectileSystem } from './ProjectileSystem';
+import { AreaHitQuery } from '../state/AreaHitQuery';
 
 const CONFIG = createDefaultGameConfig();
 const ATTACK: RangedAttack = {
@@ -40,7 +41,10 @@ const BOLT: ProjectileDefinition = { ...MAGUS_BOLT, range: 1000 };
 
 /** The system with the weapon impact on a fresh damage pipeline; `hits` runs on-hit effects. */
 const projectileSystem = (hits: HitRunner | null = null): ProjectileSystem =>
-  new ProjectileSystem(createDefaultProjectileImpacts(new DamagePipeline(), hits));
+  new ProjectileSystem(
+    createDefaultProjectileImpacts(new DamagePipeline(), hits),
+    new AreaHitQuery(),
+  );
 
 /** A body with health: a circle, or an outline when given polygons. */
 class Body extends Entity {

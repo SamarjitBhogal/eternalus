@@ -39,7 +39,7 @@ export type CastServices = {
   readonly state: GameState;
   /** Where effect and shape strategies are found (the `AbilityRegistry`). */
   readonly effects: { effectFor(kind: string): AbilityEffect; shapeFor(kind: string): AreaShape };
-  readonly targets: TargetQuery;
+  readonly targets: Pick<TargetQuery, 'find'>;
   readonly damage: DamagePipeline;
   readonly statuses: StatusEffectApplier;
 };

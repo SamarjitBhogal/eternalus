@@ -8,7 +8,9 @@ import type { InvariantRunner } from '../diagnostics/InvariantRunner';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { MatchDirector } from '../match/MatchDirector';
 import type { SpaceIndex } from '../physics/SpaceIndex';
+import type { AreaHitQuery } from '../state/AreaHitQuery';
 import type { GameState } from '../state/GameState';
+import type { ReachQuery } from '../state/ReachQuery';
 import type { SlotReadiness } from '../state/SlotReadiness.types';
 import type { ProgressionContent } from './ProgressionSystem.types';
 import type { PlayableTeam } from '../teams/teams.types';
@@ -68,4 +70,15 @@ export type DefaultSystemPipelineOptions = {
    * structures from.
    */
   readonly structures?: Pick<ContentCatalogue<StructureDefinition>, 'get'>;
+  /**
+   * The match's one hit rule for areas, which the casts, the shots and the sweeps share;
+   * `Simulation` injects the one its bots' line of fire uses too. A new `AreaHitQuery` when
+   * omitted.
+   */
+  readonly areas?: AreaHitQuery;
+  /**
+   * The match's one aim rule, which chases, combat and stuck detection share; `Simulation`
+   * injects the one its bots use too. A new `ReachQuery` when omitted.
+   */
+  readonly reach?: ReachQuery;
 };

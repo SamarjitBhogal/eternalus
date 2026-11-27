@@ -2,6 +2,7 @@ import { CastValidator } from '../abilities/CastValidator';
 import { checkStatusLinks } from '../abilities/checkStatusLinks';
 import { createDefaultAbilityRegistry } from '../abilities/defaultAbilityRegistry';
 import { HitEffects } from '../abilities/HitEffects';
+import { TargetQuery } from '../abilities/TargetQuery';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
@@ -24,7 +25,9 @@ import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStr
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import { AbilitySystem } from './AbilitySystem';
 import { AetherRegenSystem } from './AetherRegenSystem';
+import { AreaHitQuery } from '../state/AreaHitQuery';
 import type { GameState } from '../state/GameState';
+import { ReachQuery } from '../state/ReachQuery';
 import type { Rect } from '../utils/geometry.types';
 import { CaptureSystem } from './CaptureSystem';
 import { CombatSystem } from './CombatSystem';
@@ -63,12 +66,12 @@ import { SystemPipeline } from './SystemPipeline';
  * capture points, the match director, then invariants last. Combat runs after movement, so a unit
  * with a target in reach faces it, not its own way (DEC-192). This is the one place a system is
  * added, at its position in the tick (architecture 02 §9). It builds the match's one
- * `DamagePipeline` and one `StatusEffectApplier` (with the status effects loaded for this match's
- * config, checked against the ability registry: `checkStatusLinks`) and hands them to the systems
- * that need them, so a damage step applies to every hit and every status event comes from one
- * place. What a landed shot does is one `ProjectileImpact` per impact kind, from
- * `createDefaultProjectileImpacts`; the match's one `EntityFactory` builds the shots `CombatSystem`
- * fires and the units `SpawnSystem` spawns.
+ * `DamagePipeline`, one `StatusEffectApplier` (with the status effects loaded for this match's
+ * config, checked against the ability registry: `checkStatusLinks`) and one `TargetQuery`, and
+ * hands them to the systems that need them, so a damage step applies to every hit and every status
+ * event comes from one place. What a landed shot does is one `ProjectileImpact` per impact kind,
+ * from `createDefaultProjectileImpacts`; the match's one `EntityFactory` builds the shots
+ * `CombatSystem` fires and the units `SpawnSystem` spawns.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
@@ -86,6 +89,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
     ),
     validator = new CastValidator(abilities),
     structures = STRUCTURE_DEFINITIONS,
+    areas = new AreaHitQuery(),
+    reach = new ReachQuery(),
   }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
     const damage = new DamagePipeline();
@@ -95,7 +100,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
     );
     checkStatusLinks(abilities, statusEffects.all());
     const statuses = new StatusEffectApplier(statusEffects);
-    const hits = new HitEffects(abilities, damage, statuses);
+    const targets = new TargetQuery(abilities, areas);
+    const hits = new HitEffects(abilities, damage, statuses, targets);
     const flowFields =
       hordes === undefined || state.world === null
         ? null
@@ -126,7 +132,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
     }
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
-      new AbilitySystem(abilities, validator, damage, statuses),
+      new AbilitySystem(abilities, validator, damage, statuses, targets),
       // After the casts, so a cast spends before the tick's regeneration (plan arch call 13).
       new AetherRegenSystem(AETHER_REGEN, tickRate),
       new StatusEffectSystem(damage, statuses),
@@ -136,17 +142,18 @@ export class DefaultSystemPipeline extends SystemPipeline {
         ? []
         : [
             ...(hordes.space === null ? [] : [new SpaceSystem(hordes.space)]),
-            new StuckSystem(loadStuckDetection(tickRate)),
+            new StuckSystem(loadStuckDetection(tickRate), reach),
             new PathingSystem(
               createDefaultStrategyRegistry().movement,
               FORMATIONS,
               HORDE_STEERING.slotArrivalRadius,
+              reach,
               { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state, structures) },
             ),
           ]),
       // Before combat, so a shot fired this tick flies a tick before it can land.
-      new ProjectileSystem(createDefaultProjectileImpacts(damage, hits)),
-      new CombatSystem({ damage, factory, hits }),
+      new ProjectileSystem(createDefaultProjectileImpacts(damage, hits), areas),
+      new CombatSystem({ damage, factory, areas, reach, hits }),
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
