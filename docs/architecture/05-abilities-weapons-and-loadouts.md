@@ -583,7 +583,7 @@ That is why every ability, weapon, status tick and gate fire names a `DamageSour
 effective against Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `CombatSystem`.
 
 **Implementation status (sprint 2.2, PR #34).** `DamagePipeline.apply(state, targetId, amount,
-source)` is built and, with `kill(state, targetId, source)`, is the only caller of
+source, path?)` is built and, with `kill(state, targetId, source)`, is the only caller of
 `Health.applyDamage`. `kill` deals the target's whole health, shields included, past every step,
 with the same events and kill credit as a lethal `apply`; the gem eruption's blast uses it, so no
 modifier lets a unit in the zone live (DEC-371 "BOSS guards" C). Each modifier above is a
@@ -602,11 +602,10 @@ the multipliers are `BODY_PART_BONUS` in `content/mobs/bodyPartBonus.ts`). `Dama
 `apply` carry an optional `HitPath`: `origin`, where the hit came from, and `impactPoint`, where a
 shot struck. A melee hit's origin is its attacker's position (`MeleeAttackStrategy`). A status
 tick and the map collapse pass no path, so they get no bonus; `kill` (the gem's eruption) runs no
-step at all. No projectile
-deals damage yet, so only tests reach the head-shot bonus today; when ranged attacks land, the
-projectile hit passes where it started and where it struck (`INBOX.md`). Interim differences:
-no `DamageType` yet (nothing reads it; it joins `DamageHit` and
-`apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
+step at all. No projectile deals damage yet, so only tests reach the head-shot bonus today; when
+ranged attacks land, the projectile hit passes where it started and where it struck (`INBOX.md`).
+Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and `apply` with
+the first resistance); the pipeline itself emits `entity-died` with the killer, so
 `DeathResolver` is not a separate class yet. The gem's kill credit is `KillCredit`, which the
 pipeline asks on each landed hit (it keeps the `LastEnemyHit` component) and before
 `entity-died`. `BossMinionDamageStep` stands in for the target's
