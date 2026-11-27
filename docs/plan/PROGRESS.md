@@ -6662,6 +6662,63 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   check passed. Critic (`architecture-reviewer`): approve, 3 nits fixed. Ponytail: 1 cut taken.
 - Next step: Sam approves the item for a follow-up PR, or drops it.
 
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-16 map-feature link and the roster rule (DEC-231, DEC-222) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What: plan task GL-16, built on `refactor/map-feature-link` (base `feat/results-flow`).
+  - Core: a `MapFeatureLink` component (`components/MapFeatureLink.ts`, `featureId`), installed
+    by `Structure` and `Zone` when their placement names a map feature
+    (`Placement.mapFeatureId`, read by `SpawnContextReader.mapFeatureId`).
+    `Simulation.spawnZones` now passes each zone's feature id. `GameState.snapshotOf` reads the
+    component for any entity (no `instanceof Structure`); an entity with no link carries no
+    `mapFeatureId`. `Structure.mapFeatureId` (the getter) is gone; nothing else read it.
+    `StateHasher` does not hash the link: it is set once from the map, which a replay carries
+    (as `ZoneArea` and `ControllerBinding`), so recorded checkpoint hashes stay valid.
+  - Client: `MatchBridge` binds each capture point to the zone whose snapshot names its feature
+    (`captureByFeature`), never by position; `CaptureSite` (the feature position) is gone from
+    `MatchBridge.types.ts`. The roster rule moved out of `MatchBridge` into
+    `game/PublishedRoster.ts` (DEC-222): a class, not a function, because it owns the state the
+    rule needs (the last published array), so `MatchBridge` drops its two mutable roster fields
+    and each roster fixes its item check once, at construction.
+  - Docs: architecture 13 §10 (HUD data: capture points by feature id, `PublishedRoster`), 03 §5
+    (the `mapFeatureId` sketch comment), 04 §13 (the `MapFeatureLink` status bullet), 07 §13 (the
+    structure id and the zones' link); the plan's GL-16 row (as built).
+- Fail-first breaks: 15, all red then restored (`cmp` equal), in
+  `eternalus-agent-work/game-loop-plan/gl16-breaks.md` (driver `gl16-run-breaks.py`).
+- Checks run: `npm run check` → `EXIT=0` (`gl16-check-2026-11-09.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier "All matched files use Prettier code style!";
+  core "Tests 1370 passed (1370)", statements 99.15 %; client "Tests 1865 passed (1865)",
+  statements 97.06 %; "Documentation check passed."
+- Next step: the architecture critic and ponytail on this branch (pre-PR gate); its PR opens
+  after GL-5 merges (DEC-231). When it merges, `INBOX.md` "PR #64 better than the design?
+  (critic round 6)" closes.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-16 pre-PR gate: critic fixes and DEC-233 — refactor/map-feature-link — sholtzman + Claude Code
+
+- What: the pre-PR gate on GL-16 (ADR 0010).
+  - Critic round 1 (approve; 1 minor, 4 nits): architecture 04 lists `MapFeatureLink` in the
+    `Structure` and `Zone` installs (§1) and the component table (§3), and its §13 bullet only
+    points there; 07 §13 drops the history clause; 13 §10 names `PublishedRoster` as a class; the
+    decisions log's `last-reviewed` date; TSDoc on `CapturePointStatus.pointId`.
+  - Its two better-than-design items, owner answer "A: build both (Recommended)" (DEC-233): one
+    map feature may back several entities (the Cathedral's zone and its planned structure), so a
+    consumer selects by feature id and by the group it reads, and at most one entity per feature
+    carries each group (`MapFeatureLink`, `EntitySnapshot.mapFeatureId`, 04 §3, 13 §10); one
+    static `MatchBridge.byFeature(snapshot, pick)` replaces `healthByFeature` and
+    `captureByFeature`. New test: a capture point reads its zone when a structure names the same
+    feature. `INBOX.md` GL-16 item records the answer.
+  - Ponytail round 2: PASS, no cuts. Critic round 2 (approve; 2 minors, 3 nits): the plan's GL-16
+    row as built, this entry, the 13 §10 wrap, and "at most one entity per feature carries each
+    group" (04 §3 row, `byFeature` TSDoc). No round 3: what followed is docs and one TSDoc line.
+- Fail-first breaks: 3 more (rows 16 to 18), all red then restored (`cmp` equal), in
+  `eternalus-agent-work/game-loop-plan/gl16-breaks.md` (driver `gl16-r2-run-breaks.py`).
+- Checks run: `npm run check` on `8f4d8aa2` → `EXIT=0` (`gl16-final-check-2-2026-11-09.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier "All matched files use Prettier code style!";
+  core "Tests 1370 passed (1370)", statements 99.15 %; client "Tests 1866 passed (1866)",
+  statements 97.06 %; "Documentation check passed."
+- Next step: push the branch; its PR opens after GL-5 merges (DEC-231), then targets the phase
+  branch. When it merges, `INBOX.md` HC-Q47 and "PR #64 better than the design? (critic round 6)"
+  close.
+
 ### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-15 critic round 1 and DEC-223 — feat/capture-scoring — sholtzman + Claude Code
 
 - What: the GL-15 pre-PR architecture critic, round 1 (base `98e285c`, head `4d9ca6c`): approve, 0
@@ -6790,6 +6847,23 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   statements 97.06 %; "Documentation check passed."
 - Next step: merge this head into GL-16 (`refactor/map-feature-link`); push.
 
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-5 merge (phase/3 after #88) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What: merged `feat/results-flow` (`2b369165`, GL-5 with GL-4 and phase/3 after PR #88) into GL-16
+  (`76d04cff`). Conflicts: `GameState.ts` and `GameState.test.ts` imports (`MapFeatureLink` and
+  `Progression`, both); `GameState.test.ts` (both tests, GL-16's link test now passes the curves to
+  `snapshot`); 13 §10 "HUD data" (GL-16's paragraph, "XP and abilities" becomes "aether and
+  abilities"; DEC-224's level and XP sentence came in from the merge); the decisions log (DEC-233,
+  DEC-231, DEC-224 batches, newest first); this file (both, in date order). #88 made
+  `EntitySnapshot.progression` required, so GL-16's `zoneSnapshot` literal in `MatchBridge.test.ts`
+  gains `progression: null`. `GameState.snapshotOf` reads both the `MapFeatureLink` and the
+  `Progression`. No production code changed beyond the merge.
+- Checks run: `npm run check` on `76d04cff` → `EXIT=0` (`gl16-merge-88-check-2026-11-09.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier "All matched files use Prettier code style!";
+  core "Tests 1374 passed (1374)", statements 99.15 %; client "Tests 1867 passed (1867)",
+  statements 97.06 %; "Documentation check passed."
+- Next step: push; the GL-16 PR opens after GL-5 merges (DEC-231).
+
 ### 2026-11-09 — Phase 3 / merge: #88 then #87 into phase/3 — docs/inbox-stronghold-feature-type — sholtzman + Claude Code
 
 - What was done: a teammate approved #87 and #88 (CI green on both). Both append a PROGRESS entry,
@@ -6877,6 +6951,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   Prettier code style!"; `npm run docs:check` → "Documentation check passed." The full check of
   `392ad70e` (an entry above) holds for the code.
 - Next step: merge this head into GL-16 (`refactor/map-feature-link`); push.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-5 merge (phase/3 after #87) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What: merged `feat/results-flow` (`463c4f15`, GL-5 with GL-4 and phase/3 after PR #87: one
+  `INBOX.md` item and its PROGRESS entries) into GL-16 (`04af6887`). Conflict: this file (both, in date
+  order). Docs only: `git diff --stat 76d04cff 04af6887` lists only `INBOX.md` and this file.
+- Checks run: `npx prettier --check INBOX.md docs/plan/PROGRESS.md` → "All matched files use
+  Prettier code style!"; `npm run docs:check` → "Documentation check passed." The full check of
+  `76d04cff` (an entry above) holds for the code.
+- Next step: push; the GL-16 PR opens after GL-5 merges (DEC-231).
 
 ### 2026-11-09 — Phase 3 / sprint 3.1 — chore/coderabbit-config — sholtzman + Claude Code
 
@@ -7629,6 +7713,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "All matched files use Prettier code style!"; `npm run docs:check` → "Documentation check
   passed." The full check of `392ad70e` (an entry above) holds for the code.
 - Next step: merge this head into GL-16 (`refactor/map-feature-link`); push.
+
+### 2026-11-10 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-5 with phase/3 after #73 merge — refactor/map-feature-link — sholtzman + Claude Code
+
+- What: merged `feat/results-flow` (`9e1f2468`, GL-5 with phase/3 after #73) into this branch (`1337af7e`).
+  Conflict: this file (both, in date order). Config and docs only: `git diff --stat 76d04cff 1337af7e`
+  lists only .coderabbit.yaml, INBOX.md, docs/decisions/0018-coderabbit-runs-the-pr-review-skill.md, docs/plan/PROGRESS.md.
+- Checks run: `npx prettier --check` on `INBOX.md`, `.coderabbit.yaml`, this file and ADR 0018 →
+  "All matched files use Prettier code style!"; `npm run docs:check` → "Documentation check
+  passed." The full check of `76d04cff` (an entry above) holds for the code.
+- Next step: push; the GL-16 PR opens after GL-5 merges (DEC-231).
 
 ### 2026-11-10 — Phase 3 / combat sprint: merge phase/3 into the health bars PR (#89) — feat/combat-health-bars — sholtzman + Claude Code
 
@@ -9377,6 +9471,184 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   `Checked 128 Markdown files under docs/.` `Documentation check passed.` `EXIT=0`
 - Next: confirm the rounded scenery snapshots on Apple Silicon during PR review.
 
+### 2026-11-14 — Phase 3 / GL-16, merge of GL-4 (PR #93) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What changed: merged PR #93's head `f14e2661` (GL-4 with GL-5 and GL-15, and
+  `phase/3-sprint-3-work` up to `a99c3129`) into GL-16 as `4f28255a`, so that the hard merge is
+  done before #93 lands; once it does, the phase branch adds nothing new here. Resolution:
+  `GameState.ts` and `GameState.test.ts` take #93's side whole (#92 moved the snapshot to
+  `EntitySnapshotter`); GL-16's change moved with it: `EntitySnapshotter.ts` reads
+  `MapFeatureLink` (no `instanceof Structure`, the import is gone) and GL-16's zone test for the
+  linked entity is ported to `EntitySnapshotter.test.ts` (the structure case was already there).
+  `MatchBridge.test.ts`: the zone fixture gains `aether: null` (a semantic conflict: #92 added the
+  field; typecheck caught it). `MatchBridge.ts` merged on its own and keeps both sides (GL-16's
+  `byFeature` and `PublishedRoster`, #92's aether in `playerOf`). Docs keep both sides: INBOX,
+  PROGRESS, the decisions log (newest batch first); architecture 13 §10 takes GL-16's text with
+  "aether and abilities" now "abilities" (aether is live since #92); the game-loop plan has #93's
+  table with GL-16's own row (files under `state/EntitySnapshotter.ts`; "PR opens after GL-4
+  (#93) merges").
+- Fail-first: in `EntitySnapshotter.ts`, the condition `link !== undefined && entity.family ===
+"structure"` was broken; the ported test went red ("expected undefined to be
+  'capture-point-lane-1'"), then the line was restored (diff against the index clean).
+- Checks run: `npm run check` → `EXIT=0` on `4f28255a` (log
+  `eternalus-agent-work/game-loop-plan/gl16-merge-93-check-2026-11-15.log`): core "Tests 1433
+  passed (1433)"; protocol "Tests 18 passed (18)"; client "Tests 1978 passed (1978)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.".
+- Next step: pre-PR gate on the GL-16 delta against `f14e2661` (critic, ponytail); the PR opens
+  after #93 merges into `phase/3-sprint-3-work`.
+
+### 2026-11-14 — Phase 3 / GL-16, the map-feature invariant and the shared install (DEC-252) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What changed: the owner's answers to the critic round 3 better-than-design items (INBOX HC-Q58,
+  DEC-252). `MapFeatureGroupsUniqueInvariant` (`map-feature-groups-unique`, periodic, error)
+  flags two entities of one map feature that carry the same group a consumer reads by feature;
+  the groups are listed in `MapFeatureGroupsUniqueInvariant.constants.ts`. `EntityFactory.create`
+  adds `MapFeatureLink` after `spawn` for any placement with a map feature; `Structure` and
+  `Zone` no longer install it, and `SpawnContextReader.mapFeatureId` is gone. Docs: architecture
+  04 §3, §6, §13, 15 §3, 13 §10, the game-loop plan's GL-16 row, the decisions log, INBOX
+  HC-Q58. Architecture 02 and `packages/core/AGENTS.md`: `diagnostics/` may import
+  `components/`, as ten invariants already did.
+- Fail-first: (1) the factory's condition set to `=== "never"`: red "Missing component
+  \"MapFeatureLink\"" (`EntityFactory.test.ts`) and "expected [ undefined, undefined, undefined ]
+  to deeply equal [ 'capture-point-lane-0', …(2) ]" (`Simulation.capture.test.ts`); (2) the
+  invariant's `entityIds.length < 2` set to `< 3`: red "expected [] to deeply equal [ { …(5) } ]";
+  (3) the invariant bucketing unlinked entities under one feature id: red "expected [ { …(5) } ]
+  to deeply equal []". Each restored; `cmp` against the saved copy clean.
+- Critic (`architecture-reviewer`, round 4, on `b07c3608..`): approve, 0 blockers. Applied: the
+  minor (the constants no longer import `entities/` types) and the nits (unlinked entities with
+  a group in the test, the `MapFeatureLink` and `Placement` comments, the `MatchBridge` comment
+  and 13 §10 name the check, the plan row's docs list). Its better-than-design item (one exported
+  type for the feature-keyed groups, so the bridge can read only the groups the invariant checks)
+  waits for the owner. Ponytail on the same delta: no cuts.
+- Checks run: `npm run check` → `EXIT=0` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/gl16-dec252-check-2026-11-14.log`): core "Tests 1434
+  passed (1434)"; protocol "Tests 18 passed (18)"; client "Tests 1978 passed (1978)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner answers the critic's better-than-design item; GL-16 merges the new head of
+  `feat/match-scoring` (phase/3 at `88f5afd8`); its PR opens after #93 merges.
+
+### 2026-11-14 — Phase 3 / GL-16: merge the new head of feat/match-scoring (#93 with phase/3 at 88f5afd8) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What was done: merged `a74ecc20` (PR #93's local head: `feat/match-scoring` with
+  `phase/3-sprint-3-work` at `88f5afd8`, #85 minion follow-ups, #86 out-of-combat heal) into
+  this branch as `32d305b2`. Conflicts: `StateHasher.test.ts` keeps the tests of both sides;
+  architecture 02 has the rows of both sides, 04 the later `last-reviewed`; the decisions log has
+  the DEC-234 batch above the DEC-233 and DEC-231 batches (newest first, no DEC number twice);
+  this file has #93's entry, then GL-16's.
+- Checks run: `npm run check` → `EXIT=0` on `32d305b2` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/gl16-merge-a74ecc20-check-2026-11-14.log`): core "Tests
+  1555 passed (1555)"; protocol "Tests 18 passed (18)"; client "Tests 1978 passed (1978)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner answers the critic round 4 better-than-design item (one exported type for
+  the feature-keyed groups); the PR opens after #93 merges into `phase/3-sprint-3-work`.
+
+### 2026-11-15 — Phase 3 / GL-16: merge phase/3 (#93 merged, #79) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What was done: PR #93 merged into `phase/3-sprint-3-work` as `fcc48a7b` (after #79, unit facing
+  chevron, at `8dc7d962`). Merged it into this branch as `3a03c7ce`. Conflicts:
+  `StateHasher.test.ts` keeps both sides' tests (the map-feature link, the turn); in
+  `MatchBridge.test.ts` this branch's `zoneSnapshot` helper replaces the zone literal, so the
+  helper gets the `facing` that #79 makes required; architecture 04 takes #79's facing paragraph
+  and its `Transform` invariant ("facing is a unit vector") into this branch's re-padded §3
+  table, and the later `last-reviewed`; 15 the later `last-reviewed`; this file phase/3's entry,
+  then this branch's.
+- Checks run: `npm run check` → `EXIT=0` on `3a03c7ce` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/gl16-merge-fcc48a7b-check-2026-11-15.log`): core "Tests
+  1588 passed (1588)"; protocol "Tests 18 passed (18)"; client "Tests 1985 passed (1985)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner answers the critic round 4 better-than-design item (one exported type for
+  the feature-keyed groups); then the PR against `phase/3-sprint-3-work`.
+
+### 2026-11-15 — Phase 3 / GL-16: the feature-keyed groups as one typed contract (DEC-255, DEC-256) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What changed: the owner's answers to the critic round 4 and round 5 better-than-design items
+  (INBOX HC-Q59, HC-Q60; DEC-255, DEC-256). Core exports the type `FeatureKeyedGroup`, declared
+  in `state/Snapshot.types.ts` beside `EntitySnapshot.mapFeatureId` (`keyof Pick<EntitySnapshot,
+'health' | 'capture'>`). The invariant's `FEATURE_GROUPS` stays in
+  `MapFeatureGroupsUniqueInvariant.constants.ts` and `satisfies Record<FeatureKeyedGroup,
+unknown>`, so a missing or an extra group does not compile. `MatchBridge.byFeature(snapshot,
+group)` takes a `FeatureKeyedGroup` instead of a closure, so the client cannot read by feature a
+  group the invariant does not check; `boundMaxHealth` becomes `boundHealth` (only `max` is
+  read). Docs: architecture 03 §5, 13 §10, 15 §3, the game-loop plan's GL-16 row, the decisions
+  log, INBOX HC-Q59 and HC-Q60. Owner words: `eternalus-agent-work/game-loop-plan/`
+  `owner-answers-2026-11-15-gl16-r4.md` ("build it") and `-r5.md` ("Type in snapshot
+  (Recommended)", with "do whichever YOU assess is better"; the session kept that option over the
+  critic's, which also moved the list into `state/`).
+- Fail-first (`eternalus-agent-work/game-loop-plan/gl16-dec255-breaks.md`, three sets as the test
+  changed form; final set): dropping `capture` from `FEATURE_GROUPS` → TS1360 and the test red;
+  adding `aether` → TS2353 and the test red; growing the type alone → TS1360; growing the type
+  and loosening `satisfies` to `Partial` → only the test's `expectTypeOf` (TS2344); the bridge
+  reading `byFeature(snapshot, 'aether')` → TS2345 in `MatchBridge.ts`. Each restored; `cmp`
+  against the saved copies clean.
+- Critic (`architecture-reviewer`): round 5 on the DEC-255 delta approve, 0 blockers; applied the
+  decisions-log wording on DEC-253, this entry, the `expectTypeOf` test, the `boundHealth` TSDoc;
+  its better-than-design item became DEC-256. Round 6 on DEC-256: approve, 0 blockers, 3 nits (two doc nits applied: the plan row names the `index.ts` type export, the 15 §3 source column names DEC-256; the third, the runtime `toEqual`, kept as the test's only runtime assertion). Ponytail on both
+  deltas: no cuts.
+- Checks run: `npm run check` → `EXIT=0` on the DEC-256 tree before this entry was added
+  (`eternalus-agent-work/game-loop-plan/gl16-dec256-check-2026-11-15.log`): core "Tests 1589
+  passed (1589)"; protocol "Tests 18 passed (18)"; client "Tests 1985 passed (1985)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the PR against `phase/3-sprint-3-work` (Sam runs the push-and-open script).
+
+### 2026-11-16 — Phase 3 / GL-16: merge phase/3 (#127 merged) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What was done: PR #129's review (request-changes, head `bf024289`) found the branch conflicting
+  with `phase/3-sprint-3-work` after #127 (CI time limit, DEC-254) merged as `80e0ea13`. Merged it
+  into this branch as `113030be`. Conflicts: this file (phase/3's #127 entry, then this branch's
+  entries) and the owner decisions log (both sides kept; newest batch first: DEC-255/256, DEC-254,
+  DEC-252, DEC-250). Against either side, both files only gain lines. The worktree needed
+  `npm ci` first (its `node_modules` predated the server workspace).
+- Checks run: `npm run check` → `EXIT=0` on `113030be` before this entry was added
+  (`eternalus-agent-work/game-loop-plan/gl16-merge-80e0ea13-check-2026-11-16.log`): core "Tests
+  1589 passed (1589)"; protocol "Tests 18 passed (18)"; client "Tests 1985 passed (1985)"; server
+  "Tests 79 passed (79)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner pushes; PR #129's body names the new base, head and check.
+
+### 2026-11-16 — Phase 3 / GL-16: merge phase/3 (#113, #102 merged) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What was done: before the merge of `80e0ea13` was pushed, phase/3 moved to `330e969a` (#113,
+  the Vite and Vitest bump; #102, the Duel rules). Merged it into this branch as `f37cb073`.
+  Conflicts: `apps/client/src/game/MatchBridge.ts`, imports only (this branch's
+  `FeatureKeyedGroup`, `EntitySnapshot` and `PublishedRoster`, plus #102's `opponentOf`,
+  `DuelHudState` and countdown constants; the position-lookup imports this branch removed stay
+  removed), and this file (phase/3's entries, then this branch's). `npm ci` for #113's lock file.
+  The critic (`architecture-reviewer`) on the merge: approve; the PR's diff against phase/3 is
+  GL-16's diff, and nothing #102 adds relies on what GL-16 removed (#102's Duel builds structures
+  and zones through `EntityFactory.create`, so they carry `MapFeatureLink`). Its one should-fix
+  predates this merge: merge `3a03c7ce` had dropped DEC-192's Transform key methods from
+  architecture 04's component table; restored (`moveBy`, `moveTo`, `face(direction)`,
+  `lookAt(point)`), a docs-only commit.
+- Checks run: `npm run check:quick` → exit 0 after `npm ci`. `npm run check` → `EXIT=0` on
+  `f37cb073` (`eternalus-agent-work/game-loop-plan/gl16-merge-330e969a-check-2026-11-16.log`):
+  core "Tests 1609 passed (1609)"; protocol "Tests 29 passed (29)"; client "Tests 2011 passed
+  (2011)"; server "Tests 84 passed (84)"; "Documentation check passed.". After it only docs
+  changed (architecture 04 row, this entry): `prettier --check` and `npm run docs:check` on them.
+- Next step: the owner pushes; PR #129's body names the new base, head and check.
+
+### 2026-11-18 — Phase 3 / GL-16: merge phase/3 (#101, #99 merged) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What was done: PR #129 became conflicting again when #101 (zoom and minimap keys) and #99 (the
+  capture point mini-boss) merged into phase/3 as `af54fe96`. Merged it into this branch as
+  `1ad75212`. Conflicts: `packages/core/src/Simulation.ts` (the `spawnZones` TSDoc only: this
+  branch's `MapFeatureLink` sentence plus #99's guard-home and `@returns` text), architecture 04
+  and 15 (`last-reviewed`: the newer date kept) and this file (phase/3's entries, then this
+  branch's). The critic (`architecture-reviewer`) on the merge: approve, no blocker; #99 joins a
+  boss and its guards to their zone by the guard post's home entity id, never by position or by a
+  map feature, and its guards and boss carry no `MapFeatureLink`, so `map-feature-groups-unique`
+  cannot fire from them; the conflict resolution keeps both sides' changes exactly.
+- Checks run: `npm run check:quick` → exit 0. `npm run check` → `EXIT=0` on `1ad75212`
+  (`eternalus-agent-work/game-loop-plan/gl16-merge-af54fe96-check-2026-11-18.log`): core "Tests
+  1644 passed (1644)"; protocol "Tests 29 passed (29)"; client "Tests 2020 passed (2020)"; server
+  "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file.
+- Next step: the owner pushes (one more phase/3 merge is expected first: the #126 → #121 → #120 →
+  #119 chain); PR #129's body names the new base, head and check.
+
 ### 2026-11-14 — Phase 3 / the player who stays in a Duel wins (DEC-251) — feat/duel-leave-victory — sholtzman + Claude Code
 
 - What changed: the owner's answer to the open part of INBOX HC-Q57 (DEC-251, "A) yes"). When a
@@ -10700,6 +10972,56 @@ tick)`), and a minion records the point that granted its levels (`Veterancy.gran
   `npm run docs:check` on this file.
 - Next step: the owner pushes the merge (coordinator checks the script); #139 merges.
 
+### 2026-11-21 — Phase 3 / the match-start countdown: Rule 7 frame latency (DEC-299 (3)) — docs/rule7-frame-latency — sholtzman + Claude Code
+
+- What was done: answered the `INBOX.md` request "Rule 7 frame latency" (the owner's "we should
+  find out why theres latency"). Measured with the rule-7 `perf.mjs` code plus the raw frame
+  stamps, the timer's step and page-load traces (`perf-raw.mjs`); headless Chrome 158.0.8127.36,
+  Apple M4 Pro (10 performance and 4 efficiency cores), 24 GB.
+  - The 16.8 ms readings are not latency. Chrome rounds `performance.now()` and frame timestamps
+    to 0.1 ms, with jitter, in a page that is not cross-origin isolated (step read: 0.0999999 ms),
+    so a 16.67 ms frame reads 16.5 to 16.8 ms and the p95 reads 16.8 when more than 5 % land
+    there. A blank page with no app code (6 runs) and the HUD harness (`ue-perf-soak`, 12 runs,
+    tree `05b89ae3`) read the same spread; mean interval 16.6658 to 16.6663 ms (one HUD ×4 run
+    16.7055: one 33.2 ms interval, load 16.9 at its start and 41.3 just after). Cross-origin
+    isolated (step 0.005 ms) the blank page reads 16.660 to 16.670 ms. `over16_7` counts
+    floating-point noise (16.700000000000728 > 16.7).
+  - Missed frames: 2 of 40 ×4 runs on file have an interval over 25 ms (also 33.3 ms in the quiet
+    ui-off control, 2026-11-20). Not explained; HC-B22 (new) asks whether rule 7 counts them.
+  - Long tasks at ×4 (traces of 8 page loads): the harness entry module, React's first render
+    and the first-frame step (React's commit plus harness code), 11.1 to 14.4 ms each at ×1 and
+    49.2 to 99.0 ms at ×4, all before the harness is ready, so outside rule 7. On the 50 ms line:
+    49.2 and 49.9 ms were not counted. Why the 2026-11-20 06:11 runs counted none is not found:
+    the same Chrome build, script, harness, tree and dependencies, and a like load average (1.9
+    against 1.5 to 2.3). Replayed in their order (warm-up `hud-soak`, its runs first), 9 runs
+    count 0, 1 or 2 (one 0), against 2 or 3 in the 10 ×4 runs warmed up on `ue-perf-soak`: the
+    order changes the count; the mechanism is not found.
+  - Evidence and tables: `eternalus-agent-work/game-loop-plan/ue-shots-2026-11-20/frame-clock-2026-11-21/NOTE.md`.
+  - UI enhancements plan rule 7 (owner's text): the pointer to the request is replaced by the
+    reason, a fact found by measurement. `INBOX.md`: the request moves to Done.
+  - Critic r1 (`architecture-reviewer`): request changes, no blocker, 1 major (the 06:11 cause was
+    stated as found), 5 minor or nit wording fixes, all applied; BTD1 to BTD3 are HC-B22.
+- Checks run: `npm run check` → `EXIT=0`
+  (`eternalus-agent-work/game-loop-plan/check-rule7-final-2026-11-21.log`): core "Tests 1679
+  passed (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2077 passed (2077)"; server
+  "Tests 84 passed (84)"; "Documentation check passed.". This check line was filled in after that
+  run (docs only).
+- Next step: push and open the pull request (the coordinator); HC-B22 waits on the owner.
+
+### 2026-11-21 — Phase 3 / the match-start countdown: merge phase/3 (54615afa, #135) — docs/rule7-frame-latency — GAME-LOOP-AND-POST-GAME-53 (Claude Code)
+
+- What was done: merged `phase/3-sprint-3-work` at `54615afa` (#135, DEC-276) into PR #149. One
+  conflict, in this file: both sides only appended entries; #135's five entries come first, then
+  this branch's. `INBOX.md` and the UI enhancements plan merged on their own; against `54615afa`
+  their diff is the same as the branch's.
+- Checks run: `npm run check` → `EXIT=0` on the merged tree
+  (`eternalus-agent-work/game-loop-plan/check-149-merge-54615afa.log`): core "Tests 1679 passed
+  (1679)"; protocol "Tests 29 passed (29)"; client "Tests 2077 passed (2077)"; server "Tests 84
+  passed (84)"; "Documentation check passed.". This check line was filled in after that run (docs
+  only).
+- Next step: push (the coordinator). If #149 merges before #137, #137's own phase/3 merge takes
+  this branch's entries; if #137 merges first, #149 needs one more phase/3 merge.
+
 ### 2026-11-20 — Phase 3 / sprint 3: respawn review round 3 and DEC-295 — fix/legend-respawn (PR #100) — claudiodh + Claude Code
 
 - What was done: answered swholtzman's CHANGES_REQUESTED review and the owner's DEC-295. A dead Legend now waits as itself: `DeathSystem` withdraws it (`EntityStore.withdraw`, not retired), `RespawnQueue` holds the same object and `StateHasher` hashes its fields; on return it gets full health and aether, no statuses, movement or target, faces the enemy Stronghold (S1), and a bot laner re-plans its lane (`assessLanes`). `createWithId` and `Progression.restore` are gone. DEC-186 "pay on respawn" (B1): a waiting Legend is owed its team's structure and boss XP and late kill XP, paid on `legend-respawned` with cause `respawn`, which `level-matches-xp` accepts only for a Legend back this tick. `RespawnSystem` is registered in every match, after the Duel round (a Duel test pins it, S4). Client: `LegendBodies` and `LegendBodyLayer` leave a greyed body where a Legend fell. Docs: DEC-295 row, BUG-6 `Fixed`, the INBOX item moved to Done, this file's #97 entry made whole again (B2). Not done: the design-doc updates of review S3 and N4.
@@ -11061,3 +11383,40 @@ tick)`), and a minion records the point that granted its levels (`Veterancy.gran
 - Checks run: `npm run check` (Node 24.21.0), see the PR #84 round-2 report.
 - Next step: merge phase/3 (PROGRESS conflict, keep both sides), refresh the PR body, re-request
   review.
+
+### 2026-11-19 — Phase 3 / GL-16: merge phase/3 (#126, #121, #120, #119 merged) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What was done: PR #129 became conflicting again when the stacked chain #126 → #121 → #120 →
+  #119 merged into phase/3 as `d85bc2f5`. Merged it into this branch as `93f8de91`. Conflicts, all
+  in docs: architecture 03 (`last-reviewed`: the newer date kept), the owner decisions log (both
+  2026-11-14 batches kept, DEC-252 then DEC-251) and this file (this branch's entries, then
+  phase/3's). No code file conflicted and `package-lock.json` did not change, so no critic ran on
+  the merge (the gate asks for one only when code conflicts).
+- Checks run: pre-commit `npm run check:quick` on `93f8de91` → passed. `npm run check` → `EXIT=0`
+  on `93f8de91` (`eternalus-agent-work/game-loop-plan/check-gl16-merge-d85bc2f5.log`): core
+  "Tests 1654 passed (1654)"; protocol "Tests 29 passed (29)"; client "Tests 2017 passed (2017)";
+  server "Tests 84 passed (84)"; "Documentation check passed.". Then `prettier --check` and
+  `npm run docs:check` on this file. Client tests fell from 2020 (`1ad75212`) to 2017: on phase/3
+  itself (`af54fe96..d85bc2f5`), #126 (DEC-251) replaced three parametrised tests (3, 1 and 2
+  cases) with one test each; the merge removed none (`git diff 6076ea40 93f8de91` on the client
+  test files shows only those three).
+- Next step: the owner pushes with `push-gl16-merge-d85bc2f5.sh`; PR #129's body (v6) names the
+  new base, head and check.
+
+### 2026-11-20 — Phase 3 / GL-16: merge phase/3 (#125 merged) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What was done: PR #129 became conflicting again when #125 (DEC-241, content durations at load)
+  merged into phase/3 as `5a7cc8dc`. Merged it into this branch as `e34152f6`. Conflicts, all in
+  docs: architecture 04 and the owner decisions log (`last-reviewed`: the newer date kept), the
+  decisions log batches (both kept, newest first: 2026-11-16 DEC-262, then 2026-11-15 DEC-255 and
+  DEC-256) and this file (phase/3's entries, then this branch's). No code file conflicted and
+  `package-lock.json` did not change, so no critic ran on the merge (the gate asks for one only
+  when code conflicts).
+- Checks run: pre-commit `npm run check:quick` on `e34152f6` → passed. `npm run check` → `EXIT=0`
+  on `e34152f6` (`eternalus-agent-work/game-loop-plan/check-gl16-merge-5a7cc8dc-2026-11-20.log`):
+  core "Tests 1681 passed (1681)"; protocol "Tests 29 passed (29)"; client "Tests 2017 passed
+  (2017)"; server "Tests 84 passed (84)"; "Documentation check passed.". Core tests rose from 1654
+  (`93f8de91`) with #125's tests; the merge deleted no file
+  (`git diff --diff-filter=D 564fbf13 e34152f6` is empty).
+- Next step: the owner pushes with `push-gl16-merge-5a7cc8dc.sh`; PR #129's body (v7) names the
+  new base, head and check.
