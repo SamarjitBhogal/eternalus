@@ -785,7 +785,7 @@ export type LevelScalingDefinition = {
   readonly healthPerLevel: number;
   readonly aetherPerLevel: number;
   readonly basicAttackPerLevel: number;
-  readonly basicAttackPerLevelOnStructures: number; // DEC-405: a lower rate on structures
+  readonly basicAttackPerLevelOnStructures: number; // DEC-405, DEC-422: weapon and ability hits on structures
 }; // TUNE
 ```
 
@@ -795,7 +795,9 @@ export type LevelScalingDefinition = {
 `Recommendation:` balancing.md), emits `level-up { entityId, level }`, raises the `Health` base
 max and `Abilities.maxAether` by the class's `LevelScalingDefinition`, and applies the
 `UltimateChargeRule`s (§6). Ability potency is read at cast time (`CastContext.potency`), so
-`AbilitySystem` needs no listener. The **ability tree** (post-MVP, D12) is an extension point,
+`AbilitySystem` needs no listener. An ability hit on a structure grows at the class's
+`basicAttackPerLevelOnStructures`, or at its own rate when that is lower, the same middle rate
+as a weapon hit (DEC-422, DEC-405). The **ability tree** (post-MVP, D12) is an extension point,
 not a design: an `AbilityUpgradeDefinition` (`{ id, abilityId, tier, unlockLevel, patches }`) is
 applied by `AbilityRegistry.resolve` exactly like a variety, `Progression.upgradeIds` records the
 choice, and an `upgrade-ability` command carries the `near-structure` restriction from §5; "only
@@ -964,7 +966,8 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   then listens for no award (a cleared camp's and a checkpoint set's included), and the max-level
   start still applies. Not built yet: the minion-kill share radius (balancing.md "XP sources"), assists,
   the Eternal's flat 5 levels (DEC-237) (their systems do not exist), ability potency per level,
-  `upgradeIds` and the ultimate charge rules. Numbers are
+  the structure rate for ability hits (DEC-422: a follow-up PR after `feat/ability-framework`
+  and this rate are both on phase/3), `upgradeIds` and the ultimate charge rules. Numbers are
   `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
   soak metric can change them) and live in `content/progression/`.
 - **Legend respawn (`fix/legend-respawn`, GL-12, DEC-295).** FR-051 and DEC-80, with the

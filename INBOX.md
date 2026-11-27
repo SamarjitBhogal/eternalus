@@ -978,6 +978,12 @@ Reply inline (`Decision: …`).
     camp props it is full. This list is the build's reading of your "etc", not your words. Correct
     it after playtests if an item is wrong: one `true` or `false` per item in
     `content/maps/mapObjectDefinitions.ts` (DEC-405 row).
+  - 2026-11-27: HC-Q130 answered (DEC-422, Owner Calls v108): a Legend's ability hit on a tower,
+    gate or wall also grows at the lower structure rate (`basicAttackPerLevelOnStructures`,
+    `TUNE`). Not built yet: ability damage (`DamageEffect`) is in `feat/ability-framework`
+    (PR #123), and the structure rate is in `feat/legend-level-damage`. A small follow-up PR
+    builds it after both are on phase/3. Naming (your call): the field then covers ability hits
+    too, so that PR can rename it to `perLevelOnStructures`. Say if you want the new name.
 - [ ] **HC-B46 — Duel max-level start: two better-than-design items (critic on
       `chore/duel-max-level-gate-followups`, 2026-11-26; owner sign-off asked).** Owner: sholtzman.
       (1) Architecture 03 §4 says a listener that must change state defers the change to its own
