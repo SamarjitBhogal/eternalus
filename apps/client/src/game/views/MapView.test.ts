@@ -1,4 +1,9 @@
-import { DEFAULT_MAP_CONFIG, type MapDecoration, MapGenerator } from '@eternalus/core';
+import {
+  CORNER_CAMP_RING,
+  DEFAULT_MAP_CONFIG,
+  type MapDecoration,
+  MapGenerator,
+} from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
@@ -27,6 +32,29 @@ const drawMain = (): RecordingRenderer => {
 };
 
 describe('MapView', () => {
+  it('replaces dressed camp placeholders only in the main view, retaining minimap markers', () => {
+    const feature = MAP.features.find((entry) => entry.kind === 'corner-camp');
+    if (feature === undefined) throw new Error('Missing camp');
+    const art: MapDecoration = {
+      id: 'shrine',
+      replacesFeature: feature.id,
+      color: 'stone',
+      layer: 'detail',
+      shape: [],
+    };
+    const renderer = new RecordingRenderer();
+    new MapView(MAP, [art]).draw(renderer);
+    expect(
+      renderer.calls
+        .filter((call) => call.op === 'drawWorldGlyph')
+        .some((call) => call.args[1] === feature.position),
+    ).toBe(false);
+    const minimap = new RecordingRenderer();
+    new MapView(MAP, [art]).drawMinimap(minimap);
+    expect(minimap.calls.filter((call) => call.op === 'drawGlyph')).toHaveLength(
+      MAP.features.length,
+    );
+  });
   it('hides main-view building markers with roofs closed as well as open', () => {
     const building = MAP.features.find((feature) => feature.kind === 'cathedral');
     if (building === undefined) throw new Error('Missing building');
@@ -62,6 +90,19 @@ describe('MapView', () => {
     const markers = minimap.calls.filter((c) => c.op === 'drawGlyph');
     expect(markers).toHaveLength(MAP.features.length);
     expect(markers.some((c) => c.args[1] === cathedral?.position)).toBe(true);
+  });
+  it("draws the corner camp ring at core's ring size when Match injects it", () => {
+    const camps = MAP.features.filter((f) => f.kind === 'corner-camp');
+    expect(camps.length).toBeGreaterThan(0);
+    const renderer = new RecordingRenderer();
+    const featureSizes = { 'corner-camp': 2 * CORNER_CAMP_RING.radius };
+    new MapView(MAP, [], new Set(), undefined, [], () => false, featureSizes).draw(renderer);
+    const rings = renderer.calls.flatMap((c) =>
+      c.op === 'drawWorldGlyph' && camps.some(({ position }) => position === c.args[1])
+        ? [c.args[0]]
+        : [],
+    );
+    expect(rings).toEqual(camps.map(() => ({ shape: 'ring', size: 45 })));
   });
   it('draws the ground first, then every terrain shape, then footprint features', () => {
     const fills = drawMain().calls.flatMap((call) =>

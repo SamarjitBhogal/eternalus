@@ -9,6 +9,7 @@ import { SeededRandom } from '../utils/SeededRandom';
 import { AiState } from './AiState';
 import { AllyDamageStore } from './AllyDamageStore';
 import { AllyDamageTally } from './AllyDamageTally';
+import { DefenderDamageStore } from './DefenderDamageStore';
 import { EntitySnapshotter } from './EntitySnapshotter';
 import { EntityStore } from './EntityStore';
 import type { EntityId, RemovalRecord } from './EntityStore.types';
@@ -26,6 +27,7 @@ import type { HordeRequest } from './HordeRequest.types';
 import { GuardStore } from './GuardStore';
 import { HordeStore } from './HordeStore';
 import { LaneStructures } from './LaneStructures';
+import { RespawnQueue } from './RespawnQueue';
 import type { MatchWorld } from './MatchWorld';
 import type { PathQuery } from './PathQuery.types';
 import type { EntitySnapshot, HordeSnapshot, Snapshot } from './Snapshot.types';
@@ -64,8 +66,12 @@ export class GameState {
   public readonly hordes = new HordeStore();
   /** Every structure's guard posts (architecture 18 §7). */
   public readonly guards = new GuardStore();
+  /** Dead Legends waiting to return to their Stronghold (FR-051). */
+  public readonly respawns = new RespawnQueue();
   /** Each team's ally damage per lane since its last heavy wave (DEC-89, architecture 18 §3.3). */
   public readonly allyDamage = new AllyDamageStore();
+  /** The damage each Legend dealt to each checkpoint defender set (07 §7). */
+  public readonly defenderDamage = new DefenderDamageStore();
   /** Hordes asked for this tick (developer menu), fulfilled by `SpawnSystem` in order. */
   public readonly hordeRequests: HordeRequest[] = [];
   private readonly teamCounters: Record<

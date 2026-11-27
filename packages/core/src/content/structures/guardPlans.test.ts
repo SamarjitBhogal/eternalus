@@ -7,7 +7,7 @@ import { AGGRO_RULES } from '../ai/aggro/aggroRules';
 import { AI_CADENCE } from '../ai/cadence';
 import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import { MOB_DEFINITIONS } from '../mobs/mobCatalogue';
-import { GUARD_PLANS } from './guardPlans';
+import { CHECKPOINT_DEFENDERS, GUARD_PLANS } from './guardPlans';
 import { ZONE_DEFINITIONS } from '../zones/zoneCatalogue';
 import { STRUCTURE_DEFINITIONS } from './structureCatalogue';
 
@@ -63,15 +63,28 @@ describe('GUARD_PLANS', () => {
     // floor((brains - 1) / budget) ticks in the AI queue (AI56-F2).
     const brains = 2 * limits.maxUnitsPerTeam + 48;
     const wait = Math.floor((brains - 1) / AI_CADENCE.maxDecisionsPerTick);
-    const largestTarget = Math.max(
-      ...[...LEGEND_CLASSES.all(), ...MOB_DEFINITIONS.all()].map((unit) => unit.footprintRadius),
+    // A camp's or zone's guards are neutral, and neutral units are allies, so such a guard never
+    // targets another neutral home's mob (the corner boss, the largest unit, is one).
+    const isNeutralHome = (homeId: string): boolean =>
+      ZONE_DEFINITIONS.has(homeId) || STRUCTURE_DEFINITIONS.get(homeId).kind === 'camp';
+    const neutralMobs = new Set(
+      Object.entries(GUARD_PLANS)
+        .filter(([homeId]) => isNeutralHome(homeId))
+        .flatMap(([, plan]) => plan.table.map(({ mobId }) => mobId)),
     );
-    for (const plan of Object.values(GUARD_PLANS)) {
+    const largestTarget = (isNeutral: boolean): number =>
+      Math.max(
+        ...[...LEGEND_CLASSES.all(), ...MOB_DEFINITIONS.all()]
+          .filter(({ id }) => !isNeutral || !neutralMobs.has(id))
+          .map((unit) => unit.footprintRadius),
+      );
+    for (const [homeId, plan] of Object.entries(GUARD_PLANS)) {
       for (const { mobId } of plan.table) {
         const guard = MOB_DEFINITIONS.get(mobId);
         const ticks = AI_CADENCE.everyTicks.guard + wait;
         const walk = (guard.movementProfile.maxSpeed * ticks) / tickRate;
-        const stance = guard.footprintRadius + largestTarget + (guard.attack?.reach ?? 0);
+        const target = largestTarget(isNeutralHome(homeId));
+        const stance = guard.footprintRadius + target + (guard.attack?.reach ?? 0);
 
         expect({ mobId, tolerance: plan.leashTolerance >= walk + stance }).toEqual({
           mobId,
@@ -87,5 +100,22 @@ describe('GUARD_PLANS', () => {
     );
 
     expect(unknown).toEqual([]);
+  });
+
+  it('levels tower guards, forest-camp mobs, the capture point boss group and every checkpoint defender, but not the corner boss (DEC-165, DEC-260, DEC-350)', () => {
+    const levellers = Object.entries(GUARD_PLANS)
+      .filter(([, plan]) => plan.canLevel)
+      .map(([id]) => id);
+
+    expect(levellers.sort()).toEqual([
+      'buff-tower',
+      'capture-point',
+      'forest-camp-heavy',
+      'forest-camp-light',
+      'forest-camp-medium',
+      'spawner-tower',
+      'stronghold',
+    ]);
+    expect(Object.values(CHECKPOINT_DEFENDERS).every(({ canLevel }) => canLevel)).toBe(true);
   });
 });
