@@ -153,6 +153,16 @@ describe('WorldMap', () => {
     expect(grid.walkable).toEqual(before);
   });
 
+  it('changes its version at every stamp and clear, so a path cache knows to search again (DEC-379)', () => {
+    const grid = WorldMap.fromDefinition(SMALL_MAP, 10, isBlocking);
+    const built = grid.version;
+
+    grid.stampFootprint(SQUARE);
+    expect(grid.version).toBe(built + 1);
+    grid.clearFootprint(SQUARE);
+    expect(grid.version).toBe(built + 2);
+  });
+
   it('blocks every cell a wall thinner than a cell passes through, leaving no gap', () => {
     const open: MapDefinition = { ...SMALL_MAP, terrain: [] };
     const grid = WorldMap.fromDefinition(open, 10, isBlocking);
