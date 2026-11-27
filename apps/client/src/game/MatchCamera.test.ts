@@ -66,6 +66,19 @@ describe('MatchCamera', () => {
     expect(view.visibleArea()).not.toEqual(jumped);
   });
 
+  it('turns to a cut-scene target from the free view, then follows the player again', () => {
+    const { camera, view } = setUp();
+    view.overview();
+    view.lookAt({ x: 900, y: 400 });
+
+    view.focusOn({ x: 600, y: 300 }, 1);
+
+    expect(view.visibleArea()).toEqual(camera.visibleArea(MAP.width, MAP.height));
+    expect(camera.visibleArea(MAP.width, MAP.height).x).toBeCloseTo(600 - FOLLOW_VIEW_WIDTH / 2);
+    view.follow({ x: 100, y: 100 });
+    expect(camera.visibleArea(MAP.width, MAP.height).x).toBeLessThan(600 - FOLLOW_VIEW_WIDTH / 2);
+  });
+
   it('leaves the explorer for the following camera at its base zoom', () => {
     const { camera, view } = setUp();
     const following = view.visibleArea();

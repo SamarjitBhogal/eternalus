@@ -66,6 +66,23 @@ describe('MatchRecord', () => {
     ]);
   });
 
+  it('erupts the gem once, emitting greater-boss-summoned, and refuses a second eruption', () => {
+    const clock = { tick: 4 };
+    const { events, match } = recordAt(clock);
+    expect(match.isGemErupted).toBe(false);
+
+    match.eruptGem('greater-boss');
+
+    expect(match.isGemErupted).toBe(true);
+    expect(events.recentEvents()).toEqual([
+      { tick: 4, type: 'greater-boss-summoned', payload: { bossId: 'greater-boss' } },
+    ]);
+    expect(() => {
+      match.eruptGem('greater-boss');
+    }).toThrow('The Cathedral gem has already erupted: it erupts once a match.');
+    expect(events.recentEvents()).toHaveLength(1);
+  });
+
   it('holds and releases the idle flag through holdIdle', () => {
     const { match } = recordAt({ tick: 0 });
 

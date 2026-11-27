@@ -83,6 +83,17 @@ export class MatchCamera implements Projection {
     }
   }
 
+  /**
+   * Eases the camera towards `target` for a cut-scene (`CathedralCutscene`), at `smoothing` per
+   * frame. The free view closes and following stays on, so the camera eases back to the player
+   * once the cut-scene ends.
+   */
+  public focusOn(target: WorldPoint, smoothing: number): void {
+    this.isExploring = false;
+    this.isFollowing = true;
+    this.camera.track(target, smoothing);
+  }
+
   /** The player is moving: the camera follows again, even after a key held since before a click. */
   public playerMoved(): void {
     this.isFollowing = true;

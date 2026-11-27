@@ -38,6 +38,11 @@ export type StructureDefinition = EntityDefinitionBase & {
    * DEC-217 (16)). A gate's outline is for reach only (DEC-217 (17)).
    */
   readonly hasFortBox?: true;
+  /**
+   * A map object with no health of its own that stands while this structure does and is destroyed
+   * with it (`WorldObjectStore`'s `carriers`): the gem's plinth, gone when the gem erupts (12 §3).
+   */
+  readonly carriedObjectId?: string;
 };
 
 /** Which lane a spawner's horde takes: the spawner's own lane, or the team's worst lane. */
@@ -143,14 +148,19 @@ export type GuardPlanDefinition = GuardPlanBase & {
 
 /**
  * When a guard plan's posts are first filled (architecture 18 §7.1), as authored: the match's
- * first tick, or `delaySeconds` after the countdown ends (0 for camps).
+ * first tick, `delaySeconds` after the countdown ends (0 for camps), or the tick the Cathedral gem
+ * erupts (`greater-boss-summoned`, 12 §3: the Greater Boss).
  */
 type AuthoredGuardActivation =
-  { readonly at: 'match-start' } | { readonly at: 'countdown-end'; readonly delaySeconds: number };
+  | { readonly at: 'match-start' }
+  | { readonly at: 'countdown-end'; readonly delaySeconds: number }
+  | { readonly at: 'gem-eruption' };
 
 /** `AuthoredGuardActivation` as loaded: the delay in ticks. */
 type GuardActivation =
-  { readonly at: 'match-start' } | { readonly at: 'countdown-end'; readonly delayTicks: number };
+  | { readonly at: 'match-start' }
+  | { readonly at: 'countdown-end'; readonly delayTicks: number }
+  | { readonly at: 'gem-eruption' };
 
 /**
  * How a guard plan's posts refill (architecture 18 §7.1), as authored. `each`: a guard comes back
@@ -174,4 +184,9 @@ export type CathedralGemDefinition = {
   readonly statusIds: readonly string[];
   /** The gem glows for this status's duration plus `extraTicks` after each hit. */
   readonly glow: { readonly statusId: string; readonly extraTicks: number };
+  /**
+   * The eruption's blast (DEC-371 "BOSS guards" C): every unit in the capture zone the gem stands
+   * in dies to it. It is no team's, so no one is credited; `sourceId` names it as the killer.
+   */
+  readonly eruption: { readonly sourceId: string };
 };

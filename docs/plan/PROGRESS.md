@@ -11117,6 +11117,40 @@ tick)`), and a minion records the point that granted its levels (`Veterancy.gran
   4.49s") and `npm run docs:check` ("Documentation check passed.").
 - Next step: Aryan pushes `feat/bosses-p3` and asks the reviewers to re-review PR #91.
 
+### 2026-11-22 — Phase 3 / sprint 3.6: the gem eruption, the Greater Boss spawn and the mid-game cut-scene — feat/cathedral-eruption-boss — Aryan Walanj + Claude Code
+
+- What was done: cut from PR #132 (`feat/cathedral-gem-hittable` at `53d3b95f`). Ported the gem
+  eruption (`e78ef947`) and the Greater Boss spawn (`fdb233e3`) from Aryan's local chain onto #132's
+  gem entity; the old strike and blocking commits are superseded by #132 and left out. At mid-game
+  the `summon-greater-boss` action erupts the gem (`MatchRecord.eruptGem`, `greater-boss-summoned`),
+  outside a Duel. On the next tick `CathedralGemSystem` removes the gem entity and `SpawnSystem`
+  spawns one neutral `greater-boss` through a new `gem-eruption` guard plan on the Cathedral capture
+  zone (`GuardRoster.activate`, `GuardStore` posts with no first tick), then emits `boss-summoned`.
+  The boss is 2.5 m (Aryan), on `GuardController`, leashed to the 25 m centre zone, takes 25% of a
+  minion's hit, and has no kill reward yet (DEC-237's 5 levels come with its moves). The guard-plan
+  leash test leaves the centre-only boss out of other guards' targets, backed by a map test over
+  three seeds. Client: `CathedralCutscene` turns the camera to the Cathedral 1.5 s before the
+  eruption, shakes and holds 2.5 s, and `EruptionView` draws a flash and rings (Aryan's design;
+  `MatchCamera.focusOn`). Docs 03, 07, 11 and 12 and one `INBOX.md` item for Sam.
+  Critic (`architecture-reviewer`): FAIL with three blockers (state changes inside event
+  listeners, `entity-removed` emitter row, no PROGRESS entry), all fixed, with should-fixes 4-9;
+  re-check PASS. Ponytail review: two findings (a stale type comment, no `Match` test of the
+  camera), both fixed.
+  Broke once: without the gem removal both eruption tests fail; without the Duel guard the Duel
+  test fails.
+- Checks run: `npm run check` (2026-11-22 02:24-02:46) exit 1: format "All matched files use
+  Prettier code style!", `check:no-js`, lint, typecheck and knip passed; core "Test Files 1 failed
+  | 281 passed (282)", "Tests 1 failed | 1718 passed (1719)". The failure was
+  `Simulation.modifiers.test.ts` "enrages the lane of a tower lost in play", "Test timed out in
+  60000ms" (68 s under coverage); alone it passes in 13 s, and it runs the default 30-minute plan,
+  so it never reaches the eruption. Protocol "Tests 29 passed (29)"; client "Test Files 306 passed
+  (306)", "Tests 2096 passed (2096)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)".
+  Then (02:47-02:59), after the critic's nit and the `INBOX.md` item: core coverage with
+  `--maxWorkers=2` "Test Files 282 passed (282)", "Tests 1719 passed (1719)"; lint of the edited
+  file exit 0; build "✓ built in 2.63s"; "Documentation check passed."
+- Next step: CI on the pushed branch; then PR 2 (`BossController` and the six moves from
+  `feat/cathedral-boss-moves`).
+
 ### 2026-11-15 — Phase 3 / bug tracker — docs/bug-citadel-side-entrances — SamarjitBhogal + Claude Code
 
 - What was done: logged BUG-8 as Task SCRUM-443 under SCRUM-433 (label `bug`, screenshot

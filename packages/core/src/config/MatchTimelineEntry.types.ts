@@ -17,6 +17,8 @@ export type TimelineFrame = {
 /** Each timeline action's fields, by kind. A new kind is one line here and one handler class. */
 type TimelineActionPayloads = {
   readonly 'enter-phase': { readonly phase: MatchPhase };
+  /** The gem erupts and summons `bossId` (12 §3), which `SpawnSystem` spawns on its next pass. */
+  readonly 'summon-greater-boss': { readonly bossId: string };
 };
 
 /** The kind of a timeline action, e.g. `enter-phase`. */

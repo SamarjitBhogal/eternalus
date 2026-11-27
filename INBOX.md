@@ -35,12 +35,87 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
+- [x] **The gem eruption and the Greater Boss: choices to confirm (Aryan Walanj, 2026-11-22,
+      `feat/cathedral-eruption-boss`).** Sam (2026-11-15, chat): the boss is in, sprint 3.6 is
+      Aryan's, `GuardController` is the interim. Built: at mid-game (DEC-81, 15:00 of the 30-minute
+      plan) the gem erupts: the gem entity is removed, and one neutral `greater-boss` spawns at the
+      Cathedral's centre, once, with one basic attack and no moves. Every number is `TUNE`; please
+      confirm or replace each.
+      (1) **Cut-scene (Aryan's design, 2026-11-22).** The camera turns to the Cathedral 1.5 s before
+      the eruption, the gem bursts (white flash, two purple rings, a short shake) and the camera holds
+      2.5 s, then returns. The match keeps running, the player keeps control, and a fresh move press
+      skips it. Not in a Duel. (2) **Size.** Footprint radius 2.5 m (Aryan; reference 04 "obscenely
+      massive"). A body that big would widen every guard's DEC-144/DEC-181 leash sum, so the boss
+      counts as no other guard's target: a map test checks that no other guard post reaches its zone.
+      Its own plan has a 7 m tolerance (1.49 m walk + 2.5 + 1.25 + 1.5 m stance). (3) **Health.**
+      balancing.md's 40 × refHealth at level 7, refHealth(L) = 650 × 1.08^(L − 1), so 41,259 (level 7
+      was set for a 20-minute match). (4) **Hit.** One basic attack of 0.45 × refHealth = 464 every
+      2.5 s, reach 1.5 m. (5) **Movement and vision.** The heavy minion's speed (2.8 m/s), acceleration (14) and mass
+      (3.125), and a vision radius of 25 m (the zone's radius): none has a reference value. (6) **Zone.** A 25 m circle
+      around the Cathedral capture zone's centre (balancing.md "centre zone, radius 25 m"); the zone is
+      the boss's guard home. Does it also lock the Cathedral's capture while it lives, as the
+      mini-boss locks its zone? (7) **Respawn.** None. (8) **Reward.** DEC-237's flat 5 levels is not built
+      in this PR (it comes with the boss's moves); it takes 25% of a minion's hit.
+      (9) `boss-summoned` names its kind as `heavy-mob` until the `GreaterBoss` class lands.
+      (10) **Other guards near the boss.** No other guard counts the boss in its leash sum. A map
+      test checks that no other guard post on the default map (seeds 1 to 3) reaches its zone. But
+      a Cathedral checkpoint's defenders (#130) are leashed to the capture zone itself, so they
+      will fight the boss. Is that intended, or should the defenders leave it alone?
+  - **Answered 2026-11-26 by DEC-370 and DEC-371** (PR #160 R5). (1) The cut-scene plays only
+    near the Cathedral; the burst shows on the minimap. (2), (3), (5) and (7) stay as built. (4),
+    (8) and the move order are #164's. (6) The boss locks the Cathedral's capture. (9) is a code
+    interim, no question. (10) No defenders while the boss lives (the lock), and the eruption
+    kills every unit in the Cathedral. Built in `feat/cathedral-eruption-boss`; open follow-ups
+    are the item below.
+
+- [x] **The eruption's blast and the cut-scene's reach: three readings to confirm (Aryan
+      Walanj, 2026-11-26, PR #160 R5).** (1) **Who dies.** "if any defenders or entities are in the
+      cathedral when the boss erupts, they die to the explosion" is built as every unit, Legends
+      too, standing in the Cathedral's capture zone (the whole building, DEC-145), on the tick
+      after the eruption. (2) **Credit.** The blast is no team's: no kill, points or XP for anyone
+      (swholtzman sends you a card for (1) and (2)). (3) **"Near".** The cut-scene plays for a
+      player whose Legend is within 50 m of the gem (twice the 25 m centre zone; `TUNE`, no
+      reference value). A player farther away sees the burst on the minimap only while the
+      Cathedral is on it (the minimap shows 200 m around the player, DEC-182). Confirm or give
+      values.
+  - **Answered 2026-11-27 by DEC-415** (Owner Calls v103). (1) and (2): every unit dies, Legends
+    too, with no kill credit, as built. (3): 50 m, as built.
+
+- [ ] **Better than design: the blast's "kill" hit in the damage design (swholtzman reviewer,
+      2026-11-27, critic on PR #160 R6 S1).** For sign-off. The eruption blast now uses
+      `DamagePipeline.kill`: one hit for the unit's whole health that no damage rule can shrink or
+      block, so a strong minion or a unit with a damage-reduction status still dies. Architecture
+      05 §9 records `kill` only in its "Implementation status" note, and its design text says every
+      hit runs the fixed rule order. (1) Add one line for `kill` to the §9 design text. (2)
+      Optional while `kill` has one caller: split the rules into gates (unbreakable walls, friendly
+      fire), which `kill` would keep, and scalers (statuses, minion strength, boss share), which it
+      skips.
+
+- [x] **Better than design: shared boss numbers (Aryan Walanj, 2026-11-22, critic on
+      `feat/cathedral-eruption-boss`).** For sign-off. (1) `greaterBoss.ts` copies balancing.md's
+      Warrior anchor (`650 × 1.08^(L − 1)`) as its own `REF_HEALTH`; a shared `refHealth(level)`
+      helper in `content/`, built from the Warrior's content, would keep every boss in step with a
+      Legend retune (balancing.md: the boss table "never silently detunes"). (2) The Greater Boss and
+      the capture point boss each repeat the heavy minion's movement and reach; a shared heavy-mob
+      base would hold them once. Adopt now, with the boss's moves, or leave?
+  - **Answered 2026-11-26 by DEC-371 E6** ("do it now"). Built in PR #160 as
+    `content/mobs/bossReference.ts`. One reading to confirm: `refHealth` keeps balancing.md's 650
+    anchor and grows 8% per level, compounding (balancing.md); it does not read `warrior.ts`.
+    Built purely on the Warrior's content (600 at level 1, +8% of it per level, added), the
+    Greater Boss would have 35,520 health, not the 41,259 E3 keeps. The capture point boss's
+    health is now `10 × refHealth(4)` = 8,188 (was the rounded 8,200). Better than design (#160
+    critic): the corner boss uses the same MiniBoss row and still has 8,200 (DEC-296); should it
+    move to `10 × refHealth(4)` too, so both MiniBoss-row bosses agree?
+  - **Answered 2026-11-27 by DEC-415** (Owner Calls v103): yes. The corner boss now has
+    `10 × refHealth(4)` = 8,188, the same as the capture point boss (PR #160).
+
+- [x] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only
       its group's home (`CAMP_BODY`: "a camp is only its group's home"): the camp's mobs are what
       players fight, and no reference doc gives the camp body health of its own. Should a camp
       become breakable (and if so, what happens to its mobs and respawns)? A breakable camp leaves
       the shared `NEVER_DAMAGED` spread with a one-line change.
+  - **Answered 2026-11-26 by DEC-372** ("Keep it. A forest camp cannot be destroyed"). No change.
 
 - [ ] **Better than design: four Cathedral gem items (#132 pre-PR critic, 2026-11-25).** Not
       built in #132; each would be a small follow-up PR if you agree. (BTD3) One body: the gem's

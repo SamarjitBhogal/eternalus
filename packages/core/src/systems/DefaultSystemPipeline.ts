@@ -30,6 +30,7 @@ import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
 import type { DefaultSystemPipelineOptions } from './DefaultSystemPipeline.types';
 import { DuelRoundSystem } from './DuelRoundSystem';
+import { GemEruptionSystem } from './GemEruptionSystem';
 import { EnragedSystem } from './EnragedSystem';
 import { HordeSystem } from './HordeSystem';
 import { InvariantSystem } from './InvariantSystem';
@@ -62,9 +63,10 @@ import { SystemPipeline } from './SystemPipeline';
  * progress, statuses, jumps (DEC-390: an airborne entity moves by its takeoff velocity), movement,
  * collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
- * progression (kill XP), minion veterancy, structure losses and breakability, spawning (none in a
- * Duel, SCRUM-445), enraging, out-of-combat healing (DEC-188), respawn (queues the dead Legends,
- * FR-051), death, capture points, the Cathedral gem, the match director, then invariants last.
+ * the gem eruption's blast (DEC-371), progression (kill XP), minion veterancy, structure losses
+ * and breakability, spawning (none in a Duel, SCRUM-445), enraging, out-of-combat healing
+ * (DEC-188), respawn (queues the dead Legends, FR-051), death, capture points, the Cathedral
+ * gem, the match director, then invariants last.
  * Combat runs after movement, so a unit with a target in reach faces it, not its own way
  * (DEC-192). This is the one place a system is added, at its position in the tick (architecture
  * 02 §9). It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the
@@ -145,6 +147,10 @@ export class DefaultSystemPipeline extends SystemPipeline {
           ]),
       new CombatSystem(damage),
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
+      // The eruption's blast kills before progression and death (DEC-371); none in a Duel (DEC-36).
+      ...(duelStarts === undefined
+        ? [new GemEruptionSystem(state, damage, CATHEDRAL_GEM.eruption)]
+        : []),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
       new VeterancySystem(state, statuses, veterancy),
