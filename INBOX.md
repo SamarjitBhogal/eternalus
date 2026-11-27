@@ -32,6 +32,20 @@ review comments under "Feedback". Answered decisions are recorded in
       (the only `vi.mock` in core). No gameplay number or behaviour changes. Approve (built in its
       own PR) or drop.
 
+- [ ] **HC-B66 — Better than the design, not built, sign-off asked: five clean-ups around the
+      damage numbers** (W5, DEC-410, `feat/damage-numbers` critics, 2026-11-27). No gameplay number
+      or behaviour changes. Approve each (built in its own PR) or drop it.
+      (1) `Match` repeats "observe after the first snapshot, observe after each step, destroy" for
+      the health bars, the damage numbers and the Legend bodies. One `DamageNumbers` collaborator,
+      or a `SnapshotObserver` list, removes the repeats and makes `Match.ts` (about 342 lines)
+      shorter. (2) Live settings reach a running match two ways: `MatchHost` pushes the key
+      bindings on the bus `settings` event, and `Match` pulls `SettingsController.current` for the
+      damage numbers. Pick one way for both. (3) Key the badge-kind map on the damage source kind,
+      so a later `environment` hazard (lava, camp fire) needs one entry. (4) One frame clock:
+      `Match.render` and `DamageBadgeLayer.show` each compute the frame tick; pass it in.
+      (5) `SettingsController` owns the rule "Reduce motion setting OR the system's
+      `prefers-reduced-motion`"; today the CSS and `matchSettingReaders` each hold it.
+
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 

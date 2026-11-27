@@ -143,6 +143,7 @@ const catalogue = createCoreCatalogue({
 }).load();
 // The Duel server's address (ADR 0016): read here only, like every other build-time setting.
 const duelServerUrl: unknown = import.meta.env.VITE_DUEL_SERVER_URL;
+const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 const browserMatchDeps: BrowserMatchDeps = {
   resources,
   window,
@@ -150,7 +151,7 @@ const browserMatchDeps: BrowserMatchDeps = {
   gameConfig,
   bus: eventBus,
   settings,
-  prefersReducedMotion: () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  prefersReducedMotion: () => reducedMotionQuery.matches,
   clock: sessionClock,
   sinks: pageSinks,
 };

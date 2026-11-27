@@ -48,7 +48,8 @@ export class DamageBadgeLayer implements WorldLayer {
 
   /**
    * @param badges - The badges to draw (`DamageBadges.badges`).
-   * @param isReducedMotion - The Reduce motion setting (UE-03), read each frame.
+   * @param isReducedMotion - Whether motion is reduced (the Reduce motion setting, UE-03, or the
+   *   system's `prefers-reduced-motion`), read each frame.
    * @param tickRate - Ticks per second, to turn ticks into seconds.
    */
   public constructor(

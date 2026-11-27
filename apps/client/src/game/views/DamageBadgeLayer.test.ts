@@ -198,11 +198,16 @@ describe('DamageBadgeLayer (W5, DEC-410)', () => {
   it('sways a flame sideways only as it fades, and not with reduced motion (W5b)', () => {
     const textX = (seconds: number, isReducedMotion = false): number =>
       draw([badge({ kind: 'burn' })], seconds, { isReducedMotion })[0]?.textAt.x ?? Number.NaN;
-    const fading = BADGE_HOLD_SECONDS + BADGE_FADE_SECONDS / 2;
+    const fadeMoments = Array.from(
+      { length: 8 },
+      (_, index) => BADGE_HOLD_SECONDS + (BADGE_FADE_SECONDS * (index + 1)) / 9,
+    );
 
     expect(textX(BADGE_HOLD_SECONDS)).toBeCloseTo(0);
-    expect(Math.abs(textX(fading))).toBeGreaterThan(0.01);
-    expect(textX(fading, true)).toBe(0);
+    expect(Math.max(...fadeMoments.map((seconds) => Math.abs(textX(seconds))))).toBeGreaterThan(
+      0.01,
+    );
+    expect(fadeMoments.map((seconds) => textX(seconds, true))).toEqual(fadeMoments.map(() => 0));
   });
 
   it('with reduced motion on, neither pops nor moves a badge: it only appears and fades', () => {

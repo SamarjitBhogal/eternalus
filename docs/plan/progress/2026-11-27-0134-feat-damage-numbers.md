@@ -40,3 +40,13 @@ Phase 3 / sprint 3 · feat/damage-numbers (from `phase/3-sprint-3-work` f801af9a
 - Appended 2026-11-27 (DAMAGE-NUMBERS-4): merged `phase/3-sprint-3-work` 8ad77bfd (#149, #177). One
   conflict: both sides added a 2026-11-27 batch at the top of the decisions log. Both are kept,
   DEC-410 above DEC-406 (newest batch first). The full check result on the merge is in the PR body.
+- Appended 2026-11-27 (DAMAGE-NUMBERS-4): critic round 2 on the fix commit 7ef830b7 passed with
+  findings and no blockers. Fixed: D1 (the five better-than-design items are `INBOX.md` HC-B66),
+  D2 (TSDoc), D3 (`main.tsx` builds the reduced-motion query once), D4 (the DEC-410 row marks the
+  session's reading), D6 (the sway test samples 8 moments; break B53 turned it red). Accepted: D5
+  (two big badges overlap by about 0.25 world units; `// TUNE:` values).
+- Appended 2026-11-27 (DAMAGE-NUMBERS-4): merged `phase/3-sprint-3-work` e3521feb (#183, the Legend
+  jump). Three conflicts. `views/EntityLayer.ts`: kept #183's jump height (`earlier`, `heightOf`,
+  `mix`) and this branch's shared `lerpPoint` in place of the private `lerp`. The 08 §11 notes and
+  the decisions-log batches: both kept each time (the jump note before the damage-numbers note;
+  DEC-420 above DEC-410, newest batch first).
