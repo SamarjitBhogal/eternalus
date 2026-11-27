@@ -4,7 +4,7 @@ description: Sprint checklists for the performance pass against budgets, the hea
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-26
 tags: [plan, phase-6, performance, balance, art, audio, reliability, release]
 paths: ['packages/core/src/content/**', 'packages/core/src/diagnostics/**', 'apps/client/assets/**']
 related:
@@ -65,17 +65,21 @@ and the budget split of [Phase 3 sprint 3.8](phase-3-minions-hordes-and-ai.md#sp
 - [ ] **Flow-field, AI and invariant budgets** (per-tick rebuild cell budget, AI cadence and
       stagger, `light` invariants every tick and `heavy` only in dev/soak builds, all as
       `GameConfig`/`DebugConfig` values). Owner: _. Test: a bridge destruction at 144 per team
-      is absorbed with no frame > 50 ms; AI ≤ 1.5 ms p95. Done when: no budget is a literal.
+      is absorbed with at most one missed frame and no frame > 50 ms (architecture 08 §9, DEC-368);
+      AI ≤ 1.5 ms p95. Done when: no budget is a literal.
 - [ ] **Memory, leaks and the slow machine** (30-minute headless soak sampling entity count,
       listener count, ring-buffer and pool sizes every 1,800 ticks; a manual browser run with
       `measureUserAgentSpecificMemory()` where available; the same match on the oldest teammate
-      laptop, `Recommendation:` tick ≤ 12 ms p95 and median frame ≤ 33 ms there). Owner: _.
+      laptop, `Recommendation:` tick ≤ 12 ms p95; median frame ≤ two 60 Hz frames there
+      (DEC-368)). Owner: _.
       Test: counters show no monotonic growth over 54,000 ticks. Done when: both machines are
       named in a progress entry with their numbers.
 
 **Success metric:** tick p95 ≤ 8 ms at 144 units per team + 20 Legends and 60 fps (median frame
-≤ 16.7 ms, no frame > 50 ms) over a 60 s segment of the busiest match state on the reference
-laptop; 0 per-tick allocations in the four hot systems.
+≤ one 60 Hz frame, no missed frame, no frame > 50 ms) over a 60 s segment of the busiest match
+state on the reference laptop; 0 per-tick allocations in the four hot systems.
+[Architecture 08](../architecture/08-game-engine.md) §9 defines "one 60 Hz frame", "missed
+frame" and the missed-frame count (DEC-328, DEC-336, DEC-368).
 
 ## Sprint 6.2 — Balance pass via headless sim mode
 
@@ -229,19 +233,19 @@ a progress entry.
 
 ## Success metrics (phase level)
 
-| Metric                                                        | Target                                               |
-| ------------------------------------------------------------- | ---------------------------------------------------- |
-| Tick time at 144 units/team + 20 Legends                      | p95 ≤ 8 ms at 30 TPS on the reference laptop         |
-| Frame rate (busiest match state, 60 s)                        | median ≤ 16.7 ms, no frame > 50 ms                   |
-| Win rate light vs dark (200 seeds)                            | 45–55%                                               |
-| Match length (200 seeds)                                      | median 18–25 min, P95 < 35 min, 0 timeouts           |
-| Invariant violations (100 seeded matches at `heavy`)          | 0                                                    |
-| Unhandled exceptions (100 matches + 30-min play × 3 browsers) | 0                                                    |
-| Licensed assets                                               | 100% of manifest entries with licence and source     |
-| Docs check                                                    | 0 errors, 0 staleness warnings                       |
-| README quick start                                            | verified on macOS, Windows and Linux                 |
-| Coverage                                                      | core ≥ 90%, client ≥ 70% (roadmap ratchet)           |
-| Release                                                       | `v0.1.0-mvp` on green `main`; deliverables submitted |
+| Metric                                                        | Target                                                                                                                  |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Tick time at 144 units/team + 20 Legends                      | p95 ≤ 8 ms at 30 TPS on the reference laptop                                                                            |
+| Frame rate (busiest match state, 60 s)                        | median ≤ one 60 Hz frame, no missed frame, no frame > 50 ms (terms and the count: architecture 08 §9; DEC-336, DEC-368) |
+| Win rate light vs dark (200 seeds)                            | 45–55%                                                                                                                  |
+| Match length (200 seeds)                                      | median 18–25 min, P95 < 35 min, 0 timeouts                                                                              |
+| Invariant violations (100 seeded matches at `heavy`)          | 0                                                                                                                       |
+| Unhandled exceptions (100 matches + 30-min play × 3 browsers) | 0                                                                                                                       |
+| Licensed assets                                               | 100% of manifest entries with licence and source                                                                        |
+| Docs check                                                    | 0 errors, 0 staleness warnings                                                                                          |
+| README quick start                                            | verified on macOS, Windows and Linux                                                                                    |
+| Coverage                                                      | core ≥ 90%, client ≥ 70% (roadmap ratchet)                                                                              |
+| Release                                                       | `v0.1.0-mvp` on green `main`; deliverables submitted                                                                    |
 
 ## Exit criteria
 

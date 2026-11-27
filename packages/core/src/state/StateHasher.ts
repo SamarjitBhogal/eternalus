@@ -89,6 +89,10 @@ export class StateHasher {
       });
       parts.push(['guards', ...posts]);
     }
+    // Cleared checkpoint defender sets (07 §7) are appended only once one exists.
+    if (state.guards.cleared.length > 0) {
+      parts.push(['clearedSets', ...state.guards.cleared]);
+    }
     // Dead Legends waiting to respawn (DEC-295) are appended only while some wait, for the same
     // reason: each one's team, return tick and owed XP, then the waiting Legend's own fields, as
     // an entity in the store hashes them, since it is out of the store meanwhile.
@@ -117,6 +121,14 @@ export class StateHasher {
         tallies.push([team, lane, amount]);
       });
       parts.push(['allyDamage', ...tallies]);
+    }
+    // Defender damage (07 §7) is appended only while some is counted, for the same reason.
+    if (state.defenderDamage.size > 0) {
+      const tallies: unknown[] = [];
+      state.defenderDamage.forEach((defenceId, legendId, amount) => {
+        tallies.push([defenceId, legendId, amount]);
+      });
+      parts.push(['defenderDamage', ...tallies]);
     }
     // Lost towers are appended only once a lane has one, for the same reason.
     const lost = PLAYABLE_TEAMS.flatMap((team) =>
