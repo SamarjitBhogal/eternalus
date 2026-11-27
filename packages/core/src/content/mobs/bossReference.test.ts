@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { CAPTURE_POINT_BOSS } from './capturePointBoss';
+import { CORNER_BOSS } from './cornerBoss';
 import { GREATER_BOSS } from './greaterBoss';
 import { HEAVY_MINION } from './heavyMinion';
 import { HEAVY_MOB_BASE, refHealth } from './bossReference';
@@ -12,10 +13,13 @@ describe('refHealth', () => {
     expect(refHealth(7)).toBeCloseTo(650 * 1.08 ** 6, 9);
   });
 
-  it('sizes both bosses from their balancing.md rows', () => {
+  it('sizes the bosses from their balancing.md rows', () => {
     // MiniBoss at level 4: 10 × refHealth ≈ 8,200, 0.25 × refHealth ≈ 205 per hit.
     expect(CAPTURE_POINT_BOSS.baseHealth).toBe(Math.round(10 * refHealth(4)));
     expect(CAPTURE_POINT_BOSS.attack.damage).toBe(205);
+    // The corner boss uses the same MiniBoss row, so the same health (DEC-415): 8,188.
+    expect(CORNER_BOSS.baseHealth).toBe(Math.round(10 * refHealth(4)));
+    expect(CORNER_BOSS.baseHealth).toBe(8188);
     // GreaterBoss at level 7: the 41,259 the owner keeps (DEC-371 E3), 0.45 × refHealth = 464.
     expect(GREATER_BOSS.baseHealth).toBe(41_259);
     expect(GREATER_BOSS.attack.damage).toBe(464);

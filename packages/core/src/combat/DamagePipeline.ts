@@ -18,7 +18,8 @@ import type { KillCredit } from './KillCredit';
  * enemy damager as its killer (DEC-346).
  *
  * Every rule that changes a hit (friendly fire, statuses, structure multipliers, breakability) is a
- * `DamageStep`, run in order before `Health`; add one in `defaultDamageSteps.ts`.
+ * `DamageStep`, run in order before `Health`; add one in `defaultDamageSteps.ts`. `kill` is the one
+ * hit no step changes.
  */
 export class DamagePipeline {
   /**
@@ -42,6 +43,28 @@ export class DamagePipeline {
     source: DamageSource,
     path?: HitPath,
   ): DamageResult {
+    return this.hit(state, targetId, amount, source, this.steps, path);
+  }
+
+  /**
+   * Kills `targetId` with one hit from `source` for its whole health, shields included. No step
+   * changes or blocks it (the gem eruption's blast, DEC-371 "BOSS guards" C: every unit in the zone
+   * dies), and it emits the same events as a lethal `apply`, so kill credit and death are unchanged.
+   * It skips breakability and friendly fire too: never use it on a wall, a gate or an ally.
+   */
+  public kill(state: GameState, targetId: EntityId, source: DamageSource): DamageResult {
+    // `Health.applyDamage` takes only what the shields and health hold.
+    return this.hit(state, targetId, Number.MAX_VALUE, source, []);
+  }
+
+  private hit(
+    state: GameState,
+    targetId: EntityId,
+    amount: number,
+    source: DamageSource,
+    steps: readonly DamageStep[],
+    path?: HitPath,
+  ): DamageResult {
     const target = state.entities.get(targetId);
     if (target === undefined) {
       return { applied: false, reason: 'no-target' };
@@ -59,7 +82,7 @@ export class DamagePipeline {
       return { applied: false, reason: 'zero-damage' };
     }
     const from = path === undefined ? {} : { path };
-    const final = this.steps.reduce(
+    const final = steps.reduce(
       (current, step) =>
         Math.max(0, step.adjust({ targetId, amount: current, source, ...from }, state)),
       amount,

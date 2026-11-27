@@ -109,7 +109,7 @@ describe('BodyPartBonusStep', () => {
     expect(step.adjust(hit(boss, shotAcross(FRONT), legend.id), state)).toBe(100);
   });
 
-  it('gives a hit from no side no bonus: a bleed or burn tick (DEC-381 (7) A), a blast, a collapse', () => {
+  it('gives a hit from no side no bonus: a bleed or burn tick (DEC-381 (7) A), a collapse', () => {
     const { state, boss, legend, standAt } = setUp();
     standAt(BACK);
 

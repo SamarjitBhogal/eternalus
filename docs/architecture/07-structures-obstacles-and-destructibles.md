@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -563,8 +563,8 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   multiples of the shared `refHealth(level)` and its movement and reach the shared
   `HEAVY_MOB_BASE` (`content/mobs/bossReference.ts`, DEC-371 E6), as the capture point boss's.
   Minions deal it a quarter of their hit (`BOSS_MINION_DAMAGE_TAKEN`); its kill reward is #164's
-  (DEC-371 E8). The open readings are in `INBOX.md` (the eruption's blast item). In a Duel the
-  action does nothing (DEC-36), so the gem stays and no boss comes.
+  (DEC-371 E8). The blast kills every unit with no kill credit and the cut-scene's reach is 50 m
+  (DEC-415). In a Duel the action does nothing (DEC-36), so the gem stays and no boss comes.
 
 **2026-11-09 (`feat/bosses-p3`, corner camp boss, interim; updated 2026-11-17).** DEC-236
 approves corner camps for Phase 3, with the corner boss on `GuardController` as an interim

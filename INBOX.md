@@ -103,7 +103,7 @@ Reply inline (`Decision: …`).
     kills every unit in the Cathedral. Built in `feat/cathedral-eruption-boss`; open follow-ups
     are the item below.
 
-- [ ] **The eruption's blast and the cut-scene's reach: three readings to confirm (Aryan
+- [x] **The eruption's blast and the cut-scene's reach: three readings to confirm (Aryan
       Walanj, 2026-11-26, PR #160 R5).** (1) **Who dies.** "if any defenders or entities are in the
       cathedral when the boss erupts, they die to the explosion" is built as every unit, Legends
       too, standing in the Cathedral's capture zone (the whole building, DEC-145), on the tick
@@ -113,6 +113,18 @@ Reply inline (`Decision: …`).
       reference value). A player farther away sees the burst on the minimap only while the
       Cathedral is on it (the minimap shows 200 m around the player, DEC-182). Confirm or give
       values.
+  - **Answered 2026-11-27 by DEC-415** (Owner Calls v103). (1) and (2): every unit dies, Legends
+    too, with no kill credit, as built. (3): 50 m, as built.
+
+- [ ] **Better than design: the blast's "kill" hit in the damage design (swholtzman reviewer,
+      2026-11-27, critic on PR #160 R6 S1).** For sign-off. The eruption blast now uses
+      `DamagePipeline.kill`: one hit for the unit's whole health that no damage rule can shrink or
+      block, so a strong minion or a unit with a damage-reduction status still dies. Architecture
+      05 §9 records `kill` only in its "Implementation status" note, and its design text says every
+      hit runs the fixed rule order. (1) Add one line for `kill` to the §9 design text. (2)
+      Optional while `kill` has one caller: split the rules into gates (unbreakable walls, friendly
+      fire), which `kill` would keep, and scalers (statuses, minion strength, boss share), which it
+      skips.
 
 - [x] **Better than design: shared boss numbers (Aryan Walanj, 2026-11-22, critic on
       `feat/cathedral-eruption-boss`).** For sign-off. (1) `greaterBoss.ts` copies balancing.md's
@@ -129,6 +141,8 @@ Reply inline (`Decision: …`).
     health is now `10 × refHealth(4)` = 8,188 (was the rounded 8,200). Better than design (#160
     critic): the corner boss uses the same MiniBoss row and still has 8,200 (DEC-296); should it
     move to `10 × refHealth(4)` too, so both MiniBoss-row bosses agree?
+  - **Answered 2026-11-27 by DEC-415** (Owner Calls v103): yes. The corner boss now has
+    `10 × refHealth(4)` = 8,188, the same as the capture point boss (PR #160).
 
 - [x] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only

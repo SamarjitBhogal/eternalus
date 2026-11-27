@@ -10,8 +10,8 @@ export const CUTSCENE = {
   holdSeconds: 2.5,
   /**
    * How close (world units, Legend to gem) a player must be for the cut-scene to play (DEC-371
-   * E1: "only to players near the Cathedral"). TUNE: no reference value; twice the Cathedral's
-   * 25 m centre zone (INBOX).
+   * E1: "only to players near the Cathedral"). DEC-415: the owner keeps 50 m, twice the
+   * Cathedral's 25 m centre zone. TUNE: after play-testing.
    */
   nearRadius: 50,
   /** How long the burst lasts on the screen and the minimap, from the eruption. */
