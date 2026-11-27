@@ -1,6 +1,8 @@
 import {
   type AttackMode,
   type EntityId,
+  type EntitySnapshot,
+  findGemAt,
   findMapObjectAt,
   findUnitAt,
   type MapObject,
@@ -13,6 +15,7 @@ import type { AbilityCasts } from './AbilityCasts';
 import type { Projection } from './engine/input/Projection.types';
 import type { IntentSource } from './Match.types';
 import type { PlayerActions } from './PlayerActions';
+import type { ViewRegistry } from './views/ViewRegistry';
 
 /** The parts of a snapshot an attack target is picked from: its units and map objects. */
 type TargetSnapshot = Pick<Snapshot, 'entities' | 'mapObjects'>;
@@ -39,6 +42,9 @@ export class PlayerCommands implements PlayerActions {
   /** The attack mode of `lastAim`'s command: a change of mode queues a new command. */
   private attackMode: AttackMode = 'basic';
 
+  /** Whether the Legend was in the last snapshot: a Legend back from a respawn returns stopped. */
+  private wasPlayerPresent = false;
+
   /** Whether the canvas gestures own the main button's press (`setPointerClaimed`). */
   private isPointerClaimed = false;
 
@@ -51,6 +57,7 @@ export class PlayerCommands implements PlayerActions {
     private readonly simulation: Pick<Simulation, 'enqueueCommand'>,
     private readonly camera: Projection,
     private readonly mapObjects: readonly MapObject[],
+    private readonly views: ViewRegistry,
     private readonly casts: AbilityCasts,
   ) {}
 
@@ -69,8 +76,15 @@ export class PlayerCommands implements PlayerActions {
    *
    * @returns Whether the player's movement input is non-zero this tick.
    */
-  public apply(actorId: EntityId): boolean {
+  public apply(actorId: EntityId, snapshot: TargetSnapshot): boolean {
     const { move, isAttacking, isMeleeAttacking, aim, triggered } = this.input.read(this.camera);
+    const isPlayerPresent = snapshot.entities.some((entity) => entity.id === actorId);
+    if (isPlayerPresent && !this.wasPlayerPresent) {
+      // A Legend back from a respawn has no movement and no aim: send the held input again.
+      this.lastMove = { x: 0, y: 0 };
+      this.lastAim = null;
+    }
+    this.wasPlayerPresent = isPlayerPresent;
     const isHeld = isAttacking === true && !this.isPointerClaimed;
     const isConsumed = this.casts.apply(actorId, { triggered, aim, isAttacking: isHeld });
     const isMeleeHeld = isMeleeAttacking === true && !this.isPointerClaimed;
@@ -100,7 +114,7 @@ export class PlayerCommands implements PlayerActions {
    * @returns Whether a unit was under the point; it wins over a roof (`MatchViewControls.clickAt`).
    */
   public attackUnitAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): boolean {
-    const targetId = findUnitAt(snapshot.entities, actorId, point);
+    const targetId = findUnitAt(snapshot.entities, actorId, point, this.visualRadiusFor);
     if (targetId === null) {
       return false;
     }
@@ -110,11 +124,14 @@ export class PlayerCommands implements PlayerActions {
 
   /**
    * The developer explorer's click on a map object (DEC-150): queues one `attack-target` for the
-   * Legend `actorId` on the living map object under `point`; open ground or a destroyed object
-   * queues nothing.
+   * Legend `actorId` on the Cathedral gem under `point`, else on the living map object there (the
+   * gem is drawn on top of the building, DEC-292); open ground or a destroyed object queues
+   * nothing.
    */
   public attackObjectAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): void {
-    const targetId = findMapObjectAt(this.mapObjects, snapshot.mapObjects ?? [], point);
+    const targetId =
+      findGemAt(snapshot.entities, point) ??
+      findMapObjectAt(this.mapObjects, snapshot.mapObjects ?? [], point);
     if (targetId !== null) {
       this.simulation.enqueueCommand({ type: 'attack-target', actorId, targetId });
     }
@@ -142,4 +159,7 @@ export class PlayerCommands implements PlayerActions {
     this.lastAim = aim;
     this.attackMode = mode;
   }
+
+  private readonly visualRadiusFor = (entity: EntitySnapshot): number =>
+    this.views.viewFor(entity).visualRadiusOf?.(entity) ?? entity.transform?.radius ?? 0;
 }

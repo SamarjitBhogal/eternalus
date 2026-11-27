@@ -10,8 +10,9 @@ export class MeleeAttackStrategy implements AttackStrategy {
    * (`weaponSourceOf`). The hit lands in this tick, so its `onHit` effects run here too (05 §10),
    * after the damage, and it is recorded as the attack's hit (`EntityStore.recordHits`). An aim
    * with no target is a whiff: it hits nothing (a one-target attack has no area, DEC-184 is about
-   * weapons). So is a target that takes no damage now (`EntityStore.takesNoDamage`): no damage, no
-   * on-hit step, no hit (DEC-317 addendum).
+   * weapons). So is a target that ignores hits (`EntityStore.ignoresHits`: it takes no damage now):
+   * no damage, no on-hit step, no hit (DEC-317 addendum). The Cathedral gem takes no damage but is
+   * hit, so it strikes the attacker (DEC-292).
    */
   public attack(
     attacker: Entity,
@@ -19,7 +20,7 @@ export class MeleeAttackStrategy implements AttackStrategy {
     attack: UnitAttack,
     { state, damage, hits }: AttackContext,
   ): void {
-    if (targetId === null || state.entities.takesNoDamage(targetId)) {
+    if (targetId === null || state.entities.ignoresHits(targetId)) {
       return;
     }
     damage.apply(state, targetId, attack.damage, weaponSourceOf(attacker));

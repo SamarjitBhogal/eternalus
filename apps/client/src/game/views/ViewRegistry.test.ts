@@ -21,6 +21,7 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
   statuses: null,
   projectile: null,
   swing: null,
+  gem: null,
 });
 
 describe('ViewRegistry', () => {

@@ -27,6 +27,8 @@ const NOT_YET_SUPPORTED: readonly Command[] = [
   { type: 'dev-set-controller', entityId: 'entity-1', controllerId: 'bot-legend' },
 ];
 
+const TEST_CONTROLLER = { controllerId: 'rover', profileId: 'rover', memory: {} } as const;
+
 const rejectionsOf = (command: Command, handlers: CommandHandlers): string[] => {
   const state = new GameState(createDefaultGameConfig(), 1);
   const reasons: string[] = [];
@@ -42,9 +44,12 @@ describe('createDefaultCommandHandlers', () => {
   it('routes cast-ability through the injected cast check and announces its reason', () => {
     const asked: unknown[] = [];
     const handlers = createDefaultCommandHandlers({
-      blockedBy: (_state, actorId, slot, aim) => {
-        asked.push({ actorId, slot, aim });
-        return 'on-cooldown';
+      rover: TEST_CONTROLLER,
+      cast: {
+        blockedBy: (_state, actorId, slot, aim) => {
+          asked.push({ actorId, slot, aim });
+          return 'on-cooldown';
+        },
       },
     });
 
@@ -53,7 +58,10 @@ describe('createDefaultCommandHandlers', () => {
   });
 
   it('routes attack-aim to its handler, which rejects an unknown actor (DEC-184)', () => {
-    const handlers = createDefaultCommandHandlers({ blockedBy: () => null });
+    const handlers = createDefaultCommandHandlers({
+      rover: TEST_CONTROLLER,
+      cast: { blockedBy: () => null },
+    });
 
     expect(
       rejectionsOf(
@@ -66,7 +74,10 @@ describe('createDefaultCommandHandlers', () => {
   it.each(NOT_YET_SUPPORTED)(
     'rejects $type as not supported until its system exists',
     (command) => {
-      const handlers = createDefaultCommandHandlers({ blockedBy: () => null });
+      const handlers = createDefaultCommandHandlers({
+        rover: TEST_CONTROLLER,
+        cast: { blockedBy: () => null },
+      });
       expect(rejectionsOf(command, handlers)).toEqual(['not-supported']);
     },
   );
@@ -82,6 +93,7 @@ describe('createDefaultCommandHandlers', () => {
       intent: unsupported,
       'dev-spawn': unsupported,
       'dev-remove-entity': unsupported,
+      'dev-remove-legend': unsupported,
       'dev-set-controller': unsupported,
     };
     expect(Object.keys(handlers)).not.toContain('move');

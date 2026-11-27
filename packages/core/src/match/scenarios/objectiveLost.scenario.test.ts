@@ -24,6 +24,9 @@ import { MatchTimeline } from '../MatchTimeline';
 
 /** A 0 s countdown: step 0 is held, so the first attack lands on step 1. */
 const CONFIG = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
+
+/** The match's assist window, as `Simulation` passes it (DEC-346). */
+const ASSIST_WINDOW_TICKS = loadScoring(CONFIG.tickRate).assistWindowTicks;
 const UNITS = loadDefaultContent(CONFIG.tickRate);
 const CURVES = loadLevelCurves();
 /** Far past the one hit the objective has left. */
@@ -53,6 +56,7 @@ const playOut = (prepare: (state: GameState) => void = () => undefined) => {
     loadWeapons(CONFIG.tickRate),
   );
   const pipeline = new DefaultSystemPipeline({
+    assistWindowTicks: ASSIST_WINDOW_TICKS,
     invariants: new DefaultInvariantRunner({
       debug: TEST_DEBUG_CONFIG,
       logger,

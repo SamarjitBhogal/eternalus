@@ -1,5 +1,6 @@
 import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
+import { CathedralGemState } from '../components/CathedralGemState';
 import { Combat } from '../components/Combat';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
@@ -46,6 +47,7 @@ export class EntitySnapshotter {
     const capture = entity.findComponent(Capturable);
     // A structure's outline comes from its map object, which the map draws.
     const outline = entity instanceof Structure ? undefined : entity.findComponent(Footprint);
+    const gem = entity.findComponent(CathedralGemState);
     return {
       id: entity.id,
       kind: entity.kind,
@@ -93,6 +95,15 @@ export class EntitySnapshotter {
       projectile: this.projectileOf(entity, transform),
       // `Combat.recordSwing` keeps a copy and replaces it on each swing, so it is shared as is.
       swing: entity.findComponent(Combat)?.lastSwing ?? null,
+      gem:
+        gem === undefined
+          ? null
+          : {
+              holder: gem.holder,
+              glowTicksLeft: gem.glowTicksLeft,
+              glowHits: gem.glowHits,
+              ticksSinceHit: gem.ticksSinceHit,
+            },
     };
   }
 

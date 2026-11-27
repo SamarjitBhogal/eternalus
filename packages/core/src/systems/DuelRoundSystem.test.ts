@@ -5,6 +5,7 @@ import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { Abilities } from '../components/Abilities';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
+import { LastEnemyHit } from '../components/LastEnemyHit';
 import { Movement } from '../components/Movement';
 import { StatusEffects } from '../components/StatusEffects';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
@@ -209,6 +210,44 @@ describe('DuelRoundSystem', () => {
     run();
 
     expect(bar.castsInProgress).toEqual([]);
+  });
+
+  it("readies the fallen Legend's abilities but its ultimate; the survivor keeps its cooldowns (FR-117)", () => {
+    const { add, hit, run } = setUp();
+    const light = add('light', true);
+    const dark = add('dark', true);
+    const bars = [light, dark].map((legend) => {
+      const bar = new Abilities({
+        abilities: ['blade-runner', 'veil', 'hamstring'],
+        ultimate: 'fury',
+      });
+      for (const runtime of bar.slots) runtime.cooldownUntilTick = 900;
+      legend.addComponent(bar);
+      return bar;
+    });
+    hit(dark, light);
+
+    run();
+
+    const cooldowns = bars.map((bar) =>
+      (['ability-1', 'ability-4'] as const).map((slot) => bar.slot(slot)?.cooldownUntilTick),
+    );
+    expect(cooldowns).toEqual([
+      [900, 900], // light survived: "reset ... upon death" (FR-117) is not its case
+      [0, 900], // dark fell: its other abilities are ready, the ultimate keeps its cooldown
+    ]);
+  });
+
+  it("forgets a reset Legend's last enemy hit, so it earns no gem kill in the next round (DEC-346)", () => {
+    const { add, hit, run } = setUp();
+    const light = add('light', true);
+    const dark = add('dark', true);
+    light.addComponent(new LastEnemyHit(dark.id, 0));
+    hit(dark, light);
+
+    run();
+
+    expect(light.findComponent(LastEnemyHit)).toBeUndefined();
   });
 
   it('ends in a draw when both teams reach the target on one tick', () => {

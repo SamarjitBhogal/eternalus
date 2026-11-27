@@ -32,6 +32,7 @@ describe('StructureView', () => {
         statuses: null,
         projectile: null,
         swing: null,
+        gem: null,
       },
       position: { x: 0, y: 0 },
       facing: { x: 1, y: 0 },

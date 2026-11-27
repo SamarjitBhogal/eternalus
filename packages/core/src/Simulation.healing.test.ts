@@ -15,6 +15,7 @@ import { MapPresentationBuilder } from './map/MapPresentationBuilder';
 import { Simulation } from './Simulation';
 import type { RosterSlot } from './Simulation.types';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
+import { clearCheckpointDefenders } from './__fixtures__/clearCheckpointDefenders';
 import type { GameState } from './state/GameState';
 import { isPlayableTeam, opponentOf } from './teams/playableTeams';
 
@@ -61,6 +62,7 @@ const match = () =>
 describe('Simulation with out-of-combat healing (DEC-188)', () => {
   it('heals a bot that retreated hurt back to the rejoin line, and it fights again', () => {
     const simulation = match();
+    clearCheckpointDefenders(simulation);
     const retreatedAt = new Map<string, number>();
     const rejoinedAt = new Map<string, number>();
     let fightsAfterRejoin = 0;

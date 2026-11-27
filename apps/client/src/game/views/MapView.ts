@@ -1,4 +1,10 @@
-import type { MapBuilding, MapDecoration, MapDefinition, MapFeature } from '@eternalus/core';
+import type {
+  MapBuilding,
+  MapDecoration,
+  MapDefinition,
+  MapFeature,
+  MapFeatureKind,
+} from '@eternalus/core';
 
 import type { Renderer } from '../engine/render/Renderer';
 import {
@@ -27,7 +33,11 @@ export class MapView implements WorldLayer {
   private readonly hasLaneSurfaces: boolean;
   private readonly dressedFeatures: ReadonlySet<string>;
 
-  /** Creates a view for one map; `scenery` supplies its ground-layer decorations. */
+  /**
+   * Creates a view for one map; `scenery` supplies its ground-layer decorations, and
+   * `featureSizes` the sizes core owns, which replace `FEATURE_STYLES`' by kind.
+   * An explicitly sized gameplay ring also draws around authored dressing.
+   */
   public constructor(
     map: MapDefinition,
     scenery: readonly MapDecoration[] = [],
@@ -35,6 +45,7 @@ export class MapView implements WorldLayer {
     detailArea?: () => WorldRect,
     private readonly buildings: readonly MapBuilding[] = [],
     private readonly isDestroyed: (id: string) => boolean = () => false,
+    private readonly featureSizes: Readonly<Partial<Record<MapFeatureKind, number>>> = {},
   ) {
     this.map = map;
     this.hasLaneSurfaces = scenery.some((piece) => piece.isLaneSurface === true);
@@ -51,15 +62,21 @@ export class MapView implements WorldLayer {
     this.drawGround(renderer);
     for (const feature of this.map.features) {
       if (this.isDestroyed(feature.id)) continue;
-      if (this.dressedFeatures.has(feature.id)) continue;
+      const style = FEATURE_STYLES[feature.kind];
+      const featureSize = this.featureSizes[feature.kind];
+      if (
+        this.dressedFeatures.has(feature.id) &&
+        !(style.shape === 'ring' && featureSize !== undefined)
+      )
+        continue;
       if (this.hiddenRoofs.has(feature.id)) continue;
       if (this.buildings.some((building) => building.id === feature.id)) continue;
-      const style = FEATURE_STYLES[feature.kind];
       const color = MapView.featureColor(feature);
       if (style.shape === 'footprint') {
         renderer.fillPolygon(feature.footprint ?? [], color);
       } else {
-        renderer.drawWorldGlyph({ shape: style.shape, size: style.size }, feature.position, color);
+        const size = featureSize ?? style.size;
+        renderer.drawWorldGlyph({ shape: style.shape, size }, feature.position, color);
       }
     }
   }

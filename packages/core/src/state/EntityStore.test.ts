@@ -9,6 +9,7 @@ import { Movement } from '../components/Movement';
 import { StatusEffects } from '../components/StatusEffects';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { TeamMembership } from '../components/TeamMembership';
 import type { Team } from '../teams/teams.types';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
@@ -16,6 +17,7 @@ import { Entity } from '../entities/Entity';
 import { EntityFactory } from '../entities/EntityFactory';
 import { Legend } from '../entities/Legend';
 import { Unit } from '../entities/Unit';
+import { IdGenerator } from '../utils/IdGenerator';
 import { EntityStore } from './EntityStore';
 
 class Dummy extends Entity {
@@ -101,6 +103,23 @@ describe('EntityStore', () => {
     expect(removed.retiredWith).toBe('dev-removed');
     expect(store.has('entity-1')).toBe(false);
     expect(idsOf(store)).toEqual(['entity-2']);
+  });
+
+  it('withdraws an entity without retiring it, records the removal, and takes it back', () => {
+    const store = storeWith('entity-1', 'entity-2');
+    const walker = new Walker('entity-3', 'walker-definition');
+    walker.spawn(undefined);
+    store.add(walker);
+
+    const withdrawn = store.withdraw('entity-3', 'died');
+
+    expect(withdrawn).toBe(walker);
+    expect(walker.hasComponent(Movement)).toBe(true);
+    expect(store.has('entity-3')).toBe(false);
+    expect(store.removedThisTick()).toEqual([{ entityId: 'entity-3', cause: 'died' }]);
+    store.add(walker);
+    expect(idsOf(store)).toEqual(['entity-1', 'entity-2', 'entity-3']);
+    expect(() => store.withdraw('entity-9', 'died')).toThrow(/entity-9/);
   });
 
   it('reports an entity as deploying only while it has the Deploying component', () => {
@@ -317,6 +336,32 @@ describe('EntityStore', () => {
     expect(store.takesNoDamage(gate.id)).toBe(true);
     expect(store.takesNoDamage('no-collider')).toBe(false);
     expect(store.takesNoDamage('nobody')).toBe(false);
+  });
+
+  it('ignores hits on a body that takes no damage, except the Cathedral gem (DEC-292)', () => {
+    const store = new EntityStore();
+    const ids = new IdGenerator();
+    const registry = createDefaultEntityRegistry();
+    const minion = new EntityFactory(registry, loadDefaultContent(30), ids).create(
+      'light-mob',
+      'light-minion',
+      { team: 'dark', position: { x: 0, y: 0 } },
+    );
+    const gem = new EntityFactory(registry, STRUCTURE_DEFINITIONS, ids).create(
+      'cathedral-gem',
+      'cathedral',
+      { team: 'neutral', position: { x: 0, y: 0 } },
+    );
+    store.add(minion);
+    store.add(gem);
+
+    expect(store.ignoresHits(minion.id)).toBe(false);
+    minion.getComponent(Collider).setUnbreakable(true);
+    expect(store.ignoresHits(minion.id)).toBe(true);
+    // The gem takes no damage, but a hit on it lands so the gem can strike back.
+    expect(store.takesNoDamage(gem.id)).toBe(true);
+    expect(store.ignoresHits(gem.id)).toBe(false);
+    expect(store.ignoresHits('nobody')).toBe(false);
   });
 
   it('queues a cast on an ability slot, and refuses an entity without that slot', () => {

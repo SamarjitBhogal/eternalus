@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { STATUS_EFFECTS } from './statusEffectCatalogue';
 
 describe('STATUS_EFFECTS', () => {
-  it('holds the MVP set, the minion veterancy statuses, the knock-back statuses, Fury and its wind-up, Veil’s invisible, Berserk and Fear', () => {
+  it('holds the MVP set, the minion veterancy statuses, the knock-back statuses, Fury and its wind-up, Veil’s invisible, Berserk and Fear, and the Cathedral gem’s', () => {
     expect(STATUS_EFFECTS.ids).toEqual([
       'bleed',
       'concussion',
@@ -21,6 +21,8 @@ describe('STATUS_EFFECTS', () => {
       'invisible',
       'berserk',
       'feared',
+      'gem-shock',
+      'gem-burn',
     ]);
   });
 

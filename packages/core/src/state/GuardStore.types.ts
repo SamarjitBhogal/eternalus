@@ -2,14 +2,17 @@ import type { Team } from '../teams/teams.types';
 import type { EntityId } from './EntityStore.types';
 
 /**
- * One guard post of a structure (architecture 18 §7): where the guard stands, how far it may
- * chase, and who holds the post now. `SpawnSystem` fills and refills posts; `GuardController`,
+ * One guard post of a structure, camp or capture point (architecture 18 §7, §7.1): where the
+ * guard stands, how far it may chase, and who holds the post now. `SpawnSystem` fills and refills posts; `GuardController`,
  * `PathingSystem` and `GuardWithinLeashInvariant` read them.
  */
 export type GuardSlot = {
   readonly id: string;
   readonly homeId: EntityId;
-  /** The home's team; `neutral` for a camp. */
+  /**
+   * The guard's team: the home's; `neutral` for a camp; for a capture point's defenders, the
+   * point's owner when they were called (`neutral` while it had none).
+   */
   readonly team: Team;
   readonly mobId: string;
   /** The guard plan row this post belongs to, and its place in that row. */
@@ -24,6 +27,18 @@ export type GuardSlot = {
   readonly leashRadius: number;
   readonly leashTolerance: number;
   readonly respawnTicks: number;
+  /**
+   * The capture-point checkpoint whose defenders hold this post (07 §7, DEC-257); absent for a
+   * post of the home's own guard plan.
+   */
+  readonly checkpoint?: number;
+  /**
+   * The defender set this post belongs to: one per reached checkpoint (`checkpoint-reached`), as
+   * a checkpoint can be reached again after its point changes owner. Absent with `checkpoint`.
+   */
+  readonly defenceId?: string;
+  /** Whether the post's guard levels and is rallied (its plan's `canLevel`, 18 MS-16). */
+  readonly canLevel: boolean;
   /** The guard holding the post, or `null` while it waits to respawn. */
   readonly guardId: EntityId | null;
   /**

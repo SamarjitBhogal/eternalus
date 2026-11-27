@@ -60,8 +60,8 @@ export class MatchViewControls {
    * The developer explorer's click at a screen point (device pixels): the player's Legend attacks
    * the living enemy unit under it, once (a unit is drawn on top of a roof; DEC-183). With no unit,
    * the roof of the building there is cut away or put back (DEC-150); with no roof click either,
-   * the Legend attacks the map object under the point. No Legend, no attack. The view does not
-   * move.
+   * the Legend attacks the Cathedral gem or the map object under the point (DEC-292). No Legend,
+   * no attack. The view does not move.
    *
    * @returns Whether a roof was toggled, so the chrome can report the roofs (DEC-150).
    */

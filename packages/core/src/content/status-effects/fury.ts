@@ -3,9 +3,9 @@ import type { AuthoredStatusEffect } from './statusEffects.types';
 /**
  * Fury (the Vanguard's ultimate): for 8 s the holder attacks three times as fast (DEC-271) for 1.5×
  * damage, each basic hit knocks the struck body back 1 m (less for a heavier one, DEC-208), and
- * Space dashes 3 m (`fury-dash`, granted while it lasts, DEC-270). Recast refreshes the 8 s. It
- * ends at death (the fallen Legend is removed) or at a Duel round reset. TUNE: every number is
- * balancing.md:185.
+ * Space dashes 3 m (`fury-dash`, granted while it lasts, DEC-270). Recast refreshes the 8 s. After
+ * a death it stays on the withdrawn Legend until `LegendReset` removes it before the return
+ * (FR-051); a Duel round reset ends it. TUNE: every number is balancing.md:185.
  */
 export const FURY = {
   id: 'fury',

@@ -48,17 +48,21 @@ export class ProjectileView extends DefaultEntityView {
     },
   };
 
-  /** Draws the flying shot, or its ending look once it has ended. */
-  public override draw(state: EntityDrawState, renderer: Renderer): void {
+  /**
+   * Draws the flying shot, or its ending look once it has ended. A shot has no health bar, so it
+   * reports no drawn height.
+   */
+  public override draw(state: EntityDrawState, renderer: Renderer): number | undefined {
     const ending = state.entity.projectile?.ending ?? null;
     if (ending !== null) {
       this.endings[this.lookOf(state)](state, ending, renderer);
-      return;
+      return undefined;
     }
     if (this.lookOf(state) === 'drop') {
       this.drawShadow(state, 1, renderer);
     }
     this.drawShot(state, this.colorOf(state.entity.team), renderer);
+    return undefined;
   }
 
   /** The shot's ending look; throws for an id with none, which the content check rules out. */

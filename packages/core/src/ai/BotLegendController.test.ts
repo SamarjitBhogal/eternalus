@@ -28,6 +28,7 @@ import { BotLegendController } from './BotLegendController';
 import type { SlotReadiness } from '../state/SlotReadiness.types';
 import { onlyReady } from '../state/__fixtures__/stubReadiness';
 import type { SeededRandomState } from '../utils/SeededRandom.types';
+import { NO_PATH } from './BotMovement.constants';
 import { Perception } from './perception/Perception';
 import { SHIPPED_LINE_OF_FIRE } from '../state/__fixtures__/shippedLineOfFire';
 
@@ -177,6 +178,8 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
       targetId: null,
       nextCastTick: 0,
       isHalted: false,
+      // No pathfinder in this match, so nothing is cached.
+      ...NO_PATH,
     });
   });
 

@@ -1,5 +1,6 @@
 import { Abilities } from '../components/Abilities';
 import type { Aim } from '../components/AbilitySlotRuntime.types';
+import { CathedralGemState } from '../components/CathedralGemState';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
@@ -22,7 +23,8 @@ import type { EntityClass, EntityId, RemovalCause, RemovalRecord } from './Entit
 /**
  * Every live entity of a match, kept in insertion order. Systems iterate with `forEach`, so the
  * visiting order depends only on the order entities were added, never on hashing or timing.
- * The only way out is `remove(id, cause)`.
+ * The only ways out are `remove(id, cause)` and, for an entity that comes back,
+ * `withdraw(id, cause)`.
  */
 export class EntityStore {
   private readonly entities = new Map<EntityId, Entity>();
@@ -35,7 +37,10 @@ export class EntityStore {
     return this.entities.size;
   }
 
-  /** Adds a spawned entity; its id must be new. */
+  /**
+   * Adds a spawned entity, or a withdrawn one coming back (`withdraw`); its id must not be in the
+   * store.
+   */
   public add(entity: Entity): void {
     if (this.entities.has(entity.id)) {
       throw new Error(`Entity "${entity.id}" is already in the store.`);
@@ -61,6 +66,21 @@ export class EntityStore {
       throw new Error(`Cannot remove unknown entity "${id}" (${cause}).`);
     }
     entity.retire(cause);
+    this.entities.delete(id);
+    this.removals.push({ entityId: id, cause });
+    return entity;
+  }
+
+  /**
+   * Takes the entity with `id` out of the world with `cause` without retiring it: it keeps its
+   * components, so the same object can be added back later (a dead Legend waiting to respawn,
+   * FR-051, DEC-295). It counts as a removal of this tick, as `remove` does. Unknown ids throw.
+   */
+  public withdraw(id: EntityId, cause: RemovalCause): Entity {
+    const entity = this.entities.get(id);
+    if (entity === undefined) {
+      throw new Error(`Cannot withdraw unknown entity "${id}" (${cause}).`);
+    }
     this.entities.delete(id);
     this.removals.push({ entityId: id, cause });
     return entity;
@@ -191,12 +211,28 @@ export class EntityStore {
 
   /**
    * Whether the entity takes no damage now: its collider is unbreakable (a wall or gate before its
-   * breakability rule passes, a forest camp). The one rule for it (DEC-333 (2)): the damage
-   * pipeline blocks such a hit, and no weapon, shot or ability area lands on such a body (DEC-317
-   * addendum). `false` for an unknown entity or one with no collider.
+   * breakability rule passes, a forest camp, the Cathedral gem). The one rule for it (DEC-333 (2)):
+   * the damage pipeline blocks such a hit, and a bot's line of fire stops on such a body. Whether
+   * a hit lands on it at all is `ignoresHits`. `false` for an unknown entity or one with no
+   * collider.
    */
   public takesNoDamage(id: EntityId): boolean {
     return this.entities.get(id)?.findComponent(Collider)?.isUnbreakable === true;
+  }
+
+  /**
+   * Whether no weapon, shot or ability area lands on the entity (DEC-317 addendum): it takes no
+   * damage now (`takesNoDamage`), so a hit on it would do nothing, and no damage, on-hit step or
+   * hit record follows. The Cathedral gem takes no damage too, but a hit on it lands, so the
+   * damage pipeline blocks it and `CathedralGemSystem` strikes the hitter (DEC-292: "projectiles
+   * and abilities also apply").
+   */
+  public ignoresHits(id: EntityId): boolean {
+    // ponytail: the gem's component marks the one body that answers a blocked hit. Ceiling: a
+    // second such body needs an edit here; upgrade then to a content flag on its breakability rule.
+    return (
+      this.takesNoDamage(id) && this.entities.get(id)?.hasComponent(CathedralGemState) !== true
+    );
   }
 
   /**

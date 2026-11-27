@@ -66,6 +66,8 @@ const createFakeContext = (): DrawContext => ({
   save: vi.fn(),
   stroke: vi.fn(),
   strokeRect: vi.fn(),
+  drawImage: vi.fn(),
+  imageSmoothingEnabled: true,
   fillStyle: '',
   globalAlpha: 1,
   strokeStyle: '',
@@ -358,6 +360,7 @@ describe('MiniMapView unit markers (DEC-187)', () => {
       statuses: null,
       projectile: null,
       swing: null,
+      gem: null,
     };
     const counters = { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} };
     const snapshot: Snapshot = {

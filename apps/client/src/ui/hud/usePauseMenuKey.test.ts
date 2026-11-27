@@ -16,6 +16,11 @@ function recordIntents(openerRef: { current: Marker | null }) {
   return { seen, off };
 }
 
+/** The `PauseKeyState` cases: nothing selected, an ability aimed, an online Duel. */
+const IDLE = { isAiming: false, isDuel: false } as const;
+const AIMING = { isAiming: true, isDuel: false } as const;
+const DUEL = { isAiming: false, isDuel: true } as const;
+
 let stop: () => void = () => undefined;
 afterEach(() => {
   stop();
@@ -27,6 +32,11 @@ describe('pauseMenuKeyIntent', () => {
     expect(pauseMenuKeyIntent('pause')).toEqual({ kind: 'close-overlay' });
     expect(pauseMenuKeyIntent('settings')).toEqual({ kind: 'open-overlay', overlay: 'pause' });
   });
+
+  it('opens and closes the leave confirmation in an online Duel', () => {
+    expect(pauseMenuKeyIntent(null, true)).toEqual({ kind: 'open-overlay', overlay: 'leave-duel' });
+    expect(pauseMenuKeyIntent('leave-duel', true)).toEqual({ kind: 'close-overlay' });
+  });
 });
 
 describe('pressPauseMenuKey while aiming', () => {
@@ -37,7 +47,7 @@ describe('pressPauseMenuKey while aiming', () => {
     const { seen, off } = recordIntents(openerRef);
     stop = off;
 
-    pressPauseMenuKey(null, openerRef, { activeElement: marker }, true);
+    pressPauseMenuKey(null, openerRef, { activeElement: marker }, AIMING);
 
     expect(seen).toEqual([{ intent: { kind: 'cancel-aim' }, opener: null }]);
   });
@@ -47,10 +57,20 @@ describe('pressPauseMenuKey while aiming', () => {
     const { seen, off } = recordIntents(openerRef);
     stop = off;
 
-    pressPauseMenuKey(null, openerRef, { activeElement: marker }, true);
-    pressPauseMenuKey(null, openerRef, { activeElement: marker }, false);
+    pressPauseMenuKey(null, openerRef, { activeElement: marker }, AIMING);
+    pressPauseMenuKey(null, openerRef, { activeElement: marker }, IDLE);
 
     expect(seen.map(({ intent }) => intent.kind)).toEqual(['cancel-aim', 'open-overlay']);
+  });
+
+  it('cancels the aim in an online Duel too, and does not open the leave confirmation', () => {
+    const openerRef: { current: Marker | null } = { current: null };
+    const { seen, off } = recordIntents(openerRef);
+    stop = off;
+
+    pressPauseMenuKey(null, openerRef, { activeElement: marker }, { isAiming: true, isDuel: true });
+
+    expect(seen).toEqual([{ intent: { kind: 'cancel-aim' }, opener: null }]);
   });
 
   it('closes an open overlay as before, aim or not', () => {
@@ -58,7 +78,7 @@ describe('pressPauseMenuKey while aiming', () => {
     const { seen, off } = recordIntents(openerRef);
     stop = off;
 
-    pressPauseMenuKey('pause', openerRef, { activeElement: marker }, true);
+    pressPauseMenuKey('pause', openerRef, { activeElement: marker }, AIMING);
 
     expect(seen.map(({ intent }) => intent.kind)).toEqual(['close-overlay']);
   });
@@ -71,7 +91,7 @@ describe('pressPauseMenuKey', () => {
     const openerRef: { current: Marker | null } = { current: null };
     const { seen, off } = recordIntents(openerRef);
     stop = off;
-    pressPauseMenuKey(null, openerRef, { activeElement: marker }, false);
+    pressPauseMenuKey(null, openerRef, { activeElement: marker }, IDLE);
     expect(seen).toEqual([{ intent: { kind: 'open-overlay', overlay: 'pause' }, opener: marker }]);
   });
 
@@ -80,9 +100,19 @@ describe('pressPauseMenuKey', () => {
     const openerRef: { current: Marker | null } = { current: before };
     const { seen, off } = recordIntents(openerRef);
     stop = off;
-    pressPauseMenuKey('pause', openerRef, { activeElement: marker }, false);
-    pressPauseMenuKey('settings', openerRef, { activeElement: marker }, false);
+    pressPauseMenuKey('pause', openerRef, { activeElement: marker }, IDLE);
+    pressPauseMenuKey('settings', openerRef, { activeElement: marker }, IDLE);
     expect(openerRef.current).toBe(before);
     expect(seen.map(({ intent }) => intent.kind)).toEqual(['close-overlay', 'open-overlay']);
+  });
+
+  it('opens the leave confirmation in an online Duel, and still stores the opener', () => {
+    const openerRef: { current: Marker | null } = { current: null };
+    const { seen, off } = recordIntents(openerRef);
+    stop = off;
+    pressPauseMenuKey(null, openerRef, { activeElement: marker }, DUEL);
+    expect(seen).toEqual([
+      { intent: { kind: 'open-overlay', overlay: 'leave-duel' }, opener: marker },
+    ]);
   });
 });

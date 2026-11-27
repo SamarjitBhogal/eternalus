@@ -10,6 +10,7 @@ import type {
   Vec2,
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
+import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 
 import { AbilityCasts } from './AbilityCasts';
 import type { IntentSource } from './Match.types';
@@ -74,10 +75,18 @@ const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => (
   statuses: null,
   projectile: null,
   swing: null,
+  gem: null,
 });
 const PLAYER: EntitySnapshot = { ...unit(ACTOR, 'light', 20, 20), family: 'legend' };
 /** A dark-team minion standing on the house, so the house and the unit overlap. */
 const ENEMY = unit('enemy-1', 'dark', 2, 2);
+/** The Cathedral gem, standing on the house too. */
+const GEM: EntitySnapshot = {
+  ...unit('gem-1', 'neutral', 2, 2),
+  kind: 'cathedral-gem',
+  family: 'structure',
+  gem: { holder: 'neutral', glowTicksLeft: 0, glowHits: 0, ticksSinceHit: null },
+};
 
 /** The snapshot parts a target is picked from: `entities` and the house's state. */
 const snapshotOf = (
@@ -97,15 +106,43 @@ const setUp = () => {
     { enqueueCommand },
     { screenToWorld: (point) => point },
     [HOUSE],
+    createDefaultViewRegistry(),
     casts,
   );
   const queued = (type: Command['type']): number =>
     enqueueCommand.mock.calls.filter(([command]) => command.type === type).length;
-  const tick = (): boolean => commands.apply(ACTOR);
+  const tick = (entities: readonly EntitySnapshot[] = [PLAYER]): boolean =>
+    commands.apply(ACTOR, snapshotOf(entities));
   return { input, commands, casts, enqueueCommand, queued, tick };
 };
 
 describe('PlayerCommands', () => {
+  it.each([
+    ['legend', { x: 0.1, y: 2 }],
+    ['mob', { x: 0.7, y: 2 }],
+  ] as const)('targets the visible edge of an enemy %s over a building', (family, aim) => {
+    const { commands, enqueueCommand } = setUp();
+    const enemy = { ...ENEMY, family };
+    expect(commands.attackUnitAt(ACTOR, aim, snapshotOf([PLAYER, enemy]))).toBe(true);
+
+    expect(enqueueCommand.mock.calls).toEqual([
+      [{ type: 'attack-target', actorId: ACTOR, targetId: enemy.id }],
+    ]);
+  });
+
+  it('selects a minion by its drawn figure beyond the ordinary mob disc', () => {
+    const { commands, enqueueCommand } = setUp();
+    const minion = { ...ENEMY, kind: 'heavy-mob', definitionId: 'heavy-minion' };
+    const snapshot = snapshotOf([PLAYER, minion]);
+    expect(commands.attackUnitAt(ACTOR, { x: 2, y: -0.7 }, snapshot)).toBe(true);
+    expect(enqueueCommand).toHaveBeenCalledWith({
+      type: 'attack-target',
+      actorId: ACTOR,
+      targetId: minion.id,
+    });
+    expect(commands.attackUnitAt(ACTOR, { x: 2, y: -20 }, snapshot)).toBe(false);
+  });
+
   it('queues attack-aim only when the held point changes (DEC-184: no target needed)', () => {
     const { input, queued, tick, enqueueCommand } = setUp();
     input.isAttacking = true;
@@ -257,6 +294,32 @@ describe('PlayerCommands', () => {
     expect(queued('cast-ability')).toBe(0);
   });
 
+  it('a click picks a unit over the Cathedral gem, and the gem over the house behind it (DEC-292)', () => {
+    const { commands, enqueueCommand } = setUp();
+    const point = { x: 2, y: 2 };
+
+    expect(commands.attackUnitAt(ACTOR, point, snapshotOf([PLAYER, GEM]))).toBe(false);
+    commands.attackUnitAt(ACTOR, point, snapshotOf([PLAYER, GEM, ENEMY]));
+    commands.attackObjectAt(ACTOR, point, snapshotOf([PLAYER, GEM]));
+
+    expect(enqueueCommand.mock.calls.map(([command]) => command)).toEqual([
+      { type: 'attack-target', actorId: ACTOR, targetId: ENEMY.id },
+      { type: 'attack-target', actorId: ACTOR, targetId: 'gem-1' },
+    ]);
+  });
+
+  it('a held attack on the Cathedral gem aims at its point; core strikes the gem (DEC-184, DEC-292)', () => {
+    const { input, tick, enqueueCommand } = setUp();
+    input.isAttacking = true;
+    input.aim = { x: 2, y: 2 };
+
+    tick([PLAYER, GEM]);
+
+    expect(enqueueCommand.mock.calls.map(([command]) => command)).toEqual([
+      { type: 'attack-aim', actorId: ACTOR, aim: { x: 2, y: 2 } },
+    ]);
+  });
+
   it('queues no attack while the canvas gestures own the press (minimap or explorer)', () => {
     const { input, commands, queued, tick } = setUp();
     input.isAttacking = true;
@@ -331,5 +394,20 @@ describe('PlayerCommands', () => {
       { type: 'move', actorId: ACTOR, direction: { x: 1, y: 0 } },
       { type: 'stop', actorId: ACTOR },
     ]);
+  });
+
+  it('sends held movement and the held attack again when the Legend returns from a respawn', () => {
+    const { input, queued, tick } = setUp();
+    input.move = { x: 1, y: 0 };
+    input.isAttacking = true;
+    input.aim = { x: 2, y: 2 };
+    tick();
+    tick([]);
+    tick([]);
+    expect([queued('move'), queued('attack-aim')]).toEqual([1, 1]);
+
+    tick([PLAYER]);
+
+    expect([queued('move'), queued('attack-aim')]).toEqual([2, 2]);
   });
 });

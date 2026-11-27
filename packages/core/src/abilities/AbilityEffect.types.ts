@@ -41,8 +41,9 @@ export type CastContext = {
   readonly placement: ShapePlacement;
   /**
    * `value`, the spec field `field` of a step, grown by the ability's per-level `scaling` of that
-   * field: `value × (1 + perLevel × (casterLevel − 1))` (`balancing.md`: +4% potency per level,
-   * so level 1 is the content value). A field the ability does not scale comes back unchanged.
+   * field: `value × (1 + perLevel × (casterLevel − 1))`, `perLevel` from the ability's content
+   * (`scaling.<field>.perLevel`), so level 1 is the content value. A field the ability does not
+   * scale comes back unchanged.
    */
   scaled(field: string, value: number): number;
   /** The caster's level at the cast: what `scaled` grows by. A shot carries it to its landing. */

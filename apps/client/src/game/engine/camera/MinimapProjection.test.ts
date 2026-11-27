@@ -25,6 +25,8 @@ const createFakeContext = (): DrawContext => ({
   save: vi.fn(),
   stroke: vi.fn(),
   strokeRect: vi.fn(),
+  drawImage: vi.fn(),
+  imageSmoothingEnabled: true,
   fillStyle: '',
   globalAlpha: 1,
   strokeStyle: '',

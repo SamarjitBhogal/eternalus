@@ -170,6 +170,7 @@ describe('GameState', () => {
           statuses: null,
           projectile: null,
           swing: null,
+          gem: null,
         },
         {
           id: 'entity-2',
@@ -186,6 +187,7 @@ describe('GameState', () => {
           statuses: null,
           projectile: null,
           swing: null,
+          gem: null,
         },
       ],
       hordes: [],

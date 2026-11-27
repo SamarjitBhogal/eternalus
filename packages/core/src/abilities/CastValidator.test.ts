@@ -23,7 +23,10 @@ const AIM_EAST: Aim = { point: { x: 5, y: 0 }, targetId: null };
 const setUp = (kit: AbilityKit = TEST_KIT) => {
   const { state, factory, caster } = casterState(kit);
   const validator = new CastValidator(testAbilityRegistry([new RecordingEffect('fake-strike')]));
-  const handlers = createDefaultCommandHandlers(validator);
+  const handlers = createDefaultCommandHandlers({
+    rover: { controllerId: 'rover', profileId: 'rover', memory: {} },
+    cast: validator,
+  });
   const rejected: string[] = [];
   state.events.on('command-rejected', ({ reason }) => rejected.push(reason));
   const cast = (slot: AbilitySlot, aim: Aim = AIM_EAST, actorId = caster.id): void => {
@@ -212,7 +215,10 @@ describe('CastValidator.slotBlockedBy (the slot alone, for the player snapshot)'
     }
     const { state, factory, caster } = casterState(TEST_KIT);
     const validator = new CastValidator(testAbilityRegistry([new EastOnlyStrike('fake-strike')]));
-    const handlers = createDefaultCommandHandlers(validator);
+    const handlers = createDefaultCommandHandlers({
+      rover: { controllerId: 'rover', profileId: 'rover', memory: {} },
+      cast: validator,
+    });
     const rejected: string[] = [];
     state.events.on('command-rejected', ({ reason }) => rejected.push(reason));
     const aether = caster.getComponent(Aether).current;
@@ -250,7 +256,10 @@ describe('CastValidator.slotBlockedBy (the slot alone, for the player snapshot)'
     const strike = new CrampedStrike('fake-strike');
     const { state, factory, caster } = casterState(TEST_KIT);
     const validator = new CastValidator(testAbilityRegistry([strike]));
-    const handlers = createDefaultCommandHandlers(validator);
+    const handlers = createDefaultCommandHandlers({
+      rover: { controllerId: 'rover', profileId: 'rover', memory: {} },
+      cast: validator,
+    });
     const rejected: string[] = [];
     state.events.on('command-rejected', ({ reason }) => rejected.push(reason));
     const aether = caster.getComponent(Aether).current;

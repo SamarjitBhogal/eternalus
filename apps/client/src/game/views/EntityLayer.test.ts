@@ -10,7 +10,11 @@ import type { HealthBarSide } from './HealthBarView.types';
 import { HIDDEN_UNIT_OPACITY } from './EntityLayer.constants';
 import type { Visibility, VisibilityRule } from './EntityLayer.types';
 import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_MOB_GLYPH } from './entityViews.constants';
-import { HEALTH_BAR_FILL_COLORS, HEALTH_BAR_TRACK_COLOR } from './HealthBarView.constants';
+import {
+  HEALTH_BAR_FILL_COLORS,
+  HEALTH_BAR_GAP,
+  HEALTH_BAR_TRACK_COLOR,
+} from './HealthBarView.constants';
 import type { WorldLayer } from './SceneView.types';
 import { StatusCueRegistry } from './StatusCueRegistry';
 import type { StatusCueView } from './StatusCueView.types';
@@ -37,6 +41,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   statuses: null,
   projectile: null,
   swing: null,
+  gem: null,
 });
 
 const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
@@ -61,8 +66,11 @@ const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
 class SpyView implements EntityView {
   public readonly drawn: EntityDrawState[] = [];
 
-  public draw(state: EntityDrawState): void {
+  public constructor(private readonly visibleHeight?: number) {}
+
+  public draw(state: EntityDrawState): number | undefined {
     this.drawn.push(state);
+    return this.visibleHeight;
   }
 
   public drawMinimap(): void {
@@ -75,8 +83,9 @@ class SpyView implements EntityView {
  * on the mini map), so a test reads the order of bodies and opacity changes from `calls`.
  */
 class MarkView implements EntityView {
-  public draw(state: EntityDrawState, renderer: Renderer): void {
+  public draw(state: EntityDrawState, renderer: Renderer): number | undefined {
     renderer.clear(state.entity.id);
+    return undefined;
   }
 
   public drawMinimap(state: EntityDrawState, renderer: Renderer): void {
@@ -326,7 +335,7 @@ describe('EntityLayer', () => {
     // The foe's bar is centred over the foe, just above it.
     const track = polygons[2]?.[0];
     expect(((track?.[0]?.x ?? 0) + (track?.[1]?.x ?? 0)) / 2).toBeCloseTo(10);
-    expect(track?.[2]?.y).toBeLessThan(20);
+    expect(track?.[2]?.y).toBeLessThan(20 - 0.5 * 1.4);
     // The bars come after all three units, so no unit hides one.
     expect(calls.findIndex((call) => call.op === 'fillPolygon')).toBe(calls.length - 4);
   });
@@ -490,5 +499,63 @@ describe('EntityLayer', () => {
         ...[fade, ['bar'], fade, ['bar']],
       ]);
     });
+  });
+
+  it('places the health bar above the height reported by the registered view', () => {
+    const visibleHeight = 3;
+    const layer = new EntityLayer(
+      new ViewRegistry(new SpyView(visibleHeight)),
+      new StatusCueRegistry(),
+      () => false,
+      () => 'enemy',
+      () => 'shown',
+    );
+    layer.show(null, snapshot(1, [member('foe', 'mob', 10)]), 0, null);
+    const renderer = new RecordingRenderer();
+    layer.draw(renderer);
+    const track = renderer.calls.find((call) => call.op === 'fillPolygon');
+    expect(track?.args[0][2]?.y).toBeCloseTo(-visibleHeight - HEALTH_BAR_GAP);
+  });
+
+  it('draws the status cues after every unit and before the bars, each bar above its reported height', () => {
+    // The phase/3 merge joins the status cues (DEC-283) and the reported heights in one draw.
+    const visibleHeight = 3;
+    const spy = new SpyView(visibleHeight);
+    const renderer = new RecordingRenderer();
+    const barCalls = (): number =>
+      renderer.calls.filter((call) => call.op === 'fillPolygon').length;
+    const seen: [number, number][] = [];
+    const cues = new StatusCueRegistry();
+    cues.register('stun', {
+      draw: () => {
+        seen.push([spy.drawn.length, barCalls()]);
+      },
+    });
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      cues,
+      () => false,
+      () => 'enemy',
+      () => 'shown',
+    );
+    const stun = { id: 'stun', ticksActive: 1, ticksLeft: 4 };
+    layer.show(
+      null,
+      snapshot(1, [{ ...member('foe', 'mob', 10), statuses: [stun] }, member('pal', 'mob', 30)]),
+      0,
+      null,
+    );
+
+    layer.draw(renderer);
+
+    // The cue saw both units drawn and no bar yet.
+    expect(seen).toEqual([[2, 0]]);
+    const tracks = renderer.calls.flatMap((call) =>
+      call.op === 'fillPolygon' && call.args[1] === HEALTH_BAR_TRACK_COLOR ? [call.args[0]] : [],
+    );
+    expect(tracks).toHaveLength(2);
+    for (const track of tracks) {
+      expect(track[2]?.y).toBeCloseTo(-visibleHeight - HEALTH_BAR_GAP);
+    }
   });
 });

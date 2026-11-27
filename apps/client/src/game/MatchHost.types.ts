@@ -4,6 +4,7 @@ import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { CanvasPointerControlsDeps } from './CanvasPointerControls.types';
 import type { InputDevice } from './engine/input/InputDevice.types';
 import type { InputMapper } from './input/InputMapper';
+import type { DeveloperMenuController } from './DeveloperMenuController';
 import type { Match } from './Match';
 import type { MatchViewControls } from './MatchViewControls';
 import type { MatchViewport } from './MatchViewport.types';
@@ -21,6 +22,7 @@ export type MatchHostDeps = {
     Match,
     'start' | 'destroy' | 'resize' | 'setPaused' | 'setCastMode' | 'cancelAim'
   > & {
+    readonly developerMenu: Pick<DeveloperMenuController, 'toggle'>;
     readonly controls: CanvasPointerControlsDeps['controls'] &
       Pick<MatchViewControls, 'toggleMiniMap'>;
   };

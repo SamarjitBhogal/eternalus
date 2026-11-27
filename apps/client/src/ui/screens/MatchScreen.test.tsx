@@ -143,6 +143,20 @@ describe('MatchScreen', () => {
     expect(hud).toMatch(/role="timer"[^>]*>10</);
   });
 
+  it('paints "Reconnecting..." over the countdown and the pause dialog, outside the inert HUD (DEC-349)', () => {
+    const figma = figmaHudState();
+    const clock = { tick: 0, seconds: 0, countdown: 3 };
+    const state = withHudSetup({
+      ...figma,
+      match: { ...figma.match, clock, isReconnecting: true },
+    });
+    const html = render(state, 'pause');
+    const status = html.indexOf(STRINGS.hud.duelReconnecting);
+    expect(status).toBeGreaterThan(html.indexOf('role="dialog"'));
+    expect(status).toBeGreaterThan(html.lastIndexOf('</section>'));
+    expect(html).toMatch(/<div class="[^"]*"><p role="status"[^>]*>Reconnecting/);
+  });
+
   it('is not inert and has no dialog while no overlay is open', () => {
     const html = render(withHudSetup(figmaHudState()));
     expect(html).not.toContain('inert');

@@ -1,5 +1,6 @@
 import {
   type AbilitySlot,
+  CORNER_CAMP_RING,
   createDefaultGameConfig,
   type InputIntent,
   loadDisplayContent,
@@ -26,6 +27,7 @@ import type { IntentSource } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import { AIM_OVERLAY_FILL_COLOR, AIM_REFUSED_COLORS } from './views/AimOverlayView.constants';
+import { WEATHER_MOTION } from './views/BiomeAtmosphereView.constants';
 import { FOCUS_RING_COLOR } from './views/entityViews.constants';
 import { WINDUP_RING_COLOR, WINDUP_RING_COUNT } from './views/WindupRingsView.constants';
 
@@ -128,6 +130,7 @@ const setUp = (
   withMapObjects = false,
   SimulationType: typeof Simulation = Simulation,
   player: PlayerChoice = PLAYER,
+  playerSpecId: string | null = null,
 ) => {
   // No countdown: core's countdown holds all movement, and these tests walk from the start.
   const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
@@ -148,6 +151,7 @@ const setUp = (
   const input = new ScriptedIntent();
   const logger = new MemoryLogger();
   const match = new Match({
+    playerSpecId,
     simulation,
     world,
     tickRate: config.tickRate,
@@ -440,6 +444,32 @@ describe('Match range overlay', () => {
     expect(overlayFills(renderer)).toBe(0);
     match.destroy();
   });
+
+  it('draws the range overlay over the biome atmosphere, so the weather never hides it', () => {
+    // The phase/3 merge puts both layers last in one scene: the atmosphere, then the overlay.
+    const { match, input, renderer } = setUp();
+    match.setCastMode('aim-then-click');
+    input.aim = { x: 40, y: 50 };
+    input.triggered = ['ability-1'];
+    match.tick();
+    input.triggered = [];
+    // The overview shows the whole map, so the lava flows' shimmer is in view.
+    match.controls.overview();
+    renderer.calls.length = 0;
+
+    match.render(0);
+
+    const fillsOf = (isColor: (color: unknown) => boolean): number[] =>
+      renderer.calls.flatMap((call, index) =>
+        call.op === 'fillPolygon' && isColor(call.args[1]) ? [index] : [],
+      );
+    const shimmer = fillsOf((color) => String(color).startsWith(`rgba(${WEATHER_MOTION.glowRgb},`));
+    const overlay = fillsOf((color) => color === AIM_OVERLAY_FILL_COLOR);
+    expect(shimmer.length).toBeGreaterThan(0);
+    expect(overlay).toHaveLength(2);
+    expect(Math.max(...shimmer)).toBeLessThan(Math.min(...overlay));
+    match.destroy();
+  });
 });
 
 describe('Match', () => {
@@ -621,6 +651,21 @@ describe('Match', () => {
     match.destroy();
   });
 
+  it("draws every corner camp's ring at core's ring diameter (Match injects it into MapView)", () => {
+    const { match, renderer, map } = setUp();
+
+    match.render(0);
+
+    const camps = map.features.filter(({ kind }) => kind === 'corner-camp');
+    const rings = renderer.calls.flatMap((call) =>
+      call.op === 'drawWorldGlyph' && camps.some(({ position }) => position === call.args[1])
+        ? [call.args[0]]
+        : [],
+    );
+    expect(camps.length).toBeGreaterThan(0);
+    expect(rings).toEqual(camps.map(() => ({ shape: 'ring', size: 2 * CORNER_CAMP_RING.radius })));
+  });
+
   it('centres the minimap on the player and keeps it there as the player moves (DEC-182)', () => {
     const { match, renderer, input } = setUp();
     match.tick();
@@ -642,7 +687,13 @@ describe('Match', () => {
   it('centres the minimap on the camera once the player is gone, and maps clicks around it', () => {
     const { match, renderer, simulation, camera, map } = setUp();
     match.tick();
-    simulation.enqueueCommand({ type: 'dev-remove-entity', entityId: match.playerEntityId ?? '' });
+    // Core refuses to remove the human's Legend outside sim mode (13 §4), so the snapshot drops it.
+    const playerId = match.playerEntityId;
+    const snapshot = simulation.snapshot.bind(simulation);
+    vi.spyOn(simulation, 'snapshot').mockImplementation(() => {
+      const real = snapshot();
+      return { ...real, entities: real.entities.filter(({ id }) => id !== playerId) };
+    });
     match.tick();
     expect(playerX(match)).toBeNaN();
     match.render(0);
@@ -775,4 +826,13 @@ describe('Match', () => {
     expect(aim?.x).toBeCloseTo(view.x + view.width / 2);
     expect(aim?.y).toBeCloseTo(view.y + view.height / 2);
   });
+});
+
+it('renders the selected Knight through the live match view registry', () => {
+  const { match, renderer } = setUp(undefined, false, Simulation, PLAYER, 'knight');
+  match.render(0);
+  expect(
+    renderer.calls.filter((call) => call.op === 'drawSprite').map((call) => call.args[0]),
+  ).toContainEqual({ atlasId: 'knight-sprites', frame: 0 });
+  match.destroy();
 });

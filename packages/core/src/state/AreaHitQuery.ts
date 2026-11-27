@@ -25,8 +25,10 @@ import type { EntityId } from './EntityStore.types';
  *    (DEC-322 (1)): it is the locked target, or the aim point is on the outline, on no enemy unit
  *    (the rule of `findUnitAt`) and the attacker stands outside the outline. A swing inside the
  *    enemy palace does not hit the Stronghold; from outside, aiming at the palace floor does.
- * 2. A body that takes no damage now (`EntityStore.takesNoDamage`) is never hit: it takes no
- *    damage and runs no on-hit step (DEC-317 addendum). A shot stops on it (`ProjectileSystem`).
+ * 2. A body that ignores hits (`EntityStore.ignoresHits`: it takes no damage now) is never hit: it
+ *    takes no damage and runs no on-hit step (DEC-317 addendum). A shot stops on it
+ *    (`ProjectileSystem`). The Cathedral gem takes no damage but is hit, so it strikes the hitter
+ *    (DEC-292).
  *
  * It also holds the one rule for which bodies stop a shot (`stopsShot`), which `ProjectileSystem`
  * flies shots by and `LineOfFire` predicts them by. Ids come back in `compareById` order, so every
@@ -42,8 +44,9 @@ export class AreaHitQuery {
    * alive and still in the world, not the shot's owner and not on its team (no team counts as
    * enemy), and, for a walk-on outline, the entity the shot aims at (`shot.targetId`), so a shot
    * flies over the ground units stand on. A body that takes no damage now
-   * (`EntityStore.takesNoDamage`) stops it too, and nothing lands on it. The one rule by which
-   * `ProjectileSystem` flies a shot and `LineOfFire` predicts it.
+   * (`EntityStore.takesNoDamage`) stops it too; nothing lands on it unless it is the Cathedral gem
+   * (`EntityStore.ignoresHits`). The one rule by which `ProjectileSystem` flies a shot and
+   * `LineOfFire` predicts it.
    */
   public static stopsShot(entities: EntityStore, shot: ShotAim, body: ShotStopBody): boolean {
     const { entity, health, membership, outline } = body;
@@ -79,7 +82,7 @@ export class AreaHitQuery {
         !AreaHitQuery.isAlive(entity) ||
         (entity.id === attackerId && filter.includeSelf !== true) ||
         !AreaHitQuery.passes(filter, AreaHitQuery.isAlly(entity, attackerTeam)) ||
-        entities.takesNoDamage(entity.id)
+        entities.ignoresHits(entity.id)
       ) {
         return;
       }

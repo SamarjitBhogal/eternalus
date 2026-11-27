@@ -421,6 +421,13 @@ counts, because `pushOut` clamps to the bounds and so leaves the unit inside the
 summoner returns these units, and `SummonEffect` deals the damage, credited to the wall's caster
 (05 §18).
 
+**2026-11-27 (#150 merged with #132; DEC-292).** One change to the 2026-11-22 note. A body that
+takes no damage still stops every shot, but the shot lands on it only when it is the Cathedral gem
+(`EntityStore.ignoresHits`). A sweep or an ability area also skips every such body except the
+gem. On the gem the hit lands: the damage pipeline blocks the damage, and the gem strikes the
+hitter. A shot stops on the gem whether it aims at the gem or flies past it. `LineOfFire` and
+`BreakabilityStep` still use `EntityStore.takesNoDamage`.
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

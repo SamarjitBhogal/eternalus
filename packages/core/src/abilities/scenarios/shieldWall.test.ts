@@ -6,6 +6,7 @@ import type { GameState } from '../../state/GameState';
 import type { EntitySnapshot } from '../../state/Snapshot.types';
 import { TWO_LANE_MAP } from '../../state/__fixtures__/twoLaneMap';
 import { doesCircleOverlapPolygon } from '../../utils/circlePolygon';
+import { compareById } from '../../utils/compareById';
 import type { Vec2 } from '../../utils/geometry.types';
 import { abilityMatch, type ScenarioSpawn } from '../__fixtures__/abilityMatch';
 
@@ -202,12 +203,21 @@ describe('Shield Wall (scenario)', () => {
 
   it('frees the place of a wall broken earlier in the same tick: the new wall removes none', () => {
     const foe: ScenarioSpawn = { kind: 'sentinel', team: 'dark', at: { x: 116, y: 54 } };
-    const match = abilityMatch([foe, SENTINEL], {
-      content: MARCHING_ONLY,
-      world: { map: TWO_LANE_MAP, mapObjects: [] },
-    });
+    // The casts of one tick run in id order (`AbilitySystem`, `compareById`: plain string order),
+    // so the foe's id must sort first. Spawned first, it does, unless the next id gains a digit.
+    const build = (spawns: readonly ScenarioSpawn[]) => {
+      const built = abilityMatch(spawns, {
+        content: MARCHING_ONLY,
+        world: { map: TWO_LANE_MAP, mapObjects: [] },
+      });
+      const id = (spawn: ScenarioSpawn): string => built.ids[spawns.indexOf(spawn)] ?? '';
+      return [built, id(foe), id(SENTINEL)] as const;
+    };
+    const foeFirst = build([foe, SENTINEL]);
+    const [match, dark, light] =
+      compareById(foeFirst[1], foeFirst[2]) < 0 ? foeFirst : build([SENTINEL, foe]);
+    expect(compareById(dark, light)).toBeLessThan(0);
     const { state } = match.sim as unknown as { readonly state: GameState };
-    const [dark = '', light = ''] = match.ids;
     const removed: string[] = [];
     match.sim.on('entity-removed', ({ entityId, cause }) => removed.push(`${entityId} ${cause}`));
     const walls = (): string[] =>

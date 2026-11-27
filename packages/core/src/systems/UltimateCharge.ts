@@ -27,6 +27,8 @@ import type { ChargeChange } from './UltimateCharge.types';
  *   after `ProgressionSystem`, so this pays on the next tick.
  * - `assist-earned`: the helper gains `assist`. Scoring emits it in the director's pass, so this
  *   too pays on the next tick.
+ * - `entity-spawned`: with a `startCharge` (a Duel's half meter, DEC-380 (1)), the Legend gains
+ *   that share of a full meter, paid in the next pass (before a Duel's countdown ends).
  *
  * Only an entity with an ultimate slot has a meter. A dead Legend gains nothing until it
  * respawns (the owner's reading of 2026-11-16, as for structure XP); a death still takes points.
@@ -41,11 +43,22 @@ export class UltimateCharge {
    *
    * @param state - The match whose kills, hits, checkpoints and assists fill the meters.
    * @param table - The points of each source (`content/progression/ultimateCharge.ts`).
+   * @param startCharge - The share of a full meter each spawned Legend starts with
+   *   (`DuelProgressionRules.ultimateStartCharge`); none when omitted.
    */
   public constructor(
     state: GameState,
     private readonly table: UltimateChargeDefinition,
+    startCharge?: number,
   ) {
+    if (startCharge !== undefined) {
+      // ponytail: every spawn pays it. The two seated Legends of a Duel never respawn (its round
+      // reset keeps them in the store), so that is each one's one spawn. A mode with respawns and a
+      // start share needs a first-spawn guard here, as a respawn keeps its charge (DEC-295 (1)).
+      state.events.on('entity-spawned', ({ entityId }) => {
+        this.queue(state, entityId, startCharge * table.fullMeter, 'start');
+      });
+    }
     state.events.on('entity-died', (death) => {
       this.onDied(state, death);
     });

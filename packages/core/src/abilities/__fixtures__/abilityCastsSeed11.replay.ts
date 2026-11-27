@@ -19,7 +19,13 @@ import { ABILITY_CASTS_PLAN } from './abilityCastsPlan';
  * and the commands were unchanged; a dump every 10 ticks of positions, health, motion, facing,
  * statuses, abilities, the RNG and the AI brains matched the old code at every tenth tick to 450,
  * and only the new `hits` fields differed. The round-3 correctness critic hashed the full state on
- * every tick to 450 with the old hasher minus its `hits` line: identical.
+ * every tick to 450 with the old hasher minus its `hits` line: identical. Regenerated 2026-11-25
+ * when phase/3 (#132) began hashing `LastEnemyHit` (DEC-346): the commands and checkpoints 0 to
+ * 300 were unchanged, and with that hash field left out the old hashes still reproduced.
+ * Regenerated 2026-11-27 when one merge brought together the `hits` field (DEC-322 (2)) and the
+ * `LastEnemyHit` field (DEC-346): the commands and checkpoints 0 to 300 were unchanged, and the
+ * merged code hashed with each parent's own `StateHasher` reproduced that parent's checkpoints
+ * (and with the merge base's hasher, the hashes from before both fields).
  */
 export const ABILITY_CASTS_SEED_11: ReplayOf<{
   readonly seed: number;
@@ -146,15 +152,15 @@ export const ABILITY_CASTS_SEED_11: ReplayOf<{
     },
     {
       tick: 350,
-      hash: 2681243284,
+      hash: 1657237848,
     },
     {
       tick: 400,
-      hash: 3670819647,
+      hash: 3314881132,
     },
     {
       tick: 450,
-      hash: 3160943889,
+      hash: 2759818172,
     },
   ],
 };

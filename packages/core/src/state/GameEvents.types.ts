@@ -4,6 +4,7 @@ import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { EntityId, RemovalCause } from './EntityStore.types';
 import type { MatchResult } from './MatchResult.types';
+import type { OwedXp } from './RespawnQueue.types';
 
 /**
  * Who or what dealt damage (architecture 05 §9). Every hit names one, so every death has a killer.
@@ -40,7 +41,9 @@ export type UltimateChargeCause =
   | 'boss-damage'
   | 'boss-kill'
   | 'checkpoint'
-  | 'death';
+  | 'death'
+  /** The share a Legend starts with when it spawns (a Duel's half meter, DEC-380 (1)). */
+  | 'start';
 
 /**
  * Every event the simulation can emit, by name (architecture 03 §4). The single place of change
@@ -70,6 +73,11 @@ export type GameEventMap = {
     readonly absorbed: number;
     readonly source: DamageSource;
   };
+  /**
+   * A hit that a damage step took to 0 (an unbreakable structure, friendly fire): nothing reached
+   * `Health`. The Cathedral gem answers it (DEC-292).
+   */
+  readonly 'damage-blocked': { readonly targetId: EntityId; readonly source: DamageSource };
   readonly 'entity-died': { readonly entityId: EntityId; readonly killer: DamageSource };
   readonly 'structure-destroyed': {
     readonly entityId: EntityId;
@@ -86,12 +94,28 @@ export type GameEventMap = {
   /**
    * A camp's whole group is dead (18 §7.1); the group comes back after its respawn time.
    * `killerId` dealt the last mob's lethal hit and `team` is its team; both `null` when no killer
-   * is known (a death outside the damage pipeline, or a killer that left the store).
+   * is known (a death outside the damage pipeline, or a killer that left the store and is not a
+   * Legend waiting to respawn).
    */
   readonly 'camp-cleared': {
     readonly entityId: EntityId;
     readonly team: Team | null;
     readonly killerId: EntityId | null;
+  };
+  /**
+   * The last defender of one reached checkpoint's set (`defenceId`, one per `checkpoint-reached`)
+   * at capture point `pointId` is lost (07 §7). `defendersTeam` is the set's team; `killerId` and
+   * `team` are as in `camp-cleared`; `position` is where that last defender fell (`null` when it
+   * had no `Transform`).
+   */
+  readonly 'checkpoint-cleared': {
+    readonly pointId: EntityId;
+    readonly checkpoint: number;
+    readonly defenceId: string;
+    readonly defendersTeam: Team;
+    readonly team: Team | null;
+    readonly killerId: EntityId | null;
+    readonly position: Vec2 | null;
   };
   readonly 'shield-bars-changed': {
     readonly entityId: EntityId;
@@ -122,6 +146,18 @@ export type GameEventMap = {
     readonly from: Team;
     readonly to: Team;
   };
+  /** A minion's kills earned it one level (`VeterancySystem`); `MinionLevelSystem` applies it. */
+  readonly 'minion-level-earned': { readonly entityId: EntityId };
+  /**
+   * A level source other than kills (`sourceId`, a held capture zone, 07 §7, DEC-258) grants a
+   * minion `levels` minion levels, or takes them back when negative; `MinionLevelSystem` applies
+   * them on its pass.
+   */
+  readonly 'minion-levels-granted': {
+    readonly entityId: EntityId;
+    readonly levels: number;
+    readonly sourceId: EntityId;
+  };
   readonly 'phase-changed': { readonly from: MatchPhase; readonly to: MatchPhase };
   /** Once per match, when a verdict ends it; `result` is the one stored in `state.match.result`. */
   readonly 'match-ended': { readonly result: MatchResult };
@@ -133,20 +169,42 @@ export type GameEventMap = {
   };
   readonly 'status-applied': StatusPayload;
   readonly 'status-expired': StatusPayload;
+  /** Some stacks of a status taken off while some stay on (a lost minion level); `stacks` are left. */
+  readonly 'status-stacks-lost': StatusPayload & { readonly stacks: number };
   readonly 'horde-spawned': HordePayload;
   readonly 'horde-dissolved': HordePayload;
+  /**
+   * A dead Legend came back at its Stronghold (FR-051, DEC-295): the same entity, with `owedXp`,
+   * the XP it earned while it waited, which `ProgressionSystem` pays now (DEC-186).
+   */
+  readonly 'legend-respawned': {
+    readonly entityId: EntityId;
+    readonly team: Team;
+    readonly position: Vec2;
+    readonly owedXp: readonly OwedXp[];
+  };
   readonly 'level-up': { readonly entityId: EntityId; readonly level: number };
   /**
    * XP reaching a Legend; one per award, so the invariant can audit every award. A kill pays its
    * killer; `cause: 'structure-destroyed'` pays a Legend of the team that destroyed `victimId`, and
-   * `cause: 'team-kill'` a Legend of the team whose unit killed boss `victimId` (DEC-237).
+   * `cause: 'team-kill'` a Legend of the team whose unit killed boss `victimId` (DEC-237), and
+   * `cause: 'camp-cleared'` the Legend that killed the last mob of camp `victimId`, and
+   * `cause: 'checkpoint-cleared'` a Legend near the last defender of a checkpoint of capture point
+   * `victimId` (its share, 07 §7).
    */
   readonly 'xp-gained': {
     readonly entityId: EntityId;
     readonly amount: number;
     readonly victimId: EntityId;
     readonly victimTeam: Team;
-    readonly cause: 'kill' | 'structure-destroyed' | 'team-kill';
+    /** `respawn`: XP owed while the Legend waited, paid as it returns (DEC-186). */
+    readonly cause:
+      | 'kill'
+      | 'structure-destroyed'
+      | 'team-kill'
+      | 'camp-cleared'
+      | 'checkpoint-cleared'
+      | 'respawn';
   };
   /**
    * A change of a Legend's ultimate meter (architecture 05 §6), one per change, so the invariant

@@ -28,6 +28,7 @@ const unit: EntitySnapshot = {
   statuses: null,
   projectile: null,
   swing: null,
+  gem: null,
 };
 
 /** The colours `HealthBarView` fills for `entity`, in drawing order. */
@@ -72,5 +73,18 @@ describe('HealthBarView', () => {
   it('draws nothing for an entity without health or without a place', () => {
     expect(fills({ ...unit, health: null })).toEqual([]);
     expect(fills({ ...unit, transform: null })).toEqual([]);
+  });
+
+  it('uses the rendered height for clearance above a sprite', () => {
+    const renderer = new RecordingRenderer();
+    const visibleHeight = 3;
+    new HealthBarView().draw(
+      { entity: unit, position: { x: 0, y: 20 }, facing: EAST, tick: 0, isFocused: false },
+      'enemy',
+      renderer,
+      visibleHeight,
+    );
+    const track = renderer.calls.find((call) => call.op === 'fillPolygon');
+    expect(track?.args[0][2]?.y).toBeCloseTo(20 - visibleHeight - HEALTH_BAR_GAP);
   });
 });

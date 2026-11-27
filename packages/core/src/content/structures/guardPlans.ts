@@ -1,6 +1,7 @@
 import { CAPTURE_POINT_COURT } from '../zones/capturePointCourt';
+import { CORNER_CAMP_RING } from './cornerCampRing';
 import { GUARD_LEASH } from './guardLeash';
-import type { AuthoredGuardPlan } from './structures.types';
+import type { AuthoredGuardPlan, CheckpointDefenderPlanDefinition } from './structures.types';
 
 const RESPAWN = 120; // TUNE: game doc "respawn every 2 minutes"
 // TUNE: owner 2026-11-02 (DEC-144): per guard, one decision's walk (10 ticks at its own top
@@ -24,12 +25,14 @@ const CAMP = {
   activation: { at: 'countdown-end', delaySeconds: 0 },
   // TUNE: balancing.md "a cleared camp respawns 120 s later"
   respawn: { kind: 'group', seconds: 120 },
+  canLevel: true, // DEC-260 (owner 2026-11-20): forest-camp mobs level (changes DEC-165)
 } as const;
 
 /**
  * The forest camps' groups (architecture 18 §7.1), keyed by camp definition id. Compositions are
  * balancing.md's `Recommendation:` (light 4 light; medium 2 medium + 2 light; heavy 1 heavy + 2
- * medium).
+ * medium). The corner camp holds one corner boss (game doc "Outer (Corner) Camps"; interim,
+ * DEC-236).
  */
 const CAMP_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
   'forest-camp-light': { ...CAMP, table: [{ mobId: 'light-camp-mob', count: 4 }] },
@@ -46,6 +49,22 @@ const CAMP_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
       { mobId: 'heavy-camp-mob', count: 1 },
       { mobId: 'medium-camp-mob', count: 2 },
     ],
+  },
+  'corner-camp': {
+    table: [{ mobId: 'corner-boss', count: 1 }],
+    leashRadius: CORNER_CAMP_RING.leashRadius, // the boss guards exactly the ring
+    postGap: CORNER_CAMP_RING.postGap,
+    // DEC-296 (2): DEC-181's sum for the boss, which DEC-181's 5.5 m does not cover: 16 ticks (a
+    // decision plus the wait at the unit cap) × 2.5 m/s / 30 ≈ 1.33 m of walk, plus its stance
+    // 1.5 + 1.25 (a Sentinel, the largest unit it can target: it is neutral, so never another
+    // neutral mob) + 2 reach = 4.75 m, so about 6.08 m; 7 m leaves about 0.9 m of margin.
+    // guardPlans.test.ts checks the sum.
+    leashTolerance: 7,
+    activation: { at: 'match-start' }, // game doc: corner camps hold their bosses "from the start"
+    // TUNE: DEC-12; game doc "spawns new bosses every 5 minutes". `group`, not `each`: with one
+    // boss both bring it back 300 s after it dies, and only `group` announces `camp-cleared`.
+    respawn: { kind: 'group', seconds: 300 },
+    canLevel: false, // DEC-260 names forest-camp mobs only
   },
 };
 
@@ -64,6 +83,7 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     leashTolerance: TOLERANCE,
     activation: { at: 'match-start' },
     respawn: { kind: 'each', seconds: RESPAWN },
+    canLevel: true, // DEC-165: tower guards level
   },
   'buff-tower': {
     table: [{ mobId: 'medium-guard', count: 6 }],
@@ -72,6 +92,7 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     leashTolerance: TOLERANCE,
     activation: { at: 'match-start' },
     respawn: { kind: 'each', seconds: RESPAWN },
+    canLevel: true, // DEC-165: tower guards level
   },
   stronghold: {
     table: [
@@ -83,6 +104,7 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     leashTolerance: TOLERANCE,
     activation: { at: 'match-start' },
     respawn: { kind: 'each', seconds: RESPAWN },
+    canLevel: true, // DEC-165: tower guards level
   },
   ...CAMP_PLANS,
   // The outer capture points' mini-boss and its support mobs (18 §7.1, reference 04 "along with
@@ -107,5 +129,40 @@ export const GUARD_PLANS: Readonly<Record<string, AuthoredGuardPlan>> = {
     // reference 04: one mini-boss per match; its support mobs do not come back either until
     // respawning guards is signed off (INBOX.md)
     respawn: { kind: 'never' },
+    canLevel: true, // DEC-350 (4): the capture point boss group levels
   },
 };
+
+/**
+ * Each capture-point checkpoint's defenders, keyed by checkpoint (architecture 07 §7, 18 §7.1).
+ * Compositions are balancing.md's `Recommendation:` (checkpoint 1: 4 medium; checkpoint 2: 2 heavy
+ * + 4 light), on the assist mobs (DEC-260).
+ * Checkpoint 3's one massive mob is MVP-if-time (reference 02 "Assist mobs") and has no row yet.
+ */
+const DEFENDERS = {
+  postGap: GUARD_LEASH.checkpointPostRing,
+  leashTolerance: TOLERANCE,
+  canLevel: true, // DEC-260: owned and neutral defenders level
+} as const;
+
+export const CHECKPOINT_DEFENDERS: Readonly<Record<number, CheckpointDefenderPlanDefinition>> = {
+  1: {
+    ...DEFENDERS,
+    table: [{ mobId: 'medium-assist-mob', count: 4 }], // TUNE: balancing.md 4 medium
+  },
+  2: {
+    ...DEFENDERS,
+    table: [
+      { mobId: 'heavy-assist-mob', count: 2 }, // TUNE: balancing.md 2 heavy
+      { mobId: 'light-assist-mob', count: 4 }, // TUNE: balancing.md 4 light
+    ],
+  },
+};
+
+/**
+ * The most checkpoint defenders one capture point holds, living (of any side) or waiting for room
+ * under the unit cap (DEC-350): one full defence, checkpoint 2's 2 heavy + 4 light plus checkpoint
+ * 1's 4 medium, so the first push always gets its full set and a contested point never builds a
+ * crowd. Review it if checkpoint 3's massive mob is added.
+ */
+export const CHECKPOINT_DEFENDER_LIMIT = 10; // TUNE: DEC-350

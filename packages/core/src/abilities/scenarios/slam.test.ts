@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import { loadAbilities } from '../../content/abilities/loadAbilities';
 import { abilityMatch } from '../__fixtures__/abilityMatch';
+import { casterState } from '../__fixtures__/casterState';
+import { castSteps } from '../__fixtures__/castSteps';
 
 /**
  * Slam (balancing.md:187, :123): a 4 m circle around the Sentinel, 150 damage (x 2 against
@@ -74,5 +77,21 @@ describe('Slam (scenario)', () => {
 
     expect(at(warrior).x).toBeCloseTo(52 + 3, 5);
     expect(at(warrior).y).toBeCloseTo(50 + 2.5, 5);
+  });
+
+  it('grows its hit 8% per level above 1: 738 at level 50, the Duel level (DEC-380 (2))', () => {
+    const slam = loadAbilities(30).get('slam');
+    const { state, factory, caster } = casterState();
+    // A level-1 Sentinel: 1200 health, so the whole hit lands.
+    state.entities.add(
+      factory.create('sentinel', 'sentinel', { position: { x: 2, y: 0 }, team: 'dark' }),
+    );
+    const hits: number[] = [];
+    state.events.on('damage-applied', ({ amount }) => hits.push(amount));
+
+    castSteps(state, caster.id, slam.effects, { level: 50, scaling: slam.scaling });
+
+    expect(hits).toHaveLength(1);
+    expect(hits[0]).toBeCloseTo(150 * (1 + 0.08 * 49)); // 738
   });
 });

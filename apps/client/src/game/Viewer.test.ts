@@ -19,6 +19,7 @@ const entity = (id: string, team: EntitySnapshot['team'], isHidden = false): Ent
   statuses: null,
   projectile: null,
   swing: null,
+  gem: null,
   ...(isHidden && { isHidden: true }),
 });
 

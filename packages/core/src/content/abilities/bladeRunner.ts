@@ -44,5 +44,5 @@ export const BLADE_RUNNER = {
     },
   ],
   restrictions: [],
-  scaling: { amount: { perLevel: 0.04 } }, // TUNE: balancing.md:208, +4% ability potency per level
+  scaling: { amount: { perLevel: 0.08 } }, // TUNE: DEC-380 (2) build default (balancing.md 0.04 was for cap 10)
 } as const satisfies AuthoredAbility;

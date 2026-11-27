@@ -3,6 +3,38 @@ import { describe, expect, it, type Mock, vi } from 'vitest';
 import { Canvas2dRenderer } from './Canvas2dRenderer';
 import type { DrawContext } from './Canvas2dRenderer.types';
 
+describe('Canvas2dRenderer sprite frames', () => {
+  it('prepares a frame once and copies it without scaling on subsequent draws', () => {
+    const prepare = vi.fn();
+    class PreparedCanvas {
+      public getContext() {
+        return { drawImage: prepare, imageSmoothingEnabled: true };
+      }
+    }
+    vi.stubGlobal('OffscreenCanvas', PreparedCanvas);
+    try {
+      const { context } = createFakeContext();
+      const copy = vi.fn();
+      context.drawImage = copy;
+      const renderer = new Canvas2dRenderer(context, {
+        oracle: { image: { width: 384, height: 640, close: vi.fn() }, columns: 6, rows: 10 },
+      });
+      renderer.resize(100, 100);
+      renderer.showWorldArea({ x: 0, y: 0, width: 10, height: 10 });
+      expect(renderer.drawSprite({ atlasId: 'oracle', frame: 7 }, { x: 5, y: 5 }, 2)).toBe(true);
+      renderer.drawSprite({ atlasId: 'oracle', frame: 7 }, { x: 5, y: 5 }, 2);
+      expect(prepare).toHaveBeenCalledOnce();
+      expect(prepare.mock.calls[0]?.slice(1)).toEqual([64, 64, 64, 64, 0, 0, 20, 20]);
+      expect(copy.mock.calls[0]).toEqual([expect.any(PreparedCanvas), 40, 30]);
+      expect(renderer.drawSprite({ atlasId: 'missing', frame: 0 }, { x: 0, y: 0 }, 2)).toBe(false);
+      expect(renderer.drawSprite({ atlasId: 'oracle', frame: 60 }, { x: 0, y: 0 }, 2)).toBe(false);
+      renderer.destroy();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
 /** The canvas drawing tools the tests watch. */
 type DrawMethod =
   | 'beginPath'
@@ -44,6 +76,8 @@ const createFakeContext = (): FakeContext => {
     save: vi.fn(),
     stroke: vi.fn(),
     strokeRect: vi.fn(),
+    drawImage: vi.fn(),
+    imageSmoothingEnabled: true,
   };
   const context: DrawContext = {
     ...spies,

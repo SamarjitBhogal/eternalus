@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { useAppSelector } from '../../bridge/hooks';
 import { matchSlice } from '../../bridge/slices/matchSlice';
 import { STRINGS } from '../strings';
+import { OpponentPresenceBanner } from './OpponentPresenceBanner';
 import styles from './DuelHud.module.css';
 
 /**
@@ -14,8 +15,11 @@ export function DuelHud(): ReactElement | null {
   if (duel === null) return null;
   const { ownKills, opponentKills, killTarget } = duel;
   return (
-    <p role="status" aria-label={STRINGS.hud.duelScore} className={styles.score}>
-      {ownKills} - {opponentKills} ({STRINGS.hud.duelFirstTo(killTarget)})
-    </p>
+    <>
+      <p role="status" aria-label={STRINGS.hud.duelScore} className={styles.score}>
+        {ownKills} - {opponentKills} ({STRINGS.hud.duelFirstTo(killTarget)})
+      </p>
+      <OpponentPresenceBanner />
+    </>
   );
 }

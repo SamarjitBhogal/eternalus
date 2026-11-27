@@ -12,10 +12,10 @@ export interface PlayerActions {
   /** Whether the canvas gestures own the main button's press (a minimap click, the explorer). */
   setPointerClaimed(isClaimed: boolean): void;
   /**
-   * Reads this tick's intent and acts on it for the Legend `actorId`.
+   * Reads this tick's intent and acts on it for the Legend `actorId`; `snapshot` is the latest one.
    * @returns Whether the player's movement input is non-zero this tick.
    */
-  apply(actorId: EntityId): boolean;
+  apply(actorId: EntityId, snapshot: TargetSnapshot): boolean;
   /** The developer explorer's click on a unit; whether one was under `point`. */
   attackUnitAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): boolean;
   /** The developer explorer's click on a map object. */

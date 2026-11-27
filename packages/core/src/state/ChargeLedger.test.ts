@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { GameEvents } from './GameEvents';
 import { ChargeLedger } from './ChargeLedger';
 
-const setUp = () => {
+const setUp = (waitingIds: readonly string[] = []) => {
   const events = new GameEvents(() => 0);
-  return { events, ledger: new ChargeLedger(events) };
+  return { events, ledger: new ChargeLedger(events, { has: (id) => waitingIds.includes(id) }) };
 };
 
 describe('ChargeLedger', () => {
@@ -51,5 +51,19 @@ describe('ChargeLedger', () => {
 
     events.emit('entity-removed', { entityId: 'entity-2', cause: 'died' });
     expect(ledger.announcedChargeOf('entity-2')).toBe(0);
+  });
+
+  it('keeps the charge of a removed Legend that waits to respawn, as its meter keeps it (DEC-295 (1))', () => {
+    const { events, ledger } = setUp(['entity-1']);
+    events.emit('ultimate-charged', {
+      entityId: 'entity-1',
+      amount: 0.06,
+      charge: 0.06,
+      cause: 'mob-kill',
+    });
+
+    events.emit('entity-removed', { entityId: 'entity-1', cause: 'died' });
+
+    expect(ledger.announcedChargeOf('entity-1')).toBe(0.06);
   });
 });
