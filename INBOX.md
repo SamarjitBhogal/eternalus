@@ -46,7 +46,18 @@ review comments under "Feedback". Answered decisions are recorded in
       (`BodyShapeRule`) checks every body shape at load (at least 3 finite corners, the head inside
       the outline), so a bad shape fails at boot, not when the boss spawns in a match. B7 (not
       built; `ponytail:` note) `EntityStore.outlineOf` builds a new body polygon on each call;
-      08 §9 says profile first, so it stays until a profile shows the cost.
+      08 §9 says profile first, so it stays until a profile shows the cost. B6 also checks (DEC-421
+      critic, built) that the outline holds the whole footprint circle: the boss walks on its
+      circle but hits from its outline, so a circle past the outline would stop its chase short of
+      its reach. From the DEC-421 critic (2026-11-27, not built, sign-off asked): B8
+      `CombatHitbox.gapTo` works out the reach gap in local space, as `isHeadShot` does, so it
+      allocates nothing and the mirror rule stays in one class; one `utils/geometry` helper serves
+      the same "0 inside, else the nearest edge" pattern in `EntityStore` and a scenario test. B9
+      one "reach gap" query on `EntityStore`, used by every chase, so chase and hit share one rule
+      (04 §3) and `PathingSystem` needs no boss case; it costs one aim computation per chaser a
+      tick (profile first). B10 the reach and aim geometry (`isInReach`, `outlineOf`,
+      `aimPointOf`, about 120 lines) moves out of `EntityStore` into its own `state/` class, which
+      brings `EntityStore` under 300 lines; a `refactor(core)` change of its own.
 
 - [ ] **Minion strength port (PR #82, 2026-11-25): sign off `LaneProgressOf`.** Built: `combat/`
       reads lane progress through a new port, `LaneProgressOf = (laneId, team, position) => number

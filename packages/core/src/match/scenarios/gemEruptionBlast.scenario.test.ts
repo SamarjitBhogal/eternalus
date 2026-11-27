@@ -144,10 +144,9 @@ describe('the gem eruption\'s blast (scenario, DEC-371 "BOSS guards" C)', () => 
 
     // A Legend in the Cathedral but outside the boss's 25 m centre zone, so the boss does not
     // reach it from its drawn body (DEC-421): alone, it would move the capture.
-    const legend = spawn(simulation, 'warrior', 'warrior', 'light', {
-      x: gemAt.x - (GUARD_LEASH.greaterBossZone + 5),
-      y: gemAt.y,
-    });
+    const legendAt = { x: gemAt.x - (GUARD_LEASH.greaterBossZone + 5), y: gemAt.y };
+    expect(zone.getComponent(ZoneArea).contains(legendAt)).toBe(true);
+    const legend = spawn(simulation, 'warrior', 'warrior', 'light', legendAt);
     stepTo(simulation, simulation.tick + 3 * config.tickRate);
 
     expect(simulation.snapshot().entities.some(({ id }) => id === legend)).toBe(true);

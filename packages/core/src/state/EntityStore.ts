@@ -33,7 +33,7 @@ export class EntityStore {
   private readonly removals: RemovalRecord[] = [];
   private added = 0;
   private sizeAtStart = 0;
-  /** Scratch for `isInReach`'s aim point. */
+  /** Scratch for `isInReach`: the aim point, then the nearest point on a big boss's body. */
   private readonly aim: MutableVec2 = { x: 0, y: 0 };
 
   /** Number of live entities. */
@@ -184,13 +184,14 @@ export class EntityStore {
   /**
    * How far `point` lies past the attacker's edge, where its attack reach starts: its drawn body
    * outline when it has one (`CombatHitbox`: a big boss hits from its whole body, DEC-421), 0
-   * inside it; else its collider circle.
+   * inside the outline; else its collider circle, negative inside the circle.
    */
   private gapPastEdgeOf(attacker: Entity, from: Transform, point: Vec2): number {
     const hitbox = attacker.findComponent(CombatHitbox);
     if (hitbox === undefined) {
       return distance(from.position, point) - from.radius;
     }
+    // ponytail: a new world polygon on each call, as `outlineOf` (see its note).
     const body = [hitbox.polygonAt(from.position, from.facing)];
     return isPointInAnyPolygon(point, body) ? 0 : nearestPointOnPolygons(point, body, this.aim);
   }

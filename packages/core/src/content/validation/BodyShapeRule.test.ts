@@ -41,6 +41,19 @@ describe('BodyShapeRule', () => {
     }
   });
 
+  it('flags an outline that does not hold the whole footprint circle (DEC-421)', () => {
+    const rule = new BodyShapeRule();
+    // The training dummy's circle is 0.4 m: one edge 0.3 m from its centre, or a shape beside it.
+    const tooThin = SQUARE.map(({ x, y }) => ({ x, y: y < 0 ? -0.3 : y }));
+    const beside = SQUARE.map(({ x, y }) => ({ x: x + 3, y }));
+
+    for (const outline of [tooThin, beside]) {
+      expect(rule.check(withShape({ outline }))).toEqual([
+        'bodyShape.outline must hold the whole footprint circle',
+      ]);
+    }
+  });
+
   it('flags a head with fewer than 3 corners or a corner that is not finite', () => {
     const rule = new BodyShapeRule();
 
