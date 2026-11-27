@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -585,7 +585,8 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 `BreakabilityStep` (first: an unbreakable wall or gate rejects the hit before any multiplier,
 which gives the same result as §9's late check; 07 §3), `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
 `INBOX.md`), `BasicAttackLevelStep` (a Legend's `weapon` hit × its `Progression.potency` at its
-class's `basicAttackPerLevel`, §13, DEC-380 (2); an ability hit is scaled at cast instead, so it
+class's `basicAttackPerLevel`, or at the lower `basicAttackPerLevelOnStructures` when the target
+is a structure, §13, DEC-380 (2), DEC-405; an ability hit is scaled at cast instead, so it
 is not scaled twice), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8), `MinionStrengthStep`
 (the minion strength-by-distance curve, its base-stat point moved toward the enemy for each lane
 tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16; `createDefaultDamageSteps(progressOf)`
@@ -784,6 +785,7 @@ export type LevelScalingDefinition = {
   readonly healthPerLevel: number;
   readonly aetherPerLevel: number;
   readonly basicAttackPerLevel: number;
+  readonly basicAttackPerLevelOnStructures: number; // DEC-405: a lower rate on structures
 }; // TUNE
 ```
 
@@ -956,7 +958,10 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   nobody when a minion or turret lands that hit (DEC-375). Checkpoint XP is built
   (`CheckpointAwards`, 07 §7). Basic-attack potency is built (DEC-380 (2)): `Progression.potency`
   and `BasicAttackLevelStep` (§9) multiply a Legend's weapon hit by
-  `1 + basicAttackPerLevel × (level − 1)`, read when the hit lands. A match mode can turn match XP
+  `1 + basicAttackPerLevel × (level − 1)`, read when the hit lands; a hit on a structure uses the
+  lower `basicAttackPerLevelOnStructures` (DEC-405). While walls, turrets, gates, forts and the
+  palace are map objects (07 §13), the step also counts a map object whose kind is in
+  `STRUCTURE_MAP_OBJECT_KINDS` (`content/maps/`) as a structure. A match mode can turn match XP
   off (`ProgressionContent.hasMatchXp: false`, a Duel's rule, DEC-380 (1)): `ProgressionSystem`
   then listens for no award (a cleared camp's and a checkpoint set's included), and the max-level
   start still applies. Not built yet: the minion-kill share radius (balancing.md "XP sources"), assists,

@@ -159,6 +159,18 @@ Reply inline (`Decision: …`).
       caller that gives only `units` must give `null` first. An options object
       (`{ progressOf?, units? }`) removes that. A later `refactor(core)` PR; no behaviour changes.
       Decision: …
+- [ ] **HC-B63 one "is this a structure" rule for level damage and scoring
+      (`feat/legend-level-damage` DEC-405 critic, 2026-11-27; better than the design, owner
+      sign-off pending)** — The player sees no change today. (1) A high-level Legend's weapon hit
+      grows less on a structure (DEC-405). To know what is a structure, the code tests the target's
+      family, and for walls, turrets, gates and the palace (still map objects, 07 §13) a list of
+      map-object kinds. Proposal: each target's own definition says what share of the level
+      bonus it takes, as 07 §4 `damageMultipliers` do. Then walls and towers can be tuned apart,
+      and the step has no family test. Cost: a definition source for map-object targets in the
+      damage step. (2) The scoring rule for damage to structures (`defaultScoringRules.ts`,
+      `StructureHitRule`) tests only the `structure` family. So a hit on a wall or turret map
+      object scores no structure damage today. Proposal: one shared "is a structure target"
+      predicate for both. A later `refactor(core)` PR; (2) changes the scores. Decision: …
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
@@ -953,6 +965,14 @@ Reply inline (`Decision: …`).
     scale only hits on Legends? (Owner Calls card HC-Q119.) (c) Architecture 05 §13 is your design text. It does not name
     `hasMatchXp` or say that a weapon hit reads the level when it lands. Only the §18 status note
     says so. Add it to §13 if you want it in the design. Decision: …
+  - 2026-11-27: (b) answered (DEC-405, Owner Calls v103 HC-Q119): full rate on Legends, mobs and
+    bosses; a lower rate on structures (`basicAttackPerLevelOnStructures`, 0.04 per level, `TUNE`,
+    built in `feat/legend-level-damage`). (a) and (c) are still open.
+    A high-level Legend's weapon bonus is smaller against walls (the Cathedral's too), turrets,
+    gates, the palace and the 2 capture-point forts. Against trees, rocks, houses, furniture and
+    camp props it is full. This list is the build's reading of your "etc", not your words. Correct
+    it after playtests if an item is wrong: one `true` or `false` per item in
+    `content/maps/mapObjectDefinitions.ts` (DEC-405 row).
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
       of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only
