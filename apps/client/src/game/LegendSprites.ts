@@ -88,13 +88,15 @@ export class LegendSprites {
     });
   }
 
-  /** Follows each Legend with a sprite from one tick's snapshot to the next (walk row, facing). */
-  public observe(previous: Snapshot | null, current: Snapshot): void {
-    const before = new Map(previous?.entities.map((entity) => [entity.id, entity]) ?? []);
+  /**
+   * Follows each Legend with a sprite to this tick's snapshot (walk row, facing). Each animation
+   * keeps its Legend's last place and tick, so no earlier snapshot is needed.
+   */
+  public observe(current: Snapshot): void {
     for (const entity of current.entities) {
       const sheet = this.sheetOf(entity);
       if (sheet !== undefined) {
-        this.animationOf(entity, sheet).observe(before.get(entity.id) ?? null, entity);
+        this.animationOf(entity, sheet).observe(entity, current.tick);
       }
     }
   }
@@ -135,8 +137,8 @@ export class LegendSprites {
     // ponytail: every Legend gets a full sprite (DEC-378 (1), (2)). Ceiling: about 20 sprite draws
     // a frame (`legendsPerTeam` for each of the two teams, core `config/defaultGameConfig.ts`)
     // and up to 8 sheets in memory (the eight `LEGEND_SPRITE_SHEETS`). Upgrade path, only if
-    // in-game performance drops: the bots draw at 1x or at a lower frame rate, and the player
-    // keeps full fidelity (DEC-378 (2)).
+    // in-game performance drops: the player keeps full fidelity and the bots drop a little
+    // (DEC-378 (2)); for example, the bots draw at 1x or at a lower frame rate.
     const animation = new LegendAnimation(sheet.atlasId, this.tickRate);
     this.animations.set(entity.id, animation);
     return animation;

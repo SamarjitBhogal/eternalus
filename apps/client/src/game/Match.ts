@@ -235,7 +235,7 @@ export class Match implements LoopTarget {
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
-    this.legendSprites.observe(this.previous, this.current);
+    this.legendSprites.observe(this.current);
     this.healthBars.observe(this.current, this.playerId);
     this.bodies.observe(this.current);
     this.roofs.playerAt(this.livingPlayerAt());

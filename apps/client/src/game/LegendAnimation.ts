@@ -12,6 +12,11 @@ export class LegendAnimation {
   private walkRow: number = LEGEND_ATLAS_ROWS.south;
   private isMoving = false;
   private idleRow: number = LEGEND_ATLAS_ROWS.idle;
+  /** The tick of the last observed snapshot with a place, or `null` for none. */
+  private lastTick: number | null = null;
+  /** Where the Legend stood on `lastTick`. */
+  private lastX = 0;
+  private lastY = 0;
   /** Animates one Legend from the atlas `atlasId` (its sub-class's sheet). */
   public constructor(
     private readonly atlasId: string,
@@ -22,22 +27,25 @@ export class LegendAnimation {
     this.attackStartedTick = tick;
   }
   /**
-   * Follows the Legend from its last tick's snapshot (`before`, `null` when it is new) to this
-   * tick's (`after`, `null` when it is gone). Uses actual displacement, so walking against a wall
-   * does not run in place.
+   * Follows the Legend to its snapshot of `tick`. It compares the place with the place it kept
+   * from the tick before. A Legend that it did not see on the tick before is new (a spawn or a
+   * respawn), so it does not walk. It uses the actual step, so walking against a wall does not
+   * run in place.
    */
-  public observe(before: EntitySnapshot | null, after: EntitySnapshot | null): void {
-    const from = before?.transform;
-    const to = after?.transform;
-    const hasBoth = from !== undefined && from !== null && to !== undefined && to !== null;
-    const step = hasBoth ? { x: to.x - from.x, y: to.y - from.y } : { x: 0, y: 0 };
-    this.isMoving = Math.abs(step.x) + Math.abs(step.y) > Number.EPSILON;
-    const facing = to?.facing;
-    if (facing !== undefined) {
-      this.idleRow = LegendAnimation.rowFor(facing, LEGEND_ATLAS_ROWS.idle);
+  public observe(entity: EntitySnapshot, tick: number): void {
+    const to = entity.transform;
+    const wasSeen = to !== null && this.lastTick === tick - 1;
+    const dx = wasSeen ? to.x - this.lastX : 0;
+    const dy = wasSeen ? to.y - this.lastY : 0;
+    this.isMoving = Math.abs(dx) + Math.abs(dy) > Number.EPSILON;
+    this.lastTick = to === null ? null : tick;
+    if (to !== null) {
+      this.lastX = to.x;
+      this.lastY = to.y;
+      this.idleRow = LegendAnimation.rowFor(to.facing, LEGEND_ATLAS_ROWS.idle);
     }
     if (this.isMoving) {
-      this.walkRow = LegendAnimation.rowFor(step, LEGEND_ATLAS_ROWS.south);
+      this.walkRow = LegendAnimation.rowFor({ x: dx, y: dy }, LEGEND_ATLAS_ROWS.south);
     }
   }
   /** Returns the frame for the Legend at `tick`, or `null` once it is dead. */

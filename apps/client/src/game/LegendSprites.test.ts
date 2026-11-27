@@ -61,13 +61,17 @@ const BOT: EntitySnapshot = {
   transform: { x: 30, y: 20, radius: 0.75, facing: { x: 0, y: 1 } },
 };
 
-/** An empty match's first snapshot; `snapshotOf` swaps in the entities a test needs. */
+/** An empty match's first snapshot; `snapshotAt` swaps in the tick and the entities a test needs. */
 const BASE = new Simulation({
   config: createDefaultGameConfig(),
   seed: 1,
   logger: new NullLogger(),
 }).snapshot();
-const snapshotOf = (...entities: readonly EntitySnapshot[]): Snapshot => ({ ...BASE, entities });
+const snapshotAt = (tick: number, ...entities: readonly EntitySnapshot[]): Snapshot => ({
+  ...BASE,
+  tick,
+  entities,
+});
 
 /** A simulation whose events come from `bus`, so a test can count its listeners. */
 function busSimulation(): {
@@ -237,7 +241,8 @@ describe('LegendSprites', () => {
     // The bot steps east while it still faces south, so only its step can pick the east row.
     const east = { ...BOT, transform: { x: 31, y: 20, radius: 0.75, facing: { x: 0, y: 1 } } };
 
-    sprites.observe(snapshotOf(HERO, BOT), snapshotOf(HERO, east));
+    sprites.observe(snapshotAt(1, HERO, BOT));
+    sprites.observe(snapshotAt(2, HERO, east));
 
     // Row 4 is the east walk; the player stood still, so it stays on the idle row 0.
     expect([drawnFrame(sprites, HERO), drawnFrame(sprites, east)]).toEqual([
@@ -247,11 +252,25 @@ describe('LegendSprites', () => {
     sprites.destroy();
   });
 
+  it('does not walk a Legend that was out of the last snapshot (a respawn)', () => {
+    const { sprites } = spritesWith(sheetsOf(['knight', KNIGHT_SHEET], ['oracle', ORACLE_SHEET]));
+    // The bot is back one step east of where it was last seen: a respawn, not a step.
+    const back = { ...BOT, transform: { x: 31, y: 20, radius: 0.75, facing: { x: 0, y: 1 } } };
+
+    sprites.observe(snapshotAt(1, HERO, BOT));
+    sprites.observe(snapshotAt(2, HERO));
+    sprites.observe(snapshotAt(3, HERO, back));
+
+    // Row 0 is the idle row; a walk east would be row 4.
+    expect(drawnFrame(sprites, back)).toEqual({ atlasId: 'oracle-sprites', frame: 0 });
+    sprites.destroy();
+  });
+
   it("plays only the attacker's attack row, through one damage-applied listener for all Legends", () => {
     const { bus, sprites } = spritesWith(
       sheetsOf(['knight', KNIGHT_SHEET], ['oracle', ORACLE_SHEET]),
     );
-    sprites.observe(null, snapshotOf(HERO, BOT, { ...BOT, id: 'bot-2' }));
+    sprites.observe(snapshotAt(1, HERO, BOT, { ...BOT, id: 'bot-2' }));
 
     bus.emit('damage-applied', {
       targetId: 'hero',
@@ -266,6 +285,21 @@ describe('LegendSprites', () => {
       { atlasId: 'oracle-sprites', frame: 5 * 6 },
       { atlasId: 'knight-sprites', frame: 0 },
     ]);
+    sprites.destroy();
+  });
+
+  it('leaves a bot on its idle row after a status hit from it: only a weapon hit plays the attack', () => {
+    const { bus, sprites } = spritesWith(sheetsOf(['oracle', ORACLE_SHEET]));
+    sprites.observe(snapshotAt(1, HERO, BOT));
+
+    bus.emit('damage-applied', {
+      targetId: 'hero',
+      amount: 1,
+      absorbed: 0,
+      source: { attackerId: BOT.id, kind: 'status', definitionId: 'burn' },
+    });
+
+    expect(drawnFrame(sprites, BOT)).toEqual({ atlasId: 'oracle-sprites', frame: 0 });
     sprites.destroy();
   });
 
