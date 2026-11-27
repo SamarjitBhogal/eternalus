@@ -6,12 +6,12 @@ import { KNIGHT } from '../content/legends/specs/knight';
 import { LEGEND_SPECS } from '../content/legends/specs/legendSpecCatalogue';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadWeapons } from '../content/weapons/loadWeapons';
-import type { WeaponDefinition } from '../content/weapons/weapons.types';
+import type { AuthoredWeaponDefinition } from '../content/weapons/weapons.types';
 import { Magus } from './legends/Magus';
 import { Sentinel } from './legends/Sentinel';
 import { Warrior } from './legends/Warrior';
 
-const TEST_TALONS: WeaponDefinition = {
+const TEST_TALONS: AuthoredWeaponDefinition = {
   id: 'test-talons',
   displayName: 'Test talons',
   weaponClass: 'glove',

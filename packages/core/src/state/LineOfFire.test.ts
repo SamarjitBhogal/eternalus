@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { lavaBridge } from '../__fixtures__/lavaBridge';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { Footprint } from '../components/Footprint';
@@ -93,22 +94,27 @@ class Body extends Entity {
   }
 }
 
-/** A match whose walls are `walls`, or one with no collision rule when `walls` is `null`. */
-const world = (walls: readonly Polygon[] | null) => {
+/**
+ * A match whose walls are `walls`, or one with no collision rule when `walls` is `null`; with
+ * `collisions`, that collision rule instead.
+ */
+const world = (walls: readonly Polygon[] | null, collisions?: CollisionResolver) => {
   const state = new GameState(
     CONFIG,
     1,
     null,
-    walls === null
-      ? {}
-      : {
-          collisions: new CollisionResolver(
-            new StaticCollisionIndex(
-              walls.map((polygon, i) => ({ id: `wall-${String(i)}`, polygon })),
+    collisions !== undefined
+      ? { collisions }
+      : walls === null
+        ? {}
+        : {
+            collisions: new CollisionResolver(
+              new StaticCollisionIndex(
+                walls.map((polygon, i) => ({ id: `wall-${String(i)}`, polygon })),
+              ),
+              BOUNDS,
             ),
-            BOUNDS,
-          ),
-        },
+          },
   );
   let counter = 0;
   const add = (spec: BodySpec): string => {
@@ -216,6 +222,28 @@ describe('LineOfFire', () => {
     expect(shortShots.isClear(state, from, far)).toBe(false);
   });
 
+  it('tests the attack it is given, not the one the attacker has loaded (BTD-1)', () => {
+    const SHORT: RangedAttack = {
+      ...RANGED,
+      projectile: { projectileId: 'short-bolt', falloff: null },
+    };
+    const mixed = new LineOfFire({
+      get: (id) =>
+        id === 'short-bolt' ? { ...PROJECTILES.get('magus-bolt'), range: 8 } : PROJECTILES.get(id),
+    });
+    const { state, add, shooter } = world([]);
+    const loadedLong = shooter({ x: 0, y: 0 });
+    const loadedShort = shooter({ x: 0, y: 4 }, SHORT);
+    // 8.85 m from the first shooter: past the short bolt's range, inside the long one's.
+    const far = add({ at: { x: 10, y: 0 }, radius: 1 });
+    const farFromShort = add({ at: { x: 10, y: 4 }, radius: 1 });
+
+    expect(mixed.isClear(state, loadedLong, far)).toBe(true);
+    expect(mixed.isClear(state, loadedLong, far, SHORT)).toBe(false);
+    expect(mixed.isClear(state, loadedShort, farFromShort)).toBe(false);
+    expect(mixed.isClear(state, loadedShort, farFromShort, RANGED)).toBe(true);
+  });
+
   it('is clear for a melee attack, an unknown id, and a match with no collision rule', () => {
     const walled = world([box(5, -5, 0.5, 10)]);
     const melee = walled.shooter({ x: 0, y: 0 }, MELEE);
@@ -229,6 +257,38 @@ describe('LineOfFire', () => {
     expect(lineOfFire.isClear(walled.state, ranged, 'missing')).toBe(true);
     expect(lineOfFire.isClear(walled.state, 'missing', target)).toBe(true);
     expect(lineOfFire.isClear(open.state, openFrom, openTarget)).toBe(true);
+  });
+
+  describe('the launch-shape rule (DEC-334): the attacker centre is the launch point', () => {
+    it('sees past a shape that holds the attacker centre, as a wall turret sees past its pylon and wall', () => {
+      // The pylon on its wall; the target stands where the line ends deeper in the wall than it
+      // starts, which stops a sweep that starts inside a shape.
+      const { state, add, shooter } = world([box(-2.5, -2, 4, 4), box(-1, -1, 10, 2)]);
+      const from = shooter({ x: -0.5, y: 0 });
+      const target = add({ at: { x: 5, y: 0 }, radius: 0.5 });
+
+      expect(lineOfFire.isClear(state, from, target)).toBe(true);
+    });
+
+    it('is still blocked by a wall the shot circle, but not the attacker centre, overlaps', () => {
+      const { state, add, shooter } = world([box(1, -5, 10, 10)]);
+      const from = shooter({ x: 1 - SHOT_RADIUS / 3, y: 0 });
+      const target = add({ at: { x: 4, y: 0 }, radius: 0.5 });
+
+      expect(lineOfFire.isClear(state, from, target)).toBe(false);
+    });
+
+    it("is still blocked by the lava from the seed 1 map's lava bridge", () => {
+      const { collisions, onBridge, offTheSide } = lavaBridge();
+      const { state, add, shooter } = world(null, collisions);
+      const from = shooter(onBridge);
+      const past = add({
+        at: { x: onBridge.x + offTheSide.x * 6, y: onBridge.y + offTheSide.y * 6 },
+        radius: 1,
+      });
+
+      expect(lineOfFire.isClear(state, from, past)).toBe(false);
+    });
   });
 
   describe('bodies that take no damage (the rule that stops a shot, AreaHitQuery.stopsShot)', () => {

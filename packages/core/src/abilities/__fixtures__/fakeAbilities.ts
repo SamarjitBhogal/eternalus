@@ -4,6 +4,8 @@ import { loadAbilities } from '../../content/abilities/loadAbilities';
 import { loadKnockback } from '../../content/abilities/loadKnockback';
 import type { AbilityEffect } from '../AbilityEffect.types';
 import { AbilityRegistry } from '../AbilityRegistry';
+import { STATUS_EFFECTS } from '../../content/status-effects/statusEffectCatalogue';
+import { DebuffEffect } from '../effects/DebuffEffect';
 import { KnockbackEffect } from '../effects/KnockbackEffect';
 import type { ComposableAbility } from '../AbilityRegistry.types';
 import { MinLevelRestriction } from '../restrictions/MinLevelRestriction';
@@ -18,14 +20,17 @@ import { SelfTargeting } from '../targeting/SelfTargeting';
 export const SHIPPED_EFFECT_KINDS = ['damage', 'knockback', 'debuff', 'dash', 'buff'] as const;
 
 /**
- * The effects the shipped statuses' `onHit` steps name (Fury's knock-back): a match checks them
- * against its registry at boot (`checkStatusLinks`), so a test registry a `Simulation` boots on
- * needs them beside its own. The knock-back is loaded at `tickRate`, the default config's rate
- * unless given.
+ * The effects the shipped `onHit` steps name: the statuses' (Fury's knock-back) and the attacks'
+ * (the heavy turret bolt's debuff). A match checks them against its registry at boot
+ * (`checkStatusLinks`, `checkAttackLinks`), so a test registry a `Simulation` boots on needs them
+ * beside its own. The knock-back is loaded at `tickRate`, the default config's rate unless given.
  */
-export const statusOnHitEffects = (
+export const shippedOnHitEffects = (
   tickRate = createDefaultGameConfig().tickRate,
-): readonly AbilityEffect[] => [new KnockbackEffect(loadKnockback(tickRate))];
+): readonly AbilityEffect[] => [
+  new KnockbackEffect(loadKnockback(tickRate)),
+  new DebuffEffect(STATUS_EFFECTS),
+];
 
 /** A Warrior ability for tests: 30 aether, a 90-tick cooldown, one `fake-strike` step around the caster. */
 export const fakeAbility = (

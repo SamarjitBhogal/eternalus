@@ -4,6 +4,7 @@ import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { ProjectileDefinition } from '../content/projectiles/projectiles.types';
+import type { UnitAttack } from '../content/units/units.types';
 import { doesCapsuleReachPolygon } from '../utils/circlePolygon';
 import { distance, distanceToSegment, isPointInAnyPolygon } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
@@ -29,11 +30,15 @@ import { ReachQuery } from './ReachQuery';
  * more than `BODY_BEFORE_WALL_MARGIN` before it touches the target, as `ProjectileSystem` breaks a
  * near tie for the target. A body that takes damage does not: the shot lands on it. An attack
  * needs a line only when it fires a projectile. An attacker inside the target's outline hits it at
- * once.
+ * once. The attacker's centre is the shot's launch point: a shape that holds it does not block
+ * the line, as it does not stop the shot (DEC-334), so a wall turret sees past its own pylon.
  *
- * ponytail: the no-damage bodies are found by a walk over the store, O(entities) per call; only
- * bots call it, at their decision cadence. Ceiling: many ranged bots; upgrade to a `SpatialHash`
- * query along the line then.
+ * ponytail: the no-damage bodies are found by a walk over the store, O(entities) per call. Callers
+ * are the ranged bots (`bot-legend`, every 6 ticks) and the wall turrets (`TurretController`,
+ * every 2 ticks for 20 turrets, one call per ranked candidate until one is clear), all under the
+ * per-tick decision budget (`content/ai/cadence.ts`). Ceiling: not measured; about 10 turret
+ * decisions a tick, each one walk over 650+ entities at the unit cap, so the soak metric must stay
+ * inside its budget. Upgrade path: a `SpatialHash` query along the line instead of the walk.
  */
 export class LineOfFire implements LineOfFireQuery {
   /** Scratch for the aim point, then the aim direction. */
@@ -49,9 +54,14 @@ export class LineOfFire implements LineOfFireQuery {
   ) {}
 
   /** {@inheritDoc LineOfFireQuery.isClear} */
-  public isClear(state: GameState, attackerId: EntityId, targetId: EntityId): boolean {
+  public isClear(
+    state: GameState,
+    attackerId: EntityId,
+    targetId: EntityId,
+    testedAttack?: UnitAttack,
+  ): boolean {
     const attacker = state.entities.get(attackerId);
-    const attack = attacker?.findComponent(Combat)?.attack;
+    const attack = testedAttack ?? attacker?.findComponent(Combat)?.attack;
     const from = attacker?.findComponent(Transform)?.position;
     const target = state.entities.get(targetId);
     if (
@@ -77,7 +87,7 @@ export class LineOfFire implements LineOfFireQuery {
       return false;
     }
     normalizeInto(this.aim, subInto(this.aim, this.aim, from));
-    const wall = state.collisions.reach(from, this.aim, contact, shot.footprintRadius);
+    const wall = state.collisions.reach(from, this.aim, contact, shot.footprintRadius, from);
     return (
       isTouchedBeforeWall(contact, wall) &&
       !this.isBlocked(state, attackerId, targetId, from, contact, shot.footprintRadius)

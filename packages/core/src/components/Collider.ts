@@ -48,7 +48,8 @@ export class Collider {
 
   /**
    * Whether the owner takes no damage right now (architecture 07 §3): a wall or gate before its
-   * breakability rule passes. Set only by `StructureSystem`.
+   * breakability rule passes, and a wall turret's pylon with its turret (DEC-388). Set at spawn,
+   * then only by `StructureSystem`.
    */
   public get isUnbreakable(): boolean {
     return this.isUnbreakableValue;

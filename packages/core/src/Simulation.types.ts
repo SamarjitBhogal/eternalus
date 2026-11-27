@@ -11,11 +11,15 @@ import type { AuthoredGuardPlan } from './content/structures/structures.types';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
 import type { StructureDefinition } from './content/structures/structures.types';
+import type { WeaponDefinition } from './content/weapons/weapons.types';
 import type { System } from './systems/System.types';
 import type { PlayableTeam } from './teams/teams.types';
 
-/** Where structure definitions are found by id (architecture 07 §1). */
-export type StructureSource = Pick<ContentCatalogue<StructureDefinition>, 'has' | 'get'>;
+/**
+ * Where structure definitions are found by id (architecture 07 §1), and all of them, so
+ * `loadTurrets` checks the ammo lists of the ones the match builds (DEC-168 B8).
+ */
+export type StructureSource = Pick<ContentCatalogue<StructureDefinition>, 'has' | 'get' | 'all'>;
 
 /** Everything a `Simulation` is built from (architecture 03 §6). Only the first three are required. */
 export type SimulationOptions = {
@@ -48,8 +52,11 @@ export type SimulationOptions = {
    * has no Legends, and one without a human slot is in sim mode. Needs `map`.
    */
   readonly roster?: readonly RosterSlot[];
-  /** Where Legends find their weapons by id; `loadWeapons(config.tickRate)` when omitted. */
-  readonly weapons?: WeaponSource;
+  /**
+   * Where Legends find their weapons by id; `loadWeapons(config.tickRate)` when omitted. Every
+   * weapon's attacks' `onHit` steps are checked against `abilities` at boot (`checkAttackLinks`).
+   */
+  readonly weapons?: WeaponSource & Pick<ContentCatalogue<WeaponDefinition>, 'all'>;
   /**
    * The abilities and their strategies;
    * `createDefaultAbilityRegistry(loadAbilities(config.tickRate), config.tickRate)` when omitted.

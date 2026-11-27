@@ -42,10 +42,23 @@ export type MapObject = {
   readonly team?: PlayableTeam;
 };
 
+/**
+ * What is left of a map object (DEC-389, HC-B38 (3)). `standing`: it is whole. `ruin`: a
+ * structure's body whose structure is gone (a lane tower's fort, a wall turret's pylon); it still
+ * stands and blocks, and it draws as ruins (DEC-341, HC-Q91); a pylon keeps its own health
+ * (DEC-388). `destroyed`: its own health ran out; it blocks no more and draws as rubble.
+ */
+export type MapObjectCondition = 'standing' | 'ruin' | 'destroyed';
+
 /** Mutable object state projected from the simulation; geometry stays in the map definition. */
 export type MapObjectSnapshot = {
   readonly id: string;
   readonly entityId: string | null;
   readonly health: { readonly current: number; readonly max: number } | null;
-  readonly isDestroyed: boolean;
+  readonly condition: MapObjectCondition;
+  /**
+   * The health of the structure mounted on it, while that stands (a wall turret on its pylon,
+   * DEC-388). `health` is then the object's own.
+   */
+  readonly mountedHealth?: { readonly current: number; readonly max: number };
 };

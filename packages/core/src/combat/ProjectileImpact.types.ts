@@ -5,6 +5,7 @@ import type {
 } from '../components/ProjectilePayload.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 
 /** One shot landing on a body, as the impact of its kind sees it. */
@@ -13,6 +14,10 @@ export type ProjectileHit<K extends ProjectileImpactKind> = {
   readonly impact: ProjectileImpactData<K>;
   /** The entity that fired it. */
   readonly ownerId: EntityId;
+  /** The owner's team at the moment of firing. */
+  readonly team: Team;
+  /** The owner's level at the moment of firing. */
+  readonly ownerLevel: number;
   /** Who the hit is credited to. */
   readonly source: ProjectileSource;
   /** Where it was fired from. */

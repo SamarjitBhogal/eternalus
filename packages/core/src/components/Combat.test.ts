@@ -221,4 +221,65 @@ describe('Combat', () => {
       expect(combat.hitsAt(12)).toEqual([]);
     });
   });
+
+  describe('equip (DEC-303)', () => {
+    const talons = { strategy: 'melee', damage: 45, reach: 1.5, interval: 21 } as const;
+    const bow = {
+      strategy: 'ranged-projectile',
+      damage: 45,
+      reach: 50,
+      interval: 9,
+      projectile: { projectileId: 'arrow', falloff: null },
+    } as const;
+
+    it('takes the new weapon and its attacks, and keeps the target and the attack timer', () => {
+      const combat = new Combat({ basic: talons, melee: talons }, 'raptor-talons');
+      combat.setTarget('t');
+      combat.beginAttack(10);
+
+      combat.equip({ basic: bow }, 'obsidian-bow');
+
+      expect(combat.weaponId).toBe('obsidian-bow');
+      expect(combat.attack).toBe(bow);
+      expect(combat.targetId).toBe('t');
+      expect(combat.readyAtTick).toBe(31);
+      combat.beginAttack(31);
+      expect(combat.readyAtTick).toBe(40);
+    });
+
+    it('drops to basic a mode the new attacks do not have, and keeps one they have', () => {
+      const combat = new Combat({ basic: talons, melee: talons }, 'raptor-talons');
+      combat.setTarget('t', 'melee');
+
+      combat.equip({ basic: bow }, 'obsidian-bow');
+      const withBow = { mode: combat.mode, attack: combat.attack, target: combat.targetId };
+      combat.setTarget('t');
+      combat.equip({ basic: bow, melee: talons }, 'test-staff');
+      combat.setTarget('t', 'melee');
+      combat.equip({ basic: talons, melee: talons }, 'raptor-talons');
+
+      expect(withBow).toEqual({ mode: 'basic', attack: bow, target: 't' });
+      expect(combat.mode).toBe('melee');
+      expect(combat.attack).toBe(talons);
+    });
+
+    it('uses the new attacks for later target changes', () => {
+      const combat = new Combat({ basic: talons, melee: talons }, 'raptor-talons');
+
+      combat.equip({ basic: bow }, 'obsidian-bow');
+
+      expect(combat.setTarget('t', 'melee')).toBe(false);
+      expect(combat.setTarget('t')).toBe(true);
+      expect(combat.attack).toBe(bow);
+    });
+
+    it('takes attacks with no weapon, as a turret does', () => {
+      const combat = new Combat({ basic: talons }, 'raptor-talons');
+
+      combat.equip({ basic: bow }, null);
+
+      expect(combat.weaponId).toBeNull();
+      expect(combat.attack).toBe(bow);
+    });
+  });
 });

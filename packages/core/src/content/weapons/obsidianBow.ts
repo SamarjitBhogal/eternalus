@@ -1,4 +1,4 @@
-import type { WeaponDefinition } from './weapons.types';
+import type { AuthoredWeaponDefinition } from './weapons.types';
 
 /**
  * Obsidian Bow: a bow, ranged magical (reference 07 "Named weapons", 05 §10 weapon table). Any
@@ -25,4 +25,4 @@ export const OBSIDIAN_BOW = {
   ],
   allowedClasses: 'any',
   uniqueTo: null,
-} as const satisfies WeaponDefinition;
+} as const satisfies AuthoredWeaponDefinition;

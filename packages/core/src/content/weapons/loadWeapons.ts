@@ -1,4 +1,5 @@
 import { TickRate } from '../../utils/TickRate';
+import { attackInTicks, timeProblems } from '../timesInTicks';
 import { ContentCatalogue } from '../ContentCatalogue';
 import { ContentValidationError } from '../ContentValidationError';
 import { KEBAB_CASE } from '../validation/KebabCaseIdRule.constants';
@@ -6,13 +7,13 @@ import { KnownProjectileRule } from '../validation/KnownProjectileRule';
 import { PROJECTILES } from '../projectiles/projectileCatalogue';
 import { WEAPONS } from './weaponCatalogue';
 import type { ProjectileDefinition } from '../projectiles/projectiles.types';
-import type { WeaponDefinition } from './weapons.types';
+import type { AuthoredWeaponDefinition, WeaponDefinition } from './weapons.types';
 
 const isPositive = (value: number): boolean => value > 0 && Number.isFinite(value);
 
 /** What is wrong with `weapon` as authored, or nothing. */
 const problemsOf = (
-  weapon: WeaponDefinition,
+  weapon: AuthoredWeaponDefinition,
   projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'has'>,
 ): string[] => {
   const problems: string[] = [];
@@ -30,6 +31,12 @@ const problemsOf = (
     }
   }
   problems.push(...new KnownProjectileRule(projectiles).check(weapon));
+  problems.push(
+    ...timeProblems(
+      weapon.attacks.map(({ onHit }) => onHit),
+      'onHit',
+    ),
+  );
   if (
     weapon.uniqueTo !== null &&
     weapon.allowedClasses !== 'any' &&
@@ -41,8 +48,9 @@ const problemsOf = (
 };
 
 /**
- * Loads the weapons: attack intervals from seconds to ticks (architecture 03 §11, as
- * `loadDefaultContent` does for units), validated once.
+ * Loads the weapons: attack intervals and `onHit` step times from seconds to ticks (architecture
+ * 03 §11, DEC-241, as `loadDefaultContent` does for units), validated once. An `onHit` step's
+ * other fields are its effect strategy's to check at boot (`checkAttackLinks`).
  *
  * @param tickRate - Ticks per second (`GameConfig.tickRate`).
  * @param authored - The weapons to load; the shipped set by default.
@@ -51,7 +59,7 @@ const problemsOf = (
  */
 export const loadWeapons = (
   tickRate: number,
-  authored: readonly WeaponDefinition[] = WEAPONS.all(),
+  authored: readonly AuthoredWeaponDefinition[] = WEAPONS.all(),
   projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'has'> = PROJECTILES,
 ): ContentCatalogue<WeaponDefinition> => {
   const problems = authored.flatMap((weapon) => problemsOf(weapon, projectiles));
@@ -60,12 +68,9 @@ export const loadWeapons = (
   }
   const rate = new TickRate(tickRate);
   return new ContentCatalogue(
-    authored.map((weapon) => ({
+    authored.map((weapon): WeaponDefinition => ({
       ...weapon,
-      attacks: weapon.attacks.map((attack) => ({
-        ...attack,
-        interval: rate.toTicks(attack.interval),
-      })),
+      attacks: weapon.attacks.map((attack) => attackInTicks(attack, rate)),
     })),
   );
 };

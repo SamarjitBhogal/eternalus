@@ -12,12 +12,19 @@ import { Movement } from '../components/Movement';
 import type { Outline } from '../components/Outline.types';
 import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
+import { Transform } from '../components/Transform';
 import type { AbilitySlot } from '../content/abilities/AbilityDefinition.types';
 import type { AttackMode } from '../content/units/units.types';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { Entity } from '../entities/Entity';
-import type { EntityClass, EntityId, RemovalCause, RemovalRecord } from './EntityStore.types';
+import type {
+  EntityClass,
+  EntityId,
+  EntityPlace,
+  RemovalCause,
+  RemovalRecord,
+} from './EntityStore.types';
 
 /**
  * Every live entity of a match, kept in insertion order. Systems iterate with `forEach`, so the
@@ -122,6 +129,23 @@ export class EntityStore {
     return true;
   }
 
+  /**
+   * The entity's position and footprint radius (its `Transform`, read-only), or `undefined` for an
+   * unknown id or one without a `Transform`. Lets `ai/` read where a structure stands (the space
+   * index holds units only) without importing `components/`.
+   */
+  public placeOf(id: EntityId): EntityPlace | undefined {
+    return this.entities.get(id)?.findComponent(Transform);
+  }
+
+  /**
+   * The entity's velocity in metres per tick (its `Movement`), or `undefined` for an unknown id or
+   * one that cannot move. Lets `ai/` lead a moving target without importing `components/`.
+   */
+  public velocityOf(id: EntityId): Vec2 | undefined {
+    return this.entities.get(id)?.findComponent(Movement)?.velocity;
+  }
+
   /** The entity's health as a fraction of its maximum, or `undefined` without `Health`. */
   public healthFractionOf(id: EntityId): number | undefined {
     const health = this.entities.get(id)?.findComponent(Health);
@@ -164,6 +188,15 @@ export class EntityStore {
   /** Whether `attackerId` attacks `victimId` at `tick` (`victimsOf`). */
   public isAttacking(attackerId: EntityId, victimId: EntityId, tick: number): boolean {
     return this.victimsOf(attackerId, tick).includes(victimId);
+  }
+
+  /**
+   * The world point the entity attacks towards (`Combat.aimPoint`, set by `attack-aim`), or `null`
+   * when it holds no aimed attack, cannot attack or is unknown. Lets `ai/` see an aim it must stop
+   * without importing `components/`.
+   */
+  public attackAimOf(id: EntityId): Vec2 | null {
+    return this.entities.get(id)?.findComponent(Combat)?.aimPoint ?? null;
   }
 
   /**

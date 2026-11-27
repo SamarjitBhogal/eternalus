@@ -14,6 +14,7 @@ import { Veterancy } from '../components/Veterancy';
 import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { TurretState } from '../components/TurretState';
 import { INITIAL_FACING } from '../components/Transform.constants';
 import { Vision } from '../components/Vision';
 import type { Entity } from '../entities/Entity';
@@ -97,6 +98,14 @@ export class StateHasher {
         tallies.push([team, lane, amount]);
       });
       parts.push(['allyDamage', ...tallies]);
+    }
+    // Legend hits (DEC-335) are appended only while some are recorded, for the same reason.
+    if (state.legendHits.size > 0) {
+      const hits: unknown[] = [];
+      state.legendHits.forEach((legendId, team, tick) => {
+        hits.push([legendId, team, tick]);
+      });
+      parts.push(['legendHits', ...hits]);
     }
     // Lost towers are appended only once a lane has one, for the same reason.
     const lost = PLAYABLE_TEAMS.flatMap((team) =>
@@ -302,6 +311,10 @@ export class StateHasher {
     const clock = entity.findComponent(CombatClock);
     if (clock !== undefined) {
       fields.push(['combat-clock', ...clock.fields]);
+    }
+    const turret = entity.findComponent(TurretState);
+    if (turret !== undefined) {
+      fields.push(['turret', turret.loadedId]);
     }
     return fields;
   }

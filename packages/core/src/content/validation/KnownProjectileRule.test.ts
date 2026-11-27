@@ -15,7 +15,7 @@ const MOB = MOB_DEFINITIONS.get('light-minion');
 const shot = (
   projectileId: string,
   falloff: RangedAttack['projectile']['falloff'],
-): RangedAttack => ({
+): RangedAttack<never> => ({
   strategy: 'ranged-projectile',
   damage: 5,
   reach: 10,

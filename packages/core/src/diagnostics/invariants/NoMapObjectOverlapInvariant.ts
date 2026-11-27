@@ -1,11 +1,16 @@
 import { Collider } from '../../components/Collider';
 import { Deploying } from '../../components/Deploying';
 import { Movement } from '../../components/Movement';
+import { ProjectilePayload } from '../../components/ProjectilePayload';
 import { Transform } from '../../components/Transform';
 import type { GameState } from '../../state/GameState';
 import type { Invariant, Violation } from '../Invariant.types';
 
-/** Detects units placed into surviving solids independently of the collision solver. */
+/**
+ * Detects units placed into surviving solids independently of the collision solver. A shot inside
+ * a shape that holds its own launch point is not a violation: the shot can only leave that shape
+ * (the launch-shape rule, DEC-334), as a wall turret's bolt leaves its pylon and wall.
+ */
 export class NoMapObjectOverlapInvariant implements Invariant {
   public readonly id = 'no-map-object-overlap';
   public readonly severity = 'error';
@@ -23,7 +28,8 @@ export class NoMapObjectOverlapInvariant implements Invariant {
         entity.hasComponent(Deploying)
       )
         return;
-      const objectId = state.worldObjects?.blockingAt(transform.position, transform.radius);
+      const launch = entity.findComponent(ProjectilePayload)?.origin;
+      const objectId = state.worldObjects?.blockingAt(transform.position, transform.radius, launch);
       if (objectId != null)
         violations.push({
           invariantId: this.id,

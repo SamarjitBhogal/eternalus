@@ -8,6 +8,7 @@ import { DevSpawnHandler } from './handlers/DevSpawnHandler';
 import { DevSpawnMobsHandler } from './handlers/DevSpawnMobsHandler';
 import { MoveHandler } from './handlers/MoveHandler';
 import { StopHandler } from './handlers/StopHandler';
+import { SwitchAmmoHandler } from './handlers/SwitchAmmoHandler';
 import { UnsupportedCommandHandler } from './handlers/UnsupportedCommandHandler';
 
 /**
@@ -25,6 +26,7 @@ export const createDefaultCommandHandlers = (
     stop: new StopHandler(),
     'attack-target': new AttackTargetHandler(),
     'attack-aim': new AttackAimHandler(),
+    'switch-ammo': new SwitchAmmoHandler(),
     'cast-ability': new CastAbilityHandler(cast),
     intent: unsupported, // TODO(sholtzman): with sprint 1.5 PlayerController
     'dev-spawn': new DevSpawnHandler(),

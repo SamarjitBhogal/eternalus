@@ -167,6 +167,7 @@ describe('EntitySnapshotter', () => {
       new ProjectilePayload({
         ownerId: 'owner',
         team: 'light',
+        ownerLevel: 1,
         source: { attackerId: 'owner', kind: 'weapon', definitionId: 'obsidian-bow' },
         targetId: null,
         impact: { kind: 'weapon', attack: SHOT_ATTACK },

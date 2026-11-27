@@ -89,7 +89,8 @@ export type Brain = {
 
 - `ControllerRegistry` (Registry pattern) maps `ControllerId` to the instance. `EntityFactory`
   attaches a `Brain` when the definition names a controller (`LegendDefinition.controller`,
-  `MobDefinition.controller`, `TurretDefinition.controller`, `BossDefinition.controller`).
+  `MobDefinition.controller`, `StructureDefinition.controller` for a turret (DEC-335),
+  `BossDefinition.controller`).
 - `AiProfileDefinition` in `content/ai/profiles/` carries every number a controller uses (aggro
   rules, cadence, difficulty). Controllers contain no numbers.
 - SOLID: `AiSystem` depends only on the `Controller` abstraction (DIP); each controller has one
@@ -241,8 +242,9 @@ Owned by [18-minion-system](18-minion-system.md) §7.
 
 ### 4.5 TurretController (MVP; manual control MVP-if-time)
 
-Memory `{ targetId, ammo, nextShotTick, occupantId }`. Rules from the game doc and League's
-turret behaviour
+Memory `{ targetId }` (DEC-335): the loaded ammo is the turret's `TurretState` (07 §5), and its
+`Combat` cooldown is the one shot clock. `occupantId` joins with manual control. Rules from the
+game doc and League's turret behaviour
 [research §7](../research/game-architecture-and-performance-research.md#7-game-ai-for-bots):
 
 - First-in-range stickiness: keep the target until it dies or leaves range; on re-acquire use the
@@ -252,8 +254,10 @@ turret behaviour
 - Predictive aim: `aimPoint = targetPos + targetVel * (distance / projectileSpeed)`, one
   refinement iteration, vectors only (no `atan2`).
 - Ammo choice: `heavy` when the target kind is listed in `preferredAgainst` (Sentinel, HeavyMob),
-  else `default`; 1 bolt per 10 s heavy, 1 per 5 s default (`TUNE`, game doc). Ammo is content
-  (`content/weapons/turret-bolt-*.ts`), so "ammo specifics can change" is a data edit.
+  else `default`; 1 bolt per 10 s heavy, 1 per 5 s default (`TUNE`, game doc). Ammo is content:
+  each ammo is a `RangedAttack` plus `preferredAgainst` in the turret ammo table
+  (`content/structures/`, DEC-335), so "ammo specifics can change" is a data edit, and a bolt
+  flies and lands through the same path as any shot.
 - Manual control (**MVP-if-time**): when an Warrior Legend occupies the turret (`occupantId`), the
   controller yields; the occupant's `PlayerController` emits `fire-turret` and `switch-ammo`.
 
@@ -395,8 +399,43 @@ work named:
 - The stagger hashes the string id (`(tick + fnv1a(id)) % cadence`); a budget-deferred queue in
   `state.ai` replaces the round-robin cursor, with the same order (deferred first, then id order).
 - The registry holds `MinionController` (M2b), `GuardController` (M2c), `BotLegendController`
-  (M3) and `RoverController` (M8); the other controllers are absent until their phases, so it is
-  a partial map.
+  (M3), `RoverController` (M8) and `TurretController` (`feat/wall-turrets`); the other controllers
+  are absent until their phases, so it is a partial map.
+- `TurretController` (§4.5, `feat/wall-turrets`, 2026-11-22) drives a wall turret in auto mode. A
+  `Turret` structure whose definition names a controller gets a `ControllerBinding` from
+  `Structure`, as a unit does. Its brain keeps only the target (`TurretMemory`), so `StateHasher`
+  hashes it. The loaded ammo is the turret's `TurretState` and the aim point is on its `Combat`
+  (07 §13); the controller reads them through `TurretAmmoRule.ammoOf` and
+  `EntityStore.attackAimOf`. There is no `occupantId` and no `nextShotTick`: manual control is not
+  built, and `Combat`'s cooldown is the one shot clock. Its content is a turret profile
+  (`content/ai/turret.ts`, `wall-turret`) and the ammo table (`content/structures/turretAmmo.ts`),
+  loaded by `loadTurrets` and injected by `Simulation`. The controller ranks its candidates
+  (`rankTurretTargets`). The profile's `overrides` come first: an enemy Legend that damaged an
+  allied Legend within the defend-ally window becomes the target at once, also over a held target
+  (DEC-341, HC-Q94 A). The hits come from
+  `GameState.legendHits` (`LegendHitLog`), which keeps a hit after its victim dies, so the turret
+  still sees the Legend that killed its ally; the assist record (`ScoringState.recentHits`) forgets
+  them at the death. balancing.md's window ("a Legend that damaged an allied Legend in the last
+  3 s") replaces `defendAllyRange`: no number for that range exists, and only the hurter must be in
+  turret range, since the ally it hit is near it by its weapon's reach. Then the target is kept
+  while it lives and stays in range. Then the profile's `priority` list applies (heavy units, then
+  the nearest enemy). The turret takes the first candidate in that order that its shot can reach
+  (`LineOfFireQuery`, the match's one `LineOfFire`, the bots' rule of the DEC-317 addendum). It
+  picks the ammo for each candidate first and tests the line with that ammo's attack (DEC-335), so
+  the test uses the shot the turret will fire. It
+  tests the line only until one is clear, and a held target whose line closes is dropped as one
+  that leaves range. A wall turret's line starts inside its pylon and wall, which do not block it
+  (DEC-334). Range runs from the
+  turret's edge to a target's centre, so a target is also in the attack reach `Combat` will use.
+  Neutral units count as enemies, so the controller filters teams itself (no `Perception` filter
+  for that). Ammo is the first of the profile's ammo whose `preferredAgainst` fits the target's
+  kind. Predictive aim is `ai/predictiveAim.ts` (one refinement, vectors only). It reads a
+  structure's place and a target's velocity through `EntityStore.placeOf` and `velocityOf`. Each
+  decision with a target sends `switch-ammo` when the chosen ammo is not the loaded one, then
+  `attack-aim` at the predicted point, so the aim stays fresh (wall turrets part 2, 2026-11-22).
+  With no target and an aim still set, it sends `attack-aim { aim: null }` once. The bolt range is
+  35 m, `TUNE`, until the arc shot of DEC-341 (HC-Q93) lands in the tower-orb PR (Owner Calls "WT orb page",
+  DEC-341 (4); 07 §13).
 - `BotLegendController` (M3) plays the `laner` tree of §4.2 with the nodes it needs
   (`ai/bt/`: `Sequence`, `ActiveSelector`, `Condition`, `Action`; `Selector` and `Cooldown` join
   with their first use) and a `UtilityScorer` (`ai/utility/`) over two considerations, closeness

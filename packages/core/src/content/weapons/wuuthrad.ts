@@ -1,4 +1,4 @@
-import type { WeaponDefinition } from './weapons.types';
+import type { AuthoredWeaponDefinition } from './weapons.types';
 
 /**
  * Wuuthrad: a battle axe, melee physical with long reach (reference 07, 05 §10; MVP-if-time). The
@@ -22,4 +22,4 @@ export const WUUTHRAD = {
   ],
   allowedClasses: 'any',
   uniqueTo: null,
-} as const satisfies WeaponDefinition;
+} as const satisfies AuthoredWeaponDefinition;

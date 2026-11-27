@@ -4,7 +4,7 @@ description: Sprint checklists for the Structure family, layered shields, the da
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-22
 tags: [plan, phase-2, structures, combat, projectiles, spawning]
 paths:
   ['packages/core/src/combat/**', 'packages/core/src/entities/**', 'packages/core/src/systems/**']
@@ -128,6 +128,13 @@ Owner: _ (sim lane B). Week 5. Depends on 2.2.
 attacks (`RangedProjectileAttackStrategy`) are built; the `CombatSystem` v1 box (2.2) now has its
 ranged half. No box is ticked. Projectiles are not pooled (DEC-309). Turrets and the
 100-projectile soak metric are not built.
+
+**Status (2026-11-22, branch `feat/wall-turrets`, PR 4; DEC-332, DEC-334, DEC-335):** wall turrets
+auto-fire. Built: the `Turret` structure on each map turret slot, its ammo table (default and
+heavy bolts, the heavy bolt's concussion), `TurretController` (targets by its profile, line of
+fire, predictive aim) and the `switch-ammo` command. Not built: manual control, the `turret-*`
+events (`turret-fired`, `turret-control-changed`) and tower orbs. Details: the
+`feat-wall-turrets` entries of 2026-11-22 in `docs/plan/progress/`.
 
 **Success metric:** 0 pass-through anomalies with 100 projectiles in flight for 18,000 ticks
 (10-minute soak) at `heavy` invariant level.

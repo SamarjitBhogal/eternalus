@@ -55,6 +55,11 @@ type CommandPayloads = {
     /** Which attack to use; absent means `'basic'`. */
     readonly mode?: AttackMode;
   };
+  /**
+   * Loads one of a turret's ammo (architecture 11 §4.5): its `Combat` fires that ammo's attack from
+   * then on. Its attack timer stays, so a switch never gives a free shot.
+   */
+  readonly 'switch-ammo': { readonly actorId: EntityId; readonly ammoId: string };
   readonly 'cast-ability': {
     readonly actorId: EntityId;
     readonly slot: AbilitySlot;
@@ -111,6 +116,8 @@ export type CommandRejectReason =
   | 'map-only'
   | 'invalid-direction'
   | 'not-movable'
+  | 'not-a-turret'
+  | 'unknown-ammo'
   | 'cannot-attack'
   | 'invalid-target'
   | 'not-supported'

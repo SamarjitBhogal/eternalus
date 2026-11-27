@@ -5,6 +5,7 @@ import type {
   DefinitionSource,
   LegendSpecSource,
   Placement,
+  TurretAmmoSource,
   WeaponSource,
 } from './EntityFactory.types';
 import type { EntityRegistry } from './EntityRegistry';
@@ -23,6 +24,8 @@ export class EntityFactory {
    * @param weapons - Where Legends find their weapons; passed in every spawn context when given.
    * @param specs - Where Legends find the spec a placement names; passed in every spawn context
    *   when given.
+   * @param ammo - Where turrets find the ammo their definitions name; passed in every spawn context
+   *   when given, as `weapons` is.
    */
   public constructor(
     public readonly registry: EntityRegistry,
@@ -30,6 +33,7 @@ export class EntityFactory {
     private readonly ids: IdGenerator = new IdGenerator(),
     private readonly weapons: WeaponSource | null = null,
     private readonly specs: LegendSpecSource | null = null,
+    private readonly ammo: TurretAmmoSource | null = null,
   ) {}
 
   /** Whether `kind` is registered and `definitionId` names a definition that `kind` builds. */
@@ -82,6 +86,7 @@ export class EntityFactory {
       definition,
       ...(this.weapons && { weapons: this.weapons }),
       ...(this.specs && { specs: this.specs }),
+      ...(this.ammo && { ammo: this.ammo }),
     });
     return entity;
   }

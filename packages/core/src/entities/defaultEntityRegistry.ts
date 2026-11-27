@@ -12,6 +12,7 @@ import { Camp } from './structures/Camp';
 import { Gate } from './structures/Gate';
 import { SpawnerTower } from './structures/SpawnerTower';
 import { Stronghold } from './structures/Stronghold';
+import { Turret } from './structures/Turret';
 import { CapturePoint } from './zones/CapturePoint';
 
 /**
@@ -32,6 +33,7 @@ export const createDefaultEntityRegistry = (): EntityRegistry => {
   registry.register('spawner-tower', SpawnerTower);
   registry.register('buff-tower', BuffTower);
   registry.register('gate', Gate);
+  registry.register('turret', Turret);
   registry.register('camp', Camp);
   registry.register('capture-point', CapturePoint);
   return registry;

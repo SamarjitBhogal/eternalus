@@ -362,6 +362,44 @@ lets a shot fly over unless the shot aims at it: its locked target, or the walk-
 point names (`AreaHitQuery.aimedBodyOf`, DEC-322 (1)). The last move up to `range` is swept like any
 other, so a body under the end point takes the hit: an arrow damages what it lands on (DEC-322 (2)).
 
+**2026-11-22 (branch `feat/wall-turrets`, part 2; DEC-334).** The launch-shape rule: a shot is
+not stopped by a blocking shape whose blocking area holds its launch point; the shot can only
+leave that shape. The blocking area is the shape's polygon outside its passages, as
+`CollisionResolver.startsInside` and `WorldObjectStore.blockingAt` read it. So a unit on a bridge
+still has its shot stopped by the lava beside the deck. "Holds" means the launch point, not the
+shot's circle: a shot whose circle touches a wall at launch is still stopped there. A launch point
+on the polygon's edge is held too (within `CONTACT_EPSILON`, `utils/geometry`
+`isPointInBlockingArea`). A wall turret stands on the joint of two wall pieces, and the even-odd
+point test gives a point on a shared edge to one piece at most. Without the edge, the other piece
+stopped every bolt that flew into it, and `NoMapObjectOverlapInvariant` flagged the bolt at launch
+(12 of the 20 turrets on each of the seed 1 to 8 maps).
+Known limit (a map bug from before PR 4; Owner Calls card HC-Q95, owner call pending): blocking
+corner mountains (`map/MapMountainBuilder`) can cover a fort's wall ring. A mountain covers turret
+0 of each side on each of the seed 1 to 8 maps, the lane gate on seeds 3 and 5 to 8, and turret 1
+or 9 on some seeds. Where a mountain holds a turret's centre (turret 0 on seeds 3 to 8, turret 1 on
+seeds 3, 6 and 8, turret 9 on seed 6), that turret's bolts ignore that mountain for their whole
+flight. Where the mountain's edge is nearer than a bolt's radius (seed 2: 0.04 m), the mountain
+stops the bolts fired into it at launch. A new bolt also stays at the turret's centre until the
+next tick (`ProjectileSystem` runs before `CombatSystem`), so `NoMapObjectOverlapInvariant` flags
+every bolt of that turret, in any direction. The client's release setting logs one ERROR for each
+such bolt. Turrets fired no bolts before PR 4, so this log is new. The fix is in the map: keep
+blocking terrain off the wall ring.
+`CollisionQuery.reach` takes the launch point as an optional argument. `ProjectileSystem` passes
+the shot's `origin`, and `LineOfFire` passes the attacker's centre, so line of fire and shots keep
+one stop rule (DEC-317 B9). `NoMapObjectOverlapInvariant` passes a shot's origin to
+`WorldObjectStore.blockingAt`, which skips such a shape too. A unit's centre is never in a blocking
+area (the invariant), so the rule changes only wall turret bolts, which start at the turret's
+centre inside its pylon and wall (07 §13). The body stop (`AreaHitQuery.stopsShot`) is unchanged:
+on the seed 1 to 8 maps, every body outline that holds a turret's centre is on the turret's team
+(a scenario test checks each seed). The rule assumes a convex launch shape: the shape is skipped
+for the whole flight, so a shot that leaves a concave shape and enters it again is not stopped by
+it. A pylon is a convex 12-gon. The wall pieces under a turret are launch shapes too, and they are
+not convex: each is an arc band (`map/wallRing` `arcFootprint`). So a bolt that leaves its own wall
+piece toward the court can cross that piece again further along the ring and pass through it. The
+ring's size puts that second crossing far from the turret, near the end of the bolt's range (not
+measured). The sentence in §4 that concave footprints are split into convex colliders does not hold
+for wall pieces; that was so before PR 4.
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

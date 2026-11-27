@@ -37,6 +37,8 @@ export type ProjectilePayloadData = {
   readonly ownerId: string;
   /** The owner's team at the moment of firing. */
   readonly team: Team;
+  /** The owner's level at the moment of firing; 1 for an owner with no `Progression`. */
+  readonly ownerLevel: number;
   /** Who the hit is credited to. */
   readonly source: ProjectileSource;
   /**

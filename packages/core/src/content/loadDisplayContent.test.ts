@@ -83,7 +83,12 @@ describe('loadDisplayContent', () => {
 
   it('publishes every projectile id, in catalogue order', () => {
     expect(load().projectileIds).toEqual(PROJECTILES.all().map(({ id }) => id));
-    expect(load().projectileIds).toEqual(['magus-bolt', 'arrow']);
+    expect(load().projectileIds).toEqual([
+      'magus-bolt',
+      'arrow',
+      'turret-bolt',
+      'turret-heavy-bolt',
+    ]);
   });
 
   it('carries each feature kind with its name', () => {

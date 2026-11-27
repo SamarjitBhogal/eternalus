@@ -1,5 +1,6 @@
 import { Footprint } from '../../components/Footprint';
 import type { MapObject } from '../../content/maps/mapObjects.types';
+import { loadTurrets } from '../../content/structures/loadTurrets';
 import { STRUCTURE_DEFINITIONS } from '../../content/structures/structureCatalogue';
 import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
 import { EntityFactory } from '../../entities/EntityFactory';
@@ -12,6 +13,7 @@ import type { GameState } from '../GameState';
  * spawns keep `entity-1`, `entity-2`, …, then indexes them. As in `Simulation.spawnStructures`, a
  * structure whose definition `hasMapFootprint` gets the `Footprint` of its feature's map object of
  * the same id in `mapObjects` (a lane tower's fort, the Stronghold's palace), blocking or not.
+ * Turrets carry the shipped ammo.
  */
 export const spawnMapStructures = (
   state: GameState,
@@ -21,6 +23,9 @@ export const spawnMapStructures = (
     createDefaultEntityRegistry(),
     STRUCTURE_DEFINITIONS,
     new IdGenerator(1000),
+    null,
+    null,
+    loadTurrets(state.config.tickRate).ammo,
   );
   const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
     compareById(a.id, b.id),

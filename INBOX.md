@@ -810,6 +810,86 @@ Reply inline (`Decision: …`).
       2026-11-23: DEC-344 (1)).
       Architecture 18 §6.1 changes to match. Tick this item when Samarjit has read it.
 
+- [ ] **HC-Q92 — Does destroying a wall turret pay a reward? (`feat/wall-turrets`, PR 4,
+      Owner Calls card "WT destroyed reward").** Options: (A, built) yes: structure XP and points,
+      like the other structures; (B) no reward. Code names: `StructureDestroyedRule`,
+      `ProgressionSystem` (no turret-only code). FYI: a turret that kills a unit gives no kill
+      points, XP or ultimate charge to anyone, and assists still count (DEC-79: a non-Legend last
+      hit gives no kill).
+  - Answered 2026-11-23 (DEC-341): "Only the one who destroys it gets the XP. Its like killing 2
+    or 3 heavy minions." Built on `feat/wall-turrets`: 300 XP (`TUNE`) to the Legend that lands
+    the killing hit, no team-wide structure XP. Still open: your note names XP only, so the turret
+    still gives its team 5 points and counts as a destroyed structure (DEC-212). Say if a turret
+    should give no points.
+    The level question moved to HC-Q106.
+
+- [x] **HC-Q106 — Does one wall turret lift a Legend by 2 levels? (`feat/wall-turrets`, PR 4).**
+      One turret lifts a Legend by 2 levels at every level from 1 to 20. The old rule (DEC-190)
+      was at most 1 level. Options: (A, built) keep 2 levels; (B) cap it at 1 level, as the boss
+      reward is capped (DEC-237). Also: when a minion lands the last hit, no one gets the XP.
+  - Answered 2026-11-26 (DEC-389): "A: keep 2 levels (built)". Nothing changes on
+    `feat/wall-turrets`.
+
+- [x] **HC-B38 — Better than the design, sign-off asked: 5 code ideas from the critic
+      (`feat/wall-turrets`, PR 4, critic rounds 4 and 5, 2026-11-23; PR-REVIEW-ASSIST-38/39).**
+      Nothing changes in play. Say "no" to a built item and it goes back.
+      (1) Built (coordinator ruling): the `structure-destroyed` event names the structure's
+      content id (`definitionId`), so the XP code does not look the structure up in the store.
+      (2) Not built yet: a setting per structure for what its body leaves (a ruin that blocks, or
+      open ground). Today every body leaves a ruin that blocks, so the setting has one value. It
+      goes in when the tower-ruins work (#98) merges (the merge note in DEC-341 (2)).
+      (3) Not built: one state field (standing, ruin, destroyed) on each map object in place of
+      `isDestroyed` and `isRuined`. It changes the golden replay hashes of every open PR.
+      (4) Not better: one table for the team-kill XP and the destroyer-only XP. They pay different
+      people on different events and share no data.
+      (5) Built (critic round 5): the map view picks one ruin look per fallen object (one ruin over
+      the whole box, or one ruin per wall piece) and uses it both to cull and to draw.
+  - Answered 2026-11-26 (DEC-389): "A: sign off (1) to (5) as above — build 3 if we can somehow
+    get it in cleaner." (1), (4) and (5) stay as built; (2) waits for #98. (3) is built on
+    `feat/wall-turrets`: `MapObjectSnapshot.condition` (standing, ruin, destroyed). No pinned
+    replay hash covers map objects, so no golden hash changed.
+
+- [ ] **HC-Q93 — Where does a wall turret's bolt stop? (`feat/wall-turrets`, PR 4, Owner Calls
+      card "WT bolt stop").** A turret aims where its target will be. Options: (A, recommended,
+      not built yet) the bolt stops at that point and damages what is there; your HC-Q77 note
+      ("A tower shoots at where its target is or is about to be") and game design 03 ("fire at
+      destination") support it; (B, built now) the bolt flies on to its full range and hits the
+      first body it touches. A is a content flag and a few lines where the bolt is made. Code
+      names: `content/projectiles/turretBolt.ts`, `turretHeavyBolt.ts` (`range`, `TUNE`).
+  - Answered 2026-11-23 (DEC-341): an arc shot from above, with a ground shadow, that lands where
+    the target would be and lodges in the ground. Not built yet: the tower-orb PR (Owner Calls
+    "WT orb page", DEC-341 (4)), stacked on #163, builds it for turret bolts and tower orbs. Tick
+    this item when it merges.
+
+- [ ] **HC-B36 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: one health pool for a wall turret, and the wall turret code layout
+      (`feat/wall-turrets`, PR 4, pre-PR gate round 1, 2026-11-22; PR-REVIEW-ASSIST-34).**
+      Built and tested. Nothing waits on you. Say "no" to an item and it goes back.
+      (1) DEC-332: a wall turret and the pylon under it have one health bar and die together,
+      like a lane tower and its fort. This changes your DEC-217 (13) text, "Only towers share one
+      health pool with their fort". (2) DEC-335: only the code layout changes, so the game plays
+      the same. A turret fires through the same attack code as Legends and mobs. Its target rules
+      are a list in its content file. It checks its line of fire with the ammo it will fire.
+      One critic item was rejected: keeping the launch shapes' ids
+      on each bolt gives the same result as the built rule (DEC-334) and adds saved state.
+      FYI for Samarjit (minion AI owner): a lane minion does not yet treat an enemy wall turret
+      that shoots an allied minion as a target (architecture 11 §4.3, priority (4)). The minion
+      aggro entry `turret-attacking-ally-minion` never matches, because `unitClassOf` does not map
+      the `turret` kind (`content/ai/unitClasses.ts`). Map `turret` there to turn it on. Tick
+      this part when Samarjit has read it.
+  - Answered 2026-11-26 (DEC-388): "B: give the pylon its own health bar". It replaces DEC-332
+    (1); DEC-335 (2) stays signed off. Built on `feat/wall-turrets`: the pylon and the turret
+    each have a health bar; the pylon's fall takes the turret with it, and the turret's fall
+    leaves the pylon. The pylon's health and the reward when it takes the turret are defaults on
+    a new card (DEC-388 (4)). Only the FYI for Samarjit stays open: tick this item when he has
+    read it.
+
+- [x] **HC-Q120 — Wall turret pylon defaults (DEC-388; `feat/wall-turrets`, PR 4).** Owner card
+      HC-Q120 on Owner Calls v101. (1) The pylon's health is 600, provisional. (2) The turret's
+      XP goes to the pylon's destroyer. (3) The pylon takes the turret's breakability rule.
+      Built as these defaults. Say "no" to an item and it goes back.
+  - Answered 2026-11-27 (DEC-396): (1) B, 2,000; (2) A; (3) A.
+
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
       small. (G1) `StructureDefinition` has `hasMapFootprint` and `hasFortBox`; `hasFortBox`
@@ -3899,6 +3979,13 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-23 — **Your answers on the wall turret cards HC-Q90, HC-Q91 and HC-Q94** (PR 4, #163,
+  `feat/wall-turrets`): recorded as DEC-341. HC-Q90: a turret takes damage only after 2 of the 3
+  buff towers of its side are down, like its wall (as built). HC-Q91: a destroyed turret's pylon
+  stays as a ruin and blocks; a fallen tower's fort now also draws as ruins (one rule for every
+  structure body). HC-Q94: the turret switches at once to an enemy Legend that hits your Legend
+  (as built); FR-073 now says so. HC-Q92 and HC-Q93 stay open above with notes.
 
 - 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
   recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a

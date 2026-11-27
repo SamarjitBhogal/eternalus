@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { ContentValidationError } from '../ContentValidationError';
 import { loadWeapons } from './loadWeapons';
 import type { ProjectileLaunch } from '../units/units.types';
-import type { WeaponDefinition } from './weapons.types';
+import type { AuthoredWeaponDefinition } from './weapons.types';
 
 /** A stand-in melee weapon; the shipped catalogue has no numbers until the owner sets them. */
-const TEST_TALONS: WeaponDefinition = {
+const TEST_TALONS: AuthoredWeaponDefinition = {
   id: 'test-talons',
   displayName: 'Test talons',
   weaponClass: 'glove',
@@ -19,7 +19,7 @@ const TEST_TALONS: WeaponDefinition = {
 const shooting = (
   launch: Partial<ProjectileLaunch['falloff'] & object> | null,
   projectileId = 'arrow',
-): WeaponDefinition => ({
+): AuthoredWeaponDefinition => ({
   ...TEST_TALONS,
   weaponClass: 'bow',
   attacks: [
@@ -36,9 +36,20 @@ const shooting = (
   ],
 });
 
-const withAttack = (field: 'damage' | 'reach' | 'interval', value: number): WeaponDefinition => ({
+const withAttack = (
+  field: 'damage' | 'reach' | 'interval',
+  value: number,
+): AuthoredWeaponDefinition => ({
   ...TEST_TALONS,
   attacks: [{ strategy: 'melee', damage: 50, reach: 1.5, interval: 0.5, [field]: value }],
+});
+
+/** The stand-in melee weapon whose one attack runs `onHit` steps. */
+const withOnHit = (
+  onHit: NonNullable<AuthoredWeaponDefinition['attacks'][number]['onHit']>,
+): AuthoredWeaponDefinition => ({
+  ...TEST_TALONS,
+  attacks: [{ strategy: 'melee', damage: 50, reach: 1.5, interval: 0.5, onHit }],
 });
 
 describe('loadWeapons', () => {
@@ -47,6 +58,42 @@ describe('loadWeapons', () => {
     expect(
       loadWeapons(30, [withAttack('interval', 0.01)]).get('test-talons').attacks[0]?.interval,
     ).toBe(1);
+  });
+
+  it("converts an attack's onHit step times from seconds to ticks, and keeps none as none", () => {
+    const concussion = {
+      kind: 'debuff',
+      statusId: 'concussion',
+      durationSeconds: 1.5,
+      shape: { kind: 'hit' },
+    } as const;
+    const talons = withOnHit([concussion]);
+
+    expect(loadWeapons(30, [talons]).get('test-talons').attacks).toEqual([
+      {
+        strategy: 'melee',
+        damage: 50,
+        reach: 1.5,
+        interval: 15,
+        onHit: [
+          { kind: 'debuff', statusId: 'concussion', durationTicks: 45, shape: { kind: 'hit' } },
+        ],
+      },
+    ]);
+    expect(loadWeapons(30, [TEST_TALONS]).get('test-talons').attacks[0]?.onHit).toBeUndefined();
+  });
+
+  it("rejects an attack's onHit step with a negative time", () => {
+    const badTime = {
+      kind: 'debuff',
+      statusId: 'concussion',
+      durationSeconds: -1,
+      shape: { kind: 'hit' },
+    } as const;
+    const broken = () => loadWeapons(30, [withOnHit([badTime])]);
+
+    expect(broken).toThrow(ContentValidationError);
+    expect(broken).toThrow('Weapon "test-talons": debuff durationSeconds must not be negative.');
   });
 
   it('ships each class default weapon', () => {
@@ -90,7 +137,7 @@ describe('loadWeapons', () => {
   });
 
   it.each([0, -10, 181, 360, Number.NaN])('rejects a sweep arc of %s degrees', (arcDegrees) => {
-    const sweepWeapon: WeaponDefinition = {
+    const sweepWeapon: AuthoredWeaponDefinition = {
       ...TEST_TALONS,
       attacks: [{ strategy: 'melee-sweep', damage: 50, reach: 1, interval: 0.5, arcDegrees }],
     };
@@ -101,7 +148,7 @@ describe('loadWeapons', () => {
   });
 
   it.each([1, 90, 180])('accepts a sweep arc of %s degrees', (arcDegrees) => {
-    const sweepWeapon: WeaponDefinition = {
+    const sweepWeapon: AuthoredWeaponDefinition = {
       ...TEST_TALONS,
       attacks: [{ strategy: 'melee-sweep', damage: 50, reach: 1, interval: 0.5, arcDegrees }],
     };

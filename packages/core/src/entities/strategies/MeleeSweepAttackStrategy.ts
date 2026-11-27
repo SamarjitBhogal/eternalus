@@ -53,7 +53,7 @@ export class MeleeSweepAttackStrategy implements AttackStrategy {
     );
     for (const id of hitIds) {
       damage.apply(state, id, attack.damage, weaponSourceOf(attacker));
-      hits?.afterHit(state, attacker.id, id);
+      hits?.afterHit(state, attacker.id, id, attack);
     }
     state.entities.recordHits(attacker.id, hitIds, state.tick);
     attacker.getComponent(Combat).recordSwing({

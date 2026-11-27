@@ -64,14 +64,12 @@ export abstract class Unit extends Entity {
     if (basic !== undefined) {
       this.addComponent(new Combat(basic.attacks, basic.weaponId));
     }
-    if (controller !== undefined) {
-      this.addComponent(
-        new ControllerBinding(controller.controllerId, controller.profileId, controller.memory),
-      );
-    } else if (definition.controller !== undefined) {
-      this.addComponent(
-        new ControllerBinding(definition.controller, definition.aiProfile ?? definition.controller),
-      );
+    const binding =
+      controller === undefined
+        ? ControllerBinding.ofDefinition(definition)
+        : new ControllerBinding(controller.controllerId, controller.profileId, controller.memory);
+    if (binding !== undefined) {
+      this.addComponent(binding);
     }
   }
 

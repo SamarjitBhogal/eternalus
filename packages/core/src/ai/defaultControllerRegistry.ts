@@ -7,6 +7,8 @@ import type { LeashControllerContent } from './LeashBehaviour.types';
 import { MinionController } from './MinionController';
 import { RoverController } from './RoverController';
 import type { RoverControllerContent } from './RoverController.types';
+import { TurretController } from './TurretController';
+import type { TurretControllerContent } from './TurretController.types';
 
 /** Every controller by id (architecture 11 §2); an id with no controller yet is absent. */
 export type ControllerRegistry = Readonly<Partial<Record<ControllerId, Controller>>>;
@@ -23,9 +25,11 @@ export const createDefaultControllerRegistry = (content: {
   readonly leash: LeashControllerContent;
   readonly botLegend: BotLegendControllerContent;
   readonly rover: RoverControllerContent;
+  readonly turret: TurretControllerContent;
 }): ControllerRegistry => ({
   minion: new MinionController(content.leash),
   guard: new GuardController(content.leash),
   'bot-legend': new BotLegendController(content.botLegend),
   rover: new RoverController(content.rover),
+  turret: new TurretController(content.turret),
 });

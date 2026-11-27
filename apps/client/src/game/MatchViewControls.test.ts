@@ -58,7 +58,12 @@ const HOUSE: MapObject = {
   ],
 };
 const HOUSE_STATES: readonly MapObjectSnapshot[] = [
-  { id: 'house', entityId: HOUSE_ENTITY, health: { current: 100, max: 100 }, isDestroyed: false },
+  {
+    id: 'house',
+    entityId: HOUSE_ENTITY,
+    health: { current: 100, max: 100 },
+    condition: 'standing',
+  },
 ];
 
 /** A living mob of `team` at `at`, as a snapshot shows it. */

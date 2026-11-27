@@ -1,4 +1,4 @@
-import type { WeaponDefinition } from './weapons.types';
+import type { AuthoredWeaponDefinition } from './weapons.types';
 
 /**
  * Staff: melee physical, ranged magical (reference 07, 05 §10), unique to the Magus and its default
@@ -34,4 +34,4 @@ export const MAGUS_STAFF = {
   ],
   allowedClasses: ['magus'],
   uniqueTo: 'magus',
-} as const satisfies WeaponDefinition;
+} as const satisfies AuthoredWeaponDefinition;

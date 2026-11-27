@@ -1,3 +1,4 @@
+import type { ControllerId } from '../ai/ai.types';
 import type { EntityDefinitionBase } from '../EntityDefinition.types';
 import type { BreakabilityRule } from './breakability.types';
 
@@ -28,15 +29,37 @@ export type StructureDefinition = EntityDefinitionBase & {
   /**
    * Whether its map object of the same id (a lane tower's fort, the Stronghold's palace) is its
    * outline: attack reach and chases measure to that object's footprints, not the collider circle
-   * (`Footprint`, DEC-185). A blocking such object is also its body, with no health of its own.
+   * (`Footprint`, DEC-185). A blocking such object is also its body, with no health of its own,
+   * unless the structure `isMounted`.
    */
   readonly hasMapFootprint?: true;
+  /**
+   * Whether the structure stands on its map object of the same id (`hasMapFootprint`), as a wall
+   * turret stands on its pylon. The structure is mounted on that object. The object keeps its own
+   * entity and health. The object breaks under this structure's rule. When the object falls, the
+   * structure falls with it on the same tick (DEC-388). When the structure falls, the object stays
+   * standing as a ruin, with its own health.
+   */
+  readonly isMounted?: true;
   /**
    * Whether the box round its `Footprint` is a fort box (`PathingWorld.forts`): a chase of a unit
    * standing inside it closes in over the blocked ground there (DEC-185; the Stronghold's palace,
    * DEC-217 (16)). A gate's outline is for reach only (DEC-217 (17)).
    */
   readonly hasFortBox?: true;
+  /**
+   * The controller that drives it (architecture 11 §2, a turret's `TurretController`); none for a
+   * structure that decides nothing.
+   */
+  readonly controller?: ControllerId;
+  /** The AI profile its controller reads; the controller id by default. */
+  readonly aiProfile?: string;
+  /**
+   * The turret ammo ids it carries, best first (architecture 07 §5 `TurretState`): against a
+   * target it loads the first whose `preferredAgainst` fits, so the last one fits any target
+   * (`loadTurrets` checks it). A turret has at least one; other structures none.
+   */
+  readonly ammo?: readonly string[];
 };
 
 /** Which lane a spawner's horde takes: the spawner's own lane, or the team's worst lane. */

@@ -106,6 +106,7 @@ const setUp = (wallAtX: number | null = null) => {
       new ProjectilePayload({
         ownerId,
         team,
+        ownerLevel: 1,
         source: { attackerId: ownerId, kind: 'weapon', definitionId: 'magus-staff' },
         targetId,
         impact: { kind: 'weapon', attack },

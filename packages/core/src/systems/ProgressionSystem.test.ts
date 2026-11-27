@@ -18,6 +18,9 @@ import { GameState } from '../state/GameState';
 import { StateHasher } from '../state/StateHasher';
 import type { Team } from '../teams/teams.types';
 import { ProgressionSystem } from './ProgressionSystem';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { IdGenerator } from '../utils/IdGenerator';
+import { loadTurrets } from '../content/structures/loadTurrets';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 
 const CONFIG = createDefaultGameConfig();
@@ -30,6 +33,7 @@ const XP_SOURCES = {
   legendKill: { base: 150, perVictimLevel: 25 },
   structureDestroyed: 300,
   teamKills: { 'capture-point-boss': { xp: 500, maxLevels: 2 } },
+  destroyerOnly: { turret: 250 },
 };
 
 const setUp = () => {
@@ -40,8 +44,17 @@ const setUp = () => {
     undefined,
     loadWeapons(CONFIG.tickRate),
   );
+  const structures = new EntityFactory(
+    createDefaultEntityRegistry(),
+    STRUCTURE_DEFINITIONS,
+    new IdGenerator(900),
+    null,
+    null,
+    loadTurrets(CONFIG.tickRate).ammo,
+  );
   const spawn = (kind: string, definitionId: string, team: Team): Entity => {
-    const entity = factory.create(kind, definitionId, { position: { x: 0, y: 0 }, team });
+    const source = STRUCTURE_DEFINITIONS.has(definitionId) ? structures : factory;
+    const entity = source.create(kind, definitionId, { position: { x: 0, y: 0 }, team });
     state.entities.add(entity);
     return entity;
   };
@@ -69,8 +82,14 @@ const setUp = () => {
       .recentEvents()
       .filter((event) => event.type === type)
       .map((event) => event.payload);
-  const destroyStructure = (team: Team, kind = 'spawner-tower') => {
-    state.events.emit('structure-destroyed', { entityId: 'entity-gone', kind, team, lane: null });
+  const destroyStructure = (team: Team, kind = 'spawner-tower', entityId = 'entity-gone') => {
+    state.events.emit('structure-destroyed', {
+      entityId,
+      kind,
+      definitionId: kind,
+      team,
+      lane: null,
+    });
   };
   return { state, spawn, kill, run, payloads, destroyStructure };
 };
@@ -263,6 +282,56 @@ describe('ProgressionSystem', () => {
       const warrior = spawn('warrior', 'warrior', 'light');
 
       kill(warrior, spawn('light-mob', 'training-dummy', 'dark'));
+      run();
+
+      expect(warrior.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual([]);
+    });
+  });
+
+  describe('a structure that pays only its destroyer (DEC-341)', () => {
+    it("pays a wall turret's XP to the Legend that lands the killing hit, and none to its team", () => {
+      const { spawn, kill, run, payloads, destroyStructure } = setUp();
+      const destroyer = spawn('warrior', 'warrior', 'light');
+      const ally = spawn('magus', 'magus', 'light');
+      const turret = spawn('turret', 'turret', 'dark');
+
+      kill(destroyer, turret);
+      destroyStructure('dark', 'turret', turret.id);
+      run();
+
+      expect(destroyer.getComponent(Progression).xp).toBe(250);
+      expect(ally.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual([
+        {
+          entityId: destroyer.id,
+          amount: 250,
+          victimId: turret.id,
+          victimTeam: 'dark',
+          cause: 'kill',
+        },
+      ]);
+    });
+
+    it('pays no team-wide XP for a wall turret the store no longer holds (the event names its definition)', () => {
+      const { spawn, run, payloads, destroyStructure } = setUp();
+      const ally = spawn('magus', 'magus', 'light');
+
+      destroyStructure('dark', 'turret', 'entity-not-in-store');
+      run();
+
+      expect(ally.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual([]);
+    });
+
+    it('pays no one when a minion destroys the turret', () => {
+      const { spawn, kill, run, payloads, destroyStructure } = setUp();
+      const warrior = spawn('warrior', 'warrior', 'light');
+      const minion = spawn('light-mob', 'light-minion', 'light');
+      const turret = spawn('turret', 'turret', 'dark');
+
+      kill(minion, turret);
+      destroyStructure('dark', 'turret', turret.id);
       run();
 
       expect(warrior.getComponent(Progression).xp).toBe(0);

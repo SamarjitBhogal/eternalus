@@ -23,7 +23,7 @@ export class MeleeAttackStrategy implements AttackStrategy {
       return;
     }
     damage.apply(state, targetId, attack.damage, weaponSourceOf(attacker));
-    hits?.afterHit(state, attacker.id, targetId);
+    hits?.afterHit(state, attacker.id, targetId, attack);
     state.entities.recordHits(attacker.id, [targetId], state.tick);
   }
 }

@@ -10,7 +10,7 @@ export const findMapObjectAt = (
 ): string | null => {
   const candidates = new Map(
     states
-      .filter((state) => !state.isDestroyed && state.health !== null)
+      .filter((state) => state.condition !== 'destroyed' && state.health !== null)
       .map((state) => [state.id, state.entityId]),
   );
   let selected: string | null = null;

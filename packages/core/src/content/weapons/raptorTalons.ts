@@ -1,4 +1,4 @@
-import type { WeaponDefinition } from './weapons.types';
+import type { AuthoredWeaponDefinition } from './weapons.types';
 
 /**
  * Raptor Talons: a glove, melee physical (reference 07, 05 §10). The Warrior's default weapon.
@@ -21,4 +21,4 @@ export const RAPTOR_TALONS = {
   ],
   allowedClasses: 'any',
   uniqueTo: null,
-} as const satisfies WeaponDefinition;
+} as const satisfies AuthoredWeaponDefinition;

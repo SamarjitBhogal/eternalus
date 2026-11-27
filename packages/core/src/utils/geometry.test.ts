@@ -8,6 +8,7 @@ import {
   distanceToPath,
   distanceToSegment,
   isPointInAnyPolygon,
+  isPointInBlockingArea,
   isPointInPolygon,
   isPointInRect,
   lerpPoint,
@@ -86,6 +87,31 @@ describe('geometry', () => {
     expect(isPointInAnyPolygon({ x: 25, y: 5 }, [SQUARE, farSquare])).toBe(true);
     expect(isPointInAnyPolygon({ x: 15, y: 5 }, [SQUARE, farSquare])).toBe(false);
     expect(isPointInAnyPolygon({ x: 5, y: 5 }, [])).toBe(false);
+  });
+
+  it('tells whether a point is in a shape and in none of its passages (DEC-334)', () => {
+    const bridge = [
+      { x: 4, y: 0 },
+      { x: 6, y: 0 },
+      { x: 6, y: 10 },
+      { x: 4, y: 10 },
+    ];
+    expect(isPointInBlockingArea({ x: 2, y: 5 }, SQUARE)).toBe(true);
+    expect(isPointInBlockingArea({ x: 2, y: 5 }, SQUARE, [bridge])).toBe(true);
+    expect(isPointInBlockingArea({ x: 5, y: 5 }, SQUARE, [bridge])).toBe(false);
+    expect(isPointInBlockingArea({ x: 15, y: 5 }, SQUARE)).toBe(false);
+  });
+
+  it('holds a point on the joint of two shapes in both, as a wall turret stands on two wall pieces (DEC-334)', () => {
+    const east = SQUARE.map(({ x, y }) => ({ x: x + 10, y }));
+    // The even-odd test gives a point on the shared edge x = 10 to one square only.
+    const joint = { x: 10, y: 5 };
+    expect([isPointInPolygon(joint, SQUARE), isPointInPolygon(joint, east)]).toEqual([false, true]);
+
+    expect(isPointInBlockingArea(joint, SQUARE)).toBe(true);
+    expect(isPointInBlockingArea(joint, east)).toBe(true);
+    expect(isPointInBlockingArea({ x: 10.001, y: 5 }, SQUARE)).toBe(false);
+    expect(isPointInBlockingArea({ x: 10, y: 10 }, SQUARE)).toBe(true);
   });
 
   it('measures distance to a segment and a path', () => {

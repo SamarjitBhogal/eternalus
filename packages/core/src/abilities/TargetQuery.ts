@@ -1,5 +1,5 @@
 import { AreaHitQuery } from '../state/AreaHitQuery';
-import type { AreaAim } from '../state/AreaHitQuery.types';
+import type { AreaAim, AreaAttacker } from '../state/AreaHitQuery.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { AreaShape, ShapePlacement, ShapeSpec } from './shapes/AreaShape.types';
@@ -29,6 +29,7 @@ export class TargetQuery {
    *
    * @param aim - What the cast aims at (`CastFacts.aim`); a walk-on outline needs it. Absent: it
    *   aims at nothing.
+   * @param caster - The caster's team and position (`CastFacts.caster`); absent, the store's.
    * @throws Error when no `AreaShape` is registered for `shape.kind`.
    */
   public find(
@@ -38,6 +39,7 @@ export class TargetQuery {
     placement: ShapePlacement,
     filter: TargetFilter,
     aim: AreaAim = NO_AIM,
+    caster?: AreaAttacker,
   ): readonly EntityId[] {
     const area = this.shapes.shapeFor(shape.kind);
     return this.areas.find(
@@ -49,6 +51,7 @@ export class TargetQuery {
       },
       aim,
       filter,
+      caster,
     );
   }
 }

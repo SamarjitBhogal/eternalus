@@ -134,11 +134,11 @@ export class Match implements LoopTarget {
     const { hidden: hiddenRoofs } = this.roofs;
     const shown = (): WorldRect => this.camera.visibleArea();
     this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
-    const { isDestroyed } = this.objects;
+    const { isFallen } = this.objects;
     this.aiming = new AimTargeting(deps.abilities, this.playerId, deps.dashReach);
     const scene = new SceneView([
-      new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed),
-      new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
+      new MapView(map, scenery, hiddenRoofs, shown, buildings, isFallen),
+      new SceneryView(scenery, 'detail', hiddenRoofs, shown, isFallen),
       this.objects,
       this.entities,
       this.aimOverlay,

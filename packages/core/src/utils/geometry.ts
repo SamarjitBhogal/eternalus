@@ -1,3 +1,4 @@
+import { CONTACT_EPSILON } from './circlePolygon.constants';
 import { cos, sin } from './deterministicMath';
 import type { Polygon, Rect, Vec2 } from './geometry.types';
 import type { MutableVec2 } from './vec2.types';
@@ -65,6 +66,26 @@ export const doRectsOverlap = (a: Rect, b: Rect): boolean =>
  */
 export const isPointInAnyPolygon = (point: Vec2, polygons: readonly Polygon[]): boolean =>
   polygons.some((polygon) => isPointInPolygon(point, polygon));
+
+/**
+ * Whether `point` lies in the blocking area of a shape: inside `polygon` or on its edge, and inside
+ * none of its `passages` (a bridge over a river), the area that blocks a mover. The launch-shape
+ * rule (DEC-334): a shape whose blocking area holds a shot's launch point does not stop that shot.
+ * The edge counts (within `CONTACT_EPSILON`, for roundoff) because a wall turret stands on the
+ * joint of two wall pieces, and `isPointInPolygon` gives a point on a shared edge to one of them
+ * at most.
+ */
+export const isPointInBlockingArea = (
+  point: Vec2,
+  polygon: Polygon,
+  passages: readonly Polygon[] = [],
+): boolean =>
+  (isPointInPolygon(point, polygon) ||
+    polygon.some(
+      (a, index) =>
+        distanceToSegment(point, a, polygon[(index + 1) % polygon.length] ?? a) <= CONTACT_EPSILON,
+    )) &&
+  !isPointInAnyPolygon(point, passages);
 
 /** The point of the segment from `a` to `b` nearest to `point`. */
 export const closestPointOnSegment = (point: Vec2, a: Vec2, b: Vec2): Vec2 => {

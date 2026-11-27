@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { lavaBridge } from '../__fixtures__/lavaBridge';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { Combat } from '../components/Combat';
 import { Footprint } from '../components/Footprint';
@@ -87,12 +88,17 @@ class Body extends Entity {
   }
 }
 
-/** A world whose walls are `walls`, with a projectile system and movement for whole flights. */
-const world = (walls: readonly Polygon[]) => {
-  const collisions = new CollisionResolver(
+/**
+ * A world whose walls are `walls`, or whose collision rule is `collisions`, with a projectile
+ * system and movement for whole flights.
+ */
+const world = (
+  walls: readonly Polygon[],
+  collisions = new CollisionResolver(
     new StaticCollisionIndex(walls.map((polygon, i) => ({ id: `wall-${String(i)}`, polygon }))),
     BOUNDS,
-  );
+  ),
+) => {
   const state = new GameState(CONFIG, 1, null, { collisions });
   const context = { state, logger: new NullLogger() };
   const projectiles = new ProjectileSystem(
@@ -116,6 +122,7 @@ const world = (walls: readonly Polygon[]) => {
       new ProjectilePayload({
         ownerId: 'owner',
         team: 'light',
+        ownerLevel: 1,
         source: { attackerId: 'owner', kind: 'weapon', definitionId: 'magus-staff' },
         targetId,
         impact: { kind: 'weapon', attack: ATTACK },
@@ -367,5 +374,46 @@ describe('ProjectileSystem on real geometry', () => {
     expect(scene.healthOf(outline)).toBe(FULL_HEALTH - ATTACK.damage);
     expect(scene.state.entities.has(above.id)).toBe(false);
     expect(scene.state.entities.has(below.id)).toBe(false);
+  });
+
+  describe('the launch-shape rule (DEC-334)', () => {
+    it('lets a bolt launched inside its pylon and wall leave both and hit a body outside', () => {
+      // A wall turret's pylon on its wall: the launch point is inside both shapes, near the wall's
+      // end, so the first move goes deeper into the wall.
+      const scene = world([box(-2.5, -2, 4, 4), box(-1, -1, 10, 2)]);
+      const target = scene.addBody({ at: { x: 14, y: 0 } });
+      const bolt = scene.shoot({ x: -0.5, y: 0 }, { x: 1, y: 0 }, target.id);
+
+      scene.fly(10);
+
+      expect(scene.healthOf(target)).toBe(FULL_HEALTH - ATTACK.damage);
+      expect(scene.state.entities.has(bolt.id)).toBe(false);
+    });
+
+    it('still ends a shot at a wall its circle, but not its launch point, overlaps at launch', () => {
+      const scene = world([box(1, -5, 10, 10)]);
+      const behind = scene.addBody({ at: { x: 13, y: 0 } });
+      const shot = scene.shoot(
+        { x: 1 - BOLT.footprintRadius / 3, y: 0 },
+        { x: 1, y: 0 },
+        behind.id,
+      );
+
+      expect(scene.fly(10, shot)).toEqual([]);
+      expect(scene.healthOf(behind)).toBe(FULL_HEALTH);
+    });
+
+    it("still ends a shot fired from the seed 1 map's lava bridge at the lava, short of a body past it", () => {
+      const { collisions, onBridge, offTheSide } = lavaBridge();
+      const scene = world([], collisions);
+      const past = scene.addBody({
+        at: { x: onBridge.x + offTheSide.x * 6, y: onBridge.y + offTheSide.y * 6 },
+      });
+      const shot = scene.shoot(onBridge, offTheSide, past.id);
+
+      // 2 m per tick: one whole move, then the lava 3.46 m out.
+      expect(scene.fly(10, shot)).toHaveLength(1);
+      expect(scene.healthOf(past)).toBe(FULL_HEALTH);
+    });
   });
 });

@@ -1,4 +1,5 @@
 import type { Entity } from '../entities/Entity';
+import type { Vec2 } from '../utils/geometry.types';
 
 /** The unique id of an entity instance (`entity-1`, `entity-2`, ... from `EntityFactory`). */
 export type EntityId = Entity['id'];
@@ -11,3 +12,6 @@ export type EntityClass = abstract new (id: string, definitionId: string) => Ent
 
 /** One removal the store made this tick. */
 export type RemovalRecord = { readonly entityId: EntityId; readonly cause: RemovalCause };
+
+/** Where an entity stands and its footprint radius (`EntityStore.placeOf`, its `Transform`). */
+export type EntityPlace = { readonly position: Vec2; readonly radius: number };

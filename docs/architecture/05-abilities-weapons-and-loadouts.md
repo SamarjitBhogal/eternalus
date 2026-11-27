@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-26
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -591,7 +591,9 @@ every ability, weapon, status tick and gate fire names a `DamageSource`: "extra 
 Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `CombatSystem`.
 
 **Implementation status (sprint 2.2, PR #34).** `DamagePipeline.apply(state, targetId, amount,
-source)` is built and is the only caller of `Health.applyDamage`. Each modifier above is a
+source)` is built. `DamagePipeline` is the only caller of `Health.applyDamage`: through `apply`,
+and through `collapse`, a fall that no step changes (a building's contents, a wall turret on its
+fallen pylon, DEC-388). Each modifier above is a
 `DamageStep` (`adjust(hit, state) → amount`, 0 blocks) and **the order is the list in
 `combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The steps today are
 `BreakabilityStep` (first: an unbreakable wall or gate rejects the hit before any multiplier,
@@ -731,7 +733,8 @@ attack is ranged, and `obsidian-bow` exists. Projectile content is in `content/p
 (`KnownProjectileRule`, which `loadWeapons` also runs). `RangedProjectileAttackStrategy` spawns the
 `Projectile` at the attacker's centre through `AttackContext.factory` (required: a missing factory
 does not compile). Its `ProjectilePayload` holds the owner, team, source, the entity it was fired
-at (`targetId`, `null` for none), its impact (`{ kind: 'weapon', attack }`) and the origin. The
+at (`targetId`, `null` for none), its impact (`{ kind: 'weapon', attack }`), the origin and the
+owner's level at firing (`ownerLevel`, 1 without `Progression`; PR 4). The
 shot flies straight at the target's facing point, with no lead. Stand-in until PR 2 (melee sweeps,
 phase 4 sprint 4.4): the player fires only at a target under the cursor (`attack-target`), not
 along the aim DEC-184 sets. A bot holds its ranged attack only with a clear line of fire
@@ -751,7 +754,8 @@ hit to the impact of its payload's kind (its `impacts`, composed in `DefaultSyst
 `ProjectileImpact` interface is in `combat/ProjectileImpact.types.ts`, so both `combat/` and
 `abilities/` can implement it; it is not in `StrategyRegistry`, because `entities/` may import
 neither and an ability's impact needs the match's services. `WeaponImpact` applies damage times
-`falloffMultiplier` through `DamagePipeline`, then the owner's statuses' `onHit` steps through
+`falloffMultiplier` through `DamagePipeline`, then the shot's attack's own `onHit` steps and the
+owner's statuses' `onHit` steps (PR 4) through
 the `HitRunner` port (`state/HitRunner.types.ts`, which `HitEffects` satisfies); the shot is then
 removed with cause `consumed`. No `projectile-hit` event exists (DEC-314). Still not built: `heavyAttack`, `parry`, `grants`, the flex attack,
 `a-fine-line` and turret lead.
@@ -778,6 +782,30 @@ stand-in above: the player now fires along the aim, not only at a target under t
 (`views/swingWedge.ts`). Still not built: the PR 3 weapons and their arcs (dual blades, great sword,
 Bastions), two arcs for a dual-wield weapon (DEC-304, an idea), `heavyAttack`, `parry`, `grants`,
 the flex attack and `a-fine-line`.
+
+**Implementation status, 2026-11-22 (branch `feat/wall-turrets`, part 2).** An attack's own `onHit`
+steps run (§10 `WeaponAttack.onHit`). `AttackBase` has an optional `onHit`, authored in seconds
+(`AuthoredUnitAttack`) and loaded in ticks (`UnitAttack`, `attackInTicks`, DEC-241), as a status's
+`onHit` is. `loadWeapons` and `loadTurrets` load it. `HitRunner.afterHit` takes the attack that
+struck: `HitEffects` runs that attack's `onHit` first, then the `onHit` of the attacker's statuses.
+A shot keeps the attack it was fired with (`WeaponImpact` passes the payload's attack), and the two
+melee strategies pass the attack they used. `abilities/checkAttackLinks` checks the steps of every
+weapon attack and turret ammo against the ability registry at boot, as `checkStatusLinks` checks a
+status's `onHit`. The first content that uses it is the heavy turret bolt's `concussion` (07 §5).
+Bleed and sundered (lane A PR 3) are still to come as content. A shot that lands after its owner
+left the store (a destroyed turret, a Legend that died while its arrow flew) still runs its attack's
+own `onHit` steps (PR 4 critic round 2, S4; built in PR 4, since the lane A owner did not take it
+into lane A PR 3). The shot carries its owner as it fired: `ProjectilePayload` holds the owner's
+team, its level at firing (`ownerLevel`) and the origin, and `WeaponImpact` passes them to
+`HitRunner.afterHit` as the `Shooter`. `HitEffects` then casts the attack's steps from the shot's
+origin, at that level, named after the payload's source (the name `weaponSourceOf` gives a live
+owner). The statuses' `onHit` steps need the live owner, so they do not run. The cast facts carry
+the caster's team and position (`CastFacts.caster`), and `AreaHitQuery.find` uses them, so an
+`enemies` area of a gone caster still spares that caster's allies; without them it reads the store,
+as before. A dash step of a gone caster does nothing (`DashEffect`), and `EntityStore.recordHits`
+ignores an unknown attacker. A live attacker's hit does not change. `attackInTicks` and
+`timeProblems` now live in `content/timesInTicks.ts` with `stepInTicks`, shared by the loaders of
+abilities, statuses, weapons and turret ammo.
 
 ## 11. Artifacts (gadgets Z and C)
 
@@ -1050,7 +1078,10 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   built for the capture point boss (DEC-237): a mob in `XP_SOURCES.teamKills` pays every Legend of
   its killer's playable team, not the killer alone, and each Legend gets at most the XP that lifts
   it `maxLevels` levels (`Progression.xpToReach`); `level-matches-xp` checks that the killer is on
-  the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
+  the recipient's team (`cause: 'team-kill'`). Destroyer-only structure XP is built for the wall
+  turret (DEC-341): a structure in `XP_SOURCES.destroyerOnly` pays its XP only to the Legend that
+  lands the killing hit, and its `structure-destroyed` pays no team-wide structure XP. A
+  non-Legend killer pays no one. It listens to `entity-died` itself, not 12's
   `xp-granted` reward path. Not built yet: the share radius and damage bias, assists, checkpoint and
   camp XP, the Eternal's flat 5 levels (DEC-237) (their systems do not exist),
   basic-attack and ability potency per level, `upgradeIds`, and keeping dead Legends in the store

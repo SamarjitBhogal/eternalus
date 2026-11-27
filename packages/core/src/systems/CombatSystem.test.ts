@@ -17,7 +17,7 @@ import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import { loadProjectiles } from '../content/projectiles/loadProjectiles';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { loadWeapons } from '../content/weapons/loadWeapons';
-import type { WeaponDefinition } from '../content/weapons/weapons.types';
+import type { AuthoredWeaponDefinition } from '../content/weapons/weapons.types';
 import type { DamageSource } from '../state/GameEvents.types';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
@@ -471,7 +471,7 @@ describe('CombatSystem', () => {
 });
 
 /** A stand-in melee weapon dealing `damage` per hit. */
-const testWeapon = (id: string, damage: number): WeaponDefinition => ({
+const testWeapon = (id: string, damage: number): AuthoredWeaponDefinition => ({
   id,
   displayName: id,
   weaponClass: 'glove',

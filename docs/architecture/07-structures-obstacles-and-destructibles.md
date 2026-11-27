@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-26
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -165,17 +165,27 @@ export type GateState = 'closed' | 'opening' | 'open' | 'closing';
 
 ```ts
 export type TurretControl = 'auto' | { readonly kind: 'manual'; readonly legendId: EntityId };
-export type AmmoDefinition = {
+// DEC-335: an ammo is a shot like any other; its `interval` is the time between two bolts
+// (TUNE: default 1 bolt / 5 s, heavy 1 / 10 s), and `Combat` is the one shot clock.
+export type TurretAmmoDefinition = {
   readonly id: string; // 'bolt-default' | 'bolt-heavy'
-  readonly cooldownTicks: number; // TUNE: default 1 bolt / 5 s (150 ticks), heavy 1 / 10 s (300)
-  readonly projectileId: string;
-  readonly preferredTargetClasses: readonly string[]; // heavy: ['sentinel', 'heavy-mob']
+  readonly attack: RangedAttack; // damage, reach, interval, projectile, onHit
+  readonly preferredAgainst: readonly string[] | 'any'; // heavy: ['sentinel', 'heavy-mob']
+};
+// A turret's equipment: the ammo it carries, best first, and the loaded one.
+export type TurretState = {
+  readonly ammo: readonly TurretAmmoDefinition[];
+  readonly loaded: TurretAmmoDefinition;
 };
 ```
 
+The turret's `StructureDefinition` names its ammo (best first) and its controller and AI profile
+(DEC-335); `switch-ammo` is a command, so the loaded ammo is hashed state.
+
 `TurretController` (in `ai/`) drives auto mode: acquire the first enemy in range, keep it while
-alive and in range, prefer by a data priority list, switch ammo to the first `AmmoDefinition`
-whose `preferredTargetClasses` includes the target's class, and aim predictively (target position
+alive and in range, prefer by a data priority list, switch ammo to the first
+`TurretAmmoDefinition` whose `preferredAgainst` fits the target's kind, and aim predictively
+(target position
 
 - velocity × time-to-impact, solved in two iterations with deterministic vector math, no `atan2`).
   Manual mode (MVP-if-time): an Warrior Legend issues the `turret-toggle-control` and
@@ -299,15 +309,17 @@ lock the outer zones (`lockedBy`) until they die (`MatchDirector` timeline).
 
 ## 8. Structure destruction effects
 
-| Event                          | Effect (all data in content)                                               | MVP status |
-| ------------------------------ | -------------------------------------------------------------------------- | ---------- |
-| any lane structure destroyed   | `enraged` status on enemy minions in that lane (lane gets harder)          | MVP        |
-| `SpawnerTower` destroyed       | stronghold guard table shrinks; walls lose a bar if it was a shield source | MVP        |
-| `BuffTower` destroyed          | its shield bars removed everywhere; team buff and enemy debuff aura end    | MVP        |
-| `Gate`/`WallSegment` destroyed | footprint cleared; flow fields rebuilt; minimap terrain dirty              | MVP        |
-| `Stronghold` destroyed         | `match-ended` with the winner                                              | MVP        |
+| Event                          | Effect (all data in content)                                                                                                                   | MVP status |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| any lane structure destroyed   | `enraged` status on enemy minions in that lane (lane gets harder)                                                                              | MVP        |
+| `SpawnerTower` destroyed       | stronghold guard table shrinks; walls lose a bar if it was a shield source                                                                     | MVP        |
+| `BuffTower` destroyed          | its shield bars removed everywhere; team buff and enemy debuff aura end                                                                        | MVP        |
+| `Gate`/`WallSegment` destroyed | footprint cleared; flow fields rebuilt; minimap terrain dirty                                                                                  | MVP        |
+| `Stronghold` destroyed         | `match-ended` with the winner                                                                                                                  | MVP        |
+| `Turret` destroyed             | its pylon stays as a ruin that blocks, with its own health (DEC-341 (2), DEC-388); XP only to the destroyer (DEC-341 (3), 05 §18)              | MVP        |
+| a turret's pylon destroyed     | the turret on it falls on the same tick, with the pylon's killer as its killer (DEC-388; `MapDestructionSystem`, on the pylon's `entity-died`) | MVP        |
 
-Every effect is a listener on `structure-destroyed` in the owning system; `StructureSystem` never
+Every effect is a listener on a typed event (`structure-destroyed`; for a map object, `entity-died`) in the owning system; `StructureSystem` never
 calls another system (rule 12).
 
 ## 9. Obstacles
@@ -397,8 +409,8 @@ Nothing in `StructureSystem`, `DamagePipeline`, `SpawnSystem` or `MinimapView` c
 ## 14. Post-MVP items
 
 - **Anti-air defence** (orange in the game doc): a `Combat` targeting filter on `height > 0` once the
-  Flying class exists; the `Turret` class does not change, only an `AmmoDefinition` and a
-  `TargetingStrategy`.
+  Flying class exists; the `Turret` class does not change, only a `TurretAmmoDefinition` and an
+  entry in its profile's target lists (DEC-335).
 - **Form change at buildings** (yellow): an `Interactable` component on `Stronghold`/`BuffTower`
   that emits `form-change-requested`; the Legend side is a `LegendSpecDefinition` swap (D11).
 - **Bridges** across the rift as `bridge-segment` obstacles are MVP-if-time; until then the rift
@@ -453,6 +465,53 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `EntityStore.outlineOf` returns the one an entity uses, for reach, a chase and a shot alike.
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
+- **Wall turrets, part 1 (`feat/wall-turrets`, 2026-11-22; §1, §5).** Each `turret` map feature
+  builds a `Turret` structure: definition `turret` in `content/structures/structureCatalogue.ts`
+  (base health from balancing.md, the map pylon's radius, no lane, the walls' breakability rule,
+  DEC-341). Reach to the turret is measured to its pylon map object (`hasMapFootprint`). The
+  turret is mounted on the pylon (`isMounted`, DEC-388, which replaces the one health pool of
+  DEC-332 (1)): it has its own entity and health (the value is in
+  `content/maps/mapObjectDefinitions.ts`, DEC-396), and it breaks under the turret's rule
+  (`StructureSystem` flips both). Its fall takes the turret with it on the same tick:
+  `MapDestructionSystem` fells what is mounted on the pylon with `DamagePipeline.collapse`, with the
+  pylon's killer as its killer, so the turret's XP goes to the Legend that felled the pylon. Like
+  a fort, the pylon outlives the turret: it stays as a ruin that blocks, with its own health, and
+  its footprint and nav cells stay (DEC-341, HC-Q91). `WorldObjectStore.removed` marks every such
+  body a ruin, and the snapshot's `MapObjectSnapshot.condition` is `ruin` (DEC-389), so the client
+  draws a fallen tower's fort and a dead turret's pylon as ruins (06; the fort's walls still
+  block, DEC-217 (12), until the tower-ruins work (#98) lands). The snapshot also reports the
+  turret's health on its pylon (`mountedHealth`), so the client draws the turret's bar above the
+  pylon and the pylon's own bar below it. A destroyed turret sends `structure-destroyed`. It
+  pays structure points (DEC-212; whether it should is open in DEC-341), but no team-wide
+  structure XP: its XP (`xpSources.destroyerOnly`) goes only to the Legend that lands the killing
+  hit (DEC-341, HC-Q92). The
+  ammo table of §5 is `content/structures/turretAmmo.ts` (`bolt-default`, `bolt-heavy`): each
+  ammo is a `RangedAttack` plus `onHit` steps (the heavy bolt's concussion), with
+  `preferredAgainst` for the ammo choice; `loadTurrets` converts its times to ticks and validates
+  it. Its projectiles are `turret-bolt` and `turret-heavy-bolt`. Their 35 m range is `TUNE` with
+  no reference value (a bolt starts at the turret's centre, so it covers the pylon, the turret's
+  range and the lead) until the arc shot of DEC-341 (HC-Q93) replaces the straight flight in the
+  tower-orb PR (Owner Calls "WT orb page", DEC-341 (4)).
+  `TurretController` picks the target
+  and the ammo and computes the aim point (11 §4.5, §10). Part 2 (next item) builds the shot.
+- **Wall turrets, part 2 (`feat/wall-turrets`, 2026-11-22; §5, DEC-334).** Turrets fire. The
+  turret's structure definition names its ammo (`StructureDefinition.ammo`, best first, the last
+  for any target; `loadTurrets` checks both). `Turret` installs a `TurretState` (the ammo it
+  carries and the loaded one, `components/TurretState.ts`) and a `Combat` with the first ammo's
+  attack and no weapon. The `switch-ammo` command (`SwitchAmmoHandler`) loads an ammo through
+  `TurretAmmoRule.load`: `TurretState` records it and `Combat.equip` swaps the attack. The
+  attack timer stays, so a switch gives no free shot. `TurretController` sends `switch-ammo` and
+  `attack-aim` (11 §10), and `Combat` fires a bolt whenever its cooldown allows. A bolt starts at
+  the turret's centre, inside its pylon and often inside its wall. The launch-shape rule (DEC-334)
+  lets it out: a blocking shape whose blocking area (inside its polygon or on its edge, inside none
+  of its passages) holds the shot's launch point does not stop that shot (10 §12), and
+  `NoMapObjectOverlapInvariant` does not flag a shot inside such a shape. A turret kill names the
+  turret as the killer (`definitionId` `turret`). The turret has no score row, no `Progression`
+  and no ultimate meter, so the kill gives no kill points, no XP and no ultimate charge to anyone;
+  Legends that hit the victim in the assist window still get their assists. `StateHasher` hashes
+  the loaded ammo. Not built: the arc shot of DEC-341 (HC-Q93; the tower-orb PR, Owner Calls
+  "WT orb page", DEC-341 (4), builds it; until then bolts fly their 35 m range), the `turret-control-changed` and `turret-fired` events, manual control
+  and tower orbs.
 
 **2026-10-27 (PR #30, map objects).** Generated map objects currently reuse the `Obstacle`
 entity with a `MapObjectBody` component while the full structure family remains planned.

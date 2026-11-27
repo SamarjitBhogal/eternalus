@@ -1,6 +1,7 @@
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import type { CastInProgress } from '../components/Abilities.types';
+import type { AreaAttacker } from '../state/AreaHitQuery.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { AbilityEffect } from './AbilityEffect.types';
@@ -25,6 +26,12 @@ type CastSource = Pick<Ability, 'id' | 'steps'> & {
 export type CastFacts = Omit<CastInProgress, 'abilityId' | 'nextStep'> & {
   readonly casterId: EntityId;
   readonly ability: CastSource;
+  /**
+   * The caster's team and position for the steps' areas (`AreaHitQuery`); absent, the store's.
+   * `HitEffects` sets it, so the steps of a shot whose owner left the store still hit that
+   * owner's enemies, not its allies.
+   */
+  readonly caster?: AreaAttacker;
 };
 
 /** What a cast's effects work with: the match's state, pipeline, applier and lookups. */

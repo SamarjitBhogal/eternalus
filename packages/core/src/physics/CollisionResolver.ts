@@ -4,7 +4,7 @@ import type { StaticCollisionIndex } from './StaticCollisionIndex';
 import type { IndexedPolygon } from './StaticCollisionIndex.types';
 import { sweepCircle } from './sweepCircle';
 import type { SweepContact } from './sweepCircle.types';
-import { isPointInPolygon } from '../utils/geometry';
+import { isPointInBlockingArea, isPointInPolygon } from '../utils/geometry';
 import { circlePenetration, isCircleInsidePolygon } from '../utils/circlePolygon';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
 
@@ -49,8 +49,20 @@ export class CollisionResolver {
    * unit vector) in a straight line before it first touches a wall or the edge of the bounds, kept
    * as far short of a wall as `move` keeps a unit: `move`'s first sweep, without the slide. The
    * whole `distance` when nothing is in the way. Read-only, like `move`.
+   *
+   * @param launch - A shot's launch point. A shape whose blocking area holds it (inside the
+   *   polygon or on its edge, inside none of its passages) does not stop the sweep: the shot can
+   *   only leave that shape (the launch-shape rule, DEC-334). The edge counts, so a turret on the
+   *   joint of two wall pieces can leave both. A unit's centre is never in a blocking area, so a
+   *   shot from a unit is stopped as before.
    */
-  public reach(from: Vec2, direction: Vec2, distance: number, radius: number): number {
+  public reach(
+    from: Vec2,
+    direction: Vec2,
+    distance: number,
+    radius: number,
+    launch?: Vec2,
+  ): number {
     const { x, y, width, height } = this.bounds;
     const reach = Math.min(
       distance,
@@ -58,7 +70,7 @@ export class CollisionResolver {
       CollisionResolver.toEdge(from.y, direction.y, y, height, radius),
     );
     const displacement = { x: direction.x * reach, y: direction.y * reach };
-    const contact = this.firstContact(from, displacement, radius);
+    const contact = this.firstContact(from, displacement, radius, launch);
     return reach * (contact === null ? 1 : CollisionResolver.shortOf(contact, displacement));
   }
 
@@ -112,7 +124,16 @@ export class CollisionResolver {
     return Math.max(0, contact.time - CONTACT_EPSILON / Math.max(length, CONTACT_EPSILON));
   }
 
-  private firstContact(start: Vec2, delta: Vec2, radius: number): SweepContact | null {
+  /**
+   * The first contact of a circle of `radius` that moves `delta` from `start`, or `null`. A shape
+   * whose blocking area holds `launch` is skipped (DEC-334, see `reach`).
+   */
+  private firstContact(
+    start: Vec2,
+    delta: Vec2,
+    radius: number,
+    launch?: Vec2,
+  ): SweepContact | null {
     const candidates = this.index.query({
       x: Math.min(start.x, start.x + delta.x) - radius,
       y: Math.min(start.y, start.y + delta.y) - radius,
@@ -122,6 +143,8 @@ export class CollisionResolver {
     let first: SweepContact | null = null;
     const at = (time: number) => ({ x: start.x + delta.x * time, y: start.y + delta.y * time });
     for (const entry of candidates) {
+      if (launch !== undefined && isPointInBlockingArea(launch, entry.polygon, entry.passages))
+        continue;
       const stuck = CollisionResolver.startsInside(start, at(1), radius, entry);
       if (stuck !== undefined) {
         if (stuck !== null && (first === null || first.time > 0)) first = stuck;

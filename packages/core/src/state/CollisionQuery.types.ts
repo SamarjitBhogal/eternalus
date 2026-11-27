@@ -14,9 +14,14 @@ export interface CollisionQuery {
    * short of a wall as `CollisionSystem` keeps a walking unit; the whole `distance` when nothing is
    * in the way.
    *
-   * Precondition: the circle at `from` overlaps no wall, as `CollisionSystem` keeps every unit. A
-   * circle that starts inside a wall is not stopped by that wall (`CollisionResolver`'s
-   * `ponytail` remark).
+   * Precondition: the circle at `from` overlaps no wall, except a shape whose blocking area holds
+   * `launch`, as `CollisionSystem` keeps every unit. A circle that starts inside a wall is not
+   * stopped by that wall (`CollisionResolver`'s `ponytail` remark).
+   *
+   * @param launch - A shot's launch point (the launch-shape rule, DEC-334): a shape whose blocking
+   *   area (inside its polygon or on its edge, inside none of its passages) holds it does not stop
+   *   the sweep, so a shot launched inside a wall turret's pylon and wall can leave them, also
+   *   where the turret stands on the joint of two wall pieces. Omitted for a mover.
    */
-  reach(from: Vec2, direction: Vec2, distance: number, radius: number): number;
+  reach(from: Vec2, direction: Vec2, distance: number, radius: number, launch?: Vec2): number;
 }

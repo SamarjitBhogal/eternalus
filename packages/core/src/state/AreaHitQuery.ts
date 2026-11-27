@@ -8,7 +8,14 @@ import type { Team } from '../teams/teams.types';
 import { compareById } from '../utils/compareById';
 import { isPointInAnyPolygon } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
-import type { AreaAim, AreaFilter, HitArea, ShotAim, ShotStopBody } from './AreaHitQuery.types';
+import type {
+  AreaAim,
+  AreaAttacker,
+  AreaFilter,
+  HitArea,
+  ShotAim,
+  ShotStopBody,
+} from './AreaHitQuery.types';
 import type { EntityStore } from './EntityStore';
 import type { EntityId } from './EntityStore.types';
 
@@ -60,6 +67,8 @@ export class AreaHitQuery {
    * under rules 1 and 2, sorted by id.
    *
    * @param aim - What the hit aims at; a walk-on outline needs it (rule 1).
+   * @param attacker - The attacker's team and position; absent, the store's. A cast whose caster
+   *   may be gone passes its own (`CastFacts.caster`), so its enemies stay its team's enemies.
    */
   public find(
     entities: EntityStore,
@@ -67,9 +76,11 @@ export class AreaHitQuery {
     area: HitArea,
     aim: AreaAim,
     filter: AreaFilter,
+    { team: attackerTeam, position: from }: AreaAttacker = AreaHitQuery.attackerIn(
+      entities,
+      attackerId,
+    ),
   ): EntityId[] {
-    const attackerTeam = entities.teamOf(attackerId);
-    const from = entities.get(attackerId)?.findComponent(Transform)?.position;
     const hits: EntityId[] = [];
     entities.forEach((entity) => {
       const transform = entity.findComponent(Transform);
@@ -119,8 +130,7 @@ export class AreaHitQuery {
    *   the attacker stands inside the outline or is unknown.
    */
   public aimedBodyOf(entities: EntityStore, attackerId: EntityId, point: Vec2): EntityId | null {
-    const attackerTeam = entities.teamOf(attackerId);
-    const from = entities.get(attackerId)?.findComponent(Transform)?.position;
+    const { team: attackerTeam, position: from } = AreaHitQuery.attackerIn(entities, attackerId);
     const aimed: EntityId[] = [];
     entities.forEach((entity) => {
       const outline = entities.outlineOf(entity.id);
@@ -140,6 +150,14 @@ export class AreaHitQuery {
     const isStructure = (id: EntityId): number =>
       entities.get(id)?.family === 'structure' ? 0 : 1;
     return aimed.sort((a, b) => isStructure(a) - isStructure(b) || compareById(a, b))[0] ?? null;
+  }
+
+  /** The attacker's team and position as the store holds them now; both absent once it is gone. */
+  private static attackerIn(entities: EntityStore, attackerId: EntityId): AreaAttacker {
+    return {
+      team: entities.teamOf(attackerId),
+      position: entities.get(attackerId)?.findComponent(Transform)?.position,
+    };
   }
 
   /** Rule 1 by aim point: on the outline, the attacker outside it, and on no enemy unit. */

@@ -17,4 +17,19 @@ export class ControllerBinding {
     public readonly profileId: string,
     public readonly initialMemory: AiMemory = {},
   ) {}
+
+  /**
+   * The binding a definition names (architecture 11 §2): its `controller`, reading its `aiProfile`
+   * or, without one, the profile named as the controller; `undefined` when it names no controller.
+   * The one rule for it, shared by units and structures.
+   */
+  public static ofDefinition(definition: {
+    readonly controller?: ControllerId | undefined;
+    readonly aiProfile?: string | undefined;
+  }): ControllerBinding | undefined {
+    const { controller, aiProfile } = definition;
+    return controller === undefined
+      ? undefined
+      : new ControllerBinding(controller, aiProfile ?? controller);
+  }
 }
