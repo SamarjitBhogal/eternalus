@@ -454,6 +454,28 @@ not aimed at such a body flies over it; a shot aimed at it stops there. So a bod
 `canShotsCross` and a forest camp's home follow the same rule as a walk-on floor, for
 `ProjectileSystem` and `LineOfFire` alike. The melee rule still reads `isWalkOn`.
 
+**2026-11-26 (branch `feat/palace-stronghold-pool`, DEC-373 (1)).** The 2026-11-20 note above
+names `Footprint.isWalkOn` and `MapObjectBody.isWalkOn`; they no longer exist. An `Outline` now has
+two polygon lists, `walkOn` and `solid`. `AreaHitQuery.shotPolygonsOf` gives the polygons that stop
+a shot: every polygon when the shot aims at the entity, else only the solid ones. `ProjectileSystem`
+(`contactTime`) and `LineOfFire` test only those polygons. The Stronghold's outer walls and throne
+are solid polygons of its `Footprint`, so they stop every enemy shot. The palace floor is the
+palace map object's walk-on outline only (DEC-344 (4)).
+
+**2026-11-26, merge of `feat/shots-over-lava` into `feat/palace-stronghold-pool` (Q104-9).** The
+shots-over-lava correction note and the palace-stronghold-pool note above meet in one shot rule,
+per polygon. `Outline.canShotsFlyOver` (for the whole outline) is gone, because one outline can
+hold walk-on and solid polygons. An `Outline` has a third polygon list, `shotsCross`: the solid
+polygons that a shot not aimed at the entity flies over. A `MapObjectBody` whose object has
+`canShotsCross` (a camp fire's body) puts its footprints there; a structure's `Footprint` has
+none. `AreaHitQuery.shotPolygonsOf` gives every polygon to a shot aimed at the entity, and to any
+other shot the solid polygons not in `shotsCross`. So such a shot flies over a walk-on floor and a
+camp fire, and stops on the Stronghold's outer walls and throne. A body with no outline still
+reads `Collider.canShotsFlyOver` (a forest camp's home). `AreaHitQuery.aimedBodyOf` names a body
+by its walk-on or `shotsCross` polygons. The melee rule (`AreaHitQuery.find`) reads `walkOn` and
+`solid` only. The 07 note that names `Outline.canShotsFlyOver`, and the 05 §10 note (its 10 §7
+pointer means this §12 note), mean this rule now.
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

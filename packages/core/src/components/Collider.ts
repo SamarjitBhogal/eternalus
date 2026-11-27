@@ -11,7 +11,8 @@ export class Collider {
   /**
    * Whether a shot not aimed at the owner flies over its circle (`AreaHitQuery.stopsShot`): a
    * forest camp's home, which sits unseen inside its camp fire (HC-Q105, HC-Q115). Read only for a
-   * body with no outline; an outline says it itself (`Outline.canShotsFlyOver`).
+   * body with no outline; an outline says it by its polygons (`Outline.walkOn`,
+   * `Outline.shotsCross`).
    */
   public readonly canShotsFlyOver: boolean;
 

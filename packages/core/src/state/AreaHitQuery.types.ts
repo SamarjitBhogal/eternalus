@@ -62,7 +62,7 @@ export type ShotAim = {
   readonly ownerId: EntityId;
   readonly team: Team;
   /**
-   * The locked target, or the outline shots fly over that the aim point was on
+   * The locked target, or the body whose walk-on or `shotsCross` polygons the aim point was on
    * (`AreaHitQuery.aimedBodyOf`); `null` for neither.
    */
   readonly targetId: EntityId | null;

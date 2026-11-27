@@ -43,8 +43,10 @@ it('is an outline: its footprints, walked on when the object does not block', ()
   const rock = { ...palace, id: 'rock', kind: 'rock' as const, isBlocking: true };
 
   expect(new MapObjectBody(palace).polygons).toEqual([floor]);
-  expect(new MapObjectBody(palace).isWalkOn).toBe(true);
-  expect(new MapObjectBody(rock).isWalkOn).toBe(false);
+  expect(new MapObjectBody(palace).walkOn).toEqual([floor]);
+  expect(new MapObjectBody(palace).solid).toEqual([]);
+  expect(new MapObjectBody(rock).walkOn).toEqual([]);
+  expect(new MapObjectBody(rock).solid).toEqual([floor]);
 });
 
 it('lets a shot not aimed at it fly over it when it is walked on or shots cross it (a camp fire, HC-Q105)', () => {
@@ -57,8 +59,12 @@ it('lets a shot not aimed at it fly over it when it is walked on or shots cross 
   const palace = { ...rock, id: 'palace', kind: 'stronghold' as const, isBlocking: false };
   const fire = { ...rock, id: 'fire', kind: 'furniture' as const, canShotsCross: true as const };
 
-  expect(new MapObjectBody(rock).canShotsFlyOver).toBe(false);
-  expect(new MapObjectBody(palace).canShotsFlyOver).toBe(true);
-  expect(new MapObjectBody(fire).canShotsFlyOver).toBe(true);
-  expect(new MapObjectBody(fire).isWalkOn).toBe(false);
+  // A shot not aimed at it flies over its walk-on polygons and its `shotsCross` ones (Q104-9).
+  expect(new MapObjectBody(rock).walkOn).toEqual([]);
+  expect(new MapObjectBody(rock).shotsCross).toEqual([]);
+  expect(new MapObjectBody(palace).walkOn).toEqual([floor]);
+  expect(new MapObjectBody(palace).shotsCross).toEqual([]);
+  expect(new MapObjectBody(fire).shotsCross).toEqual([floor]);
+  expect(new MapObjectBody(fire).walkOn).toEqual([]);
+  expect(new MapObjectBody(fire).solid).toEqual([floor]);
 });

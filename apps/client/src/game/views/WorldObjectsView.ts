@@ -60,9 +60,10 @@ export class WorldObjectsView implements WorldLayer {
       const look = WorldObjectsView.ruinLookOf(geometry, state);
       const visibleBounds = look?.bounds ?? bounds;
       if (
-        object.buildingId !== undefined &&
-        (this.isFallen(object.buildingId) ||
-          (object.isInterior === true && !this.hiddenRoofs.has(object.buildingId)))
+        this.isGoneWithBuilding(object, state) ||
+        (object.buildingId !== undefined &&
+          object.isInterior === true &&
+          !this.hiddenRoofs.has(object.buildingId))
       )
         continue;
       if (
@@ -95,10 +96,19 @@ export class WorldObjectsView implements WorldLayer {
       if (
         look !== undefined &&
         geometry.object.isInterior !== true &&
-        (geometry.object.buildingId === undefined || !this.isFallen(geometry.object.buildingId))
+        !this.isGoneWithBuilding(geometry.object, state)
       )
         look.draw(renderer);
     }
+  }
+  /**
+   * Whether the object was destroyed with its fallen building: the building's ruins stand for it,
+   * so it is not drawn. An object that still stands or is a ruin draws by its own state, so a
+   * structure's body keeps its health bar or its ruins after its building falls (the Stronghold's
+   * outer walls and throne when the palace falls, DEC-373 (1)).
+   */
+  private isGoneWithBuilding({ buildingId }: MapObject, state: MapObjectSnapshot): boolean {
+    return buildingId !== undefined && state.isDestroyed && this.isFallen(buildingId);
   }
   /**
    * A destroyed body is one ruin over its whole box. A ruined body still blocks, so a ruined fort's

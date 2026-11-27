@@ -22,11 +22,11 @@ export type MapObjectKind =
  * What an object's footprint does to a shot (HC-Q89, DEC-345). A map builder sets them; an object
  * without them stops a shot. A unit or a dash collides with the footprint whatever they say.
  */
-export type MapObjectFlags = {
+type MapObjectFlags = {
   /**
    * A shot flies over the footprint: it is no wall to a shot. A unit or a dash still stops. On an
    * object with health (a camp fire), a shot aimed at the object still lands on it
-   * (`MapObjectBody.canShotsFlyOver`, `AreaHitQuery.stopsShot`, HC-Q105).
+   * (`MapObjectBody.shotsCross`, `AreaHitQuery.shotPolygonsOf`, HC-Q105, Q104-9).
    */
   readonly canShotsCross?: true;
   /**
@@ -36,15 +36,30 @@ export type MapObjectFlags = {
   readonly canLightShots?: true;
 };
 
+/**
+ * What a map builder says about an object besides its art: what it does to a shot
+ * (`MapObjectFlags`), and the structure it is part of the body of (`MapObject.partOf`).
+ */
+export type MapObjectTraits = MapObjectFlags & {
+  /**
+   * The id of the feature whose structure this object is part of the body of: the Stronghold's
+   * outer walls and its throne (DEC-373 (1)). It blocks (`MapObject.isBlocking`) and has no health
+   * of its own: a hit on it is a hit on the structure (one pool, as a lane tower's fort, DEC-185
+   * B), and it outlives the structure as a ruin that blocks (DEC-341). Its polygons are solid
+   * polygons of the structure's `Footprint` (`structureBodyParts`).
+   */
+  readonly partOf?: string;
+};
+
 /** Authored ownership: all art of one object changes together when that object is destroyed. */
-export type MapObjectArt = MapObjectFlags & {
+export type MapObjectArt = MapObjectTraits & {
   readonly id: string;
   readonly kind: MapObjectKind;
   readonly isFootprint: boolean;
 };
 
 /** Exact world geometry shared by collision, targeting and destruction presentation. */
-export type MapObject = MapObjectFlags & {
+export type MapObject = MapObjectTraits & {
   readonly id: string;
   readonly kind: MapObjectKind;
   readonly footprints: readonly Polygon[];

@@ -41,15 +41,19 @@ import type { System, SystemContext } from './System.types';
  *
  * Which bodies stop a shot is `AreaHitQuery.stopsShot`, the rule `LineOfFire` predicts by: live
  * things with `Health` other than the owner and its team (neutral bodies count as enemies). A body
- * with an outline (`Footprint`, `MapObjectBody`) is hit on that outline, at once when the shot
- * starts inside it. A body shots fly over (`Outline.canShotsFlyOver`, or for a body with no
- * outline `Collider.canShotsFlyOver`: a walk-on outline, a map object flagged `canShotsCross`, a
- * forest camp's home) is hit only by a shot aimed at that entity (`payload.targetId`: the locked
- * target, or the outline shots fly over that the aim point was on, DEC-322 (1)). A body is
- * gathered once a tick, and each move tests only those whose box it reaches.
+ * with an outline (`Footprint`, `MapObjectBody`) is hit on the polygons that stop the shot
+ * (`AreaHitQuery.shotPolygonsOf`), at once when the shot starts inside one. A shot aimed at the
+ * entity (`payload.targetId`: the locked target, or the body whose walk-on or `shotsCross`
+ * polygons the aim point was on, DEC-322 (1)) can hit each of its polygons. Any other shot flies
+ * over the walk-on polygons (a palace floor, a gate's passage) and the solid polygons shots cross
+ * (`Outline.shotsCross`: a camp fire's body, HC-Q105), and stops on every other solid polygon (a
+ * fort, the Stronghold's outer walls and throne, DEC-373 (1), Q104-9). A body with no outline is
+ * hit on its collider circle; a shot not aimed at it flies over it when its collider says so
+ * (`Collider.canShotsFlyOver`: a forest camp's home). A body is gathered once a tick, and each
+ * move tests only those whose box it reaches.
  * Ties go to the first body in store order, except that the shot's target takes a near tie
- * (`isTouchedBeforeWall` on the first body's contact): a palace wall whose face is the
- * Stronghold's edge does not take a shot fired at the Stronghold (DEC-317 (8)).
+ * (`isTouchedBeforeWall` on the first body's contact): a palace wall whose face is the palace
+ * floor's edge does not take a shot fired at the floor (DEC-317 (8)).
  *
  * A shot flies over a shape flagged `canShotsCross` (a map builder sets it: the collision rule
  * skips it for a shot, so it is no wall here). A shot whose definition has `litOnHit` steps
@@ -246,7 +250,7 @@ export class ProjectileSystem implements System {
       ) {
         continue;
       }
-      const time = ProjectileSystem.contactTime(body, from, delta, radius);
+      const time = ProjectileSystem.contactTime(body, payload, from, delta, radius);
       if (time === null) continue;
       if (body.entity.id === payload.targetId) target = { body, time };
       if (first === null || time < first.time) first = { body, time };
@@ -267,19 +271,25 @@ export class ProjectileSystem implements System {
     );
   }
 
-  /** The share (0 to 1) of the move at which it touches the body, 0 if it starts touching. */
+  /**
+   * The share (0 to 1) of the move at which it touches the body, 0 if it starts touching. An
+   * outline is touched only on the polygons that stop the shot (`AreaHitQuery.shotPolygonsOf`).
+   */
   private static contactTime(
-    { transform, outline }: ShotBody,
+    body: ShotBody,
+    shot: ProjectilePayload,
     from: Vec2,
     delta: Vec2,
     radius: number,
   ): number | null {
+    const { transform, outline } = body;
     if (outline === null) {
       return sweepDisc(from, delta, radius, transform.position, transform.radius);
     }
-    if (isPointInAnyPolygon(from, outline.polygons)) return 0;
+    const polygons = AreaHitQuery.shotPolygonsOf(shot, body);
+    if (isPointInAnyPolygon(from, polygons)) return 0;
     let first: number | null = null;
-    for (const polygon of outline.polygons) {
+    for (const polygon of polygons) {
       const time = sweepCircle(from, delta, radius, polygon)?.time;
       if (time !== undefined && (first === null || time < first)) first = time;
     }

@@ -69,6 +69,34 @@ describe('MapObjectBuilder', () => {
       true,
     );
   });
+  it("makes only each Stronghold's outer walls and throne part of its body (HC-Q104, DEC-373 (1))", () => {
+    const map = new MapGenerator().generate(createDefaultGameConfig(), 1);
+    const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+
+    for (const team of ['light', 'dark'] as const) {
+      const stronghold = `${team}-stronghold`;
+      const outer = objects.filter((o) => o.id.startsWith(`${stronghold}-outer-boundary-`));
+      const inner = objects.filter((o) => o.id.startsWith(`${stronghold}-palace-boundary-`));
+      const rooms = objects.filter((o) => /^[a-z]+-palace-interior-[a-z]+-wall-/.test(o.id));
+      const throne = objects.find((o) => o.id === `${team}-palace-interior-throne`);
+      const parts = objects.filter((o) => o.partOf === stronghold);
+
+      expect(outer.length).toBeGreaterThan(40);
+      expect(inner.length).toBeGreaterThan(40);
+      expect(rooms.length).toBeGreaterThan(20);
+      expect(throne?.isBlocking).toBe(true);
+      expect(parts.map((o) => o.id).sort()).toEqual(
+        [...outer.map((o) => o.id), `${team}-palace-interior-throne`].sort(),
+      );
+      expect([...inner, ...rooms].every((o) => o.partOf === undefined)).toBe(true);
+    }
+    // Nothing else on the map is part of a structure's body by `partOf`.
+    expect(objects.filter((o) => o.partOf !== undefined).length).toBe(
+      objects.filter((o) => o.partOf === 'light-stronghold' || o.partOf === 'dark-stronghold')
+        .length,
+    );
+  });
+
   it('refuses a footprint with fewer than 3 points', () => {
     const map = { ...new MapGenerator().generate(createDefaultGameConfig(), 1), features: [] };
     const presentation = {
