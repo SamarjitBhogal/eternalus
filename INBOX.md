@@ -262,7 +262,8 @@ Reply inline (`Decision: …`).
       Duels cast now, so the reset applies FR-117 as written ("reset to fully cooled down upon
       death"): after a round, the Legend that died has every ability but its ultimate ready. The
       Legend that survived keeps its cooldowns, and both keep their ultimate meters (DEC-295 (1)).
-      HC-B52 (1) asks if the survivor's abilities must also be ready. Aether, shields and the
+      HC-B52 (1) asks if the survivor's abilities must also be ready (answered 2026-11-27,
+      DEC-411 (1): both Legends). Aether, shields and the
       ability bar stay open.
 - [ ] **HC-Q56 — Four ideas from critic round 2 and one from round 3, not built: your call
       (`feat/ability-framework`, 2026-11-14).** (1) **Name and home of the display loader.**
@@ -431,6 +432,8 @@ Reply inline (`Decision: …`).
   - Note 2026-11-26 (#136 merge critic M136-2): the corner boss from #123 is in
     `XP_SOURCES.teamKills` but in no meter list; HC-Q121 asks whether its kill fills the meter.
     The boss record of this follow-up then holds its meter rates too.
+  - Note 2026-11-27 (DEC-412): the corner boss is now in `bossKill` and `bossDamagePerPercent`;
+    the boss record takes both lists.
 - [ ] **HC-Q66 — Fury's dash wind-up: five readings your answer did not settle
       (`feat/vanguard-kit`, 2026-11-20; DEC-283 (5)).** Built one way and tested; nothing waits on
       the answer. You picked "The Legend stands still 0.3 s while the rings close in, then dashes
@@ -1168,7 +1171,7 @@ Reply inline (`Decision: …`).
       (guards follow the minion rules, DEC-144 (C)). A minion that hits its lane objective is not
       "fighting" and still turns to help (Owner Calls card `busy-minion-building`, open).
       Architecture 18 §6.1 changes to match. Tick this item when Samarjit has read it.
-- [ ] **HC-B52 — Three findings from the PR #136 critics after DEC-380: two built, one planned
+- [x] **HC-B52 — Three findings from the PR #136 critics after DEC-380: two built, one planned
       (`feat/vanguard-kit`, 2026-11-26; DEC-380 critic D380-2 and D380-9, merge critic M136-5).**
       (1) **After a Duel round, only the Legend that died gets its abilities back (built).**
       FR-117: abilities other than the ultimate "reset to fully cooled down upon death".
@@ -1192,7 +1195,11 @@ Reply inline (`Decision: …`).
       `endAll`), so each end emits `status-expired`, and `LegendReset` loses its loop and
       `hold(null)`. It touches every death, so it goes in a small follow-up PR after #136, not
       in #136 (DEC-380 (2) must be in the MVP tonight). Build it in that follow-up, or leave it?
-- [ ] **HC-Q121 — Does killing the corner boss fill your ultimate meter? (`feat/vanguard-kit`,
+  - Answered 2026-11-27 (DEC-411, Owner Calls v103): (1) "B: both Legends": built in #136;
+    (2) "A: keep it (built, recommended)"; (3) "A: follow-up PR after #136 (recommended)":
+    combat lane A builds it after #136. The R3-4 plan under (2) (a mode-neutral slice) stays
+    planned with `hasMatchXp`.
+- [x] **HC-Q121 — Does killing the corner boss fill your ultimate meter? (`feat/vanguard-kit`,
       2026-11-26; merge critic M136-2).** You kill the corner boss and your ultimate meter gains
       1 point of 100; the capture point boss fills it. The corner boss came with #123 (DEC-236,
       DEC-296). The meter's boss lists (`content/progression/ultimateCharge.ts`: `bossKill`,
@@ -1201,6 +1208,21 @@ Reply inline (`Decision: …`).
       Options: (A) like the capture point boss: a kill fills the meter, and each 1% of its
       health gives 1 point; (B) keep it as a heavy camp mob; (C) a kill fills the meter, and
       damage gives nothing. Recommendation: A. No number is added until you answer.
+  - Answered 2026-11-27 (DEC-412, Owner Calls v103): "A: like the capture point boss
+    (recommended)". Built in #136.
+
+- [ ] **Better than design: three items from the #136 phase/3 merge critic (2026-11-27). Not
+      built; each has a planned place.** (1) After a Duel round and after a respawn, the code
+      resets the Legend and then readies its abilities on the next line, in two places
+      (`DuelRoundSystem`, `RespawnSystem`). Better: the shared reset (`LegendReset.apply`)
+      readies the abilities itself. Planned in the DEC-411 (3) follow-up PR, which changes
+      `LegendReset` anyway. (2) `PlayerCommands` takes six arguments in a fixed order, so two
+      branches that each add one conflict (#148 and #150 add `casts` fifth; #136 adds `views`
+      fifth). Better: one named object (`PlayerCommandsDeps`), as `MatchDeps` does. Planned in
+      fold unit U5, where those call sites meet. (3) `ProgressionSystem.ts` has 330 lines (the
+      guide is about 300). Better: a `CampAwards` helper beside `CheckpointAwards` takes the camp
+      clear bonus, so both reward helpers have one shape. Planned as a small follow-up PR
+      (combat lane A) after the fold. Approve each, or say which to leave.
 
 - [ ] **Why can forest camps never break? (your note on the gem tidy-ups, DEC-346, 2026-11-23).**
       You asked "what about the forest camps? why can they never break?". Today a camp's body is only
@@ -1231,7 +1253,7 @@ Reply inline (`Decision: …`).
       flag and one finder would keep it closed to change. Not built in #132. OK to do each in a
       small follow-up PR?
 
-- [ ] **Better than design: the Esc key reads both of its flags from the store (#123 merge critic
+- [x] **Better than design: the Esc key reads both of its flags from the store (#123 merge critic
       round 2, BTD-1, 2026-11-25). Built under your standing rule; sign-off asked, nothing
       blocks the PR.** After the phase/3 merge, Esc depended on two yes/no values: "an ability is
       aimed" and "this is an online Duel". The hook read the first from the store at the key
@@ -1245,6 +1267,7 @@ Reply inline (`Decision: …`).
       `MatchScreen` row now names what the screen and its pause key read (`selectAimingSlot`,
       `selectIsDuel`) and the `cancel-aim` intent; the row named neither before. Approve, or say
       to revert to the smaller fix (one test, no signature change).
+  - Answered 2026-11-27 (DEC-413, Owner Calls v103): "A: keep it (built)". No change.
 
 - [ ] **`feat/duel-arena-only-legends` (PR #145, SCRUM-445, SCRUM-446, SCRUM-447, SCRUM-450):
       one owner item left.** Q1 and Q2 are answered and built: DEC-348 (2026-11-23: no
