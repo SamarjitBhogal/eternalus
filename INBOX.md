@@ -2898,6 +2898,45 @@ Reply inline (`Decision: …`).
     should key on `setup.mode`; `MatchSetupDraft` could be a union by `mode`, so that "a Duel has
     no rosters" is a type fact. For doc-gardening: the folder table of architecture 02 has no row
     for `game/duel/` and `game/engine/net/`, which import `@eternalus/protocol` (#97).
+- [ ] **HC-B47 — #129 merge critic: the Cathedral gem could find its zone by the map feature, not
+      by position (`refactor/map-feature-link`; DEC-139).** The player sees no change today. The
+      gem glows in the colour of the team that holds the Cathedral. To find that team, the gem
+      looks for the capture zone whose area covers the gem's position. After #129, the gem and
+      the Cathedral zone name the same map feature, so the gem can find its zone by that name,
+      as the HUD does since DEC-231. Gain: the gem stays right if the zone's shape ever stops
+      covering it. Cost: a gem made with no map feature (a developer spawn, a unit test) gets no
+      holder. Code: `CathedralGemSystem` (#132) uses `ZoneArea.contains`; it could match
+      `MapFeatureLink`. Not built on #129, because the gem code is #132's. Build it in the next
+      PR that changes the gem (the Duel gem follow-up, DEC-346), or keep the position test?
+      Recommendation: build it then; it is the identity rule of DEC-231.
+- [x] **HC-Q60 — GL-16 critic round 5: one better-than-design item (`refactor/map-feature-link`;
+      DEC-139).** The critic approved the DEC-255 build. `FeatureKeyedGroup` lived in the
+      invariant's companion file, so the client depended on a diagnostic, not on the snapshot
+      contract. Move only the type to `state/Snapshot.types.ts` beside `mapFeatureId` (the list
+      stays in the invariant and is checked against it), move the list into `state/` too (the
+      critic's version), or keep it as it is.
+  - Answered 2026-11-15 in the question dialog (DEC-256): "Type in snapshot (Recommended)", noting
+    "do whichever YOU assess is better"; the session kept that option. Built on GL-16: the type in
+    `state/Snapshot.types.ts`, `FEATURE_GROUPS` `satisfies Record<FeatureKeyedGroup, unknown>`.
+- [x] **HC-Q59 — GL-16 critic round 4: one better-than-design item (`refactor/map-feature-link`;
+      DEC-139).** The groups `map-feature-groups-unique` checks (`FEATURE_GROUPS`) and the
+      closures `MatchBridge.byFeature` takes are two copies, so the bridge could read by feature a
+      group the invariant does not check. Export
+      `type FeatureKeyedGroup = keyof typeof FEATURE_GROUPS` from `@eternalus/core` and type
+      `byFeature(snapshot, group)` with it. Cost: one core API export, 3 bridge call sites, a fifth
+      critic pass. Build now on GL-16, or keep as it is.
+  - Answered 2026-11-15 in chat (DEC-255): "build it". Built on GL-16: `FeatureKeyedGroup`
+    (exported as a type; where it lives: HC-Q60) and the typed `MatchBridge.byFeature`.
+- [x] **HC-Q58 — GL-16 critic round 3: two better-than-design items (`refactor/map-feature-link`;
+      DEC-139).** The critic approved GL-16 after the merge of GL-4 (#93). (1) Nothing in core
+      checks DEC-233's rule that at most one entity of a map feature carries each group a consumer
+      reads by feature id: add an invariant. (2) `Structure` and `Zone` each install
+      `MapFeatureLink` from the placement with the same lines: install it once, in
+      `EntityFactory`. Answer per item: build now on GL-16, or keep as it is.
+  - Answered 2026-11-14 in the question dialog (DEC-252): "Add the core check (Recommended)" and
+    "Build the shared install". Built on GL-16: `MapFeatureGroupsUniqueInvariant`
+    (`map-feature-groups-unique`) and the install in `EntityFactory.create`. The core check takes
+    a fourth critic pass, past the three-loop limit; the owner chose it.
 - [ ] **HC-Q42 — Where do Legends spawn at tick 0: all at their Citadel (DEC-80), or as built (match-director critic).** DEC-80 says "All Legends spawn at their Citadel at tick 0." As built (architecture 18 §8, MS-20), each bot laner spawns at its team's end of its assigned lane, and only the Rovers (the bot Rover and the human's Legend, DEC-173) spawn at their team's Stronghold. Keep the as-built lane start for laners and narrow DEC-80 to respawns, or spawn every Legend at its Citadel and let laners walk to their lanes?
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
@@ -3153,6 +3192,8 @@ Reply inline (`Decision: …`).
       the feature id; they meet when architecture 12 §8 turns `capture-point-owner-changed` into
       `point-taken`. It is a core API change (`EntitySnapshot`). Build it on #64, or later with the
       `point-taken` wiring?
+  - Answered 2026-11-09 (DEC-231): "build now", by the game-loop session. It is plan task GL-16
+    (`refactor/map-feature-link`, stacked on GL-5). Close this item when that PR merges.
 - [ ] **FR-071 still names the `returning` state (PR #56, DEC-155)** (owner: sholtzman,
       `docs/requirements/06-mvp-requirements.md`). FR-071 gives the minion FSM as
       `marching → engaging → returning`. Since DEC-155 it is `marching ⇄ engaging`: a leash break
@@ -3284,10 +3325,13 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       PR only if it is assured to happen: its PR opens after GL-4's and merges right after it.
       Close this item when that PR merges.
 - [ ] **GL-16 map-feature link (DEC-221 (3); GL-5 critic round 3, B1)** — Owner: sholtzman,
-      `refactor/map-feature-link` (base: the phase branch after GL-5 merges). A `MapFeatureLink`
+      `refactor/map-feature-link` (base `feat/results-flow`; built now, DEC-231). A `MapFeatureLink`
       component, set from a placement's map feature id, on structures and capture zones. The
       snapshots read it instead of `instanceof Structure`, and `MatchBridge` binds a capture site
       to its zone by that id, not by position. Close this item when its PR merges.
+      Its critic round 1 better-than-design items (one feature may back several entities; one
+      `MatchBridge.byFeature` helper) were answered 2026-11-09 (DEC-233): "A: build both
+      (Recommended)", built in GL-16.
 - [ ] **GL-17 entity component query (DEC-229; GL-15 critic round 2, better than the design)** —
       Owner: sholtzman, `refactor/entity-component-query` (base: the phase branch after #79 and
       #85 merge; they change `EntityStore`). A read-only query port on `EntityStore` for the
