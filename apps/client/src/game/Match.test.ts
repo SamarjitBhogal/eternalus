@@ -160,8 +160,8 @@ const setUp = (
     // The port as `createBrowserMatch` binds it.
     dashReach: (origin, direction, distance, radius) =>
       simulation.dashReach(origin, direction, distance, radius),
-    isSummonBlocked: (corners, origin, direction, distance) =>
-      simulation.isSummonBlocked(corners, origin, direction, distance),
+    summonPreview: (corners, origin, direction, distance) =>
+      simulation.summonPreview(corners, origin, direction, distance),
     observer: { crashed: () => undefined, ended: () => undefined },
     // A bus only the tests listen to, at the shipped cadence.
     bridge: {
@@ -391,12 +391,20 @@ describe('Match range overlay', () => {
     match.destroy();
   });
 
-  it('asks the simulation whether the Shield Wall fits, and draws a refused one in red (DEC-382, HC-B43 (7))', () => {
+  it('asks the simulation where the Shield Wall stands, draws that outline, and draws a refused one in red (DEC-382, HC-B43 (7), HC-S15)', () => {
     const { match, input, renderer, simulation } = setUp(undefined, false, Simulation, {
       legend: 'sentinel',
       team: 'light',
     });
-    const blocked = vi.spyOn(simulation, 'isSummonBlocked').mockReturnValue(true);
+    const outline = [
+      { x: 1, y: 1 },
+      { x: 2, y: 1 },
+      { x: 2, y: 5 },
+      { x: 1, y: 5 },
+    ];
+    const blocked = vi
+      .spyOn(simulation, 'summonPreview')
+      .mockReturnValue({ outline, isBlocked: true });
     match.setCastMode('aim-then-click');
     input.aim = { x: 40, y: 50 };
     input.triggered = ['ability-3'];
@@ -408,8 +416,13 @@ describe('Match range overlay', () => {
     match.render(0);
     expect(blocked).toHaveBeenCalled();
     expect([fillsIn(AIM_REFUSED_COLORS.fill), fillsIn(AIM_OVERLAY_FILL_COLOR)]).toEqual([1, 0]);
+    expect(
+      renderer.calls.find(
+        (call) => call.op === 'fillPolygon' && call.args[1] === AIM_REFUSED_COLORS.fill,
+      )?.args[0],
+    ).toEqual(outline);
 
-    blocked.mockReturnValue(false);
+    blocked.mockReturnValue({ outline, isBlocked: false });
     renderer.calls.length = 0;
     match.render(0);
     expect([fillsIn(AIM_REFUSED_COLORS.fill), fillsIn(AIM_OVERLAY_FILL_COLOR)]).toEqual([0, 1]);

@@ -1,6 +1,7 @@
 import { CastValidator } from './abilities/CastValidator';
 import { dashReach } from './abilities/dashReach';
-import { isSummonBlocked } from './abilities/summonPlacement';
+import { summonPreview } from './abilities/summonPlacement';
+import type { PlacedSummon } from './abilities/summonPlacement.types';
 import { createDefaultAbilityRegistry } from './abilities/defaultAbilityRegistry';
 import { AiSystem } from './ai/AiSystem';
 import type { AiMemory } from './content/ai/ai.types';
@@ -317,19 +318,19 @@ export class Simulation {
   }
 
   /**
-   * Whether a body with the outline `corners` (metres, +x along its facing) cannot stand
-   * `distance` metres from `from` along `direction` (a unit vector), facing that way: the rule a
-   * `summon` step refuses a cast with (`isSummonBlocked`), on the match's own walls. A read-only
-   * query for aim previews (a Shield Wall's outline turns red, DEC-382, HC-B43 (7)); it changes
-   * nothing.
+   * Where a body with the outline `corners` (metres, +x along its facing) stands when it is placed
+   * `distance` metres from `from` along `direction` (a unit vector), and whether it cannot stand
+   * there: the rule a `summon` step refuses a cast with (`summonPreview`), on the match's own
+   * walls. `null` for the zero direction. A read-only query for aim previews (a Shield Wall's
+   * outline, red where refused, DEC-382, HC-B43 (7), HC-S15); it changes nothing.
    */
-  public isSummonBlocked(
+  public summonPreview(
     corners: readonly Vec2[],
     from: Vec2,
     direction: Vec2,
     distance: number,
-  ): boolean {
-    return isSummonBlocked(this.state.walls, corners, from, direction, distance);
+  ): PlacedSummon | null {
+    return summonPreview(this.state.walls, corners, from, direction, distance);
   }
 
   /** Number of ticks completed. */

@@ -218,7 +218,7 @@ describe('Simulation.dashReach', () => {
   });
 });
 
-describe('Simulation.isSummonBlocked (DEC-382, HC-B43 (7))', () => {
+describe('Simulation.summonPreview (DEC-382, HC-B43 (7), HC-S15)', () => {
   /** The Shield Wall barrier's outline: 1 m along its facing, 4 m across. */
   const WALL = [
     { x: -0.5, y: -2 },
@@ -255,19 +255,28 @@ describe('Simulation.isSummonBlocked (DEC-382, HC-B43 (7))', () => {
         : {}),
     });
 
-  it('says no on open ground and yes over a wall or past the map edge, as the cast does', () => {
+  it('places the outline: free on open ground, blocked over a wall or past the map edge, as the cast does', () => {
     const match = sim();
 
-    expect(match.isSummonBlocked(WALL, { x: 96, y: 30 }, EAST, 3)).toBe(false);
-    expect(match.isSummonBlocked(WALL, { x: 98, y: 30 }, EAST, 3)).toBe(true);
-    expect(match.isSummonBlocked(WALL, { x: 2, y: 30 }, { x: -1, y: 0 }, 3)).toBe(true);
+    expect(match.summonPreview(WALL, { x: 96, y: 30 }, EAST, 3)).toEqual({
+      outline: [
+        { x: 98.5, y: 28 },
+        { x: 99.5, y: 28 },
+        { x: 99.5, y: 32 },
+        { x: 98.5, y: 32 },
+      ],
+      isBlocked: false,
+    });
+    expect(match.summonPreview(WALL, { x: 98, y: 30 }, EAST, 3)?.isBlocked).toBe(true);
+    expect(match.summonPreview(WALL, { x: 2, y: 30 }, { x: -1, y: 0 }, 3)?.isBlocked).toBe(true);
+    expect(match.summonPreview(WALL, { x: 96, y: 30 }, { x: 0, y: 0 }, 3)).toBeNull();
   });
 
-  it('says no in a match with no map, and changes nothing', () => {
+  it('places the outline but never blocks it in a match with no map, and changes nothing', () => {
     const match = sim(false);
     const before = match.snapshot();
 
-    expect(match.isSummonBlocked(WALL, { x: 0, y: 0 }, EAST, 3)).toBe(false);
+    expect(match.summonPreview(WALL, { x: 0, y: 0 }, EAST, 3)?.isBlocked).toBe(false);
     expect(match.snapshot()).toEqual(before);
   });
 });

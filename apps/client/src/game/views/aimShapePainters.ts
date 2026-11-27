@@ -39,10 +39,9 @@ function arcCorners(centre: Vec2, radius: number, from: number, sweep: number): 
  * circle centre, a path as the rectangle the dash sweeps (the dash's length by the path's width),
  * a cone as its fan from the caster toward the pointer in darker blue, or, at a full turn, the
  * circle of its range in lighter blue (DEC-206 (3)); a cone's reach counts from the caster's body
- * edge (DEC-319). An `outline` is the body a step places (Shield Wall), drawn where it will stand:
- * its middle the outline's distance ahead of the caster toward the pointer, turned to face the
- * pointer as core's `placePolygon` turns it, in the refused colours where the cast is refused
- * (`AimFrame.isRefused`); nothing with the pointer on the caster. A `hit` shape
+ * edge (DEC-319). An `outline` is the body a step places (Shield Wall): the painter draws the
+ * outline core placed (`AimFrame.placed`), in the refused colours where the cast is refused. It
+ * draws nothing when core placed no outline (the pointer is on the caster). A `hit` shape
  * (a status's on-hit step, Fury, or a shot's, Hamstring) is never aimed, so it draws nothing.
  */
 export const AIM_SHAPE_PAINTERS: ShapePainters = {
@@ -64,17 +63,9 @@ export const AIM_SHAPE_PAINTERS: ShapePainters = {
       renderer,
     );
   },
-  outline: ({ corners, distance }, { origin, direction, isRefused }, renderer) => {
-    if (direction.x === 0 && direction.y === 0) return;
-    const centre = { x: origin.x + direction.x * distance, y: origin.y + direction.y * distance };
-    paint(
-      corners.map(({ x, y }) => ({
-        x: centre.x + x * direction.x - y * direction.y,
-        y: centre.y + x * direction.y + y * direction.x,
-      })),
-      renderer,
-      isRefused ? AIM_REFUSED_COLORS : AIM_OVERLAY_COLORS,
-    );
+  outline: (_shape, { placed }, renderer) => {
+    if (placed === null) return;
+    paint(placed.outline, renderer, placed.isBlocked ? AIM_REFUSED_COLORS : AIM_OVERLAY_COLORS);
   },
   cone: ({ reach, arcDegrees }, { origin, casterRadius, direction }, renderer) => {
     const radius = casterRadius + reach;

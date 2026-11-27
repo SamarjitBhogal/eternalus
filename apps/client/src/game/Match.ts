@@ -146,7 +146,7 @@ export class Match implements LoopTarget {
       deps.abilities,
       this.playerId,
       deps.dashReach,
-      deps.isSummonBlocked,
+      deps.summonPreview,
     );
     const scene = new SceneView([
       new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed),

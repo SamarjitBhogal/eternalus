@@ -1509,14 +1509,17 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     the map's edge. A delayed step is checked at the cast.
   - **Aim overlay.** `describe` gives one display step with the display-only shape `outline`
     (`PlacedOutline` in `content/loadDisplayContent.ts`: the outline's corners and its
-    distance). The client paints it where the wall will stand: its middle `distance` ahead of
-    the caster toward the pointer, turned to face that way (`aimShapePainters.ts`). The outline
-    turns red where the cast would be refused (DEC-382, HC-B43 (7) B): the client asks
-    `Simulation.isSummonBlocked` (the `MatchDeps.isSummonBlocked` port), which runs
-    `abilities/summonPlacement.ts`, the same rule `aimBlockedBy` refuses the cast with. The
-    preview asks from where the Legend is drawn, as a dash's reach does. A Duel draws no range
-    overlay, so it has no port. The client still turns the outline itself, a copy of
-    `placePolygon` (`INBOX.md` HC-S15).
+    distance). Core places the outline; the client only draws it (DEC-382, HC-B43 (7) B,
+    `INBOX.md` HC-S15). The client asks `Simulation.summonPreview` (the
+    `MatchDeps.summonPreview` port). It runs `summonPreview` in `abilities/summonPlacement.ts`.
+    That function returns a `PlacedSummon`: the outline, with its middle `distance` ahead of the
+    caster and turned to face the aim, and whether the cast is refused there. It returns `null`
+    for the zero direction. `aimBlockedBy` refuses the cast with the same function, so the
+    preview and the cast use one rule. `AimTargeting` copies the result into the step. The
+    painter (`aimShapePainters.ts`) draws exactly that outline, red where it is refused, and
+    draws nothing for `null`. The client keeps no copy of the turning rule. The preview asks
+    from where the Legend is drawn, as a dash's reach does. A Duel draws no range overlay, so it
+    has no port.
   - **Not built.** DEC-307's stop of a charging Sentinel comes with PR 8; the wall blocks walking
     and dashes like a map wall. `NoMapObjectOverlapInvariant` does not check placed walls
     (`INBOX.md` HC-S14, scheduled with PR 8).
