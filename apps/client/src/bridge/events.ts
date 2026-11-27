@@ -246,9 +246,15 @@ export type BridgeEventMap = {
   /** Remaining session time of one countdown. */
   countdown: { readonly kind: CountdownKind; readonly remainingMs: number };
   'match-clock': MatchClock;
-  /** The two players' names, when the server pairs them (the VERSUS screen). */
+  /**
+   * The two players' names, when the server pairs them (the VERSUS screen), and again when the
+   * Duel ends, for the results (the Duel's setup cleared them; SCRUM-449).
+   */
   'duel-versus': DuelVersus;
-  /** The Duel's scoreboard, on the HUD cadence; only in a Duel. */
+  /**
+   * The Duel's scoreboard, on the HUD cadence; only in a Duel. Once more when the Duel ends, with
+   * the final score from the server's last snapshot (SCRUM-449).
+   */
   'duel-state': DuelHudState;
   /** The Duel opponent's connection: `graceMs` is the reconnect window while they are away, `null` once connected. */
   'duel-opponent-presence': { readonly graceMs: number | null };

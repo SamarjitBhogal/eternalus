@@ -1,7 +1,7 @@
 import { type LogAttributes, makeLogRecord } from '@eternalus/core';
 
 import type { MatchEnding } from '../bridge/domain.types';
-import { canRepeatSetup } from '../bridge/matchSetupRules';
+import { canRepeatSetup, hasResultsCountdown } from '../bridge/matchSetupRules';
 import type {
   AssetGroup,
   ClassSelection,
@@ -22,6 +22,7 @@ import type {
   SessionState,
 } from './SessionController.types';
 import { DuelSession } from './duel/DuelSession';
+import { finalDuelScore } from './duel/finalDuelScore';
 import { rosterSlots } from './session/rosterSlots';
 import { buildMatchSetup } from './session/buildMatchSetup';
 import { fillRosters } from './session/fillRosters';
@@ -54,6 +55,8 @@ export class SessionController {
   private readonly duel: DuelSession;
   /** The name this player joined the Duel queue with, for the VERSUS screen. */
   private duelName = '';
+  /** The opponent's name from `match-found`, sent again with the final score for the results (DEC-347). */
+  private duelOpponentName = '';
 
   /** Loads the content catalogue; nothing runs until `start()`. */
   public constructor(private readonly deps: SessionControllerDeps) {
@@ -64,6 +67,7 @@ export class SessionController {
       logger: deps.logger,
       handlers: {
         matched: (opponent) => {
+          this.duelOpponentName = opponent;
           deps.bus.emit('duel-versus', { own: this.duelName, opponent });
           deps.bus.emit('menu-route', { route: 'duel-versus' });
         },
@@ -121,6 +125,7 @@ export class SessionController {
         this.newMatchSetup();
       },
       canRepeatMatchSetup: () => this.canRepeatMatchSetup(),
+      hasResultsCountdown: () => hasResultsCountdown(this.setup?.mode ?? null),
       repeatMatchSetup: () => {
         if (this.setup === null || !this.canRepeatMatchSetup()) {
           throw new Error('No match setup to repeat');
@@ -341,14 +346,20 @@ export class SessionController {
   /**
    * The server ended the Duel: from the loading or the match phase it publishes the result and
    * shows the results screen; from the queue (the opponent left before the first snapshot) it
-   * shows the home screen. Not a lost connection, so nothing is logged as an error.
+   * shows the home screen. Not a lost connection, so nothing is logged as an error. The results
+   * name both players with the final kill score (SCRUM-449): the names again (the Duel's setup
+   * cleared them) and the score from the server's last snapshot, not the HUD's throttled one.
    */
   private endDuel(ending: MatchEnding): void {
     if (this.current?.phase === 'menu') {
       this.deps.bus.emit('menu-route', { route: 'home' });
       return;
     }
-    this.deps.bus.emit('duel-ended', ending);
+    const { bus } = this.deps;
+    bus.emit('duel-versus', { own: this.duelName, opponent: this.duelOpponentName });
+    const score = finalDuelScore(this.duel.latestSnapshot(), this.duel.team);
+    if (score !== null) bus.emit('duel-state', score);
+    bus.emit('duel-ended', ending);
     this.transition('results', null);
   }
 

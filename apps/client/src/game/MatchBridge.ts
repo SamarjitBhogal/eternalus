@@ -4,19 +4,15 @@ import {
   type FeatureKeyedGroup,
   type MapDefinition,
   type MatchResult,
-  opponentOf,
+  type PlayableTeam,
   type Simulation,
   type Snapshot,
   type Unsubscribe,
 } from '@eternalus/core';
 
 import type { MatchClock } from '../bridge/events';
-import type {
-  CapturePointStatus,
-  DuelHudState,
-  PlayerHudSnapshot,
-  StructureStatus,
-} from '../bridge/hud.types';
+import type { CapturePointStatus, PlayerHudSnapshot, StructureStatus } from '../bridge/hud.types';
+import { finalDuelScore } from './duel/finalDuelScore';
 import { ROSTER_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import type { MatchBridgeDeps } from './MatchBridge.types';
 import { PublishedRoster } from './PublishedRoster';
@@ -130,9 +126,8 @@ export class MatchBridge {
     const { bus, tickRate } = this.deps;
     bus.emit('match-clock', MatchBridge.clockOf(snapshot, tickRate));
     bus.emit('hud-state', { player: MatchBridge.playerOf(snapshot, playerId) });
-    if (snapshot.match.duel !== undefined) {
-      bus.emit('duel-state', MatchBridge.duelOf(snapshot, snapshot.match.duel, playerId));
-    }
+    const duelScore = finalDuelScore(snapshot, MatchBridge.teamOf(snapshot, playerId));
+    if (duelScore !== null) bus.emit('duel-state', duelScore);
   }
 
   /**
@@ -154,19 +149,10 @@ export class MatchBridge {
     return { tick, seconds: Math.max(0, sinceEnd) / tickRate, countdown };
   }
 
-  /** The Duel's score from the player's side. */
-  private static duelOf(
-    snapshot: Snapshot,
-    duel: NonNullable<Snapshot['match']['duel']>,
-    playerId: EntityId | null,
-  ): DuelHudState {
+  /** The player's team; `light` when the player is not in the snapshot. */
+  private static teamOf(snapshot: Snapshot, playerId: EntityId | null): PlayableTeam {
     const own = snapshot.entities.find((entity) => entity.id === playerId)?.team;
-    const ownTeam = own === 'dark' ? 'dark' : 'light';
-    return {
-      ownKills: duel.kills[ownTeam],
-      opponentKills: duel.kills[opponentOf(ownTeam)],
-      killTarget: duel.killTarget,
-    };
+    return own === 'dark' ? 'dark' : 'light';
   }
 
   /** Publishes both rosters; each keeps its unchanged items and array (`PublishedRoster`). */

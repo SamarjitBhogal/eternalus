@@ -30,6 +30,7 @@ export class FakeSessionContext implements SessionContext {
     transition: [],
     newMatchSetup: [],
     canRepeatMatchSetup: [],
+    hasResultsCountdown: [],
     repeatMatchSetup: [],
     clearMatchSetup: [],
     selection: [],
@@ -52,6 +53,8 @@ export class FakeSessionContext implements SessionContext {
   public readonly matches: FakeRunningMatch[] = [];
   /** What `canRepeatMatchSetup` answers. */
   public canRepeat = true;
+  /** What `hasResultsCountdown` answers. */
+  public hasCountdown = true;
   /** When set, `prepareWorld` throws it. */
   public prepareWorldError: Error | null = null;
   /** When set, `createMatch` throws it. */
@@ -79,6 +82,12 @@ export class FakeSessionContext implements SessionContext {
   public canRepeatMatchSetup(): boolean {
     this.record('canRepeatMatchSetup', []);
     return this.canRepeat;
+  }
+
+  /** Records the call; answers `hasCountdown`. */
+  public hasResultsCountdown(): boolean {
+    this.record('hasResultsCountdown', []);
+    return this.hasCountdown;
   }
 
   /** Records the call. */
