@@ -9,6 +9,7 @@ import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { Simulation } from './Simulation';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
 import type { PlayableTeam, Team } from './teams/teams.types';
+import { UNARMED_STRUCTURES } from './__fixtures__/hordeMatches';
 
 type LaneEvent = {
   readonly tick: number;
@@ -30,6 +31,9 @@ const siege = () => {
     logger,
     debug: TEST_DEBUG_CONFIG,
     map: TWO_LANE_MAP,
+    // Unarmed towers: this test is about the enrage on a tower loss, not the tower's orbs
+    // (DEC-302). A tower that fires orbs outlives the defending horde added below.
+    structures: UNARMED_STRUCTURES,
   });
   const enraged: { readonly tick: number; readonly entityId: string }[] = [];
   simulation.on('status-applied', ({ entityId, statusId }) => {
