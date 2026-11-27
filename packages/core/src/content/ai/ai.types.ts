@@ -303,6 +303,61 @@ export type BossProfileDefinition = {
   readonly roamArrivalRadius: number;
   /** Roam points and chase points stay this far inside the zone's edge. */
   readonly zoneMargin: number;
-  /** Its moves, in rotation order: the boss uses them one after another, then starts again. */
+  /** Every move the boss can use; its brain picks one by the situation (`brain`). */
   readonly moves: readonly BossMoveDefinition[];
+  /** The situation tree's numbers and its branches' moves (11 §4.6, DEC-371 E7). */
+  readonly brain: BossBrainDefinition;
+  /** The moves locked until the boss is hurt, and when it is hurt (DEC-417). */
+  readonly hurtPhase: BossHurtPhaseDefinition;
+};
+
+/** What a boss move scores on when two or more moves fit one branch (`UtilityScorer`). */
+export type BossConsideration = 'reach' | 'crowd' | 'damage';
+
+/** One branch of a boss's situation tree: the moves it may use and how it scores them. */
+export type BossBranchDefinition = {
+  /** Ids of the profile's moves this branch may use. */
+  readonly moveIds: readonly string[];
+  /**
+   * How much each consideration counts: `reach` (the target deep inside the move's range),
+   * `crowd` (the share of the zone's enemies inside the move's range) and `damage` (the move's
+   * damage against the profile's largest).
+   */
+  readonly weights: Readonly<Record<BossConsideration, number>>;
+};
+
+/**
+ * A boss's situation tree (architecture 11 §4.6, DEC-371 E7): the branches, highest priority
+ * first, and the numbers that open them. Metres and seconds.
+ */
+type BossBrainDefinition = {
+  /** Damage dealt to the boss counts as recent for this long. */
+  readonly threatSeconds: number;
+  /** A target this close is in melee range; a nearest target farther away is far. */
+  readonly meleeRange: number;
+  /** `punish` opens when one Legend dealt at least this share (0 to 1) of the recent damage. */
+  readonly punishShare: number;
+  /** `crowd` counts the enemies this close. */
+  readonly crowdRadius: number;
+  /** `crowd` opens when at least this many enemies are within `crowdRadius`. */
+  readonly crowdCount: number;
+  /** The top recent damage dealer, a Legend in melee range: hit it hard. */
+  readonly punish: BossBranchDefinition;
+  /** Many enemies close by: hit them all. */
+  readonly crowd: BossBranchDefinition;
+  /** The nearest enemy is out of melee range: reach it. */
+  readonly far: BossBranchDefinition;
+  /** Any enemy in the zone, when no branch above found a move. */
+  readonly fallback: BossBranchDefinition;
+};
+
+/** The phases of a boss fight (DEC-417): `hurt` opens the locked moves. */
+export type BossPhaseId = 'healthy' | 'hurt';
+
+/** When a boss turns `hurt` and what that opens (DEC-417). */
+type BossHurtPhaseDefinition = {
+  /** The boss turns `hurt` once its health falls below this share (0 to 1) of its max. */
+  readonly healthShare: number;
+  /** Ids of the profile's moves locked until the boss is `hurt`. */
+  readonly moveIds: readonly string[];
 };

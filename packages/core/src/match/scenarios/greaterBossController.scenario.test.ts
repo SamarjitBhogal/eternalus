@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 
+import { DamagePipeline } from '../../combat/DamagePipeline';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { GREATER_BOSS_PROFILE } from '../../content/ai/bosses/greaterBoss';
 import { MOB_DEFINITIONS } from '../../content/mobs/mobCatalogue';
@@ -15,10 +16,13 @@ import {
   stateOf,
   stepTo,
   theBoss,
+  toughen,
 } from './__fixtures__/greaterBossMatch';
 
 const PROFILE = GREATER_BOSS_PROFILE;
-const [SLAM] = PROFILE.moves;
+const [SLAM, SWEEP, , BEAM] = PROFILE.moves;
+/** The moves the boss may use only once it is hurt (DEC-417). */
+const HURT_MOVES: readonly string[] = PROFILE.hurtPhase.moveIds;
 /** Each move of the profile by id, for checking a landing against its own numbers. */
 const MOVES = new Map<string, (typeof PROFILE.moves)[number]>(
   PROFILE.moves.map((move) => [move.id, move]),
@@ -55,6 +59,12 @@ type Recording = {
   readonly roamGaps: number[];
   /** Every hit the boss dealt: tick, target, amount. */
   readonly hits: { readonly tick: number; readonly targetId: string; readonly amount: number }[];
+  /** Every phase change of the boss: tick, new phase, and its health share at that moment. */
+  readonly phaseChanges: {
+    readonly tick: number;
+    readonly to: string;
+    readonly healthShare: number;
+  }[];
   readonly hash: number;
 };
 
@@ -82,6 +92,7 @@ const record = (
   const landings: number[] = [];
   const landed: string[] = [];
   const hits: Recording['hits'] = [];
+  const phaseChanges: Recording['phaseChanges'] = [];
   simulation.on('boss-entrance', () => entrances.push(simulation.tick));
   simulation.on('boss-telegraph', () => telegraphs.push(simulation.tick));
   simulation.on('boss-move-executed', ({ move }) => {
@@ -92,6 +103,10 @@ const record = (
   const bossId = theBoss(simulation).id;
   simulation.on('damage-applied', ({ targetId, amount, source }) => {
     if (source.attackerId === bossId) hits.push({ tick: simulation.tick, targetId, amount });
+  });
+  simulation.on('boss-phase-changed', ({ to }) => {
+    const healthShare = stateOf(simulation).entities.healthFractionOf(bossId) ?? NaN;
+    phaseChanges.push({ tick: simulation.tick, to, healthShare });
   });
   const states: Recording['states'] = [];
   const fromCentre: number[] = [];
@@ -140,25 +155,38 @@ const record = (
     path,
     roamGaps,
     hits,
+    phaseChanges,
     hash: simulation.hash(),
   };
 };
 
-/** A fight: Light Warriors next to the boss, replaced as they die, so it keeps slamming. */
-const fight = (seed = 1): Recording => {
-  const spot = (centre: Vec2): Vec2 => ({ x: centre.x - (SLAM.radius - 0.5), y: centre.y });
+/** Where the Warriors of a fight stand around the boss: west, north, south. */
+const AROUND: readonly Vec2[] = [
+  { x: -1, y: 0 },
+  { x: 0, y: 1 },
+  { x: 0, y: -1 },
+];
+
+/**
+ * A fight: `count` Light Warriors (at most three) inside the slam's reach of the boss, replaced as
+ * they die, so it keeps striking. None of them hurts the boss.
+ */
+const fight = (seed = 1, count = 2): Recording => {
+  const gap = SLAM.radius - 0.5;
+  const spot = (centre: Vec2): Vec2 => ({ x: centre.x - gap, y: centre.y });
   let centreSeen: Vec2 = { x: 0, y: 0 };
   return record(
     (simulation, centre) => {
       centreSeen = centre;
-      spawnWarrior(simulation, spot(centre));
-      spawnWarrior(simulation, { x: centre.x, y: centre.y + (SLAM.radius - 0.5) });
+      for (const { x, y } of AROUND.slice(0, count)) {
+        spawnWarrior(simulation, { x: centre.x + x * gap, y: centre.y + y * gap });
+      }
     },
     {
       seed,
       each: (simulation) => {
         const alive = simulation.snapshot().entities.filter(({ kind }) => kind === 'warrior');
-        if (alive.length < 2) {
+        if (alive.length < count) {
           simulation.enqueueCommand({
             type: 'dev-spawn',
             kind: 'warrior',
@@ -170,6 +198,68 @@ const fight = (seed = 1): Recording => {
         }
       },
     },
+  );
+};
+
+/** How much each of the punisher's scripted hits deals: half the boss's health in about 11 s. */
+const PUNISH_HIT = 60;
+/**
+ * Punish: Warrior A stands inside the slam's reach and hits the boss every tick (a scripted hit
+ * through the damage pipeline); Warrior B stands nearer, a quarter turn off A's line. Neither dies.
+ */
+const punish = () => {
+  let attackerId = '';
+  let nearerId = '';
+  /** Each Warrior's distance from the boss when it telegraphs its first move. */
+  let firstGaps = { attacker: NaN, nearer: NaN };
+  const run = record(
+    (simulation, centre) => {
+      attackerId = spawnWarrior(simulation, { x: centre.x - (SLAM.radius - 0.5), y: centre.y });
+      nearerId = spawnWarrior(simulation, { x: centre.x, y: centre.y + 3.1 });
+      toughen(simulation, attackerId);
+      toughen(simulation, nearerId);
+      const bossId = theBoss(simulation).id;
+      simulation.on('boss-telegraph', () => {
+        if (!Number.isNaN(firstGaps.attacker)) return;
+        firstGaps = {
+          attacker: gapBetween(simulation, bossId, attackerId),
+          nearer: gapBetween(simulation, bossId, nearerId),
+        };
+      });
+    },
+    {
+      each: (simulation, bossId) => {
+        new DamagePipeline().apply(stateOf(simulation), bossId, PUNISH_HIT, {
+          attackerId,
+          kind: 'weapon',
+          definitionId: 'raptor-talons',
+        });
+      },
+    },
+  );
+  return { ...run, attackerId, nearerId, firstGaps };
+};
+
+/** A Legend that keeps its distance: one Light Warrior 12 m from the boss, inside the zone. */
+const kite = () => {
+  let kiterId = '';
+  const run = record((simulation, centre) => {
+    kiterId = spawnWarrior(simulation, { x: centre.x - 12, y: centre.y });
+  });
+  return { ...run, kiterId };
+};
+
+/** The distance between two entities; `NaN` when either is gone. */
+const gapBetween = (simulation: Simulation, from: string, to: string): number => {
+  const [a, b] = [positionOf(simulation, from), positionOf(simulation, to)];
+  return a === null || b === null ? NaN : Math.hypot(b.x - a.x, b.y - a.y);
+};
+
+/** Every unit that a landing of one of `moves` struck, each once. */
+const struckBy = (run: Recording, moves: readonly string[]): Set<string> => {
+  const ticks = run.landings.filter((_, at) => moves.includes(run.landed[at] ?? ''));
+  return new Set(
+    run.hits.filter(({ tick }) => ticks.includes(tick)).map(({ targetId }) => targetId),
   );
 };
 
@@ -290,10 +380,10 @@ describe('the Greater Boss on BossController: roam and slam (scenario, 11 §4.6)
     });
   });
 
-  it('uses all six moves in a fight, in profile order, one after another', () => {
-    const order = PROFILE.moves.map(({ id }) => id);
-    expect(fought.landed.length).toBeGreaterThanOrEqual(order.length);
-    expect(fought.landed).toEqual(fought.landed.map((_, at) => order[at % order.length]));
+  it('lands no wide sweep and no charge while it is healthy (DEC-417)', () => {
+    expect(fought.phaseChanges).toEqual([]);
+    expect(fought.landed.length).toBeGreaterThan(1);
+    expect(fought.landed.filter((move) => HURT_MOVES.includes(move))).toEqual([]);
   });
 
   it('never leaves the zone, roaming or fighting', () => {
@@ -348,33 +438,48 @@ describe('the Greater Boss slam lands where the boss stands (scenario)', () => {
     expect(run.hits.filter(({ tick }) => tick === firstLanding)).toEqual([]);
   }, 120_000);
 
-  it('stays inside the zone while it chases a Legend to the zone edge and past it', () => {
+  it('ignores a Legend that drew a move at its edge once it stands past it, and stays in', () => {
     let warriorId = '';
     let hasRun = false;
+    let outsideTick = Infinity;
+    let centreSeen: Vec2 = { x: 0, y: 0 };
     const run = record(
       (simulation, centre) => {
+        centreSeen = centre;
         warriorId = spawnWarrior(simulation, { x: centre.x - (ZONE - 2), y: centre.y });
+        // It outlives the boss's hits, so it stays where a boss that saw past its zone could
+        // reach it.
+        toughen(simulation, warriorId);
+        // The boss's beam reaches the zone's edge from where it stands (DEC-371 E7), so its first
+        // move needs no walk: the Legend runs out of the zone at that first telegraph.
+        simulation.on('boss-telegraph', () => {
+          if (hasRun) return;
+          hasRun = true;
+          simulation.enqueueCommand({
+            type: 'move',
+            actorId: warriorId,
+            direction: { x: -1, y: 0 },
+          });
+        });
       },
       {
-        // The Legend waits at the zone's edge until the boss comes for it, then runs out of the zone.
-        each: (simulation, bossId) => {
-          const boss = positionOf(simulation, bossId);
-          const warrior = positionOf(simulation, warriorId);
-          if (hasRun || boss === null || warrior === null) return;
-          if (Math.hypot(warrior.x - boss.x, warrior.y - boss.y) <= SLAM.range + 2) {
-            hasRun = true;
-            simulation.enqueueCommand({
-              type: 'move',
-              actorId: warriorId,
-              direction: { x: -1, y: 0 },
-            });
+        // Then it stands just past the edge, inside the beam's reach of a boss near the centre.
+        each: (simulation) => {
+          const at = positionOf(simulation, warriorId);
+          if (outsideTick !== Infinity || at === null) return;
+          if (Math.hypot(at.x - centreSeen.x, at.y - centreSeen.y) > ZONE + 2) {
+            outsideTick = simulation.tick;
+            simulation.enqueueCommand({ type: 'stop', actorId: warriorId });
           }
         },
       },
     );
 
-    // It chased: it walked out toward the Legend, but never past the zone's edge.
     expect(hasRun).toBe(true);
+    expect(outsideTick).toBeLessThan(Infinity);
+    // No move at the Legend past the edge: only units inside the zone are targets.
+    expect(run.telegraphs.filter((tick) => tick > outsideTick)).toEqual([]);
+    // It roamed far once the Legend had gone, but never past the zone's edge.
     expect(Math.max(...run.fromCentre)).toBeGreaterThan(ZONE / 2);
     expect(Math.max(...run.fromCentre)).toBeLessThanOrEqual(ZONE);
   }, 120_000);
@@ -422,5 +527,54 @@ describe('the Greater Boss entrance roar (scenario, reference 04)', () => {
 
   it('gives the same hash for the same seed', () => {
     expect(fight(2).hash).toBe(run.hash);
+  }, 120_000);
+});
+
+describe('the Greater Boss brain picks its move for the situation (scenario, DEC-371 E7, DEC-417)', () => {
+  let crowded: Recording;
+  let kited: ReturnType<typeof kite>;
+  let punished: ReturnType<typeof punish>;
+
+  beforeAll(() => {
+    crowded = fight(1, 3);
+    kited = kite();
+    punished = punish();
+  }, 240_000);
+
+  it('sweeps a crowd in melee, and never beams it', () => {
+    expect(crowded.landed).toContain(SWEEP.id);
+    expect(crowded.landed).not.toContain(BEAM.id);
+  });
+
+  it('opens on a Legend that keeps its distance with the beam, aimed at it', () => {
+    expect(kited.landed[0]).toBe(BEAM.id);
+    expect(struckBy(kited, [BEAM.id])).toEqual(new Set([kited.kiterId]));
+  });
+
+  it('beams the top damage dealer, never the unit that stands nearer', () => {
+    expect(punished.firstGaps.nearer).toBeLessThan(punished.firstGaps.attacker);
+    expect(punished.landed).toContain(BEAM.id);
+    expect(struckBy(punished, [BEAM.id])).toEqual(new Set([punished.attackerId]));
+  });
+
+  it('turns hurt once, on its first tick below half health, and only then lands a hurt move', () => {
+    const [change, ...more] = punished.phaseChanges;
+    const hurtLandings = punished.landings.filter((_, at) =>
+      HURT_MOVES.includes(punished.landed[at] ?? ''),
+    );
+
+    expect(more).toEqual([]);
+    expect(change?.to).toBe('hurt');
+    expect(change?.healthShare).toBeLessThan(PROFILE.hurtPhase.healthShare);
+    // One scripted hit lands between two ticks: the phase turns before the next one.
+    expect(change?.healthShare).toBeGreaterThanOrEqual(
+      PROFILE.hurtPhase.healthShare - PUNISH_HIT / BOSS.baseHealth,
+    );
+    expect(hurtLandings.length).toBeGreaterThan(0);
+    expect(Math.min(...hurtLandings)).toBeGreaterThan(change?.tick ?? Infinity);
+  });
+
+  it('gives the same hash for the same seed', () => {
+    expect(punish().hash).toBe(punished.hash);
   }, 120_000);
 });

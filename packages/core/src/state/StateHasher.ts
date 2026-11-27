@@ -1,5 +1,6 @@
 import { Aether } from '../components/Aether';
 import { BossMoveCast } from '../components/BossMoveCast';
+import { BossPhase } from '../components/BossPhase';
 import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
 import { ChaseWatch } from '../components/ChaseWatch';
@@ -12,6 +13,7 @@ import { Progression } from '../components/Progression';
 import { Veterancy } from '../components/Veterancy';
 import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
+import { ThreatLedger } from '../components/ThreatLedger';
 import { Transform } from '../components/Transform';
 import { INITIAL_FACING } from '../components/Transform.constants';
 import { Vision } from '../components/Vision';
@@ -177,6 +179,14 @@ export class StateHasher {
     const cast = entity.findComponent(BossMoveCast);
     if (cast !== undefined) {
       fields.push(['boss-move', ...cast.fields]);
+    }
+    const bossPhase = entity.findComponent(BossPhase);
+    if (bossPhase !== undefined) {
+      fields.push(['boss-phase', ...bossPhase.fields]);
+    }
+    const threat = entity.findComponent(ThreatLedger);
+    if (threat !== undefined) {
+      fields.push(['threat', ...threat.fields]);
     }
     const vision = entity.findComponent(Vision);
     if (vision !== undefined) {

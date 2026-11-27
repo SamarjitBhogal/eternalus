@@ -2,6 +2,7 @@ import type { CommandHandlers } from './CommandHandler.types';
 import { AttackTargetHandler } from './handlers/AttackTargetHandler';
 import { BossMoveHandler } from './handlers/BossMoveHandler';
 import { DevRemoveEntityHandler } from './handlers/DevRemoveEntityHandler';
+import { DevSetBossPhaseHandler } from './handlers/DevSetBossPhaseHandler';
 import { DevSpawnHandler } from './handlers/DevSpawnHandler';
 import { DevSpawnMobsHandler } from './handlers/DevSpawnMobsHandler';
 import { MoveHandler } from './handlers/MoveHandler';
@@ -28,6 +29,7 @@ export const createDefaultCommandHandlers = (
     'dev-spawn': new DevSpawnHandler(),
     'dev-spawn-mobs': new DevSpawnMobsHandler(),
     'dev-remove-entity': new DevRemoveEntityHandler(),
+    'dev-set-boss-phase': new DevSetBossPhaseHandler(),
     'dev-set-controller': unsupported, // TODO(sholtzman): with the controller registry (AI)
   };
 };

@@ -163,16 +163,17 @@ describe('BossController', () => {
     expect(decide(due).memory.roamX).not.toBe(due.roamX);
   });
 
-  it('telegraphs the slam on a target in range when roaming and off cooldown', () => {
+  it('telegraphs the move its tree picks, aimed at the target, when roaming', () => {
     const { state, boss, add, decide } = setUp();
-    add(HOME.x + SLAM.range - 0.5);
+    const warrior = add(HOME.x + SLAM.range - 0.5);
     const landTick = state.tick + 1 + ticks(SLAM.telegraphSeconds);
+    // Every move but the slam cooling, so the tree has one move to pick.
+    const cooling = Object.fromEntries(
+      PROFILE.moves.filter(({ id }) => id !== SLAM.id).map(({ id }) => [`ready:${id}`, 10_000]),
+    );
 
-    expect(decide({ fsm: 'roam' })).toMatchObject({
-      commands: [
-        { type: 'stop', actorId: boss },
-        { type: 'boss-move', actorId: boss, moveId: SLAM.id },
-      ],
+    expect(decide({ fsm: 'roam', ...cooling })).toMatchObject({
+      commands: [{ type: 'boss-move', actorId: boss, moveId: SLAM.id, targetId: warrior }],
       memory: {
         fsm: 'telegraph',
         moveId: SLAM.id,
@@ -215,28 +216,15 @@ describe('BossController', () => {
     expect(decide({ fsm: 'roam', [`ready:${SLAM.id}`]: landTick }).memory.fsm).toBe('telegraph');
   });
 
-  it('uses its moves in profile order, one after another, and starts again after the last', () => {
-    const { add, decide } = setUp();
-    add(HOME.x + SLAM.range - 0.5);
-    const cast: string[] = [];
-    let memory: AiMemory = { fsm: 'roam' };
-    for (let turn = 0; turn < PROFILE.moves.length + 1; turn += 1) {
-      const decision = decide(memory);
-      const command = decision.commands.find(({ type }) => type === 'boss-move');
-      cast.push(command?.type === 'boss-move' ? command.moveId : 'none');
-      // Back to roam with every move off cooldown, keeping the rotation's place.
-      memory = { fsm: 'roam', next: decision.memory.next ?? 0 };
-    }
-    expect(cast).toEqual([...PROFILE.moves.map(({ id }) => id), SLAM.id]);
-  });
+  it('walks toward the nearest target while no move of its tree is ready', () => {
+    const { boss, add, decide } = setUp();
+    add(HOME.x + 8);
+    add(HOME.x - 12);
+    const cooling = Object.fromEntries(PROFILE.moves.map(({ id }) => [`ready:${id}`, 10_000]));
 
-  it('holds the rotation on a move whose target is out of range, and walks instead', () => {
-    const { add, decide } = setUp();
-    add(HOME.x + SLAM.range + 1);
-    const decision = decide({ fsm: 'roam', next: 0 });
-
-    expect(decision.commands.map(({ type }) => type)).toEqual(['move']);
-    expect(decision.memory.next).toBe(0);
+    expect(decide({ fsm: 'roam', ...cooling }).commands).toEqual([
+      { type: 'move', actorId: boss, direction: { x: 1, y: 0 } },
+    ]);
   });
 
   it('chases a target in the zone but stops at the margin, and ignores one outside the zone', () => {

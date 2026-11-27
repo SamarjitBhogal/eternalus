@@ -1,4 +1,4 @@
-import type { BossMoveDefinition, BossProfileDefinition } from '../content/ai/ai.types';
+import type { BossProfileDefinition } from '../content/ai/ai.types';
 import type { AiMemory } from '../state/AiState.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
@@ -7,30 +7,35 @@ import type { Vec2 } from '../utils/geometry.types';
 import { SeededRandom } from '../utils/SeededRandom';
 import { TickRate } from '../utils/TickRate';
 import type { BossState, BossStep, BossTurn, BossZone } from './BossController.types';
+import { BossMoveChooser } from './BossMoveChooser';
+import type { BossTarget } from './BossMoveChooser.types';
 import type { Controller, Decision, DecisionInput } from './Controller.types';
 
 /**
  * Drives a boss (architecture 11 §4.6): the entrance (the GreaterBoss's roar), then `roam →
  * telegraph → execute → recover → roam`, one state per decision, so the order never skips one.
- * `roam` never stands still: it walks toward the nearest non-neutral unit inside the zone (clamped
- * to the zone), or else to a seeded random point inside the zone, a new one on arrival or every
- * `roamSeconds`. With a target inside a move's `range` and the move off cooldown, it stops and
- * sends `boss-move`, which telegraphs on the next tick and lands `telegraphSeconds` later
- * (`BossMoveSystem`); it stands through `telegraph`, `execute` and `recover`. The zone is its guard
- * post's circle (home edge plus leash). Stateless: its FSM, timers and roam point live in the
- * brain's memory.
- *
- * Interim (11 §4.6): moves rotate in profile order, one after another, so every move comes up (at
- * Aryan's request; INBOX: the rotation item); the next move waits, and the boss chases, until a
- * target is in its range and it is off cooldown. The utility and seeded weighted pick are not
- * built. The target is the nearest one, not the top recent damage dealer (INBOX: the bias has no
- * window or weight yet).
+ * In `roam` its situation tree (`BossMoveChooser`, DEC-371 E7) picks a move and a target: when it
+ * finds one, the boss sends `boss-move` aimed at that target: the move stops it, telegraphs on the
+ * next tick and lands `telegraphSeconds` later (`BossMoveSystem`); it stands through `telegraph`,
+ * `execute` and `recover`. Else `roam` never stands still: it walks toward the nearest non-neutral
+ * unit inside the zone (clamped to the zone), or else to a seeded random point inside the zone, a
+ * new one on arrival or every `roamSeconds`. The zone is its guard post's circle (home edge plus
+ * leash). Stateless: its FSM, timers, cooldowns and roam point live in the brain's memory.
  */
 export class BossController implements Controller {
   public readonly id = 'boss';
 
-  /** @param profiles - Every boss profile by id (`content/ai/bosses/`). */
-  public constructor(private readonly profiles: Readonly<Record<string, BossProfileDefinition>>) {}
+  private readonly choosers: ReadonlyMap<string, BossMoveChooser>;
+
+  /**
+   * @param profiles - Every boss profile by id (`content/ai/bosses/`).
+   * @throws Error when a profile's brain names a move it does not have (`BossMoveChooser`).
+   */
+  public constructor(private readonly profiles: Readonly<Record<string, BossProfileDefinition>>) {
+    this.choosers = new Map(
+      Object.values(profiles).map((profile) => [profile.id, new BossMoveChooser(profile)]),
+    );
+  }
 
   /** Whether `profileId` names a boss profile. */
   public hasProfile(profileId: string): boolean {
@@ -45,7 +50,8 @@ export class BossController implements Controller {
    */
   public decide({ state, entityId, brain, perception }: DecisionInput): Decision {
     const profile = this.profiles[brain.profileId];
-    if (profile === undefined) {
+    const chooser = this.choosers.get(brain.profileId);
+    if (profile === undefined || chooser === undefined) {
       throw new Error(`Entity "${entityId}" names boss profile "${brain.profileId}", unknown.`);
     }
     const zone = BossController.zoneOf(state, entityId);
@@ -56,7 +62,7 @@ export class BossController implements Controller {
     const { positions } = state.space;
     const rng = SeededRandom.fromState(brain.rngState);
     const rate = new TickRate(state.config.tickRate);
-    const { commands, memory } = BossController.step({
+    const { commands, memory } = BossController.step(chooser, {
       state,
       id: entityId,
       memory: brain.memory,
@@ -71,7 +77,7 @@ export class BossController implements Controller {
   }
 
   /** One FSM step: a timed state holds until its tick, then gives way to the next. */
-  private static step(turn: BossTurn): BossStep {
+  private static step(chooser: BossMoveChooser, turn: BossTurn): BossStep {
     const { state, memory, profile, ticks } = turn;
     const fsm = memory.fsm;
     const until = Number(memory.until ?? 0);
@@ -96,51 +102,34 @@ export class BossController implements Controller {
         memory: { ...memory, fsm: 'recover' satisfies BossState, until: recoverUntil },
       };
     }
-    return BossController.roam(turn);
+    return BossController.roam(chooser, turn);
   }
 
   /**
-   * `roam`: start a move on a target in range, else walk on (toward the target or a roam point). A
-   * boss just out of `entrance` or `recover` roams for one decision before it may start a move.
+   * `roam`: start the move the situation tree picks, else walk on (toward the nearest target or a
+   * roam point). A boss just out of `entrance` or `recover` roams for one decision before it may
+   * start a move.
    */
-  private static roam(turn: BossTurn): BossStep {
+  private static roam(chooser: BossMoveChooser, turn: BossTurn): BossStep {
     const { state, id, memory, profile, at, ticks } = turn;
-    const target = BossController.nearestTarget(turn);
-    const landTickOf = (move: BossMoveDefinition): number =>
-      state.tick + 1 + ticks(move.telegraphSeconds);
-    const turnIndex = Number(memory.next ?? 0) % profile.moves.length;
-    const candidate = profile.moves[turnIndex];
-    const move =
-      target === null ||
-      memory.fsm !== 'roam' ||
-      candidate === undefined ||
-      !BossController.isReady(
-        candidate,
-        BossController.gap(target, at),
-        landTickOf(candidate),
-        memory,
-      )
-        ? undefined
-        : candidate;
-    if (move !== undefined) {
-      const landTick = landTickOf(move);
+    const targets = BossController.targetsOf(turn);
+    const choice = memory.fsm === 'roam' ? chooser.choose(turn, targets) : null;
+    if (choice !== null) {
+      const { move, target, landTick } = choice;
       return {
-        commands: [
-          { type: 'stop', actorId: id },
-          { type: 'boss-move', actorId: id, moveId: move.id },
-        ],
+        commands: [{ type: 'boss-move', actorId: id, moveId: move.id, targetId: target.id }],
         memory: {
           ...memory,
           fsm: 'telegraph' satisfies BossState,
           moveId: move.id,
-          next: (turnIndex + 1) % profile.moves.length,
           until: landTick,
           [`ready:${move.id}`]: landTick + ticks(move.cooldownSeconds),
         },
       };
     }
     let next: AiMemory = { ...memory, fsm: 'roam' satisfies BossState };
-    let to = target === null ? null : BossController.clampToZone(target, turn);
+    const [nearest] = targets;
+    let to = nearest === undefined ? null : BossController.clampToZone(nearest.at, turn);
     if (to === null) {
       const point = { x: Number(memory.roamX), y: Number(memory.roamY) };
       const isDue =
@@ -159,38 +148,21 @@ export class BossController implements Controller {
     return { commands: [{ type: 'move', actorId: id, direction }], memory: next };
   }
 
-  /** Whether `move` may start on a target `distance` away, landing on `landTick`. */
-  private static isReady(
-    move: BossMoveDefinition,
-    distance: number,
-    landTick: number,
-    memory: AiMemory,
-  ): boolean {
-    const ready = memory[`ready:${move.id}`];
-    return distance <= move.range && (typeof ready !== 'number' || landTick >= ready);
-  }
-
-  /** The non-neutral living unit inside the zone nearest the boss; ties go to the lower id. */
-  private static nearestTarget({ state, zone, at, perception }: BossTurn): Vec2 | null {
+  /** The living non-neutral units inside the zone, nearest first; ties go to the lower id. */
+  private static targetsOf({ state, zone, at, perception }: BossTurn): BossTarget[] {
     const { space } = state;
-    if (space === null) {
-      return null;
-    }
-    let best: Vec2 | null = null;
-    let bestGap = Number.POSITIVE_INFINITY;
+    const targets: BossTarget[] = [];
     for (const id of perception.unitsWithin(zone, zone.radius, {
       hostileTo: 'neutral',
       aliveOnly: true,
     })) {
-      const index = space.indexOf(id);
-      if (index === undefined) continue;
+      const index = space?.indexOf(id);
+      if (space === null || index === undefined) continue;
       const point = { x: space.positions[2 * index] ?? 0, y: space.positions[2 * index + 1] ?? 0 };
-      if (BossController.gap(point, at) < bestGap) {
-        best = point;
-        bestGap = BossController.gap(point, at);
-      }
+      targets.push({ id, at: point, gap: BossController.gap(point, at) });
     }
-    return best;
+    // A stable sort keeps `unitsWithin`'s id order between equal gaps.
+    return targets.sort((a, b) => a.gap - b.gap);
   }
 
   /** A seeded random point inside the zone, `zoneMargin` from its edge (rejection sampling). */

@@ -5,6 +5,7 @@ import type { EntityId } from './EntityStore.types';
 import type { TeamState } from './GameState.types';
 import type { Horde } from './Horde.types';
 import type { DuelScore, ScheduledMark } from './MatchState.types';
+import type { BossPhaseId } from '../content/ai/ai.types';
 import type { MapObjectSnapshot } from '../content/maps/mapObjects.types';
 import type { Polygon } from '../utils/geometry.types';
 
@@ -20,6 +21,12 @@ export type EntitySnapshot = {
    * to its structure by identity, never by position.
    */
   readonly mapFeatureId?: string;
+  /**
+   * A boss's phase (`BossPhase`, DEC-417) and the tick it changed, so the client can play the
+   * phase cue for `tick - changedTick` ticks. `null` for an entity without one (a boss before its
+   * first hit or change, and every other entity).
+   */
+  readonly bossPhase: { readonly phase: BossPhaseId; readonly changedTick: number } | null;
   readonly id: EntityId;
   readonly kind: string;
   readonly family: string;

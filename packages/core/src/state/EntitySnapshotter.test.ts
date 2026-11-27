@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { BossPhase } from '../components/BossPhase';
 import { Capturable } from '../components/Capturable';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { ZoneArea } from '../components/ZoneArea';
@@ -57,6 +58,17 @@ describe('EntitySnapshotter', () => {
 
     expect(snapshotter.snapshotOf(house).mapObjectId).toBe('house-7');
     expect(snapshotter.snapshotOf(new Bare('entity-2', 'bare'))).not.toHaveProperty('mapObjectId');
+  });
+
+  it("gives a boss's phase and the tick it changed, and null before its first hit or change", () => {
+    const boss = new Bare('entity-1', 'greater-boss');
+    const snapshotter = new EntitySnapshotter(4, CURVES);
+    expect(snapshotter.snapshotOf(boss).bossPhase).toBeNull();
+
+    const phase = new BossPhase();
+    phase.enter('hurt', 42);
+    boss.addComponent(phase);
+    expect(snapshotter.snapshotOf(boss).bossPhase).toEqual({ phase: 'hurt', changedTick: 42 });
   });
 
   it('names the map feature a structure was built from, and leaves the key out for every other entity', () => {

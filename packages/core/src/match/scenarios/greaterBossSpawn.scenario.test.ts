@@ -4,7 +4,6 @@ import { DamagePipeline } from '../../combat/DamagePipeline';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { timelineFrameOf } from '../../config/timelineFrameOf';
 import { GREATER_BOSS_PROFILE } from '../../content/ai/bosses/greaterBoss';
-import { LEGEND_CLASSES } from '../../content/legends/legendCatalogue';
 import { MOB_DEFINITIONS } from '../../content/mobs/mobCatalogue';
 import { GUARD_LEASH } from '../../content/structures/guardLeash';
 import {
@@ -16,6 +15,7 @@ import {
   stateOf,
   stepTo,
   theBoss,
+  toughen,
 } from './__fixtures__/greaterBossMatch';
 
 const [SLAM] = GREATER_BOSS_PROFILE.moves;
@@ -109,32 +109,25 @@ describe('the Greater Boss spawns at the gem eruption (scenario, 12 §3)', () =>
     const { simulation, config, spawnTick, feature } = match();
     const zone = GUARD_LEASH.greaterBossZone;
     stepTo(simulation, spawnTick + 1);
-    const boss = theBoss(simulation);
     const warriorId = spawnWarrior(simulation, {
       x: feature.position.x - (zone - 4),
       y: feature.position.y,
     });
-    simulation.enqueueCommand({ type: 'attack-target', actorId: warriorId, targetId: boss.id });
+    // It lives through the boss's beams (DEC-371 E7), so it can get away.
+    toughen(simulation, warriorId);
     const fromCentre = (): number => {
       const at = theBoss(simulation).transform;
       return at === null ? NaN : Math.hypot(at.x - feature.position.x, at.y - feature.position.y);
     };
-    const gapToWarrior = (): number => {
-      const at = theBoss(simulation).transform;
-      const warrior = simulation.snapshot().entities.find(({ id }) => id === warriorId);
-      return at === null || warrior?.transform == null
-        ? Infinity
-        : Math.hypot(at.x - warrior.transform.x, at.y - warrior.transform.y);
-    };
     let farthest = 0;
-    // Just outside the slam's range (centre to centre), so the Legend turns before it is struck.
-    const runAway = SLAM.range + LEGEND_CLASSES.get('warrior').footprintRadius + 0.5;
-    // The boss walks out to the Legend; once it is close, the Legend backs out of the zone, faster
-    // than the boss, which chases it to the leash.
-    for (let tick = 0; tick < 15 * config.tickRate && gapToWarrior() > runAway; tick += 1) {
+    // The Legend waits inside the zone. The boss beams it from afar and walks out to it while the
+    // beam cools (DEC-371 E7): about 15 m in this time (13.4 m at 40 s).
+    const pullSeconds = 45;
+    for (let tick = 0; tick < pullSeconds * config.tickRate; tick += 1) {
       simulation.step();
       farthest = Math.max(farthest, fromCentre());
     }
+    // Then the Legend backs out of the zone, faster than the boss, which chases it to the leash.
     simulation.enqueueCommand({ type: 'move', actorId: warriorId, direction: { x: -1, y: 0 } });
     for (let tick = 0; tick < 10 * config.tickRate; tick += 1) {
       simulation.step();
@@ -142,11 +135,11 @@ describe('the Greater Boss spawns at the gem eruption (scenario, 12 §3)', () =>
     }
     const warrior = simulation.snapshot().entities.find(({ id }) => id === warriorId);
 
-    // The Legend got away, out of the zone; the boss followed it until it left the leash.
+    // The Legend got away, out of the zone; the boss followed it out, never past the edge.
     expect(warrior?.transform?.x).toBeLessThan(feature.position.x - 2 * zone);
     expect(farthest).toBeGreaterThan(zone / 2);
     expect(farthest).toBeLessThanOrEqual(zone);
-  });
+  }, 120_000);
 
   it('does not respawn once it dies', () => {
     const { simulation, config, spawnTick, feature } = match();
