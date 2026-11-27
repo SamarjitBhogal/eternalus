@@ -178,6 +178,10 @@ Reply inline (`Decision: …`).
       game code repeat the same few lines for it (the boss damage system, the entity store twice,
       out-of-combat healing and stuck detection). Three of them are outside this change, so it
       waits for its own small change.
+      (14) A developer-menu idea (not built; a reviewer marked it better than the design): the
+      menu now has three boxes where you type a unit's id (remove a unit, remove a Legend, set a
+      boss phase). One shared box would remove the copies. For the boss phase, the menu could
+      instead list the living bosses, so you pick one and type nothing. Do you want that list?
 
 - [ ] **The Greater Boss's sweep (Aryan Walanj, 2026-11-20, `feat/cathedral-boss-moves`).**
       balancing.md gives the sweep "cone knockback" (the MiniBoss row) and the GreaterBoss's light
@@ -195,7 +199,9 @@ Reply inline (`Decision: …`).
       to face the player its brain chose. Point (9) of the brain item asks you to confirm this.
   - **(5) and the telegraph in (3) answered 2026-11-26 by DEC-371 E9** (Owner Calls v98). The cone
     keeps pointing where the boss faces (as built), and the telegraph of both sweeps is 0.5 s.
-    Built in PR #164. The recover and the cooldown in (3) stay open.
+    Built in PR #164. The recover and the cooldown in (3) stay open. PR #187 (`feat/boss-brain`)
+    then turns the boss to face its target before the telegraph (the note above); point (9) of
+    the brain item asks you to confirm that turn.
 
 - [ ] **The Greater Boss's charge (Aryan Walanj, 2026-11-20, `feat/cathedral-boss-moves`).**
       balancing.md gives only the heavy move (0.45 × refHealth, 464, every 2.5 s), so these are

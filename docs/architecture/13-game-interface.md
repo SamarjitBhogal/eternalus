@@ -602,6 +602,10 @@ and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver
   event; with the memory adapter that is immediate, with IndexedDB (S2) it needs a boot-time wait
   or the `degraded` path of [14](14-persistence-and-resources.md) §10.
 
+Developer menu (2026-11-27, Boss phase): the menu also sets a boss's phase (DEC-417, PR #187).
+`DeveloperBossPhase` takes a boss's entity id and a phase (Hurt or Healthy) and sends one
+`dev-set-boss-phase`. Core refuses an entity that is not a living boss (the §4 row).
+
 Developer menu (2026-11-13, slice 2): the menu also adds a bot Legend of a selectable class to a
 team (`dev-spawn-legend { team, definitionId }`, at the Stronghold, Rover controller, refused at
 `maxLegendsPerTeam`), and removes one with `dev-remove-legend { entityId }`, refused for the
