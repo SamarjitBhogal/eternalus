@@ -20,7 +20,8 @@ const grantProblems = (
 
 /**
  * Checks, at boot, what a status names of the ability layer (architecture 05 §8): each `onHit` step
- * passes the registry's step check (a strategy for every kind, each step's own `validate`), and a
+ * passes the registry's step check as a step of an `onHit` list (a strategy for every kind, each
+ * step's own `validate`, a `hit` shape allowed, HC-B26 (5)), and a
  * `grants` id names an ability of slot kind `granted`. `loadStatusEffects` cannot: content does
  * not see the registry. `DefaultSystemPipeline` runs it where it loads the statuses.
  *
@@ -31,7 +32,7 @@ export const checkStatusLinks = (
   statuses: readonly StatusEffectDefinition[],
 ): void => {
   const problems = statuses.flatMap((status) => [
-    ...registry.checkSteps(`Status "${status.id}" onHit`, status.onHit ?? []),
+    ...registry.checkSteps(`Status "${status.id}" onHit`, status.onHit ?? [], { isOnHit: true }),
     ...grantProblems(registry, status),
   ]);
   if (problems.length > 0) {

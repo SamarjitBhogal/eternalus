@@ -13,6 +13,8 @@ export type PositionedSpawnContext<Definition extends DefinitionRef> = {
   /** The definition named by the entity's `definitionId`, matched to its kind by the factory. */
   readonly definition: Definition;
   readonly position: Vec2;
+  /** The spawn's start facing, when it gives one (`Placement.facing`; a placed Shield Wall). */
+  readonly facing?: Vec2;
 };
 
 /** A spawn context for entities that have a place in the world and a team. */
@@ -21,6 +23,4 @@ export type PlacedSpawnContext<Definition extends DefinitionRef> =
     readonly team: Team;
     /** The spawn's own controller, when it gives one (`Placement.controller`). */
     readonly controller?: ControllerSpawn;
-    /** The spawn's start facing, when it gives one (`Placement.facing`). */
-    readonly facing?: Vec2;
   };

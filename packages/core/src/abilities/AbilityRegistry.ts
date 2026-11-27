@@ -2,6 +2,7 @@ import type { AbilityDisplayStep } from '../content/loadDisplayContent';
 import { ContentValidationError } from '../content/ContentValidationError';
 import type { AbilityEffect, EffectStep } from './AbilityEffect.types';
 import type { AbilityRestriction } from './AbilityRestriction.types';
+import { CAST_STEPS } from './AbilityRegistry.constants';
 import type {
   Ability,
   AbilitySource,
@@ -10,7 +11,7 @@ import type {
 } from './AbilityRegistry.types';
 import { ComposedAbility } from './ComposedAbility';
 import { flattenSteps, shapeOf } from './effectSteps';
-import type { AreaShape } from './shapes/AreaShape.types';
+import type { AreaShape, StepList } from './shapes/AreaShape.types';
 import type { CastTargeting, TargetingSpec } from './targeting/CastTargeting.types';
 
 /**
@@ -181,12 +182,15 @@ export class AbilityRegistry {
 
   /**
    * Everything wrong with `steps` of `owner` (as `Status "fury" onHit`), every step nested in them
-   * included: kinds with no strategy, then each step's and each shape's own `validate` problems.
-   * The check composing an ability runs on its effects; `checkStatusLinks` runs it at boot on each
+   * included: kinds with no strategy, then each step's and each shape's own `validate` problems,
+   * each shape checked with the list that holds its step (HC-B26 (5)). The check composing an
+   * ability runs on its effects (not an `onHit` list); `checkStatusLinks` runs it at boot on each
    * status's `onHit` steps.
+   *
+   * @param list - The list `steps` form: `{ isOnHit: true }` for a status's `onHit`.
    */
-  public checkSteps(owner: string, steps: readonly EffectStep[]): string[] {
-    return this.problemsIn(owner, steps, []);
+  public checkSteps(owner: string, steps: readonly EffectStep[], list: StepList): string[] {
+    return this.problemsIn(owner, steps, list, []);
   }
 
   /**
@@ -202,7 +206,7 @@ export class AbilityRegistry {
       targeting === null || this.targetings.has(targeting.kind)
         ? []
         : [`targeting "${targeting.kind}"`];
-    return this.problemsIn(`Ability "${definition.id}"`, definition.effects, [
+    return this.problemsIn(`Ability "${definition.id}"`, definition.effects, CAST_STEPS, [
       ...missingRules,
       ...missingTargeting,
     ]);
@@ -215,9 +219,13 @@ export class AbilityRegistry {
   private problemsIn(
     owner: string,
     ownSteps: readonly EffectStep[],
+    list: StepList,
     missingElsewhere: readonly string[],
   ): string[] {
-    const steps = flattenSteps(ownSteps).map((step) => ({ step, shape: shapeOf(step) }));
+    const steps = flattenSteps(ownSteps, list).map((placed) => ({
+      ...placed,
+      shape: shapeOf(placed.step),
+    }));
     const missing = [
       ...steps.flatMap(({ step, shape }) => [
         ...(this.effects.has(step.kind) ? [] : [`effect "${step.kind}"`]),
@@ -225,9 +233,9 @@ export class AbilityRegistry {
       ]),
       ...missingElsewhere,
     ];
-    const invalid = steps.flatMap(({ step, shape }) => [
+    const invalid = steps.flatMap(({ step, list: holder, shape }) => [
       ...(this.effects.get(step.kind)?.validate(step) ?? []),
-      ...(shape === undefined ? [] : (this.shapes.get(shape.kind)?.validate(shape) ?? [])),
+      ...(shape === undefined ? [] : (this.shapes.get(shape.kind)?.validate(shape, holder) ?? [])),
     ]);
     return [
       ...(missing.length > 0

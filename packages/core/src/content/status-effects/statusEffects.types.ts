@@ -1,7 +1,14 @@
 import type { AbilityEffectSpec, AuthoredEffectSpec } from '../abilities/AbilityDefinition.types';
 
-/** A number a status scales: each reader asks `StatusEffects.multiplier(stat)` for one value. `aetherCost` multiplies what a cast costs (read by the cast path in the next slice). */
-export type StatusStat = 'moveSpeed' | 'attackSpeed' | 'damageDealt' | 'damageTaken' | 'aetherCost';
+/** A number a status scales: each reader asks `StatusEffects.multiplier(stat)` for one value. `aetherCost` multiplies what a cast costs (read by the cast path in the next slice). `size` scales the body's radius (`BodySizeSystem`). `acceleration` scales how fast the holder speeds up toward its heading, not how fast it slows down (`MovementSystem`; Berserk, DEC-382 (R5 B)). */
+export type StatusStat =
+  | 'moveSpeed'
+  | 'acceleration'
+  | 'attackSpeed'
+  | 'damageDealt'
+  | 'damageTaken'
+  | 'aetherCost'
+  | 'size';
 
 /**
  * A yes/no rule a status imposes. `cannot-cast` waits for `AbilitySystem` (phase 4);
@@ -14,6 +21,14 @@ export type StatusStat = 'moveSpeed' | 'attackSpeed' | 'damageDealt' | 'damageTa
  */
 export type StatusFlag =
   'cannot-move' | 'cannot-attack' | 'cannot-cast' | 'control-immune' | 'untargetable' | 'hidden';
+
+/**
+ * How a status steers its holder while it lasts, over every command, controller and pathing steer
+ * (Fear, DEC-203): `flee-source` runs straight away from the status's source. `cower` stands in
+ * place: the holder slows to a stop. One `StatusSteering` strategy per kind
+ * (`entities/strategies/defaultStrategyRegistry.ts`, `StatusSteeringSystem`).
+ */
+export type StatusSteeringKind = 'flee-source' | 'cower';
 
 /** Whether a status helps, hurts or transforms its target (architecture 05 section 8). */
 type StatusPolarity = 'buff' | 'debuff' | 'form';
@@ -85,6 +100,12 @@ type StatusEffectBase = {
    * absent = it does not.
    */
   readonly endsOnHit?: boolean;
+  /**
+   * The forms in which the status may steer its holder (Fear: run or cower, DEC-203, DEC-382
+   * (R3 D)); absent = it does not steer. Each application takes one form. With two or more,
+   * `StatusEffectApplier.apply` draws it from the match's seeded RNG; with one, it draws nothing.
+   */
+  readonly steering?: readonly StatusSteeringKind[];
 };
 
 /**
@@ -94,6 +115,12 @@ type StatusEffectBase = {
 export type AuthoredStatusEffect = StatusEffectBase & {
   /** `null` lasts until removed (`enraged`). */
   readonly durationSeconds: number | null;
+  /**
+   * The longest time an application lasts when its source gives no time of its own (Fear's 2 to
+   * 4 s, DEC-382 (R3 D)). Each such application then draws a whole tick count from
+   * `durationSeconds` to this. Absent = it always lasts `durationSeconds`.
+   */
+  readonly maxDurationSeconds?: number;
   /** 1 for `refresh`. */
   readonly maxStacks: number | 'structures-per-lane';
   readonly periodic: {
@@ -115,6 +142,8 @@ export type AuthoredStatusEffect = StatusEffectBase & {
 export type StatusEffectDefinition = StatusEffectBase & {
   /** `null` lasts until removed. */
   readonly durationTicks: number | null;
+  /** The longest drawn time (`maxDurationSeconds`), in ticks; absent = no draw. */
+  readonly maxDurationTicks?: number;
   readonly maxStacks: number;
   readonly periodic: {
     readonly everyTicks: number;

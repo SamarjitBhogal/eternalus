@@ -20,11 +20,13 @@ import { loadSpawnWaves } from '../content/structures/loadSpawnWaves';
 import { OPENING_WAVE } from '../content/structures/spawnWaves';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { StructureDefinition } from '../content/structures/structures.types';
+import { EntitySummoner } from '../entities/EntitySummoner';
 import { ProjectileLauncher } from '../entities/ProjectileLauncher';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import { AbilitySystem } from './AbilitySystem';
 import { AetherRegenSystem } from './AetherRegenSystem';
+import { BodySizeSystem } from './BodySizeSystem';
 import type { GameState } from '../state/GameState';
 import type { Rect } from '../utils/geometry.types';
 import { CaptureSystem } from './CaptureSystem';
@@ -53,15 +55,16 @@ import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue'
 import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
+import { StatusSteeringSystem } from './StatusSteeringSystem';
 import { SystemPipeline } from './SystemPipeline';
 
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
- * progress, the queued casts, aether regeneration, statuses, movement, collision (DEC-121 (c):
- * every later reader sees resolved positions), the neighbour index, stuck detection (DEC-193),
- * steering, the shots in flight, combat, map destruction, progression (kill XP), minion veterancy,
- * structure losses and breakability, spawning, enraging, out-of-combat healing (DEC-188), death,
- * capture points, the match director, then invariants last. Combat runs after movement, so a unit
+ * progress, the queued casts, aether regeneration, statuses, body sizes, status steering, movement, collision
+ * (DEC-121 (c): every later reader sees resolved positions), the neighbour index, stuck detection
+ * (DEC-193), steering, the shots in flight, combat, map destruction, progression (kill XP), minion
+ * veterancy, structure losses and breakability, spawning, enraging, out-of-combat healing
+ * (DEC-188), death, capture points, the match director, then invariants last. Combat runs after movement, so a unit
  * with a target in reach faces it, not its own way (DEC-192). This is the one place a system is
  * added, at its position in the tick (architecture 02 §9). It builds the match's one
  * `DamagePipeline` and one `StatusEffectApplier` (with the status effects loaded for this match's
@@ -69,8 +72,8 @@ import { SystemPipeline } from './SystemPipeline';
  * that need them, so a damage step applies to every hit and every status event comes from one
  * place. What a landed shot does is one `ProjectileImpact` per impact kind, from
  * `createDefaultProjectileImpacts`; the match's one `EntityFactory` builds the shots `CombatSystem`
- * fires and the units `SpawnSystem` spawns, and through one `ProjectileLauncher` the shots
- * abilities throw.
+ * fires and the units `SpawnSystem` spawns, through one `ProjectileLauncher` the shots
+ * abilities throw and through one `EntitySummoner` the bodies they place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
@@ -97,8 +100,14 @@ export class DefaultSystemPipeline extends SystemPipeline {
     );
     checkStatusLinks(abilities, statusEffects.all());
     const statuses = new StatusEffectApplier(statusEffects);
-    const launcher = new ProjectileLauncher(factory);
-    const hits = new HitEffects(abilities, damage, statuses, launcher);
+    const steps = {
+      damage,
+      statuses,
+      launcher: new ProjectileLauncher(factory),
+      summoner: new EntitySummoner(factory),
+    };
+    const hits = new HitEffects(abilities, steps);
+    const strategies = createDefaultStrategyRegistry();
     const flowFields =
       hordes === undefined || state.world === null
         ? null
@@ -107,6 +116,10 @@ export class DefaultSystemPipeline extends SystemPipeline {
             state.world.definition,
             map.flowFieldCorridorHalfWidth,
           );
+    // A wall placed or removed during the match changed these cells (07 §10).
+    state.events.on('terrain-changed', ({ cells }) => {
+      flowFields?.markDirty(cells);
+    });
     const world = state.world?.grid ?? null;
     const features = state.world?.definition.features ?? [];
     if (world !== null && state.worldObjects !== undefined) {
@@ -129,10 +142,14 @@ export class DefaultSystemPipeline extends SystemPipeline {
     }
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
-      new AbilitySystem(abilities, validator, damage, statuses, launcher),
+      new AbilitySystem(abilities, validator, steps),
       // After the casts, so a cast spends before the tick's regeneration (plan arch call 13).
       new AetherRegenSystem(AETHER_REGEN, tickRate),
       new StatusEffectSystem(state, damage, statuses),
+      // After the statuses, so a size takes effect in the tick its status starts or ends.
+      new BodySizeSystem(),
+      // After the AI, the commands and the statuses of this tick, before the walking it steers.
+      new StatusSteeringSystem(strategies.steering),
       new MovementSystem(),
       ...(hordes?.collisions ?? []),
       ...(hordes === undefined
@@ -140,16 +157,14 @@ export class DefaultSystemPipeline extends SystemPipeline {
         : [
             ...(hordes.space === null ? [] : [new SpaceSystem(hordes.space)]),
             new StuckSystem(loadStuckDetection(tickRate)),
-            new PathingSystem(
-              createDefaultStrategyRegistry().movement,
-              FORMATIONS,
-              HORDE_STEERING.slotArrivalRadius,
-              { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state, structures) },
-            ),
+            new PathingSystem(strategies.movement, FORMATIONS, HORDE_STEERING.slotArrivalRadius, {
+              flowFields,
+              forts: DefaultSystemPipeline.fortBoxesOf(state, structures),
+            }),
           ]),
       // Before combat, so a shot fired this tick flies a tick before it can land.
       new ProjectileSystem(createDefaultProjectileImpacts(damage, hits, hits)),
-      new CombatSystem({ damage, factory, hits }),
+      new CombatSystem({ damage, factory, hits, strategies }),
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),

@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-26
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -180,6 +180,7 @@ invariant `finite-transforms` checks the position and the facing
 | `Spawner`       | `spawnTableId`, `intervalTicks`, `nextSpawnTick`, `guardIds`                                                                           | next spawn ≥ current tick                                                                                                                 | `isDue(tick)`, `schedule(tick)`                                                                    |
 | `Capturable`    | `owner`, `progress`, `checkpoint`, `lockedBy`, `presence`, each side's reached checkpoint                                              | `-1 <= progress <= 1`; `0 <= checkpoint <= ` the configured count (checked by `CaptureProgressBoundsInvariant`)                           | `setProgress`, `setOwner` (clears the checkpoints each side reached), `setPresence`, `markReached` |
 | `ZoneArea`      | `polygons` (the building's floor, world units)                                                                                         | at least one polygon of at least 3 finite points                                                                                          | `contains(point)`, `reachFrom(center)`                                                             |
+| `Summoned`      | `ownerId` (the caster that placed the body: a Shield Wall, 05 §3 `summon`, DEC-382)                                                    | fixed at placing; added before the body joins the match                                                                                   | none (read-only)                                                                                   |
 
 Cross-component calls go through the entity (`entity.get(Team)`), not through a global lookup.
 Pairs that are always used together (`Combat` and `Movement`) may hold a direct reference,
@@ -412,6 +413,19 @@ session or phase named:
 spawn and land. `RangedProjectileAttackStrategy` creates each one through `EntityFactory`
 (`AttackContext.factory`), and `ProjectileSystem` removes it with cause `consumed`. Each shot is
 a new entity, with no pool (§11, signed off as DEC-309). Particles are unchanged.
+
+**Implementation status, 2026-11-23 (branch `feat/sentinel-kit`, lane B PR 6; the Sentinel
+kit).** `Transform.radius` is the built radius times a scale, and `Transform.resize` alone changes
+the scale (Berserk's `size` stat, `systems/BodySizeSystem`). A unit definition may list
+`statusImmunities`, the statuses the unit never gets (DEC-207); `StatusEffects` keeps the list.
+The strategy registry has a `steering` key: one `StatusSteering` strategy per status `steering`
+form (`FleeSourceSteeringStrategy` for Fear's `flee-source`, `CowerSteeringStrategy` for its
+`cower`, DEC-382 (R3 D)). `entities/EntitySummoner` puts a
+summoned body (a Shield Wall) into the match through the one `EntityFactory`, behind the
+`Summoner` port in `state/`, as `ProjectileLauncher` does for shots. `entities/isCollisionMover`
+is the one test of which units walls stop (DEC-363). Details:
+[05 §18](05-abilities-weapons-and-loadouts.md#18-implementation-status), "Berserk", "Shield
+Wall" and "Rip & Tear and Fear".
 
 ## Related
 

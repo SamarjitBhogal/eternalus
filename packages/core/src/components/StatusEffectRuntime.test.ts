@@ -96,6 +96,24 @@ describe('StatusEffectRuntime', () => {
     expect(short.expiresTick).toBe(115);
   });
 
+  it('takes the form each application gives, the first form when none is given (DEC-382 (R3 D))', () => {
+    const feared = LOADED.get('feared');
+    const stun = LOADED.get('stun');
+    const runtime = new StatusEffectRuntime(feared).start(feared, 'a', 0, undefined, 'cower');
+    expect(runtime.steering).toBe('cower');
+
+    runtime.reapply('b', 10, undefined, 'flee-source');
+    expect(runtime.steering).toBe('flee-source');
+    runtime.reapply('b', 20, undefined, 'cower');
+    expect(runtime.steering).toBe('cower');
+    runtime.reapply('b', 30);
+    expect(runtime.steering).toBe('flee-source');
+
+    expect(new StatusEffectRuntime(feared).start(feared, 'a', 0).steering).toBe('flee-source');
+    // A pooled instance reused for a status that does not steer has no form.
+    expect(runtime.start(stun, 'a', 40).steering).toBeNull();
+  });
+
   it('stays permanent when a permanent status is reapplied with an override', () => {
     const enraged = LOADED.get('enraged');
     const runtime = new StatusEffectRuntime(enraged).start(enraged, 'a', 0);

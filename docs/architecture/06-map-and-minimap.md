@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-21
+last-reviewed: 2026-11-23
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -620,6 +620,13 @@ seams, runes and emitter artwork for the existing turret features. `MapDecoratio
 suppresses the main view's plain feature marker; explicit object ownership removes the correct
 panel artwork when its wall segment dies. The minimap retains its generated feature markers.
 All decoration stays in the existing render layers and adds no new shield-immunity mechanic.
+
+### 2026-11-23 — Walls placed during the match (lane B PR 6, `feat/sentinel-kit`)
+
+The `terrain-changed` event exists (the 2026-10-30 amendment above expected it in Phase 2
+sprint 2.5). A wall placed during the match (a Shield Wall) reports its cells with it
+(`map/RuntimeWalls`, [10](10-physics.md) §12). A destroyed map object still clears its cells and
+marks the lane fields dirty directly (`INBOX.md` HC-B43 (2)).
 
 ## Related
 

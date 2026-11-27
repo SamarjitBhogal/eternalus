@@ -1,4 +1,5 @@
 import { loadKnockback } from '../content/abilities/loadKnockback';
+import { OBSTACLE_DEFINITIONS } from '../content/obstacles/obstacleCatalogue';
 import { PROJECTILES } from '../content/projectiles/projectileCatalogue';
 import { STATUS_EFFECTS } from '../content/status-effects/statusEffectCatalogue';
 import { AbilityRegistry } from './AbilityRegistry';
@@ -7,10 +8,13 @@ import { BuffEffect } from './effects/BuffEffect';
 import { DamageEffect } from './effects/DamageEffect';
 import { DashEffect } from './effects/DashEffect';
 import { DebuffEffect } from './effects/DebuffEffect';
+import { ExecuteEffect } from './effects/ExecuteEffect';
 import { KnockbackEffect } from './effects/KnockbackEffect';
 import { ProjectileEffect } from './effects/ProjectileEffect';
+import { SummonEffect } from './effects/SummonEffect';
 import { MinLevelRestriction } from './restrictions/MinLevelRestriction';
 import { CircleShape } from './shapes/CircleShape';
+import { ConeShape } from './shapes/ConeShape';
 import { HitShape } from './shapes/HitShape';
 import { PathShape } from './shapes/PathShape';
 import { DirectionalTargeting } from './targeting/DirectionalTargeting';
@@ -26,9 +30,11 @@ import { SelfTargeting } from './targeting/SelfTargeting';
  *
  * @param abilities - The loaded abilities (`loadAbilities`).
  * @param tickRate - Ticks per second (`GameConfig.tickRate`), for the knock-back's travel time
- *   (`loadKnockback`).
- * @param statuses - The statuses a debuff or a buff may name; the shipped ones by default.
+ *   (`loadKnockback`). The knock-back's impact damage also goes to the summon step.
+ * @param statuses - The statuses a debuff or a buff may name, and a buff's `size` modifiers; the
+ *   shipped ones by default.
  * @param projectiles - The projectiles a shot step may name; the shipped ones by default.
+ * @param bodies - The bodies a summon step may place; the shipped obstacles by default.
  * @throws ContentValidationError when the knock-back tuning is invalid (`loadKnockback`), or
  *   listing every ability that names a kind with no line here or has a step or shape its strategy
  *   refuses.
@@ -36,19 +42,24 @@ import { SelfTargeting } from './targeting/SelfTargeting';
 export const createDefaultAbilityRegistry = (
   abilities: AbilitySource,
   tickRate: number,
-  statuses: { has(id: string): boolean } = STATUS_EFFECTS,
+  statuses: ConstructorParameters<typeof BuffEffect>[0] = STATUS_EFFECTS,
   projectiles: ConstructorParameters<typeof ProjectileEffect>[0] = PROJECTILES,
+  bodies: ConstructorParameters<typeof SummonEffect>[0] = OBSTACLE_DEFINITIONS,
 ): AbilityRegistry => {
   const registry = new AbilityRegistry(abilities);
+  const knockback = loadKnockback(tickRate);
   registry.registerEffect(new DamageEffect());
   registry.registerEffect(new DebuffEffect(statuses));
-  registry.registerEffect(new KnockbackEffect(loadKnockback(tickRate)));
+  registry.registerEffect(new KnockbackEffect(knockback));
   registry.registerEffect(new DashEffect());
   registry.registerEffect(new BuffEffect(statuses));
   registry.registerEffect(new ProjectileEffect(projectiles));
+  registry.registerEffect(new SummonEffect(bodies, knockback.impactDamage));
+  registry.registerEffect(new ExecuteEffect());
   registry.registerShape(new CircleShape());
   registry.registerShape(new PathShape());
   registry.registerShape(new HitShape());
+  registry.registerShape(new ConeShape());
   registry.registerTargeting(new SelfTargeting());
   registry.registerTargeting(new DirectionalTargeting());
   registry.registerTargeting(new HeadingTargeting());

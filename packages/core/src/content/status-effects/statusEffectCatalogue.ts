@@ -1,10 +1,12 @@
 import { ContentCatalogue } from '../ContentCatalogue';
+import { BERSERK } from './berserk';
 import { BLEED } from './bleed';
 import { BLIND } from './blind';
 import { CONCUSSION } from './concussion';
 import { CONTROL_IMMUNE } from './controlImmune';
 import { CRUSHED } from './crushed';
 import { ENRAGED } from './enraged';
+import { FEARED } from './feared';
 import { FURY } from './fury';
 import { FURY_WINDUP } from './furyWindup';
 import { INVISIBLE } from './invisible';
@@ -15,7 +17,7 @@ import { STAGGERED } from './staggered';
 import { STUN } from './stun';
 import { VETERAN } from './veteran';
 
-/** Every status effect as authored (the MVP set of phase 2 sprint 2.2, then the knock-back statuses of the ability framework, then the Vanguard's buffs, its dash's wind-up and Veil's `invisible`). A new status is a file and a line here; `loadStatusEffects` turns them into definitions. */
+/** Every status effect as authored (the MVP set of phase 2 sprint 2.2, then the knock-back statuses of the ability framework, then the Vanguard's buffs, its dash's wind-up and Veil's `invisible`, then the Sentinel's `berserk` and Fear). A new status is a file and a line here; `loadStatusEffects` turns them into definitions. */
 export const STATUS_EFFECTS = new ContentCatalogue<AuthoredStatusEffect>([
   BLEED,
   CONCUSSION,
@@ -31,4 +33,6 @@ export const STATUS_EFFECTS = new ContentCatalogue<AuthoredStatusEffect>([
   FURY,
   FURY_WINDUP,
   INVISIBLE,
+  BERSERK,
+  FEARED,
 ]);

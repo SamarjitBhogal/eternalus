@@ -2,6 +2,8 @@ import type { Renderer } from '../engine/render/Renderer';
 import type { GlyphSpec } from '../engine/render/Renderer.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
 import {
+  BODY_OUTLINE_EDGE_COLOR,
+  BODY_OUTLINE_EDGE_WIDTH,
   FOCUS_RING_COLOR,
   FOCUS_RING_SCALE,
   MINI_MAP_OUTLINE_COLORS,
@@ -12,15 +14,21 @@ import { TEAM_COLORS } from './MapView.constants';
 
 /**
  * The view for any entity without a view of its own: a disc of its footprint radius in its
- * team's colour, and a ring when the player controls it. It has no mini map marker; a subclass
- * that sets `minimapGlyph` gets one.
+ * team's colour, and a ring when the player controls it. A body whose snapshot carries an
+ * `outline` (an obstacle placed during the match, a Shield Wall) is that outline instead, filled in
+ * its team's colour with a dark edge. It has no mini map marker; a subclass that sets
+ * `minimapGlyph` gets one.
  */
 export class DefaultEntityView implements EntityView {
   /** The marker on the mini map, or `null` for none (only Legends and mobs have one, DEC-187). */
   protected readonly minimapGlyph: GlyphSpec | null = null;
 
-  /** Draws the team-coloured disc, and the focus ring when focused. */
+  /** Draws the team-coloured disc (or outline), and the focus ring when focused. */
   public draw({ entity, position, isFocused }: EntityDrawState, renderer: Renderer): void {
+    if (entity.outline !== undefined) {
+      this.drawOutline(entity, renderer);
+      return;
+    }
     const diameter = (entity.transform?.radius ?? 0) * 2;
     renderer.drawWorldGlyph({ shape: 'dot', size: diameter }, position, this.colorOf(entity.team));
     if (isFocused) {
@@ -42,6 +50,16 @@ export class DefaultEntityView implements EntityView {
     const outline = { shape: glyph.shape, size: glyph.size + MINI_MAP_OUTLINE_WIDTH * 2 };
     renderer.drawGlyph(outline, position, MINI_MAP_OUTLINE_COLORS[entity.team ?? 'neutral']);
     renderer.drawGlyph(glyph, position, this.colorOf(entity.team));
+  }
+
+  /** Fills each polygon of the entity's outline in its team's colour and edges it. */
+  private drawOutline(entity: EntityDrawState['entity'], renderer: Renderer): void {
+    for (const polygon of entity.outline ?? []) {
+      const [first] = polygon;
+      if (first === undefined) continue;
+      renderer.fillPolygon(polygon, this.colorOf(entity.team));
+      renderer.strokePath([...polygon, first], BODY_OUTLINE_EDGE_COLOR, BODY_OUTLINE_EDGE_WIDTH);
+    }
   }
 
   /** The colour of `team`, or the neutral colour for no team or `neutral`. */

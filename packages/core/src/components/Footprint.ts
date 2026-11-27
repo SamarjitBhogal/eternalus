@@ -4,7 +4,8 @@ import type { Outline } from './Outline.types';
 /**
  * The exact ground a structure stands on, as world-space polygons: a lane tower's fort walls,
  * corner towers and keep, the Stronghold's palace outline, or a gate's outline (DEC-217 (17)),
- * from the map object of the same id (07 §1, the definition's `hasMapFootprint`). Attack reach to
+ * from the map object of the same id (07 §1, the definition's `hasMapFootprint`); or a placed
+ * obstacle's outline (a Shield Wall, `ObstacleDefinition.footprint`), which is solid. Attack reach to
  * the structure is measured to these outlines instead of its collider circle, so a melee hit on
  * the fort is a hit on the tower (DEC-185) and melee at the palace wall reaches the Stronghold
  * (DEC-185 D); a chase closes on their nearest point, or holds inside them

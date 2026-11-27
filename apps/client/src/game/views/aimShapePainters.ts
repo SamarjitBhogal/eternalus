@@ -3,39 +3,51 @@ import type { Vec2 } from '@eternalus/core';
 import type { Renderer } from '../engine/render/Renderer';
 import {
   AIM_CIRCLE_SEGMENTS,
-  AIM_OVERLAY_FILL_COLOR,
-  AIM_OVERLAY_OUTLINE_COLOR,
+  AIM_CONE_CIRCLE_COLORS,
+  AIM_CONE_FAN_COLORS,
+  AIM_FULL_TURN_DEGREES,
+  AIM_OVERLAY_COLORS,
   AIM_OVERLAY_OUTLINE_WIDTH,
+  AIM_REFUSED_COLORS,
 } from './AimOverlayView.constants';
-import type { ShapePainters } from './AimOverlayView.types';
+import type { AimAreaColors, ShapePainters } from './AimOverlayView.types';
 
-/** Fills a closed outline and strokes it. */
-function paint(corners: readonly Vec2[], renderer: Renderer): void {
+/** Fills a closed outline and strokes it, in `colors`. */
+function paint(
+  corners: readonly Vec2[],
+  renderer: Renderer,
+  colors: AimAreaColors = AIM_OVERLAY_COLORS,
+): void {
   const [first] = corners;
   if (first === undefined) return;
-  renderer.fillPolygon(corners, AIM_OVERLAY_FILL_COLOR);
-  renderer.strokePath([...corners, first], AIM_OVERLAY_OUTLINE_COLOR, AIM_OVERLAY_OUTLINE_WIDTH);
+  renderer.fillPolygon(corners, colors.fill);
+  renderer.strokePath([...corners, first], colors.outline, AIM_OVERLAY_OUTLINE_WIDTH);
+}
+
+/** The corners of an arc of `radius` around `centre`, from angle `from` over `sweep` radians. */
+function arcCorners(centre: Vec2, radius: number, from: number, sweep: number): Vec2[] {
+  const segments = Math.max(1, Math.ceil((AIM_CIRCLE_SEGMENTS * Math.abs(sweep)) / (2 * Math.PI)));
+  const isClosed = Math.abs(sweep) >= 2 * Math.PI;
+  return Array.from({ length: isClosed ? segments : segments + 1 }, (_, corner) => {
+    const angle = from + (sweep * corner) / segments;
+    return { x: centre.x + radius * Math.cos(angle), y: centre.y + radius * Math.sin(angle) };
+  });
 }
 
 /**
  * The painters of the range overlay, one per shape kind (05 §3, §15): a circle on the frame's
- * circle centre, a path as the rectangle the dash sweeps (the dash's length by the path's width).
- * A `hit` shape (a status's on-hit step, Fury, or a shot's, Hamstring) is never aimed, so it
- * draws nothing.
+ * circle centre, a path as the rectangle the dash sweeps (the dash's length by the path's width),
+ * a cone as its fan from the caster toward the pointer in darker blue, or, at a full turn, the
+ * circle of its range in lighter blue (DEC-206 (3)); a cone's reach counts from the caster's body
+ * edge (DEC-319). An `outline` is the body a step places (Shield Wall): the painter draws the
+ * outline core placed (`AimFrame.placed`), in the refused colours where the cast is refused. It
+ * draws nothing when core placed no outline (the pointer is on the caster). A `hit` shape
+ * (a status's on-hit step, Fury, or a shot's, Hamstring) is never aimed, so it draws nothing.
  */
 export const AIM_SHAPE_PAINTERS: ShapePainters = {
   hit: () => undefined,
   circle: ({ radius }, { circleCentre }, renderer) => {
-    paint(
-      Array.from({ length: AIM_CIRCLE_SEGMENTS }, (_, corner) => {
-        const angle = (2 * Math.PI * corner) / AIM_CIRCLE_SEGMENTS;
-        return {
-          x: circleCentre.x + radius * Math.cos(angle),
-          y: circleCentre.y + radius * Math.sin(angle),
-        };
-      }),
-      renderer,
-    );
+    paint(arcCorners(circleCentre, radius, 0, 2 * Math.PI), renderer);
   },
   path: ({ width }, { origin, direction, pathLength }, renderer) => {
     if (pathLength === null || (direction.x === 0 && direction.y === 0)) return;
@@ -50,5 +62,20 @@ export const AIM_SHAPE_PAINTERS: ShapePainters = {
       ],
       renderer,
     );
+  },
+  outline: (_shape, { placed }, renderer) => {
+    if (placed === null) return;
+    paint(placed.outline, renderer, placed.isBlocked ? AIM_REFUSED_COLORS : AIM_OVERLAY_COLORS);
+  },
+  cone: ({ reach, arcDegrees }, { origin, casterRadius, direction }, renderer) => {
+    const radius = casterRadius + reach;
+    if (arcDegrees >= AIM_FULL_TURN_DEGREES) {
+      paint(arcCorners(origin, radius, 0, 2 * Math.PI), renderer, AIM_CONE_CIRCLE_COLORS);
+      return;
+    }
+    if (direction.x === 0 && direction.y === 0) return;
+    const sweep = (arcDegrees * Math.PI) / 180;
+    const from = Math.atan2(direction.y, direction.x) - sweep / 2;
+    paint([origin, ...arcCorners(origin, radius, from, sweep)], renderer, AIM_CONE_FAN_COLORS);
   },
 };

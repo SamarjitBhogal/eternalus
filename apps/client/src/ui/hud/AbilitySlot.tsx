@@ -29,12 +29,20 @@ const LOOK_STATE: Readonly<Record<HudSlotLook, (reason: HudBlockReason | null) =
 };
 
 /**
+ * The reasons a slot also shows as a small prompt above it, because nothing else on the HUD shows
+ * them: Berserk without room for its grown body ("Not enough space", DEC-382, `INBOX.md` HC-Q113).
+ * The cooldown fill, the aether bar and the meter show the other reasons.
+ */
+const PROMPTED_REASONS: ReadonlySet<HudBlockReason> = new Set(['no-room']);
+
+/**
  * One ability or gadget slot (05 §15; the same path for gadgets, 05 §11), with OD-9's looks: the
  * gold glow when ready, the red vertical gradient while cooling down, filled from the bottom by
  * the share of the cooldown still to run (the cooldown sweep 13 §3 asks for, as a vertical fill),
  * the plain frame when blocked (icon dimmed), the hatch before any data. The icon comes from the
  * class kit and every slot shows the `KeyGlyph` of its action (FR-081). The slot selected for aiming is outlined
- * (`isAiming`); a slot with no effects yet reads `Not yet available`. `className` places it.
+ * (`isAiming`); a slot with no effects yet reads `Not yet available`. A reason in
+ * `PROMPTED_REASONS` also shows as text above the slot while it holds. `className` places it.
  */
 export function AbilitySlot({
   slot,
@@ -48,6 +56,10 @@ export function AbilitySlot({
   const view = useAppSelector((state) => selectHudSlotView(state, slot), shallowEqual);
   const isBlocked =
     view.look === 'idle' && view.blockedBy !== null && view.blockedBy !== 'empty-slot';
+  const prompt =
+    view.blockedBy !== null && PROMPTED_REASONS.has(view.blockedBy)
+      ? STRINGS.hud.blockedBy[view.blockedBy]
+      : null;
   return (
     <div
       role="group"
@@ -73,6 +85,12 @@ export function AbilitySlot({
       <span className={styles.glyph}>
         <KeyGlyph action={slot} appearance="hud" />
       </span>
+      {prompt !== null && (
+        // The slot's name already says it (`LOOK_STATE`), so a screen reader does not read it twice.
+        <span className={styles.prompt} aria-hidden="true">
+          {prompt}
+        </span>
+      )}
     </div>
   );
 }

@@ -8,9 +8,11 @@ import type { WorldLayer } from './SceneView.types';
  * effect steps, drawn in the world around the player's Legend. A caster-centred ability shows a
  * circle on the caster whatever the pointer does; a dash shows its path from the caster toward the
  * pointer, as far as the dash will really go (a wall stops it), and the circles of the steps that
- * run at its end. `Match` builds what it shows (`AimTargeting`): the view only reads that target
- * and draws nothing without one (always the case in quick-cast mode). Each shape kind is one
- * painter (`AIM_SHAPE_PAINTERS`).
+ * run at its end; a cone shows its fan toward the pointer (Rip & Tear, DEC-206 (3)); an outline
+ * shows the body a step places where it will stand (Shield Wall), in red where the cast is refused
+ * because the body cannot stand there (DEC-382, HC-B43 (7)). `Match` builds what it shows
+ * (`AimTargeting`): the view only reads that target and draws nothing without one (always the
+ * case in quick-cast mode). Each shape kind is one painter (`AIM_SHAPE_PAINTERS`).
  */
 export class AimOverlayView implements WorldLayer {
   private target: AimTarget | null = null;
@@ -29,10 +31,17 @@ export class AimOverlayView implements WorldLayer {
    */
   public draw(renderer: Renderer): void {
     if (this.target === null) return;
-    const { origin, direction, steps } = this.target;
-    let frame: AimFrame = { origin, direction, circleCentre: origin, pathLength: null };
+    const { origin, casterRadius, direction, steps } = this.target;
+    let frame: AimFrame = {
+      origin,
+      casterRadius,
+      direction,
+      circleCentre: origin,
+      pathLength: null,
+      placed: null,
+    };
     const drawn = new Set<string>();
-    for (const { shape, reach } of steps) {
+    for (const { shape, reach, placed } of steps) {
       if (reach !== null) {
         frame = {
           ...frame,
@@ -44,7 +53,7 @@ export class AimOverlayView implements WorldLayer {
       const key = `${JSON.stringify(shape)}@${String(frame.circleCentre.x)},${String(frame.circleCentre.y)}`;
       if (!drawn.has(key)) {
         drawn.add(key);
-        AimOverlayView.paint(this.painters, shape.kind, shape, frame, renderer);
+        AimOverlayView.paint(this.painters, shape.kind, shape, { ...frame, placed }, renderer);
       }
     }
   }

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import type { MapDefinition } from '../content/maps/maps.types';
@@ -98,6 +99,53 @@ describe('DamagePipeline', () => {
       reason: 'zero-damage',
     });
     expect(state.events.recentEvents()).toEqual([]);
+  });
+
+  it('kills outright on an execute: a step that only reduces the hit does not count, the shields go too, and it is a killing hit (DEC-204)', () => {
+    const state = setUp();
+    healthOf(state).addShield('entity-50', 10);
+    const halve = {
+      name: 'halve',
+      adjust: ({ amount }: { readonly amount: number }) => amount / 2,
+    };
+
+    const result = new DamagePipeline([halve]).execute(state, 'entity-1', SOURCE);
+
+    expect(result).toEqual({ applied: true, amount: 100, absorbed: 10, killed: true });
+    expect(state.events.recentEvents().map(({ type, payload }) => [type, payload])).toEqual([
+      ['damage-applied', { targetId: 'entity-1', amount: 100, absorbed: 10, source: SOURCE }],
+      ['entity-died', { entityId: 'entity-1', killer: SOURCE }],
+    ]);
+  });
+
+  it('blocks an execute that a damage step blocks fully, such as an unbreakable gate', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), STRUCTURE_DEFINITIONS);
+    const gate = factory.create('gate', 'gate', { position: { x: 9, y: 0 }, team: 'light' });
+    state.entities.add(gate);
+    const before = gate.getComponent(Health).current;
+
+    expect(new DamagePipeline().execute(state, gate.id, SOURCE)).toEqual({
+      applied: false,
+      reason: 'blocked',
+    });
+    expect(gate.getComponent(Health).current).toBe(before);
+    expect(state.events.recentEvents()).toEqual([]);
+  });
+
+  it('executes nothing that is missing or already dead', () => {
+    const state = setUp();
+    const pipeline = new DamagePipeline();
+    pipeline.execute(state, 'entity-1', SOURCE);
+
+    expect(pipeline.execute(state, 'entity-1', SOURCE)).toEqual({
+      applied: false,
+      reason: 'already-dead',
+    });
+    expect(pipeline.execute(state, 'entity-404', SOURCE)).toEqual({
+      applied: false,
+      reason: 'no-target',
+    });
   });
 
   it('rejects a missing target without throwing', () => {

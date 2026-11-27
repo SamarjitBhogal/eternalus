@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { CONCUSSION } from '../content/status-effects/concussion';
+import { FEARED } from '../content/status-effects/feared';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import type { StatusEffectRuntime } from './StatusEffectRuntime';
 import { StatusEffects } from './StatusEffects';
@@ -17,6 +18,34 @@ const slow = (id: string, value: number) =>
   ]).get(id);
 
 describe('StatusEffects', () => {
+  it('knows the statuses its content is immune to (DEC-207)', () => {
+    const statuses = new StatusEffects(['feared']);
+
+    expect(statuses.isImmuneTo('feared')).toBe(true);
+    expect(statuses.isImmuneTo('bleed')).toBe(false);
+    expect(new StatusEffects().isImmuneTo('feared')).toBe(false);
+  });
+
+  it('gives the newest unbroken status that steers, with a heading that starts at zero', () => {
+    const statuses = new StatusEffects();
+    const feared = LOADED.get('feared');
+    const otherFear = loadStatusEffects(30, 2, [{ ...FEARED, id: 'dread', endsOnHit: true }]).get(
+      'dread',
+    );
+
+    expect(statuses.steering).toBeUndefined();
+    statuses.apply(BLEED, 'a', 0);
+    statuses.apply(feared, 'a', 0);
+    expect(statuses.steering?.definition.id).toBe('feared');
+    expect(statuses.steering?.heading).toEqual({ x: 0, y: 0 });
+    statuses.apply(otherFear, 'b', 1);
+    expect(statuses.steering?.definition.id).toBe('dread');
+    statuses.breakOnHit(2);
+    expect(statuses.steering?.definition.id).toBe('feared');
+    statuses.expire(60);
+    expect(statuses.steering).toBeUndefined();
+  });
+
   it('expires a status on the exact tick its duration ends', () => {
     const statuses = new StatusEffects();
     statuses.apply(LOADED.get('concussion'), 'a', 10); // 3 s = 90 ticks
@@ -66,6 +95,21 @@ describe('StatusEffects', () => {
     statuses.apply(ENRAGED, 'b', 4);
     expect(statuses.multiplier('damageDealt')).toBeCloseTo(1.3 * 1.15);
     expect(statuses.multiplier('moveSpeed')).toBeCloseTo(1.1);
+  });
+
+  it('gives a stat with one more instance of a status by the same fold, and changes nothing', () => {
+    const statuses = new StatusEffects();
+    const veteran = LOADED.get('veteran'); // +0.1 damage dealt per stack, additive (DEC-164)
+    statuses.apply(veteran, 'a', 0);
+
+    expect(statuses.multiplierWith('damageDealt', veteran)).toBeCloseTo(1.2); // adds sum
+    expect(statuses.multiplierWith('damageDealt', ENRAGED)).toBeCloseTo(1.1 * 1.15);
+    expect(statuses.multiplierWith('moveSpeed', veteran)).toBe(1);
+    expect(statuses.multiplier('damageDealt')).toBeCloseTo(1.1);
+    expect(statuses.active).toHaveLength(1);
+
+    statuses.apply(ENRAGED, 'b', 1); // a `mul` the entity holds stays in the fold
+    expect(statuses.multiplierWith('damageDealt', veteran)).toBeCloseTo(1.2 * 1.15);
   });
 
   it('never reaches 0 by stacking slows', () => {

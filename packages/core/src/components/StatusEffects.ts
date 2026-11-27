@@ -2,6 +2,7 @@ import type {
   StatusEffectDefinition,
   StatusFlag,
   StatusStat,
+  StatusSteeringKind,
 } from '../content/status-effects/statusEffects.types';
 import { StatusEffectRuntime } from './StatusEffectRuntime';
 
@@ -9,18 +10,29 @@ import { StatusEffectRuntime } from './StatusEffectRuntime';
  * The statuses on an entity (architecture 05 section 8) and what they add up to: one multiplier per
  * stat (each modifier's `value` once per stack, `StatModifier`) and the set of flags, recomputed
  * whenever the list changes or a status breaks, so every reader asks one question per tick. An
- * entity without this component is immune to statuses (structures). Ids are plain strings
- * (`components/` may not import `state/`).
+ * entity without this component is immune to statuses (structures); one with it may be immune to
+ * some by its content (`UnitDefinition.statusImmunities`: the Sentinel to Fear, DEC-207). Ids are
+ * plain strings (`components/` may not import `state/`).
  */
 export class StatusEffects {
   private readonly activeList: StatusEffectRuntime[] = [];
 
+  private readonly immunities: ReadonlySet<string>;
+
+  /** The newest active status that steers its holder; recomputed with the flags. */
+  private steeringStatus: StatusEffectRuntime | undefined = undefined;
+
+  /** @param immunities - The ids of the statuses this entity never gets (its content's). */
+  public constructor(immunities: readonly string[] = []) {
+    this.immunities = new Set(immunities);
+  }
+
   private readonly spare: StatusEffectRuntime[] = [];
 
-  /** Per stat, (1 + its `add` bonus) × every active `mul` modifier's `value` raised to its stacks. */
-  private readonly multipliers = new Map<StatusStat, number>();
+  /** Per stat, every active `mul` modifier's `value` raised to its stacks, multiplied together. */
+  private readonly products = new Map<StatusStat, number>();
 
-  /** Per stat, the sum of every active `add` modifier's `value` × its stacks; folded in above. */
+  /** Per stat, the sum of every active `add` modifier's `value` × its stacks. */
   private readonly bonuses = new Map<StatusStat, number>();
 
   private readonly flags = new Set<StatusFlag>();
@@ -35,19 +47,22 @@ export class StatusEffects {
    * by its stacking rule. Use `combat/StatusEffectApplier`, which also emits `status-applied`.
    *
    * @param durationTicks - This application's duration when its source overrides the definition's.
+   * @param steering - This application's form, of the definition's `steering` forms; the first
+   *   form when omitted.
    */
   public apply(
     definition: StatusEffectDefinition,
     sourceId: string | null,
     tick: number,
     durationTicks?: number,
+    steering?: StatusSteeringKind,
   ): void {
     const existing = this.find(definition.id);
     if (existing === undefined) {
       const runtime = this.spare.pop() ?? new StatusEffectRuntime(definition);
-      this.activeList.push(runtime.start(definition, sourceId, tick, durationTicks));
+      this.activeList.push(runtime.start(definition, sourceId, tick, durationTicks, steering));
     } else {
-      existing.reapply(sourceId, tick, durationTicks);
+      existing.reapply(sourceId, tick, durationTicks, steering);
     }
     this.recompute();
   }
@@ -106,9 +121,40 @@ export class StatusEffects {
     return hasBroken;
   }
 
-  /** What `stat` is multiplied by: 1 with no modifier on it. */
+  /** Whether this entity never gets the status `statusId` (`StatusEffectApplier` refuses it). */
+  public isImmuneTo(statusId: string): boolean {
+    return this.immunities.has(statusId);
+  }
+
+  /**
+   * The newest active, unbroken status that steers this entity (`StatusEffectRuntime.steering`,
+   * Fear), whose `heading` `MovementSystem` walks along in place of the entity's own (a zero
+   * heading stands); `undefined` with none.
+   */
+  public get steering(): StatusEffectRuntime | undefined {
+    return this.steeringStatus;
+  }
+
+  /** What `stat` is multiplied by: (1 + its `add` bonus) × its `mul` product; 1 with no modifier on it. */
   public multiplier(stat: StatusStat): number {
-    return this.multipliers.get(stat) ?? 1;
+    return StatusEffects.combine(stat, this.bonuses, this.products);
+  }
+
+  /**
+   * What `stat` would be multiplied by with one more instance of `definition` (one stack) beside
+   * the active ones, by the same fold as `multiplier`. It changes nothing. `BuffEffect` measures
+   * the body that a cast would grow with it (DEC-382, `INBOX.md` HC-Q113, HC-B62).
+   */
+  public multiplierWith(
+    stat: StatusStat,
+    definition: Pick<StatusEffectDefinition, 'modifiers'>,
+  ): number {
+    const bonuses = new Map(this.bonuses);
+    const products = new Map(this.products);
+    for (const modifier of definition.modifiers) {
+      StatusEffects.fold(bonuses, products, modifier, 1);
+    }
+    return StatusEffects.combine(stat, bonuses, products);
   }
 
   /** Whether any active status sets `flag`. */
@@ -126,31 +172,52 @@ export class StatusEffects {
   }
 
   private recompute(): void {
-    this.multipliers.clear();
+    this.products.clear();
     this.bonuses.clear();
     this.flags.clear();
-    for (const { definition, stacks, isBroken } of this.activeList) {
+    this.steeringStatus = undefined;
+    for (const status of this.activeList) {
+      const { definition, stacks, isBroken } = status;
       if (isBroken) {
         continue;
       }
-      for (const { stat, op, value } of definition.modifiers) {
-        if (op === 'add') {
-          this.bonuses.set(stat, (this.bonuses.get(stat) ?? 0) + value * stacks);
-          continue;
-        }
-        let product = this.multipliers.get(stat) ?? 1;
-        // Repeated multiplication, not Math.pow, which core avoids (ADR 0012).
-        for (let stack = 0; stack < stacks; stack += 1) {
-          product *= value;
-        }
-        this.multipliers.set(stat, product);
+      if (status.steering !== null) {
+        this.steeringStatus = status;
+      }
+      for (const modifier of definition.modifiers) {
+        StatusEffects.fold(this.bonuses, this.products, modifier, stacks);
       }
       for (const flag of definition.flags) {
         this.flags.add(flag);
       }
     }
-    this.bonuses.forEach((bonus, stat) => {
-      this.multipliers.set(stat, (1 + bonus) * (this.multipliers.get(stat) ?? 1));
-    });
+  }
+
+  /** Folds `stacks` of one modifier into its stat's `add` bonus or `mul` product. */
+  private static fold(
+    bonuses: Map<StatusStat, number>,
+    products: Map<StatusStat, number>,
+    { stat, op, value }: StatusEffectDefinition['modifiers'][number],
+    stacks: number,
+  ): void {
+    if (op === 'add') {
+      bonuses.set(stat, (bonuses.get(stat) ?? 0) + value * stacks);
+      return;
+    }
+    let product = products.get(stat) ?? 1;
+    // Repeated multiplication, not Math.pow, which core avoids (ADR 0012).
+    for (let stack = 0; stack < stacks; stack += 1) {
+      product *= value;
+    }
+    products.set(stat, product);
+  }
+
+  /** A stat's multiplier: (1 + its `add` bonus) × its `mul` product. */
+  private static combine(
+    stat: StatusStat,
+    bonuses: ReadonlyMap<StatusStat, number>,
+    products: ReadonlyMap<StatusStat, number>,
+  ): number {
+    return (1 + (bonuses.get(stat) ?? 0)) * (products.get(stat) ?? 1);
   }
 }

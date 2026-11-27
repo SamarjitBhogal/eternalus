@@ -9,7 +9,8 @@ import { KNOCKBACK } from './knockback';
  *
  * @param tickRate - Ticks per second (`GameConfig.tickRate`).
  * @param authored - The tuning to load; the shipped one by default.
- * @throws ContentValidationError when the travel time is negative or not finite.
+ * @throws ContentValidationError when the travel time or the impact damage is negative or not
+ *   finite.
  */
 export const loadKnockback = (
   tickRate: number,
@@ -17,5 +18,6 @@ export const loadKnockback = (
 ): KnockbackDefinition => {
   const { travelSeconds, ...rest } = authored;
   assertNonNegativeFinite('knock-back', [['travelSeconds', travelSeconds]]);
+  assertNonNegativeFinite('knock-back', [['impactDamage', rest.impactDamage]], 'hp');
   return { ...rest, travelTicks: new TickRate(tickRate).toTicks(travelSeconds) };
 };

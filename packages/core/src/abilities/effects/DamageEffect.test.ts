@@ -40,6 +40,29 @@ describe('DamageEffect', () => {
     expect(new DamageEffect().kind).toBe('damage');
   });
 
+  it('hits only the enemies whose health meets its condition, read as the step runs (DEC-204)', () => {
+    const { state, caster, at, hits } = setUp();
+    const low = at(2, 'dark');
+    low.getComponent(Health).applyDamage(75); // 25 of 100 left
+    at(-2, 'dark');
+
+    castSteps(state, caster.id, [{ ...HIT, amount: 10, health: { below: 0.3 } }]);
+
+    expect(hits.map(({ targetId }) => targetId)).toEqual([low.id]);
+  });
+
+  it('needs each health bound, when set, to be a fraction from 0 to 1', () => {
+    expect(new DamageEffect().validate({ ...HIT, health: { below: 0.3, atOrAbove: 0 } })).toEqual(
+      [],
+    );
+    expect(
+      new DamageEffect().validate({ ...HIT, health: { below: 1.2, atOrAbove: -0.1 } }),
+    ).toEqual([
+      'health below must be a fraction from 0 to 1',
+      'health atOrAbove must be a fraction from 0 to 1',
+    ]);
+  });
+
   it('damages every enemy in its shape through the pipeline, never allies or the caster', () => {
     const { state, caster, at, hits } = setUp();
     const enemy = at(2, 'dark');

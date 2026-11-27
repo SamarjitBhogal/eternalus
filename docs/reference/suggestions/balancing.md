@@ -4,7 +4,7 @@ description: Proposed tuning values, formulas and balance knobs for the MVP (hor
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-23
 tags: [reference, suggestions, balancing, content, testing]
 paths: ['packages/core/src/content/**', 'packages/core/src/config/**']
 related:
@@ -185,7 +185,7 @@ The game doc gives each MVP class only two abilities (Warrior: Veil, Blade Runne
 | Warrior  | Fury (ultimate)                    | meter    | 0      | 8 s; attack speed 300%; damage × 1.5 with knockback 1 m; dash 3 m on the dash key, 1 s internal cooldown                                                                   |
 | Sentinel | Rip & Tear                         | 10 s     | 30     | 3 m cone; 90 damage + bleed; targets under 30% health take double and are dragged 1.5 m toward you                                                                         |
 | Sentinel | Slam                               | 16 s     | 50     | radius 4 m; 150 damage; knockback 3 m; knockup 0.8 s; × 2 against structures and obstacles                                                                                 |
-| Sentinel | Shield Wall (DEC-11)               | 18 s     | 40     | a 4 m wall obstacle for 6 s, 800 health                                                                                                                                    |
+| Sentinel | Shield Wall (DEC-11)               | 18 s     | 40     | 4 m wall obstacle, 800 health; permanent until broken; at most 2 per Legend: a new one removes the oldest, a destroyed one frees its place (DEC-330 (7))                   |
 | Sentinel | Berserk (ultimate)                 | meter    | 0      | 12 s; size × 1.3; damage × 1.5; speed +20%; damage taken −30%                                                                                                              |
 | Sentinel | Meteor Fall (ultimate)             | meter    | 0      | leap up to 10 m; radius 6 m; 400 damage; stun 1 s                                                                                                                          |
 | Magus    | Imbue                              | 20 s     | 45     | 8 s; Damage: +25% damage, +20% attack speed; Support: self +15% / +10%, allies within 6 m +10% / +5%                                                                       |

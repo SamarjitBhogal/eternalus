@@ -1,26 +1,30 @@
 import type { AbilityDisplay, AbilitySlot, EntityId, Snapshot, Vec2 } from '@eternalus/core';
 
 import type { HudSlotId } from '../bridge/Binding.types';
-import type { DashReach } from './Match.types';
+import type { DashReach, SummonPreview } from './Match.types';
 import type { AimTarget } from './views/AimOverlayView.types';
 
 /**
  * Builds what the range overlay (`AimOverlayView`) draws each frame: the ability in the player's
  * selected slot, from the snapshot's slots and the display data, aimed from where the player's
  * Legend is drawn toward the pointer. It asks the simulation's rule how far each dash step really
- * goes (`DashReach`), so the view itself never calls the simulation (AGENTS.md rule 6). It also
- * says whether the ability in a slot uses the aim, for `AbilityCasts`.
+ * goes (`DashReach`) and the outline a placed body stands in and whether it is refused there (`SummonPreview`),
+ * so the view itself never calls the simulation (AGENTS.md rule 6). It also says whether the
+ * ability in a slot uses the aim, for `AbilityCasts`.
  */
 export class AimTargeting {
   /**
    * @param abilities Every ability's display data (`DisplayCatalogue.abilities`).
    * @param playerId The player's Legend, or `null` when it has none.
    * @param dashReach How far a dash really goes; without it a dash goes its whole distance.
+   * @param summonPreview Where a placed outline stands and whether it is refused there; without
+   *   it no step has a placed outline.
    */
   public constructor(
     private readonly abilities: readonly AbilityDisplay[],
     private readonly playerId: EntityId | null,
     private readonly dashReach?: DashReach,
+    private readonly summonPreview?: SummonPreview,
   ) {}
 
   /**
@@ -50,8 +54,12 @@ export class AimTargeting {
         distance === undefined
           ? null
           : (this.dashReach?.(origin, direction, distance, radius) ?? distance),
+      placed:
+        shape?.kind === 'outline'
+          ? (this.summonPreview?.(shape.corners, origin, direction, shape.distance) ?? null)
+          : null,
     }));
-    return { origin: { x: origin.x, y: origin.y }, direction, steps };
+    return { origin: { x: origin.x, y: origin.y }, casterRadius: radius, direction, steps };
   }
 
   /**

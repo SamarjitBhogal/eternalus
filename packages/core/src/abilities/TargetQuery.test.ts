@@ -10,6 +10,7 @@ import type { MapObject } from '../content/maps/mapObjects.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
+import { UNIT_FAMILIES } from '../entities/unitFamilies';
 import type { AreaAim } from '../state/AreaHitQuery.types';
 import { GameState } from '../state/GameState';
 import { WorldObjectStore } from '../state/WorldObjectStore';
@@ -124,6 +125,35 @@ describe('TargetQuery', () => {
     expect(friends).toEqual([ally.id]);
     expect(everyone).toContain(caster.id);
     expect(everyone).toHaveLength(foes.length + 2);
+  });
+
+  it('keeps only the bodies whose health, read now, meets the filter’s health condition (DEC-204)', () => {
+    const { state, caster, add, query } = setUp();
+    const at = (left: number) => {
+      const dummy = add('light-mob', 'training-dummy', 'dark', { x: 1, y: 0 });
+      dummy.getComponent(Health).applyDamage(100 - left); // a dummy has 100 health
+      return dummy.id;
+    };
+    const [low, edge, high] = [at(29), at(30), at(100)];
+    const find = (health: { below?: number; atOrAbove?: number }) =>
+      query.find(state, caster.id, DISC, ON_CASTER, { team: 'enemies', health });
+
+    expect(find({ below: 0.3 })).toEqual([low]);
+    expect(find({ atOrAbove: 0.3 })).toEqual([edge, high]);
+    expect(find({ atOrAbove: 0.3, below: 1 })).toEqual([edge]);
+    expect(find({})).toEqual([low, edge, high]);
+  });
+
+  it('keeps only the bodies of the filter’s families, when it names any', () => {
+    const { state, caster, add, query } = setUp();
+    const dummy = add('light-mob', 'training-dummy', 'dark', { x: 1, y: 0 });
+    const tower = add('buff-tower', 'buff-tower', 'dark', { x: 2, y: 2 });
+    const find = (families?: readonly string[]) =>
+      query.find(state, caster.id, DISC, ON_CASTER, { team: 'enemies', families });
+
+    expect(find(UNIT_FAMILIES)).toEqual([dummy.id]);
+    expect(find(['structure'])).toEqual([tower.id]);
+    expect(find()).toEqual([dummy.id, tower.id]);
   });
 
   it('leaves the caster out unless the filter includes it', () => {

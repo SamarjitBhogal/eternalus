@@ -4,6 +4,7 @@ import type { CastInProgress } from '../components/Abilities.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { ShotLauncher } from '../state/ShotLauncher.types';
+import type { Summoner } from '../state/Summoner.types';
 import type { AbilityEffect } from './AbilityEffect.types';
 import type { Ability, ComposableAbility } from './AbilityRegistry.types';
 import type { AreaShape } from './shapes/AreaShape.types';
@@ -28,7 +29,10 @@ export type CastFacts = Omit<CastInProgress, 'abilityId' | 'nextStep'> & {
   readonly ability: CastSource;
 };
 
-/** What a cast's effects work with: the match's state, pipeline, applier, launcher and lookups. */
+/**
+ * What a cast's effects work with: the match's state, pipeline, applier, launcher, summoner and
+ * lookups.
+ */
 export type CastServices = {
   readonly state: GameState;
   /** Where effect and shape strategies are found (the `AbilityRegistry`). */
@@ -38,4 +42,12 @@ export type CastServices = {
   readonly statuses: StatusEffectApplier;
   /** Puts a step's shot into the match (`ProjectileEffect`). */
   readonly launcher: ShotLauncher;
+  /** Puts a step's body into the match, and takes one out (`SummonEffect`). */
+  readonly summoner: Summoner;
 };
+
+/**
+ * The match's services that a cast's steps write through, the same for every cast: `HitEffects`
+ * and `AbilitySystem` take them once and pass them into each cast's `CastServices`.
+ */
+export type StepServices = Pick<CastServices, 'damage' | 'statuses' | 'launcher' | 'summoner'>;

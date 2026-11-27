@@ -43,10 +43,12 @@ describe('createDefaultViewRegistry', () => {
     expect(registry.viewFor(entity('arrow', 'projectile'))).toBeInstanceOf(ProjectileView);
   });
 
-  it('passes unknown kinds to the reporter it is given', () => {
+  it('passes unknown kinds to the reporter it is given, and never an obstacle (a placed wall)', () => {
     const unknown: string[] = [];
+    const registry = createDefaultViewRegistry((kind) => unknown.push(kind));
 
-    createDefaultViewRegistry((kind) => unknown.push(kind)).viewFor(entity('banner', 'decoration'));
+    registry.viewFor(entity('obstacle', 'obstacle'));
+    registry.viewFor(entity('banner', 'decoration'));
 
     expect(unknown).toEqual(['banner']);
   });

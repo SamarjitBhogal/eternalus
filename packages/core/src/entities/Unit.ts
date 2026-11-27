@@ -16,7 +16,7 @@ import type { BasicAttack } from './Unit.types';
 /**
  * Abstract base for entities of the `unit` family. It installs the components every unit has
  * (architecture 04 §1): `Transform`, `Health`, `Movement`, `TeamMembership`, a circle `Collider`
- * on the unit layer, `Vision` and `StatusEffects`, from a definition, a position and a team; plus
+ * on the unit layer, `Vision` and `StatusEffects` (with the definition's status immunities), from a definition, a position and a team; plus
  * `Combat` when the definition has an attack and a `ControllerBinding` when the spawn or the
  * definition names a controller (the spawn's wins). It faces the spawn's start facing when the
  * spawn gives one (`Placement.facing`, DEC-216 (6)).
@@ -59,7 +59,7 @@ export abstract class Unit extends Entity {
     this.addComponent(new TeamMembership(team));
     this.addComponent(new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'unit'));
     this.addComponent(new Vision(definition.visionRadius));
-    this.addComponent(new StatusEffects());
+    this.addComponent(new StatusEffects(definition.statusImmunities));
     const basic = this.basicAttack(context);
     if (basic !== undefined) {
       this.addComponent(new Combat(basic.attacks, basic.weaponId));

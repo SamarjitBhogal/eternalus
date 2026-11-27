@@ -118,6 +118,8 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         abilities: request.abilities,
         dashReach: (origin, direction, distance, radius) =>
           simulation.dashReach(origin, direction, distance, radius),
+        summonPreview: (corners, origin, direction, distance) =>
+          simulation.summonPreview(corners, origin, direction, distance),
         observer: request.observer,
         bridge: {
           bus: deps.bus,

@@ -15,7 +15,9 @@ export type AbilitySlot =
 
 /**
  * Why a cast was refused (05 §6). `unavailable`: the ability has no effects yet (`effects: []`),
- * so it is in a kit but cannot be cast until its class's PR builds it.
+ * so it is in a kit but cannot be cast until its class's PR builds it. `no-room`: the body that
+ * the cast grows has no room where the caster stands (Berserk, `BuffEffect.casterBlockedBy`;
+ * DEC-382, HC-Q113).
  */
 export type AbilityRejectReason =
   | 'empty-slot'
@@ -26,6 +28,7 @@ export type AbilityRejectReason =
   | 'casting'
   | 'cannot-cast'
   | 'no-target'
+  | 'no-room'
   | 'restricted'
   | 'unavailable';
 
@@ -49,15 +52,25 @@ type AbilityTargeting =
  * The area an effect step covers (05 §3). `circle` is centred on the caster, or on the dash's end
  * for a dash's `onEnd` step; `path` is the capsule a dash sweeps, `width` metres across (its length
  * is the dash's `distance`); `hit` is the body a basic attack or a shot just struck, for a
- * status's `onHit` steps (Fury) and a shot's (Hamstring). `cone` joins with Rip & Tear (DEC-206).
+ * status's `onHit` steps (Fury) and a shot's (Hamstring); `cone` is a fan from the caster along
+ * the aim, `reach` metres past its body edge (DEC-319) and `arcDegrees` wide, or the whole circle of
+ * that reach at 360 (Rip & Tear, DEC-206).
  */
 export type EffectShape =
   | { readonly kind: 'circle'; readonly radius: number }
   | { readonly kind: 'path'; readonly width: number }
-  | { readonly kind: 'hit' };
+  | { readonly kind: 'hit' }
+  | { readonly kind: 'cone'; readonly reach: number; readonly arcDegrees: number };
 
 /** What kind of damage a hit deals (`balancing.md` ability table). */
 type DamageType = 'physical' | 'magical';
+
+/**
+ * Which targets of a step's `shape` it acts on by their health, as fractions of max health (base
+ * health, no shields) read when the step runs (Rip & Tear, DEC-204): `below` takes those under it,
+ * `atOrAbove` those at or above it; both may be set. Each is from 0 to 1 (checked at load).
+ */
+export type HealthCondition = { readonly below?: number; readonly atOrAbove?: number };
 
 /** Damages every target in `shape` (05 §3 `DamageEffect`). */
 export type DamageSpec = {
@@ -67,6 +80,20 @@ export type DamageSpec = {
   readonly shape: EffectShape;
   /** Damage multiplier against structures and obstacles; absent = 1. */
   readonly structureMultiplier?: number;
+  /** Only the targets whose health meets it; absent = every target. */
+  readonly health?: HealthCondition;
+};
+
+/**
+ * Kills every target in `shape` at or below `atOrBelow` of its max health, read when the step runs
+ * (Rip & Tear, DEC-204: "enemies at or below 10% health die"); nothing reduces it (`ExecuteEffect`).
+ */
+export type ExecuteSpec = {
+  readonly kind: 'execute';
+  readonly atOrBelow: number;
+  readonly shape: EffectShape;
+  /** `'units'`: only Legends, mobs and bosses (`entities/unitFamilies`); absent = every family. */
+  readonly families?: 'units';
 };
 
 /**
@@ -79,6 +106,8 @@ export type KnockbackSpec = {
   readonly distance: number;
   readonly knockup?: boolean;
   readonly shape: EffectShape;
+  /** Only the targets whose health meets it; absent = every target. */
+  readonly health?: HealthCondition;
 };
 
 /** Applies a negative status to every target in `shape` (05 §3 `DebuffEffect`); seconds as authored. */
@@ -90,6 +119,8 @@ type AuthoredDebuffSpec = {
   /** How many times the status is applied to each target (bleed stacks, DEC-269); absent = 1. */
   readonly stacks?: number;
   readonly shape: EffectShape;
+  /** Only the targets whose health meets it; absent = every target. */
+  readonly health?: HealthCondition;
 };
 
 /**
@@ -141,7 +172,7 @@ type AuthoredBuffSpec = {
 export type BuffSpec = InTicks<AuthoredBuffSpec>;
 
 /** An effect that acts on the targets in its `shape`, as authored. */
-type AuthoredShapedEffectSpec = DamageSpec | KnockbackSpec | AuthoredDebuffSpec;
+type AuthoredShapedEffectSpec = DamageSpec | KnockbackSpec | AuthoredDebuffSpec | ExecuteSpec;
 
 /**
  * Moves the caster `distance` metres along the aim (05 §3 `DashEffect`); `onPath` runs on the
@@ -174,11 +205,28 @@ type AuthoredProjectileSpec = {
 export type ProjectileSpec = InTicks<AuthoredProjectileSpec>;
 
 /**
+ * Places one body from a definition, owned by the caster (05 §3 `SummonEffect`; Shield Wall,
+ * DEC-330 (7)): `distance` metres from the caster's centre along the cast's direction, facing that
+ * way. The caster holds at most `maxActive` bodies of the definition: a new one removes the oldest.
+ */
+export type SummonSpec = {
+  readonly kind: 'summon';
+  /** The body's definition (`content/obstacles/`). */
+  readonly definitionId: string;
+  readonly distance: number;
+  readonly maxActive: number;
+};
+
+/**
  * One step of an ability's cast timeline as authored (05 §3); one effect strategy per `kind`. A
  * status's `onHit` steps are authored the same way.
  */
 export type AuthoredEffectSpec =
-  AuthoredShapedEffectSpec | AuthoredDashSpec | AuthoredBuffSpec | AuthoredProjectileSpec;
+  | AuthoredShapedEffectSpec
+  | AuthoredDashSpec
+  | AuthoredBuffSpec
+  | AuthoredProjectileSpec
+  | SummonSpec;
 
 /** One loaded effect step: every time in ticks. A status's `onHit` steps are loaded this way. */
 export type AbilityEffectSpec = InTicks<AuthoredEffectSpec>;

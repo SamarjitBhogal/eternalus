@@ -28,6 +28,7 @@ export const SENTINEL = {
     ultimate: 'berserk', // DEC-209 (2): key 4
   },
   passiveOptions: ['wrecking-run'],
+  statusImmunities: ['feared'], // DEC-207: Sentinels are immune to Fear, from any source
   defaultAction: null,
   referenceHeight: 4.6, // TUNE: ~15 ft (an elephant)
   footprintRadius: 1.25, // DEC-06

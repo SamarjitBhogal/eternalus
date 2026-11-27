@@ -12,6 +12,7 @@ import type { MapDefinition } from '../content/maps/maps.types';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import { Entity } from '../entities/Entity';
 import type { Team } from '../teams/teams.types';
+import type { Vec2 } from '../utils/geometry.types';
 import { SeededRandom } from '../utils/SeededRandom';
 import { TWO_LANE_MAP } from './__fixtures__/twoLaneMap';
 import { matchWorldOf } from './__fixtures__/matchWorld';
@@ -273,7 +274,12 @@ describe('GameState', () => {
 
   // Moved from `MatchWorld.test.ts`: the port sits beside `space` and `paths` (critic r2 BTD-B).
   it('keeps the collision rule it was given beside its other indexes, and none without one', () => {
-    const collisions = { reach: () => 1 };
+    const collisions = {
+      reach: () => 1,
+      pushOut: (at: Vec2) => at,
+      hasRoom: () => true,
+      hitsWall: () => false,
+    };
 
     const state = new GameState(createDefaultGameConfig(), 1, null, { collisions });
 

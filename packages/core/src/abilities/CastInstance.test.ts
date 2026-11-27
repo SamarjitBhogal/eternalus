@@ -13,6 +13,7 @@ import { castSteps } from './__fixtures__/castSteps';
 import { fakeAbility, testAbilityRegistry } from './__fixtures__/fakeAbilities';
 import { RecordingEffect } from './__fixtures__/RecordingEffect';
 import { RecordingLauncher } from './__fixtures__/RecordingLauncher';
+import { RecordingSummoner } from './__fixtures__/RecordingSummoner';
 import { CastInstance } from './CastInstance';
 import { TargetQuery } from './TargetQuery';
 
@@ -61,6 +62,7 @@ const timeline = () => {
       damage: new DamagePipeline(),
       statuses: new StatusEffectApplier(STATUSES),
       launcher: new RecordingLauncher(),
+      summoner: new RecordingSummoner(),
     },
   );
   /** Steps the state to `tick`. */
@@ -121,6 +123,7 @@ describe('CastInstance', () => {
         damage: new DamagePipeline(),
         statuses: new StatusEffectApplier(loadStatusEffects(30, 2)),
         launcher: new RecordingLauncher(),
+        summoner: new RecordingSummoner(),
       },
     ).run(AT_ORIGIN);
 
@@ -162,6 +165,7 @@ describe('CastInstance', () => {
         damage: new DamagePipeline(),
         statuses: new StatusEffectApplier(loadStatusEffects(30, 2)),
         launcher: new RecordingLauncher(),
+        summoner: new RecordingSummoner(),
       },
     ).run(AT_ORIGIN);
     const [step] = strike.log;
@@ -195,6 +199,7 @@ describe('CastInstance', () => {
         damage: new DamagePipeline(),
         statuses: new StatusEffectApplier(loadStatusEffects(30, 2)),
         launcher: new RecordingLauncher(),
+        summoner: new RecordingSummoner(),
       },
     ).run(AT_ORIGIN);
 
@@ -228,15 +233,17 @@ describe('CastInstance', () => {
   it('places a later step where it is told, its direction still the one fixed at the cast', () => {
     const { cast, log, at } = timeline();
     const later = { from: { x: 3, y: 3 }, to: { x: 3, y: 3 } };
+    // The cast's aim and the caster's body (a Warrior, 0.5 m) go with every placement, for a cone.
+    const withCast = { direction: { x: 1, y: 0 }, casterRadius: 0.5 };
 
     cast.run(AT_ORIGIN);
     at(2);
     cast.run(later, 1);
 
     expect(log.map(({ cast: context }) => context.placement)).toEqual([
-      { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } },
-      later,
-      later,
+      { from: { x: 0, y: 0 }, to: { x: 0, y: 0 }, ...withCast },
+      { ...later, ...withCast },
+      { ...later, ...withCast },
     ]);
     expect(log.map(({ cast: context }) => context.direction)).toEqual([
       { x: 1, y: 0 },
@@ -282,5 +289,35 @@ describe('CastInstance areas', () => {
 
     castSteps(state, caster.id, [disc], { aim: { x: 6, y: 0 } });
     expect(hits).toEqual([floor.id]);
+  });
+
+  it('points a cone along the cast’s aim and counts its reach from the caster’s body edge (DEC-319)', () => {
+    const { state, factory, caster } = casterState();
+    const dummyAt = (x: number, y: number) => {
+      const dummy = factory.create('light-mob', 'training-dummy', {
+        position: { x, y },
+        team: 'dark',
+      });
+      state.entities.add(dummy);
+      return dummy;
+    };
+    // The Warrior's body is 0.5 m: a 2 m fan reaches 2.5 m from its centre, plus a dummy's 0.4 m.
+    const east = dummyAt(2.8, 0);
+    const west = dummyAt(-2, 0);
+    dummyAt(3, 1); // 3.16 m away, 18 degrees off the aim: its body edge is past the fan's reach
+    const hits: string[] = [];
+    state.events.on('damage-applied', ({ targetId }) => hits.push(targetId));
+    const fan = {
+      kind: 'damage',
+      amount: 10,
+      damageType: 'physical',
+      shape: { kind: 'cone', reach: 2, arcDegrees: 90 },
+    } as const;
+
+    castSteps(state, caster.id, [fan], { aim: { x: 9, y: 0 } });
+    expect(hits).toEqual([east.id]);
+
+    castSteps(state, caster.id, [fan], { aim: { x: -9, y: 0 } });
+    expect(hits).toEqual([east.id, west.id]);
   });
 });

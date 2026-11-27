@@ -4,6 +4,22 @@ import { Movement } from './Movement';
 
 const STATS = { maxSpeed: 3, acceleration: 1, mass: 2 };
 
+describe('Movement heading for one tick', () => {
+  it('walks along a heading given for the tick and keeps its own for later (Fear, DEC-203)', () => {
+    const movement = new Movement({ maxSpeed: 3, acceleration: 30, mass: 1 });
+    movement.steer({ x: 1, y: 0 });
+
+    movement.advance(1, { x: 0, y: -1 });
+
+    expect(movement.velocity.x).toBe(0);
+    expect(movement.velocity.y).toBeLessThan(0);
+    expect(movement.heading).toEqual({ x: 1, y: 0 });
+    movement.advance();
+    expect(movement.velocity.y).toBe(0);
+    expect(movement.velocity.x).toBeGreaterThan(0);
+  });
+});
+
 describe('Movement', () => {
   it('starts stopped', () => {
     const movement = new Movement(STATS);
@@ -117,6 +133,19 @@ describe('Movement', () => {
     movement.advance(0);
     expect(movement.speed).toBe(0);
     expect(movement.heading).toEqual({ x: 1, y: 0 });
+  });
+
+  it('speeds up by acceleration × accelerationScale toward a heading, slows down by acceleration alone', () => {
+    const movement = new Movement({ maxSpeed: 10, acceleration: 1, mass: 1 });
+    movement.steer({ x: 1, y: 0 });
+
+    movement.advance(1, undefined, 1.5);
+    movement.advance(1, undefined, 1.5);
+    expect(movement.speed).toBe(3);
+
+    movement.steer({ x: 0, y: 0 });
+    movement.advance(1, undefined, 1.5);
+    expect(movement.speed).toBe(2);
   });
 
   it('reports the top speed the last advance allowed, above maxSpeed for a scale above 1', () => {

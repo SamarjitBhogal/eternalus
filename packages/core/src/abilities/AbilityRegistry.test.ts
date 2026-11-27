@@ -17,7 +17,12 @@ import { DirectionalTargeting } from './targeting/DirectionalTargeting';
 import { HeadingTargeting } from './targeting/HeadingTargeting';
 
 /** A step with a shape kind no registry line covers. */
-const CONE_STRIKE_STEP = { kind: 'fake-strike', shape: { kind: 'cone' } } as const;
+const RING_STRIKE_STEP = { kind: 'fake-strike', shape: { kind: 'ring' } } as const;
+/** A strike on the one body just struck: valid only in an `onHit` list (HC-B26 (5)). */
+const HIT_STRIKE = { kind: 'fake-strike', shape: { kind: 'hit' } } as const;
+/** The problem a `hit` outside an `onHit` list reports. */
+const HIT_OUTSIDE_ON_HIT =
+  'a "hit" shape holds a body only in an onHit list (a shot\'s or a status\'s)';
 
 describe('AbilityRegistry', () => {
   it('binds each effect step to its strategy, in order, and each restriction to its rule', () => {
@@ -132,13 +137,13 @@ describe('AbilityRegistry', () => {
 
   it('fails loudly on a shape or restriction kind with no strategy (a typo or a missing registry line)', () => {
     const abilities = new ContentCatalogue([
-      fakeAbility({ id: 'cone-strike', effects: [CONE_STRIKE_STEP] }),
+      fakeAbility({ id: 'ring-strike', effects: [RING_STRIKE_STEP] }),
       fakeAbility({ id: 'carry-strike', restrictions: [{ kind: 'not-while-carrying' }] }),
     ]);
     const registry = testAbilityRegistry([new RecordingEffect('fake-strike')], abilities);
 
-    expect(() => registry.resolve('cone-strike')).toThrow(ContentValidationError);
-    expect(() => registry.resolve('cone-strike')).toThrow('shape "cone"');
+    expect(() => registry.resolve('ring-strike')).toThrow(ContentValidationError);
+    expect(() => registry.resolve('ring-strike')).toThrow('shape "ring"');
     expect(() => registry.resolve('carry-strike')).toThrow('restriction "not-while-carrying"');
     expect(() => {
       registry.resolveAll();
@@ -170,12 +175,45 @@ describe('AbilityRegistry', () => {
       distance: 3,
       durationTicks: 9,
       onPath: [],
-      onEnd: [{ kind: 'knockback', distance: 1, shape: { kind: 'cone' } }],
+      onEnd: [{ kind: 'knockback', distance: 1, shape: { kind: 'ring' } }],
     } as const;
+    const onHit = { isOnHit: true };
 
-    expect(registry.checkSteps('Status "fury" onHit', [{ kind: 'fake-strike' }])).toEqual([]);
-    expect(registry.checkSteps('Status "fury" onHit', [dash])).toEqual([
-      'Status "fury" onHit names effect "knockback", shape "cone" with no registered strategy (defaultAbilityRegistry.ts).',
+    expect(registry.checkSteps('Status "fury" onHit', [{ kind: 'fake-strike' }], onHit)).toEqual(
+      [],
+    );
+    expect(registry.checkSteps('Status "fury" onHit', [dash], onHit)).toEqual([
+      'Status "fury" onHit names effect "knockback", shape "ring" with no registered strategy (defaultAbilityRegistry.ts).',
+    ]);
+  });
+
+  it("allows a \"hit\" area only in an onHit list: a shot's or a status's, not a cast's or a dash's (HC-B26 (5))", () => {
+    const shot = { kind: 'projectile', projectileId: 'bolt', onHit: [HIT_STRIKE] } as const;
+    const dash = { kind: 'dash', distance: 3, durationTicks: 9, onPath: [], onEnd: [HIT_STRIKE] };
+    const abilities = new ContentCatalogue([
+      fakeAbility({ id: 'shot-strike', effects: [shot] }),
+      fakeAbility({ id: 'cast-strike', effects: [HIT_STRIKE] }),
+      fakeAbility({ id: 'dash-strike', effects: [dash] }),
+    ]);
+    const registry = testAbilityRegistry(
+      [
+        new RecordingEffect('fake-strike'),
+        new RecordingEffect('projectile'),
+        new RecordingEffect('dash'),
+      ],
+      abilities,
+    );
+
+    expect(registry.resolve('shot-strike').isAvailable).toBe(true);
+    expect(() => registry.resolve('cast-strike')).toThrow(
+      `Ability "cast-strike": ${HIT_OUTSIDE_ON_HIT}.`,
+    );
+    expect(() => registry.resolve('dash-strike')).toThrow(
+      `Ability "dash-strike": ${HIT_OUTSIDE_ON_HIT}.`,
+    );
+    expect(registry.checkSteps('Status "fury" onHit', [HIT_STRIKE], { isOnHit: true })).toEqual([]);
+    expect(registry.checkSteps('Status "fury" onHit', [dash], { isOnHit: true })).toEqual([
+      `Status "fury" onHit: ${HIT_OUTSIDE_ON_HIT}.`,
     ]);
   });
 
@@ -211,7 +249,7 @@ describe('AbilityRegistry', () => {
     expect(registry.effectFor('fake-strike')).toBe(strike);
     expect(registry.shapeFor('path').kind).toBe('path');
     expect(() => registry.effectFor('fake-bolt')).toThrow('No effect strategy');
-    expect(() => registry.shapeFor('cone')).toThrow('No shape strategy');
+    expect(() => registry.shapeFor('ring')).toThrow('No shape strategy');
   });
 
   it('tells from the bound targeting strategy whether a cast uses the aim', () => {

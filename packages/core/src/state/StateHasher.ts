@@ -12,6 +12,7 @@ import { ProjectilePayload } from '../components/ProjectilePayload';
 import { Progression } from '../components/Progression';
 import { Veterancy } from '../components/Veterancy';
 import { StatusEffects } from '../components/StatusEffects';
+import { Summoned } from '../components/Summoned';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { INITIAL_FACING } from '../components/Transform.constants';
@@ -253,6 +254,11 @@ export class StateHasher {
           status.periodAnchorTick,
           status.expiresTick,
           ...(status.isBroken ? ['broken'] : []),
+          // Only a status that steers (Fear) adds its form and heading, so other statuses hash as
+          // before.
+          ...(status.steering === null
+            ? []
+            : ['steering', status.steering, status.heading.x, status.heading.y]),
         ]),
       ]);
     }
@@ -292,6 +298,12 @@ export class StateHasher {
     const clock = entity.findComponent(CombatClock);
     if (clock !== undefined) {
       fields.push(['combat-clock', ...clock.fields]);
+    }
+    // A placed body's caster decides which body the caster's next cast removes (Shield Wall,
+    // DEC-382 (HC-B43 (3))). Only a placed body adds it, so a match without one hashes as before.
+    const summoned = entity.findComponent(Summoned);
+    if (summoned !== undefined) {
+      fields.push(['summoned', summoned.ownerId]);
     }
     return fields;
   }

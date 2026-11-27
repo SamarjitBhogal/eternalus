@@ -6,9 +6,11 @@ import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type {
   StatusEffectDefinition,
   StatusExpireSpec,
+  StatusSteeringKind,
 } from '../content/status-effects/statusEffects.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { Rng } from '../utils/Rng.types';
 
 /**
  * The one way a status reaches or leaves an entity (architecture 05 section 8): abilities, weapons,
@@ -36,10 +38,15 @@ export class StatusEffectApplier {
   /**
    * Applies status `statusId` to `targetId`, credited to `sourceId`. Returns whether it landed: a
    * missing or dead target, or one without `StatusEffects` (a structure), is immune, and so is a
-   * `control-immune` target to hard control.
+   * `control-immune` target to hard control and a target whose content is immune to the status
+   * (`StatusEffects.isImmuneTo`: the Sentinel to Fear, DEC-207), whatever the source.
+   * Each application that lands draws from the match's seeded RNG (`state.rng`) only what its
+   * status leaves open (Fear, DEC-382 (R3 D)): one of its `steering` forms when it has two or more,
+   * and, with no `durationTicks`, a whole tick count from `durationTicks` to `maxDurationTicks`
+   * when the status has a `maxDurationTicks`. Every other status draws nothing.
    *
    * @param durationTicks - The source's own duration for this application (a debuff step's
-   *   `durationTicks`); the status's own duration when omitted.
+   *   `durationTicks`); the status's own duration, or a drawn one, when omitted.
    * @throws UnknownDefinitionError when no status has the id `statusId`.
    * @throws Error when `durationTicks` is given and is not a positive whole number of ticks.
    */
@@ -62,11 +69,19 @@ export class StatusEffectApplier {
       target === undefined ||
       statuses === undefined ||
       target.findComponent(Health)?.isDead === true ||
+      statuses.isImmuneTo(statusId) ||
       (definition.controlClass === 'hard' && statuses.has('control-immune'))
     ) {
       return false;
     }
-    statuses.apply(definition, sourceId, state.tick, durationTicks);
+    const steering = StatusEffectApplier.drawForm(definition, state.rng);
+    statuses.apply(
+      definition,
+      sourceId,
+      state.tick,
+      durationTicks ?? StatusEffectApplier.drawDuration(definition, state.rng),
+      steering,
+    );
     if (definition.grants !== undefined) {
       target.findComponent(Abilities)?.slot('granted')?.hold(definition.grants);
     }
@@ -156,6 +171,30 @@ export class StatusEffectApplier {
     if (isRegrantDue) {
       StatusEffectApplier.regrant(slot, statuses);
     }
+  }
+
+  /**
+   * The form of one application of `definition`: drawn from `rng` when the status has two or more
+   * `steering` forms, its one form with no draw, `undefined` when it does not steer.
+   */
+  private static drawForm(
+    definition: StatusEffectDefinition,
+    rng: Rng,
+  ): StatusSteeringKind | undefined {
+    const forms = definition.steering ?? [];
+    return forms.length < 2 ? forms[0] : forms[rng.nextInt(0, forms.length - 1)];
+  }
+
+  /**
+   * The drawn duration of one application of `definition` with no source time: a whole tick count
+   * from `durationTicks` to `maxDurationTicks`, both inclusive. `undefined`, with no draw, when the
+   * status has no `maxDurationTicks` (it lasts its `durationTicks`).
+   */
+  private static drawDuration(definition: StatusEffectDefinition, rng: Rng): number | undefined {
+    const { durationTicks, maxDurationTicks } = definition;
+    return durationTicks === null || maxDurationTicks === undefined
+      ? undefined
+      : rng.nextInt(durationTicks, maxDurationTicks);
   }
 
   /** Whether `slot` (the holder's `granted` slot) holds the ability `definition` grants. */

@@ -218,6 +218,69 @@ describe('Simulation.dashReach', () => {
   });
 });
 
+describe('Simulation.summonPreview (DEC-382, HC-B43 (7), HC-S15)', () => {
+  /** The Shield Wall barrier's outline: 1 m along its facing, 4 m across. */
+  const WALL = [
+    { x: -0.5, y: -2 },
+    { x: 0.5, y: -2 },
+    { x: 0.5, y: 2 },
+    { x: -0.5, y: 2 },
+  ];
+  const EAST = { x: 1, y: 0 };
+  /** The two-lane map with a rift across it at x 100.2 to 100.8, and its walls (no objects). */
+  const sim = (withMap = true) =>
+    new Simulation({
+      config: createDefaultGameConfig(),
+      seed: 1,
+      logger: new NullLogger(),
+      ...(withMap
+        ? {
+            map: {
+              ...TWO_LANE_MAP,
+              terrain: [
+                {
+                  id: 'rift',
+                  kind: 'rift' as const,
+                  shape: [
+                    { x: 100.2, y: 0 },
+                    { x: 100.8, y: 0 },
+                    { x: 100.8, y: 60 },
+                    { x: 100.2, y: 60 },
+                  ],
+                },
+              ],
+            },
+            mapObjects: [],
+          }
+        : {}),
+    });
+
+  it('places the outline: free on open ground, blocked over a wall or past the map edge, as the cast does', () => {
+    const match = sim();
+
+    expect(match.summonPreview(WALL, { x: 96, y: 30 }, EAST, 3)).toEqual({
+      outline: [
+        { x: 98.5, y: 28 },
+        { x: 99.5, y: 28 },
+        { x: 99.5, y: 32 },
+        { x: 98.5, y: 32 },
+      ],
+      isBlocked: false,
+    });
+    expect(match.summonPreview(WALL, { x: 98, y: 30 }, EAST, 3)?.isBlocked).toBe(true);
+    expect(match.summonPreview(WALL, { x: 2, y: 30 }, { x: -1, y: 0 }, 3)?.isBlocked).toBe(true);
+    expect(match.summonPreview(WALL, { x: 96, y: 30 }, { x: 0, y: 0 }, 3)).toBeNull();
+  });
+
+  it('places the outline but never blocks it in a match with no map, and changes nothing', () => {
+    const match = sim(false);
+    const before = match.snapshot();
+
+    expect(match.summonPreview(WALL, { x: 0, y: 0 }, EAST, 3)?.isBlocked).toBe(false);
+    expect(match.snapshot()).toEqual(before);
+  });
+});
+
 describe('Simulation: a dash in the tick after a map object breaks (critic r2 F1)', () => {
   /** A 100-HP rock 0.6 m thick, 0.5 m east of the Warrior's circle. */
   const ROCK: MapObject = {

@@ -1,3 +1,6 @@
+import type { AimAreaColors } from './AimOverlayView.types';
+import { FOCUS_RING_COLOR } from './entityViews.constants';
+
 /** Outline of the range overlay: the player's focus-ring yellow (`FOCUS_RING_COLOR`). */
 export { FOCUS_RING_COLOR as AIM_OVERLAY_OUTLINE_COLOR } from './entityViews.constants';
 
@@ -11,3 +14,36 @@ export const AIM_OVERLAY_OUTLINE_WIDTH = 2;
 
 /** How many corners approximate a circle (the renderer draws polygons and paths only). */
 export const AIM_CIRCLE_SEGMENTS = 48;
+
+/** Every area but a cone's: the overlay fill and outline above. */
+export const AIM_OVERLAY_COLORS: AimAreaColors = {
+  fill: AIM_OVERLAY_FILL_COLOR,
+  outline: FOCUS_RING_COLOR,
+};
+
+/** A cone's fan: darker blue (DEC-206 (3)). */
+// TUNE: placeholder shades; DEC-206 (3) names only "darker blue"
+export const AIM_CONE_FAN_COLORS: AimAreaColors = {
+  fill: 'rgba(29, 78, 216, 0.3)',
+  outline: '#1d4ed8',
+};
+
+/** A cone of a full turn, the circle of the fan's range: lighter blue (DEC-206 (3)). */
+// TUNE: placeholder shades; DEC-206 (3) names only "lighter blue"
+export const AIM_CONE_CIRCLE_COLORS: AimAreaColors = {
+  fill: 'rgba(147, 197, 253, 0.16)',
+  outline: '#93c5fd',
+};
+
+/**
+ * An area the cast refuses where it is drawn (a Shield Wall that cannot stand there): red
+ * (DEC-382, HC-B43 (7)).
+ */
+// TUNE: placeholder shades; HC-B43 (7) names only "red"
+export const AIM_REFUSED_COLORS: AimAreaColors = {
+  fill: 'rgba(220, 38, 38, 0.25)',
+  outline: '#dc2626',
+};
+
+/** A cone this wide (degrees) is the whole circle of its reach (core `ConeShape`). */
+export const AIM_FULL_TURN_DEGREES = 360;

@@ -1,14 +1,12 @@
-import type { DamagePipeline } from '../combat/DamagePipeline';
-import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { Progression } from '../components/Progression';
 import type { StatusEffectRuntime } from '../components/StatusEffectRuntime';
 import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
-import type { ShotLauncher } from '../state/ShotLauncher.types';
 import type { AbilityRegistry } from './AbilityRegistry';
 import { CastInstance } from './CastInstance';
+import type { StepServices } from './CastInstance.types';
 import type { OnHitCast } from './HitEffects.types';
 import type { ShapePlacement } from './shapes/AreaShape.types';
 import { TargetQuery } from './TargetQuery';
@@ -27,15 +25,12 @@ export class HitEffects {
 
   /**
    * @param registry - Where effect and shape strategies are found (the `AbilityRegistry`).
-   * @param damage - The match's one damage pipeline, for the steps.
-   * @param statuses - The match's one status applier, for the steps.
-   * @param launcher - Puts a step's shot into the match.
+   * @param services - The match's one damage pipeline and status applier, and the ports that put
+   *   a step's shot and body into the match.
    */
   public constructor(
     private readonly registry: Pick<AbilityRegistry, 'effectFor' | 'shapeFor'>,
-    private readonly damage: DamagePipeline,
-    private readonly statuses: StatusEffectApplier,
-    private readonly launcher: ShotLauncher,
+    private readonly services: StepServices,
   ) {
     this.targets = new TargetQuery(registry);
   }
@@ -116,12 +111,10 @@ export class HitEffects {
         tick: state.tick,
       },
       {
+        ...this.services,
         state,
         effects: this.registry,
         targets: this.targets,
-        damage: this.damage,
-        statuses: this.statuses,
-        launcher: this.launcher,
       },
     ).run({ from: placement.from, to: placement.to, targetId });
   }

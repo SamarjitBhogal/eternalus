@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-20
+last-reviewed: 2026-11-23
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -504,6 +504,15 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   does not follow the owner yet (the minimap entity markers, SCRUM-151).
 - The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
   capture tracker); this PR publishes the presence and draws the split bar in the world.
+- **Placed obstacles (`feat/sentinel-wall`, 2026-11-23; DEC-330 (7)).** `ObstacleDefinition` has
+  an optional `footprint` (§9): a polygon in metres, +x along the facing. `Obstacle` turns it to
+  the spawn's facing (`Placement.facing`) and installs it as a solid `Footprint`. The first one is
+  the Shield Wall's `shield-wall-barrier` (`content/obstacles/obstacleCatalogue.ts`, the factory's
+  obstacles beside the map objects'), placed during the match by a `summon` step (05 §18). Its
+  outline joins the walls and the nav grid at once and leaves them when it is removed
+  (`RuntimeWalls`, 10 §12); the grid change is announced as `terrain-changed` (§10, §11), which
+  marks the lane fields dirty. `NoMapObjectOverlapInvariant` checks map objects only, not placed
+  walls.
 
 ## Related
 

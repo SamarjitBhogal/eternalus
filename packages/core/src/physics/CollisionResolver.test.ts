@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { doesCircleOverlapPolygon } from '../utils/circlePolygon';
+import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
 import { CollisionResolver } from './CollisionResolver';
 import { StaticCollisionIndex } from './StaticCollisionIndex';
 
@@ -127,6 +129,173 @@ describe('CollisionResolver', () => {
       expect(beyondEdge.reach({ x: 195, y: 30 }, EAST, 8, 0.5)).toBe(
         open.reach({ x: 195, y: 30 }, EAST, 8, 0.5),
       );
+    });
+  });
+
+  describe('hitsWall (a knock-back into a wall, DEC-382, HC-B43 (6))', () => {
+    const EAST = { x: 1, y: 0 };
+    const wall = () =>
+      new CollisionResolver(
+        new StaticCollisionIndex([{ id: 'wall', polygon: rect(5, -20, 1, 40) }]),
+        OPEN,
+      );
+
+    it('is true where the wall stops the move short, from a gap or from touching it', () => {
+      expect(wall().hitsWall({ x: 0, y: 0 }, EAST, 8, 0.5)).toBe(true);
+      expect(wall().hitsWall({ x: 4.5, y: 0 }, EAST, 1, 0.5)).toBe(true);
+      expect(wall().hitsWall({ x: 0, y: 0 }, { x: Math.SQRT1_2, y: Math.SQRT1_2 }, 8, 0.5)).toBe(
+        true,
+      );
+    });
+
+    it('is false where the move ends short of the wall, runs along it, or leaves it', () => {
+      expect(wall().hitsWall({ x: 0, y: 0 }, EAST, 4, 0.5)).toBe(false);
+      expect(wall().hitsWall({ x: 4.4, y: 0 }, { x: 0, y: 1 }, 8, 0.5)).toBe(false);
+      expect(wall().hitsWall({ x: 4.4, y: 0 }, { x: -1, y: 0 }, 8, 0.5)).toBe(false);
+    });
+
+    it('counts a touch only when it comes more than CONTACT_EPSILON before the end of the move', () => {
+      // The circle touches the wall after 4.5 m.
+      expect(wall().hitsWall({ x: 0, y: 0 }, EAST, 4.5 + CONTACT_EPSILON / 2, 0.5)).toBe(false);
+      expect(wall().hitsWall({ x: 0, y: 0 }, EAST, 4.5 + CONTACT_EPSILON * 2, 0.5)).toBe(true);
+    });
+
+    it('is false where the edge of the bounds stops the move first: the edge is not a wall', () => {
+      const bounds = { x: 0, y: 0, width: 200, height: 60 };
+      const open = new CollisionResolver(new StaticCollisionIndex([]), bounds);
+      const beyondEdge = new CollisionResolver(
+        new StaticCollisionIndex([{ id: 'outside', polygon: rect(200.2, 0, 5, 60) }]),
+        bounds,
+      );
+
+      expect(open.hitsWall({ x: 195, y: 30 }, EAST, 8, 0.5)).toBe(false);
+      expect(beyondEdge.hitsWall({ x: 195, y: 30 }, EAST, 8, 0.5)).toBe(false);
+    });
+  });
+
+  describe('pushOut', () => {
+    it('leaves a circle that overlaps no wall where it is', () => {
+      const resolver = new CollisionResolver(
+        new StaticCollisionIndex([{ id: 'wall', polygon: rect(5, -20, 1, 40) }]),
+        OPEN,
+      );
+
+      expect(resolver.pushOut({ x: 4.5, y: 0 }, 0.5)).toEqual({ x: 4.5, y: 0 });
+    });
+
+    it('moves a grown circle the shortest way out of a wall, just clear of it', () => {
+      const resolver = new CollisionResolver(
+        new StaticCollisionIndex([{ id: 'wall', polygon: rect(5, -20, 1, 40) }]),
+        OPEN,
+      );
+
+      const out = resolver.pushOut({ x: 4.5, y: 0 }, 0.65);
+
+      expect(out.x).toBeCloseTo(4.35, 6);
+      expect(out.x).toBeLessThan(4.35);
+      expect(out.y).toBe(0);
+    });
+
+    it('clears both walls of a corner, and keeps the circle inside the bounds', () => {
+      const corner = new CollisionResolver(
+        new StaticCollisionIndex([
+          { id: 'east', polygon: rect(5, -20, 1, 40) },
+          { id: 'north', polygon: rect(-20, 5, 40, 1) },
+        ]),
+        OPEN,
+      );
+      const edge = new CollisionResolver(new StaticCollisionIndex([]), {
+        x: 0,
+        y: 0,
+        width: 20,
+        height: 10,
+      });
+
+      const out = corner.pushOut({ x: 4.5, y: 4.5 }, 0.8);
+
+      expect(out.x).toBeLessThanOrEqual(4.2);
+      expect(out.y).toBeLessThanOrEqual(4.2);
+      expect(edge.pushOut({ x: 0.5, y: 5 }, 0.65)).toEqual({ x: 0.65, y: 5 });
+    });
+
+    it('never moves a circle into a wall it did not overlap: a pass stops short of the next wall', () => {
+      // A wall placed over the circle; the shortest way out (east) leads into a pocket of two rocks.
+      const rocks = [rect(114.8, 52.2, 3.3, 1.7), rect(115.7, 54.2, 3.5, 3.8)];
+      const resolver = new CollisionResolver(
+        new StaticCollisionIndex([
+          { id: 'placed', polygon: rect(112.5, 52, 1, 4) },
+          ...rocks.map((polygon, index) => ({ id: `rock-${String(index)}`, polygon })),
+        ]),
+        OPEN,
+      );
+
+      const out = resolver.pushOut({ x: 113.1, y: 54.5 }, 1.25);
+
+      expect(out.x).toBeGreaterThan(113.1);
+      for (const polygon of rocks) expect(doesCircleOverlapPolygon(out, 1.25, polygon)).toBe(false);
+      // The pass slides along the south rock's corner into the pocket: it does not stop at it.
+      expect(out.x).toBeCloseTo(114.45, 2);
+      expect(out.y).toBeCloseTo(55.237, 2);
+    });
+
+    it('keeps each pass inside the bounds, so the clamp moves no circle into a rock', () => {
+      // A wall turned 45° lies over the circle, 1.1 m from the east edge. The way out leads past
+      // the edge; a clamp back from there would end inside the rock south of the circle.
+      const rock = rect(37, 22.2, 0.8, 2);
+      const [along, across] = [2 * Math.SQRT1_2, 0.5 * Math.SQRT1_2];
+      const resolver = new CollisionResolver(
+        new StaticCollisionIndex([
+          {
+            id: 'placed',
+            polygon: [
+              { x: 38.6 + along - across, y: 20 - along - across },
+              { x: 38.6 + along + across, y: 20 - along + across },
+              { x: 38.6 - along + across, y: 20 + along + across },
+              { x: 38.6 - along - across, y: 20 + along - across },
+            ],
+          },
+          { id: 'rock', polygon: rock },
+        ]),
+        { x: 0, y: 0, width: 40, height: 40 },
+      );
+      const start = { x: 37.66, y: 20.95 };
+
+      const out = resolver.pushOut(start, 1.25);
+
+      expect(doesCircleOverlapPolygon(start, 1.25, rock)).toBe(false);
+      expect(out.x).toBeGreaterThan(start.x);
+      expect(out.x).toBeLessThanOrEqual(38.75);
+      expect(doesCircleOverlapPolygon(out, 1.25, rock)).toBe(false);
+    });
+
+    it('leaves a circle inside a passage of the wall where it is', () => {
+      const resolver = new CollisionResolver(
+        new StaticCollisionIndex([
+          { id: 'wall', polygon: rect(5, -20, 1, 40), passages: [rect(4, -2, 3, 4)] },
+        ]),
+        OPEN,
+      );
+
+      expect(resolver.pushOut({ x: 5.5, y: 0 }, 0.65)).toEqual({ x: 5.5, y: 0 });
+    });
+  });
+
+  describe('hasRoom', () => {
+    const resolver = new CollisionResolver(
+      new StaticCollisionIndex([
+        { id: 'wall', polygon: rect(5, -20, 1, 40), passages: [rect(4, -2, 3, 4)] },
+      ]),
+      OPEN,
+    );
+
+    it('is true for a circle clear of every wall and for one inside a passage of a wall', () => {
+      expect(resolver.hasRoom({ x: 4.3, y: 10 }, 0.65)).toBe(true);
+      expect(resolver.hasRoom({ x: 5.5, y: 0 }, 0.65)).toBe(true);
+    });
+
+    it('is false for a circle that overlaps a wall, also one with its centre in the wall', () => {
+      expect(resolver.hasRoom({ x: 4.5, y: 10 }, 0.65)).toBe(false);
+      expect(resolver.hasRoom({ x: 5.5, y: 10 }, 0.65)).toBe(false);
     });
   });
 });

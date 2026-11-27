@@ -11,6 +11,14 @@ export type AuthoredKnockback = {
   readonly staggerStatusId: string;
   /** The status a knock-up (`knockup: true`) adds. */
   readonly knockupStatusId: string;
+  /**
+   * The damage a target takes when a wall stops its knock-back short (a map object, a wall, a
+   * placed wall or a structure; the map's edge does not count): once per push, credited to the
+   * caster, through the `DamagePipeline` (DEC-382, `INBOX.md` HC-B43 (6)). It is also the damage
+   * a unit takes when a new Shield Wall pins it against something solid (`SummonEffect`), so a
+   * change here changes both pushes.
+   */
+  readonly impactDamage: number;
 };
 
 /**
@@ -33,4 +41,5 @@ export const KNOCKBACK = {
   travelSeconds: 0.25, // TUNE: proposal pending the owner (plan, owner answers 2026-11-12)
   staggerStatusId: 'staggered', // more-abilities.md section 7: staggered follows every knock-back
   knockupStatusId: 'knockup', // plan arch call 7
+  impactDamage: 40, // TUNE: DEC-382 (HC-B43 (6)) build default
 } as const satisfies AuthoredKnockback;

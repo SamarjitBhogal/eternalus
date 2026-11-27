@@ -609,6 +609,204 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-23 (DEC-343): (1) kept, as built; 05 §3 now states it. (2) (A): lane B
     builds the one shot launcher with lane A after #148 merges. (4) kept, as built. (5) (A): built
     in lane B's PR 6 (Sentinel Rip & Tear). (6) (A): built in lane B's next PR, after #159 merges.
+- [x] **HC-Q107 — Rip & Tear: how wide is the fan in front of the Sentinel? (lane B PR 6,
+      `feat/sentinel-kit`, card "PR6 R1 cone" on the Owner Calls page v92, 2026-11-23).**
+      Nothing waits on the answer; the build uses (A), marked `TUNE`. The Sentinel claws in a fan
+      in front of it, and every enemy in the fan is hit. The fan reaches 3 m past the Sentinel's
+      body (`balancing.md`, Rip & Tear row). Nothing gives its width. The weapon arcs (DEC-304)
+      are 70° (Bastions) to 160° (Wuuthrad). (A) 90°, a quarter circle (built). (B) 120°.
+      (C) 60°. (D) Other (note). Code: `content/abilities/ripAndTear.ts`.
+  - Answered 2026-11-26 (DEC-382, R1): (A) 90°, a quarter circle. As built.
+- [x] **HC-Q108 — Rip & Tear: do weak enemies (under 30% health) also take double damage, and
+      how far are they pushed? (lane B PR 6, card "PR6 R2 low health", 2026-11-23).** Nothing
+      waits on the answer; the build uses (A). The balancing row says enemies under 30% health
+      "take double and are dragged 1.5 m toward you". DEC-204 changed the drag to a push away and
+      added the kill at 10% health or less. It says nothing about the double damage or the push
+      distance. Each health check is made when its part of the attack happens, in order: damage,
+      then the kill, then the push. So an enemy that the 90 damage takes under 30% is also pushed,
+      and an enemy that it takes to 10% or less dies. (A) Double damage (180), pushed 1.5 m away
+      (built). (B) Normal damage (90), pushed 1.5 m away. (C) Other (note).
+  - Answered 2026-11-26 (DEC-382, R2): (A) double damage (180), pushed 1.5 m away. As built.
+- [x] **HC-Q109 — Rip & Tear Fear: do enemies run or cower, and for how long? (lane B PR 6, card
+      "PR6 R3 fear", 2026-11-23).** Nothing waits on the answer; the build uses (A). After Rip &
+      Tear, every enemy that survives within 3 m of the Sentinel's body is feared. DEC-203: a
+      feared unit runs away at half speed or cowers in place, for 2 to 4 s, and the source may
+      choose which. The build: the unit runs straight away from the Sentinel for 2 s, and it
+      cannot attack or use abilities. A player's own Legend runs too; its move, attack and ability
+      keys do nothing for those 2 s. A second Rip & Tear starts a new 2 s; Fear never adds up.
+      Sentinels are never feared (DEC-207). (A) Run away for 2 s (built). (B) Run away for 3 s.
+      (C) Cower in place for 2 s. (D) Random run or cower, 2 to 4 s. (E) Other (note). Code:
+      `content/status-effects/feared.ts`.
+  - Answered 2026-11-26 (DEC-382, R3): (D) random run or cower, 2 to 4 s. Built: each Fear draws
+    its form and its duration from the match's seeded random numbers (`StatusEffectApplier`;
+    `content/status-effects/feared.ts`).
+- [x] **HC-Q110 — Shield Wall: where does it stand, and who can break it? (lane B PR 6, card
+      "PR6 R4 wall", 2026-11-23).** Nothing waits on the answer; the build uses (A). DEC-330 (7):
+      the wall stays until it breaks, each Legend has at most 2, and a third removes the oldest.
+      The build: the wall is 4 m long and 1 m thick, at a right angle to the aim, with its middle
+      3 m in front of the Sentinel. It has 800 health (`balancing.md`). It blocks walking and
+      shots for both teams, attacks from both teams damage it, and it stays when the Sentinel
+      dies. If the spot overlaps a wall, a building, the map edge or another Shield Wall (also the
+      Sentinel's own oldest one), the cast does not happen and costs nothing. A wall can stand in
+      a gate opening. The narrowest gate opening is about 12 m (the middle lane; 18.5 m on the
+      side lanes; measured on the seed-1 map). One Sentinel's 2 walls (8 m) cannot close a gate,
+      but 2 Sentinels can close the middle gate. `more-abilities.md` says the wall "never blocks a
+      gate or a lane fully". (A) As built: both teams can break it, and it may stand in a gate.
+      (B) As built, but only the Sentinel's enemies can damage it. (C) As built, but a wall cannot
+      be placed in a gate opening. (D) Other (note). Code: `content/abilities/shieldWall.ts`,
+      `content/obstacles/shieldWallBarrier.ts`.
+  - Answered 2026-11-26 (DEC-382, R4): (A) as built. Both teams can break the wall, and it may
+    stand in a gate.
+- [x] **HC-Q111 — Berserk: does "speed +20%" mean a higher top speed only? (lane B PR 6, card
+      "PR6 R5 berserk speed", 2026-11-23).** Nothing waits on the answer; the build uses (A).
+      Berserk lasts 12 s: the Sentinel grows 1.3 times bigger, deals 1.5 times the damage, takes
+      30% less damage and gets 20% more speed (`balancing.md`). The Sentinel speeds up very slowly
+      (about 50 s to top speed today; Wrecking Run in PR 8 changes this). The build raises only
+      the top speed by 20%, so a Sentinel that starts from a stop gains almost nothing in 12 s.
+      (A) Top speed +20% only (built). (B) Top speed +20%, and it also speeds up 20% faster.
+      (C) Other (note). Code: `content/status-effects/berserk.ts`.
+  - Answered 2026-11-26 (DEC-382, R5): (B) top speed +20%, and it also speeds up 20% faster.
+    Built: the `acceleration` status stat (`content/status-effects/berserk.ts`, `MovementSystem`).
+- [x] **HC-Q112 — Rip & Tear: does the 10% kill also work on towers and the Stronghold? (lane B
+      PR 6, card "PR6 R6 execute", 2026-11-23).** Nothing waits on the answer; the build uses
+      (A). Rip & Tear kills every enemy in the fan that has 10% health or less (DEC-204). DEC-206
+      (1) says the attack applies to "every enemy in the fan", and towers, the Stronghold, gates
+      and walls are enemies too. If the kill works on them, a Sentinel finishes any tower or the
+      Stronghold at 10% with one cast. The build kills units only: Legends, minions, camp
+      monsters and bosses. Buildings still take the normal damage. (A) Units only (built).
+      (B) Every enemy in the fan. (C) Other (note). Code: `abilities/effects/ExecuteEffect.ts`
+      (`TargetFilter.families`).
+  - Answered 2026-11-26 (DEC-382, R6): (A) units only. As built.
+- [x] **HC-Q113 — Berserk in a tight space: what happens when the bigger Sentinel does not fit?
+      (lane B PR 6, correctness critic round 3, M1, 2026-11-24).** Nothing waits on the answer;
+      the build uses (A). Berserk makes the Sentinel 1.3 times as wide: 3.25 m, from 2.5 m.
+      Between two rocks or walls less than 3.25 m apart, the bigger body does not fit. Before
+      this fix it grew there and stood partly inside a rock, and the game's error check reported
+      it. Now the Sentinel keeps its normal size there. Berserk still counts: the damage, the
+      damage reduction, the speed and the 12 s all start at the cast. The body grows in the
+      first moment the Sentinel has room, for example when it walks out of the gap. (A) Normal
+      size until there is room (built, DEC-365 (1)). (B) Move the Sentinel to the nearest free
+      ground and grow it there; it can jump a few metres. (C) Grow in place and stand partly
+      inside the rock. (D) Other (note). Code: `systems/BodySizeSystem.ts`.
+  - Answered 2026-11-26 (DEC-382): Other (note): "cannot activate if there isnt enough space.
+    normal size until the user clears the area, then they can activate it. gives small prompt
+    saying "not enough space"". Built: the cast is refused with the reason `no-room` and spends
+    nothing; the ultimate slot shows "Not enough space" while the reason holds. The DEC-365 (1)
+    rule stays as the safety net.
+- [ ] **HC-S13 — Scheduled: an online Duel must not send a hidden enemy to a player
+      (Samarjit's review of #150, 6026306663, nit 1; lane B PR 6, 2026-11-23).** Nothing to
+      answer now. `isHidden` on a snapshot entity only tells the client not to draw the unit
+      (`Viewer`, HC-B19 (5)). The snapshot still holds the hidden enemy and its position. In a
+      single-player match this is safe. In a server-run Duel, a changed client could show the
+      enemy. The multiplayer plan already has the fix: W10 builds the per-seat snapshot and its
+      visibility filter in core (ADR 0016 point 1, draft), and the match host (MP-4) sends each
+      seat only what core filters. That filter must leave out every enemy that is hidden from the
+      seat's team (Veil today, any `hidden` status later). Scheduled with W10; it needs no change
+      before a server-run Duel exists.
+- [x] **HC-B43 — Better than the design, sign-off asked: nine items from the PR 6 critics
+      (lane B PR 6, `feat/sentinel-kit`, pre-PR gate rounds 1 and 2, 2026-11-23;
+      COMBAT-ABILITIES-LANE-2-24 and -25).** Nothing blocks the PR. Item (4) changes one design
+      line after your yes. (1) Built, recorded as DEC-363: one rule pushes a unit out of the
+      walls, and one rule says which units walls stop. A new Shield Wall and a body that grows
+      (Berserk) use both; the collision step uses the second. Before, each of the three had its
+      own copy, and the copies differed. Say "no" and it goes back. (2) Not
+      built: a map object that breaks (a wall segment, a rock) could leave the walls by the same
+      path as a placed wall (`RuntimeWalls` and the `terrain-changed` event). Today it has its own
+      path, outside PR 6. (A) Keep two paths. (B) One path, in a follow-up PR. (3) Not built: a
+      placed wall could carry its owner on the wall itself (a `Summoned` component) in place of
+      the match's ledger of who placed what (`SummonLedger`). The ledger is kept: it copies the
+      shipped `ChargeLedger`, and the oldest-wall lookup stays one read. (4) Built: Rip & Tear's
+      fan is written as a reach past the body edge and an arc in degrees (`{ reach, arcDegrees }`),
+      the words of the weapon sweeps (DEC-319, DEC-304). The design text (05 §3) says a radius and
+      the cosine of the half angle. With your yes, the 05 §3 line changes to match.
+      Round 2 added five items. (5) Built, DEC-364 (1): the guard leash check allows 6 m, not
+      5.5 m (your "about 5.5 m" of DEC-181). A Berserk Sentinel is wider, and the old value could
+      report a guard that did nothing wrong (5.82 m by the DEC-144 formula). Only the check reads
+      the value; play does not change. (6) Built, DEC-364 (2) and DEC-365 (2): a unit under a new
+      Shield Wall is never pushed into a rock or another wall next to it. Before, this could
+      happen in a narrow pocket. The push does not look for free ground: if the shortest way out
+      is closed, the unit stays partly inside the new wall and can walk out.
+      (7) Not built, scheduled as HC-S15: when you aim Shield Wall where it cannot stand, the
+      outline does not show that the cast will be refused. (8) Not built, kept as it is: the rule
+      "which units walls stop" could live on the entity store, so that the overlap check
+      (`NoMapObjectOverlapInvariant`) shares it. The check keeps its own, wider rule on purpose:
+      it tests the collision code from outside (DEC-364 (3)). (9) Not built, kept as it is: the
+      ledger of placed walls could forget a broken wall when it breaks. Today the one reader
+      (`SummonEffect`) skips broken walls.
+  - Answered 2026-11-26 (DEC-382; Owner Calls v97, the card's words): (1) keep it, as built.
+    (2) one path, in a follow-up PR, not in PR 6. (3) store the owner on each wall, after a
+    critic pass on the design: built (the `Summoned` component; `SummonLedger` is gone). (4) yes,
+    reach and degrees: 05 §3 now says `cone { reach, arcDegrees }`. (5) keep 6 m. (6) keep it,
+    and a unit that a push moves into an object takes damage, "balanced; tuneable": built for a
+    knock-back and for the push-out under a new Shield Wall, 40 per push, credited to the caster
+    (`content/abilities/knockback.ts`, `TUNE`). (7) build it in PR 6 now, red where the wall
+    cannot stand: built (HC-S15). (8) the check keeps its own rule. (9) the list forgets a broken
+    wall: it falls out of (3).
+- [ ] **HC-B62 — Better than the design, not built, sign-off asked: five follow-ups from the
+      PR 6 gate on your answers (lane B PR 6, #175, gate v98 round 1, 2026-11-27;
+      COMBAT-ABILITIES-LANE-2-31, -32).** Only (3) changes what the player sees, and only in a rare
+      case. Nothing blocks the PR.
+      (1) **One place builds "this damage came from this cast".** Five ability steps write the
+      same three fields (who cast it, that it is an ability, which ability) when they deal
+      damage. One helper would hold them, so a new field (an item, a level) changes one place.
+      Three of the five steps are outside PR 6, so this is a follow-up PR after the stack lands.
+      Code: `{ attackerId, kind: 'ability', definitionId }` in `DamageEffect`, `ExecuteEffect`,
+      `ProjectileEffect`, `KnockbackEffect`, `SummonEffect`.
+      (2) **The aim overlay keeps one copy of the Shield Wall outline.** Each step of the aim
+      overlay carries the outline core placed, and the overlay copies it into the frame it gives
+      the painter. Passing the step to the painter removes the copy. Then the one check of the
+      shape's kind in the aim code (`shape?.kind === 'outline'` in
+      `apps/client/src/game/AimTargeting.ts`) can move to the painter of that kind too. It changes
+      what every aim painter receives, so it is a follow-up PR. Code: `AimStep.placed`,
+      `AimFrame.placed` (`apps/client/src/game/views/AimOverlayView.types.ts`).
+      (3) **A minion that is still walking out of the building it spawned in takes no push
+      damage.** Walls do not stop such a minion yet (DEC-363). Today a knock-back toward a wall
+      still deals it the 40 impact damage, although the wall does not stop it. The fix is one
+      check in `KnockbackEffect`. It needs one more import for ability code
+      (`entities/isCollisionMover`, beside the `entities/unitFamilies` import it has), so the
+      import table in 02 §2 and `packages/core/AGENTS.md` gets one line. This is rare, and the
+      player sees it only as a missing 40 damage.
+      (4) **One test stand-in for the collision rule.** Seven tests write their own stand-in for
+      `CollisionQuery`, so each new method of it changes all seven. One `FakeCollisionQuery` class
+      beside the port (02 §8) would hold them. Test code only.
+      (5) **Named options in place of trailing optional parameters.** `Movement.advance` and
+      `StatusEffects.apply` take trailing optional parameters (a scale, a duration, a steering
+      form), and some callers pass `undefined` to reach the last one. An options object (`{ durationTicks, steering }`) reads better and
+      stays stable when the next field comes.
+      Built in PR 6 from the same review, under the standing rule to build the better design now
+      (DEC-223, DEC-232); the player sees no change, sign-off asked: (a) the Berserk room check
+      asks `Transform.radiusAt` for the grown radius, so it no longer recomputes the built radius
+      from the size now. (b) The Berserk room check gets the grown size from the one status rule
+      (`StatusEffects.multiplierWith`), not from its own copy. The copy gave a wrong size when
+      two statuses both add to the size; no status does that today.
+      Options: (A) all five as follow-up PRs after the stack lands, and keep (a) and (b)
+      (recommended); (B) only some (name them in the note); (C) none, keep (a) and (b);
+      (D) other (note).
+- [ ] **HC-S14 — Scheduled: the map-object overlap check does not see placed walls (lane B PR 6,
+      `feat/sentinel-kit`, critic N8, 2026-11-23).** Nothing to answer now.
+      `NoMapObjectOverlapInvariant` checks that no unit stands inside a map object. It does not
+      check a placed wall (a Shield Wall). The summoner pushes every unit out of a new wall, and
+      a body grows only where the grown body has room (DEC-365 (1)). A push never moves a unit
+      into a map object (DEC-364 (2), DEC-365 (2)). The push does not search for free ground, so
+      a unit can stay partly inside the placed wall (10 §12). It can walk out, and a dash that
+      starts there can cross the 1 m wall. Scheduled
+      with PR 8 (passives), which changes placed walls again (DEC-307: a charging Sentinel stops
+      at the wall, 05 §18): the check for placed walls, and a swept first leg for a move that
+      starts inside one (the `ponytail` remark on `CollisionResolver`).
+- [x] **HC-S15 — Scheduled: the Shield Wall aim outline does not show a refused cast (lane B
+      PR 6, `feat/sentinel-kit`, architecture critic round 2, BTD-1, 2026-11-23).** Nothing to
+      answer now. The outline shows where the wall will stand. A cast is refused, and spends
+      nothing, where the wall would overlap a wall or leave the map; the outline looks the same
+      there. The client also repeats core's rule for turning the outline (`placePolygon`).
+      Scheduled with lane B PR 7 (the Magus kit, DEC-301): a placement preview from core, as
+      `Simulation.dashReach` is for a dash. It returns the placed outline and whether it has
+      room (`PlacedWalls.isBlocked`), so there is one turning rule and the overlay can show a
+      refused cast. It is not built in PR 6: it adds a port across core and the client, and the
+      gate's three critic rounds are used. PR 7 is the next lane B PR, and its placed zone
+      (Sanctuary) is a second user of the preview.
+  - Built 2026-11-27 in PR 6 (DEC-382, HC-B43 (7) B): core places the outline (`summonPreview`:
+    the placed outline and whether the cast is refused there), and the client draws exactly that
+    outline, red where the cast is refused. The client keeps no copy of `placePolygon`.
 - [x] **HC-Q67 — Combat gaps: build before the presentation (2026-11-27)? In which order?
       (combat audit, COMBAT-WEAPONS-ABILITIES-35, 2026-11-20; asked on the Owner Calls page).**
       Your nine combat questions: 0 of 9 are true today. Evidence and the proposed PRs (two lanes,

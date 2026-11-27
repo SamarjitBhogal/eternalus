@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-23
+last-reviewed: 2026-11-27
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -171,7 +171,9 @@ and the `DamagePipeline`, never each other and never a system (rule 12). The cat
 | `revive`     | `ReviveEffect`               | Returns an intact allied corpse to play at a health fraction                                            | `healthFraction`, `corpseMaxAgeSeconds`, `reviveLockoutSeconds`     | MVP (Magus default action)                   |
 
 Shapes and filters are shared types: `EffectShape` is `self`, `circle { radius }`,
-`cone { radius, cosHalfAngle }`, `line { length, width }` or `path` (the dash capsule);
+`cone { reach, arcDegrees }` (a reach past the caster's body edge and an arc in degrees, the
+words of the weapon sweeps; DEC-382, `INBOX.md` HC-B43 (4)), `line { length, width }` or `path`
+(the dash capsule);
 `TargetFilter` is `{ team: 'allies' | 'enemies' | 'all'; includeSelf?; facing?: 'toward-caster';
 families? }`. Cones and "facing" are dot products on unit vectors, so they are deterministic across
 browsers. Every spec may carry `delaySeconds` (converted to `delayTicks`), which is what turns a
@@ -565,8 +567,8 @@ MS-16, `balancing.md`), applied by `VeterancySystem`.
 `periodic.effects` are `StatusTickSpec`s shaped like `AbilityEffectSpec`, run by `StatusTickEffect`
 strategies (`combat/defaultStatusTickEffects.ts`, `DamageStatusTick`) until the `AbilityRegistry`
 lands; their damage goes through the match's one `DamagePipeline` with `kind: 'status'`, crediting
-the applier. Readers: `MovementSystem` (`moveSpeed`, `cannot-move`), `CombatSystem`
-(`cannot-attack`; `attackSpeed`, fixed when a hit lands), `StatusModifierStep` (`damageDealt`, `damageTaken`); `CastValidator` (`cannot-cast` and the `aetherCost` stat, §18). Whether the applier's `remove` / `expire` (and so `status-expired`) are covered by
+the applier. Readers: `MovementSystem` (`moveSpeed`, `acceleration`, `cannot-move`), `CombatSystem`
+(`cannot-attack`; `attackSpeed`, fixed when a hit lands), `StatusModifierStep` (`damageDealt`, `damageTaken`); `CastValidator` (`cannot-cast` and the `aetherCost` stat, §18); `BodySizeSystem` (`size`, the body's radius, §18 "Berserk"). Whether the applier's `remove` / `expire` (and so `status-expired`) are covered by
 DEC-41 is still open. `blind` has no hard miss (DEC-42): its aim wobble and the client vignette are
 follow-ups. `StatusStacksWithinMaxInvariant` runs every tick. `polarity`, `controlClass` and
 `onExpire` (`apply-status` specs, run by the applier's `expire` on time-out only, credited to the
@@ -1167,7 +1169,12 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **Motion and statuses.** Dashes and knock-backs are forced motion (`Movement.push`; ADR 0026
     decision 4); a knock-back's base mass and travel time are in
     `content/abilities/knockback.ts`, and `loadKnockback` converts the travel time to ticks at load
-    (03 §8, DEC-241). Every knock-back target gets `staggered` (cannot cast);
+    (03 §8, DEC-241). A target whose knock-back a wall stops short (a map object, a wall, a
+    placed wall or a structure; not the map's edge) takes the knock-back's `impactDamage`,
+    once per push, credited to the caster, through the `DamagePipeline` (DEC-382, `INBOX.md`
+    HC-B43 (6); the test is `CollisionQuery.hitsWall`, [10](10-physics.md)). A unit that the
+    push-out of a new Shield Wall cannot free takes the same damage (the Shield Wall bullet
+    below). Every knock-back target gets `staggered` (cannot cast);
     `knockup` (shown as "Airborne") stops moving, attacking and casting. An airborne target can
     still be pushed: DEC-208's stacking is kept over `more-abilities.md` §7's "cannot be pushed
     further" (`INBOX.md` HC-Q53). The 0.2 s landing stagger and `control-immune` wait for status
@@ -1430,6 +1437,163 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
   - **Bots and client.** A Warrior bot may now cast Hamstring at the enemy it fights
     (`pickReadySlot` aims at the enemy's position). The client draws the blade as a shot that
     drops at its range (`PROJECTILE_ENDING_LOOKS`).
+- **Berserk (`feat/sentinel-kit`, lane B PR 6, 2026-11-23; DEC-199).** Berserk is the Sentinel's
+  ultimate (`content/abilities/berserk.ts`): targeting `self` and one `buff` step, as Fury. The
+  status `content/status-effects/berserk.ts` lasts 12 s (`refresh`) and has four modifiers:
+  `damageDealt` × 1.5, `damageTaken` × 0.7, `moveSpeed` × 1.2 and `size` × 1.3 (`TUNE`,
+  `balancing.md`). A fifth modifier, `acceleration`, makes the Sentinel speed up faster
+  too, so Berserk helps from a stop (DEC-382 (R5 B)). Where the code adds to §8:
+  - **`acceleration` stat.** `StatusStat` has a seventh member, `acceleration`. `MovementSystem`
+    passes `multiplier('acceleration')` to `Movement.advance`, which scales the speed-up toward a
+    heading by it. The slow-down without a heading keeps the unit's own `acceleration`.
+  - **`size` stat.** `StatusStat` has a sixth member, `size`, which scales the body's radius.
+    `Transform.radius` is the built radius times a scale, and `Transform.resize` is the one way to
+    change the scale. `systems/BodySizeSystem` runs after `StatusEffectSystem` and before
+    `MovementSystem`. Each tick it scales every body with `StatusEffects` to
+    `multiplier('size')`, so a size starts and ends in the tick its status does, whatever ends the
+    status (time-out, a Duel reset). Every reader sees the one radius: reach (`ReachQuery`, the
+    sweep), areas, shots, clicks (`findUnitAt`), collision, the hash and the snapshot, so the
+    client draws the larger body. A moving body that grows is pushed out of the walls it then
+    overlaps. Where the push leaves it in a wall (a gap narrower than the grown body), it keeps
+    its size until it has room ([10](10-physics.md) §12, DEC-365). `ascended` (× 1.25) and
+    `eternal` (× 1.5) can use the same stat.
+  - **No room, no cast (DEC-382, `INBOX.md` HC-Q113).** Berserk cannot be cast where the grown
+    body has no room. `BuffEffect.casterBlockedBy` refuses the cast with a new reason, `no-room`
+    (a reason the §6 sketch does not list). It asks the caster's `StatusEffects` for the `size`
+    the caster would have with the status the step applies (`multiplierWith`, the one fold of the
+    status modifiers), so the 1.3 is not copied and two `size` modifiers combine as they do on the
+    body (`add`s sum, `mul`s multiply). Its room test is `BodySizeSystem`'s
+    (`state/placeWithRoom`: the push-out, then `hasRoom`), so a Sentinel beside one wall can still
+    cast. A refused cast spends nothing, so the meter stays full; the cast works once the
+    Sentinel stands where it has room. The player snapshot shows the reason, and the HUD shows
+    "Not enough space" above the ultimate slot ([13](13-game-interface.md) §10).
+    `BodySizeSystem`'s rule stays as the safety net for a body that grows in another way (a wall
+    placed later in the tick of the cast, a later size status).
+- **Shield Wall (`feat/sentinel-wall`, 2026-11-23; DEC-330 (7), DEC-307, DEC-382 (R4 A)).** Shield
+  Wall is the Sentinel's `ability-3` (`content/abilities/shieldWall.ts`): `directional`, with one
+  `summon` step that places the `shield-wall-barrier` obstacle (`content/obstacles/`). Where the
+  code differs from §3:
+  - **The `summon` spec.** `{ definitionId, distance, maxActive }`: the body stands `distance`
+    metres from the caster's centre along the cast's direction, facing that way, and a caster holds
+    at most `maxActive` bodies of the definition. A new one first removes the caster's oldest as
+    `despawned`; a body that leaves the world for any cause, or breaks, frees its place (DEC-330
+    (7)). Each body carries its caster in the `Summoned` component (DEC-382, HC-B43 (3) B), which
+    the summoner adds before the body joins the match and `StateHasher` hashes. The step counts
+    the caster's standing bodies of the definition from the store, oldest first in store order,
+    and skips a dead one (HC-B43 (9) B); no separate list exists. §3's `count`,
+    `lifetimeSeconds` and `controllerId` are not built: no ability needs them yet (the wall is
+    permanent until broken, DEC-330 (7)). The body stays when its caster dies or leaves.
+  - **Placing.** `abilities/` may not import `entities/` (02 §2), so the step places through a
+    port, `Summoner` (`state/Summoner.types.ts`, on `CastContext.summoner`), which
+    `entities/EntitySummoner` satisfies with the match's one `EntityFactory`, as `ShotLauncher`
+    does for shots. `ObstacleDefinition.footprint` (07 §9) is the outline in metres with +x along
+    the facing; `Obstacle` turns it to the spawn's facing and installs it as a solid `Footprint`,
+    so reach, area hits and shots find the wall by its outline (`EntityStore.outlineOf`). The
+    wall has no team, so every attack of either team damages it, as a tree or a rock
+    (`structureMultiplier` applies).
+  - **Blocking.** The summoner makes a solid outline a wall through `GameState.walls`
+    (`PlacedWalls`, 10 §12): the static collision index, the nav grid and the lane fields. It
+    pushes every unit the outline covers out of the walls by the match's one push-out rule
+    (`CollisionQuery.pushOut`, which `BodySizeSystem` also uses; DEC-363), so no unit starts a
+    move inside a wall, with one exception. A push never moves a unit into a map object or
+    another wall (DEC-364, DEC-365), and it does not search for free ground. So a unit can stay
+    partly inside the new wall; it can walk out (10 §12, `INBOX.md` HC-S14). Such a unit is
+    pinned: something solid stopped the push (a map object, a wall, a structure or the map's
+    edge), so it still has no room where the push ends (`CollisionQuery.hasRoom`). `summon`
+    returns the pinned units (`SummonResult.pinnedIds`), and the step deals each one the
+    knock-back's `impactDamage` once, credited to the caster under the cast's id, through the
+    `DamagePipeline`, so friendly fire and the status multipliers apply (DEC-382, `INBOX.md`
+    HC-B43 (6)).
+  - **A step's aim check.** An effect may have `aimBlockedBy` (optional on `AbilityEffect`);
+    `CastValidator` asks every step of the ability after the targeting, so a refused cast spends
+    nothing. An effect may also have `casterBlockedBy`, a check without the aim (Berserk's
+    `no-room`, the Berserk bullet above). `CastValidator` asks it first, also in `slotBlockedBy`,
+    so the player snapshot shows its reason. The summon refuses (`no-target`) a wall whose outline would overlap a wall (terrain,
+    a blocking map object, another placed wall, the caster's oldest wall included) or reach past
+    the map's edge. A delayed step is checked at the cast.
+  - **Aim overlay.** `describe` gives one display step with the display-only shape `outline`
+    (`PlacedOutline` in `content/loadDisplayContent.ts`: the outline's corners and its
+    distance). Core places the outline; the client only draws it (DEC-382, HC-B43 (7) B,
+    `INBOX.md` HC-S15). The client asks `Simulation.summonPreview` (the
+    `MatchDeps.summonPreview` port). It runs `summonPreview` in `abilities/summonPlacement.ts`.
+    That function returns a `PlacedSummon`: the outline, with its middle `distance` ahead of the
+    caster and turned to face the aim, and whether the cast is refused there. It returns `null`
+    for the zero direction. `aimBlockedBy` refuses the cast with the same function, so the
+    preview and the cast use one rule. `AimTargeting` copies the result into the step. The
+    painter (`aimShapePainters.ts`) draws exactly that outline, red where it is refused, and
+    draws nothing for `null`. The client keeps no copy of the turning rule. The preview asks
+    from where the Legend is drawn, as a dash's reach does. The cast is checked from the
+    simulation's position on the next tick. So near a wall, while the Legend moves, the colour can
+    be wrong by up to one tick of movement (a dash's reach has the same limit). A Duel draws no
+    range overlay, so it has no port.
+  - **Not built.** DEC-307's stop of a charging Sentinel comes with PR 8; the wall blocks walking
+    and dashes like a map wall. `NoMapObjectOverlapInvariant` does not check placed walls
+    (`INBOX.md` HC-S14, scheduled with PR 8).
+  - **Client.** The snapshot carries a placed body's outline (`EntitySnapshot.outline`, left out
+    for every other entity). `DefaultEntityView` draws it, registered on purpose for the
+    `obstacle` family (`defaultViewRegistry.ts`), so a wall logs no "No view for kind" warning:
+    the outline filled in the team colour (neutral) with a dark edge, in place of the disc.
+- **Rip & Tear and Fear (`feat/sentinel-rip`, 2026-11-23; DEC-203, DEC-204, DEC-206, DEC-207;
+  DEC-382 (R1 A, R2 A, R3 D, R6 A)).** Rip & Tear is the Sentinel's `ability-2`
+  (`content/abilities/ripAndTear.ts`), `directional` (the fan needs a direction, so an aim on the
+  caster is refused, as for a dash). Its steps, in order: 180 damage to the enemies in the fan
+  under 30% health, 90 to those at or above it, an execute at or below 10%, a 1.5 m knock-back of
+  those under 30%, one bleed stack, then `feared` on the enemies in the circle of the fan's range.
+  DEC-382 holds the owner's answers to the cards "PR6 R1" to "PR6 R3" and "PR6 R6" (2026-11-26).
+  Its ability potency grows per level by its `scaling.amount.perLevel` (DEC-380 (2)).
+  Where the code differs from §3 and §8:
+  - **`cone` (§3).** `{ kind: 'cone', reach, arcDegrees }` (`abilities/shapes/ConeShape.ts`): a fan
+    from the caster along the cast's aim, `reach` metres past the caster's body edge (as a melee
+    sweep's reach, DEC-319), `arcDegrees` above 0 and at most 180, on the sweep's sector geometry
+    (`utils/sector.ts`). At 360 it is the whole circle of that reach: DEC-206 (2)'s circle "with the
+    fan's range as its radius", which needs no direction. `ShapePlacement` gets `direction` and
+    `casterRadius`; `CastInstance` adds both to every placement. A push moves away from the caster.
+  - **Health conditions and `execute` (§3).** A `damage`, `knockback` or `debuff` step may carry
+    `health: { below?, atOrAbove? }` (fractions of max health, base bar only). `TargetQuery` keeps
+    the targets that meet it, read when the step runs, so a hit earlier in the cast counts. A new
+    `execute` step (`ExecuteEffect`) kills the enemies at or below `atOrBelow` through
+    `DamagePipeline.execute`: a damage step that only reduces a hit does not count and shields go
+    too, but a step that blocks the hit fully (an unbreakable structure, a body that takes no
+    damage) stops it. It is announced as a killing hit, so the kill, the XP, the assists and the
+    ultimate meter follow as for any kill.
+    It kills units only: its step sets `families: 'units'` (`ExecuteSpec`, `ripAndTear.ts`), which
+    the effect turns into `TargetFilter.families` (§3) = `UNIT_FAMILIES`
+    (`entities/unitFamilies.ts`), so an enemy structure or map object at or below the threshold
+    is spared (DEC-382 (R6 A); DEC-206 (1) says "every enemy in the fan"). An
+    `execute` step with no `families` kills an enemy of any family.
+  - **Fear (§8).** `feared` (`content/status-effects/feared.ts`): half speed, `cannot-attack`,
+    `cannot-cast`, soft control, a time from its `durationSeconds` to its `maxDurationSeconds`, and
+    `steering: ['flee-source', 'cower']`: each Fear runs away or cowers (DEC-382 (R3 D)). A
+    status's `steering` lists the forms it may take; each form names a `StatusSteering` strategy
+    (`entities/strategies/`, the `steering` key of the strategy registry).
+    `StatusEffectApplier.apply` draws what a status leaves open, from the match's seeded RNG
+    (`state.rng`), when the application lands: a form when the status has two or more, then a
+    whole tick count from `durationTicks` to `maxDurationTicks` when the source gives no time of its
+    own. A status with one form and a fixed time draws nothing, so a match without Fear keeps its
+    hash. `StatusEffectRuntime.steering` keeps the form. A reapplication is a new Fear: it draws
+    again, and the later expiry wins. `StatusSteeringSystem` runs after the statuses and before
+    `MovementSystem`; each tick it sets the newest steering status's `heading` through the
+    strategy of that runtime's form. `flee-source` points straight away from the status's source,
+    and keeps the last heading once the source is gone. `cower` writes a zero heading.
+    `MovementSystem` walks the holder along that heading in place of its own
+    (`Movement.advance(speedScale, heading)`); a zero heading slows it to a stop. So a command, a
+    controller or `PathingSystem` steers underneath and takes over when the fear ends. A player's
+    Legend runs or cowers too; its cast is refused (`cannot-cast`). `StateHasher` hashes the form
+    and the heading of a steering status.
+  - **Status immunity (DEC-207).** `UnitDefinition.statusImmunities` lists the statuses a unit
+    never gets; the Sentinel's is `['feared']` (`content/legends/sentinel.ts`). `StatusEffects`
+    keeps the list and `StatusEffectApplier.apply` refuses such a status from any source, with no
+    event. `KnownStatusRefsRule` checks the ids at load.
+  - **The `hit` area only in an `onHit` list (DEC-343, HC-B26 (5)).** The boot check walks each
+    step with the list that holds it (`flattenSteps`); a list field named `onHit` (a shot's) and a
+    status's `onHit` are `onHit` lists. Each shape's `validate` gets the list, and `HitShape`
+    refuses a `hit` anywhere else, so content that puts it on a cast's own step or in a dash's
+    `onPath` or `onEnd` fails at boot.
+  - **Bots and client.** A Sentinel bot may now cast Rip & Tear at the enemy it fights
+    (`pickReadySlot` aims at the enemy's position). The aim overlay paints a cone as its fan toward
+    the pointer in darker blue, and a cone of 360 as a lighter-blue circle (DEC-206 (3)); the
+    circle is drawn after the fan, both translucent. The aim target carries the caster's body
+    radius.
 
 ## Related
 

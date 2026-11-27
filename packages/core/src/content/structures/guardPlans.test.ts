@@ -9,14 +9,26 @@ import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import { MOB_DEFINITIONS } from '../mobs/mobCatalogue';
 import { GUARD_PLANS } from './guardPlans';
 import { ZONE_DEFINITIONS } from '../zones/zoneCatalogue';
+import { STATUS_EFFECTS } from '../status-effects/statusEffectCatalogue';
 import { STRUCTURE_DEFINITIONS } from './structureCatalogue';
+
+/**
+ * The widest body a guard can face: the largest unit radius in content, grown by every `size`
+ * status at once (Berserk's 1.3, balancing.md:189).
+ */
+const largestTargetRadius = (): number =>
+  Math.max(
+    ...[...LEGEND_CLASSES.all(), ...MOB_DEFINITIONS.all()].map((unit) => unit.footprintRadius),
+  ) *
+  STATUS_EFFECTS.all()
+    .flatMap(({ modifiers }) => modifiers)
+    .filter(({ stat, op }) => stat === 'size' && op === 'mul')
+    .reduce((grown, { value }) => grown * value, 1);
 
 describe('GUARD_PLANS', () => {
   it('gives every guard a leash tolerance of one decision walk plus its farthest stance (DEC-144)', () => {
     const { tickRate } = createDefaultGameConfig();
-    const largestTarget = Math.max(
-      ...[...LEGEND_CLASSES.all(), ...MOB_DEFINITIONS.all()].map((unit) => unit.footprintRadius),
-    );
+    const largestTarget = largestTargetRadius();
     for (const plan of Object.values(GUARD_PLANS)) {
       for (const { mobId } of plan.table) {
         const guard = MOB_DEFINITIONS.get(mobId);
@@ -63,9 +75,7 @@ describe('GUARD_PLANS', () => {
     // floor((brains - 1) / budget) ticks in the AI queue (AI56-F2).
     const brains = 2 * limits.maxUnitsPerTeam + 48;
     const wait = Math.floor((brains - 1) / AI_CADENCE.maxDecisionsPerTick);
-    const largestTarget = Math.max(
-      ...[...LEGEND_CLASSES.all(), ...MOB_DEFINITIONS.all()].map((unit) => unit.footprintRadius),
-    );
+    const largestTarget = largestTargetRadius();
     for (const plan of Object.values(GUARD_PLANS)) {
       for (const { mobId } of plan.table) {
         const guard = MOB_DEFINITIONS.get(mobId);

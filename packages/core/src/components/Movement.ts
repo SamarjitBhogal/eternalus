@@ -128,12 +128,16 @@ export class Movement {
    *
    * @param speedScale - Multiplies `maxSpeed` for this tick (statuses: 0.7 slowed, 0 stunned,
    *   above 1 enraged). The speed limit (`limitSpeed`) still caps the result.
+   * @param heading - The heading for this tick only, in place of the entity's own (a status that
+   *   steers it, Fear); the own heading stays as it is. The own heading by default.
+   * @param accelerationScale - Multiplies `acceleration` while it speeds up along a heading this
+   *   tick (Berserk's 1.2, DEC-382 (R5 B)); slowing down without a heading keeps `acceleration`.
    */
-  public advance(speedScale = 1): void {
+  public advance(speedScale = 1, heading: Vec2 = this.currentHeading, accelerationScale = 1): void {
     const cap = Math.min(this.maxSpeed * speedScale, this.currentSpeedLimit);
     this.currentTopSpeed = cap;
-    if (this.currentHeading.x !== 0 || this.currentHeading.y !== 0) {
-      this.accelerateToward(this.currentHeading, cap);
+    if (heading.x !== 0 || heading.y !== 0) {
+      this.accelerateToward(heading, cap, this.acceleration * accelerationScale);
       return;
     }
 
@@ -145,10 +149,10 @@ export class Movement {
   }
 
   /**
-   * Speeds up by one tick of acceleration, up to `cap`, and points the velocity along
-   * `direction`. A zero direction stops the unit.
+   * Speeds up by one tick of acceleration (`rate`, `acceleration` by default), up to `cap`, and
+   * points the velocity along `direction`. A zero direction stops the unit.
    */
-  public accelerateToward(direction: Vec2, cap = this.maxSpeed): void {
+  public accelerateToward(direction: Vec2, cap = this.maxSpeed, rate = this.acceleration): void {
     const length = Math.hypot(direction.x, direction.y);
 
     if (length === 0) {
@@ -156,7 +160,7 @@ export class Movement {
       return;
     }
 
-    this.currentSpeed = Math.min(cap, this.currentSpeed + this.acceleration);
+    this.currentSpeed = Math.min(cap, this.currentSpeed + rate);
     const scale = this.currentSpeed / length;
     this.currentVelocity.x = direction.x * scale;
     this.currentVelocity.y = direction.y * scale;

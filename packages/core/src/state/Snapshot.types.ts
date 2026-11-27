@@ -49,6 +49,12 @@ export type EntitySnapshot = {
   readonly aether: { readonly current: number; readonly max: number } | null;
   /** The ground a zone covers (`ZoneArea`), as polygons in world units; `null` for non-zones. */
   readonly area: readonly Polygon[] | null;
+  /**
+   * The solid outline of a body placed during the match (an obstacle's `Footprint`: a Shield
+   * Wall), as polygons in world units, so the client can draw it. Absent for every other entity:
+   * a structure and a map object are drawn from the map.
+   */
+  readonly outline?: readonly Polygon[];
   /** A capture point's state (`Capturable`, architecture 07 §7); `null` for every other entity. */
   readonly capture: CaptureSnapshot | null;
   /**

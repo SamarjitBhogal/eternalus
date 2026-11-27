@@ -14,6 +14,7 @@ import { ProjectileFlight } from '../components/ProjectileFlight';
 import { ProjectilePayload } from '../components/ProjectilePayload';
 import { Progression } from '../components/Progression';
 import { StatusEffects } from '../components/StatusEffects';
+import { Summoned } from '../components/Summoned';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { INITIAL_FACING } from '../components/Transform.constants';
@@ -152,6 +153,32 @@ describe('StateHasher', () => {
 
     statuses.apply(veil, null, 0);
     expect(hasher.hash(state)).toBe(whole);
+  });
+
+  it('changes with the heading of a status that steers (Fear), which a source that is gone keeps', () => {
+    const { state, soldier } = stateWithSoldier();
+    const statuses = new StatusEffects();
+    soldier.addComponent(statuses);
+    statuses.apply(loadStatusEffects(30, 2).get('feared'), null, 0);
+    const still = hasher.hash(state);
+
+    const heading = statuses.steering?.heading;
+    if (heading === undefined) throw new Error('no steering status');
+    heading.x = -1;
+
+    expect(hasher.hash(state)).not.toBe(still);
+  });
+
+  it('changes with the form of a status that steers (Fear runs or cowers, DEC-382 (R3 D))', () => {
+    const hashWith = (form: 'flee-source' | 'cower'): number => {
+      const { state, soldier } = stateWithSoldier();
+      const statuses = new StatusEffects();
+      soldier.addComponent(statuses);
+      statuses.apply(loadStatusEffects(30, 2).get('feared'), null, 0, undefined, form);
+      return hasher.hash(state);
+    };
+
+    expect(hashWith('cower')).not.toBe(hashWith('flee-source'));
   });
 
   it('hashes an ability bar only once a slot leaves its initial state, then each slot field', () => {
@@ -933,5 +960,18 @@ describe('StateHasher', () => {
 
       expect(new Set(hashes).size).toBe(5);
     });
+  });
+
+  // A body without `Summoned` keeps the legacy fields ("hashes a match without hordes ...").
+  it('hashes a placed body’s caster, so two casters give two hashes (DEC-382, HC-B43 (3))', () => {
+    const hashOwnedBy = (ownerId?: string): number => {
+      const { state, soldier } = stateWithSoldier();
+      if (ownerId !== undefined) soldier.addComponent(new Summoned(ownerId));
+      return hasher.hash(state);
+    };
+    const unowned = hashOwnedBy();
+
+    expect(hashOwnedBy('entity-7')).toBe(hashOwnedBy('entity-7'));
+    expect(new Set([unowned, hashOwnedBy('entity-7'), hashOwnedBy('entity-8')]).size).toBe(3);
   });
 });

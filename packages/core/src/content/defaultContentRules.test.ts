@@ -15,6 +15,7 @@ import { KitInPoolRule } from './validation/KitInPoolRule';
 import { KnownAbilityRefsRule } from './validation/KnownAbilityRefsRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
 import { KnownProjectileRule } from './validation/KnownProjectileRule';
+import { KnownStatusRefsRule } from './validation/KnownStatusRefsRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
@@ -36,6 +37,7 @@ describe('createDefaultContentRules', () => {
       KnownProjectileRule,
       KnownAbilityRefsRule,
       KitInPoolRule,
+      KnownStatusRefsRule,
     ]);
   });
 

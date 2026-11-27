@@ -110,3 +110,9 @@ export const SWING_WEDGE = {
   color: '#ffffff',
   startOpacity: 0.5,
 } as const;
+
+/** Edge of a body drawn by its outline (a Shield Wall): dark stone, as the ruins' dark stone. */
+export const BODY_OUTLINE_EDGE_COLOR = '#55584f';
+
+/** Width of that edge, in screen pixels. */
+export const BODY_OUTLINE_EDGE_WIDTH = 2;

@@ -12,6 +12,7 @@ import type { AbilityKit, AbilitySlot } from '../content/abilities/AbilityDefini
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { casterState, TEST_KIT } from './__fixtures__/casterState';
 import { RecordingEffect } from './__fixtures__/RecordingEffect';
+import type { AbilityRejectReason } from '../content/abilities/AbilityDefinition.types';
 import { testAbilityRegistry } from './__fixtures__/fakeAbilities';
 import { CastValidator } from './CastValidator';
 
@@ -200,5 +201,77 @@ describe('CastValidator.slotBlockedBy (the slot alone, for the player snapshot)'
       'no entity "entity-404"',
     );
     expect(validator.blockedBy(state, 'entity-404', 'ability-1', AIM_EAST)).toBe('unknown-entity');
+  });
+
+  it('asks each step its own aim check, after the targeting: a refused aim spends nothing', () => {
+    /** A strike that cannot be aimed west of its caster (as a wall with no room). */
+    class EastOnlyStrike extends RecordingEffect {
+      public aimBlockedBy(_spec: unknown, { point }: Aim): AbilityRejectReason | null {
+        return point.x < 0 ? 'no-target' : null;
+      }
+    }
+    const { state, factory, caster } = casterState(TEST_KIT);
+    const validator = new CastValidator(testAbilityRegistry([new EastOnlyStrike('fake-strike')]));
+    const handlers = createDefaultCommandHandlers(validator);
+    const rejected: string[] = [];
+    state.events.on('command-rejected', ({ reason }) => rejected.push(reason));
+    const aether = caster.getComponent(Aether).current;
+
+    applyCommand(
+      {
+        type: 'cast-ability',
+        actorId: caster.id,
+        slot: 'ability-1',
+        aim: { point: { x: -5, y: 0 }, targetId: null },
+      },
+      handlers,
+      { state, factory },
+    );
+
+    expect(rejected).toEqual(['no-target']);
+    expect(caster.getComponent(Aether).current).toBe(aether);
+    expect(validator.blockedBy(state, caster.id, 'ability-1', AIM_EAST)).toBeNull();
+    expect(validator.slotBlockedBy(state, caster.id, 'ability-1')).toBeNull();
+  });
+
+  it('asks each step its check of the caster with and without an aim, before the aim check: a refused cast spends nothing', () => {
+    /** A strike that needs room around its caster (as Berserk, HC-Q113) and an aim east of it. */
+    class CrampedStrike extends RecordingEffect {
+      public isCramped = true;
+
+      public casterBlockedBy(): AbilityRejectReason | null {
+        return this.isCramped ? 'no-room' : null;
+      }
+
+      public aimBlockedBy(_spec: unknown, { point }: Aim): AbilityRejectReason | null {
+        return point.x < 0 ? 'no-target' : null;
+      }
+    }
+    const strike = new CrampedStrike('fake-strike');
+    const { state, factory, caster } = casterState(TEST_KIT);
+    const validator = new CastValidator(testAbilityRegistry([strike]));
+    const handlers = createDefaultCommandHandlers(validator);
+    const rejected: string[] = [];
+    state.events.on('command-rejected', ({ reason }) => rejected.push(reason));
+    const aether = caster.getComponent(Aether).current;
+    const west: Aim = { point: { x: -5, y: 0 }, targetId: null };
+
+    applyCommand(
+      { type: 'cast-ability', actorId: caster.id, slot: 'ability-1', aim: AIM_EAST },
+      handlers,
+      { state, factory },
+    );
+    const cramped = [
+      validator.slotBlockedBy(state, caster.id, 'ability-1'),
+      validator.blockedBy(state, caster.id, 'ability-1', west),
+    ];
+    strike.isCramped = false;
+
+    expect(rejected).toEqual(['no-room']);
+    expect(caster.getComponent(Aether).current).toBe(aether);
+    expect(caster.getComponent(Abilities).hasPendingCast).toBe(false);
+    expect(cramped).toEqual(['no-room', 'no-room']);
+    expect(validator.slotBlockedBy(state, caster.id, 'ability-1')).toBeNull();
+    expect(validator.blockedBy(state, caster.id, 'ability-1', west)).toBe('no-target');
   });
 });

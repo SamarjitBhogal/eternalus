@@ -7,6 +7,7 @@ import {
   MemoryLogger,
   NullLogger,
   Simulation,
+  type Snapshot,
   type Vec2,
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
@@ -24,7 +25,7 @@ import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
 import type { IntentSource } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
-import { AIM_OVERLAY_FILL_COLOR } from './views/AimOverlayView.constants';
+import { AIM_OVERLAY_FILL_COLOR, AIM_REFUSED_COLORS } from './views/AimOverlayView.constants';
 import { FOCUS_RING_COLOR } from './views/entityViews.constants';
 import { WINDUP_RING_COLOR, WINDUP_RING_COUNT } from './views/WindupRingsView.constants';
 
@@ -71,7 +72,7 @@ class ScriptedIntent implements IntentSource {
 /** Where a test `Simulation` finds definitions, when a test needs kinds the shipped content lacks. */
 type Content = NonNullable<ConstructorParameters<typeof Simulation>[0]['content']>;
 
-/** A rock (kind `obstacle`, which has no view of its own), alone: no human slot plays on it. */
+/** A rock (kind `obstacle`, drawn by the default view), alone: no human slot plays on it. */
 const CONTENT_WITH_A_ROCK: Content = (() => {
   const definitions = [
     {
@@ -99,22 +100,44 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
 })();
 
 /**
+ * A simulation whose snapshots show every rock as a zone of a kind that no view draws
+ * (`test-zone`): every shipped kind has a view, so only such a kind reaches the default view's
+ * warning.
+ */
+class UnknownKindSimulation extends Simulation {
+  public override snapshot(): Snapshot {
+    const snapshot = super.snapshot();
+    return {
+      ...snapshot,
+      entities: snapshot.entities.map((entity) =>
+        entity.kind === 'obstacle' ? { ...entity, kind: 'test-zone', family: 'zone' } : entity,
+      ),
+    };
+  }
+}
+
+/**
  * A match on seed 1's prepared world, with `PLAYER` the roster's human slot on the world's map
  * (core spawns the human slot at its Stronghold, and the map's hordes and guards spawn too); the
  * simulation gets the world's map objects only `withMapObjects`. With `content`, which lacks the
  * mobs the map's structures spawn, it plays in sim mode instead: no map, so no roster (a roster
  * needs the map).
  */
-const setUp = (content?: Content, withMapObjects = false) => {
+const setUp = (
+  content?: Content,
+  withMapObjects = false,
+  SimulationType: typeof Simulation = Simulation,
+  player: PlayerChoice = PLAYER,
+) => {
   // No countdown: core's countdown holds all movement, and these tests walk from the start.
   const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
   const world = prepareMatchWorld(config, SEED);
   const generated = world.map;
-  const simulation = new Simulation({
+  const simulation = new SimulationType({
     seed: SEED,
     logger: new NullLogger(),
     ...(content === undefined
-      ? { ...withPlayer(config, PLAYER), map: generated }
+      ? { ...withPlayer(config, player), map: generated }
       : { config, content }),
     ...(withMapObjects ? { mapObjects: world.mapObjects } : {}),
   });
@@ -137,6 +160,8 @@ const setUp = (content?: Content, withMapObjects = false) => {
     // The port as `createBrowserMatch` binds it.
     dashReach: (origin, direction, distance, radius) =>
       simulation.dashReach(origin, direction, distance, radius),
+    summonPreview: (corners, origin, direction, distance) =>
+      simulation.summonPreview(corners, origin, direction, distance),
     observer: { crashed: () => undefined, ended: () => undefined },
     // A bus only the tests listen to, at the shipped cadence.
     bridge: {
@@ -363,6 +388,44 @@ describe('Match range overlay', () => {
     const corners = path?.op === 'fillPolygon' ? path.args[0] : [];
     const [a, b] = corners;
     expect(Math.hypot((b?.x ?? 0) - (a?.x ?? 0), (b?.y ?? 0) - (a?.y ?? 0))).toBeCloseTo(3);
+    match.destroy();
+  });
+
+  it('asks the simulation where the Shield Wall stands, draws that outline, and draws a refused one in red (DEC-382, HC-B43 (7), HC-S15)', () => {
+    const { match, input, renderer, simulation } = setUp(undefined, false, Simulation, {
+      legend: 'sentinel',
+      team: 'light',
+    });
+    const outline = [
+      { x: 1, y: 1 },
+      { x: 2, y: 1 },
+      { x: 2, y: 5 },
+      { x: 1, y: 5 },
+    ];
+    const blocked = vi
+      .spyOn(simulation, 'summonPreview')
+      .mockReturnValue({ outline, isBlocked: true });
+    match.setCastMode('aim-then-click');
+    input.aim = { x: 40, y: 50 };
+    input.triggered = ['ability-3'];
+    match.tick();
+    input.triggered = [];
+    const fillsIn = (colour: string) =>
+      renderer.calls.filter((call) => call.op === 'fillPolygon' && call.args[1] === colour).length;
+
+    match.render(0);
+    expect(blocked).toHaveBeenCalled();
+    expect([fillsIn(AIM_REFUSED_COLORS.fill), fillsIn(AIM_OVERLAY_FILL_COLOR)]).toEqual([1, 0]);
+    expect(
+      renderer.calls.find(
+        (call) => call.op === 'fillPolygon' && call.args[1] === AIM_REFUSED_COLORS.fill,
+      )?.args[0],
+    ).toEqual(outline);
+
+    blocked.mockReturnValue({ outline, isBlocked: false });
+    renderer.calls.length = 0;
+    match.render(0);
+    expect([fillsIn(AIM_REFUSED_COLORS.fill), fillsIn(AIM_OVERLAY_FILL_COLOR)]).toEqual([0, 1]);
     match.destroy();
   });
 
@@ -622,6 +685,29 @@ describe('Match', () => {
   });
 
   it('logs once for each kind it has to draw with the default view', () => {
+    const { match, simulation, logger } = setUp(CONTENT_WITH_A_ROCK, false, UnknownKindSimulation);
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'obstacle',
+      definitionId: 'rock',
+      team: 'neutral',
+      at: { x: 100, y: 100 },
+      count: 2,
+    });
+    match.tick();
+
+    match.render(0);
+    match.render(0);
+
+    expect(match.snapshot.entities.filter(({ kind }) => kind === 'test-zone')).toHaveLength(2);
+    expect(
+      logger.records.map(({ severityText, scope, body }) => [severityText, scope, body]),
+    ).toEqual([
+      ['WARN', 'client.views', 'No view for kind "test-zone"; drawing the default view.'],
+    ]);
+  });
+
+  it('draws an obstacle outside the map objects (a placed wall) with the default view, logging no warning', () => {
     const { match, simulation, logger } = setUp(CONTENT_WITH_A_ROCK);
     simulation.enqueueCommand({
       type: 'dev-spawn',
@@ -636,9 +722,8 @@ describe('Match', () => {
     match.render(0);
     match.render(0);
 
-    expect(
-      logger.records.map(({ severityText, scope, body }) => [severityText, scope, body]),
-    ).toEqual([['WARN', 'client.views', 'No view for kind "obstacle"; drawing the default view.']]);
+    expect(match.snapshot.entities.filter(({ kind }) => kind === 'obstacle')).toHaveLength(2);
+    expect(logger.records).toEqual([]);
   });
 
   it('draws the lane hordes and other mobs with their own view, logging no default-view warning', () => {

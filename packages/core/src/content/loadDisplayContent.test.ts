@@ -187,11 +187,22 @@ describe('loadDisplayContent', () => {
     );
   });
 
-  it('marks exactly the seven built abilities available; the others have no steps', () => {
+  it('marks exactly the ten built abilities available; the others have no steps', () => {
     const { abilities } = load();
 
     expect(abilities.filter((ability) => ability.isAvailable).map((ability) => ability.id)).toEqual(
-      ['blade-runner', 'veil', 'hamstring', 'fury', 'fury-dash', 'slam', 'shockwave'],
+      [
+        'blade-runner',
+        'veil',
+        'hamstring',
+        'fury',
+        'fury-dash',
+        'slam',
+        'rip-and-tear',
+        'shield-wall',
+        'berserk',
+        'shockwave',
+      ],
     );
     for (const ability of abilities.filter((entry) => !entry.isAvailable)) {
       expect(ability.steps).toEqual([]);

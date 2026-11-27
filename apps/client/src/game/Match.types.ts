@@ -7,6 +7,7 @@ import type {
   MapFeatureKind,
   MapObject,
   MapPresentation,
+  PlacedSummon,
   Simulation,
   Vec2,
 } from '@eternalus/core';
@@ -87,6 +88,20 @@ export type MatchSimulation = Pick<
  */
 export type DashReach = (origin: Vec2, direction: Vec2, distance: number, radius: number) => number;
 
+/**
+ * Where a body with the outline `corners` (metres, +x along its facing) stands when it is placed
+ * `distance` metres from `origin` along the unit `direction`, and whether it cannot stand there:
+ * the simulation's own rule (`Simulation.summonPreview`, the one a `summon` step refuses a cast
+ * with), so the range overlay draws the outline core placed and shows where a Shield Wall cast is
+ * refused (DEC-382, HC-B43 (7), HC-S15). `null` for the zero direction.
+ */
+export type SummonPreview = (
+  corners: readonly Vec2[],
+  origin: Vec2,
+  direction: Vec2,
+  distance: number,
+) => PlacedSummon | null;
+
 /** How an online Duel differs from a local match for `Match` (ADR 0016 point 1). */
 type RemotePlayer = {
   /** The player's Legend from the server's `match-found`; never `snapshot.match.humanLegendId`. */
@@ -120,6 +135,13 @@ export type MatchDeps = {
    * clamp from the server or a client-side copy of the walls.
    */
   readonly dashReach?: DashReach;
+  /**
+   * Where a placed body (a Shield Wall) stands and whether it is refused there: the local
+   * simulation's `summonPreview`. The range overlay draws only this outline, so without it an
+   * outline step draws nothing. Absent online, as `dashReach` is: a Duel draws no range overlay
+   * (`createBrowserDuelMatch` gives it no abilities), so nothing is lost there.
+   */
+  readonly summonPreview?: SummonPreview;
   /** Hears the match crash or end (the request's observer). */
   readonly observer: MatchObserver;
   /** Where the match's `MatchBridge` publishes, and what (architecture 08 §7). */

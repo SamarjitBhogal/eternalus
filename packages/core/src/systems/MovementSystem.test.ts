@@ -6,7 +6,9 @@ import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import type { MapDefinition, MapPresentation } from '../content/maps/maps.types';
+import { BERSERK } from '../content/status-effects/berserk';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
+import { loadWeapons } from '../content/weapons/loadWeapons';
 import { MapObjectBuilder } from '../map/MapObjectBuilder';
 import { staticCollisionIndexOf } from '../map/staticCollisionIndexOf';
 import { NullLogger } from '../diagnostics/NullLogger';
@@ -152,6 +154,46 @@ describe('MovementSystem', () => {
 
     expect(movement.speed).toBe(0);
     expect(transform.facing).toEqual({ x: 0, y: -1 });
+  });
+
+  it('speeds a Berserk Sentinel up 20% faster from a stop than top speed alone would (DEC-382 (R5 B))', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      UNIT_DEFINITIONS,
+      undefined,
+      loadWeapons(30),
+    );
+    const statuses = loadStatusEffects(30, 2, [
+      BERSERK,
+      {
+        ...BERSERK,
+        id: 'top-speed-only',
+        modifiers: [{ stat: 'moveSpeed', op: 'mul', value: 1.2 }],
+      },
+    ]);
+    const sentinelWith = (statusId: string, y: number): Movement => {
+      const sentinel = factory.create('sentinel', 'sentinel', {
+        position: { x: 0, y },
+        team: 'light',
+      });
+      state.entities.add(sentinel);
+      sentinel.getComponent(StatusEffects).apply(statuses.get(statusId), null, 0);
+      sentinel.getComponent(Movement).steer({ x: 1, y: 0 });
+      return sentinel.getComponent(Movement);
+    };
+    const berserk = sentinelWith('berserk', 0);
+    const topSpeedOnly = sentinelWith('top-speed-only', 10);
+    const system = new MovementSystem();
+
+    for (let tick = 0; tick < 30; tick += 1) {
+      system.update({ state, logger: new NullLogger() });
+    }
+
+    // Far below either top speed: the Sentinel speeds up very slowly (content/legends/sentinel.ts).
+    expect(topSpeedOnly.speed).toBeCloseTo(30 * topSpeedOnly.acceleration, 12);
+    expect(berserk.speed).toBeGreaterThan(topSpeedOnly.speed);
+    expect(berserk.speed / topSpeedOnly.speed).toBeCloseTo(1.2, 12);
   });
 
   it('leaves entities without Movement where they are', () => {

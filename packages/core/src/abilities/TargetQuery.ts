@@ -1,3 +1,4 @@
+import type { HealthCondition } from '../content/abilities/AbilityDefinition.types';
 import { AreaHitQuery } from '../state/AreaHitQuery';
 import type { AreaAim } from '../state/AreaHitQuery.types';
 import type { EntityId } from '../state/EntityStore.types';
@@ -15,7 +16,9 @@ const NO_AIM: AreaAim = { targetId: null, point: null };
  * relative to the caster, sorted by id, so every run hits in the same order. A body with an
  * outline (a house, a wall, a fort, a structure footprint) is tested by its polygons, as a basic
  * attack reaches it; any other body by its circle. A walk-on outline is hit only when the cast
- * aims at it, and a body that takes no damage now is not hit.
+ * aims at it, and a body that takes no damage now is not hit. A filter's families then keep the
+ * bodies of those families, and its health condition the bodies whose health, read now, meets it
+ * (DEC-204).
  */
 export class TargetQuery {
   private readonly areas = new AreaHitQuery();
@@ -40,7 +43,7 @@ export class TargetQuery {
     aim: AreaAim = NO_AIM,
   ): readonly EntityId[] {
     const area = this.shapes.shapeFor(shape.kind);
-    return this.areas.find(
+    const found = this.areas.find(
       state.entities,
       casterId,
       {
@@ -49,6 +52,24 @@ export class TargetQuery {
       },
       aim,
       filter,
+    );
+    const { health, families } = filter;
+    return found.filter(
+      (id) =>
+        (families === undefined || families.includes(state.entities.get(id)?.family ?? '')) &&
+        (health === undefined || TargetQuery.meets(state.entities.healthFractionOf(id), health)),
+    );
+  }
+
+  /** Whether a health fraction (`undefined` without `Health`) meets `condition`. */
+  private static meets(
+    fraction: number | undefined,
+    { below, atOrAbove }: HealthCondition,
+  ): boolean {
+    return (
+      fraction !== undefined &&
+      (below === undefined || fraction < below) &&
+      (atOrAbove === undefined || fraction >= atOrAbove)
     );
   }
 }

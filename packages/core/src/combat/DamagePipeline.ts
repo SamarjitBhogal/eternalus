@@ -44,19 +44,64 @@ export class DamagePipeline {
     if (amount === 0) {
       return { applied: false, reason: 'zero-damage' };
     }
-    const final = this.steps.reduce(
-      (current, step) => Math.max(0, step.adjust({ targetId, amount: current, source }, state)),
-      amount,
-    );
+    const final = this.afterSteps(state, targetId, amount, source);
     if (final === 0) {
       return { applied: false, reason: 'blocked' };
     }
 
-    const { toShields, toBase } = health.applyDamage(final);
-    state.events.emit('damage-applied', { targetId, amount: toBase, absorbed: toShields, source });
+    return DamagePipeline.land(state, targetId, health, final, source);
+  }
 
-    // Not `health.isDead`: TypeScript still narrows it to false from the check above.
-    const killed = health.current === 0;
+  /**
+   * Kills `targetId` outright (an ability's `execute` step, DEC-204): it takes the target's health
+   * and every shield bar. The damage steps run on that amount only to find a full block (an
+   * unbreakable structure, a body that takes no damage, a teammate): then nothing happens. A step
+   * that only reduces the hit does not count, so nothing reduces an execute (not `damageTaken`,
+   * not a shield). It is announced as a killing hit from `source` (`damage-applied`, then
+   * `entity-died`), so the kill, the XP, the assists and the ultimate meter follow as for any kill.
+   */
+  public execute(state: GameState, targetId: EntityId, source: DamageSource): DamageResult {
+    const target = state.entities.get(targetId);
+    if (target === undefined) {
+      return { applied: false, reason: 'no-target' };
+    }
+    const health = target.findComponent(Health);
+    if (health === undefined) {
+      return { applied: false, reason: 'no-health' };
+    }
+    if (health.isDead) {
+      return { applied: false, reason: 'already-dead' };
+    }
+    if (this.afterSteps(state, targetId, health.total, source) === 0) {
+      return { applied: false, reason: 'blocked' };
+    }
+    return DamagePipeline.land(state, targetId, health, health.total, source);
+  }
+
+  /** `amount` after every damage step, in order, never below 0. */
+  private afterSteps(
+    state: GameState,
+    targetId: EntityId,
+    amount: number,
+    source: DamageSource,
+  ): number {
+    return this.steps.reduce(
+      (current, step) => Math.max(0, step.adjust({ targetId, amount: current, source }, state)),
+      amount,
+    );
+  }
+
+  /** Takes `amount` from `health` and announces the hit, and the kill when it took the last of it. */
+  private static land(
+    state: GameState,
+    targetId: EntityId,
+    health: Health,
+    amount: number,
+    source: DamageSource,
+  ): DamageResult {
+    const { toShields, toBase } = health.applyDamage(amount);
+    state.events.emit('damage-applied', { targetId, amount: toBase, absorbed: toShields, source });
+    const killed = health.isDead;
     if (killed) {
       state.events.emit('entity-died', { entityId: targetId, killer: source });
     }

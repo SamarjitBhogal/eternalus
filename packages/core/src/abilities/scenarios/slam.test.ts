@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { abilityMatch } from '../__fixtures__/abilityMatch';
 
 /**
- * Slam (balancing.md:185, :123): a 4 m circle around the Sentinel, 150 damage (x 2 against
+ * Slam (balancing.md:187, :123): a 4 m circle around the Sentinel, 150 damage (x 2 against
  * structures and obstacles), a 3 m knock-back for a base-mass target and a 0.8 s (24 tick)
  * knock-up. The Sentinel stands at (50, 50); a self-centred cast needs no aim, so it aims at itself.
  */

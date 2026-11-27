@@ -1,4 +1,8 @@
-import type { StatusEffectDefinition } from '../content/status-effects/statusEffects.types';
+import type {
+  StatusEffectDefinition,
+  StatusSteeringKind,
+} from '../content/status-effects/statusEffects.types';
+import type { MutableVec2 } from '../utils/vec2.types';
 
 /**
  * One active status on one entity (architecture 05 section 8). `StatusEffects` keeps and reuses
@@ -29,6 +33,19 @@ export class StatusEffectRuntime {
    */
   public isBroken = false;
 
+  /**
+   * The form in which this application steers its holder: one of `definition.steering` (Fear runs
+   * or cowers, DEC-382 (R3 D)). `null` for a status that does not steer. `start` and `reapply` set
+   * it; `StatusSteeringSystem` reads it.
+   */
+  public steering: StatusSteeringKind | null = null;
+
+  /**
+   * The heading a status that steers its holder (`steering`, Fear) last gave it, written by
+   * `StatusSteeringSystem` each tick; zero before the first and for any other status.
+   */
+  public readonly heading: MutableVec2 = { x: 0, y: 0 };
+
   /** @param definition - The status this is an instance of; `start` sets it again on reuse. */
   public constructor(public definition: StatusEffectDefinition) {}
 
@@ -36,18 +53,24 @@ export class StatusEffectRuntime {
    * (Re)starts this instance as a fresh application of `definition` (loaded, in ticks) at `tick`.
    *
    * @param durationTicks - This application's own duration (a source's override, e.g. Blade
-   *   Runner's 0.5 s stun); the definition's `durationTicks` when omitted.
+   *   Runner's 0.5 s stun, or a drawn one); the definition's `durationTicks` when omitted.
+   * @param steering - This application's form (`StatusEffectApplier` draws it); the definition's
+   *   first form when omitted, `null` when it has none.
    */
   public start(
     definition: StatusEffectDefinition,
     sourceId: string | null,
     tick: number,
     durationTicks?: number,
+    steering?: StatusSteeringKind,
   ): this {
     this.definition = definition;
     this.sourceId = sourceId;
     this.stacks = 1;
     this.isBroken = false;
+    this.steering = steering ?? definition.steering?.[0] ?? null;
+    this.heading.x = 0;
+    this.heading.y = 0;
     this.periodAnchorTick = tick;
     this.periodTicks = definition.periodic?.everyTicks ?? null;
     this.expiresTick = this.expiryOf(tick, durationTicks);
@@ -59,12 +82,19 @@ export class StatusEffectRuntime {
    * runs to the later of its current expiry and this application's (`durationTicks`, else the
    * definition's), so a reapplication never shortens the time left: a 0.5 s stun on a target with
    * 2 s of stun left leaves 2 s, on one with 0.2 s left gives 0.5 s. It comes after any hit
-   * that broke the status, so it clears `isBroken`.
+   * that broke the status, so it clears `isBroken`. It takes this application's form (`steering`,
+   * as `start` does): a new Fear may cower where the last one ran.
    */
-  public reapply(sourceId: string | null, tick: number, durationTicks?: number): void {
+  public reapply(
+    sourceId: string | null,
+    tick: number,
+    durationTicks?: number,
+    steering?: StatusSteeringKind,
+  ): void {
     const { stacking, maxStacks } = this.definition;
     this.sourceId = sourceId;
     this.isBroken = false;
+    this.steering = steering ?? this.definition.steering?.[0] ?? null;
     switch (stacking) {
       case 'refresh':
         break;
