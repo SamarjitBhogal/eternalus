@@ -20,19 +20,23 @@ type TargetSnapshot = Pick<Snapshot, 'entities' | 'mapObjects'>;
 
 /**
  * Turns the player's intent into commands for the player's Legend, once a tick (`Match.tick`):
- * `move` or `stop` only when the movement axes change, and `attack-target` once per target the
- * held attack button aims at (a living enemy unit under the cursor first, else a map object). A
- * press the canvas gestures own is no held attack (`setPointerClaimed`; 06 §10, attack and roof
- * input arbitration): with the developer explorer shown that is every press, and a plain click
- * attacks once on its release instead (`MatchViewControls.clickAt`, DEC-150). It only turns input
- * into commands: `apply` tells `Match` whether the player moves, and `Match` tells the camera
- * (DEC-151).
+ * `move` or `stop` only when the movement axes change, `jump` only when the jump key's held state
+ * changes (DEC-390: core jumps again on each landing while it is held), and `attack-target` once
+ * per target the held attack button aims at (a living enemy unit under the cursor first, else a
+ * map object). A press the canvas gestures own is no held attack (`setPointerClaimed`; 06 §10,
+ * attack and roof input arbitration): with the developer explorer shown that is every press, and a
+ * plain click attacks once on its release instead (`MatchViewControls.clickAt`, DEC-150). It only
+ * turns input into commands: `apply` tells `Match` whether the player moves, and `Match` tells the
+ * camera (DEC-151).
  */
 export class PlayerCommands implements PlayerActions {
   private lastMove: Vec2 = { x: 0, y: 0 };
 
   /** The unit or map object the held attack targeted last; `null` once released or stopped. */
   private attackTargetId: EntityId | null = null;
+
+  /** The held state the last `jump` sent; `false` for a Legend back from a respawn. */
+  private wasJumpHeld = false;
 
   /** Whether the Legend was in the last snapshot: a Legend back from a respawn returns stopped. */
   private wasPlayerPresent = false;
@@ -68,16 +72,18 @@ export class PlayerCommands implements PlayerActions {
    * @returns Whether the player's movement input is non-zero this tick.
    */
   public apply(actorId: EntityId, snapshot: TargetSnapshot): boolean {
-    const { move, isAttacking, aim } = this.input.read(this.camera);
+    const { move, isAttacking, isJumping, aim } = this.input.read(this.camera);
     const isPlayerPresent = snapshot.entities.some((entity) => entity.id === actorId);
     if (isPlayerPresent && !this.wasPlayerPresent) {
       // A Legend back from a respawn has no movement and no target: send the held input again.
       this.lastMove = { x: 0, y: 0 };
       this.attackTargetId = null;
+      this.wasJumpHeld = false;
     }
     this.wasPlayerPresent = isPlayerPresent;
     const attackAim = isAttacking === true && !this.isPointerClaimed ? aim : null;
     this.applyAttack(actorId, attackAim, snapshot);
+    this.applyJump(actorId, isJumping === true);
     const isMoving = move.x !== 0 || move.y !== 0;
     if (move.x === this.lastMove.x && move.y === this.lastMove.y) {
       return isMoving;
@@ -131,6 +137,14 @@ export class PlayerCommands implements PlayerActions {
       this.simulation.enqueueCommand({ type: 'attack-target', actorId, targetId });
     }
     this.attackTargetId = targetId;
+  }
+
+  /** Queues `jump` when the held state of the jump key changes (DEC-390). */
+  private applyJump(actorId: EntityId, isHeld: boolean): void {
+    if (isHeld !== this.wasJumpHeld) {
+      this.simulation.enqueueCommand({ type: 'jump', actorId, isHeld });
+      this.wasJumpHeld = isHeld;
+    }
   }
 
   private readonly visualRadiusFor = (entity: EntitySnapshot): number =>

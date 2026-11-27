@@ -64,8 +64,9 @@ export class InputMapper {
   }
 
   /**
-   * The intent for this frame: one normalised move vector (screen axes, y down), the world
-   * point under the pointer and the ability and gadget slots pressed this frame.
+   * The intent for this frame: one normalised move vector (screen axes, y down), whether attack
+   * and jump are held, the world point under the pointer and the ability and gadget slots pressed
+   * this frame.
    */
   public toIntent(actions: ActionState, projection: Projection): InputIntent {
     const { held, pressed, pointer } = actions;
@@ -76,6 +77,7 @@ export class InputMapper {
     const scale = x !== 0 && y !== 0 ? Math.SQRT1_2 : 1;
     return {
       ...(held.has('attack') ? { isAttacking: true } : {}),
+      ...(held.has('jump') ? { isJumping: true } : {}),
       move: { x: x * scale, y: y * scale },
       aim: pointer === null ? null : projection.screenToWorld(pointer),
       triggered: CAST_SLOTS.filter((slot) => pressed.has(slot)),
