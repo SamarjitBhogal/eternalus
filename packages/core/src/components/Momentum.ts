@@ -3,6 +3,7 @@ import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
 import { sqrt } from '../utils/deterministicMath';
+import { slideOffInto } from '../utils/slideOff';
 
 /**
  * The velocity rule of a unit with momentum (the Sentinel's Wrecking Run, DEC-307; architecture
@@ -94,14 +95,14 @@ export class Momentum {
   /**
    * The unit's last move touched the walls or world edges whose unit normals, pointing out of
    * each, are `normals` (`CollisionSystem`): drops the part of `velocity` that runs into them
-   * (`slideOff`), so a head-on hit stops the unit, a glancing one keeps its slide along the wall,
-   * and a press into a corner stops it. Keeps the walls for the next `drive`.
+   * (`slideOffInto`), so a head-on hit stops the unit, a glancing one keeps its slide along the
+   * wall, and a press into a corner stops it. Keeps the walls for the next `drive`.
    * Mutates `velocity` and returns its length, the new speed.
    */
   public shed(velocity: MutableVec2, normals: readonly Vec2[]): number {
     this.forgetWalls();
     for (const normal of normals) this.walls.push(normal);
-    this.slideOff(velocity.x, velocity.y, velocity);
+    slideOffInto(velocity, velocity, this.walls);
     return sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
   }
 
@@ -117,13 +118,13 @@ export class Momentum {
 
   /**
    * Points `guide` where this tick's drive builds and sets `press`, the part of `heading` that runs
-   * into the walls the last move touched (`slideOff` takes it off). Returns the most speed the
+   * into the walls the last move touched (`slideOffInto` takes it off). Returns the most speed the
    * drive builds to along `guide`: `top` in the open, `top` times what is left of the heading at a
    * wall, and 0 head-on or in a corner.
    */
   private aim(heading: Vec2, top: number): number {
     const { guide, press } = this;
-    this.slideOff(heading.x, heading.y, guide);
+    slideOffInto(guide, heading, this.walls);
     press.x = heading.x - guide.x;
     press.y = heading.y - guide.y;
     if (press.x === 0 && press.y === 0) return top;
@@ -131,41 +132,6 @@ export class Momentum {
     guide.x = reach === 0 ? 0 : guide.x / reach;
     guide.y = reach === 0 ? 0 : guide.y / reach;
     return top * reach;
-  }
-
-  /**
-   * Sets `out` to the vector closest to (`x`, `y`) that runs into none of the walls the last move
-   * touched, as a frictionless contact does: the vector itself, else its slide along the one wall
-   * that leaves it clear of the others, else zero (head-on, or pressed into a corner). Sliding off
-   * each wall in turn is not enough: in a corner wider than 90° it leaves a part that points out
-   * along the second wall, and the unit flips between the walls every tick.
-   */
-  private slideOff(x: number, y: number, out: MutableVec2): void {
-    out.x = x;
-    out.y = y;
-    if (this.isClear(x, y, 0)) return;
-    out.x = 0;
-    out.y = 0;
-    let reach = 0;
-    for (const wall of this.walls) {
-      const into = -(x * wall.x + y * wall.y);
-      if (into <= 0) continue;
-      const slidX = x + wall.x * into;
-      const slidY = y + wall.y * into;
-      const length = slidX * slidX + slidY * slidY;
-      // The slide runs along this wall, so roundoff can put it a hair into this wall or one in line.
-      if (length > reach && this.isClear(slidX, slidY, CONTACT_EPSILON)) {
-        out.x = slidX;
-        out.y = slidY;
-        reach = length;
-      }
-    }
-  }
-
-  /** Whether (`x`, `y`) runs into none of the walls the last move touched by more than `slack`. */
-  private isClear(x: number, y: number, slack: number): boolean {
-    for (const wall of this.walls) if (x * wall.x + y * wall.y < -slack) return false;
-    return true;
   }
 
   /**

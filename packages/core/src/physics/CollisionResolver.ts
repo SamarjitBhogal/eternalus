@@ -7,6 +7,8 @@ import type { SweepContact } from './sweepCircle.types';
 import { isPointInPolygon } from '../utils/geometry';
 import { circlePenetration, isCircleInsidePolygon } from '../utils/circlePolygon';
 import { CONTACT_EPSILON } from '../utils/circlePolygon.constants';
+import { slideOffInto } from '../utils/slideOff';
+import { scaleInto } from '../utils/vec2';
 
 /**
  * Resolves continuous circle motion against static polygons, sliding along walls and corners, and
@@ -71,25 +73,28 @@ export class CollisionResolver {
   }
 
   /**
-   * `move` without the bounds: the sweep and the slide. It slides the rest of the move off each
-   * wall in turn, so a unit pressed into a corner wider than 90° moves a hair out along one wall,
-   * and back, from tick to tick (a known defect, `INBOX.md` HC-B33).
+   * `move` without the bounds: the sweep and the slide. At each wall it meets, what is left of the
+   * whole move slides off every wall the move has met so far at once (`slideOffInto`), so a unit
+   * pressed into a corner of any angle stops dead (`INBOX.md` HC-B33).
    */
   private slide(start: Vec2, displacement: Vec2, radius: number, contacts?: Vec2[]): Vec2 {
-    let position = { ...start };
-    let delta = { ...displacement };
+    const walls: Vec2[] = [];
+    const position = { ...start };
+    const delta = { ...displacement };
+    let left = 1;
     for (let iteration = 0; iteration < MAX_SLIDE_CONTACTS; iteration++) {
       const contact = this.firstContact(position, delta, radius);
       if (contact === null) return { x: position.x + delta.x, y: position.y + delta.y };
       contacts?.push(contact.normal);
+      // ponytail: a wall the slide has left (round a column) still limits the rest of this move,
+      // so a fast move can stop a tick early at the next wall. Upgrade: keep only the walls the
+      // circle still touches, which needs each contact's polygon.
+      walls.push(contact.normal);
       const travel = CollisionResolver.shortOf(contact, delta);
-      position = { x: position.x + delta.x * travel, y: position.y + delta.y * travel };
-      const remainder = { x: delta.x * (1 - contact.time), y: delta.y * (1 - contact.time) };
-      const intoWall = Math.min(0, remainder.x * contact.normal.x + remainder.y * contact.normal.y);
-      delta = {
-        x: remainder.x - contact.normal.x * intoWall,
-        y: remainder.y - contact.normal.y * intoWall,
-      };
+      position.x += delta.x * travel;
+      position.y += delta.y * travel;
+      left *= 1 - contact.time;
+      slideOffInto(delta, scaleInto(delta, displacement, left), walls);
       if (Math.hypot(delta.x, delta.y) <= CONTACT_EPSILON) return position;
     }
     return position;

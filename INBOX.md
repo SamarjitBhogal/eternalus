@@ -702,8 +702,11 @@ Reply inline (`Decision: …`).
       `eternalus-agent-work/abilities/pr8-passives/probe/probe-obtuse-fix3.txt` and
       `probe-obtuse-r3-arch.txt`; the 150° and push numbers are from the gate round 3 correctness
       critic.
-  - Answered 2026-11-23 (DEC-330): "A: fix it in a small PR before PR 8 merges". Not built yet;
-    the fix PR comes after the PR 8 follow-up.
+  - Answered 2026-11-23 (DEC-330): "A: fix it in a small PR before PR 8 merges". Built on
+    `fix/wide-corner-slide`, a PR into `feat/class-passives` (2026-11-23, GAME-LOOP-AND-POST-GAME-64):
+    the resolver and `Momentum` share one slide rule, `utils/slideOff.ts` (10 §7). A Sentinel
+    pressed into a 120° or 135° corner now settles and faces one way, and a push into the corner no
+    longer moves it (numbers: `docs/plan/progress/2026-11-23-0900-fix-wide-corner-slide.md`).
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
