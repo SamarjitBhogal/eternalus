@@ -3464,6 +3464,12 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Done
 
+- 2026-11-26 — **Camp rewards: the clearing Legend is the last killer; the three critic refactors
+  are dropped (DEC-375)** (`feat/camp-rewards`, PR #153): you chose "as built" for who gets the
+  camp clear bonus (the Legend that killed the camp's last mob; nobody when a minion or turret
+  does) and dropped B1 to B3. Closes "Camp rewards" and "`feat/camp-rewards` critic (2026-11-22),
+  better than the design". Decision: DEC-375.
+
 - 2026-11-26 — **Bot path cache: "one leg late" accepted (DEC-373)** (`feat/minion-bot-path-cache`,
   PR #84): you chose (a), accept as built. The cache holds no grid version; a way that opens while
   a bot walks a cached leg is found at most one leg late. Doc 11 §6 states it. Decision: DEC-373.
