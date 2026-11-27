@@ -3,6 +3,7 @@ import { FiniteTransformsInvariant } from './invariants/FiniteTransformsInvarian
 import { HealthWithinBoundsInvariant } from './invariants/HealthWithinBoundsInvariant';
 import { GuardWithinLeashInvariant } from './invariants/GuardWithinLeashInvariant';
 import { HordeMembershipConsistentInvariant } from './invariants/HordeMembershipConsistentInvariant';
+import { MapFeatureGroupsUniqueInvariant } from './invariants/MapFeatureGroupsUniqueInvariant';
 import { LevelMatchesXpInvariant } from './invariants/LevelMatchesXpInvariant';
 import { NoDeathWithoutKillerInvariant } from './invariants/NoDeathWithoutKillerInvariant';
 import { NoMapObjectOverlapInvariant } from './invariants/NoMapObjectOverlapInvariant';
@@ -36,6 +37,7 @@ export class DefaultInvariantRunner extends InvariantRunner {
         new LevelMatchesXpInvariant(curves),
         new StatusStacksWithinMaxInvariant(),
         new CaptureProgressBoundsInvariant(),
+        new MapFeatureGroupsUniqueInvariant(),
         new PhaseMonotonicInvariant(phaseOrder, terminalPhases),
       ],
       debug,

@@ -299,8 +299,15 @@ heavy plus light assist mobs; 3: one massive "Balrog-type" mob; DEC-260), held b
 that owns the point, or neutral while no team does ([18](18-minion-system.md) MS-28, §7.1;
 DEC-257). They never respawn. A change of owner keeps the ones still alive: they fight the new
 owner's units inside the zone and count as presence for their own side, so the new owner must
-kill them to keep the point (DEC-261). A cleared checkpoint awards XP shared among nearby allies biased toward the top
-damage dealer (`ProgressionSystem` listens to `checkpoint-cleared`). Holding a zone applies
+kill them to keep the point (DEC-261). Defenders level from their kills like tower guards
+(DEC-260). A capture point holds at most `CHECKPOINT_DEFENDER_LIMIT` defenders, living (of any
+side) or waiting for room under the unit cap: a reached set that does not fit adds only the
+defenders that fit, in table order, and a team's waiting defenders are cancelled when the point
+changes owner (DEC-350). Each reached checkpoint's defenders are one set; when a set's last
+defender is lost, the roster announces `checkpoint-cleared`, and `ProgressionSystem` shares the
+checkpoint's XP among the clearing team's living Legends near where it fell, biased toward the
+damage each dealt to the set (`xpSources.checkpointCleared`; the damage is kept in
+`GameState.defenderDamage`); DEC-376 fixes how the sources' silent points are read. Holding a zone applies
 `StatusEffects` from content: ability/ultimate cooldown reduction, removed on loss. Every capture
 point has a zone level-up (DEC-258): once a side has held it for the hold time without a break,
 that side's hordes spawned on its lane gain minion levels, and losing the point takes them back on
@@ -430,7 +437,7 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `Stronghold`, `SpawnerTower`, `BuffTower` and `Gate`, with `content/structures/structureCatalogue.ts`
   (base health from `balancing.md`) and their registry lines. `Simulation` builds one per map
   feature with a structure definition, in feature id order, carrying the feature's lane
-  (`Structure.laneId`) and id (`Structure.mapFeatureId`, which the snapshot carries as
+  (`Structure.laneId`) and id (a `MapFeatureLink` component, DEC-231; the snapshot carries it as
   `EntitySnapshot.mapFeatureId`, so the HUD structure strip binds each tile to its structure,
   DEC-212). `BreakabilityRule` (§3, without `all-of`) is evaluated by `StructureSystem`,
   which also emits `structure-destroyed`; `BreakabilityStep` blocks damage to unbreakable targets.
@@ -483,7 +490,9 @@ and a `Capturable` component, one per `capture-point` and `cathedral` map featur
 (`content/zones/`), moved by `CaptureSystem` with the weights and rates of
 `GameConfig.match.capturePoints`. `Simulation` computes each zone's floor from the map alone
 (`map/zoneArea.ts`) instead of taking it as an explicit placement (06): zones come from the map,
-so a replay or a match without map objects rebuilds the same zones. Interim differences:
+so a replay or a match without map objects rebuilds the same zones. Each zone carries its
+feature's `MapFeatureLink` (DEC-231), so the client binds a HUD capture point to its zone by the
+snapshot's `mapFeatureId`, not by position. Interim differences:
 
 - **Zone lock (2026-11-12).** `CaptureSystem` sets `lockedBy` every tick from the zone's guard
   posts: a living guard of a mob in `content/zones/zoneLocks.ts` (the capture point boss) locks
