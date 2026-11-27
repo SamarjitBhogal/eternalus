@@ -10,6 +10,7 @@ import type { MapDefinition } from '../content/maps/maps.types';
 import { MOB_DEFINITIONS } from '../content/mobs/mobCatalogue';
 import { LEVEL_CURVE_CATALOGUE } from '../content/progression/levelCurveCatalogue';
 import { XP_SOURCES } from '../content/progression/xpSources';
+import { CHECKPOINT_DEFENDER_LIMIT } from '../content/structures/guardPlans';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { LevelMatchesXpInvariant } from '../diagnostics/invariants/LevelMatchesXpInvariant';
@@ -66,7 +67,13 @@ const campMatch = (
     undefined,
     loadWeapons(TICK_RATE),
   );
-  const roster = new GuardRoster(factory, units, loadGuardPlans(TICK_RATE), {});
+  const roster = new GuardRoster(
+    factory,
+    units,
+    loadGuardPlans(TICK_RATE),
+    {},
+    CHECKPOINT_DEFENDER_LIMIT,
+  );
   roster.layOut(state);
   const progression = new ProgressionSystem(state, {
     units,

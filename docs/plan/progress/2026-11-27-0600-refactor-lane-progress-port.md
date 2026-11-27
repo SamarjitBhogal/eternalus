@@ -19,9 +19,11 @@ Phase 3 / minion plan gap: minion strength by flow-field distance · refactor/la
   above the phase/3 batches DEC-373..375, and its "built in" line and `INBOX.md` HC-B45 name this
   follow-up PR; `ProgressionSystem.camps.test.ts` (PR #153) takes `damageStepsWithoutLaneProgress()`
   in its three `new DamagePipeline()` calls (camp mobs are in no horde: strength 1 changes nothing).
-  No other compiled caller is in phase/3 (grep; `npm run typecheck` passes).
-- Checks run: `npm run check` on this tree → `exit=0`; core "Tests 1898 passed (1898)" (313 files),
-  protocol 31, client 2263 (333 files), server 163, "Documentation check passed."
-  (`../eternalus-agent-work/pr-rule-2026-11-25/lpp-check-1.log`).
+  Merged phase/3 `e8250d6b` (PR #173): its DEC-376 batch goes below DEC-384, and
+  `ProgressionSystem.checkpoints.test.ts` takes the same steps in its two calls (its targets are
+  guards, its one minion attacker is in no horde). No compiled caller is left (grep, typecheck).
+- Checks run: `npm run check` on the merged tree → `exit=0`; core "Tests 1915 passed (1915)" (315
+  files), protocol 31, client 2263 (333 files), server 163, "Documentation check passed."
+  (`../eternalus-agent-work/pr-rule-2026-11-25/lpp-check-2.log`).
 - Next step: open the PR (base `phase/3-sprint-3-work`); merge it after the player and map stacks
   land, then fix the `new DamagePipeline()` calls they bring once, here (coordinator, 2026-11-27).

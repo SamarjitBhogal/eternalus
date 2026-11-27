@@ -48,7 +48,7 @@ import { VeterancySystem } from './VeterancySystem';
 import { ZoneLevelUpSystem } from './ZoneLevelUpSystem';
 import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
-import { CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
+import { CHECKPOINT_DEFENDER_LIMIT, CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
 import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
 import { TickRate } from '../utils/TickRate';
 import { loadGuardPlans } from '../content/structures/loadGuardPlans';
@@ -162,6 +162,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
                     formationId: RANKS_FORMATION.id,
                     guards: loadGuardPlans(tickRate, hordes.guards),
                     defenders: CHECKPOINT_DEFENDERS,
+                    defenderLimit: CHECKPOINT_DEFENDER_LIMIT,
                   }),
                 ]
               : []),
