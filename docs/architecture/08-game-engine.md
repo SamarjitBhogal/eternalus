@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-26
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -124,7 +124,7 @@ export interface Renderer {
   resize(cssWidth: number, cssHeight: number, dpr: number): void;
   beginFrame(): void; // clears 'entities' and 'overlay'; 'terrain' only where chunks are dirty
   layer(name: RenderLayer): void; // subsequent draw calls go to this layer
-  drawSprite(sprite: SpriteRef, x: number, y: number, options?: SpriteOptions): void;
+  drawSprite(sprite: SpriteRef, feet: WorldPoint, size: number): boolean;
   drawPolygon(points: readonly Vec2Like[], style: PolygonStyle): void;
   drawText(text: string, x: number, y: number, style: TextStyle): void;
   drawGlyph(glyph: GlyphSpec, x: number, y: number, colour: string): void; // minimap markers
@@ -246,7 +246,9 @@ flowchart LR
   order (`apps/client/AGENTS.md`): terrain layer → entities sorted by interpolated `y` → overlay.
 - `ViewRegistry` (Registry pattern) maps entity `kind` → `EntityView`; `DefaultEntityView` draws
   a definition sprite for kinds without a bespoke view. Views read snapshots through `import type`
-  only and never mutate state (rule 6).
+  only and never mutate state (rule 6). The `EntityView.draw` contract returns
+  `number | undefined`: a view may report its rendered height above its anchor for health-bar
+  placement. An undefined height uses the snapshot radius.
 - Interpolation: views draw `prev + (current - prev) × alpha` for position. The facing uses the
   same blend, scaled back to length 1 (`EntityLayer.turn`), and snaps at the midpoint when the two
   facings are opposite (a zero blend takes `current`). Entities that appeared this tick draw at `current` (no ghost from the
@@ -305,6 +307,13 @@ The design keeps the move cheap:
   snapshots exceed the ~10 KiB per message rule of thumb.
 
 ## 11. Implementation status
+
+The selected player's Legend uses atlas frames for idle, movement, and basic attacks.
+The renderer prepares destination-size frames lazily in a bounded cache and returns whether
+it drew the sprite. The Legend view falls back to the standard drawing when the atlas is
+unavailable. The health bar sits above the height a view reports it drew, else above the view's
+`visualRadiusOf`, else above the footprint. Only the human player's Legend draws a sprite; the
+owner ships this in Phase 3 (DEC-374).
 
 HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
 

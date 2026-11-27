@@ -1,3 +1,4 @@
+import type { EntityView } from './EntityView.types';
 import { CapturePointView } from './CapturePointView';
 import { CathedralGemView } from './CathedralGemView';
 import { DefaultEntityView } from './DefaultEntityView';
@@ -13,9 +14,12 @@ import { ViewRegistry } from './ViewRegistry';
  *
  * @param onUnknownKind - Told once per kind drawn with the default view.
  */
-export const createDefaultViewRegistry = (onUnknownKind?: (kind: string) => void): ViewRegistry => {
+export const createDefaultViewRegistry = (
+  onUnknownKind?: (kind: string) => void,
+  legend?: EntityView,
+): ViewRegistry => {
   const registry = new ViewRegistry(new DefaultEntityView(), onUnknownKind);
-  registry.registerFamily('legend', new LegendView());
+  registry.registerFamily('legend', legend ?? new LegendView());
   registry.registerFamily('mob', new MobView());
   registry.registerKind('light-mob', new MinionView('light'));
   registry.registerKind('medium-mob', new MinionView('medium'));

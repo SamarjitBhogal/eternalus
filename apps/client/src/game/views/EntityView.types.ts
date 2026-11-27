@@ -19,8 +19,8 @@ export type EntityDrawState = {
  * snapshots and draw through the `Renderer` port (architecture 08 §8; 06 §8).
  */
 export interface EntityView {
-  /** Draws the entity in the main view, sized in world units. */
-  draw(state: EntityDrawState, renderer: Renderer): void;
+  /** Draws the entity and may return its visible height above its position in world units. */
+  draw(state: EntityDrawState, renderer: Renderer): number | undefined;
   /** Draws the entity's mini map marker, sized in CSS pixels, or nothing. */
   drawMinimap(state: EntityDrawState, renderer: Renderer): void;
   /**
