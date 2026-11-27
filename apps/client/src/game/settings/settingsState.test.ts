@@ -37,6 +37,18 @@ describe('settingsWithDefaults', () => {
   });
 });
 
+describe('settingsWithDefaults and the hud group (DEC-410)', () => {
+  it('gives a save from before the hud group the default, and keeps a saved one', () => {
+    const { audio, video, accessibility } = settingsSlice.getInitialState();
+    const old = { bindings: [], audio, video, accessibility };
+
+    expect(settingsWithDefaults(old).hud).toEqual({ shouldShowEveryHit: false });
+    expect(settingsWithDefaults({ ...old, hud: { shouldShowEveryHit: true } }).hud).toEqual({
+      shouldShowEveryHit: true,
+    });
+  });
+});
+
 describe('applySettingsIntent', () => {
   const start = settingsWithDefaults(null);
 
@@ -77,6 +89,16 @@ describe('applySettingsIntent', () => {
     expect(next.accessibility).toEqual({ ...start.accessibility, reduceMotion: true });
     expect(next.video).toEqual(start.video);
     expect(next.bindings).toBe(start.bindings);
+  });
+
+  it('merges a hud patch (DEC-410)', () => {
+    const next = applySettingsIntent(start, {
+      kind: 'update-settings',
+      patch: { hud: { shouldShowEveryHit: true } },
+    });
+
+    expect(next.hud).toEqual({ shouldShowEveryHit: true });
+    expect(next.accessibility).toEqual(start.accessibility);
   });
 });
 

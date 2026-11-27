@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from './combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from './combat/__fixtures__/damageSteps';
 import { Health } from './components/Health';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DUEL_RULES } from './content/duel/duelRules';
@@ -65,8 +66,8 @@ const ROUND_THE_GEM = 15;
  * also steps south and slides round it.
  */
 const fightUntil = (sim: Simulation, done: (snapshot: Snapshot) => boolean, limit = 6000) => {
-  for (let i = 0; i < limit && !done(sim.snapshot()); i += 1) {
-    const snapshot = sim.snapshot();
+  let snapshot = sim.snapshot();
+  for (let i = 0; i < limit && !done(snapshot); i += 1) {
     const { id: light, legend: from } = legendOf(sim, snapshot, 'light');
     const { id: dark, legend: to } = legendOf(sim, snapshot, 'dark');
     const at = { x: from.transform?.x ?? 0, y: from.transform?.y ?? 0 };
@@ -78,8 +79,9 @@ const fightUntil = (sim: Simulation, done: (snapshot: Snapshot) => boolean, limi
     sim.enqueueCommand({ type: 'move', actorId: light, direction });
     sim.enqueueCommand({ type: 'attack-target', actorId: light, targetId: dark });
     sim.step();
+    snapshot = sim.snapshot();
   }
-  return sim.snapshot();
+  return snapshot;
 };
 
 describe('Simulation: a Duel', () => {
@@ -134,10 +136,12 @@ describe('Simulation: a Duel', () => {
   });
 
   it(
-    'counts a kill and resets both Legends to their start points at full health',
+    'counts a kill and resets both Legends to their start points at full health, earning no XP',
     () => {
       const sim = build();
       const before = sim.snapshot();
+      const xpAwards: unknown[] = [];
+      sim.on('xp-gained', (award) => xpAwards.push(award));
       const after = fightUntil(sim, (snapshot) => (snapshot.match.duel?.kills.light ?? 0) > 0);
 
       expect(after.match.duel?.kills).toEqual({ light: 1, dark: 0 });
@@ -150,6 +154,11 @@ describe('Simulation: a Duel', () => {
           y: legendOf(sim, before, team).legend.transform?.y,
         });
       }
+      sim.step(); // a kill's award would be paid by the next pass at the latest
+      expect(xpAwards).toEqual([]); // DEC-380 (1): no match XP in a Duel
+      expect(legendOf(sim, sim.snapshot(), 'light').legend.progression?.xp).toBe(
+        legendOf(sim, before, 'light').legend.progression?.xp,
+      );
     },
     FIGHT_TIMEOUT_MS,
   );
@@ -269,7 +278,7 @@ describe('Simulation: a Duel', () => {
       const wallId = (sim.snapshot().mapObjects ?? []).find(({ id }) => id === wall?.id)?.entityId;
       if (wallId === undefined || wallId === null) throw new Error('No Cathedral wall');
       const before = state.entities.get(wallId)?.findComponent(Health)?.current;
-      new DamagePipeline().apply(state, wallId, 100, {
+      new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, wallId, 100, {
         attackerId: 'entity-9',
         kind: 'weapon',
         definitionId: 'sword',

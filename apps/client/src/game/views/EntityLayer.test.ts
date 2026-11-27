@@ -5,7 +5,11 @@ import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { EntityLayer } from './EntityLayer';
 import type { HealthBarSide } from './HealthBarView.types';
-import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_MOB_GLYPH } from './entityViews.constants';
+import {
+  LEGEND_VISUAL_DIAMETER,
+  MINI_MAP_LEGEND_GLYPH,
+  MINI_MAP_MOB_GLYPH,
+} from './entityViews.constants';
 import {
   HEALTH_BAR_FILL_COLORS,
   HEALTH_BAR_GAP,
@@ -13,6 +17,7 @@ import {
 } from './HealthBarView.constants';
 import type { WorldLayer } from './SceneView.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
+import { LegendSpriteView } from './LegendSpriteView';
 import { ViewRegistry } from './ViewRegistry';
 
 const EAST = { x: 1, y: 0 };
@@ -27,6 +32,7 @@ const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot =
   team: 'dark',
   transform: { x, y, radius: 0.4, facing },
   health: null,
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
@@ -55,15 +61,29 @@ const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
 class SpyView implements EntityView {
   public readonly drawn: EntityDrawState[] = [];
 
-  public constructor(private readonly visibleHeight?: number) {}
-
-  public draw(state: EntityDrawState): number | undefined {
+  public draw(state: EntityDrawState): void {
     this.drawn.push(state);
-    return this.visibleHeight;
   }
 
   public drawMinimap(): void {
     // The main-view tests below record `draw` only.
+  }
+}
+
+/** A view that draws nothing and reports a fixed artwork radius, as a drawn sprite does. */
+class TallView implements EntityView {
+  public constructor(private readonly radius: number) {}
+
+  public draw(): void {
+    // The health-bar test below needs only the radius.
+  }
+
+  public drawMinimap(): void {
+    // The health-bar test below needs the main view only.
+  }
+
+  public visualRadiusOf(): number {
+    return this.radius;
   }
 }
 
@@ -92,6 +112,24 @@ const minimapMarks = (layer: EntityLayer): [unknown, number][] =>
   );
 
 describe('EntityLayer', () => {
+  it("hands every view the frame time: the snapshot's tick plus alpha (DEC-398, card PR170 (12))", () => {
+    const spy = new SpyView();
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      () => false,
+      () => null,
+    );
+    layer.show(
+      snapshot(6, [unit('a', 0, 0)]),
+      snapshot(7, [unit('a', 1, 0), unit('b', 5, 0)]),
+      0.25,
+      null,
+    );
+    layer.draw(new RecordingRenderer());
+
+    expect(spy.drawn.map((state) => state.frameTick)).toEqual([7.25, 7.25]);
+  });
+
   it('interpolates positions between the last two snapshots by alpha', () => {
     const spy = new SpyView();
     const layer = new EntityLayer(
@@ -104,6 +142,33 @@ describe('EntityLayer', () => {
     layer.draw(new RecordingRenderer());
 
     expect(spy.drawn.map((state) => state.position)).toEqual([{ x: 2.5, y: 1 }]);
+  });
+
+  it('interpolates a jump height like the position; a new entity starts at its height (DEC-390)', () => {
+    const spy = new SpyView();
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      () => false,
+      () => null,
+    );
+    const lifted = (id: string, height: number): EntitySnapshot => ({
+      ...unit(id, 0, 0),
+      elevation: { height },
+    });
+
+    layer.show(
+      snapshot(1, [lifted('a', 0.4), unit('mob', 5, 0)]),
+      snapshot(2, [lifted('a', 1.2), unit('mob', 5, 0), lifted('new', 1)]),
+      0.25,
+      null,
+    );
+    layer.draw(new RecordingRenderer());
+
+    expect(spy.drawn.map((state) => [state.entity.id, state.height])).toEqual([
+      ['a', 0.6],
+      ['mob', 0],
+      ['new', 1],
+    ]);
   });
 
   it('turns the facing between the last two snapshots by alpha, as a unit vector (08 §8)', () => {
@@ -259,17 +324,74 @@ describe('EntityLayer', () => {
     expect(calls.findIndex((call) => call.op === 'fillPolygon')).toBe(calls.length - 4);
   });
 
-  it('places the health bar above the height reported by the registered view', () => {
-    const visibleHeight = 3;
+  it('lifts a bar above the radius its view reports, not the footprint (a drawn sprite)', () => {
     const layer = new EntityLayer(
-      new ViewRegistry(new SpyView(visibleHeight)),
+      new ViewRegistry(new TallView(3)),
       () => false,
       () => 'enemy',
     );
-    layer.show(null, snapshot(1, [member('foe', 'mob', 10)]), 0, null);
+    const foe = {
+      ...member('foe', 'mob', 10),
+      transform: { x: 10, y: 20, radius: 0.5, facing: EAST },
+    };
+    layer.show(null, snapshot(1, [foe]), 0, null);
     const renderer = new RecordingRenderer();
     layer.draw(renderer);
-    const track = renderer.calls.find((call) => call.op === 'fillPolygon');
-    expect(track?.args[0][2]?.y).toBeCloseTo(-visibleHeight - HEALTH_BAR_GAP);
+    const [track] = renderer.calls.flatMap((call) =>
+      call.op === 'fillPolygon' ? [call.args[0]] : [],
+    );
+
+    expect(track?.[2]?.y).toBeCloseTo(20 - 3 - HEALTH_BAR_GAP);
+  });
+
+  it("puts a sprite Legend's bar on the sprite top, not on its 2.6 m click radius", () => {
+    // The sprite's top stands 0.9 of its width above the feet (the sheet's data gives it).
+    const sprites = {
+      sizeOf: () => ({ width: LEGEND_VISUAL_DIAMETER, top: LEGEND_VISUAL_DIAMETER * 0.9 }),
+      frameOf: () => ({ atlasId: 'knight-sprites', frame: 0 }),
+    };
+    const layer = new EntityLayer(
+      createDefaultViewRegistry(undefined, new LegendSpriteView(sprites)),
+      () => false,
+      () => 'enemy',
+    );
+    const foe = {
+      ...member('foe', 'legend', 10),
+      transform: { x: 10, y: 20, radius: 0.75, facing: EAST },
+    };
+    layer.show(null, snapshot(1, [foe]), 0, null);
+    const renderer = new RecordingRenderer();
+    layer.draw(renderer);
+    const [track] = renderer.calls.flatMap((call) =>
+      call.op === 'fillPolygon' ? [call.args[0]] : [],
+    );
+
+    expect(track?.[2]?.y).toBeCloseTo(20 - LEGEND_VISUAL_DIAMETER * 0.9 - HEALTH_BAR_GAP);
+  });
+
+  it("raises a jumping sprite Legend's bar by the interpolated jump height (DEC-390)", () => {
+    const sprites = {
+      sizeOf: () => ({ width: LEGEND_VISUAL_DIAMETER, top: LEGEND_VISUAL_DIAMETER * 0.9 }),
+      frameOf: () => ({ atlasId: 'knight-sprites', frame: 0 }),
+    };
+    const layer = new EntityLayer(
+      createDefaultViewRegistry(undefined, new LegendSpriteView(sprites)),
+      () => false,
+      () => 'enemy',
+    );
+    const foe = (height: number): EntitySnapshot => ({
+      ...member('foe', 'legend', 10),
+      transform: { x: 10, y: 20, radius: 0.75, facing: EAST },
+      elevation: { height },
+    });
+    // Half way from 1 m to 2 m: the sprite and its bar both stand 1.5 m up.
+    layer.show(snapshot(1, [foe(1)]), snapshot(2, [foe(2)]), 0.5, null);
+    const renderer = new RecordingRenderer();
+    layer.draw(renderer);
+    const [track] = renderer.calls.flatMap((call) =>
+      call.op === 'fillPolygon' ? [call.args[0]] : [],
+    );
+
+    expect(track?.[2]?.y).toBeCloseTo(20 - LEGEND_VISUAL_DIAMETER * 0.9 - 1.5 - HEALTH_BAR_GAP);
   });
 });

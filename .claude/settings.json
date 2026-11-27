@@ -78,7 +78,7 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["scripts/hooks/session-start.mjs"],
+            "args": ["${CLAUDE_PROJECT_DIR}/scripts/hooks/session-start.mjs"],
             "timeout": 30
           }
         ]
@@ -91,7 +91,7 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["scripts/hooks/post-edit.mjs"],
+            "args": ["${CLAUDE_PROJECT_DIR}/scripts/hooks/post-edit.mjs"],
             "timeout": 120
           }
         ]
@@ -103,7 +103,7 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["scripts/hooks/stop-check.mjs"],
+            "args": ["${CLAUDE_PROJECT_DIR}/scripts/hooks/stop-check.mjs"],
             "timeout": 300
           }
         ]

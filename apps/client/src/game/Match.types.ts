@@ -1,6 +1,7 @@
 import type {
   EntityId,
   InputIntent,
+  LegendClassId,
   Logger,
   MapDefinition,
   MapFeatureKind,
@@ -10,11 +11,13 @@ import type {
 } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
+import type { SettingsSliceState } from '../bridge/slices/settingsSlice';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
 import type { Camera } from './engine/Camera';
 import type { Projection } from './engine/input/Projection.types';
 import type { FrameScheduler } from './engine/loop/FrameScheduler.types';
 import type { Renderer } from './engine/render/Renderer';
+import type { LegendSpriteSheet } from './legendSpriteSheets.types';
 import type { PlayerActions } from './PlayerActions';
 import type { SovereignArtwork } from './SovereignArtwork';
 
@@ -92,7 +95,17 @@ export type MatchDeps = {
     SovereignArtwork,
     'beginFrame' | 'draw' | 'endFrame' | 'destroy'
   >;
-  readonly playerSpecId?: string | null;
+  /**
+   * The sprite sheets of the match's Legends by sub-class id, in a local match
+   * (`matchLegendSheets`, called by the match factory; DEC-378 (2)). Each Legend's snapshot names
+   * its sub-class. Left out in an online Duel: every Legend is a disc.
+   */
+  readonly legendSheets?: ReadonlyMap<string, LegendSpriteSheet> | undefined;
+  /**
+   * Each Legend class's sprite width by class id (core content `spriteWidth`, DEC-424;
+   * `legendSpriteWidthsOf`). A Legend whose class has none is a disc.
+   */
+  readonly legendSpriteWidths?: Readonly<Record<LegendClassId, number>> | undefined;
   readonly simulation: MatchSimulation;
   /** Set for an online Duel: replaces the local `PlayerCommands` and the snapshot's human Legend. */
   readonly remote?: RemotePlayer;
@@ -104,6 +117,17 @@ export type MatchDeps = {
   readonly renderer: Renderer;
   readonly camera: Camera;
   readonly input: IntentSource;
+  /**
+   * The player's current settings, read while the match runs: the damage numbers follow "show
+   * every hit" (W5c). `null` (or left out) means the defaults.
+   */
+  readonly settings?: () => Pick<SettingsSliceState, 'hud'> | null;
+  /**
+   * Whether motion is reduced, read each frame: the in-game Reduce motion setting (UE-03) or the
+   * system's `prefers-reduced-motion` (13 §7). The damage numbers then only appear and fade. Off
+   * when left out.
+   */
+  readonly isReducedMotion?: () => boolean;
   /** Whether the developer menu exists in this match (`?dev=1`, 13 §4); off when left out. */
   readonly isDeveloperMenuEnabled?: boolean;
   /** Where client-side problems are reported (e.g. a kind drawn with the default view). */

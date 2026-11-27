@@ -1,5 +1,5 @@
 import type { EntityId } from '../state/EntityStore.types';
-import type { DamageSource } from '../state/GameEvents.types';
+import type { DamageSource, HitPath } from '../state/GameEvents.types';
 import type { GameState } from '../state/GameState';
 
 /** One hit on its way through the pipeline. */
@@ -8,6 +8,8 @@ export type DamageHit = {
   /** The amount after the steps before this one. */
   readonly amount: number;
   readonly source: DamageSource;
+  /** Where the hit came from; a hit from no side (a status tick, a collapse) has none. */
+  readonly path?: HitPath;
 };
 
 /**

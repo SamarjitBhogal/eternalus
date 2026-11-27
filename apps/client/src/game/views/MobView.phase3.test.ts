@@ -23,6 +23,7 @@ const MINION: EntitySnapshot = {
   team: 'light',
   transform: { x: 0, y: 0, radius: 0.4, facing: { x: 0, y: 1 } },
   health: { current: 150, max: 150 },
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
@@ -40,7 +41,10 @@ describe('MobView', () => {
   it('draws a dark outline and the facing chevron under the team disc (DEC-192)', () => {
     const renderer = new RecordingRenderer();
 
-    new MobView().draw({ entity: MINION, position: AT, facing: SOUTH, isFocused: false }, renderer);
+    new MobView().draw(
+      { entity: MINION, position: AT, facing: SOUTH, isFocused: false, frameTick: 0 },
+      renderer,
+    );
 
     expect(renderer.calls).toEqual([
       {
@@ -64,6 +68,7 @@ describe('MobView', () => {
       position: AT,
       facing: SOUTH,
       isFocused: false,
+      frameTick: 0,
     });
 
     view.drawMinimap(at('light'), renderer);

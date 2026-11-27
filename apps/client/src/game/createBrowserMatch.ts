@@ -1,5 +1,10 @@
-import type { ResourceController } from '../data/resources/ResourceController';
-import { type GameConfig, makeLogRecord, SEVERITY, Simulation } from '@eternalus/core';
+import {
+  type GameConfig,
+  type LegendClassId,
+  makeLogRecord,
+  SEVERITY,
+  Simulation,
+} from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
@@ -7,6 +12,7 @@ import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { LogSink } from '../data/logging/LogSink.types';
 import { RingBufferSink } from '../data/logging/RingBufferSink';
 import { SinkLogger } from '../data/logging/SinkLogger';
+import type { ResourceController } from '../data/resources/ResourceController';
 import { DeviceIntentSource } from './DeviceIntentSource';
 import { Camera } from './engine/Camera';
 import { KeyboardDevice } from './engine/input/KeyboardDevice';
@@ -16,29 +22,47 @@ import { Canvas2dRenderer } from './engine/render/Canvas2dRenderer';
 import type { SessionClock } from './engine/time/SessionClock.types';
 import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
-import { LEGEND_ATLASES } from './LegendAnimation.constants';
 import { Match } from './Match';
-import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, LOG_RING_CAPACITY } from './Match.constants';
+import { followViewFor } from './followViewFor';
+import { LOG_RING_CAPACITY } from './Match.constants';
+import { matchLegendSheets } from './matchLegendSheets';
+import { matchAssetGroups } from './session/matchAssetGroups';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { MatchHost } from './MatchHost';
 import type { HostDocument, HostWindow } from './MatchHost.types';
 import { withPlayerTeam } from './withPlayerTeam';
 import type { SettingsController } from './settings/SettingsController';
+import type { MatchDeps } from './Match.types';
 import type { MatchFactory } from './SessionController.types';
 import { SovereignArtwork } from './SovereignArtwork';
 
 /** What the browser match factory is built from; `main.tsx` passes window, document and the page singletons. */
 export type BrowserMatchDeps = {
-  readonly resources?: Pick<ResourceController, 'load' | 'release' | 'atlases'>;
+  /**
+   * The loaded sprite atlases: `match-loading` loaded the sheet group of every Legend in the
+   * rosters before the match (13 §2), and the factory hands their atlases to the renderer. Left
+   * out (the Duel factory, tests), the renderer gets none and every Legend is a disc.
+   */
+  readonly resources?: Pick<ResourceController, 'atlases'>;
   /** The frame scheduler (`RafFrameScheduler`) is built on it, so the type names rAF. */
   readonly window: HostWindow & Pick<Window, 'requestAnimationFrame' | 'cancelAnimationFrame'>;
   readonly document: HostDocument;
   readonly gameConfig: GameConfig;
+  /**
+   * Each Legend class's sprite width by class id (core content `spriteWidth`, DEC-424;
+   * `legendSpriteWidthsOf`): the sprites' widths and the player's camera.
+   */
+  readonly legendSpriteWidths: Readonly<Record<LegendClassId, number>>;
   /** `?dev=1` (13 §4): the developer menu exists in every match this factory builds. */
   readonly isDeveloperMenuEnabled?: boolean;
   readonly bus: TypedEventBus<BridgeEventMap>;
-  /** The player's bindings when the match starts; later changes arrive as `settings` events. */
-  readonly settings: Pick<SettingsController, 'bindings'>;
+  /**
+   * The player's bindings when the match starts (later changes arrive as `settings` events), and
+   * the current settings the match reads while it runs (the damage numbers, W5c).
+   */
+  readonly settings: Pick<SettingsController, 'bindings' | 'current'>;
+  /** The system's `prefers-reduced-motion` (13 §7), read each frame; `main.tsx` asks `matchMedia`. */
+  readonly prefersReducedMotion: () => boolean;
   /** Stamps the match's log records (the engine clock; core never reads time). */
   readonly clock: SessionClock;
   /**
@@ -62,6 +86,20 @@ export function createMatchLogger(deps: BrowserMatchDeps, ring: RingBufferSink):
   );
 }
 
+/**
+ * The settings a running match reads (W5c, DEC-410): the HUD group, and whether motion is reduced
+ * by the in-game Reduce motion setting or by the system's `prefers-reduced-motion` (13 §7).
+ */
+export function matchSettingReaders(
+  deps: Pick<BrowserMatchDeps, 'settings' | 'prefersReducedMotion'>,
+): Required<Pick<MatchDeps, 'settings' | 'isReducedMotion'>> {
+  return {
+    settings: () => deps.settings.current,
+    isReducedMotion: () =>
+      deps.settings.current?.accessibility.reduceMotion === true || deps.prefersReducedMotion(),
+  };
+}
+
 /** What an error report needs from the match (ADR 0025 §3, §4): it only reads the simulation. */
 function readEvidence(simulation: Simulation, ring: RingBufferSink): MatchEvidence {
   const replay = simulation.exportReplay();
@@ -76,25 +114,38 @@ function readEvidence(simulation: Simulation, ring: RingBufferSink): MatchEviden
  * builds the adapters (renderer, camera, devices, mapper, logger, frame scheduler), a fresh
  * `Simulation(setup.seed)` on `request.world`'s map and map objects with `request.roster` (the
  * setup's bots and the player's human slot) as its roster, the `Match` on the same world and its
- * `MatchHost`, then starts the host, which owns everything from then on. The match log records the seed first.
+ * `MatchHost`, then starts the host, which owns everything from then on. The renderer gets the
+ * atlases of every Legend's sprite sheet (`matchLegendSheets`), which `match-loading` loaded and
+ * the session releases (13 §2), and the `Match` gets the sheets (DEC-378 (2)) and each class's
+ * sprite width; the camera's view zooms out with the player's own sprite width (DEC-424). The match log
+ * records the seed first.
  * @throws What the renderer or `Match` threw, after destroying every adapter already built
  *   (0 listeners, 0 pending frames).
  */
 export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
   return (request, viewport) => {
-    const { window, gameConfig, settings, resources } = deps;
-    const playerSpecId = request.setup.allies.find((entry) => entry.isPlayer)?.specId ?? null;
-    const atlasGroup = LEGEND_ATLASES[playerSpecId ?? '']?.group;
-    let isAtlasOwner = true;
+    const { window, gameConfig, settings, resources, legendSpriteWidths } = deps;
+    const legendSheets = matchLegendSheets(request.setup);
     // Core spawns the roster's human slot, the player's Rover, at the team's Stronghold: a map
     // without one throws in `Simulation`, below.
     const config = withPlayerTeam(gameConfig, request.setup.playerTeam);
-    const renderer = Canvas2dRenderer.fromCanvas(viewport.canvas);
+    // The groups `match-loading` loaded; only the sprite sheet groups hold atlases.
+    const atlases = Object.fromEntries(
+      matchAssetGroups(request.setup).flatMap((group) =>
+        Object.entries(resources?.atlases(group) ?? {}),
+      ),
+    );
+    const renderer = Canvas2dRenderer.fromCanvas(viewport.canvas, atlases);
     if (renderer === null) {
       throw new Error('This browser cannot draw on a 2D canvas.');
     }
-    // The match points the camera at the player's Legend, so its start point does not matter.
-    const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
+    // The match points the camera at the player's Legend, so its start point does not matter. The
+    // view zooms out with the player's own sprite width (DEC-424).
+    const player = request.setup.allies.find(({ isPlayer }) => isPlayer);
+    const view = followViewFor(
+      player === undefined ? undefined : legendSpriteWidths[player.classId],
+    );
+    const camera = new Camera({ x: 0, y: 0 }, view.width, view.height);
     const ring = new RingBufferSink(LOG_RING_CAPACITY);
     const logger = createMatchLogger(deps, ring);
     const { seed } = request.setup;
@@ -118,7 +169,8 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         ...(viewport.sovereignLayer === undefined
           ? {}
           : { sovereignArtwork: new SovereignArtwork(viewport.sovereignLayer, viewport.canvas) }),
-        playerSpecId,
+        legendSheets,
+        legendSpriteWidths,
         simulation,
         world: request.world,
         tickRate: gameConfig.tickRate,
@@ -129,6 +181,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         logger,
         observer: request.observer,
         isDeveloperMenuEnabled: deps.isDeveloperMenuEnabled === true,
+        ...matchSettingReaders(deps),
         bridge: {
           bus: deps.bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
@@ -151,35 +204,12 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
       input,
       bus: deps.bus,
       mapper,
-      adapters: [
-        renderer,
-        camera,
-        {
-          destroy: () => {
-            isAtlasOwner = false;
-            if (atlasGroup !== undefined) resources?.release(atlasGroup);
-          },
-        },
-      ],
+      adapters: [renderer, camera],
       evidence: () => readEvidence(simulation, ring),
       currentTick: () => simulation.tick,
     });
     // A throw here has already been undone by the host (every listener, the match, the adapters).
     host.start();
-    if (atlasGroup !== undefined && resources !== undefined) {
-      void resources
-        .load(atlasGroup, () => undefined)
-        .then(() => {
-          if (isAtlasOwner) renderer.setAtlases(resources.atlases(atlasGroup));
-        })
-        .catch((error: unknown) => {
-          logger.log(
-            makeLogRecord('WARN', 'client.resources', 'Legend atlas load failed', {
-              attributes: { error: String(error) },
-            }),
-          );
-        });
-    }
     return host;
   };
 }

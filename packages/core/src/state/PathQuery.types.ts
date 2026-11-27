@@ -14,6 +14,12 @@ export interface PathQuery {
    */
   waypoint(start: Vec2, goal: Vec2, out: MutableVec2): boolean;
 
+  /**
+   * Changes whenever a waypoint may change (the grid under the searches changed), so a cached
+   * waypoint from an older version is searched again (`BotMovement`, `StuckSystem`, 11 §6).
+   */
+  readonly version: number;
+
   /** Whether a walker can go straight from `start` to `end` without crossing blocked ground. */
   isLineClear(start: Vec2, end: Vec2): boolean;
 }

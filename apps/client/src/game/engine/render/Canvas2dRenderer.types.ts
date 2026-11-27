@@ -15,6 +15,8 @@ export type DrawContext = Pick<
   | 'fill'
   | 'fillRect'
   | 'fillStyle'
+  | 'fillText'
+  | 'font'
   | 'lineJoin'
   | 'lineTo'
   | 'lineWidth'
@@ -25,6 +27,9 @@ export type DrawContext = Pick<
   | 'stroke'
   | 'strokeRect'
   | 'strokeStyle'
+  | 'strokeText'
+  | 'textAlign'
+  | 'textBaseline'
 >;
 
 /**

@@ -1,0 +1,293 @@
+import { describe, expect, it, vi } from 'vitest';
+
+import { createDefaultGameConfig } from './config/defaultGameConfig';
+import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
+import { MemoryLogger } from './diagnostics/MemoryLogger';
+import { NullLogger } from './diagnostics/NullLogger';
+import { runReplay } from './diagnostics/replay';
+import { REPLAY_CHECKPOINT_EVERY } from './diagnostics/Replay.constants';
+import { Scoring } from './match/Scoring';
+import { Simulation } from './Simulation';
+import type { RosterSlot } from './Simulation.types';
+import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
+
+const roster: readonly RosterSlot[] = [
+  { pilot: 'human', team: 'dark', definitionId: 'warrior', role: 'rover' },
+  { pilot: 'bot', team: 'dark', definitionId: 'warrior', role: 'laner', difficulty: 'normal' },
+  { pilot: 'bot', team: 'light', definitionId: 'warrior', role: 'rover', difficulty: 'normal' },
+  { pilot: 'bot', team: 'light', definitionId: 'warrior', role: 'laner', difficulty: 'normal' },
+];
+
+/** `throwOnViolation` makes any invariant violation fail the test. */
+const newMatch = (): { simulation: Simulation; logger: MemoryLogger } => {
+  const logger = new MemoryLogger();
+  const simulation = new Simulation({
+    config: createDefaultGameConfig({ match: { playerTeam: 'dark', countdownSeconds: 0 } }),
+    seed: 3,
+    logger,
+    debug: TEST_DEBUG_CONFIG,
+    map: TWO_LANE_MAP,
+    roster,
+  });
+  return { simulation, logger };
+};
+
+const run = (simulation: Simulation, ticks: number): void => {
+  for (let tick = 0; tick < ticks; tick += 1) {
+    simulation.step();
+  }
+};
+
+const humanOf = (simulation: Simulation): string | null =>
+  simulation.snapshot().match.humanLegendId;
+
+const positionOf = (simulation: Simulation, id: string) =>
+  simulation.snapshot().entities.find((entity) => entity.id === id)?.transform;
+
+/** The dark laner: a bot Legend that is not the human's. */
+const darkLanerOf = (simulation: Simulation): string =>
+  simulation
+    .snapshot()
+    .entities.find(
+      ({ family, team, id }) =>
+        family === 'legend' && team === 'dark' && id !== humanOf(simulation),
+    )?.id ?? '';
+
+describe('Simulation sim mode (FR-099, dev-set-controller)', () => {
+  it('runs bot-versus-bot after the human is removed, with no violation, the same way twice', () => {
+    const play = () => {
+      const { simulation, logger } = newMatch();
+      simulation.enqueueCommand({
+        type: 'dev-set-controller',
+        entityId: humanOf(simulation) ?? '',
+        controllerId: 'rover',
+      });
+      run(simulation, 900);
+      return { hash: simulation.hash(), human: humanOf(simulation), logger };
+    };
+
+    const [first, second] = [play(), play()];
+
+    expect(first.human).toBeNull();
+    expect(first.hash).toBe(second.hash);
+    expect(first.logger.records.filter(({ severityText }) => severityText === 'ERROR')).toEqual([]);
+  });
+
+  it('re-adds the human to a chosen Legend: the AI lets go and the human commands rule', () => {
+    const { simulation } = newMatch();
+    const former = humanOf(simulation) ?? '';
+    const chosen = darkLanerOf(simulation);
+    run(simulation, 60);
+    const walked = positionOf(simulation, chosen);
+    expect(walked).not.toEqual(positionOf(simulation, former));
+
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: chosen,
+      controllerId: 'player',
+    });
+    simulation.step();
+    simulation.enqueueCommand({ type: 'stop', actorId: chosen });
+    run(simulation, 30);
+    const stopped = positionOf(simulation, chosen);
+    run(simulation, 300);
+
+    expect(humanOf(simulation)).toBe(chosen);
+    expect(positionOf(simulation, chosen)).toEqual(stopped);
+    // The demoted human plays as a Rover bot: it keeps moving on its own.
+    const before = positionOf(simulation, former);
+    run(simulation, 300);
+    expect(positionOf(simulation, former)).not.toEqual(before);
+    // The former human is a Rover bot now; handing the new human back leaves nobody.
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: chosen,
+      controllerId: 'rover',
+    });
+    simulation.step();
+    expect(humanOf(simulation)).toBeNull();
+  });
+
+  it('refuses an unknown entity, a non-Legend and an unknown controller', () => {
+    const { simulation } = newMatch();
+    const rejected: string[] = [];
+    simulation.on('command-rejected', ({ reason }) => rejected.push(reason));
+    const structure = simulation.snapshot().entities.find(({ family }) => family !== 'legend');
+    const entityId = humanOf(simulation) ?? '';
+
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: 'nobody',
+      controllerId: 'player',
+    });
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: structure?.id ?? '',
+      controllerId: 'player',
+    });
+    simulation.enqueueCommand({ type: 'dev-set-controller', entityId, controllerId: 'no-such' });
+    simulation.step();
+
+    expect(rejected).toEqual(['unknown-entity', 'not-a-legend', 'unknown-controller']);
+    expect(humanOf(simulation)).toBe(entityId);
+  });
+
+  it('refuses to seat the human on a Legend of the other team (DEC-173): the seat stays', () => {
+    const { simulation } = newMatch();
+    const rejected: string[] = [];
+    simulation.on('command-rejected', ({ reason }) => rejected.push(reason));
+    const human = humanOf(simulation);
+    const lightLegend = simulation
+      .snapshot()
+      .entities.find(({ family, team }) => family === 'legend' && team === 'light');
+
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: lightLegend?.id ?? '',
+      controllerId: 'player',
+    });
+    simulation.step();
+
+    expect(lightLegend).toBeDefined();
+    expect(rejected).toEqual(['not-player-team']);
+    expect(humanOf(simulation)).toBe(human);
+  });
+
+  it("removes the former human's Legend by dev-remove-legend once in sim mode (DEC-293)", () => {
+    const { simulation } = newMatch();
+    const rejected: string[] = [];
+    simulation.on('command-rejected', ({ reason }) => rejected.push(reason));
+    const former = humanOf(simulation) ?? '';
+
+    simulation.enqueueCommand({ type: 'dev-remove-legend', entityId: former });
+    simulation.step();
+    expect(rejected).toEqual(['human-legend']);
+
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: former,
+      controllerId: 'rover',
+    });
+    simulation.enqueueCommand({ type: 'dev-remove-legend', entityId: former });
+    simulation.step();
+    expect(rejected).toEqual(['human-legend']);
+    expect(positionOf(simulation, former)).toBeUndefined();
+  });
+
+  it('replays a menu-driven sim-mode match to the same hash (FR-100)', () => {
+    const { simulation } = newMatch();
+    const former = humanOf(simulation) ?? '';
+    const chosen = darkLanerOf(simulation);
+    // `null` (the bot its team lacks) and a picked `bot-legend` (DEC-356) replay too; the first
+    // test covers `rover` twice.
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: former,
+      controllerId: null,
+    });
+    run(simulation, REPLAY_CHECKPOINT_EVERY);
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: chosen,
+      controllerId: 'player',
+    });
+    run(simulation, 2 * REPLAY_CHECKPOINT_EVERY);
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: chosen,
+      controllerId: 'bot-legend',
+    });
+    run(simulation, REPLAY_CHECKPOINT_EVERY);
+
+    const replay = simulation.exportReplay();
+
+    expect(
+      replay.commands.map(({ command }) =>
+        command.type === 'dev-set-controller' ? command.controllerId : command.type,
+      ),
+    ).toEqual([null, 'player', 'bot-legend']);
+    expect(
+      runReplay(
+        replay,
+        (setup) => new Simulation({ ...setup, logger: new NullLogger(), debug: TEST_DEBUG_CONFIG }),
+      ),
+    ).toEqual({ firstDivergence: null, finalHash: simulation.hash() });
+  });
+
+  it("moves the scoring rows' human mark with the seat (the match result names who played)", () => {
+    // `Simulation` keeps its state private: read it from the first call of a spy on `Scoring.fold`.
+    const fold = vi.spyOn(Scoring.prototype, 'fold');
+    const { simulation } = newMatch();
+    const former = humanOf(simulation) ?? '';
+    const chosen = darkLanerOf(simulation);
+    simulation.step();
+
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: chosen,
+      controllerId: 'player',
+    });
+    simulation.step();
+
+    const legends = fold.mock.calls[0]?.[0].state.match.scoring.legends ?? [];
+    const controllerOf = (id: string) =>
+      legends.find(({ entityId }) => entityId === id)?.controller;
+    expect(controllerOf(former)).toBe('bot');
+    expect(controllerOf(chosen)).toBe('human');
+    fold.mockRestore();
+  });
+
+  it('gives a Legend the human leaves the role its team lacks: the Rover first, then a lane', () => {
+    // `Simulation` keeps its state private: read it from the first call of a spy on `Scoring.fold`.
+    const fold = vi.spyOn(Scoring.prototype, 'fold');
+    const { simulation } = newMatch();
+    const former = humanOf(simulation) ?? '';
+    const chosen = darkLanerOf(simulation);
+    simulation.step();
+    const bindingOf = (id: string) => fold.mock.calls[0]?.[0].state.entities.controllerOf(id);
+
+    // The dark team's Rover was the human: the Legend the human leaves becomes the Rover.
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: chosen,
+      controllerId: 'player',
+    });
+    simulation.step();
+    expect(bindingOf(former)?.controllerId).toBe('rover');
+
+    // Now the team has its Rover: with no bot picked, the Legend the human leaves takes a lane.
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: chosen,
+      controllerId: null,
+    });
+    simulation.step();
+    expect(humanOf(simulation)).toBeNull();
+    expect(bindingOf(chosen)?.controllerId).toBe('bot-legend');
+    expect(bindingOf(chosen)?.initialMemory).toEqual({ lane: 'lane-0' });
+    fold.mockRestore();
+  });
+
+  it('gives the human Legend the bot the developer picks, not the role its team lacks (DEC-356)', () => {
+    // `Simulation` keeps its state private: read it from the first call of a spy on `Scoring.fold`.
+    const fold = vi.spyOn(Scoring.prototype, 'fold');
+    const { simulation } = newMatch();
+    const former = humanOf(simulation) ?? '';
+    simulation.step();
+    const bindingOf = (id: string) => fold.mock.calls[0]?.[0].state.entities.controllerOf(id);
+
+    // The human plays the dark Rover, so the team lacks a Rover; the developer picks a lane bot.
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: former,
+      controllerId: 'bot-legend',
+    });
+    simulation.step();
+
+    expect(humanOf(simulation)).toBeNull();
+    expect(bindingOf(former)?.controllerId).toBe('bot-legend');
+    // The dark laner holds lane-0, so the game picks lane-1.
+    expect(bindingOf(former)?.initialMemory).toEqual({ lane: 'lane-1' });
+    fold.mockRestore();
+  });
+});

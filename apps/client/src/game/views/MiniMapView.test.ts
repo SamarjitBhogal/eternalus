@@ -71,6 +71,11 @@ const createFakeContext = (): DrawContext => ({
   strokeStyle: '',
   lineWidth: 1,
   lineJoin: 'miter',
+  font: '',
+  textAlign: 'start',
+  textBaseline: 'alphabetic',
+  fillText: vi.fn(),
+  strokeText: vi.fn(),
 });
 
 /** Where a point lies against the ellipse filling `area`: 1 on it, below 1 inside. */
@@ -351,6 +356,7 @@ describe('MiniMapView unit markers (DEC-187)', () => {
       team: 'light',
       transform: { x: CENTRE.x + 10, y: CENTRE.y, radius: 0.4, facing: { x: 1, y: 0 } },
       health: { current: 150, max: 150 },
+      elevation: null,
       progression: null,
       aether: null,
       area: null,

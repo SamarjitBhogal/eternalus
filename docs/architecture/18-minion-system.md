@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -105,8 +105,10 @@ spawn's own controller and starting memory (`Placement.controller`, holding the 
 Pull request M5a adds the MVP minion modifiers (MS-16): `MinionStrengthStep` in the damage steps
 (strength by distance, floored at base stats per DISC-24, its base-stat point moving toward the
 enemy for each lane tower the enemy has lost there; lane progress is the path cost on the lane's
-flow field, gate to gate as the polyline measured it (DEC-280), through `LaneFlowFields.progress` injected as the `LaneProgressOf` port, with the
-lane polyline as the fallback off the corridor) and `EnragedSystem`, its own system right after
+flow field, gate to gate as the polyline measured it (DEC-280), read only through the injected
+`LaneProgressOf` port; the lane polyline is a second implementation of the port
+(`LaneRoutes.progress`), and `DefaultSystemPipeline.laneProgressOf` composes "field, else
+polyline" for points off the corridor, DEC-384) and `EnragedSystem`, its own system right after
 `SpawnSystem` (one `enraged` stack per lost SpawnerTower or BuffTower on the lane; the losses are
 kept per team and lane in `TeamState.towersLostByLane`, which the strength step reads too). The
 damage pipeline (`combat/DamagePipeline`) is built. Pull request `feat/minion-structures` adds the
@@ -126,7 +128,8 @@ shipped at 0, so off); Tower Guardians wait for ranged attacks and the owner's n
 (`INBOX.md`). Owner rules for minion XP: each veteran level adds to damage, it does not compound
 (DEC-164); tower guards level up and get the rally aura like horde minions, and a kill of a lane
 minion, a tower guard or a camp mob counts toward the killer's level; camp mobs never level and
-get no aura (DEC-165, changed by DEC-260: forest-camp mobs level). Pull request M6 adds the
+get no aura (DEC-165, changed by DEC-260: forest-camp mobs level, and by DEC-402: the corner boss
+levels). Pull request M6 adds the
 forest camps: a `Camp`
 structure per camp feature, the camp groups in `content/structures/guardPlans.ts` (a `group` plan
 activated when the countdown ends), camp mobs held by `GuardController`, and `camp-cleared`
@@ -137,7 +140,8 @@ MVP-if-time), on the light, medium and heavy assist mobs (DEC-260), laid out by
 `GuardRoster.defend` on `checkpoint-reached`; a lost point's living defenders stay (DEC-261).
 Pull request M6c makes a guard a leveller when its plan's `canLevel` says so (tower guards,
 DEC-165; forest-camp mobs and checkpoint defenders, DEC-260; the capture point boss group,
-DEC-350; not the corner boss), adds the defender limit per capture point and the cancelling of a
+DEC-350; not the corner boss, which levels since DEC-402), adds the defender limit per capture
+point and the cancelling of a
 lost owner's waiting defenders (DEC-350), and announces `checkpoint-cleared` for its XP (07 §7).
 Pull request M10 adds the zone level-up (07 §7, DEC-258): `ZoneLevelUpSystem` and
 `minion-levels-granted`, applied with kill levels (`minion-level-earned`) by `MinionLevelSystem`
@@ -468,12 +472,15 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
   held chase does not hold for ever: `StuckSystem`, just before `PathingSystem`, finds a chaser
   that has come no closer to its target for a while and gives it the next A\* waypoint round,
   which `PathingSystem` steers it to (DEC-193, DEC-217 (14); the numbers, with the cap on A\*
-  plans a tick, are `STUCK_DETECTION` in `content/ai/stuckDetection.ts`). A chase of a target
+  plans a tick, are `STUCK_DETECTION` in `content/ai/stuckDetection.ts`). A detour planned
+  before the map changed (a wall opened or closed since: `PathQuery.version`, 06 §6) is planned
+  again at once (owner, DEC-392). A chase of a target
   with an outline (a map object, or a structure with a `Footprint`: a lane tower's fort, the
   Stronghold's palace, a gate, 07 §13) aims at the nearest point of its outline, the point attack
   reach is measured to (`EntityStore.aimPointOf`); a mob that stands inside the outline is in reach
   already, so it holds there, as every chase stops at reach (DEC-234); it faces the building's
-  centre (DEC-220 (1)). The blocked
+  centre (DEC-220 (1)). A unit with a body shape (a big boss) reaches from its drawn body, so its
+  chase holds once the target is in that reach (DEC-421). The blocked
   ground under the target (a fort's cells, under the structure or under a unit inside its court,
   or a map object's cells)
   never holds or turns a chase: the mob closes in until collision stops it at a wall, in reach

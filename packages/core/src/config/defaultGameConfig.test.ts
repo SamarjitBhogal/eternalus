@@ -37,7 +37,7 @@ describe('createDefaultGameConfig', () => {
     );
   });
 
-  it('builds the default timeline: the countdown end in ticks, then three fractions (12 §3)', () => {
+  it('builds the default timeline: the countdown end in ticks, then the fractions, the gem eruption right after mid-game (12 §3)', () => {
     expect(createDefaultGameConfig().match.timeline).toEqual([
       {
         id: 'sovereigns-crowned',
@@ -58,6 +58,11 @@ describe('createDefaultGameConfig', () => {
         id: 'mid-game',
         at: { atFraction: 0.5 },
         action: { kind: 'enter-phase', phase: 'mid-game' },
+      },
+      {
+        id: 'gem-eruption',
+        at: { atFraction: 0.5 },
+        action: { kind: 'summon-greater-boss', bossId: 'greater-boss' },
       },
       {
         id: 'end-game',

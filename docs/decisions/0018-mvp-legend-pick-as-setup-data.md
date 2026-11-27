@@ -4,7 +4,7 @@ description: Decision for DEC-49 and DEC-56, accepted with the owner's correctio
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-11-27
 tags: [adr, entities, content, character-select, sub-classes]
 related:
   - 'docs/decisions/0006-entity-model-inheritance-plus-composition.md'
@@ -19,7 +19,8 @@ related:
 
 - Status: accepted (product owner decision in chat: accepted 2026-10-24, corrected 2026-10-25
   before it was applied, DEC-56; drafted 2026-10-17 as "MVP Legend pick as setup data" for
-  DEC-49; the file keeps its first name so that earlier records still resolve)
+  DEC-49; the file keeps its first name so that earlier records still resolve); point 2
+  amended by DEC-397 (the sub-class pick may choose the Legend's look in a match), 2026-11-27
 - Date: 2026-10-17
 
 ## Context
@@ -113,3 +114,19 @@ list, so it waits for the owner in `INBOX.md` HC-T1.
   fixtures that name it; a doc that names the content files needs no edit.
 - The branch that implements the pick did not merge before this ADR was accepted (a merge
   precondition in its pull request).
+
+## Amendment (2026-11-27, DEC-397)
+
+The product owner signed off Owner Calls card HC-B57, option A: "sign off, the sub-class may
+choose the Legend's look (recommended)". His note: "we have added abilities and weapons now too.
+subclass now has the capacity to change look, name, abilities, weapons, details (selection menu),
+etc. seems to be fleshed out, no?" ([owner decisions log](../reference/game-design/13-owner-decisions-log.md),
+DEC-397). Where point 2 above disagrees, this section wins.
+
+1. Point 2's "nothing in the simulation or in a running match reads it" no longer holds. Each
+   Legend keeps its sub-class, and its snapshot names it (`EntitySnapshot.specId`; DEC-378 (2)),
+   so the client draws the Legend's sprite (architecture 03 §5).
+2. The rest of point 2 stands for this amendment: the sub-class gives no stats, sizes or entity
+   class. ADR 0026 (the ability framework, PR #123, not yet on phase/3) amends point 2 for kits:
+   a sub-class's abilities and weapons.
+3. The body above is not edited ([ADR 0011](0011-documentation-longevity.md) rule 6).

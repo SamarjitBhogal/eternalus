@@ -66,6 +66,23 @@ describe('MatchRecord', () => {
     ]);
   });
 
+  it('erupts the gem once, emitting greater-boss-summoned, and refuses a second eruption', () => {
+    const clock = { tick: 4 };
+    const { events, match } = recordAt(clock);
+    expect(match.isGemErupted).toBe(false);
+
+    match.eruptGem('greater-boss');
+
+    expect(match.isGemErupted).toBe(true);
+    expect(events.recentEvents()).toEqual([
+      { tick: 4, type: 'greater-boss-summoned', payload: { bossId: 'greater-boss' } },
+    ]);
+    expect(() => {
+      match.eruptGem('greater-boss');
+    }).toThrow('The Cathedral gem has already erupted: it erupts once a match.');
+    expect(events.recentEvents()).toHaveLength(1);
+  });
+
   it('holds and releases the idle flag through holdIdle', () => {
     const { match } = recordAt({ tick: 0 });
 
@@ -121,6 +138,36 @@ describe('MatchRecord', () => {
     expect(() => {
       match.seatHuman('entity-8');
     }).toThrow('already seated');
+    expect(match.humanLegendId).toBe('entity-7');
+  });
+
+  it('moves the human seat (sim mode) to another Legend or to nobody, never to where it is', () => {
+    const { match, events } = recordAt({ tick: 0 });
+    const moves: unknown[] = [];
+    events.on('human-reseated', (payload) => moves.push(payload));
+    match.seatHuman('entity-7');
+
+    match.reseatHuman('entity-8');
+    expect(match.humanLegendId).toBe('entity-8');
+    expect(() => {
+      match.reseatHuman('entity-8');
+    }).toThrow('already seated');
+    match.reseatHuman(null);
+    expect(match.humanLegendId).toBeNull();
+    expect(moves).toEqual([
+      { from: 'entity-7', to: 'entity-8' },
+      { from: 'entity-8', to: null },
+    ]);
+  });
+
+  it("never moves a Duel's seats (ADR 0016)", () => {
+    const { match } = recordAt({ tick: 0 });
+    match.seatHuman('entity-7');
+    match.startDuel(10);
+
+    expect(() => {
+      match.reseatHuman('entity-8');
+    }).toThrow('never moved');
     expect(match.humanLegendId).toBe('entity-7');
   });
 

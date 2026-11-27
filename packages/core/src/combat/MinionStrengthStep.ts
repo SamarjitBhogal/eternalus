@@ -14,22 +14,22 @@ import { opponentOf } from '../teams/playableTeams';
  * each lane tower the enemy has lost on that lane (DISC-24), up to `maxBasePoint`. Health never
  * rescales, so a health bar never jumps. Anything outside a horde (Legends included) is 1.
  *
- * `t` is measured by path cost on the lane's flow field (`balancing.md`), from the home gate (0)
- * to the enemy gate (1) (DEC-280), through
- * the injected `LaneProgressOf`; where the field cannot say (no field, or a unit off its corridor),
- * `t` falls back to the nearest point of the lane polyline.
+ * `t` runs from the home gate (0) to the enemy gate (1) (DEC-280) and comes only from the injected
+ * `LaneProgressOf`; where it cannot say (`null`), the strength is 1. The composition root decides
+ * how `t` is measured: `DefaultSystemPipeline` gives the lane flow field's path cost
+ * (`balancing.md`), and the lane polyline where the field cannot say (DEC-384).
  */
 export class MinionStrengthStep implements DamageStep {
   public readonly name = 'minion-strength';
 
   /**
    * @param curve - The curve's slope, clamps and base-stat point, from content.
-   * @param progressOf - Lane progress by flow-field path cost; `null` measures along the polyline.
+   * @param progressOf - Where a horde member is along its lane (DEC-384).
    * @throws Error when the base-stat point is not inside the lane (`0 < basePoint ≤ maxBasePoint ≤ 1`).
    */
   public constructor(
     private readonly curve: MinionStrengthCurve,
-    private readonly progressOf: LaneProgressOf | null = null,
+    private readonly progressOf: LaneProgressOf,
   ) {
     if (!(
       curve.basePoint > 0 &&
@@ -49,15 +49,13 @@ export class MinionStrengthStep implements DamageStep {
   private strengthOf(id: EntityId, state: GameState): number {
     const horde = state.hordes.hordeOf(id);
     const position = state.entities.get(id)?.findComponent(Transform)?.position;
-    const routes = state.world?.routes;
-    if (horde === undefined || position === undefined || routes === undefined) {
+    if (horde === undefined || position === undefined) {
       return 1;
     }
-    const length = routes.length(horde.lane);
-    // `t` runs home gate (0) to enemy gate (1), DEC-280.
-    const t =
-      this.progressOf?.(horde.lane, horde.team, position) ??
-      (length > 0 ? routes.distanceAlong(horde.lane, horde.team, position) / length : 0);
+    const t = this.progressOf(horde.lane, horde.team, position);
+    if (t === null) {
+      return 1;
+    }
     const { k, min, max, basePoint, shiftPerTowerLost, maxBasePoint } = this.curve;
     const enemy = opponentOf(horde.team);
     const lost = state.teams[enemy].towersLostByLane[horde.lane] ?? 0;

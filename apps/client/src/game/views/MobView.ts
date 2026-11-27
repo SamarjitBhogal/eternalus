@@ -29,7 +29,7 @@ export class MobView extends DefaultEntityView {
   }
 
   /** Draws the dark outline and the facing chevron, then the team disc and focus ring on top. */
-  public override draw(state: EntityDrawState, renderer: Renderer): number | undefined {
+  public override draw(state: EntityDrawState, renderer: Renderer): void {
     const visual = withVisualRadius(state, this.discRadiusOf(state.entity));
     const diameter = (visual.entity.transform?.radius ?? 0) * 2;
     renderer.drawWorldGlyph(
@@ -38,6 +38,6 @@ export class MobView extends DefaultEntityView {
       MOB_OUTLINE_COLOR,
     );
     drawFacingChevron(visual, renderer);
-    return super.draw(visual, renderer);
+    super.draw(visual, renderer);
   }
 }

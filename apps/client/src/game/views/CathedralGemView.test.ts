@@ -17,6 +17,7 @@ const gemEntity = (gem: GemSnapshot | null): EntitySnapshot => ({
   team: 'neutral',
   transform: { x: AT.x, y: AT.y, radius: 5, facing: { x: 1, y: 0 } },
   health: { current: 1, max: 1 },
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
@@ -27,7 +28,13 @@ const gemEntity = (gem: GemSnapshot | null): EntitySnapshot => ({
 const draw = (gem: GemSnapshot | null) => {
   const renderer = new RecordingRenderer();
   new CathedralGemView().draw(
-    { entity: gemEntity(gem), position: AT, facing: { x: 1, y: 0 }, isFocused: false },
+    {
+      entity: gemEntity(gem),
+      position: AT,
+      facing: { x: 1, y: 0 },
+      isFocused: false,
+      frameTick: 0,
+    },
     renderer,
   );
   return renderer.calls;
@@ -73,7 +80,13 @@ describe('CathedralGemView (DEC-291, DEC-292)', () => {
     const renderer = new RecordingRenderer();
     const view: EntityView = new CathedralGemView();
     view.drawMinimap(
-      { entity: gemEntity(DARK), position: AT, facing: { x: 1, y: 0 }, isFocused: false },
+      {
+        entity: gemEntity(DARK),
+        position: AT,
+        facing: { x: 1, y: 0 },
+        isFocused: false,
+        frameTick: 0,
+      },
       renderer,
     );
 

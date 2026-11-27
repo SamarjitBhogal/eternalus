@@ -23,6 +23,7 @@ const UNIT: EntitySnapshot = {
   team: 'dark',
   transform: { x: AT.x, y: AT.y, radius: RADIUS, facing: { x: 1, y: 0 } },
   health: null,
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
@@ -33,7 +34,10 @@ const UNIT: EntitySnapshot = {
 /** The points of the one path the chevron draws for `facing`. */
 const chevron = (facing: WorldPoint): readonly WorldPoint[] => {
   const renderer = new RecordingRenderer();
-  drawFacingChevron({ entity: UNIT, position: AT, facing, isFocused: false }, renderer);
+  drawFacingChevron(
+    { entity: UNIT, position: AT, facing, isFocused: false, frameTick: 0 },
+    renderer,
+  );
   const [call, ...rest] = renderer.calls;
   expect(rest).toEqual([]);
   if (call?.op !== 'strokePath')
@@ -100,6 +104,7 @@ describe('drawFacingChevron (DEC-192)', () => {
         position: AT,
         facing: { x: 1, y: 0 },
         isFocused: false,
+        frameTick: 0,
       },
       renderer,
     );

@@ -28,6 +28,7 @@ function setUp(
   // The real controller over the real bus: the key's effect is what the UI would receive.
   const developerMenu = new DeveloperMenuController({
     isEnabled: options.isDeveloperMenuEnabled === true,
+    humanLegendId: () => null,
     simulation: { enqueueCommand: vi.fn() },
     bus,
     map: { features: [] },

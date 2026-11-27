@@ -1,3 +1,5 @@
+import type { ATTACHMENT_REFERENCES } from './attachmentReferences';
+
 /**
  * Kebab-case id of an asset; also the basename of its files: `<id>.webp`, `<id>@2x.webp`, and
  * `<id>@<rendition>.webp` / `<id>@<rendition>@2x.webp` for a rendition. The bridge restates this
@@ -7,16 +9,25 @@ export type AssetId = string;
 
 /**
  * How an asset is decoded; one loader per type (14 §11). `ui-image`: an image the React screens
- * draw, decoded with `HTMLImageElement.decode()`; `font`: a `FontFace`.
+ * draw, decoded with `HTMLImageElement.decode()`; `font`: a `FontFace`; `sprite-atlas`: an image
+ * the canvas draws, decoded to an `ImageBitmap` and cut into a uniform grid of frames
+ * (`SpriteAtlasLoader`).
  */
 export type AssetType = 'ui-image' | 'font' | 'sprite-atlas';
+
+/**
+ * The sprite sheet group family (DEC-398, card PR170 (9)): each sheet is its own group, named by
+ * its asset id, so the match loads a sheet by its id. A new sheet needs no new group name.
+ */
+export type SpriteAtlasGroup = `sprite-atlas:${AssetId}`;
 
 /**
  * When an asset loads (13 §2; 14 §14): `boot` before the menu; the `selection` groups in `loading`
  * (`selection` for both class-step layouts and the Legend step, `selection-primary` and
  * `selection-alternate` for one layout's class step, `selection-primary-raster` and
  * `selection-raster` for the plates the `figma-raster` effects renderer draws); `match` in
- * `match-loading`.
+ * `match-loading`. `match-loading` then loads the sheet group (`SpriteAtlasGroup`) of every Legend
+ * in the match (`matchAssetGroups`; DEC-378 (2)).
  */
 export type AssetGroup =
   | 'boot'
@@ -26,14 +37,7 @@ export type AssetGroup =
   | 'selection-raster'
   | 'selection-primary-raster'
   | 'match'
-  | 'atlas-assassin'
-  | 'atlas-knight'
-  | 'atlas-paladin'
-  | 'atlas-colossus'
-  | 'atlas-juggernaut'
-  | 'atlas-catalyst'
-  | 'atlas-oracle'
-  | 'atlas-necromancer';
+  | SpriteAtlasGroup;
 
 /**
  * One use of an image whose device-pixel box differs from the entry's other uses in size,
@@ -53,6 +57,9 @@ export type RenditionKey =
   | 'refraction-idle'
   | 'refraction-picked'
   | 'mirrored';
+
+/** A registered contributor attachment (ADR 0028): a key of `ATTACHMENT_REFERENCES`. */
+type AttachmentReferenceId = keyof typeof ATTACHMENT_REFERENCES;
 
 /** Who licensed an asset; `ASSET_LICENCES` holds the text and notice. */
 export type LicenceId = 'owner' | 'user-authorised-art' | 'ofl-cinzel' | 'mit-phosphor';
@@ -100,8 +107,11 @@ type EntryBase = {
    * paints removed, the holes and the crop).
    */
   readonly source: string;
-  /** ADR 0028: a registered, documented user attachment shared by derived assets. */
-  readonly attachmentReferenceId?: string;
+  /**
+   * ADR 0028: the registered, documented contributor attachment the asset is made from (a key of
+   * `ATTACHMENT_REFERENCES`, so a typo fails the type check).
+   */
+  readonly attachmentReferenceId?: AttachmentReferenceId;
 };
 
 /** An image the React screens and the HUD draw, with its per-use renditions (I-45). */
@@ -123,11 +133,19 @@ export type FontEntry = EntryBase & {
   readonly weight: string;
 };
 
-/** One asset of the manifest. */
+/** A world sprite sheet the canvas draws: one image cut into a uniform grid of frames. */
 export type SpriteAtlasEntry = EntryBase & {
   readonly type: 'sprite-atlas';
+  /** Frames per row; the image width divides by it (`SpriteAtlasLoader` checks). */
   readonly columns: number;
+  /** Rows of frames; the image height divides by it (`SpriteAtlasLoader` checks). */
   readonly rows: number;
+  /**
+   * Where the feet stand in each cell: their height above the cell's bottom edge, as a share of
+   * the cell's height, from 0 to 1 (`SpriteAtlasLoader` checks). The renderer stands the sprite on
+   * its feet, so a new sheet needs no number in the code (DEC-398, card PR170 (8)).
+   */
+  readonly groundOffset: number;
 };
 
 /** One asset of the manifest, including world animation atlases. */

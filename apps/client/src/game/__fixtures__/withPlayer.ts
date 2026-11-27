@@ -8,13 +8,16 @@ import type { LegendClassId } from '../../bridge/domain.types';
 import { withPlayerTeam } from '../withPlayerTeam';
 
 /**
- * Which Legend the player plays and on which team: the selection's class and the setup's team
- * (HC-F4). The Legend (sub-class) pick is setup data only and never reaches the match (DEC-49).
+ * Which Legend the player plays and on which team: the selection's class, the setup's team
+ * (HC-F4) and, optionally, the sub-class pick. The pick reaches the match as the human slot's
+ * `specId`; its Legend's snapshot names it, which picks the sprite sheet (DEC-378 (2)).
  */
 export type PlayerChoice = {
   /** The class id, which is also the Legend's definition id in core content (`'magus'`). */
   readonly legend: LegendClassId;
   readonly team: PlayableTeam;
+  /** The sub-class (`ClassSelection.specId`); left out, the slot names none. */
+  readonly specId?: string;
 };
 
 /**
@@ -29,7 +32,13 @@ export function withPlayer(
   return {
     config: withPlayerTeam(config, player.team),
     roster: [
-      { pilot: 'human', team: player.team, definitionId: player.legend, role: 'rover' },
+      {
+        pilot: 'human',
+        team: player.team,
+        definitionId: player.legend,
+        role: 'rover',
+        ...(player.specId !== undefined && { specId: player.specId }),
+      },
       ...bots,
     ],
   };

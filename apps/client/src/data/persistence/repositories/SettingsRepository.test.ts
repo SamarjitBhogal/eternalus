@@ -66,6 +66,17 @@ describe('SettingsRepository', () => {
     });
   });
 
+  it('saves and loads the hud group, and loads none from a record saved before it (DEC-410)', async () => {
+    const { repository } = await setup();
+    const withHud: PersistedSettings = { ...SETTINGS, hud: { shouldShowEveryHit: true } };
+
+    await repository.save('p1', withHud);
+    await repository.save('p2', SETTINGS);
+
+    expect(await repository.load('p1')).toEqual(withHud);
+    expect(Object.keys((await repository.load('p2')) ?? {})).not.toContain('hud');
+  });
+
   it('reports nothing saved as null', async () => {
     const { repository } = await setup();
 

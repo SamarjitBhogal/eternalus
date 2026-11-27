@@ -13,7 +13,7 @@ export type {
   InputIntent,
 } from './commands/Command.types';
 export { ConfigValidationError } from './config/ConfigValidationError';
-export { createDefaultGameConfig } from './config/defaultGameConfig';
+export { createDefaultGameConfig, GEM_ERUPTION_ENTRY_ID } from './config/defaultGameConfig';
 export type {
   DeepPartial,
   GameConfig,
@@ -41,6 +41,7 @@ export type {
   LegendSpecDefinition,
   RoleRatings,
 } from './content/legends/specs/legendSpecs.types';
+export type { ControllerId } from './content/ai/ai.types';
 export { DUEL_RULES } from './content/duel/duelRules';
 export { loadDisplayContent } from './content/loadDisplayContent';
 export type { DisplayContent } from './content/loadDisplayContent';

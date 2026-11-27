@@ -1,5 +1,6 @@
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
+import { CombatHitbox } from '../components/CombatHitbox';
 import { Deploying } from '../components/Deploying';
 import { Movement } from '../components/Movement';
 import { StatusEffects } from '../components/StatusEffects';
@@ -80,7 +81,8 @@ export class PathingSystem implements System {
    * blocked nav ground under the target reaches back toward the attacker: the grid blocks a fort's
    * whole court, but its walls stop no one at the doorways (owner 2026-11-04: units may enter
    * towers). Otherwise `depth` is 0. A stuck chase's detour waypoint (DEC-193) replaces the
-   * target, reached like a slot.
+   * target, reached like a slot. A unit with a body shape (a big boss) holds once the target is in
+   * reach of its drawn body (`isInReach`, DEC-421), so it does not walk on to its feet circle.
    */
   private chase(state: SystemContext['state'], memberId: string): number | undefined {
     const attacker = state.entities.get(memberId);
@@ -102,6 +104,12 @@ export class PathingSystem implements System {
     const aimed = state.entities.aimPointOf(targetId, self.position, this.target);
     if (aimed === null) {
       return undefined;
+    }
+    if (
+      attacker?.hasComponent(CombatHitbox) === true &&
+      state.entities.isInReach(memberId, targetId)
+    ) {
+      return Number.POSITIVE_INFINITY; // a big boss hits from its drawn body: it holds (DEC-421)
     }
     const { x, y } = self.position;
     const grid = state.world?.grid;
@@ -257,6 +265,7 @@ export class PathingSystem implements System {
 
   /**
    * Steers every guard (18 §7) toward the unit it chases, or its post; never along a lane field.
+   * Only `GuardController`'s: a boss holding a post steers itself.
    * A guard at its post with nothing to chase turns to face outward, on guard again after a chase
    * or a leash return (DEC-220 (3)): at its post as the strategy's arrival counts it. A guard that
    * cannot move (stunned) does not turn (DEC-216 (7)).

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Deploying } from '../components/Deploying';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
 import { Movement } from '../components/Movement';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { TeamMembership } from '../components/TeamMembership';
@@ -191,6 +192,21 @@ describe('EntityStore', () => {
     expect(store.steer('nobody', { x: 1, y: 0 })).toBe(false);
   });
 
+  it('holds the jump key of an entity that has Jump and refuses one that does not', () => {
+    const store = storeWith('still');
+    const jumper = new Walker('jumper', 'walker-definition');
+    jumper.spawn({});
+    jumper.addComponent(new Jump());
+    store.add(jumper);
+
+    expect(store.holdJump('jumper', true)).toBe(true);
+    expect(jumper.getComponent(Jump).isHeld).toBe(true);
+    expect(store.holdJump('jumper', false)).toBe(true);
+    expect(jumper.getComponent(Jump).isHeld).toBe(false);
+    expect(store.holdJump('still', true)).toBe(false);
+    expect(store.holdJump('nobody', true)).toBe(false);
+  });
+
   it("reads an entity's team and whether it is alive", () => {
     const store = storeWith('dummy');
     const minion = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)).create(
@@ -256,6 +272,58 @@ describe('EntityStore', () => {
     expect(store.isInReach(minion.id, far.id)).toBe(false);
     expect(store.isInReach('dummy', near.id)).toBe(false);
     expect(store.isInReach(minion.id, 'nobody')).toBe(false);
+  });
+
+  it('lets melee connect with the Greater Boss at the edge of its visible body (DEC-381)', () => {
+    const store = new EntityStore();
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const boss = factory.create('heavy-mob', 'greater-boss', {
+      team: 'neutral',
+      position: { x: 100, y: 100 },
+    });
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 121, y: 94 },
+    });
+    store.add(boss);
+    store.add(minion);
+    expect(store.isInReach(minion.id, boss.id)).toBe(true);
+    minion.getComponent(Transform).moveTo({ x: 125, y: 94 });
+    expect(store.isInReach(minion.id, boss.id)).toBe(false);
+  });
+
+  it('lets the Greater Boss reach a unit from the edge of its drawn body, not its feet (DEC-421)', () => {
+    const store = new EntityStore();
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const boss = factory.create('heavy-mob', 'greater-boss', {
+      team: 'neutral',
+      position: { x: 100, y: 100 },
+    });
+    // 1 m past the body's right edge (x 20 at y -6, either facing), about 22 m from its feet.
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 121, y: 94 },
+    });
+    store.add(boss);
+    store.add(minion);
+    expect(store.isInReach(boss.id, minion.id)).toBe(true);
+    minion.getComponent(Transform).moveTo({ x: 110, y: 100 });
+    expect(store.isInReach(boss.id, minion.id)).toBe(true);
+    minion.getComponent(Transform).moveTo({ x: 125, y: 94 });
+    expect(store.isInReach(boss.id, minion.id)).toBe(false);
+  });
+
+  it('gives no outline for a body shape that has no Transform, and does not throw', () => {
+    const store = new EntityStore();
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const boss = factory.create('heavy-mob', 'greater-boss', {
+      team: 'neutral',
+      position: { x: 100, y: 100 },
+    });
+    store.add(boss);
+    expect(store.outlineOf(boss.id)).toHaveLength(1);
+    boss.removeComponent(Transform);
+    expect(store.outlineOf(boss.id)).toBeUndefined();
   });
 
   it('measures reach to a map object from its footprint edge, and never to a cornerless one', () => {

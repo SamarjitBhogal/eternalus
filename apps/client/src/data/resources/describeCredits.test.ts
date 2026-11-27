@@ -6,13 +6,13 @@ import type { AssetLicence, AssetManifestEntry, LicenceId } from './AssetManifes
 import { describeCredits } from './describeCredits';
 
 const LICENCES: Readonly<Record<LicenceId, AssetLicence>> = {
+  owner: { work: 'Art', licenceName: 'Owner', notice: 'By the owner', text: null },
   'user-authorised-art': {
     work: 'References',
     licenceName: 'Permission confirmed',
     notice: 'Permission by contributor',
     text: null,
   },
-  owner: { work: 'Art', licenceName: 'Owner', notice: 'By the owner', text: null },
   'ofl-cinzel': { work: 'Font', licenceName: 'OFL', notice: 'Copyright font', text: 'OFL text' },
   'mit-phosphor': {
     work: 'Icons',
@@ -69,8 +69,8 @@ describe('describeCredits', () => {
     const credited = credits.flatMap((credit) => credit.assets.map((asset) => asset.assetId));
 
     expect(credits.map((credit) => [credit.licenceId, credit.licenceText !== null])).toEqual([
-      ['user-authorised-art', false],
       ['owner', false],
+      ['user-authorised-art', false],
       ['ofl-cinzel', true],
       ['mit-phosphor', true],
     ]);

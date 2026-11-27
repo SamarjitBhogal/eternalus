@@ -43,13 +43,19 @@ export interface MatchState {
    * `MovementSystem`, `CombatSystem` and `HordeSystem`.
    */
   readonly isIdleHeld: boolean;
+  /**
+   * Whether the Cathedral gem has erupted (DEC-83: it looks the same until then): the gem is gone
+   * and strikes no more. Set once, only through `MatchRecord.eruptGem`, by `summon-greater-boss`.
+   */
+  readonly isGemErupted: boolean;
   /** The team the match is played (or spectated) for, from `config.match.playerTeam`. */
   readonly playerTeam: PlayableTeam;
   /**
    * The Legend of the human on `playerTeam`; `null` in sim mode (11 §7: no human slot in the
-   * roster), and when the human slot names no Legend definition. Set once, only through
-   * `MatchRecord.seatHuman`, by `Simulation` from the roster's human slot, when the match is
-   * built. A Duel (ADR 0016) seats one human per team: `Simulation.humanLegendIdOf` reads either.
+   * roster), and when the human slot names no Legend definition. Set through
+   * `MatchRecord.seatHuman` by `Simulation` from the roster's human slot, when the match is
+   * built. Sim mode's `dev-set-controller` moves it afterwards through `MatchRecord.reseatHuman`.
+   * A Duel (ADR 0016) seats one human per team: `Simulation.humanLegendIdOf` reads either.
    */
   readonly humanLegendId: EntityId | null;
   /**

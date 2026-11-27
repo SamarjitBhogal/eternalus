@@ -26,6 +26,8 @@ export type ScoredHit = {
  */
 export type ScoredDeath = {
   readonly victimId: EntityId;
+  /** The content definition the victim was built from. */
+  readonly definitionId: string;
   readonly kind: string;
   readonly team: Team | undefined;
   readonly killerId: EntityId | null;

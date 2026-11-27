@@ -14,6 +14,7 @@ const dummy = (team: EntitySnapshot['team']): EntitySnapshot => ({
   team,
   transform: { x: 10, y: 20, radius: 0.4, facing: { x: 1, y: 0 } },
   health: { current: 100, max: 100 },
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
@@ -30,7 +31,7 @@ describe('DefaultEntityView', () => {
     const renderer = new RecordingRenderer();
 
     new DefaultEntityView().draw(
-      { entity: dummy('dark'), position: AT, facing: EAST, isFocused: false },
+      { entity: dummy('dark'), position: AT, facing: EAST, isFocused: false, frameTick: 0 },
       renderer,
     );
 
@@ -43,7 +44,7 @@ describe('DefaultEntityView', () => {
     const renderer = new RecordingRenderer();
 
     new DefaultEntityView().draw(
-      { entity: dummy('light'), position: AT, facing: EAST, isFocused: true },
+      { entity: dummy('light'), position: AT, facing: EAST, isFocused: true, frameTick: 0 },
       renderer,
     );
 
@@ -55,8 +56,14 @@ describe('DefaultEntityView', () => {
     const renderer = new RecordingRenderer();
     const view = new DefaultEntityView();
 
-    view.draw({ entity: dummy('neutral'), position: AT, facing: EAST, isFocused: false }, renderer);
-    view.draw({ entity: dummy(null), position: AT, facing: EAST, isFocused: false }, renderer);
+    view.draw(
+      { entity: dummy('neutral'), position: AT, facing: EAST, isFocused: false, frameTick: 0 },
+      renderer,
+    );
+    view.draw(
+      { entity: dummy(null), position: AT, facing: EAST, isFocused: false, frameTick: 0 },
+      renderer,
+    );
 
     expect(renderer.calls).toEqual([
       { op: 'drawWorldGlyph', args: [{ shape: 'dot', size: 0.8 }, AT, NEUTRAL_ENTITY_COLOR] },
@@ -68,7 +75,7 @@ describe('DefaultEntityView', () => {
     const renderer = new RecordingRenderer();
 
     new DefaultEntityView().drawMinimap(
-      { entity: dummy('dark'), position: AT, facing: EAST, isFocused: false },
+      { entity: dummy('dark'), position: AT, facing: EAST, isFocused: false, frameTick: 0 },
       renderer,
     );
 

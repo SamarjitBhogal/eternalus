@@ -7,9 +7,11 @@ import {
   doesPolygonOverlapRect,
   distanceToPath,
   distanceToSegment,
+  doesRayCrossPolygon,
   isPointInAnyPolygon,
   isPointInPolygon,
   isPointInRect,
+  isPolygon,
   lerpPoint,
   nearestPointOnPolygons,
   polarPoint,
@@ -53,6 +55,26 @@ describe('geometry', () => {
     expect(isPointInPolygon({ x: 5, y: 5 }, SQUARE)).toBe(true);
     expect(isPointInPolygon({ x: 15, y: 5 }, SQUARE)).toBe(false);
     expect(isPointInPolygon({ x: 5, y: -1 }, SQUARE)).toBe(false);
+  });
+
+  it('accepts a polygon of at least 3 finite corners only', () => {
+    expect(isPolygon(SQUARE)).toBe(true);
+    expect(isPolygon(SQUARE.slice(0, 2))).toBe(false);
+    expect(isPolygon([...SQUARE.slice(0, 3), { x: Number.NaN, y: 0 }])).toBe(false);
+    expect(isPolygon([...SQUARE.slice(0, 3), { x: 0, y: Infinity }])).toBe(false);
+  });
+
+  it('tells whether a ray crosses a polygon ahead of its start, and never behind it', () => {
+    expect(doesRayCrossPolygon({ x: -5, y: 5 }, { x: 1, y: 0 }, SQUARE)).toBe(true);
+    expect(doesRayCrossPolygon({ x: -5, y: 0 }, { x: 1, y: 1 }, SQUARE)).toBe(true);
+    // From inside, the ray always crosses on its way out.
+    expect(doesRayCrossPolygon({ x: 5, y: 5 }, { x: 0, y: -3 }, SQUARE)).toBe(true);
+    // The square is behind the start.
+    expect(doesRayCrossPolygon({ x: -5, y: 5 }, { x: -1, y: 0 }, SQUARE)).toBe(false);
+    // The ray meets the lines of two edges (x = 0 at y = 15, y = 10 at x = -2.5), but off the edges.
+    expect(doesRayCrossPolygon({ x: -5, y: 5 }, { x: 1, y: 2 }, SQUARE)).toBe(false);
+    expect(doesRayCrossPolygon({ x: -5, y: 15 }, { x: 1, y: 0 }, SQUARE)).toBe(false);
+    expect(doesRayCrossPolygon({ x: -5, y: 5 }, { x: 0, y: 0 }, SQUARE)).toBe(false);
   });
 
   it('tells whether a point is in an upright rectangle, edges included', () => {

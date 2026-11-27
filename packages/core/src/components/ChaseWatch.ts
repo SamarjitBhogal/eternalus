@@ -4,8 +4,9 @@ import type { StuckWindow } from './ChaseWatch.types';
 /**
  * How a unit's chase of its attack target is going (owner 2026-11-05, DEC-193): its gap to the
  * point it heads for (its target, or its detour waypoint once it was stuck) when its current window
- * started (its last progress, new target, waypoint or stuck call), when that was, and the
- * waypoint. `StuckSystem` adds, updates and removes it;
+ * started (its last progress, new target, waypoint or stuck call), when that was, the waypoint,
+ * and the map version it was planned on (`PathQuery.version`; a newer map plans again, owner,
+ * DEC-392). `StuckSystem` adds, updates and removes it;
  * `PathingSystem` and the bot Legends steer to `waypoint` while there is one.
  */
 export class ChaseWatch {
@@ -18,6 +19,8 @@ export class ChaseWatch {
   private readonly way = { x: 0, y: 0 };
 
   private hasWay = false;
+
+  private wayVersion = 0;
 
   private isPlanDueValue = false;
 
@@ -35,8 +38,18 @@ export class ChaseWatch {
   }
 
   /**
-   * Whether the unit waits for an A\* plan: stuck, or at its waypoint, on a tick whose plan budget
-   * was spent (`requestPlan`). `headFor` and `dropWaypoint` answer it.
+   * Whether the waypoint was planned on another map version than `mapVersion` (a wall opened or
+   * closed since, `PathQuery.version`), so the detour must be planned again (DEC-392). `false`
+   * without a waypoint: a straight chase follows the map live.
+   */
+  public isWayStale(mapVersion: number): boolean {
+    return this.hasWay && this.wayVersion !== mapVersion;
+  }
+
+  /**
+   * Whether the unit waits for an A\* plan: stuck, at its waypoint, or on a way planned on an older
+   * map (`isWayStale`), on a tick whose plan budget was spent (`requestPlan`). `headFor` and
+   * `dropWaypoint` answer it.
    */
   public get isPlanDue(): boolean {
     return this.isPlanDueValue;
@@ -51,6 +64,7 @@ export class ChaseWatch {
       this.hasWay,
       this.way.x,
       this.way.y,
+      this.wayVersion,
       this.isPlanDueValue,
     ];
   }
@@ -86,10 +100,14 @@ export class ChaseWatch {
     return true;
   }
 
-  /** Heads the detour for `(x, y)`, `gap` away, judging progress toward it from `tick`. */
-  public headFor(x: number, y: number, gap: number, tick: number): void {
+  /**
+   * Heads the detour for `(x, y)`, `gap` away, judging progress toward it from `tick`; the way was
+   * planned on map `mapVersion` (`PathQuery.version`).
+   */
+  public headFor(x: number, y: number, gap: number, tick: number, mapVersion: number): void {
     this.way.x = x;
     this.way.y = y;
+    this.wayVersion = mapVersion;
     this.hasWay = true;
     this.isPlanDueValue = false;
     this.restart(gap, tick);

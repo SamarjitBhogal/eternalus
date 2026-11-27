@@ -12,19 +12,26 @@ import type { PlayerHudSnapshot } from '../bridge/hud.types';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import type { LogSink } from '../data/logging/LogSink.types';
 import { RingBufferSink } from '../data/logging/RingBufferSink';
+import { SpriteAtlasAsset } from '../data/resources/SpriteAtlasAsset';
 import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
-import { createBrowserMatch, type BrowserMatchDeps } from './createBrowserMatch';
+import { settingsSlice } from '../bridge/slices/settingsSlice';
+import {
+  createBrowserMatch,
+  type BrowserMatchDeps,
+  matchSettingReaders,
+} from './createBrowserMatch';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
 import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
-import { MS_PER_SECOND } from './Match.constants';
+import { LOG_RING_CAPACITY, MS_PER_SECOND } from './Match.constants';
 import type { MatchObserver, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { MatchRequest, RunningMatch } from './SessionController.types';
 import { rosterSlots } from './session/rosterSlots';
+import { SHIPPED_SPRITE_WIDTHS } from './__fixtures__/spriteWidths';
 
 const CONFIG = createDefaultGameConfig();
 const SEED = 3;
@@ -46,19 +53,26 @@ function evidenceOf(running: RunningMatch): MatchEvidence {
 function setUp(
   canvas = new FakeViewportCanvas(),
   sinks: readonly LogSink[] = [],
-  isDeveloperMenuEnabled = false,
   resources?: BrowserMatchDeps['resources'],
+  isDeveloperMenuEnabled = false,
 ) {
   const window = new FakeBrowserTarget();
   const document = new FakeBrowserTarget();
   const bus = new TypedEventBus<BridgeEventMap>();
+  /** How often the match asked the system for reduced motion. */
+  const motion = { reads: 0 };
   const factory = createBrowserMatch({
     window,
     document,
     gameConfig: CONFIG,
+    legendSpriteWidths: SHIPPED_SPRITE_WIDTHS,
     isDeveloperMenuEnabled,
     bus,
-    settings: { bindings: null },
+    settings: { bindings: null, current: null },
+    prefersReducedMotion: () => {
+      motion.reads += 1;
+      return false;
+    },
     clock: new FakeSessionClock(),
     sinks,
     ...(resources === undefined ? {} : { resources }),
@@ -85,20 +99,13 @@ function setUp(
   /** Every listener on the window, the document and the canvas. */
   const listeners = (): number =>
     window.listenerCount() + document.listenerCount() + canvas.listenerCount();
-  return { window, bus, factory, viewport, request, listeners };
+  return { window, bus, factory, viewport, request, listeners, motion };
 }
 
 describe('createBrowserMatch', () => {
-  it('loads only the selected atlas and releases it with the match', async () => {
-    const group = 'atlas-colossus';
-    const resources = {
-      load: vi.fn(() => Promise.resolve({ group, failed: [] } as const)),
-      release: vi.fn(),
-      atlases: vi.fn(() => ({})),
-    };
-    const { factory, viewport, request } = setUp(undefined, [], false, resources);
-    const matchRequest = request();
-    const player: RosterEntry = {
+  describe("the player's sprite atlas (loaded by match-loading, 13 §2)", () => {
+    /** A Colossus player in the dark team, the request's only ally. */
+    const COLOSSUS: RosterEntry = {
       legendId: 'player',
       displayName: 'Player',
       team: 'dark',
@@ -108,17 +115,120 @@ describe('createBrowserMatch', () => {
       specId: 'colossus',
       isPlayer: true,
     };
-    const running = factory(
-      { ...matchRequest, setup: { ...matchRequest.setup, allies: [player] } },
-      viewport,
-    );
-    await Promise.resolve();
-    expect(resources.load.mock.calls).toHaveLength(1);
-    expect(resources.load).toHaveBeenCalledWith(group, expect.any(Function));
-    expect(resources.atlases).toHaveBeenCalledWith(group);
-    running.destroy();
-    expect(resources.release).toHaveBeenCalledExactlyOnceWith(group);
+    /** Starts a Colossus match over `atlases`; returns its WARN records and the atlas lookups. */
+    const startWith = (atlases: Readonly<Record<string, SpriteAtlasAsset>>) => {
+      const ring = new RingBufferSink(LOG_RING_CAPACITY);
+      const resources = { atlases: vi.fn(() => atlases) };
+      const { factory, viewport, request } = setUp(undefined, [ring], resources);
+      const matchRequest = request();
+      const running = factory(
+        { ...matchRequest, setup: { ...matchRequest.setup, allies: [COLOSSUS] } },
+        viewport,
+      );
+      const warnings = ring
+        .tail(LOG_RING_CAPACITY)
+        .map(({ scope, attributes }) => [scope, attributes]);
+      running.destroy();
+      return { warnings, lookups: resources.atlases.mock.calls };
+    };
+
+    it("hands the atlas of the player's sheet to the renderer: the sprite view, no WARN", () => {
+      const image = { width: 384, height: 640, close: vi.fn() };
+      const { warnings, lookups } = startWith({
+        'colossus-sprites': new SpriteAtlasAsset(image, 6, 10, 0.1),
+      });
+
+      expect(lookups).toEqual([['match'], ['sprite-atlas:colossus-sprites']]);
+      expect(warnings).toEqual([]);
+      // The session owns the atlas: the match neither loads nor closes it.
+      expect(image.close).not.toHaveBeenCalled();
+    });
+
+    it('still starts the match when the atlas did not load: a disc and one WARN', () => {
+      const { warnings } = startWith({});
+
+      expect(warnings).toEqual([['client.views', { atlasId: 'colossus-sprites' }]]);
+    });
+
+    it("hands the atlases of every Legend's sheet to the renderer, each group once (DEC-378)", () => {
+      const ring = new RingBufferSink(LOG_RING_CAPACITY);
+      const image = () => ({ width: 384, height: 640, close: vi.fn() });
+      const byGroup: Readonly<Record<string, Readonly<Record<string, SpriteAtlasAsset>>>> = {
+        'sprite-atlas:colossus-sprites': {
+          'colossus-sprites': new SpriteAtlasAsset(image(), 6, 10, 0.1),
+        },
+        'sprite-atlas:oracle-sprites': {
+          'oracle-sprites': new SpriteAtlasAsset(image(), 6, 10, 0.1),
+        },
+      };
+      const resources = { atlases: vi.fn((group: string) => byGroup[group] ?? {}) };
+      const { factory, viewport, request } = setUp(undefined, [ring], resources);
+      const matchRequest = request();
+      const oracle: RosterEntry = {
+        ...COLOSSUS,
+        legendId: 'bot',
+        specId: 'oracle',
+        isPlayer: false,
+      };
+
+      const running = factory(
+        {
+          ...matchRequest,
+          setup: { ...matchRequest.setup, allies: [COLOSSUS, oracle], enemies: [oracle] },
+        },
+        viewport,
+      );
+      const warnings = ring.tail(LOG_RING_CAPACITY).filter(({ scope }) => scope === 'client.views');
+      running.destroy();
+
+      expect(resources.atlases.mock.calls).toEqual([
+        ['match'],
+        ['sprite-atlas:colossus-sprites'],
+        ['sprite-atlas:oracle-sprites'],
+      ]);
+      expect(warnings).toEqual([]);
+    });
+
+    it("zooms the camera out with the player's class: its sprite is the same size on screen (DEC-424)", () => {
+      /** The player's sprite width in screen pixels, from the first frames of a match as `specId`. */
+      const drawnWidth = (classId: string, specId: string): unknown => {
+        const drawImage = vi.fn();
+        const canvas = new FakeViewportCanvas(1280, 720, {
+          ...FakeViewportCanvas.silentContext(),
+          drawImage,
+        });
+        const atlas = new SpriteAtlasAsset({ width: 384, height: 640, close: vi.fn() }, 6, 10, 0.1);
+        const resources = {
+          atlases: vi.fn((group: string) =>
+            group === `sprite-atlas:${specId}-sprites` ? { [`${specId}-sprites`]: atlas } : {},
+          ),
+        };
+        const { window, factory, viewport, request } = setUp(canvas, [], resources);
+        const matchRequest = request();
+        const running = factory(
+          {
+            ...matchRequest,
+            setup: { ...matchRequest.setup, allies: [{ ...COLOSSUS, classId, specId }] },
+            roster: [{ ...PLAYER_SLOT, definitionId: classId, specId }],
+          },
+          viewport,
+        );
+        window.runFrame(0);
+        window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
+        running.destroy();
+        return (drawImage.mock.calls[0] as unknown[] | undefined)?.[7];
+      };
+      const widths = [
+        drawnWidth('warrior', 'knight'),
+        drawnWidth('magus', 'oracle'),
+        drawnWidth('sentinel', 'colossus'),
+      ];
+
+      // A 5.2 m sprite on the 96 m view of a 1280 px canvas is 69 px wide; so are 7.8 m and 13 m.
+      expect(widths).toEqual([69, 69, 69]);
+    });
   });
+
   it.each([
     { isDeveloperMenuEnabled: true, opened: [true] },
     { isDeveloperMenuEnabled: false, opened: [] },
@@ -128,6 +238,7 @@ describe('createBrowserMatch', () => {
       const { window, bus, factory, viewport, request } = setUp(
         undefined,
         [],
+        undefined,
         isDeveloperMenuEnabled,
       );
       const states: boolean[] = [];
@@ -325,6 +436,35 @@ describe('createBrowserMatch', () => {
     expect(world.mapObjects.length).toBeGreaterThan(0);
     expect(replay.mapObjects).toEqual(world.mapObjects);
     running.destroy();
+  });
+
+  it('gives the match the settings readers: the drawn frame asks for reduced motion (DEC-410)', () => {
+    const { window, factory, viewport, request, motion } = setUp();
+    const running = factory(request(), viewport);
+
+    window.runFrame(0);
+    window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
+
+    expect(motion.reads).toBeGreaterThan(0);
+    running.destroy();
+  });
+
+  it('reads the HUD settings, and reduces motion by the setting or by the system (13 §7)', () => {
+    const initial = settingsSlice.getInitialState();
+    const reduced = { ...initial, accessibility: { ...initial.accessibility, reduceMotion: true } };
+    const readersOf = (current: typeof initial | null, isSystemReduced: boolean) =>
+      matchSettingReaders({
+        settings: { bindings: null, current },
+        prefersReducedMotion: () => isSystemReduced,
+      });
+
+    expect(readersOf(initial, false).settings()).toBe(initial);
+    expect(readersOf(null, false).settings()).toBeNull();
+    expect(readersOf(initial, false).isReducedMotion()).toBe(false);
+    expect(readersOf(null, false).isReducedMotion()).toBe(false);
+    expect(readersOf(reduced, false).isReducedMotion()).toBe(true);
+    expect(readersOf(initial, true).isReducedMotion()).toBe(true);
+    expect(readersOf(null, true).isReducedMotion()).toBe(true);
   });
 
   it('draws the minimap every frame, with the developer explorer hidden or shown (DEC-143)', () => {

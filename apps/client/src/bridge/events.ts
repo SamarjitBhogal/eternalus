@@ -96,7 +96,12 @@ export type UiIntent =
   | { readonly kind: 'save-crash-note'; readonly note: string }
   | { readonly kind: 'dismiss-crash-report' }
   /** The developer menu's gameplay button: `Match` enqueues the command; ignored while the menu is off (13 §4). */
-  | { readonly kind: 'dev-command'; readonly command: DevCommand };
+  | { readonly kind: 'dev-command'; readonly command: DevCommand }
+  /**
+   * The developer menu's Follow (13 §4 spectate, client-only, no `Command`): with no human seated,
+   * the camera follows this Legend; `null` stops following. Ignored while the menu is off.
+   */
+  | { readonly kind: 'dev-follow'; readonly legendId: string | null };
 
 /** One Legend shown on the selection and loading screens, built before the simulation exists. */
 export type RosterEntry = {
@@ -129,7 +134,9 @@ export type SessionReason =
 /**
  * When assets load (13 §2): `selection` holds what both class layouts and the Legend step show, the
  * layout groups the rest (14 §14); the `-raster` groups hold only plates, loaded only on the
- * `'figma-raster'` effects renderer (DEC-54). Restated in `data/resources/AssetManifest.types.ts`.
+ * `'figma-raster'` effects renderer (DEC-54). A `sprite-atlas:<asset id>` group holds one sprite
+ * sheet (one group family, DEC-398); `match-loading` loads the sheet of every Legend in the match
+ * after `match` (DEC-378 (2)). Restated in `data/resources/AssetManifest.types.ts`.
  */
 export type AssetGroup =
   | 'boot'
@@ -139,14 +146,7 @@ export type AssetGroup =
   | 'selection-raster'
   | 'selection-primary-raster'
   | 'match'
-  | 'atlas-assassin'
-  | 'atlas-knight'
-  | 'atlas-paladin'
-  | 'atlas-colossus'
-  | 'atlas-juggernaut'
-  | 'atlas-catalyst'
-  | 'atlas-oracle'
-  | 'atlas-necromancer';
+  | `sprite-atlas:${AssetId}`;
 
 /**
  * URLs of a group's loaded images and the draw boxes its entries declare (both `{}` after
@@ -239,9 +239,15 @@ export type BridgeEventMap = {
   /** Remaining session time of one countdown. */
   countdown: { readonly kind: CountdownKind; readonly remainingMs: number };
   'match-clock': MatchClock;
-  /** The two players' names, when the server pairs them (the VERSUS screen). */
+  /**
+   * The two players' names, when the server pairs them (the VERSUS screen), and again when the
+   * Duel ends, for the results (the Duel's setup cleared them; SCRUM-449).
+   */
   'duel-versus': DuelVersus;
-  /** The Duel's scoreboard, on the HUD cadence; only in a Duel. */
+  /**
+   * The Duel's scoreboard, on the HUD cadence; only in a Duel. Once more when the Duel ends, with
+   * the final score from the server's last snapshot (SCRUM-449).
+   */
   'duel-state': DuelHudState;
   /** The Duel opponent's connection: `graceMs` is the reconnect window while they are away, `null` once connected. */
   'duel-opponent-presence': { readonly graceMs: number | null };

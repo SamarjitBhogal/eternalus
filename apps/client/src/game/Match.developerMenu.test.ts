@@ -85,6 +85,27 @@ describe('Match developer menu', () => {
     expect(enqueue).not.toHaveBeenCalled();
   });
 
+  it('keeps running with no human (sim mode): the menu is told, nothing follows or crashes', () => {
+    const { match, bus, states } = setUp(true);
+    match.start();
+    const human = match.playerEntityId;
+    expect(states.at(-1)?.humanLegendId).toBe(human);
+    expect(human).not.toBeNull();
+
+    bus.emit('ui-intent', {
+      kind: 'dev-command',
+      command: { type: 'dev-set-controller', entityId: human ?? '', controllerId: 'rover' },
+    });
+    match.tick();
+    match.tick();
+    match.render(0);
+
+    expect(states.at(-1)?.legends.map(({ id }) => id)).toContain(human);
+    expect(match.playerEntityId).toBeNull();
+    expect(states.at(-1)?.humanLegendId).toBeNull();
+    match.destroy();
+  });
+
   it("refuses to remove the human's Legend through the menu: it stays, and so does its seat", () => {
     const { match, bus, simulation } = setUp(true);
     const humanId = simulation.snapshot().match.humanLegendId;

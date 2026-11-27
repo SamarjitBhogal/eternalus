@@ -20,6 +20,7 @@ import { compareById } from '../utils/compareById';
 import type { Vec2 } from '../utils/geometry.types';
 import { cancelWaitingDefenders } from './checkpointDefenders';
 import { GuardRoster } from './GuardRoster';
+import { checkEruptionPlan } from './eruptionPlanProblems';
 import { spawnPlanProblems } from './spawnPlanProblems';
 import type { CheckpointReached, PointLost, ScheduledWave, SpawnPlan } from './SpawnSystem.types';
 import type { System, SystemContext } from './System.types';
@@ -43,10 +44,12 @@ import { isPlayableTeam } from '../teams/playableTeams';
  * no schedule state of its own.
  *
  * It also runs every structure's and zone's guard plan (18 §7, 07 §6) through its `GuardRoster`,
- * and adds a capture point's defenders when `checkpoint-reached` names it with a Legend present
+ * adds a capture point's defenders when `checkpoint-reached` names it with a Legend present
  * (07 §7, 18 §7.1, DEC-259). A point that changes owner keeps its living defenders: they fight
  * the new owner inside the zone and count as presence for their own side (DEC-261); the old
- * owner's defenders still waiting for room under the unit cap are cancelled (DEC-350).
+ * owner's defenders still waiting for room under the unit cap are cancelled (DEC-350). On its pass
+ * after `greater-boss-summoned` it spawns the summoned boss and announces it with `boss-summoned`
+ * and its entrance roar with `boss-entrance` (12 §3, reference 04).
  */
 export class SpawnSystem implements System {
   public readonly name = 'spawn';
@@ -56,6 +59,8 @@ export class SpawnSystem implements System {
   private readonly singleUnits: GameEventMap['spawn-requested'][] = [];
   /** The checkpoints reached with a Legend present since the last pass, in order. */
   private readonly checkpointsReached: CheckpointReached[] = [];
+  /** The bosses `greater-boss-summoned` asked for, spawned on the next pass. */
+  private readonly summoned: string[] = [];
   /** The capture points that changed owner since the last pass, in order. */
   private readonly pointsLost: PointLost[] = [];
 
@@ -112,6 +117,7 @@ export class SpawnSystem implements System {
       plan.defenderLimit,
     );
     this.guards.layOut(state);
+    checkEruptionPlan(state, plan);
     state.events.on('spawn-requested', (request) => {
       this.singleUnits.push({ ...request, position: { ...request.position } });
     });
@@ -123,6 +129,10 @@ export class SpawnSystem implements System {
       if (presentLegendIds.length > 0 && owner !== undefined) {
         this.checkpointsReached.push({ pointId, checkpoint, owner });
       }
+    });
+    // The erupted gem summons its boss (12 §3), spawned on this system's next pass.
+    state.events.on('greater-boss-summoned', ({ bossId }) => {
+      this.summoned.push(bossId);
     });
     state.events.on('capture-point-owner-changed', ({ pointId, from }) => {
       this.pointsLost.push({ pointId, from });
@@ -153,6 +163,12 @@ export class SpawnSystem implements System {
   public update({ state }: SystemContext): void {
     for (const request of this.singleUnits.splice(0)) {
       this.spawnSingleUnit(state, request);
+    }
+    for (const bossId of this.summoned.splice(0)) {
+      for (const boss of this.guards.activate(state, bossId)) {
+        state.events.emit('boss-summoned', { entityId: boss.id, kind: boss.kind });
+        state.events.emit('boss-entrance', { bossId: boss.id });
+      }
     }
     const routes = state.world?.routes;
     const requests = state.hordeRequests.splice(0);

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { clearCheckpointDefenders } from './__fixtures__/clearCheckpointDefenders';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
@@ -91,6 +92,9 @@ describe('Simulation with bot laners (minion plan M3)', () => {
         .entities.filter(({ kind }) => kind === 'warrior')
         .map(({ id }) => id),
     );
+    // A horde held by a capture point's defenders would not reach the structures (they have their
+    // own tests).
+    clearCheckpointDefenders(simulation);
     let botHits = 0;
     simulation.on('damage-applied', ({ targetId, source }) => {
       botHits += structures.has(targetId) && bots.has(source.attackerId ?? '') ? 1 : 0;
@@ -258,7 +262,8 @@ describe('Simulation with bot laners (minion plan M3)', () => {
         simulation.step();
       }
       const cached = stored.mock.calls.filter(
-        ([, { memory }]) => typeof memory.pathGoalX === 'number',
+        ([, { memory }]) =>
+          typeof memory.pathGoalX === 'number' && typeof memory.pathVersion === 'number',
       ).length;
       stored.mockRestore();
       return { cached, hash: simulation.hash() };

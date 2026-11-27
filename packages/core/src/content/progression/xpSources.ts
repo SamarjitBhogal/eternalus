@@ -13,12 +13,15 @@ export const XP_SOURCES: XpSourcesDefinition = {
   // of the curve. One value for every structure kind.
   structureDestroyed: 120,
   // TUNE: balancing.md "Camps" `Recommendation:` "a 50 XP bonus to the clearing Legends"; the
-  // clearing Legend is the one that killed the camp's last mob (DEC-375). Forest
-  // camps only: balancing.md lists the corner camps apart, and their boss pays `teamKills`.
+  // clearing Legend is the one that killed the camp's last mob (DEC-375). The corner camp pays
+  // it like a forest camp, and its boss still pays `teamKills` (owner, DEC-393). The boss's capped
+  // XP and this bonus together lift a Legend its `teamKills` `maxLevels` at most (owner, DEC-423);
+  // xpSources.test.ts guards it.
   campCleared: {
     'forest-camp-light': 50,
     'forest-camp-medium': 50,
     'forest-camp-heavy': 50,
+    'corner-camp': 50,
   },
   // TUNE: balancing.md "Capture points" `Recommendation:` (checkpoint XP 60 / 150 / 400, allies
   // within 10 m, `share_i = xp × (0.6 / n + 0.4 × damage_i / totalDamage)`).
@@ -30,5 +33,10 @@ export const XP_SOURCES: XpSourcesDefinition = {
     // TUNE: as the capture point boss: the corner boss uses the same MiniBoss row; DEC-237 (owner
     // 2026-11-10): "team-wide is fine for now" for the corner boss.
     'corner-boss': { xp: 500, maxLevels: 2 },
+    // DEC-237 (owner 2026-11-10): "Killing the middle boss puts you up 5 levels from wherever you
+    // are, flat"; it replaces balancing.md's 1,500 XP. DEC-371 E8b (owner 2026-11-26): "2.5 for the
+    // whole team; 5 for the last hitter" (5 in all), each keeping its share of its level (E8a).
+    // DEC-416: a last hit by a minion or a tower gives the 5 to its team's Legend that hit last.
+    'greater-boss': { levels: 2.5, lastHitterLevels: 5 },
   },
 };

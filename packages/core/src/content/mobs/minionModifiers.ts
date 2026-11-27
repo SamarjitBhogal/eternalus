@@ -27,4 +27,5 @@ export const ENRAGING_STRUCTURES: readonly StructureKind[] = ['spawner-tower', '
  */
 export const BOSS_MINION_DAMAGE_TAKEN: Readonly<Record<string, number>> = {
   'capture-point-boss': 0.25, // TUNE: balancing.md
+  'greater-boss': 0.25, // TUNE: balancing.md
 };

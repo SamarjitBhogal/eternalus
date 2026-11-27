@@ -7,13 +7,13 @@ import {
   type Snapshot,
 } from '@eternalus/core';
 
-import { LegendAnimation } from './LegendAnimation';
-import { LEGEND_VISUAL_DIAMETER } from './views/entityViews.constants';
-import { LegendSpriteView } from './views/LegendSpriteView';
-
 import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
+import { CathedralCutscene } from './CathedralCutscene';
+import { CUTSCENE } from './CathedralCutscene.constants';
 import { BiomeAtmosphereView } from './views/BiomeAtmosphereView';
+import { DamageBadges } from './DamageBadges';
+import { DamageBadgeLayer } from './views/DamageBadgeLayer';
 import { GameLoop } from './engine/loop/GameLoop';
 import { DeveloperMenuController } from './DeveloperMenuController';
 import { HealthBarVisibility } from './HealthBarVisibility';
@@ -32,8 +32,10 @@ import { MatchCamera } from './MatchCamera';
 import { MatchViewControls } from './MatchViewControls';
 import type { PlayerActions } from './PlayerActions';
 import { PlayerCommands } from './PlayerCommands';
+import { LegendSprites } from './LegendSprites';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
+import { EruptionView } from './views/EruptionView';
 import { LegendBodyLayer } from './views/LegendBodyLayer';
 import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
@@ -68,6 +70,11 @@ export class Match implements LoopTarget {
 
   private readonly bodies: LegendBodies;
 
+  /** Which damage numbers are on screen (W5, DEC-410); it listens to the simulation's events. */
+  private readonly damageBadges: DamageBadges;
+
+  private readonly badgeLayer: DamageBadgeLayer;
+
   /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */
   private readonly objects: WorldObjectsView;
   private readonly atmosphere: BiomeAtmosphereView;
@@ -75,6 +82,9 @@ export class Match implements LoopTarget {
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
 
   private readonly camera: MatchCamera;
+
+  /** The mid-game cut-scene: where the camera looks around the gem eruption, and its burst. */
+  private readonly cutscene: CathedralCutscene;
 
   private readonly roofs: BuildingRoofs;
 
@@ -85,10 +95,9 @@ export class Match implements LoopTarget {
   private previous: Snapshot | null = null;
 
   private current: Snapshot;
-  private readonly legendAnimation: LegendAnimation;
-  private frameTick = 0;
 
-  private readonly playerId: EntityId | null;
+  /** Every Legend's sprite: the animations and the Legend view (DEC-378). */
+  private readonly legendSprites: LegendSprites;
 
   /** The developer menu's key, state and `dev-command` path (13 §4); inert unless enabled. */
   public readonly developerMenu: DeveloperMenuController;
@@ -105,15 +114,19 @@ export class Match implements LoopTarget {
     const { simulation, world, tickRate, scheduler, camera, logger, bridge, input } = deps;
     const { map, presentation, mapObjects } = world;
     this.current = simulation.snapshot();
-    this.playerId = deps.remote?.legendId ?? this.current.match.humanLegendId;
-    this.legendAnimation = new LegendAnimation(
-      this.playerId,
-      deps.playerSpecId ?? null,
-      tickRate,
-      simulation,
-    );
+    this.legendSprites = new LegendSprites(deps);
     this.healthBars = new HealthBarVisibility(simulation);
     this.bodies = new LegendBodies(simulation);
+    this.damageBadges = new DamageBadges(
+      simulation,
+      () => deps.settings?.()?.hud.shouldShowEveryHit ?? false,
+      tickRate,
+    );
+    this.badgeLayer = new DamageBadgeLayer(
+      () => this.damageBadges.badges,
+      () => deps.isReducedMotion?.() ?? false,
+      tickRate,
+    );
     const { scenery, buildings } = presentation;
     this.roofs = new BuildingRoofs(buildings);
     const { hidden: hiddenRoofs } = this.roofs;
@@ -134,14 +147,12 @@ export class Match implements LoopTarget {
           ),
         );
       },
-      new LegendSpriteView(
-        (entity) => this.legendAnimation.frame(entity, this.frameTick),
-        LEGEND_VISUAL_DIAMETER,
-      ),
+      this.legendSprites.view,
       sovereignView,
     );
     this.entities = new EntityLayer(views, isDead, this.healthBars.healthBarOf);
     this.camera = new MatchCamera(camera, map);
+    this.cutscene = new CathedralCutscene(simulation, tickRate);
     this.commands =
       deps.remote?.createActions(this.camera) ??
       new PlayerCommands(input, simulation, this.camera, mapObjects, views);
@@ -157,6 +168,8 @@ export class Match implements LoopTarget {
       new LegendBodyLayer(this.bodies.bodies),
       this.entities,
       this.atmosphere,
+      new EruptionView(() => this.cutscene.burst()),
+      this.badgeLayer,
     ]);
     const centre = (): WorldPoint => this.miniMapCentre();
     this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING, centre) };
@@ -170,8 +183,13 @@ export class Match implements LoopTarget {
       simulation,
       bus: bridge.bus,
       map,
+      humanLegendId: () => this.playerId,
+      onFollow: () => {
+        this.camera.playerMoved();
+      },
     });
     this.healthBars.observe(this.current, this.playerId);
+    this.damageBadges.observe(this.current, this.playerId);
     this.bodies.observe(this.current);
     this.bridge = new MatchBridge({
       ...bridge,
@@ -189,6 +207,7 @@ export class Match implements LoopTarget {
       camera: this.camera,
       roofs: this.roofs,
       commands: this.commands,
+      playerId: () => this.playerId,
       miniMap: this.world.miniMap,
       onMiniMapShownChanged: (isShown) => {
         this.deps.bridge.bus.emit('minimap-visibility', { isShown });
@@ -197,14 +216,20 @@ export class Match implements LoopTarget {
           this.render(1);
         }
       },
-      playerId: this.playerId,
       snapshot: () => this.current,
     });
   }
 
-  /** The id of the player's Legend; known from construction, `null` when its spawn failed. */
+  /**
+   * The id of the player's Legend: `null` when its spawn failed or, in sim mode, while the match
+   * has no human (`dev-set-controller` moves it, 13 §4); follows the latest snapshot.
+   */
   public get playerEntityId(): EntityId | null {
     return this.playerId;
+  }
+
+  private get playerId(): EntityId | null {
+    return this.deps.remote?.legendId ?? this.current.match.humanLegendId;
   }
 
   /** The latest snapshot. */
@@ -249,34 +274,51 @@ export class Match implements LoopTarget {
    * (`ended`).
    */
   public tick(): void {
+    let isMoving = false;
     if (this.playerId !== null) {
-      const isMoving = this.commands.apply(this.playerId, this.current);
+      isMoving = this.commands.apply(this.playerId, this.current);
       if (isMoving) {
         this.camera.playerMoved();
       }
     }
     this.deps.simulation.step();
     this.previous = this.current;
+    const previousPlayerId = this.playerId;
     this.current = this.deps.simulation.snapshot();
-    this.legendAnimation.observe(this.previous, this.current);
+    if (this.playerId !== previousPlayerId) {
+      this.developerMenu.publish();
+    }
+    this.developerMenu.observeLegends(this.current.entities);
+    this.legendSprites.observe(this.current);
     this.healthBars.observe(this.current, this.playerId);
+    this.damageBadges.observe(this.current, this.playerId);
     this.bodies.observe(this.current);
+    this.cutscene.observe(this.current, isMoving, this.livingPlayerAt());
     this.roofs.playerAt(this.livingPlayerAt());
     if (this.bridge.afterTick(this.current, this.playerId)) {
       this.deps.observer.ended();
     }
   }
 
-  /** One frame: the camera follows the player, then the scene and the minimap are drawn. */
+  /**
+   * One frame: the camera follows the player (with no human, the Legend the developer menu's
+   * Follow names) or looks where the mid-game cut-scene says, then the scene and the minimap are
+   * drawn.
+   */
   public render(alpha: number): void {
-    this.frameTick = this.current.tick + alpha;
     const { renderer } = this.deps;
-    this.camera.follow(this.playerEntity()?.transform ?? null);
+    const focus = this.cutscene.focus();
+    if (focus === null) {
+      this.camera.follow(this.cameraTarget()?.transform ?? null);
+    } else {
+      this.camera.focusOn(focus, CUTSCENE.smoothing);
+    }
     const view = this.camera.visibleArea();
     const { scene, miniMap } = this.world;
     renderer.clear(BACKGROUND_COLOR);
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
+    this.badgeLayer.show(this.previous, this.current, alpha);
     this.objects.show(this.current.mapObjects ?? []);
     this.atmosphere.show(
       this.livingPlayerAt(),
@@ -303,10 +345,12 @@ export class Match implements LoopTarget {
    */
   public destroy(): void {
     this.deps.sovereignArtwork?.destroy();
-    this.legendAnimation.destroy();
+    this.legendSprites.destroy();
     this.loop.destroy();
     this.healthBars.destroy();
+    this.cutscene.destroy();
     this.bodies.destroy();
+    this.damageBadges.destroy();
     this.developerMenu.destroy();
     this.bridge.destroy();
   }
@@ -324,6 +368,18 @@ export class Match implements LoopTarget {
   private miniMapCentre(): WorldPoint {
     const view = this.camera.visibleArea();
     return this.livingPlayerAt() ?? { x: view.x + view.width / 2, y: view.y + view.height / 2 };
+  }
+
+  /**
+   * What the camera follows: the player's Legend, or with no human the Legend the developer menu
+   * follows (13 §4 spectate); `undefined` when neither is in the latest snapshot.
+   */
+  private cameraTarget(): EntitySnapshot | undefined {
+    const followed = this.developerMenu.followedLegendId;
+    return (
+      this.playerEntity() ??
+      this.current.entities.find(({ id, family }) => id === followed && family === 'legend')
+    );
   }
 
   /** The player's Legend in the latest snapshot; `undefined` before it spawns or once removed. */

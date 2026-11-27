@@ -10,8 +10,8 @@ import type { Polygon } from '../utils/geometry.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
- * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`, `Capturable`
- * or `CathedralGemState`), never a made-up default.
+ * (no `Transform`, `Jump`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea`,
+ * `Capturable` or `CathedralGemState`), never a made-up default.
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
@@ -23,6 +23,17 @@ export type EntitySnapshot = {
    * and by the group it reads (`FeatureKeyedGroup`).
    */
   readonly mapFeatureId?: string;
+  /**
+   * A Legend's sub-class (spec) id from its roster slot (`RosterSlot.specId`), so the client draws
+   * its sprite sheet (DEC-378 (2)). Left out for every other entity and for a Legend whose slot
+   * names none.
+   */
+  readonly specId?: string;
+  /**
+   * A big boss's body outline in world units (`CombatHitbox`, DEC-381): a click inside it selects
+   * the unit. Left out for every unit that is only its disc.
+   */
+  readonly combatHitbox?: Polygon;
   readonly id: EntityId;
   readonly kind: string;
   readonly family: string;
@@ -35,6 +46,12 @@ export type EntitySnapshot = {
     readonly radius: number;
     readonly facing: { readonly x: number; readonly y: number };
   } | null;
+  /**
+   * The drawn height above the ground in metres, from any lift (today only a Legend's `Jump`,
+   * DEC-390; named for what the view draws, DEC-420): above 0 only in the air; `null` for every
+   * entity that nothing can lift.
+   */
+  readonly elevation: { readonly height: number } | null;
   readonly health: { readonly current: number; readonly max: number } | null;
   /** A Legend's level and XP (`Progression`, DEC-224); `null` for every entity that does not level. */
   readonly progression: ProgressionSnapshot | null;

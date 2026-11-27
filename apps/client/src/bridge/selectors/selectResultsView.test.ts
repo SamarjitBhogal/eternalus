@@ -45,6 +45,8 @@ describe('selectResultsView', () => {
       verdict: 'victory',
       status: { kind: 'verdict-line', text: 'Their Queen is down.' },
       canRematch: true,
+      hasCountdown: true,
+      duelScore: null,
     });
   });
 
@@ -56,6 +58,8 @@ describe('selectResultsView', () => {
       verdict: 'victory',
       status: { kind: 'opponent-left' },
       canRematch: false,
+      hasCountdown: false,
+      duelScore: null,
     });
   });
 
@@ -74,6 +78,8 @@ describe('selectResultsView', () => {
       verdict: 'defeat',
       status: null,
       canRematch: false,
+      hasCountdown: false,
+      duelScore: null,
     });
   });
 

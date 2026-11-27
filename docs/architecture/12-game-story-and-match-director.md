@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -274,7 +274,8 @@ the owner's values (`TUNE`, DEC-79): a Legend kill, an assist, a death (no point
 holds FR-007's objective points (DEC-84 (2)) at the owner's values (DEC-131): a destroyed
 structure (team-only, DEC-212), a capture per checkpoint and a hold per full minute of a team's
 held time pooled over its points (both team-only, DEC-214). Bosses and the sovereign give no
-personal points. A hit on or a kill of a unit on the attacker's own team, itself
+personal points; a boss built as a mob (until doc 04's `Boss` family) is listed by definition in
+`SCORING.bossIds`, which the mob death rule skips. A hit on or a kill of a unit on the attacker's own team, itself
 included, counts for nothing, as for XP (DEC-130; O5, `05` §18). The assist window sits beside the weights in `SCORING`, so `Simulation` passes one value; `loadScoring` turns the scoring times into ticks once: the assist window from `SCORING` (it rejects a negative or non-finite one) and the minute that hold points count in (`03` §8, DEC-241, DEC-285 (2), DEC-287), so the scoring rules and their factory see only ticks. Listeners only append to a per-tick buffer; `fold(ctx)` applies it
 inside the director's pass ("listeners defer state changes to their own system's pass", `03` §4),
 and the `ScoreBook`'s data sits in `state.match` so it is hashed. Achievements (**MVP-if-time**) are pure
@@ -475,9 +476,7 @@ Legends to their start points at full health at once, and `KillCountCondition` (
 the match at the target. The score is `state.match.duel` and `Snapshot.match.duel`. The shipped
 numbers (target, countdown, start offset) are `DUEL_RULES` in `content/duel/duelRules.ts`. What
 this note left as generated (mobs, objectives, the crystal, the Cathedral's entrances) is the
-2026-11-25 note below; FR-115's inert world beyond that is not built. Every Legend enters a Duel at
-its level curve's cap (`DUEL_RULES.legendsStartAtMaxLevel`, SCRUM-444; `ProgressionSystem` raises
-it when it spawns); only Legends are raised.
+2026-11-25 note below; FR-115's inert world beyond that is not built.
 
 Implementation status, 2026-11-25 (branch `feat/duel-arena-only-legends`; the owner's feedback on
 the Duel demo of 2026-11-20, Jira SCRUM-445, SCRUM-446 and SCRUM-450, and the owner's answers
@@ -505,6 +504,10 @@ that part is built, never in a system's tick:
 
 The removed structures' art is still drawn from the map presentation; hiding it in a Duel is not
 built.
+
+Implementation status, 2026-11-25 (branch `feat/duel-legend-max-level`, SCRUM-444): every Legend
+enters a Duel at its level curve's cap (`DUEL_RULES.legendsStartAtMaxLevel`; `ProgressionSystem`
+raises it when it spawns, 05 §18). Only Legends are raised.
 
 The human's Legend works like this (DEC-173): it is the roster's `human` slot (`RosterSlot.pilot`),
 at most one per roster and on `playerTeam`; a roster without one is sim mode. The client gives it
@@ -546,11 +549,29 @@ sovereign, whose display name per team is in `content/sovereigns/sovereignDispla
 `loadDisplayContent()` returns both, and the client's results screen shows the line.
 `forfeit` and `aborted` have no lines yet (no condition produces them).
 
-Not built yet: `atmosphere` in `MatchState`; the rest of `content/narrative/` (§9); an entity
+Not built yet: `atmosphere` in `MatchState` (the interim is the boolean
+`MatchState.isGemErupted`, below); the rest of `content/narrative/` (§9); an entity
 that carries `WinObjective` (the sovereign); `MatchResult.timeline` and `achievements` (with
 their producers); the other §5 counters and `TeamStats` fields; a condition for `forfeit` or
-`aborted` (the ids exist); the timeline actions other than `enter-phase`; `dev-set-phase`; the
-announcer; the other invariants of §12.
+`aborted` (the ids exist); the timeline actions other than `enter-phase` and
+`summon-greater-boss`; the Greater Boss turning its killer into an Eternal (§7;
+`BossController` with its six moves and entrance roar, and its team reward (DEC-237, DEC-371 E8,
+DEC-416), are built); `dev-set-phase`; the announcer; the other invariants of §12.
+
+The gem eruption (§3) is built (2026-11-22, `feat/cathedral-eruption-boss`): the default
+timeline's `gem-eruption` entry, at `mid-game`'s fraction and right after it (DEC-81), runs
+`summon-greater-boss` (`match/actions/SummonGreaterBossAction.ts`). It calls
+`MatchRecord.eruptGem(bossId)` outside a Duel (DEC-36), which sets `MatchState.isGemErupted` once (a second call throws;
+hashed from then on) and emits `greater-boss-summoned { bossId }`. On the next tick
+`GemEruptionSystem`'s blast kills every unit in the Cathedral (DEC-371), the gem and its plinth
+are removed, and `SpawnSystem` spawns the boss and emits `boss-summoned` (07's implementation
+status).
+`GuardRoster.activate` fills the gem-eruption posts of `bossId`'s mob; `SpawnSystem` rejects at
+load a `bossId` that no gem-eruption post on the map names. The timeline's phase rules read only its
+`enter-phase` entries. The client's `CathedralCutscene` turns the camera to the Cathedral from
+just before the eruption tick (read from `upcoming`), for a player whose Legend is near the
+Cathedral then (DEC-371 E1), and draws the burst on `greater-boss-summoned`, on the minimap too
+(08 §11).
 
 ## Related
 

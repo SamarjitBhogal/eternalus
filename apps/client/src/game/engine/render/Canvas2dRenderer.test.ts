@@ -3,35 +3,100 @@ import { describe, expect, it, type Mock, vi } from 'vitest';
 import { Canvas2dRenderer } from './Canvas2dRenderer';
 import type { DrawContext } from './Canvas2dRenderer.types';
 
-describe('Canvas2dRenderer sprite frames', () => {
-  it('prepares a frame once and copies it without scaling on subsequent draws', () => {
-    const prepare = vi.fn();
-    class PreparedCanvas {
-      public getContext() {
-        return { drawImage: prepare, imageSmoothingEnabled: true };
-      }
-    }
-    vi.stubGlobal('OffscreenCanvas', PreparedCanvas);
-    try {
-      const { context } = createFakeContext();
-      const copy = vi.fn();
-      context.drawImage = copy;
-      const renderer = new Canvas2dRenderer(context, {
-        oracle: { image: { width: 384, height: 640, close: vi.fn() }, columns: 6, rows: 10 },
-      });
-      renderer.resize(100, 100);
-      renderer.showWorldArea({ x: 0, y: 0, width: 10, height: 10 });
-      expect(renderer.drawSprite({ atlasId: 'oracle', frame: 7 }, { x: 5, y: 5 }, 2)).toBe(true);
-      renderer.drawSprite({ atlasId: 'oracle', frame: 7 }, { x: 5, y: 5 }, 2);
-      expect(prepare).toHaveBeenCalledOnce();
-      expect(prepare.mock.calls[0]?.slice(1)).toEqual([64, 64, 64, 64, 0, 0, 20, 20]);
-      expect(copy.mock.calls[0]).toEqual([expect.any(PreparedCanvas), 40, 30]);
-      expect(renderer.drawSprite({ atlasId: 'missing', frame: 0 }, { x: 0, y: 0 }, 2)).toBe(false);
-      expect(renderer.drawSprite({ atlasId: 'oracle', frame: 60 }, { x: 0, y: 0 }, 2)).toBe(false);
-      renderer.destroy();
-    } finally {
-      vi.unstubAllGlobals();
-    }
+/**
+ * A 384 x 640 atlas of 6 x 10 cells, 64 x 64 px each (the shipped 1x Legend sheet's shape), whose
+ * feet stand on the cell's bottom edge.
+ */
+const ORACLE = {
+  image: { width: 384, height: 640, close: vi.fn() },
+  columns: 6,
+  rows: 10,
+  groundOffset: 0,
+};
+
+/** A renderer holding `atlases` on a 100 x 100 screen that shows a 10 x 10 world (scale 10). */
+const createSpriteRenderer = (
+  context: DrawContext,
+  atlases: ConstructorParameters<typeof Canvas2dRenderer>[1] = { oracle: ORACLE },
+): Canvas2dRenderer => {
+  const renderer = new Canvas2dRenderer(context, atlases);
+  renderer.resize(100, 100);
+  renderer.showWorldArea({ x: 0, y: 0, width: 10, height: 10 });
+  return renderer;
+};
+
+describe('Canvas2dRenderer sprites', () => {
+  it('draws one frame from its source cell with smoothing off, its feet on the given point', () => {
+    const { context } = createFakeContext();
+    const smoothingDuringDraw: boolean[] = [];
+    const drawImage = vi.fn(() => {
+      smoothingDuringDraw.push(context.imageSmoothingEnabled);
+    });
+    context.drawImage = drawImage;
+    const renderer = createSpriteRenderer(context);
+
+    // Frame 7 is column 1, row 1: source (64, 64). Two world units wide at scale 10 is 20 px;
+    // the anchor (5, 5) is the screen point (50, 50), so the box starts 10 px left and 20 px up.
+    renderer.drawSprite({ atlasId: 'oracle', frame: 7 }, { x: 5, y: 5 }, 2);
+
+    expect(drawImage.mock.calls).toEqual([[ORACLE.image, 64, 64, 64, 64, 40, 30, 20, 20]]);
+    expect(smoothingDuringDraw).toEqual([false]);
+    // The context's own setting comes back, so later drawings are not changed.
+    expect(context.imageSmoothingEnabled).toBe(true);
+  });
+
+  it('takes the height from the shape of the cell, so a tall cell is not squashed', () => {
+    const { context, spies } = createFakeContext();
+    const tall = { ...ORACLE, image: { width: 384, height: 1280, close: vi.fn() } };
+    createSpriteRenderer(context, { tall }).drawSprite(
+      { atlasId: 'tall', frame: 0 },
+      { x: 5, y: 5 },
+      2,
+    );
+
+    // A 64 x 128 cell drawn 20 px wide is 40 px tall, and ends on the anchor.
+    expect(spies.drawImage.mock.calls).toEqual([[tall.image, 0, 0, 64, 128, 40, 10, 20, 40]]);
+  });
+
+  it("stands the sprite on its feet: the sheet's ground offset, not the cell's bottom edge", () => {
+    const { context, spies } = createFakeContext();
+    const raised = { ...ORACLE, groundOffset: 0.25 };
+    const renderer = createSpriteRenderer(context, { raised });
+    renderer.drawSprite({ atlasId: 'raised', frame: 0 }, { x: 5, y: 5 }, 2);
+
+    // The 20 px cell's feet stand 5 px above its bottom edge, so it starts 15 px above (50, 50).
+    expect(spies.drawImage.mock.calls).toEqual([[raised.image, 0, 0, 64, 64, 40, 35, 20, 20]]);
+    expect(renderer.spriteTop({ atlasId: 'raised', frame: 0 }, 2)).toBe(1.5);
+    expect(renderer.spriteTop({ atlasId: 'missing', frame: 0 }, 2)).toBeNull();
+  });
+
+  it('has a sprite only for an injected atlas and a whole frame inside its grid', () => {
+    const { context, spies } = createFakeContext();
+    const renderer = createSpriteRenderer(context);
+    const has = (atlasId: string, frame: number): boolean => renderer.hasSprite({ atlasId, frame });
+
+    expect([has('oracle', 0), has('oracle', 59)]).toEqual([true, true]);
+    expect([has('missing', 0), has('oracle', 60), has('oracle', -1), has('oracle', 1.5)]).toEqual([
+      false,
+      false,
+      false,
+      false,
+    ]);
+    renderer.drawSprite({ atlasId: 'missing', frame: 0 }, { x: 5, y: 5 }, 2);
+    renderer.drawSprite({ atlasId: 'oracle', frame: 60 }, { x: 5, y: 5 }, 2);
+    expect(spies.drawImage).not.toHaveBeenCalled();
+  });
+
+  it('gets its atlases from fromCanvas, and drops them on destroy', () => {
+    const { context, spies } = createFakeContext();
+    const renderer = Canvas2dRenderer.fromCanvas({ getContext: () => context }, { oracle: ORACLE });
+    expect(renderer?.hasSprite({ atlasId: 'oracle', frame: 0 })).toBe(true);
+
+    renderer?.destroy();
+    renderer?.drawSprite({ atlasId: 'oracle', frame: 0 }, { x: 5, y: 5 }, 2);
+
+    expect(renderer?.hasSprite({ atlasId: 'oracle', frame: 0 })).toBe(false);
+    expect(spies.drawImage).not.toHaveBeenCalled();
   });
 });
 
@@ -40,16 +105,19 @@ type DrawMethod =
   | 'beginPath'
   | 'clip'
   | 'closePath'
+  | 'drawImage'
   | 'ellipse'
   | 'fill'
   | 'fillRect'
+  | 'fillText'
   | 'lineTo'
   | 'moveTo'
   | 'rect'
   | 'restore'
   | 'save'
   | 'stroke'
-  | 'strokeRect';
+  | 'strokeRect'
+  | 'strokeText';
 
 /** A pretend canvas plus a spy for each drawing tool. */
 type FakeContext = {
@@ -69,6 +137,7 @@ const createFakeContext = (): FakeContext => {
     ellipse: vi.fn(),
     fill: vi.fn(),
     fillRect: vi.fn(),
+    fillText: vi.fn(),
     lineTo: vi.fn(),
     moveTo: vi.fn(),
     rect: vi.fn(),
@@ -76,6 +145,7 @@ const createFakeContext = (): FakeContext => {
     save: vi.fn(),
     stroke: vi.fn(),
     strokeRect: vi.fn(),
+    strokeText: vi.fn(),
     drawImage: vi.fn(),
     imageSmoothingEnabled: true,
   };
@@ -85,6 +155,9 @@ const createFakeContext = (): FakeContext => {
     strokeStyle: '',
     lineWidth: 1,
     lineJoin: 'miter',
+    font: '',
+    textAlign: 'start',
+    textBaseline: 'alphabetic',
   };
   return { context, spies };
 };
@@ -161,6 +234,37 @@ describe('Canvas2dRenderer', () => {
     // Line width stays 3 pixels no matter how zoomed in the world is.
     expect(context.lineWidth).toBe(3);
     expect(context.strokeStyle).toBe('#00ff00');
+  });
+
+  it('draws text centred on its screen point, sized in world units, outline under the fill', () => {
+    const { context, spies } = createFakeContext();
+    const renderer = createFittedRenderer(context);
+    renderer.resize(1000, 500, 2);
+    renderer.drawText(
+      '125',
+      { x: 10, y: 20 },
+      {
+        font: 'Cinzel, serif',
+        weight: 700,
+        size: 2,
+        color: '#ffffff',
+        outline: { color: '#000000', width: 1.5 },
+      },
+    );
+
+    // 2 world units x 5 = 10 px high; (10, 20) is (250 + 50, 100) on screen.
+    expect(context.font).toBe('700 10px Cinzel, serif');
+    expect(context.textAlign).toBe('center');
+    expect(context.textBaseline).toBe('middle');
+    expect(spies.strokeText).toHaveBeenCalledWith('125', 300, 100);
+    expect(spies.fillText).toHaveBeenCalledWith('125', 300, 100);
+    // The outline is 1.5 CSS px at pixel ratio 2, and goes under the fill.
+    expect(context.lineWidth).toBe(3);
+    expect(spies.strokeText.mock.invocationCallOrder[0]).toBeLessThan(
+      spies.fillText.mock.invocationCallOrder[0] ?? 0,
+    );
+    expect(context.fillStyle).toBe('#ffffff');
+    expect(context.strokeStyle).toBe('#000000');
   });
 
   it('draws nothing for an empty shape or path', () => {

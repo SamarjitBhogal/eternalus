@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
+import { damageStepsWithoutLaneProgress } from './combat/__fixtures__/damageSteps';
 import { DamagePipeline } from './combat/DamagePipeline';
 import { Health } from './components/Health';
 import { NullLogger } from './diagnostics/NullLogger';
@@ -50,7 +51,7 @@ it('ends the match when a spawned Monarch falls after its BuffTowers', () => {
   const enemies = simulation.snapshot().entities.filter(({ team }) => team === 'dark');
   const monarch = enemies.find(({ kind }) => kind === 'monarch');
   if (monarch === undefined) throw new Error('Missing enemy Monarch');
-  const damage = new DamagePipeline();
+  const damage = new DamagePipeline(damageStepsWithoutLaneProgress());
   const demolish = (id: string) => {
     const health = state.entities.get(id)?.getComponent(Health);
     if (health === undefined) throw new Error('Missing test target');

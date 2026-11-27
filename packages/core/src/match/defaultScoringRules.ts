@@ -17,13 +17,14 @@ import type { ScoringRules } from './ScoringRule.types';
  */
 export const createDefaultScoringRules = ({
   weights,
+  bossIds,
   assistWindowTicks,
   minuteTicks,
 }: ScoringOptions): ScoringRules => ({
   hits: { legend: new LegendHitRule(), structure: new StructureHitRule() },
   deaths: {
     legend: new LegendDeathRule(weights, assistWindowTicks),
-    mob: new MobDeathRule(weights.minionKill),
+    mob: new MobDeathRule(weights.minionKill, bossIds),
   },
   listeners: [
     new StructureDestroyedRule(weights.structureDestroyed),

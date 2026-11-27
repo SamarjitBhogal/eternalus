@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Combat } from '../components/Combat';
+import { Jump } from '../components/Jump';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import type { WeaponDefinition } from '../content/weapons/weapons.types';
@@ -20,6 +21,16 @@ const ARMED_WARRIOR = { ...WARRIOR, defaultLoadout: { primaryWeaponId: 'test-tal
 const PLACEMENT = { position: { x: 0, y: 0 }, team: 'light' } as const;
 
 describe('Legend', () => {
+  it('keeps the spec its spawn context names, and null without one (DEC-378 (2))', () => {
+    const knight = new Warrior('entity-1', 'warrior');
+    const plain = new Warrior('entity-2', 'warrior');
+
+    knight.spawn({ ...PLACEMENT, definition: ARMED_WARRIOR, weapons: WEAPONS, specId: 'knight' });
+    plain.spawn({ ...PLACEMENT, definition: ARMED_WARRIOR, weapons: WEAPONS });
+
+    expect([knight.specId, plain.specId]).toEqual(['knight', null]);
+  });
+
   it('builds its Combat from its default weapon', () => {
     const legend = new Warrior('entity-1', 'warrior');
 
@@ -38,6 +49,14 @@ describe('Legend', () => {
     const combat = legend.getComponent(Combat);
     expect(combat.weaponId).toBe('raptor-talons');
     expect(combat.attack).toMatchObject({ damage: 45, reach: 1.5, interval: 21 });
+  });
+
+  it('can jump, standing on the ground with the key released (DEC-390)', () => {
+    const legend = new Warrior('entity-1', 'warrior');
+
+    legend.spawn({ ...PLACEMENT, definition: WARRIOR, weapons: loadWeapons(30) });
+
+    expect(legend.getComponent(Jump).fields).toEqual([false, null, 0, 0]);
   });
 
   it('throws when it names a weapon but was spawned without a weapon source', () => {

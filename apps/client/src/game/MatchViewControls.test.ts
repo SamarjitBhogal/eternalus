@@ -70,6 +70,7 @@ const unit = (id: string, team: 'light' | 'dark', at: Vec2): EntitySnapshot => (
   team,
   transform: { ...at, radius: 1, facing: { x: 1, y: 0 } },
   health: { current: 10, max: 10 },
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
@@ -130,7 +131,7 @@ const setUp = (
     commands,
     miniMap,
     onMiniMapShownChanged,
-    playerId,
+    playerId: () => playerId,
     snapshot: () => ({ entities: units, mapObjects: HOUSE_STATES }),
   });
   const sent = (): Command[] => enqueueCommand.mock.calls.map(([command]) => command);

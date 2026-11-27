@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -478,6 +478,9 @@ and rendering but release their collision footprints.
 
 The Structure family replaces this stand-in in Phase 2 sprint 2.1. Until then a side's map
 objects carry its team (`MapObject.team`), so only the other side can attack them (DEC-121 (a)).
+A Legend's weapon hit takes the structure level rate on a map object whose kind is in
+`STRUCTURE_MAP_OBJECT_KINDS` (DEC-405, 05 §18). Each entry there is dead data once a `structure`
+entity replaces that kind's map objects (`WallSegment` and `Turret`, 07 §1, are the planned ones).
 Blocking footprints already block the pathing grid and a destroyed one reopens its cells; the
 `terrain-changed` event follows in sprint 2.5. The game-loop integration uses `GameState.livingBuffTowerCount(team)`:
 only living `structure` / `buff-tower` entities with the owning team's membership count.
@@ -541,10 +544,38 @@ snapshot's `mapFeatureId`, not by position. Interim differences:
   feature's definition id; the planned `Cathedral` building (§1) cannot share that id, so its PR
   changes the spawn link (or renames the gem's id, which no save stores yet, ADR 0023). Its
   `CathedralGemState` (the Cathedral's holder from `capture-point-owner-changed`, and its glow) is
-  in the snapshot, and `CathedralGemView` draws it in the holder's colour (DEC-291). The gem system
+  in the snapshot, and `CathedralGemView` draws it in the holder's colour (DEC-291). To find the
+  holder, the gem system takes the capture zone whose area covers the gem's position; the next PR
+  that changes the gem matches the zone by its `MapFeatureLink` instead (DEC-403). The gem system
   is off in a Duel until the follow-up PR builds the owner's Duel design (DEC-346). The `Cathedral`
-  building is not an entity yet: its `Spawner` and `Aura` (§1, §6), the gem's look over time and
-  the summon-greater-boss action are not built.
+  building is not an entity yet: its `Spawner` and `Aura` (§1, §6), and the gem's look over time
+  are not built.
+- **Gem eruption and the Greater Boss (2026-11-22, `feat/cathedral-eruption-boss`).** The
+  `summon-greater-boss` timeline action (12 §3) erupts the gem at mid-game. On the next tick, each in its own
+  pass after `greater-boss-summoned` (03 §Events), `SpawnSystem` fills the Greater Boss's post and
+  `CathedralGemSystem` removes the gem entity (`despawned`); its plinth is the map object the
+  gem carries (`carriedObjectId`), so it is destroyed with the gem and collision, the path grid
+  and the lane fields reopen there (§10). Earlier on that tick, with the other damage systems,
+  `GemEruptionSystem` kills every unit standing in the capture zone the gem stands in, Legends
+  too, as environment damage that credits no one (DEC-371 "BOSS guards").
+  Interim for the Cathedral's `Spawner` (§1, §6): the boss is a guard of the Cathedral capture
+  zone's guard plan (`content/structures/guardPlans.ts`, `cathedral-capture-point`), one post at
+  the zone's centre with `activation: { at: 'gem-eruption' }` (posts that `GuardRoster.activate`
+  fills for the summoned `bossId`) and `respawn: never`; `SpawnSystem` then emits
+  `boss-summoned`. Its leash is balancing.md's 25 m centre zone (`GUARD_LEASH.greaterBossZone`).
+  The boss is a neutral `heavy-mob` definition (`content/mobs/greaterBoss.ts`) on
+  `BossController` with six moves, not doc 04's `GreaterBoss` class (11's implementation status),
+  built by #160 and #164 (DEC-370); its guard post spawns it and its circle is the boss's zone,
+  but it has no movement strategy, so `PathingSystem` does not steer it to the post. It locks the
+  Cathedral's capture while it lives (`ZONE_LOCKING_MOBS`, DEC-371 E4), so no checkpoint is
+  reached and no defenders come. Its health and hit are multiples of the shared
+  `refHealth(level)` and its movement and reach the shared `HEAVY_MOB_BASE`
+  (`content/mobs/bossReference.ts`, DEC-371 E6), as the capture point boss's. Minions deal it a
+  quarter of their hit (`BOSS_MINION_DAMAGE_TAKEN`); its kill lifts the killer's team 2.5 levels
+  and the last hitter 5 (DEC-237, DEC-371 E8, DEC-416, `XP_SOURCES.teamKills`). The blast kills
+  every unit with no kill credit and the cut-scene's reach is 50 m (DEC-415). Every move number
+  is `TUNE`; the questions are in `INBOX.md` (the Greater Boss items). In a Duel the action does
+  nothing (DEC-36), so the gem stays and no boss comes.
 
 **2026-11-09 (`feat/bosses-p3`, corner camp boss, interim; updated 2026-11-17).** DEC-236
 approves corner camps for Phase 3, with the corner boss on `GuardController` as an interim

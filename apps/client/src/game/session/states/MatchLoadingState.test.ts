@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { AssetGroup } from '../../../bridge/events';
 import { firstAvailableSpecId } from '../../content/__fixtures__/shippedCatalogue';
+import { filledRostersFixture } from '../../__fixtures__/filledRosters';
 import { FakeSessionContext } from '../../FakeSessionContext';
+import { LEGEND_SPRITE_SHEETS } from '../../legendSpriteSheets';
 import { flushMicrotasks, testResources, testSession } from '../../testSessionDeps';
 import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from '../sessionTiming.constants';
 import { MatchLoadingState } from './MatchLoadingState';
@@ -39,8 +41,70 @@ describe('MatchLoadingState', () => {
     const { context, groups, onReady } = entered();
     expect(groups).toEqual(['match']);
     onReady?.();
-    expect(context.order).toEqual(['loadAssets', 'prepareWorld', 'transition']);
+    expect(context.order).toEqual(['rosters', 'loadAssets', 'prepareWorld', 'transition']);
     expect(context.calls.transition).toEqual([['match']]);
+  });
+
+  it("loads the sprite sheet group of the player's pick after the match group", () => {
+    const context = new FakeSessionContext();
+    context.lockedRosters = filledRostersFixture({ player: 'colossus' });
+    new MatchLoadingState().enter(context);
+
+    expect(context.calls.loadAssets.map(([groups]) => groups)).toEqual([
+      ['match', 'sprite-atlas:colossus-sprites'],
+    ]);
+  });
+
+  it("loads every roster Legend's sheet group after the match group, each once", () => {
+    const context = new FakeSessionContext();
+    context.lockedRosters = filledRostersFixture({
+      player: 'colossus',
+      allies: ['oracle', 'colossus'],
+      enemies: ['juggernaut', null, 'oracle'],
+    });
+    new MatchLoadingState().enter(context);
+
+    const loads = context.calls.loadAssets.map(([groups]) => groups);
+    const [first, ...sheets] = loads[0] ?? [];
+
+    expect(loads).toHaveLength(1);
+    expect(first).toBe('match');
+    expect(new Set(sheets)).toEqual(
+      new Set([
+        'sprite-atlas:colossus-sprites',
+        'sprite-atlas:oracle-sprites',
+        'sprite-atlas:juggernaut-sprites',
+      ]),
+    );
+    expect(sheets).toHaveLength(3);
+  });
+
+  it('opens the match when the sprite sheet fails to load: the sheet stays unloaded', async () => {
+    const atlasId = LEGEND_SPRITE_SHEETS[SENTINEL_LEGEND]?.atlasId;
+    if (atlasId === undefined) throw new Error(`${SENTINEL_LEGEND} has no sprite sheet`);
+    const sheet = `sprite-atlas:${atlasId}` as const;
+    const { resources, loader } = testResources([sheet]);
+    const session = testSession({ resources });
+    const settle = async (): Promise<void> => {
+      do {
+        loader.resolveAll();
+        await flushMicrotasks();
+      } while (loader.pendingCount > 0);
+    };
+    session.controller.start();
+    await settle();
+    session.intent({ kind: 'start-match' });
+    await settle();
+    session.intent({ kind: 'select-class', classId: 'sentinel', specId: SENTINEL_LEGEND });
+    session.intent({ kind: 'confirm-selection' });
+    session.clock.advance(SELECT_COUNTDOWN_MS);
+    session.clock.advance(REVEAL_COUNTDOWN_MS);
+    await settle();
+
+    expect(session.phases.slice(-2)).toEqual(['match-loading', 'match']);
+    expect(loader.calls.map(({ url }) => url)).toContain(`/test/${sheet}.webp`);
+    expect(resources.isLoaded(sheet)).toBe(false);
+    expect(session.logger.records).toEqual([]);
   });
 
   it('aborts the match when the world cannot be built', () => {

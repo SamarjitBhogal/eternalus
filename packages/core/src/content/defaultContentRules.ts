@@ -6,6 +6,7 @@ import type { LegendSpecDefinition } from './legends/specs/legendSpecs.types';
 import { LEVEL_CURVE_CATALOGUE } from './progression/levelCurveCatalogue';
 import type { LevelCurveDefinition } from './progression/progression.types';
 import type { BotRosterDefinition } from './teams/botRoster.types';
+import { BodyShapeRule } from './validation/BodyShapeRule';
 import { BotRosterClassRule } from './validation/BotRosterClassRule';
 import { BotRosterDifficultyRule } from './validation/BotRosterDifficultyRule';
 import type { ContentRule, UnitDefinitionRule } from './validation/ContentValidator.types';
@@ -14,6 +15,7 @@ import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
 import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
+import { PositiveSpriteWidthRule } from './validation/PositiveSpriteWidthRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
 import { SpecClassExistsRule } from './validation/SpecClassExistsRule';
@@ -33,9 +35,11 @@ export const createDefaultContentRules = (
   new KebabCaseIdRule(),
   new PositiveStatsRule(),
   new PositiveAetherRule(),
+  new PositiveSpriteWidthRule(),
   new KnownLevelCurveRule(curves),
   new LevelScalingRule(),
   new KnownWeaponRule(weapons),
+  new BodyShapeRule(),
 ];
 
 /**

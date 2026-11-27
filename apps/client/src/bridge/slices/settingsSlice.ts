@@ -9,6 +9,8 @@ export type SettingsSliceState = {
   readonly audio: { readonly master: number; readonly music: number; readonly effects: number };
   readonly video: { readonly fullscreen: boolean; readonly renderScale: number };
   readonly accessibility: { readonly reduceMotion: boolean; readonly colourBlindMode: boolean };
+  /** What the match shows: `shouldShowEveryHit` shows every hit's damage number (W5c, DEC-410). */
+  readonly hud: { readonly shouldShowEveryHit: boolean };
 };
 
 /** A change to some of the non-binding settings, as the settings screen sends it. */
@@ -16,6 +18,7 @@ export type SettingsPatch = {
   readonly audio?: Partial<SettingsSliceState['audio']>;
   readonly video?: Partial<SettingsSliceState['video']>;
   readonly accessibility?: Partial<SettingsSliceState['accessibility']>;
+  readonly hud?: Partial<SettingsSliceState['hud']>;
 };
 
 // Bindings start empty: the defaults live in game/input/keybindings.ts, which bridge/ may not
@@ -25,6 +28,7 @@ const initialState: SettingsSliceState = {
   audio: { master: 1, music: 1, effects: 1 },
   video: { fullscreen: false, renderScale: 1 },
   accessibility: { reduceMotion: false, colourBlindMode: false },
+  hud: { shouldShowEveryHit: false },
 };
 
 /** Settings and keybindings, replaced whole each time the game publishes them. */
@@ -49,5 +53,6 @@ export const settingsSlice = createSlice({
     selectAudio: (state) => state.audio,
     selectVideo: (state) => state.video,
     selectAccessibility: (state) => state.accessibility,
+    selectHud: (state) => state.hud,
   },
 });

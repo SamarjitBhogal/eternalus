@@ -1,5 +1,5 @@
 import { AiSystem } from './ai/AiSystem';
-import type { AiMemory } from './content/ai/ai.types';
+import type { AiMemory, ControllerId } from './content/ai/ai.types';
 import {
   createDefaultControllerRegistry,
   type ControllerRegistry,
@@ -9,7 +9,6 @@ import type { Command } from './commands/Command.types';
 import type { CommandContext, CommandHandlers } from './commands/CommandHandler.types';
 import { CommandQueue } from './commands/CommandQueue';
 import { LegendSpawner } from './entities/LegendSpawner';
-import { ROVER_BOT } from './content/ai/difficulties/rover';
 import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers';
 import { Footprint } from './components/Footprint';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from './config/matchPhases';
@@ -23,6 +22,7 @@ import { recentContext } from './diagnostics/recentContext';
 import { REPLAY_CHECKPOINT_EVERY } from './diagnostics/Replay.constants';
 import { loadAggroRules } from './content/ai/aggro/loadAggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
+import { BOSS_PROFILES, loadBossTelegraphTicks } from './content/ai/bosses/bossProfiles';
 import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from './content/ai/rover';
 import { LEGEND_KIND_IDS } from './content/legends/legendKinds';
@@ -35,6 +35,8 @@ import { BOT_DIFFICULTIES } from './content/ai/difficulties/botDifficulties';
 import { RANKS_FORMATION } from './content/mobs/formations/ranks';
 import type { EntityId } from './state/EntityStore.types';
 import { assignLanes } from './state/assignLanes';
+import { createMissingRoleChooser, createPickedBotChooser } from './state/missingRoleChooser';
+import { ROVER_SPAWN, SIM_MODE_BOTS } from './Simulation.constants';
 import { formationSlot } from './state/formationSlot';
 import { unitClassOf } from './content/ai/unitClasses';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
@@ -99,9 +101,7 @@ export class Simulation {
   private readonly botQueue = new CommandQueue();
   /** Commands from `enqueueCommand` (player, developer menu). Each one enters the replay log. */
   private readonly externalQueue = new CommandQueue();
-  private readonly handlers: CommandHandlers = createDefaultCommandHandlers({
-    rover: { controllerId: 'rover', profileId: ROVER_BOT.id, memory: {} },
-  });
+  private readonly handlers: CommandHandlers;
   private readonly commandContext: CommandContext;
   private readonly systemContext: SystemContext;
   private readonly pipeline: SystemPipeline;
@@ -177,6 +177,13 @@ export class Simulation {
       duel === undefined ? undefined : duelStartPoints(map, DUEL_RULES.startOffset);
     if (duel !== undefined) this.state.match.startDuel(duel.killTarget);
     const { tickRate } = this.state.config;
+    this.handlers = createDefaultCommandHandlers({
+      rover: ROVER_SPAWN,
+      player: 'player' satisfies ControllerId,
+      missingRole: createMissingRoleChooser(SIM_MODE_BOTS),
+      pickedBot: createPickedBotChooser(SIM_MODE_BOTS),
+      bossTelegraphTicks: loadBossTelegraphTicks(tickRate),
+    });
     const curves = levelCurves ?? loadLevelCurves();
     this.curves = curves;
     const weaponSource = weapons ?? loadWeapons(tickRate);
@@ -199,7 +206,7 @@ export class Simulation {
       undefined,
       weaponSource,
     );
-    const owners = Simulation.spawnStructures(this.state, factory, {
+    const { owners, carriers } = Simulation.spawnStructures(this.state, factory, {
       structures,
       mapObjects,
       omittedIds: arena?.omittedStructureIds ?? [],
@@ -218,6 +225,7 @@ export class Simulation {
         entities: this.state.entities,
         definitions: MAP_OBJECT_DEFINITIONS,
         owners,
+        carriers,
       });
       this.state.events.on('entity-removed', ({ entityId }) =>
         this.state.worldObjects?.removed(entityId),
@@ -250,7 +258,10 @@ export class Simulation {
           xpSources: XP_SOURCES,
           ...(duel === undefined
             ? {}
-            : { legendsStartAtMaxLevel: DUEL_RULES.legendsStartAtMaxLevel }),
+            : {
+                legendsStartAtMaxLevel: DUEL_RULES.legendsStartAtMaxLevel,
+                hasMatchXp: DUEL_RULES.hasMatchXp,
+              }),
         },
         director,
         // One scoring load: a gem kill's window is the assists' window (DEC-346).
@@ -380,7 +391,11 @@ export class Simulation {
    * health. A Duel does not build the structures its `omittedStructureIds` list (DEC-348: towers,
    * gates, camps and Strongholds; the Cathedral's gem stays).
    *
-   * @returns Map object id → the id of the structure it is the body of.
+   * A structure whose definition names a `carriedObjectId` carries that map object (the gem's
+   * plinth): the object is destroyed when the structure is removed.
+   *
+   * @returns Map object id → the id of the structure it is the body of (`owners`), or that
+   *   carries it (`carriers`).
    */
   private static spawnStructures(
     state: GameState,
@@ -394,15 +409,19 @@ export class Simulation {
       readonly mapObjects?: readonly MapObject[] | undefined;
       readonly omittedIds: readonly string[];
     },
-  ): ReadonlyMap<string, string> {
+  ): {
+    readonly owners: ReadonlyMap<string, string>;
+    readonly carriers: ReadonlyMap<string, string>;
+  } {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
       compareById(a.id, b.id),
     );
     const bodies = new Map(mapObjects.map((object) => [object.id, object]));
     const owners = new Map<string, string>();
+    const carriers = new Map<string, string>();
     for (const { id, definitionId, position, team, laneId } of features) {
       if (structures.has(definitionId) && !omittedIds.includes(definitionId)) {
-        const { kind, hasMapFootprint } = structures.get(definitionId);
+        const { kind, hasMapFootprint, carriedObjectId } = structures.get(definitionId);
         const placement = {
           position,
           team,
@@ -413,10 +432,11 @@ export class Simulation {
         const body = hasMapFootprint === true ? bodies.get(id) : undefined;
         if (body !== undefined) structure.addComponent(new Footprint(body.footprints));
         if (body?.isBlocking === true) owners.set(body.id, structure.id);
+        if (carriedObjectId !== undefined) carriers.set(carriedObjectId, structure.id);
         state.entities.add(structure);
       }
     }
-    return owners;
+    return { owners, carriers };
   }
 
   /**
@@ -660,7 +680,8 @@ export class Simulation {
   /**
    * Spawns one roster slot's Legend at `position` on its team, facing the enemy Stronghold
    * (DEC-216 (6)), and announces it: a bot with its controller (whose brain starts with `memory`),
-   * the human with none, recorded as the human's Legend (DEC-172).
+   * the human with none, recorded as the human's Legend (DEC-172). The Legend keeps the slot's
+   * spec, if any (DEC-378 (2)).
    */
   private static spawnSlot(
     state: GameState,
@@ -669,19 +690,16 @@ export class Simulation {
     position: Vec2,
     memory: AiMemory,
   ): void {
-    const entity = legends.spawn(
-      state,
-      slot.definitionId,
-      slot.team,
-      position,
-      slot.pilot === 'bot'
-        ? {
-            controllerId: Simulation.controllerOf(slot),
-            profileId: slot.difficulty,
-            memory,
-          }
-        : undefined,
-    );
+    const entity = legends.spawn(state, slot.definitionId, slot.team, position, {
+      ...(slot.specId !== undefined && { specId: slot.specId }),
+      ...(slot.pilot === 'bot' && {
+        controller: {
+          controllerId: Simulation.controllerOf(slot),
+          profileId: slot.difficulty,
+          memory,
+        },
+      }),
+    });
     if (slot.pilot === 'human') {
       state.match.seatHuman(entity.id, slot.team);
     }
@@ -745,6 +763,7 @@ export class Simulation {
         legendKinds: LEGEND_KIND_IDS,
         laneWeights: LANE_ASSESSMENT_WEIGHTS,
       },
+      bosses: BOSS_PROFILES,
     });
   }
 

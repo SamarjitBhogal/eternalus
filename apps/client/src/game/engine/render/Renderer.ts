@@ -1,4 +1,11 @@
-import type { GlyphSpec, ScreenRect, SpriteRef, WorldPoint, WorldRect } from './Renderer.types';
+import type {
+  GlyphSpec,
+  ScreenRect,
+  SpriteRef,
+  TextStyle,
+  WorldPoint,
+  WorldRect,
+} from './Renderer.types';
 
 /**
  * The display port (architecture 09 §4): everything views may ask of the screen. Views call
@@ -6,8 +13,20 @@ import type { GlyphSpec, ScreenRect, SpriteRef, WorldPoint, WorldRect } from './
  * implementation that touches `CanvasRenderingContext2D`; tests pass recording fakes.
  */
 export interface Renderer {
-  /** Copies a prepared frame centred above its feet; false lets views draw a fallback. */
-  drawSprite(sprite: SpriteRef, feet: WorldPoint, size: number): boolean;
+  /**
+   * Draws one atlas frame `width` world units wide, with the feet of its cell on `feet` (the
+   * atlas's `groundOffset`); the height follows the shape of the atlas cell. Draws nothing when
+   * `hasSprite(sprite)` is false.
+   */
+  drawSprite(sprite: SpriteRef, feet: WorldPoint, width: number): void;
+  /** Whether `drawSprite` can draw `sprite`: the renderer holds its atlas, and the atlas has the frame. */
+  hasSprite(sprite: SpriteRef): boolean;
+  /**
+   * How far the top of `sprite` stands above its feet when it is drawn `width` world units wide,
+   * in world units (the atlas data: the cell's shape and its `groundOffset`); `null` when
+   * `hasSprite(sprite)` is false.
+   */
+  spriteTop(sprite: SpriteRef, width: number): number | null;
   /** Sets the drawing area in device pixels and how many device pixels make one CSS pixel. */
   resize(screenWidth: number, screenHeight: number, pixelRatio?: number): void;
   /**
@@ -31,6 +50,8 @@ export interface Renderer {
   drawWorldGlyph(glyph: GlyphSpec, center: WorldPoint, color: string): void;
   /** Draws a marker centred on a world position, sized in CSS pixels (minimap markers). */
   drawGlyph(glyph: GlyphSpec, center: WorldPoint, color: string): void;
+  /** Draws one line of text centred on a world position: outline first, then the fill. */
+  drawText(text: string, center: WorldPoint, style: TextStyle): void;
   /** Converts a world position to a screen position in device pixels. */
   toScreen(point: WorldPoint): WorldPoint;
   /** Releases the renderer. Owners must call this. */

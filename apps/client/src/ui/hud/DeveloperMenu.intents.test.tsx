@@ -17,12 +17,19 @@ import { DeveloperMenu } from './DeveloperMenu';
 let root: Root | undefined;
 
 /** Mounts the open menu; returns the container and every `dev-command` it emits. */
-function mount() {
+function mount(humanLegendId: string | null = 'e1', followedLegendId: string | null = null) {
   const store = createAppStore({
     content: TEST_CONTENT,
     developerMenu: {
       ...developerMenuSlice.getInitialState(),
       isOpen: true,
+      humanLegendId,
+      followedLegendId,
+      legends: [
+        { id: 'e7', label: 'e7 (dark warrior)' },
+        { id: 'e8', label: 'e8 (light sentinel)' },
+      ],
+      controllerIds: { player: 'player', rover: 'rover', laner: 'bot-legend' },
       origins: [
         { id: 'gate-a', label: 'gate-a' },
         { id: 'gate-b', label: 'gate-b' },
@@ -183,6 +190,83 @@ describe('DeveloperMenu buttons', () => {
         command: { type: 'dev-spawn-legend', team: 'light', definitionId: 'warrior' },
       },
     ]);
+  });
+
+  it('Remove human sends one dev-set-controller for the human Legend: null with no bot picked, else the picked bot (DEC-356)', () => {
+    const { container, intents, stop } = mount();
+    const bot = field(container, 'Bot');
+    expect([...bot.querySelectorAll('option')].map((o) => o.textContent)).toEqual([
+      'Game picks',
+      'Lane bot',
+      'Rover',
+    ]);
+    click(container, 'Remove human');
+    pick(container, 'Bot', 'bot-legend');
+    click(container, 'Remove human');
+    pick(container, 'Bot', 'rover');
+    click(container, 'Remove human');
+    stop();
+    const removeHuman = (controllerId: string | null) => ({
+      kind: 'dev-command',
+      command: { type: 'dev-set-controller', entityId: 'e1', controllerId },
+    });
+    expect(intents).toEqual([removeHuman(null), removeHuman('bot-legend'), removeHuman('rover')]);
+  });
+
+  it('turns the Bot select off with no human, like Remove human', () => {
+    const { container, stop } = mount(null);
+    stop();
+    expect(field(container, 'Bot').hasAttribute('disabled')).toBe(true);
+  });
+
+  it('Take control sends one dev-set-controller to the human for the typed id, and nothing without one', () => {
+    const { container, intents, stop } = mount();
+    click(container, 'Take control');
+    expect(intents).toEqual([]);
+    type(container, 'Legend id', ' e7 ');
+    click(container, 'Take control');
+    stop();
+    expect(intents).toEqual([
+      {
+        kind: 'dev-command',
+        command: { type: 'dev-set-controller', entityId: 'e7', controllerId: 'player' },
+      },
+    ]);
+  });
+
+  it('Follow lists the Legends of the store, sends a client-only dev-follow (None releases) with no human, and is off with one', () => {
+    const seated = mount();
+    expect(field(seated.container, 'Follow').hasAttribute('disabled')).toBe(true);
+    seated.stop();
+    act(() => {
+      root?.unmount();
+    });
+    seated.container.remove();
+
+    const { container, intents, stop } = mount(null, 'e7');
+    const follow = field(container, 'Follow');
+    expect([...follow.querySelectorAll('option')].map((o) => o.textContent)).toEqual([
+      'None',
+      'e7 (dark warrior)',
+      'e8 (light sentinel)',
+    ]);
+    pick(container, 'Follow', 'e8');
+    pick(container, 'Follow', '');
+    stop();
+    expect(intents).toEqual([
+      { kind: 'dev-follow', legendId: 'e8' },
+      { kind: 'dev-follow', legendId: null },
+    ]);
+  });
+
+  it('keeps a followed Legend that left the list selected, so None can release it', () => {
+    const { container, intents, stop } = mount(null, 'e9');
+    const follow = field(container, 'Follow');
+    expect((follow as HTMLSelectElement).value).toBe('e9');
+    expect(follow.textContent).toContain('e9 (not in the match now)');
+    pick(container, 'Follow', '');
+    stop();
+    expect(intents).toEqual([{ kind: 'dev-follow', legendId: null }]);
   });
 
   it('Remove Legend sends exactly one dev-remove-legend with the typed id, and nothing without one (DEC-293)', () => {

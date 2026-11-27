@@ -10,7 +10,7 @@
 import path from 'node:path';
 
 import { isLintable } from './changedFiles.mjs';
-import { editedFile, isInside, readHookInput, repoRoot, run, tail } from './hookInput.mjs';
+import { editedFile, isInside, projectRoot, readHookInput, run, tail } from './hookInput.mjs';
 
 const FORMATTABLE = new Set([
   '.ts',
@@ -26,15 +26,16 @@ const FORMATTABLE = new Set([
 ]);
 
 const input = await readHookInput();
-const root = repoRoot(input);
 const file = editedFile(input);
+// The edited file's checkout, not the session's: a session can edit a file in another worktree.
+const root = file === null ? null : projectRoot(path.dirname(file));
 
 if (file === null || !isInside(root, file)) {
   process.exit(0);
 }
 
 const extension = path.extname(file).toLowerCase();
-const relativePath = path.relative(root, path.resolve(root, file));
+const relativePath = path.relative(root, file);
 
 if (FORMATTABLE.has(extension)) {
   const prettier = await run(

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
 import { LastEnemyHit } from '../components/LastEnemyHit';
 import { StatusEffects } from '../components/StatusEffects';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
@@ -31,7 +33,7 @@ class Fighter extends Entity {
 const setUp = (killTarget = 10) => {
   const state = new GameState(createDefaultGameConfig(), 1);
   state.match.startDuel(killTarget);
-  const damage = new DamagePipeline();
+  const damage = new DamagePipeline(damageStepsWithoutLaneProgress());
   const system = new DuelRoundSystem(STARTS);
   let next = 0;
   const add = (team: PlayableTeam | 'neutral', isSeat: boolean): Entity => {
@@ -151,6 +153,21 @@ describe('DuelRoundSystem', () => {
     run();
 
     expect(light.findComponent(LastEnemyHit)).toBeUndefined();
+  });
+
+  it('puts a jumping reset Legend on the ground with its key released (DEC-390)', () => {
+    const { add, hit, run } = setUp();
+    const light = add('light', true);
+    const dark = add('dark', true);
+    const jump = new Jump();
+    dark.addComponent(jump);
+    jump.hold(true);
+    jump.takeOff({ x: 1, y: 0 });
+    hit(dark, light);
+
+    run();
+
+    expect(jump.fields).toEqual([false, null, 0, 0]);
   });
 
   it('ends in a draw when both teams reach the target on one tick', () => {

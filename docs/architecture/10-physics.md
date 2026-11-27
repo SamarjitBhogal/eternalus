@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-27
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -290,6 +290,14 @@ Order in `SystemPipeline`: `MovementSystem` → `CollisionSystem` → `SpaceSyst
 
 ## 12. Implementation status
 
+Knockback (§3) is interim (2026-11-22, `feat/greater-boss-moves`): no `pendingImpulse`, mass
+or friction yet. A knockback is a one-step displacement, `Movement.pushBy`, added to the unit's
+next step by `MovementSystem` (held or not, without turning it) and swept by `CollisionSystem`
+like a walk, so it stops at walls; `StateHasher` hashes a push while it waits. A push on a Legend
+in the air (DEC-390) moves it once, on top of its takeoff velocity, and does not change that
+velocity. The Greater Boss's sweep (on the units it hits) and charge (on the boss itself) are its
+only users. The impulse model replaces it when a second pusher (the Sentinel's Slam) lands.
+
 `physics/SpatialHash` (minion plan M1, M2a) has §5's `rebuild` and an exact, ascending
 `queryCircle`, over points only: no radii and no `queryRect` yet.
 `physics/SpaceIndex` wraps it as `state.space` (11 §3), rebuilt by `SpaceSystem` after
@@ -309,6 +317,16 @@ back out.
 gaps in the same wall geometry used for drawing. Bridge decks permit passage across terrain
 while retaining collision at their sides. Destroyed object IDs disable their static footprints.
 Unit-to-unit momentum, SAT and the remaining physics described above are still planned.
+
+**2026-11-27 (DEC-390, Legend jump).** A Legend's jump height lives in its `Jump` component, not
+in §1's `Transform.height`. The height is only drawn: no physics reads it, and §1 keeps
+`Transform.height` for a real altitude (the Flying class, post-MVP). While a Legend is in the air,
+`MovementSystem` moves it by the velocity it had at takeoff, and `CollisionSystem` sweeps that move
+against walls and footprints, so a jump crosses nothing that a walk cannot. A knockback (the
+interim push above) moves a Legend in the air once; the Legend keeps its takeoff velocity. Units do
+not block units yet (above), so a jump passes through units as a walk does. A stun (`cannot-move`)
+ends a jump in the air at once; a slow does not change it (DEC-420). The snapshot group is
+`elevation: { height }`, named for what the view draws (DEC-420).
 
 ## Related
 

@@ -3,7 +3,7 @@ import type { DetailSlot, RoleRatingAxis } from '../bridge/catalogue.types';
 import type { MatchVerdict } from '../bridge/domain.types';
 import type { MenuRoute, SessionPhase, SessionReason } from '../bridge/events';
 import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
-import type { ResultsStatus } from '../bridge/selectors/selectResultsView';
+import type { DuelScoreSide, ResultsStatus } from '../bridge/selectors/selectResultsView';
 
 /**
  * Banner text per `session.reason`: every `SessionReason` but the popup ones has one (a missing
@@ -137,6 +137,9 @@ export const STRINGS = {
     /** The ended match's length, `mm:ss` (`selectMatchDurationText`). */
     duration: (time: string): string => `Match length ${time}`,
     countdownLabel: 'Time left before the main menu',
+    /** An ended Duel's final kill score, the player's own side first (SCRUM-449). */
+    duelScore: (own: DuelScoreSide, opponent: DuelScoreSide): string =>
+      `${own.name} ${String(own.kills)} – ${opponent.name} ${String(opponent.kills)}`,
     // DEC-78: "A Continue control skips the wait."
     continue: 'Continue',
     playAgain: 'Play again',
@@ -195,6 +198,7 @@ export const STRINGS = {
     renderScale: 'Render scale',
     reduceMotion: 'Reduce motion',
     colourBlindMode: 'Colour-blind mode',
+    showEveryHit: 'Damage numbers for every hit',
   },
   /**
    * The confirmation before leaving an online Duel: leaving forfeits (DEC-250 (4)), the opponent
@@ -223,6 +227,17 @@ export const STRINGS = {
     removeEntity: 'Remove entity',
     entityId: 'Entity id',
     remove: 'Remove',
+    simMode: 'Sim mode',
+    legendId: 'Legend id',
+    removeHuman: 'Remove human',
+    bot: 'Bot',
+    botGamePicks: 'Game picks',
+    botLaner: 'Lane bot',
+    botRover: 'Rover',
+    takeControl: 'Take control',
+    follow: 'Follow',
+    followNone: 'None',
+    followAway: 'not in the match now',
   },
   pause: { title: 'Paused', resume: 'Resume', settings: 'Settings', leave: 'Leave match' },
   /** The match viewport; the explorer labels show only with the developer flag (13 §4, DEC-32). */
@@ -364,6 +379,7 @@ export const ACTION_LABELS: Readonly<Record<InputAction, string>> = {
   'move-down': 'Move down',
   'move-left': 'Move left',
   'move-right': 'Move right',
+  jump: 'Jump',
   attack: 'Attack',
   'ability-1': 'Ability 1',
   'ability-2': 'Ability 2',

@@ -4,7 +4,7 @@ description: The art theme and its references, the MVP art level, the Light and 
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-20
 tags: [reference, game-design, art, lore, naming]
 related:
   - 'docs/reference/suggestions/naming.md'
@@ -43,7 +43,9 @@ asset manifest (`../../architecture/14-persistence-and-resources.md`); nothing i
 | Dark (unique skins)  | Red, black, purple | Same classes, with hellish lava and rock styling | palette **MVP**; unique skins **post-MVP** |
 
 The same three classes exist on both teams; the team changes the skin, not the kit. "Per-class
-skin selection" is a loadout slot (`08-loadout.md`). Team colours are also the HUD and minimap
+skin selection" is a loadout slot (`08-loadout.md`). Skins are changeable and can be gated by
+team and class, for example a "Golden Sun" skin only for the Light Magus (DEC-38, a full-game
+stretch goal). Team colours are also the HUD and minimap
 colours for `light` and `dark`; `neutral` needs a third (`Recommendation:` grey-green, matching
 the corner-camp "purple" rifts only for terrain).
 

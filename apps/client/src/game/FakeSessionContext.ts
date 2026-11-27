@@ -1,6 +1,6 @@
 import { MemoryLogger } from '@eternalus/core';
 
-import type { BridgeEventMap, ClassSelection } from '../bridge/events';
+import type { BridgeEventMap, ClassSelection, FilledRosters } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import { ASSET_LICENCES } from '../data/resources/assetLicences';
 import { ASSET_MANIFEST } from '../data/resources/AssetManifest';
@@ -15,9 +15,9 @@ import type { SessionContext } from './SessionController.types';
  * Test double of the session context (02 §8) for a state's unit test: a real bus and
  * `FakeSessionClock`, the shipped catalogue and credits, a `MemoryLogger`, and a record of every
  * method call (its arguments per method in `calls`, the call order in `order`). `selection()`
- * answers the last `recordSelection`, `createMatch` hands out a new `FakeRunningMatch` each time,
- * and a load's cancel is recorded by load index; set `prepareWorldError` or `createMatchError` to
- * make that method throw.
+ * answers the last `recordSelection`, `rosters()` answers `lockedRosters`, `createMatch` hands
+ * out a new `FakeRunningMatch` each time, and a load's cancel is recorded by load index; set
+ * `prepareWorldError` or `createMatchError` to make that method throw.
  */
 export class FakeSessionContext implements SessionContext {
   public readonly bus = new TypedEventBus<BridgeEventMap>();
@@ -30,10 +30,12 @@ export class FakeSessionContext implements SessionContext {
     transition: [],
     newMatchSetup: [],
     canRepeatMatchSetup: [],
+    hasResultsCountdown: [],
     repeatMatchSetup: [],
     clearMatchSetup: [],
     selection: [],
     recordSelection: [],
+    rosters: [],
     joinDuelQueue: [],
     leaveDuelQueue: [],
     forfeitDuel: [],
@@ -52,10 +54,14 @@ export class FakeSessionContext implements SessionContext {
   public readonly matches: FakeRunningMatch[] = [];
   /** What `canRepeatMatchSetup` answers. */
   public canRepeat = true;
+  /** What `hasResultsCountdown` answers. */
+  public hasCountdown = true;
   /** When set, `prepareWorld` throws it. */
   public prepareWorldError: Error | null = null;
   /** When set, `createMatch` throws it. */
   public createMatchError: Error | null = null;
+  /** What `rosters()` answers: the rosters LOCK IN filled; `null` until a test sets them. */
+  public lockedRosters: FilledRosters | null = null;
   private picked: ClassSelection | null = null;
 
   /**
@@ -81,6 +87,12 @@ export class FakeSessionContext implements SessionContext {
     return this.canRepeat;
   }
 
+  /** Records the call; answers `hasCountdown`. */
+  public hasResultsCountdown(): boolean {
+    this.record('hasResultsCountdown', []);
+    return this.hasCountdown;
+  }
+
   /** Records the call. */
   public repeatMatchSetup(): void {
     this.record('repeatMatchSetup', []);
@@ -101,6 +113,12 @@ export class FakeSessionContext implements SessionContext {
   public recordSelection(selection: ClassSelection | null): void {
     this.record('recordSelection', [selection]);
     this.picked = selection;
+  }
+
+  /** Records the call; answers `lockedRosters`. */
+  public rosters(): FilledRosters | null {
+    this.record('rosters', []);
+    return this.lockedRosters;
   }
 
   /** Records the call. */

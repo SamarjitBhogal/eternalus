@@ -43,6 +43,8 @@ export type Placement = {
   readonly facing?: Vec2;
   /** The ground a zone covers, as polygons in world units (zones only, `ZoneArea`). */
   readonly area?: readonly Polygon[];
+  /** The Legend spec a Legend keeps (`RosterSlot.specId`); absent = it has none. */
+  readonly specId?: string;
 };
 
 /**

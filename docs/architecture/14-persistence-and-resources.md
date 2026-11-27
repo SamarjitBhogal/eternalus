@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-22
+last-reviewed: 2026-11-27
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -395,7 +395,7 @@ as the registry, one loader per asset type, one cache.
 
 ```ts
 // Sketch: apps/client/src/data/resources/AssetManifest.ts — the ONLY list of assets (02 §9); a script checks files, bytes, hash and licence in CI
-export type AssetType = 'image' | 'audio' | 'json' | 'ui-image' | 'font'; // 'ui-image': decoded for the DOM; 'font': DEC-51
+export type AssetType = 'image' | 'audio' | 'json' | 'ui-image' | 'font' | 'sprite-atlas'; // 'ui-image': decoded for the DOM; 'font': DEC-51; 'sprite-atlas': a sheet the canvas draws
 export type AssetGroup =
   // a session loads only its layout's and its effects renderer's art (DEC-52, DEC-54)
   | 'boot'
@@ -404,7 +404,8 @@ export type AssetGroup =
   | 'selection-alternate'
   | 'selection-raster'
   | 'selection-primary-raster'
-  | 'match';
+  | 'match'
+  | `sprite-atlas:${AssetId}`; // the sprite sheet group family: each sheet is its own group, named by its id, so the match loads a sheet by its id (DEC-398, card PR170 (9))
 export type AssetManifestEntry = {
   readonly id: AssetId;
   readonly file: AssetFile; // { url, bytes, hash } at device pixel ratio 1
@@ -417,6 +418,10 @@ export type AssetManifestEntry = {
   readonly hash: string;
   readonly licence: string;
   readonly source: string;
+  // a 'sprite-atlas' entry also names its uniform grid and its feet: no JSON frame table (DEC-398, card PR170 (10))
+  readonly columns?: number;
+  readonly rows?: number;
+  readonly groundOffset?: number; // where the feet stand: a share of the cell's height above its bottom edge, 0 to 1 (DEC-398, card PR170 (8))
 };
 export const ASSET_MANIFEST = {
   version: '1',
@@ -430,11 +435,12 @@ export interface AssetLoader<T> {
 }
 export class ImageLoader implements AssetLoader<ImageBitmap> {} // fetch → blob → createImageBitmap (crops sprite frames from a sheet)
 export class AudioLoader implements AssetLoader<AudioBuffer> {} // fetch → arrayBuffer → injected decode (WebAudioOutput's decodeAudioData)
-export class JsonLoader implements AssetLoader<Json> {} // fetch → json → injected validator (atlas frame tables; content stays TS in core)
+export class SpriteAtlasLoader implements AssetLoader<SpriteAtlasAsset> {} // a sprite sheet: one ImageBitmap cut into the grid of its manifest entry; checks the grid and the feet
+export class JsonLoader implements AssetLoader<Json> {} // fetch → json → injected validator (a frame table only for an uneven sheet; content stays TS in core)
 export class UiImageLoader implements AssetLoader<HTMLImageElement> {} // an image decoded for the DOM (decode()); its URL reaches ui/ through the store (DEC-51)
 export class FontLoader implements AssetLoader<LoadableFace> {} // a FontFace added to document.fonts; no @font-face, no CDN (DEC-51)
 export class AssetCache {
-  get<T>(id: AssetId): T;
+  get(id: AssetId): unknown; // the controller's checked lookups narrow it, one per kind of file
   has(id: AssetId): boolean;
   set(id: AssetId, group: AssetGroup, value: unknown): void;
   release(group: AssetGroup): void;
@@ -448,7 +454,7 @@ export class ResourceController {
     logger: Logger;
   }) {}
   public load(group: AssetGroup, onProgress: (p: LoadProgress) => void): Promise<void>; // LoadProgress = { group, loadedBytes, totalBytes, failed: AssetId[] }
-  public get<T>(id: AssetId): T; // throws on an unknown id at boot, never mid-frame
+  public atlases(group: AssetGroup): Readonly<Record<AssetId, SpriteAtlasAsset>>; // one checked lookup per kind of file: the compiler checks the kind (DEC-398, card PR170 (14)); sounds and other kinds get their own when they are built
   public release(group: AssetGroup): void; // ImageBitmap.close(), drop buffers
 }
 ```
@@ -460,7 +466,10 @@ export class ResourceController {
   `document.fonts` from the `boot` group, and `--font-game` names the family first.
 - **Density and groups.** The device pixel ratio is read once per session and picks each entry's
   `file` or `file2x`; art only one class-step layout or one effects renderer draws sits in its own
-  group, so a session never loads the other's.
+  group, so a session never loads the other's. A group family (`sprite-atlas:<id>`, DEC-398,
+  card PR170 (9)) counts as one group: one folder and one manifest file. Where this document,
+  02 or `apps/client/AGENTS.md` says "one file per asset group" or "one folder per asset group",
+  a family is one group.
 - Progress is byte-based from the manifest (`loadedBytes / totalBytes`), monotonic, and ends at
   the manifest sum when every file loads: only the loaded files of a loaded entry count, so a load
   with a failed file ends below the sum; `SessionController` publishes it as `loading-progress` for
@@ -473,8 +482,10 @@ export class ResourceController {
   script in `scripts/` (`Recommendation:`).
 - No service worker and no Cache API for the MVP: hashed file names from Vite give HTTP caching
   for free; revisit only if offline play becomes a requirement (research A4). Content and
-  tuning are TypeScript data in core (`ContentCatalogue`), not assets; the only JSON assets are
-  atlas frame tables. The manifest's `licence` and `source` feed `AboutScreen` and the asset
+  tuning are TypeScript data in core (`ContentCatalogue`), not assets. A sprite sheet is a uniform
+  grid: its manifest entry names `columns`, `rows` and `groundOffset`, and `SpriteAtlasLoader`
+  checks them, so a sheet needs no JSON frame table (DEC-398, card PR170 (10)). A JSON frame table
+  comes only with the first uneven sheet. The manifest's `licence` and `source` feed `AboutScreen` and the asset
   policy check (plan Phase 6, sprint 6.3).
 
 ## 12. Tests
@@ -509,7 +520,7 @@ export class ResourceController {
 
 ## 14. Implementation status
 
-ADR 0028 (DEC-298) registers contributor-confirmed art using attachmentReferenceId and the user-authorised-art licence. hasAssetProvenance checks each reference against its documented record. Sprite atlases use the sprite-atlas asset type in separate per-Legend groups.
+ADR 0028 (DEC-298) registers contributor-confirmed art using attachmentReferenceId and the user-authorised-art licence. hasAssetProvenance checks each reference against its documented record. Sprite atlases use the `sprite-atlas` asset type and the sprite sheet group family of §11 (DEC-398, card PR170 (9)): each sheet is its own group, `sprite-atlas:<asset id>`, and the whole family sits in one manifest file (`legendSpriteAssets.ts`) and one folder (`assets/match/legends/`).
 
 Built in Sprint 1 (session F), settings only: `PersistenceController` with `open`,
 `loadSettings`, `saveSettings` and `close` (the Sprint 1 brief's facade, in place of §2's
@@ -522,8 +533,8 @@ reads through the shared `readOrQuarantine`. Interim gaps, to settle before
 `IndexedDbStorageAdapter` (S2) fixes v1 on disk:
 
 - Settings are one `SettingsDtoV1` record per profile keyed by `profileId`, not §7's
-  `SettingsGroupDtoV1` keyed by `[profileId, group]`; the groups are `audio`, `video` and
-  `accessibility` (the Sprint 1 contract's `settingsSlice`), with no `developer` or `storage`
+  `SettingsGroupDtoV1` keyed by `[profileId, group]`; the groups are `audio`, `video`,
+  `accessibility` (the Sprint 1 contract's `settingsSlice`) and `hud` (DEC-410, below), with no `developer` or `storage`
   group yet. Changing the key path after IndexedDB ships needs a new store and a `transform`.
 - One profile (`LOCAL_PROFILE_ID`) until the profiles store exists.
 - The validation helpers (`isRecord`, `groupProblem`, field checks) are private to
@@ -546,6 +557,10 @@ reads through the shared `readOrQuarantine`. Interim gaps, to settle before
   bump, and the settings record stays at version 1. The wording of §13's recipe row waits for him
   in `INBOX.md` HC-T1 (T-226). **Appended 2026-11-02:** he approved it (HC-T1, DEC-142); §13's row
   "A field or a settings group" now says the rule.
+- **The `hud` group (2026-11-27, DEC-410).** `SettingsDtoV1` has an optional `hud` group
+  (`{ shouldShowEveryHit }`, W5c) inside version 1, by DEC-125: a record saved before it still
+  reads, and the game gives it the default. A `hud` value of the wrong shape quarantines the
+  record, as any other bad group does.
 
 Resources (`feat/hud-and-character-select`, 2026-10-24; the owner's art and the Cinzel font,
 DEC-51). §1 and §11 say this since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1); the
@@ -555,7 +570,15 @@ detail:
   `load(group, onProgress)` with byte progress from the manifest, `isLoaded`, `progress`,
   `urls(group)` (the URLs the DOM shows), `boxes(group)` (the draw boxes the manifest declares)
   and `release(group)`. The device pixel ratio is read once, so each image's
-  1x or 2x file is fixed for the session. SpriteAtlasLoader decodes ImageBitmap atlases and ResourceController.atlases exposes the loaded grids. The local match requests and releases one group for its selected Legend. Not built yet: get, AssetCache, and audio and JSON loaders.
+  1x or 2x file is fixed for the session. `SpriteAtlasLoader` decodes `ImageBitmap` atlases, and
+  `atlases(group)` hands the loaded atlases of a group to the match factory, which injects them
+  into the renderer. `match-loading` loads the sheet group of every Legend in the match
+  (DEC-378 (2)), and `MenuState` and `ResultsState` release them
+  (`matchAssetGroups`). `atlases(group)` picks the handles with
+  `instanceof SpriteAtlasAsset`: it is §11's checked lookup for sprite sheets (DEC-398, card
+  PR170 (14)). `AssetCache` stays planned:
+  plan Phase 5, sprint 5.2 names it in the task "`ResourceController` facade + `AssetCache` +
+  `loadingSlice`". Not built yet: `AssetCache`, and the audio and JSON loaders.
   An asset that fails to load never rejects its group: it is warned about through an injected
   callback and listed in the load's outcome, and a failed rendition falls back to the entry's own
   file; §12's typed error is not built. Progress counts an entry's loaded files once the entry is
@@ -565,7 +588,7 @@ detail:
   files) into the one `ASSET_MANIFEST`. An entry has a `file` and an optional `file2x` (each with
   URL, bytes and hash), its per-use `renditions`, a `licence` and a `source`. An image placed at the
   spot it was baked for (a plate, a weapon art) also carries its draw `box` (origin and size in px
-  of the 1920 × 1080 frame), on the entry or on a rendition. `AssetType` is `'ui-image' | 'font'`.
+  of the 1920 × 1080 frame), on the entry or on a rendition. `AssetType` is `'ui-image' | 'font' | 'sprite-atlas'`.
   The shared groups (`boot`, `selection`, `selection-primary`, `selection-alternate`,
   `selection-raster`, `selection-primary-raster`, `match`) let a session load only its layout's art
   and, with the `'css'` effects renderer, no Figma plates (`game/session/selectionAssetGroups.ts`).

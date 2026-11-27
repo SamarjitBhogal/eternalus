@@ -1,8 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { AssetGroup, AssetUrls, SessionPhase } from '../bridge/events';
+import type {
+  AssetGroup,
+  AssetUrls,
+  FilledRosters,
+  SessionPhase,
+  UiIntent,
+} from '../bridge/events';
 import { assetsSlice } from '../bridge/slices/assetsSlice';
 import { firstAvailableSpecId, shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
+import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
+import { matchLegendSheets } from './matchLegendSheets';
 import type {
   SessionContext,
   SessionControllerDeps,
@@ -19,7 +27,10 @@ const SELECTION_GROUPS: readonly AssetGroup[] = [
   'selection-primary-raster',
 ];
 
-/** A session whose real match state also hands the test its context (to reach results). */
+/**
+ * A session whose real match state also hands the test its context (to reach results) and still
+ * handles its intents (`leave-match`).
+ */
 function sessionWithResults(overrides: Partial<SessionControllerDeps> = {}) {
   const captured: { context: SessionContext | null } = { context: null };
   const real = createDefaultSessionStates();
@@ -33,6 +44,9 @@ function sessionWithResults(overrides: Partial<SessionControllerDeps> = {}) {
       },
       exit: (context: SessionContext) => {
         real.match.exit?.(context);
+      },
+      handleIntent: (intent: UiIntent, context: SessionContext) => {
+        real.match.handleIntent?.(intent, context);
       },
     },
   } satisfies Record<SessionPhase, SessionState>;
@@ -179,6 +193,43 @@ describe('SessionController asset groups', () => {
 
     expect(session.controller.phase).toBe('menu');
     expect(session.emptied.filter(({ group }) => group === 'match')).toHaveLength(1);
+  });
+
+  it("frees the player's sprite sheet group when the player leaves the match for the menu", async () => {
+    const sheet = LEGEND_SPRITE_SHEETS[firstAvailableSpecId('magus')];
+    if (sheet === undefined) throw new Error('the first Magus pick has no sprite sheet');
+    const session = sessionWithResults();
+    session.controller.start();
+    await session.resolveLoads();
+    await session.toMatch();
+    const group = `sprite-atlas:${sheet.atlasId}` as const;
+    const isLoadedInMatch = session.resources.isLoaded(group);
+
+    session.intent({ kind: 'leave-match' });
+
+    expect(session.controller.phase).toBe('menu');
+    expect(isLoadedInMatch).toBe(true);
+    expect(session.resources.isLoaded(group)).toBe(false);
+  });
+
+  it('loads the sheet group of every Legend in the filled rosters, and frees each on leave-match', async () => {
+    const session = sessionWithResults();
+    const locked: FilledRosters[] = [];
+    session.bus.on('selection-locked', (rosters) => locked.push(rosters));
+    session.controller.start();
+    await session.resolveLoads();
+    await session.toMatch();
+    const groups = [...matchLegendSheets(locked[0] ?? null).values()].map(
+      ({ atlasId }) => `sprite-atlas:${atlasId}` as const,
+    );
+    const loadedInMatch = groups.filter((group) => session.resources.isLoaded(group));
+
+    session.intent({ kind: 'leave-match' });
+
+    // The player's sheet and the bots' sheets: more than one group (DEC-378 (2)).
+    expect(groups.length).toBeGreaterThan(1);
+    expect(loadedInMatch).toEqual(groups);
+    expect(groups.filter((group) => session.resources.isLoaded(group))).toEqual([]);
   });
 
   it('shows the selection group on the win/lose screen and empties it on the way to the menu', async () => {

@@ -61,6 +61,8 @@ const ACTION_RULES: Readonly<
   'enter-phase': (action) => MATCH_PHASES.some((phase) => phase === action.phase),
   'spawn-sovereigns': (action) =>
     typeof action.definitionId === 'string' && action.definitionId.trim() !== '',
+  // config/ reads no content: `SpawnSystem` checks the id against the map's gem-eruption posts.
+  'summon-greater-boss': (action) => typeof action.bossId === 'string' && action.bossId !== '',
 };
 
 const isKnownAction = (action: unknown): boolean =>
@@ -80,11 +82,6 @@ const timelineOf = (config: unknown): readonly MatchTimelineEntry[] =>
   // Safe: every mark and every action passed their rules before any rule that calls this.
   valueAt(config, 'match.timeline') as readonly MatchTimelineEntry[];
 
-const phaseEntriesOf = (config: unknown) =>
-  timelineOf(config).flatMap(({ action, at }) =>
-    action.kind === 'enter-phase' ? [{ at, phase: action.phase }] : [],
-  );
-
 /** What the timeline's marks resolve against; only for rules after the three fields' own rules. */
 const frameOf = (config: unknown): TimelineFrame =>
   // Safe: all three fields passed their own rules before any rule that calls this.
@@ -95,6 +92,12 @@ const frameOf = (config: unknown): TimelineFrame =>
       countdownSeconds: valueAt(config, 'match.countdownSeconds') as number,
     },
   });
+
+/** The timeline's `enter-phase` entries, in order: the ones the phase rules read. */
+const phaseEntriesOf = (config: unknown) =>
+  timelineOf(config).flatMap(({ at, action }) =>
+    action.kind === 'enter-phase' ? [{ at, action }] : [],
+  );
 
 /** Checked in order; cross-field rules come after the fields they read. */
 const RULES: readonly Rule[] = [
@@ -233,7 +236,7 @@ const RULES: readonly Rule[] = [
     path: 'match.timeline',
     rule: `enter-phase entries must not enter a terminal phase (${TERMINAL_MATCH_PHASES.join(', ')}): only a verdict does`,
     isValid: (_value, config) =>
-      phaseEntriesOf(config).every(({ phase }) => !TERMINAL_MATCH_PHASES.includes(phase)),
+      phaseEntriesOf(config).every(({ action }) => !TERMINAL_MATCH_PHASES.includes(action.phase)),
   },
   {
     path: 'match.timeline',
@@ -254,8 +257,8 @@ const RULES: readonly Rule[] = [
     rule: `enter-phase entries must move forward through the match phases, after ${MATCH_PHASES[0]}`,
     isValid: (_value, config) => {
       let reached = 0; // the match starts in MATCH_PHASES[0]
-      for (const { phase } of phaseEntriesOf(config)) {
-        const index = MATCH_PHASES.indexOf(phase);
+      for (const { action } of phaseEntriesOf(config)) {
+        const index = MATCH_PHASES.indexOf(action.phase);
         if (index <= reached) {
           return false;
         }
@@ -268,6 +271,12 @@ const RULES: readonly Rule[] = [
     path: 'match.timeline',
     rule: 'must have at least one enter-phase entry: the first one ends the countdown',
     isValid: (_value, config) => phaseEntriesOf(config).length > 0,
+  },
+  {
+    path: 'match.timeline',
+    rule: 'must have at most one summon-greater-boss entry: the gem erupts once (architecture 12 §3)',
+    isValid: (_value, config) =>
+      timelineOf(config).filter(({ action }) => action.kind === 'summon-greater-boss').length <= 1,
   },
   {
     path: 'match.timeline',

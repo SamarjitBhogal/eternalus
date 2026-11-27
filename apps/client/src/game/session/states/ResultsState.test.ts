@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MenuRoute, UiIntent } from '../../../bridge/events';
+import { filledRostersFixture } from '../../__fixtures__/filledRosters';
 import { FakeSessionContext } from '../../FakeSessionContext';
 import { RESULTS_COUNTDOWN_MS } from '../sessionTiming.constants';
 import { ResultsState } from './ResultsState';
@@ -28,6 +29,19 @@ describe('ResultsState', () => {
     expect(countdown).toEqual([RESULTS_COUNTDOWN_MS]);
     context.clock.advance(1_000);
     expect(countdown).toEqual([RESULTS_COUNTDOWN_MS, RESULTS_COUNTDOWN_MS - 1_000]);
+  });
+
+  it('also releases the sprite sheet group of every Legend in the match', () => {
+    const context = new FakeSessionContext();
+    context.lockedRosters = filledRostersFixture({ player: 'oracle', allies: ['colossus'] });
+
+    new ResultsState().enter(context);
+
+    expect(context.calls.releaseAssets).toEqual([
+      ['match'],
+      ['sprite-atlas:oracle-sprites'],
+      ['sprite-atlas:colossus-sprites'],
+    ]);
   });
 
   it('goes to the menu when the countdown ends, not before (DEC-78)', () => {
@@ -92,6 +106,19 @@ describe('ResultsState', () => {
     state.handleIntent({ kind: 'leave-match' }, context);
     state.handleIntent({ kind: 'confirm-selection' }, context);
 
+    expect(context.calls.transition).toEqual([]);
+  });
+
+  it('starts no countdown after a Duel and stays until the player leaves (SCRUM-449)', () => {
+    const context = new FakeSessionContext();
+    context.hasCountdown = false;
+    const countdown: number[] = [];
+    context.bus.on('countdown', ({ remainingMs }) => countdown.push(remainingMs));
+    new ResultsState().enter(context);
+
+    context.clock.advance(RESULTS_COUNTDOWN_MS * 2);
+
+    expect(countdown).toEqual([]);
     expect(context.calls.transition).toEqual([]);
   });
 });

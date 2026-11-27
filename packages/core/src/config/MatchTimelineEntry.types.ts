@@ -18,6 +18,8 @@ export type TimelineFrame = {
 type TimelineActionPayloads = {
   readonly 'enter-phase': { readonly phase: MatchPhase };
   readonly 'spawn-sovereigns': { readonly definitionId: string };
+  /** The gem erupts and summons `bossId` (12 §3), which `SpawnSystem` spawns on its next pass. */
+  readonly 'summon-greater-boss': { readonly bossId: string };
 };
 
 /** The kind of a timeline action, e.g. `enter-phase`. */
