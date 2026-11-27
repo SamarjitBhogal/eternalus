@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-27
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -324,6 +324,12 @@ back out.
 gaps in the same wall geometry used for drawing. Bridge decks permit passage across terrain
 while retaining collision at their sides. Destroyed object IDs disable their static footprints.
 Unit-to-unit momentum, SAT and the remaining physics described above are still planned.
+
+**2026-11-27 (`fix/tower-orbs-windows-timeout`, PR #168).** `WorldObjectStore.blockingAt` (the
+check behind `NoMapObjectOverlapInvariant`, separate from the collision solver) has its own lazy
+grid of record boxes, with the same cell scheme as `StaticCollisionIndex`. One shared box grid in
+`utils/` for both is a better-than-design item that waits for the owner's sign-off (`INBOX.md`
+HC-B67).
 
 **2026-11-13, updated 2026-11-14 (`feat/ability-framework`, ADR 0026 decision 4).** `Movement` has `push` and
 `takeForcedStep` for dashes and knock-backs; it has no `pendingImpulse` or `desiredVelocity` (a

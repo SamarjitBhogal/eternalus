@@ -950,6 +950,18 @@ Reply inline (`Decision: …`).
   - Answered 2026-11-27 (DEC-400): "A: the orb follows a runner past 30 m (built)" (Owner Calls
     version 103). The code does not change.
 
+- [ ] **HC-B67 — Better than the design, sign-off asked: one shared search grid
+      (`fix/tower-orbs-windows-timeout`, the #168 speed fix, pre-PR critic, 2026-11-27;
+      PLAYER-STACK-FOLD-2; Owner Calls v109 card "HC-B67 one shared search grid").** Nothing
+      changes in play. The speed fix gave the map-object check its own search grid. The collision
+      code already has a grid built the same way (same cell size, same cell loop). The collision
+      grid also has no guard against a box at infinity, so one bad position can make a query
+      loop without end. Options: (A, recommended) after the demo, one follow-up PR moves both
+      grids onto one shared helper, so the grid code exists once and has the guard; (B) keep the
+      two grids. Not built tonight: it touches the collision code on demo night. Code names:
+      `WorldObjectStore.blockingAt` (`state/`), `physics/StaticCollisionIndex`, a new
+      `utils/BoxGrid.ts`; architecture 10 §5 and the 02 key-files list change.
+
 - [ ] **HC-B36 — Better than the design, built under your standing rule (DEC-223), sign-off
       asked: one health pool for a wall turret, and the wall turret code layout
       (`feat/wall-turrets`, PR 4, pre-PR gate round 1, 2026-11-22; PR-REVIEW-ASSIST-34).**
