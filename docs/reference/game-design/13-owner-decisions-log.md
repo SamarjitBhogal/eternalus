@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-26
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,15 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-26 (the bot path cache's "one leg late")
+
+The acting owner's (SamarjitBhogal) answer of 2026-11-26 to `INBOX.md` "Bot path cache (PR #84)",
+given in the PR #84 review session. DEC-373 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-373 | **The bot path cache is accepted as built: a way that opens is found at most one leg late** (closes `INBOX.md` "Bot path cache (PR #84)"). Asked "(a) accept as built; (b) store the grid's version with the cache and search again when it changes", the acting owner chose (a). The cache holds no grid version: at runtime the grid only opens cells, so a bot never walks into a closed cell, and a way that opens while it walks a cached leg is found when it reaches that waypoint. If a runtime change ever closes cells, store the grid's version with the cache (option (b)). | architecture 11 §6 |
 
 ## Batch 2026-11-23 (Owner Calls page: the Cathedral gem's open rules)
 
@@ -230,6 +239,16 @@ this batch (DEC-287 and DEC-290 to DEC-298 are other sessions').
 | ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Docs changed                                                |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | DEC-289 | **The tower horde test may run for 120 s; the other core tests keep 60 s.** The owner's words: "Raise this one test's cap to 120 s and log an INBOX item to make the test faster". `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its lane within 10 seconds (DEC-133, seed %i)", passes its own time limit, `HORDE_WALK_TIMEOUT_MS` (120 s); every other core test keeps the `testTimeout` of `packages/core/vitest.config.ts` (60 s). On PR #122 (run 44714237495, attempt 1, head `56bcd64b`) seed 1 timed out at 60 s on windows-latest; the re-run passed at 51.6 s, Ubuntu runs took 23 to 34 s, and one seed takes about 3 s locally without coverage: runner speed under coverage, not a regression. The cost: a run of this test that really hangs fails 60 s later. Built in its own PR (`fix/horde-test-timeout`). | None; `INBOX.md` request "Make the tower horde test faster" |
+
+## Batch 2026-11-20 (Owner Calls page)
+
+The owner's answer of 2026-11-20 on the Owner Calls page to S1 of the 2026-11-19 review of PR #82
+(`feat/minion-strength-flow-field`), posted on the PR for the owner by the coordinator session
+PR-REVIEW-COORDINATION-5.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Changes                                                                                                                        |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| DEC-280 | **Minion strength `t` runs gate to gate, as built.** The owner: "Gate to gate, as built; update balancing.md. The lane path ends at the gates, so there is no code change." So `t` runs along the lane path from the minion's home gate (0) to the enemy gate (1), as `MinionStrengthStep` measures it through the lane flow field (`FlowField.progressAt`), not Stronghold to Stronghold as `balancing.md` first worded it. FR-039's acceptance (base × curve(0) at home, curve(0.5) at the centre) holds either way. | `docs/reference/suggestions/balancing.md` "Minion strength-by-distance curve"; `MinionStrengthStep.ts`, `FlowField.ts` cite it |
 
 ## Batch 2026-11-20 (Owner Calls page: PR #131)
 
