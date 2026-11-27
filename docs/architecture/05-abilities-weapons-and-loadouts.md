@@ -944,12 +944,14 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   it `maxLevels` levels (`Progression.xpToReach`); `level-matches-xp` checks that the killer is on
   the recipient's team (`cause: 'team-kill'`). It listens to `entity-died` itself, not 12's
   `xp-granted` reward path. Camp XP is built: `camp-cleared` pays the camp's entry in
-  `XP_SOURCES.campCleared`, keyed by camp definition id (forest camps only; a corner camp's boss
-  pays `teamKills` instead) (`cause: 'camp-cleared'`), one tick after the last mob's kill XP, and
+  `XP_SOURCES.campCleared`, keyed by camp definition id (the forest camps and the corner camp; a
+  corner camp's boss also pays `teamKills`, DEC-393) (`cause: 'camp-cleared'`), one tick after the last mob's kill XP, and
   is owed like a kill when its Legend waits to respawn; `level-matches-xp` checks that the camp is
   a guard home with none of its own posts holding a guard (checkpoint-defender posts on the same
   home do not count). The bonus goes only to the Legend that killed the camp's last mob, and to
-  nobody when a minion or turret lands that hit (DEC-375). Not built yet:
+  nobody when a minion or turret lands that hit (DEC-375). The corner boss's capped XP and the
+  corner camp's bonus together lift a Legend `maxLevels` levels at most; the bonus is paid uncapped,
+  so the content values keep this true and `xpSources.test.ts` guards it (DEC-423). Not built yet:
   the share radius and damage bias, assists, checkpoint XP, the Eternal's flat 5 levels (DEC-237)
   (their systems do not exist), basic-attack and ability potency per level, `upgradeIds` and the
   ultimate charge rules. Numbers are

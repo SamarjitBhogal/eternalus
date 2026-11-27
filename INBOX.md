@@ -3517,6 +3517,17 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Done
 
+- 2026-11-27 — **Your answer HC-Q131: the 2-level limit of a mini boss kill includes the corner
+  camp's clear bonus (DEC-423)** (`feat/corner-camp-clear-bonus`, with DEC-393): nothing changes
+  in play. A new test in `xpSources.test.ts` fails if a later tuning lets the corner boss's XP
+  plus the corner camp's bonus give a Legend a third level. Decision: DEC-423.
+
+- 2026-11-27 — **Your answers HC-B55 and PR153 (1b), (2b) and (2c): the corner camp pays the clear
+  bonus too (DEC-393)** (`feat/corner-camp-clear-bonus`, a follow-up to PR #153): DEC-375 stands
+  (only the Legend that killed the camp's last mob gets the bonus), and the corner camp now pays
+  it like a forest camp. Its mini boss still pays its XP to the whole team. Your "near the camp"
+  defaults (PR153 (1b)) are recorded; under DEC-375 they change nothing. Decision: DEC-393.
+
 - 2026-11-26 — **Minion M6c interpretations approved as built (DEC-376)**
   (`feat/minion-m6c-defender-followups`, PR #173): you approved (a) to (g) as built (the 10 m from
   where the last defender fell, the damage-biased share with an even split when Legends dealt
