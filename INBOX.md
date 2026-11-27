@@ -325,6 +325,15 @@ Reply inline (`Decision: …`).
       **Done in PR #130 (2026-11-22):** defender posts carry `GuardSlot.checkpoint` and sit beside
       the zone's plan; mates need the same home and team (`GuardController`), and a `group` plan's
       group is the home's own posts only (`GroupGuardRespawn`).
+
+- [x] **PR #90 stand-in confirmation (2026-11-16).** The owner confirmed DEC-238 on
+      2026-11-20 (Owner Calls page), reaffirming their
+      [PR #90 review](https://github.com/SamarjitBhogal/eternalus/pull/90#pullrequestreview-5852980286).
+      The confirmation covers retained code-drawn map, camp and minion art, unit display sizes,
+      the follow camera and weather.
+      The confirmation excludes disputed image assets, asset provenance ADRs, and the
+      parallel ability stack.
+
 - [ ] **BUG-5 / SCRUM-438 (2026-11-12, `fix/bound-key-actions`) — two owner questions.** (1) Bound
       but unhandled actions: `toggle-developer-menu` (handled since #107), `sprint`, `interact`,
       `turret-toggle-control`, `turret-switch-ammo` (gameplay not built) and `toggle-perf-overlay`
@@ -864,7 +873,8 @@ Reply inline (`Decision: …`).
     snapshot); a snapshot every tick, no interpolation or prediction. (3) Core's `intent` command
     is still a stub (sprint 1.5 PlayerController), so the server translates intents into
     `move`/`stop`/`attack-target` (`SeatCommands`, ported from the client's `PlayerCommands`);
-    once `intent` is applied in core, `SeatCommands` goes. (4) Map desync risk: the client
+    once `intent` is applied in core, `SeatCommands` goes. Apply the shared drawn-size hit test
+    at that point so local and Duel input select the same targets. (4) Map desync risk: the client
     regenerates the map from `match-found.seed` with its own default `GameConfig`; a config drift
     between the two builds, or an engine-level Math difference (03 §8), would draw a world that is
     not the server's. Send the map (or a config hash) on the wire, or accept the risk while both

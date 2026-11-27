@@ -3,6 +3,7 @@ import { CathedralGemView } from './CathedralGemView';
 import { DefaultEntityView } from './DefaultEntityView';
 import { LegendView } from './LegendView';
 import { MobView } from './MobView';
+import { MinionView } from './MinionView';
 import { StructureView } from './StructureView';
 import { ViewRegistry } from './ViewRegistry';
 
@@ -16,6 +17,9 @@ export const createDefaultViewRegistry = (onUnknownKind?: (kind: string) => void
   const registry = new ViewRegistry(new DefaultEntityView(), onUnknownKind);
   registry.registerFamily('legend', new LegendView());
   registry.registerFamily('mob', new MobView());
+  registry.registerKind('light-mob', new MinionView('light'));
+  registry.registerKind('medium-mob', new MinionView('medium'));
+  registry.registerKind('heavy-mob', new MinionView('heavy'));
   registry.registerFamily('structure', new StructureView());
   registry.registerKind('capture-point', new CapturePointView());
   registry.registerKind('cathedral-gem', new CathedralGemView());

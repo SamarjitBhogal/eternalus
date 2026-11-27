@@ -68,7 +68,12 @@ export class EntityLayer implements WorldLayer {
     for (const state of ordered) {
       const side = this.healthBarOf(state.entity);
       if (side !== null) {
-        this.healthBars.draw(state, side, renderer);
+        this.healthBars.draw(
+          state,
+          side,
+          renderer,
+          this.views.viewFor(state.entity).visualRadiusOf?.(state.entity),
+        );
       }
     }
   }
