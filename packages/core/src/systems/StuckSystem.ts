@@ -18,9 +18,10 @@ import type { System, SystemContext } from './System.types';
  * `PathingSystem` aims), or its detour waypoint. One that has not come
  * `minProgress` closer in `windowTicks`, and is not in reach, is stuck: it heads for the A\*
  * waypoint toward that point over the nav grid (`state.paths`), and asks again each time it comes
- * within `waypointRadius` of it or is stuck on the way. A clear straight line, no way, or (for a
- * guard or camp mob) a waypoint outside its leash circle gives it no waypoint, so it chases
- * straight as before. The nav grid blocks a tower's whole court, so a way to a unit inside one ends
+ * within `waypointRadius` of it, is stuck on the way, or the map changed since that plan (a wall
+ * opened or closed: `PathQuery.version`, owner, DEC-392, as the bot path cache, DEC-379). A clear
+ * straight line, no way, or (for a guard or camp mob) a waypoint outside its leash circle gives it
+ * no waypoint, so it chases straight as before. The nav grid blocks a tower's whole court, so a way to a unit inside one ends
  * on the open ground nearest it, and hordes never path through a court (owner 2026-11-05, A). Runs
  * after the positions are resolved and before `PathingSystem`, which steers mobs to the waypoint;
  * bot Legends read it on their next decision. At most `maxPlansPerTick` A\* plans run a tick (11
@@ -69,7 +70,8 @@ export class StuckSystem implements System {
       const gap = distance(self.position, watch.waypointFor(targetId) ?? this.aim);
       const isStuck = watch.observe(targetId, gap, isInReach, window);
       const isAtWaypoint = watch.waypoint !== null && gap <= this.rule.waypointRadius;
-      if (isStuck || isAtWaypoint) {
+      const isMapChanged = state.paths !== null && watch.isWayStale(state.paths.version);
+      if (isStuck || isAtWaypoint || isMapChanged) {
         watch.requestPlan();
       }
       if (watch.isPlanDue && plans > 0) {
@@ -85,14 +87,15 @@ export class StuckSystem implements System {
    * the waypoint lies outside a guard's leash circle (18 §7: a guard never leaves it).
    */
   private plan(state: GameState, entity: Entity, watch: ChaseWatch, from: Vec2): void {
-    const isFound = state.paths?.waypoint(from, this.aim, this.step) === true;
+    const { paths } = state;
+    const isFound = paths?.waypoint(from, this.aim, this.step) === true;
     const post = state.guards.slotOf(entity.id);
     const isInLeash =
       post === undefined ||
       distance(this.step, { x: post.homeX, y: post.homeY }) - post.homeRadius <= post.leashRadius;
     const isAim = this.step.x === this.aim.x && this.step.y === this.aim.y;
     if (isFound && isInLeash && !isAim) {
-      watch.headFor(this.step.x, this.step.y, distance(from, this.step), state.tick);
+      watch.headFor(this.step.x, this.step.y, distance(from, this.step), state.tick, paths.version);
     } else {
       watch.dropWaypoint(distance(from, this.aim), state.tick);
     }

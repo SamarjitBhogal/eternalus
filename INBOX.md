@@ -3534,6 +3534,12 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Done
 
+- 2026-11-27 — **Your answers HC-B54 and HC-B50: a unit plans again when the map changes
+  (DEC-379, DEC-392)** (`fix/bot-replan-on-map-change`, a follow-up to PR #84): your v98 answer
+  on the bot path cache stands over DEC-373 (HC-B54 A), and stuck detours follow the same rule
+  (HC-B50 B). A bot's cached waypoint and a stuck unit's detour waypoint both keep the map's
+  version, and a new version plans the way again. Replaces DEC-373. Decision: DEC-379, DEC-392.
+
 - 2026-11-27 — **HC-B64: the snapshot names the jump height `elevation` (DEC-420)** (`feat/legend-jump`,
   PR #183): you chose B, rename now. The snapshot group is `elevation: { height }`; the `jump`
   command, the `Jump` component and the `jump` input action keep their names. Decision: DEC-420.

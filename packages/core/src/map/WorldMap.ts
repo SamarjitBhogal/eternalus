@@ -19,6 +19,7 @@ export class WorldMap {
   public readonly walkable: Uint8Array;
   private readonly terrainWalkable: Uint8Array;
   private readonly stamps: Uint16Array;
+  private changes = 0;
 
   private constructor(width: number, height: number, cellSize: number) {
     this.cellSize = cellSize;
@@ -57,6 +58,15 @@ export class WorldMap {
   public isWalkable(col: number, row: number): boolean {
     const isOnGrid = col >= 0 && row >= 0 && col < this.cols && row < this.rows;
     return isOnGrid && this.walkable[row * this.cols + col] === 1;
+  }
+
+  /**
+   * Counts the stamps and clears so far: it changes whenever a cell may have changed, so a cache
+   * of searches over the grid (a bot's path cache, a stuck unit's detour, 11 §6) knows when to
+   * start again.
+   */
+  public get version(): number {
+    return this.changes;
   }
 
   /** Whether the cell under the world position `(x, y)` can be walked on; outside the grid, no. */
@@ -130,6 +140,7 @@ export class WorldMap {
    * `openings` (a bridge deck over a lava river). Returns the cells that changed.
    */
   public stampFootprint(footprint: Polygon, openings: readonly Polygon[] = []): readonly number[] {
+    this.changes += 1;
     return this.cellsInside(footprint, openings).filter((cell) => {
       this.stamps[cell] = (this.stamps[cell] ?? 0) + 1;
       return this.refresh(cell);
@@ -138,6 +149,7 @@ export class WorldMap {
 
   /** Undoes one `stampFootprint` of the same polygon and openings. Returns the cells that changed. */
   public clearFootprint(footprint: Polygon, openings: readonly Polygon[] = []): readonly number[] {
+    this.changes += 1;
     return this.cellsInside(footprint, openings).filter((cell) => {
       this.stamps[cell] = Math.max((this.stamps[cell] ?? 0) - 1, 0);
       return this.refresh(cell);
