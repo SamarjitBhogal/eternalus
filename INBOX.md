@@ -1140,6 +1140,11 @@ Reply inline (`Decision: …`).
       (`BotLeaves.movement = new BotMovement()`), and `stopsShot` stays static; (R2-A10)
       splitting `BotLeaves.ts` (328 lines): a split rewires the bot tree in the last critic
       round, and the leaves are one cohesive set.
+      Note 2026-11-27 (merge of `feat/vanguard-kit` into `feat/vanguard-veil-hamstring`, Step
+      C): (2) now has two rules. Weapons, shots and ability areas ask `EntityStore.ignoresHits`:
+      it is `takesNoDamage`, except that a hit on the Cathedral gem lands (DEC-292).
+      `takesNoDamage` stays the rule for the damage step (`BreakabilityStep`) and the bots' line
+      of fire (`LineOfFire`). DEC-333 has the same note.
 
 - [ ] **HC-Q87 — Inside the enemy palace, your weapon never hits the Stronghold
       (`feat/melee-sweeps`, PR 2, critic R2-A2).** Confirm. Your answer to HC-Q76 was "A: aim at

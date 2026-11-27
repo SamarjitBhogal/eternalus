@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-25
+last-reviewed: 2026-11-27
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -487,12 +487,16 @@ approved them, `INBOX.md` HC-T1), and this note gives the detail:
   explorer shown, a click (a press whose pointer travels less than the click slop in total before
   its release) is resolved once at its release point in this order (`MatchViewControls.clickAt`,
   DEC-183): a living enemy unit there is attacked; else a click that toggles a roof is a roof
-  click; else the click attacks the map object there. A drag does neither. When units overlap, the
-  one drawn on top wins (DEC-183). The held attack button does not pick a target: it aims at the
-  point under the cursor (`attack-aim`, DEC-319 (6); `PlayerCommands`), and only the explorer's
-  click picks a target, a unit first, else a map object.
-  In local matches, both inputs pick Legends and mobs by the
-  hit radius reported by their registered view. Health bars use the same display extent.
+  click; else the click attacks the Cathedral gem there (it is drawn on top of the building,
+  DEC-292), else the map object there (`PlayerCommands.attackObjectAt`). A drag does neither. When
+  units overlap, the one drawn on top wins (DEC-183). The held attack button does not pick a target:
+  it aims at the point under the cursor (`attack-aim`, DEC-184, DEC-319 (6); `PlayerCommands`), and
+  only the explorer's click picks a target: a unit first, else the gem, else a map object.
+  In local matches, the explorer's click picks Legends and mobs by the hit radius reported by
+  their registered view (`findUnitAt`). The held attack picks nothing, so it has no drawn-size
+  rule: the 2026-11-27 merge of `feat/vanguard-kit` into `feat/vanguard-veil-hamstring` dropped
+  the held-attack drawn-size pick of `50f9a082`, because DEC-184 forbids an attack only on a
+  target under the cursor. Health bars use the same display extent.
   Movement collision and attack reach still use simulation geometry. When Duel intent moves into
   core, its targeting needs the shared drawn-size rule as well.
   A click on the building the player's Legend stands in toggles
@@ -636,12 +640,6 @@ suppresses the main view's plain feature marker; explicit object ownership remov
 panel artwork when its wall segment dies. The minimap retains its generated feature markers.
 All decoration stays in the existing render layers and adds no new shield-immunity mechanic.
 
-### 2026-11-23 — Walls placed during the match (lane B PR 6, `feat/sentinel-kit`)
-
-The `terrain-changed` event exists (the 2026-10-30 amendment above expected it in Phase 2
-sprint 2.5). A wall placed during the match (a Shield Wall) reports its cells with it
-(`map/RuntimeWalls`, [10](10-physics.md) §12). A destroyed map object still clears its cells and
-
 **2026-11-11 — DEC-238 visual stand-ins.**
 
 [DEC-238](../reference/game-design/13-owner-decisions-log.md#batch-2026-11-10-pr-90-review-visuals) approves these provisional visuals.
@@ -705,6 +703,13 @@ drawing is not built, and is requested in `INBOX.md` ("Duel closed-door drawing"
 object and everything a side built (`DUEL_RULES.arena.omittedObjectKinds`, `omitsSideObjects`), and
 marks the Cathedral's walls `MapObject.isUnbreakable`, all in `match/duelArena.ts` before the walk
 grid is built; trees, houses and rocks stay. The dropped objects' art is still drawn.
+
+### 2026-11-23 — Walls placed during the match (lane B PR 6, `feat/sentinel-kit`)
+
+The `terrain-changed` event exists (the 2026-10-30 amendment above expected it in Phase 2
+sprint 2.5). A wall placed during the match (a Shield Wall) reports its cells with it
+(`map/RuntimeWalls`, [10](10-physics.md) §12). A destroyed map object still clears its cells and
+marks the lane fields dirty directly (`INBOX.md` HC-B43 (2)).
 
 ## Related
 
