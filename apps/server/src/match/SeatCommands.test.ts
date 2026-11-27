@@ -18,6 +18,7 @@ const unit = (
   team,
   transform: { x, y, radius: 1, facing: { x: 1, y: 0 } },
   health: { current: hp, max: 10 },
+  elevation: null,
   progression: null,
   aether: null,
   area: null,
@@ -111,6 +112,28 @@ describe('SeatCommands', () => {
     seat.apply(attack, snapshot);
     seat.apply(attack, snapshot);
     expect(commands.map((c) => c.type)).toEqual(['attack-target', 'move', 'stop', 'attack-target']);
+  });
+
+  it('queues jump only when the held state of the jump key changes (DEC-390)', () => {
+    const { seat, commands } = setup();
+    const snapshot = { entities: [] };
+    seat.apply(intent({}), snapshot);
+    seat.apply(intent({ isJumping: true }), snapshot);
+    seat.apply(intent({ isJumping: true }), snapshot);
+    seat.apply(intent({}), snapshot);
+    expect(commands).toEqual([
+      { type: 'jump', actorId: ACTOR, isHeld: true },
+      { type: 'jump', actorId: ACTOR, isHeld: false },
+    ]);
+  });
+
+  it('queues a held jump again after reset', () => {
+    const { seat, commands } = setup();
+    const snapshot = { entities: [] };
+    seat.apply(intent({ isJumping: true }), snapshot);
+    seat.reset();
+    seat.apply(intent({ isJumping: true }), snapshot);
+    expect(commands.map((c) => c.type)).toEqual(['jump', 'jump']);
   });
 
   it('queues a held movement and attack again after reset', () => {
