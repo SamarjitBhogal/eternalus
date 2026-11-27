@@ -80,7 +80,7 @@ describe('loadProjectiles', () => {
     expect(projectiles.get('arrow').litOnHit).toEqual([
       { kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } },
     ]);
-    for (const id of ['magus-bolt', 'turret-bolt', 'turret-heavy-bolt']) {
+    for (const id of ['magus-bolt', 'tower-orb', 'turret-bolt', 'turret-heavy-bolt']) {
       expect(projectiles.get(id).litOnHit).toBeUndefined();
     }
   });

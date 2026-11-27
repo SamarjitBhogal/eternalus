@@ -152,7 +152,10 @@ export class WorldObjectStore {
     this.mounts.delete(entityId);
   }
 
-  /** Marks the map objects of the records at `indices` ruins and replaces each record with `keep` of it. */
+  /**
+   * Marks the map objects of the records at `indices` ruins and replaces each record with `keep`
+   * of it.
+   */
   private leave(
     indices: readonly number[],
     keep: (record: WorldObjectRecord) => WorldObjectRecord,
@@ -282,8 +285,8 @@ export class WorldObjectStore {
       point.y - radius > bounds.y + bounds.height ||
       !object.isBlocking ||
       this.destroyed.has(object.id) ||
-      // A structure's body (a fort, a pylon) outlives the structure (`removed`), so only an
-      // object's own death counts.
+      // A structure's body (a fort, the Stronghold's outer walls and throne) outlives the
+      // structure (`removed`), so only an object's own death counts.
       (health?.isDead === true && !this.owned.has(entityId ?? '')) ||
       object.passages?.some((shape) => isCircleInsidePolygon(point, radius, shape)) === true
     )
