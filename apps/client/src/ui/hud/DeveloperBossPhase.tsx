@@ -1,11 +1,12 @@
 import { type ReactElement, useId, useState } from 'react';
 
+import type { DevCommand } from '../../bridge/developerMenu.types';
 import { emitIntent } from '../../bridge/eventBus';
 import { Button } from '../components/Button';
 import { STRINGS } from '../strings';
 import styles from './DeveloperMenu.module.css';
 
-type BossPhase = keyof typeof STRINGS.developerMenu.bossPhases;
+type BossPhase = Extract<DevCommand, { readonly type: 'dev-set-boss-phase' }>['phase'];
 
 const isBossPhase = (value: string): value is BossPhase =>
   Object.keys(STRINGS.developerMenu.bossPhases).includes(value);

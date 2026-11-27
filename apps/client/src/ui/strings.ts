@@ -228,7 +228,7 @@ export const STRINGS = {
     bossId: 'Boss id',
     phase: 'Phase',
     setPhase: 'Set phase',
-    /** The phases `dev-set-boss-phase` takes (DEC-417); the first is the picker's start. */
+    /** The phase picker's labels, one per phase `dev-set-boss-phase` takes (DEC-417). */
     bossPhases: { hurt: 'Hurt', healthy: 'Healthy' } satisfies Record<
       Extract<DevCommand, { readonly type: 'dev-set-boss-phase' }>['phase'],
       string
