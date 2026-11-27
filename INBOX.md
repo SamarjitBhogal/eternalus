@@ -100,7 +100,7 @@ Reply inline (`Decision: …`).
       base would hold them once. Adopt now, with the boss's moves, or leave?
   - **Answered 2026-11-26 by DEC-371 E6** ("do it now"). Built in PR #160 as
     `content/mobs/bossReference.ts`. One reading to confirm: `refHealth` keeps balancing.md's 650
-    anchor and grows by the Warrior's `healthPerLevel` (compounding, as balancing.md writes it).
+    anchor and grows 8% per level, compounding (balancing.md); it does not read `warrior.ts`.
     Built purely on the Warrior's content (600 at level 1, +8% of it per level, added), the
     Greater Boss would have 35,520 health, not the 41,259 E3 keeps. The capture point boss's
     health is now `10 × refHealth(4)` = 8,188 (was the rounded 8,200). Better than design (#160
