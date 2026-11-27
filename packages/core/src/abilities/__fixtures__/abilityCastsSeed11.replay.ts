@@ -25,7 +25,11 @@ import { ABILITY_CASTS_PLAN } from './abilityCastsPlan';
  * out every old hash reproduced; only checkpoints 350, 400 and 450 changed, once Legends hit
  * Legends. Regenerated 2026-11-25 when phase/3 (#132) began hashing `LastEnemyHit` (DEC-346):
  * the commands and checkpoints 0 to 300 were unchanged, and with that hash field left out the old
- * hashes still reproduced.
+ * hashes still reproduced. Regenerated 2026-11-27 when the player-stack fold merged the U4 fold
+ * (wall turrets: hit records, DEC-322 (2), and the Legend hit log, DEC-335) with phase/3's
+ * `LastEnemyHit` (DEC-346): each side had re-recorded 350, 400 and 450 for its own hash fields, and
+ * the merged hasher has both. The commands and checkpoints 0 to 300 were unchanged; the first
+ * divergence was at 350. Not checked: that only those hash fields differ.
  */
 export const ABILITY_CASTS_SEED_11: ReplayOf<{
   readonly seed: number;
@@ -152,15 +156,15 @@ export const ABILITY_CASTS_SEED_11: ReplayOf<{
     },
     {
       tick: 350,
-      hash: 3533000894,
+      hash: 3486924761,
     },
     {
       tick: 400,
-      hash: 1027571182,
+      hash: 1600707285,
     },
     {
       tick: 450,
-      hash: 3860863756,
+      hash: 1436598341,
     },
   ],
 };
