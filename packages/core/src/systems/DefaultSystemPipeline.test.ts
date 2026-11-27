@@ -136,6 +136,7 @@ describe('DefaultSystemPipeline', () => {
       'ai',
       'hordes',
       'status-effects',
+      'jump',
       'movement',
       'collision',
       'space',

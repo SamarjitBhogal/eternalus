@@ -31,6 +31,7 @@ const structure = (
     team: 'light',
     transform: { x: 5, y: 6, radius: 3, facing: { x: 1, y: 0 } },
     health,
+    elevation: null,
     progression: null,
     aether: null,
     area: null,

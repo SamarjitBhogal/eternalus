@@ -10,6 +10,11 @@ export type EntityDrawState = {
   readonly position: WorldPoint;
   /** The way the entity faces: a unit vector, interpolated like `position` (DEC-192). */
   readonly facing: WorldPoint;
+  /**
+   * Height above the ground in world units, interpolated like `position` (a jump, DEC-390).
+   * Absent or 0 on the ground.
+   */
+  readonly height?: number;
   /** True for the entity the player controls (highlighted). */
   readonly isFocused: boolean;
   /**

@@ -79,6 +79,14 @@ describe('ClientMessageParser', () => {
     });
   });
 
+  it('keeps isJumping (DEC-390)', () => {
+    const raw = JSON.stringify({ type: 'intent', seq: 0, intent: { ...intent, isJumping: true } });
+    expect(parser.parse(raw)).toEqual({
+      ok: true,
+      message: { type: 'intent', seq: 0, intent: { ...intent, isJumping: true } },
+    });
+  });
+
   it('refuses a message over the size limit before parsing it', () => {
     expect(parser.parse(' '.repeat(MAX_CLIENT_MESSAGE_LENGTH + 1))).toEqual({
       ok: false,
@@ -121,6 +129,10 @@ describe('ClientMessageParser', () => {
     [
       'a non-boolean isAttacking',
       JSON.stringify({ type: 'intent', seq: 1, intent: { ...intent, isAttacking: 1 } }),
+    ],
+    [
+      'a non-boolean isJumping',
+      JSON.stringify({ type: 'intent', seq: 1, intent: { ...intent, isJumping: 'yes' } }),
     ],
   ])('refuses %s as malformed', (_label, raw) => {
     expect(parser.parse(raw)).toEqual({ ok: false, reason: 'malformed' });
