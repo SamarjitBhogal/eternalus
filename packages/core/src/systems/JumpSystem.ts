@@ -7,13 +7,14 @@ import type { System, SystemContext } from './System.types';
 /**
  * Flies every jump one tick along its arc (DEC-390), then lifts each entity that stands on the
  * ground with its jump key held, keeping the velocity it moves with now (momentum). So a held key
- * jumps again on the landing tick. Nothing takes off while the match holds units idle
- * (`state.match.isIdleHeld`, the countdown) or a status holds the entity in place (`cannot-move`).
- * Runs before `MovementSystem`, which moves an airborne entity by its takeoff velocity.
+ * jumps again on the landing tick. While the match holds units idle (`state.match.isIdleHeld`, the
+ * countdown) or a status holds the entity in place (`cannot-move`, a stun), nothing takes off and
+ * a jump in the air ends at once: the Legend drops straight down (DEC-420, HC-Q127 C). A slow
+ * does not change a jump in the air. Runs before `MovementSystem`, which moves an airborne entity
+ * by its takeoff velocity.
  *
- * Built defaults, each an open owner card: a jump has no cooldown and no cost (HC-Q125); a status
- * blocks only the takeoff, so a stun or slow in the air does not change the arc (HC-Q127); bots
- * send no `jump` command, so only human players jump (HC-Q128).
+ * A jump has no cooldown and no cost (DEC-420, HC-Q125 A); bots send no `jump` command, so only
+ * human players jump (DEC-420, HC-Q128 A).
  * Allocates nothing per entity (architecture 10 §2).
  */
 export class JumpSystem implements System {
@@ -30,16 +31,13 @@ export class JumpSystem implements System {
       if (jump === undefined) {
         return;
       }
+      if (isIdleHeld || entity.findComponent(StatusEffects)?.has('cannot-move') === true) {
+        jump.land();
+        return;
+      }
       jump.advance(this.arc);
       const movement = entity.findComponent(Movement);
-      // HC-Q127 default: `cannot-move` blocks only the takeoff, never a jump already in the air.
-      if (
-        jump.isAirborne ||
-        !jump.isHeld ||
-        isIdleHeld ||
-        movement === undefined ||
-        entity.findComponent(StatusEffects)?.has('cannot-move') === true
-      ) {
+      if (jump.isAirborne || !jump.isHeld || movement === undefined) {
         return;
       }
       jump.takeOff(movement.velocity);

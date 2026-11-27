@@ -4,10 +4,12 @@ import type { MutableVec2 } from '../utils/vec2.types';
 
 /**
  * A Legend's jump (DEC-390): whether the jump key is held, and the arc it flies while in the air.
- * `JumpSystem` calls `advance` each tick and `takeOff` when a held key meets the ground; while
- * airborne, `MovementSystem` moves the Legend by `velocity`, the velocity it had at takeoff
- * (momentum). The height is only drawn: collision does not change in the air, and no combat code
- * reads it, so a Legend attacks and casts in the air as on the ground (HC-Q126 default).
+ * `JumpSystem` calls `advance` each tick, `takeOff` when a held key meets the ground, and `land`
+ * when a stun or the countdown hold catches it in the air (DEC-420). While airborne,
+ * `MovementSystem` moves the Legend by `velocity`, the velocity it had at takeoff (momentum). The
+ * height is only drawn: collision does not change in the air, and no combat code reads it, so a
+ * Legend attacks in the air as on the ground (DEC-420, HC-Q126 C; the ability system must block
+ * casting in the air when it is built).
  *
  * @remarks The velocity is copied in place, so a jump allocates nothing.
  */
@@ -83,7 +85,8 @@ export class Jump {
     this.land();
   }
 
-  private land(): void {
+  /** Ends the jump at once: on the ground, no velocity; the key state is kept (DEC-420). */
+  public land(): void {
     this.airTick = null;
     this.heightValue = 0;
     this.takeoffVelocity.x = 0;

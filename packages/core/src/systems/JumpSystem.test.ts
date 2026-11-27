@@ -109,4 +109,53 @@ describe('JumpSystem', () => {
 
     expect(jump.isAirborne).toBe(false);
   });
+
+  it.each<
+    readonly [string, (setup: { context: SystemContext; dummy: Entity }, isOn: boolean) => void]
+  >([
+    [
+      'a stun',
+      ({ dummy }, isOn) => {
+        const statuses = dummy.getComponent(StatusEffects);
+        if (isOn) {
+          statuses.apply(loadStatusEffects(tickRate, 1).get('stun'), null, 0);
+        } else {
+          statuses.remove('stun');
+        }
+      },
+    ],
+    [
+      'the countdown hold (DEC-88)',
+      ({ context }, isOn) => {
+        context.state.match.holdIdle(isOn);
+      },
+    ],
+  ])(
+    'drops a jump in the air to the ground under %s, then jumps again (DEC-420)',
+    (_label, holdInPlace) => {
+      const setup = setUp();
+      const { context, dummy, jump } = setup;
+      const movement = dummy.getComponent(Movement);
+      movement.steer({ x: 1, y: 0 });
+      movement.advance();
+      const system = new JumpSystem(ARC);
+      jump.hold(true);
+      system.update(context);
+      system.update(context);
+      expect(jump.height).toBeGreaterThan(0);
+      holdInPlace(setup, true);
+
+      system.update(context);
+
+      expect(jump.isAirborne).toBe(false);
+      expect(jump.height).toBe(0);
+      expect(jump.velocity).toEqual({ x: 0, y: 0 });
+      expect(jump.isHeld).toBe(true);
+
+      holdInPlace(setup, false);
+      system.update(context);
+
+      expect(jump.isAirborne).toBe(true);
+    },
+  );
 });

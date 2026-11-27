@@ -72,23 +72,20 @@ describe('MovementSystem', () => {
     expect(movement.velocity).toEqual({ x: 0, y: movement.acceleration });
   });
 
-  it.each(['stun', 'concussion'])(
-    'keeps the takeoff velocity when %s lands in the air (HC-Q127 default)',
-    (statusId) => {
-      const { context, dummy } = setUp();
-      const jump = new Jump();
-      dummy.addComponent(jump);
-      jump.takeOff({ x: 0.25, y: 0 });
-      const status = loadStatusEffects(createDefaultGameConfig().tickRate, 2).get(statusId);
-      dummy.getComponent(StatusEffects).apply(status, null, 0);
+  it('keeps the takeoff velocity when a slow (concussion) lands in the air (DEC-420)', () => {
+    const { context, dummy } = setUp();
+    const jump = new Jump();
+    dummy.addComponent(jump);
+    jump.takeOff({ x: 0.25, y: 0 });
+    const concussion = loadStatusEffects(createDefaultGameConfig().tickRate, 2).get('concussion');
+    dummy.getComponent(StatusEffects).apply(concussion, null, 0);
 
-      new MovementSystem().update(context);
+    new MovementSystem().update(context);
 
-      const transform = dummy.getComponent(Transform);
-      expect(transform.position).toEqual({ x: 0.25, y: 0 });
-      expect(transform.facing).toEqual({ x: 1, y: 0 });
-    },
-  );
+    const transform = dummy.getComponent(Transform);
+    expect(transform.position).toEqual({ x: 0.25, y: 0 });
+    expect(transform.facing).toEqual({ x: 1, y: 0 });
+  });
 
   it('moves a grounded entity with Jump by its own velocity', () => {
     const { context, dummy } = setUp();

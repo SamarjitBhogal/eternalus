@@ -32,7 +32,7 @@ export class MovementSystem implements System {
             : (statuses?.multiplier('moveSpeed') ?? 1);
         movement.advance(speedScale);
         const jump = entity.findComponent(Jump);
-        // No steering in the air: the takeoff velocity holds until landing (HC-Q124 default).
+        // No steering in the air: the takeoff velocity holds until landing (DEC-420).
         const velocity = jump?.isAirborne === true ? jump.velocity : movement.velocity;
         transform.moveBy(velocity);
         transform.face(velocity);
