@@ -394,8 +394,9 @@ work named:
   Cathedral capture zone guard post's circle (home edge plus leash, the 25 m centre zone); the boss still
   spawns through the guard plan (07's Implementation status), but `PathingSystem` steers only
   `GuardController`'s guards, so the boss steers itself with `move`. As §4.6 designs, the
-  situation tree (`ai/BossMoveChooser.ts`, DEC-371 E7, 2026-11-27) picks among the six moves
-  (balancing.md: two sweeps, slam, beam, charge, roar); it closes the 2026-11-20 rotation
+  situation tree (`ai/BossMoveChooser.ts`, DEC-371 E7, 2026-11-27) picks among the five fighting
+  moves of the six (balancing.md: two sweeps, slam, beam, charge, roar; the roar is the
+  entrance's, below); it closes the 2026-11-20 rotation
   interim. The damage-dealer bias is the `punish` branch: a Legend in `meleeRange` that dealt at
   least `punishShare` of the damage of the last
   `threatSeconds` (`ThreatLedger`, written by `BossDamageSystem`). Inside a branch,

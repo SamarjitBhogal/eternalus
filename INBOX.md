@@ -120,6 +120,11 @@ Reply inline (`Decision: …`).
       the design): one place for a phase change. Today the damage system and the developer menu
       each set the phase and then announce it. One shared step could do both, so the two cannot
       drift apart.
+      (13) A code-structure idea, no change in play (not built; a reviewer marked it better than
+      the design): one shared "find this part of a unit, or add it" step. Today five places in the
+      game code repeat the same few lines for it (the boss damage system, the entity store twice,
+      out-of-combat healing and stuck detection). Three of them are outside this change, so it
+      waits for its own small change.
 
 - [ ] **The Greater Boss's sweep (Aryan Walanj, 2026-11-20, `feat/cathedral-boss-moves`).**
       balancing.md gives the sweep "cone knockback" (the MiniBoss row) and the GreaterBoss's light
@@ -133,6 +138,8 @@ Reply inline (`Decision: …`).
       OK as the interim? (5) The cone points where the boss faces when it lands (its last walk,
       toward its target), so a Legend can sidestep during the telegraph. Should it aim at the
       target instead?
+      **(5) changed by `feat/boss-brain` (2026-11-27):** before the telegraph, the boss now turns
+      to face the player its brain chose. Point (9) of the brain item asks you to confirm this.
 
 - [ ] **The Greater Boss's charge (Aryan Walanj, 2026-11-20, `feat/cathedral-boss-moves`).**
       balancing.md gives only the heavy move (0.45 × refHealth, 464, every 2.5 s), so these are
