@@ -3,7 +3,10 @@ import type { EntitySnapshot } from '@eternalus/core';
 import type { Renderer } from '../engine/render/Renderer';
 import type { WorldPoint } from '../engine/render/Renderer.types';
 
-/** One entity to draw this frame: its snapshot, where to draw it, and whether it is the player's. */
+/**
+ * One entity to draw this frame: its snapshot, where to draw it, whether it is the player's, and
+ * the frame time.
+ */
 export type EntityDrawState = {
   readonly entity: EntitySnapshot;
   /** Interpolated between the last two ticks, in world units. */
@@ -12,6 +15,11 @@ export type EntityDrawState = {
   readonly facing: WorldPoint;
   /** True for the entity the player controls (highlighted). */
   readonly isFocused: boolean;
+  /**
+   * The tick this frame shows: the latest snapshot's tick plus the frame's `alpha`. A view that
+   * animates picks its frame by it (DEC-398, card PR170 (12)).
+   */
+  readonly frameTick: number;
 };
 
 /**

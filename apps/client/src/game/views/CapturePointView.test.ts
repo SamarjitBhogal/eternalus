@@ -52,7 +52,7 @@ const capture = (overrides: Partial<CaptureSnapshot> = {}): CaptureSnapshot => (
 const draw = (entity: EntitySnapshot): RecordingRenderer => {
   const renderer = new RecordingRenderer();
   new CapturePointView().draw(
-    { entity, position: AT, facing: { x: 1, y: 0 }, isFocused: false },
+    { entity, position: AT, facing: { x: 1, y: 0 }, isFocused: false, frameTick: 0 },
     renderer,
   );
   return renderer;

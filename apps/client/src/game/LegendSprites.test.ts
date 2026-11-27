@@ -83,11 +83,11 @@ function busSimulation(): {
   return { bus, simulation: { tick: 0, on: bus.on.bind(bus) } };
 }
 
-/** The frame the sprites' view draws for `entity`, read from the `drawSprite` call. */
-function drawnFrame(sprites: LegendSprites, entity: EntitySnapshot = HERO): unknown {
+/** The frame the sprites' view draws for `entity` at `frameTick`, read from the `drawSprite` call. */
+function drawnFrame(sprites: LegendSprites, entity: EntitySnapshot = HERO, frameTick = 0): unknown {
   const renderer = new RecordingRenderer();
   sprites.view?.draw(
-    { entity, position: { x: 10, y: 20 }, facing: { x: 0, y: 1 }, isFocused: false },
+    { entity, position: { x: 10, y: 20 }, facing: { x: 0, y: 1 }, isFocused: false, frameTick },
     renderer,
   );
   return renderer.calls.find((call) => call.op === 'drawSprite')?.args[0];
@@ -146,7 +146,13 @@ describe('LegendSprites', () => {
     const { logger, sprites } = spritesWith(sheetsOf(['knight', KNIGHT_SHEET]), KNIGHT_GRID);
     const renderer = new RecordingRenderer();
     sprites.view?.draw(
-      { entity: HERO, position: { x: 10, y: 20 }, facing: { x: 0, y: 1 }, isFocused: false },
+      {
+        entity: HERO,
+        position: { x: 10, y: 20 },
+        facing: { x: 0, y: 1 },
+        isFocused: false,
+        frameTick: 0,
+      },
       renderer,
     );
 
@@ -158,16 +164,13 @@ describe('LegendSprites', () => {
     expect(logger.records).toEqual([]);
   });
 
-  it('draws the frames of the tick that the render step sets', () => {
+  it("draws the frames of the draw state's frame time (DEC-398, card PR170 (12))", () => {
     const { sprites } = spritesWith(sheetsOf(['knight', KNIGHT_SHEET]), KNIGHT_GRID);
 
     // The idle row has 6 frames over 1.2 s: tick 9 (0.3 s) is frame 1, tick 15 (0.5 s) frame 2.
-    sprites.setFrameTick(0);
-    const atStart = drawnFrame(sprites);
-    sprites.setFrameTick(9);
-    const atNine = drawnFrame(sprites);
-    sprites.setFrameTick(15);
-    const atFifteen = drawnFrame(sprites);
+    const atStart = drawnFrame(sprites, HERO, 0);
+    const atNine = drawnFrame(sprites, HERO, 9);
+    const atFifteen = drawnFrame(sprites, HERO, 15);
 
     expect([atStart, atNine, atFifteen]).toEqual([
       { atlasId: 'knight-sprites', frame: 0 },
@@ -210,8 +213,8 @@ describe('LegendSprites', () => {
     const state = { entity: BOT, position: { x: 30, y: 20 }, facing: { x: 0, y: 1 } };
     const bot = new RecordingRenderer();
     const disc = new RecordingRenderer();
-    sprites.view?.draw({ ...state, isFocused: false }, bot);
-    new LegendView().draw({ ...state, isFocused: false }, disc);
+    sprites.view?.draw({ ...state, isFocused: false, frameTick: 0 }, bot);
+    new LegendView().draw({ ...state, isFocused: false, frameTick: 0 }, disc);
 
     expect(drawnFrame(sprites, HERO)).toEqual({ atlasId: 'knight-sprites', frame: 0 });
     expect(bot.calls).toEqual(disc.calls);

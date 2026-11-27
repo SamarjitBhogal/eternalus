@@ -6,24 +6,26 @@ import {
   type Unsubscribe,
 } from '@eternalus/core';
 
+import type { SpriteRef } from './engine/render/Renderer.types';
 import { LegendAnimation } from './LegendAnimation';
 import type { LegendSpriteSheet } from './legendSpriteSheets.types';
 import type { LegendSpritesDeps } from './LegendSprites.types';
 import type { EntityView } from './views/EntityView.types';
 import { LEGEND_VISUAL_DIAMETER } from './views/entityViews.constants';
 import { LegendSpriteView } from './views/LegendSpriteView';
-import type { LegendSpriteFrame } from './views/LegendSpriteView.types';
+import type { LegendSpriteSize, LegendSpriteSource } from './views/LegendSpriteView.types';
 
 /**
  * The sprites of every Legend in one match (DEC-378 (2): every Legend gets its sprite). Each
  * Legend's snapshot names its sub-class (`EntitySnapshot.specId`), which picks its sheet. It owns
  * each Legend's `LegendAnimation` by entity id, the one `damage-applied` listener that starts
- * their attack rows, the tick the current frame shows and the Legend view. A Legend without a
+ * their attack rows, and the Legend view, to which it answers each Legend's sprite size and frame.
+ * The view gets the frame time with its draw state (DEC-398, card PR170 (12)). A Legend without a
  * sub-class, without a sheet, or whose atlas did not load is drawn as the ordinary disc; the
- * others still get their sprites. `Match` gives it each tick's snapshots and each frame's tick,
- * and destroys it with the match.
+ * others still get their sprites. `Match` gives it each tick's snapshot and destroys it with the
+ * match.
  */
-export class LegendSprites {
+export class LegendSprites implements LegendSpriteSource {
   /**
    * The Legend family's view for the view registry: a `LegendSpriteView` when the renderer holds
    * the atlas of at least one sheet; else `undefined`, and the registry keeps its ordinary Legend
@@ -42,9 +44,6 @@ export class LegendSprites {
   private readonly tickRate: number;
 
   private readonly renderer: LegendSpritesDeps['renderer'];
-
-  /** The tick the current frame shows (the snapshot's tick plus the frame's `alpha`). */
-  private frameTick = 0;
 
   /**
    * Keeps each sheet of `legendSheets` whose atlas the renderer holds, and logs one WARN for each
@@ -82,7 +81,7 @@ export class LegendSprites {
       this.unsubscribe = () => undefined;
       return;
     }
-    this.view = new LegendSpriteView((entity) => this.spriteOf(entity), LEGEND_VISUAL_DIAMETER);
+    this.view = new LegendSpriteView(this);
     // One listener for every Legend: a weapon hit starts the attacker's attack row.
     this.unsubscribe = simulation.on('damage-applied', ({ source }) => {
       if (source.kind === 'weapon' && source.attackerId !== null) {
@@ -104,25 +103,26 @@ export class LegendSprites {
     }
   }
 
-  /** Sets the tick the next frame draws: the snapshot's tick plus the frame's `alpha`. */
-  public setFrameTick(frameTick: number): void {
-    this.frameTick = frameTick;
-  }
-
   /** Releases the event subscription with the match. */
   public destroy(): void {
     this.unsubscribe();
   }
 
-  /** The sprite `entity` draws this frame, or `null` for the disc (no loaded sheet, or dead). */
-  private spriteOf(entity: EntitySnapshot): LegendSpriteFrame | null {
+  /** The sprite size of a Legend with a loaded sheet, or `null` (the disc). */
+  public sizeOf(entity: EntitySnapshot): LegendSpriteSize | null {
     const sheet = this.sheetOf(entity);
-    if (sheet === undefined) {
-      return null;
-    }
-    const frame = this.animationOf(entity, sheet).frame(entity, this.frameTick);
-    const top = frame === null ? null : this.renderer.spriteTop(frame, LEGEND_VISUAL_DIAMETER);
-    return frame === null || top === null ? null : { frame, top };
+    const width = LEGEND_VISUAL_DIAMETER;
+    const top =
+      sheet === undefined
+        ? null
+        : this.renderer.spriteTop({ atlasId: sheet.atlasId, frame: 0 }, width);
+    return top === null ? null : { width, top };
+  }
+
+  /** The frame `entity` draws at `frameTick`, or `null` for the disc (no loaded sheet, or dead). */
+  public frameOf(entity: EntitySnapshot, frameTick: number): SpriteRef | null {
+    const sheet = this.sheetOf(entity);
+    return sheet === undefined ? null : this.animationOf(entity, sheet).frame(entity, frameTick);
   }
 
   /** The loaded sheet of a Legend's sub-class, or `undefined` for any other entity. */

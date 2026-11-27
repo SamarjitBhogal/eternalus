@@ -10,7 +10,8 @@ import type { ViewRegistry } from './ViewRegistry';
 
 /**
  * The scene layer that draws every entity of the latest snapshot through the `ViewRegistry`
- * (architecture 08 §8), in the main view and on the mini map (06 §8). In the main view positions
+ * (architecture 08 §8), in the main view and on the mini map (06 §8). Each view gets the frame
+ * time with the other draw data (`EntityDrawState.frameTick`). In the main view positions
  * and facings are interpolated between the previous and current snapshot by `alpha`; an entity
  * that appeared this tick draws where it is (no ghost from the origin). It draws back to front by
  * `y`. A mini map dot sits at the snapshot position (DEC-187 (C)).
@@ -46,13 +47,14 @@ export class EntityLayer implements WorldLayer {
     focusId: string | null,
   ): void {
     const before = new Map(previous?.entities.map((entity) => [entity.id, entity]) ?? []);
+    const frameTick = current.tick + alpha;
     this.states = current.entities.flatMap((entity) => {
       const now = entity.transform;
       if (entity.mapObjectId !== undefined || now === null) return [];
       const then = before.get(entity.id)?.transform ?? now;
       const position = EntityLayer.lerp(then, now, alpha);
       const facing = EntityLayer.turn(then.facing, now.facing, alpha);
-      return [{ entity, position, facing, isFocused: entity.id === focusId }];
+      return [{ entity, position, facing, isFocused: entity.id === focusId, frameTick }];
     });
   }
 

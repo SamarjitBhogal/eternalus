@@ -6,6 +6,7 @@ import { FOCUS_RING_COLOR, LEGEND_VISUAL_DIAMETER } from './entityViews.constant
 import { LegendSpriteView } from './LegendSpriteView';
 import { LEGEND_SPRITE_RING_SCALE } from './LegendSpriteView.constants';
 import { LegendView } from './LegendView';
+import type { LegendSpriteSource } from './LegendSpriteView.types';
 import { TEAM_COLORS } from './MapView.constants';
 
 const entity: EntitySnapshot = {
@@ -22,15 +23,26 @@ const entity: EntitySnapshot = {
   capture: null,
   gem: null,
 };
-const state = { entity, position: { x: 1, y: 2 }, isFocused: true, facing: { x: 0, y: 1 } };
+const state = {
+  entity,
+  position: { x: 1, y: 2 },
+  isFocused: true,
+  frameTick: 0,
+  facing: { x: 0, y: 1 },
+};
 const FRAME = { atlasId: 'oracle-sprites', frame: 3 } as const;
-/** `FRAME`, whose top stands 5.1 m above its feet (the renderer gives it from the sheet's data). */
-const SPRITE = { frame: FRAME, top: 5.1 } as const;
+/** A Legend that draws `FRAME` 6.8 m wide, its top 5.1 m above its feet (the sheet's data). */
+const SPRITES: LegendSpriteSource = {
+  sizeOf: () => ({ width: 6.8, top: 5.1 }),
+  frameOf: () => FRAME,
+};
+/** A Legend without a sprite (no sheet, or its atlas did not load). */
+const NO_SPRITES: LegendSpriteSource = { sizeOf: () => null, frameOf: () => null };
 
 describe('LegendSpriteView', () => {
   it('draws the frame with its feet on the position, then the team ring and the focus ring', () => {
     const renderer = new RecordingRenderer();
-    new LegendSpriteView(() => SPRITE, 6.8).draw(state, renderer);
+    new LegendSpriteView(SPRITES).draw(state, renderer);
     const glyphs = renderer.calls.flatMap((call) => (call.op === 'drawWorldGlyph' ? [call] : []));
 
     // The view passes only the position and the width: the renderer stands the sprite on its feet.
@@ -47,15 +59,30 @@ describe('LegendSpriteView', () => {
     ]);
   });
 
+  it("picks its frame from the draw state's frame time (DEC-398, card PR170 (12))", () => {
+    const asked: number[] = [];
+    const view = new LegendSpriteView({
+      ...SPRITES,
+      frameOf: (_, frameTick) => {
+        asked.push(frameTick);
+        return FRAME;
+      },
+    });
+    view.draw({ ...state, frameTick: 9.5 }, new RecordingRenderer());
+    view.draw({ ...state, frameTick: 15 }, new RecordingRenderer());
+
+    expect(asked).toEqual([9.5, 15]);
+  });
+
   it('gives the sprite top for the health bar and keeps the 2.6 m click radius (DEC-238)', () => {
-    const view = new LegendSpriteView(() => SPRITE, 6.8);
+    const view = new LegendSpriteView(SPRITES);
 
     expect(view.visualTopOf(entity)).toBe(5.1);
     expect(view.visualRadiusOf()).toBe(LEGEND_VISUAL_DIAMETER / 2);
   });
 
   it('draws any other Legend as the ordinary Legend view, with the bar on its radius', () => {
-    const view = new LegendSpriteView(() => null, 6.8);
+    const view = new LegendSpriteView(NO_SPRITES);
     const drawn = new RecordingRenderer();
     const ordinary = new RecordingRenderer();
     view.draw(state, drawn);
@@ -65,9 +92,18 @@ describe('LegendSpriteView', () => {
     expect(view.visualTopOf(entity)).toBe(LEGEND_VISUAL_DIAMETER / 2);
   });
 
+  it('draws a Legend with a sheet but no frame (dead) as the ordinary Legend view', () => {
+    const drawn = new RecordingRenderer();
+    const ordinary = new RecordingRenderer();
+    new LegendSpriteView({ ...SPRITES, frameOf: () => null }).draw(state, drawn);
+    new LegendView().draw(state, ordinary);
+
+    expect(drawn.calls).toEqual(ordinary.calls);
+  });
+
   it('keeps the Legend minimap marker', () => {
     const renderer = new RecordingRenderer();
-    new LegendSpriteView(() => SPRITE, 6.8).drawMinimap(state, renderer);
+    new LegendSpriteView(SPRITES).drawMinimap(state, renderer);
 
     expect(renderer.calls.some((call) => call.op === 'drawGlyph')).toBe(true);
   });

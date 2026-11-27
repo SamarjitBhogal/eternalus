@@ -125,8 +125,10 @@ describe('PlayerCommands', () => {
 
   it('picks a sprite Legend inside its 2.6 m click circle, not 3 m above its feet (DEC-238)', () => {
     // The sprite stands about 4.8 m above the feet; its top must not reach the click test.
-    const sprite = { frame: { atlasId: 'knight-sprites', frame: 0 }, top: 4.8 };
-    const legendView = new LegendSpriteView(() => sprite, LEGEND_VISUAL_DIAMETER);
+    const legendView = new LegendSpriteView({
+      sizeOf: () => ({ width: LEGEND_VISUAL_DIAMETER, top: 4.8 }),
+      frameOf: () => ({ atlasId: 'knight-sprites', frame: 0 }),
+    });
     const { commands } = setUp(createDefaultViewRegistry(undefined, legendView));
     const foe = { ...unit('foe', 'dark', 10, 10), family: 'legend' };
     const snapshot = snapshotOf([PLAYER, foe]);

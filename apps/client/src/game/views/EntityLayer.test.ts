@@ -111,6 +111,24 @@ const minimapMarks = (layer: EntityLayer): [unknown, number][] =>
   );
 
 describe('EntityLayer', () => {
+  it("hands every view the frame time: the snapshot's tick plus alpha (DEC-398, card PR170 (12))", () => {
+    const spy = new SpyView();
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      () => false,
+      () => null,
+    );
+    layer.show(
+      snapshot(6, [unit('a', 0, 0)]),
+      snapshot(7, [unit('a', 1, 0), unit('b', 5, 0)]),
+      0.25,
+      null,
+    );
+    layer.draw(new RecordingRenderer());
+
+    expect(spy.drawn.map((state) => state.frameTick)).toEqual([7.25, 7.25]);
+  });
+
   it('interpolates positions between the last two snapshots by alpha', () => {
     const spy = new SpyView();
     const layer = new EntityLayer(
@@ -300,15 +318,12 @@ describe('EntityLayer', () => {
 
   it("puts a sprite Legend's bar on the sprite top, not on its 2.6 m click radius", () => {
     // The sprite's top stands 0.9 of its width above the feet (the sheet's data gives it).
-    const sprite = {
-      frame: { atlasId: 'knight-sprites', frame: 0 },
-      top: LEGEND_VISUAL_DIAMETER * 0.9,
+    const sprites = {
+      sizeOf: () => ({ width: LEGEND_VISUAL_DIAMETER, top: LEGEND_VISUAL_DIAMETER * 0.9 }),
+      frameOf: () => ({ atlasId: 'knight-sprites', frame: 0 }),
     };
     const layer = new EntityLayer(
-      createDefaultViewRegistry(
-        undefined,
-        new LegendSpriteView(() => sprite, LEGEND_VISUAL_DIAMETER),
-      ),
+      createDefaultViewRegistry(undefined, new LegendSpriteView(sprites)),
       () => false,
       () => 'enemy',
     );

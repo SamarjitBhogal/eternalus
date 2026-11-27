@@ -81,7 +81,7 @@ export class Match implements LoopTarget {
 
   private current: Snapshot;
 
-  /** Every Legend's sprite: the animations, the frame's tick and the Legend view (DEC-378). */
+  /** Every Legend's sprite: the animations and the Legend view (DEC-378). */
   private readonly legendSprites: LegendSprites;
 
   private readonly playerId: EntityId | null;
@@ -246,7 +246,6 @@ export class Match implements LoopTarget {
 
   /** One frame: the camera follows the player, then the scene and the minimap are drawn. */
   public render(alpha: number): void {
-    this.legendSprites.setFrameTick(this.current.tick + alpha);
     const { renderer } = this.deps;
     this.camera.follow(this.playerEntity()?.transform ?? null);
     const view = this.camera.visibleArea();

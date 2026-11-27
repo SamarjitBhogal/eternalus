@@ -39,7 +39,7 @@ describe('MobView', () => {
     const renderer = new RecordingRenderer();
 
     new MobView().draw(
-      { facing: { x: 1, y: 0 }, entity: MINION, position: AT, isFocused: false },
+      { facing: { x: 1, y: 0 }, entity: MINION, position: AT, isFocused: false, frameTick: 0 },
       renderer,
     );
 
@@ -64,6 +64,7 @@ describe('MobView', () => {
       entity: { ...MINION, team },
       position: AT,
       isFocused: false,
+      frameTick: 0,
     });
 
     view.drawMinimap(at('light'), renderer);
