@@ -1,7 +1,7 @@
 import type { AuthoredAbility } from './AbilityDefinition.types';
 
 /**
- * Shield Wall (DEC-199 Bulwark, DEC-330 (7), reading R4): raise a 4 m stone wall square to the
+ * Shield Wall (DEC-199 Bulwark, DEC-330 (7), DEC-382 (R4 A)): raise a 4 m stone wall square to the
  * aim, its middle 3 m in front of the Sentinel's centre (the `shield-wall-barrier` obstacle, 800
  * health). It is permanent until broken; it blocks walking and shots for both teams, and any attack
  * of either team damages it. Each Sentinel has at most 2: a new one removes the oldest, and a
@@ -22,7 +22,7 @@ export const SHIELD_WALL = {
     {
       kind: 'summon',
       definitionId: 'shield-wall-barrier',
-      distance: 3, // TUNE: reading, owner card PR6 R4 (metres from the Sentinel's centre)
+      distance: 3, // TUNE: DEC-382 (R4 A) (metres from the Sentinel's centre)
       maxActive: 2, // TUNE: DEC-330 (7)
     },
   ],

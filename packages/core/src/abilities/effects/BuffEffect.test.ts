@@ -4,11 +4,14 @@ import { StatusEffectApplier } from '../../combat/StatusEffectApplier';
 import { StatusEffects } from '../../components/StatusEffects';
 import { Transform } from '../../components/Transform';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
+import { BERSERK } from '../../content/status-effects/berserk';
 import { loadStatusEffects } from '../../content/status-effects/loadStatusEffects';
 import { STATUS_EFFECTS } from '../../content/status-effects/statusEffectCatalogue';
+import type { AuthoredStatusEffect } from '../../content/status-effects/statusEffects.types';
 import type { Entity } from '../../entities/Entity';
 import { CollisionResolver } from '../../physics/CollisionResolver';
 import { StaticCollisionIndex } from '../../physics/StaticCollisionIndex';
+import type { CollisionQuery } from '../../state/CollisionQuery.types';
 import { GameState } from '../../state/GameState';
 import type { GameEventMap } from '../../state/GameEvents.types';
 import type { Polygon } from '../../utils/geometry.types';
@@ -138,5 +141,46 @@ describe('BuffEffect.casterBlockedBy (Berserk needs room, DEC-382, HC-Q113)', ()
     new StatusEffectApplier(loadStatusEffects(30, 2)).apply(state, sentinel.id, 'berserk', null);
 
     expect(check('berserk')).toBeNull();
+  });
+
+  it('grows the body by the one status fold: two `size` adds sum, they do not multiply', () => {
+    const growing = (id: string, value: number): AuthoredStatusEffect => ({
+      ...BERSERK,
+      id,
+      modifiers: [{ stat: 'size', op: 'add', value }],
+    });
+    const loaded = loadStatusEffects(30, 2, [
+      growing('swollen', 0.2),
+      growing('bloated', 0.3),
+      { ...BERSERK, id: 'flat', modifiers: [{ stat: 'size', op: 'mul', value: 1 }] },
+    ]);
+    const radii: number[] = [];
+    const collisions: CollisionQuery = {
+      reach: (_from, _direction, distance) => distance,
+      hitsWall: () => false,
+      pushOut: (at) => at,
+      hasRoom: (_at, radius) => {
+        radii.push(radius);
+        return true;
+      },
+    };
+    const { factory } = casterState();
+    const state = new GameState(createDefaultGameConfig(), 1, null, { collisions });
+    const sentinel = factory.create('sentinel', 'sentinel', {
+      position: { x: 5, y: 5 },
+      team: 'light',
+    });
+    state.entities.add(sentinel);
+    sentinel.getComponent(StatusEffects).apply(loaded.get('swollen'), null, 0);
+
+    const buff = new BuffEffect(loaded);
+    buff.casterBlockedBy({ kind: 'buff', statusId: 'flat' }, sentinel.id, state);
+    expect(radii).toEqual([]); // a `size` × 1 does not grow the body: no room asked
+
+    buff.casterBlockedBy({ kind: 'buff', statusId: 'bloated' }, sentinel.id, state);
+
+    // (1 + 0.2 + 0.3) × the built 1.25 m, as StatusEffects folds it; not (1 + 0.2) × (1 + 0.3).
+    expect(radii).toHaveLength(1);
+    expect(radii[0]).toBeCloseTo(1.25 * 1.5);
   });
 });

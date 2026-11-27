@@ -1459,15 +1459,17 @@ while it is set (DEC-283 (7), HC-Q61 (3)).
     `eternal` (× 1.5) can use the same stat.
   - **No room, no cast (DEC-382, `INBOX.md` HC-Q113).** Berserk cannot be cast where the grown
     body has no room. `BuffEffect.casterBlockedBy` refuses the cast with a new reason, `no-room`
-    (a reason the §6 sketch does not list). It reads the growth from the `size` modifiers of the
-    status the step applies, so the 1.3 is not copied. Its room test is `BodySizeSystem`'s
+    (a reason the §6 sketch does not list). It asks the caster's `StatusEffects` for the `size`
+    the caster would have with the status the step applies (`multiplierWith`, the one fold of the
+    status modifiers), so the 1.3 is not copied and two `size` modifiers add up as they do on the
+    body. Its room test is `BodySizeSystem`'s
     (`state/placeWithRoom`: the push-out, then `hasRoom`), so a Sentinel beside one wall can still
     cast. A refused cast spends nothing, so the meter stays full; the cast works once the
     Sentinel stands where it has room. The player snapshot shows the reason, and the HUD shows
     "Not enough space" above the ultimate slot ([13](13-game-interface.md) §10).
     `BodySizeSystem`'s rule stays as the safety net for a body that grows in another way (a wall
     placed later in the tick of the cast, a later size status).
-- **Shield Wall (`feat/sentinel-wall`, 2026-11-23; DEC-330 (7), DEC-307, reading R4).** Shield
+- **Shield Wall (`feat/sentinel-wall`, 2026-11-23; DEC-330 (7), DEC-307, DEC-382 (R4 A)).** Shield
   Wall is the Sentinel's `ability-3` (`content/abilities/shieldWall.ts`): `directional`, with one
   `summon` step that places the `shield-wall-barrier` obstacle (`content/obstacles/`). Where the
   code differs from §3:

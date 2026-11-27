@@ -31,7 +31,7 @@ describe('loadKnockback', () => {
 
   it('rejects an impact damage that is negative or not a number', () => {
     expect(() => loadKnockback(30, { ...KNOCKBACK, impactDamage: -1 })).toThrow(
-      'Invalid knock-back: impactDamage is -1',
+      'Invalid knock-back: impactDamage is -1 hp',
     );
     expect(() => loadKnockback(30, { ...KNOCKBACK, impactDamage: Number.NaN })).toThrow(
       ContentValidationError,

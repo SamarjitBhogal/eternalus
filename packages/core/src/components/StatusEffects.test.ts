@@ -97,6 +97,18 @@ describe('StatusEffects', () => {
     expect(statuses.multiplier('moveSpeed')).toBeCloseTo(1.1);
   });
 
+  it('gives a stat with one more instance of a status by the same fold, and changes nothing', () => {
+    const statuses = new StatusEffects();
+    const veteran = LOADED.get('veteran'); // +0.1 damage dealt per stack, additive (DEC-164)
+    statuses.apply(veteran, 'a', 0);
+
+    expect(statuses.multiplierWith('damageDealt', veteran)).toBeCloseTo(1.2); // adds sum
+    expect(statuses.multiplierWith('damageDealt', ENRAGED)).toBeCloseTo(1.1 * 1.15);
+    expect(statuses.multiplierWith('moveSpeed', veteran)).toBe(1);
+    expect(statuses.multiplier('damageDealt')).toBeCloseTo(1.1);
+    expect(statuses.active).toHaveLength(1);
+  });
+
   it('never reaches 0 by stacking slows', () => {
     const statuses = new StatusEffects();
     statuses.apply(LOADED.get('concussion'), 'a', 0);

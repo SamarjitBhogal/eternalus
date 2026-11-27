@@ -1,6 +1,5 @@
 import { TickRate } from '../../utils/TickRate';
 import { assertNonNegativeFinite } from '../assertNonNegativeFinite';
-import { ContentValidationError } from '../ContentValidationError';
 import type { AuthoredKnockback, KnockbackDefinition } from './knockback';
 import { KNOCKBACK } from './knockback';
 
@@ -19,10 +18,6 @@ export const loadKnockback = (
 ): KnockbackDefinition => {
   const { travelSeconds, ...rest } = authored;
   assertNonNegativeFinite('knock-back', [['travelSeconds', travelSeconds]]);
-  if (!(Number.isFinite(rest.impactDamage) && rest.impactDamage >= 0)) {
-    throw new ContentValidationError(
-      `Invalid knock-back: impactDamage is ${String(rest.impactDamage)}`,
-    );
-  }
+  assertNonNegativeFinite('knock-back', [['impactDamage', rest.impactDamage]], 'hp');
   return { ...rest, travelTicks: new TickRate(tickRate).toTicks(travelSeconds) };
 };

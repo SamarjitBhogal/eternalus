@@ -10,7 +10,7 @@ import type { Vec2 } from '../../utils/geometry.types';
 import { abilityMatch, type ScenarioSpawn } from '../__fixtures__/abilityMatch';
 
 /**
- * Shield Wall (DEC-330 (7), reading R4, balancing.md:188): a 4 m by 1 m wall, square to the aim,
+ * Shield Wall (DEC-330 (7), DEC-382 (R4 A), balancing.md:188): a 4 m by 1 m wall, square to the aim,
  * its middle 3 m in front of the Sentinel's centre, with 800 health. It blocks walking and shots
  * for both teams and any attack damages it. A Sentinel keeps at most 2: a 3rd removes the oldest,
  * and a destroyed one frees its place. It stays when the Sentinel is gone. 40 aether, 18 s.

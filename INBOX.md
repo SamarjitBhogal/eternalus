@@ -742,6 +742,46 @@ Reply inline (`Decision: …`).
     (`content/abilities/knockback.ts`, `TUNE`). (7) build it in PR 6 now, red where the wall
     cannot stand: built (HC-S15). (8) the check keeps its own rule. (9) the list forgets a broken
     wall: it falls out of (3).
+- [ ] **HC-B62 — Better than the design, not built, sign-off asked: five follow-ups from the
+      PR 6 gate on your answers (lane B PR 6, #175, gate v98 round 1, 2026-11-27;
+      COMBAT-ABILITIES-LANE-2-31, -32).** Only (3) changes what the player sees, and only in a rare
+      case. Nothing blocks the PR.
+      (1) **One place builds "this damage came from this cast".** Five ability steps write the
+      same three fields (who cast it, that it is an ability, which ability) when they deal
+      damage. One helper would hold them, so a new field (an item, a level) changes one place.
+      Three of the five steps are outside PR 6, so this is a follow-up PR after the stack lands.
+      Code: `{ attackerId, kind: 'ability', definitionId }` in `DamageEffect`, `ExecuteEffect`,
+      `ProjectileEffect`, `KnockbackEffect`, `SummonEffect`.
+      (2) **The aim overlay keeps one copy of the Shield Wall outline.** Each step of the aim
+      overlay carries the outline core placed, and the overlay copies it into the frame it gives
+      the painter. Passing the step to the painter removes the copy. Then the one check of the
+      shape's kind in the aim code (`shape?.kind === 'outline'` in
+      `apps/client/src/game/AimTargeting.ts`) can move to the painter of that kind too. It changes
+      what every aim painter receives, so it is a follow-up PR. Code: `AimStep.placed`,
+      `AimFrame.placed` (`apps/client/src/game/views/AimOverlayView.types.ts`).
+      (3) **A minion that is still walking out of the building it spawned in takes no push
+      damage.** Walls do not stop such a minion yet (DEC-363). Today a knock-back toward a wall
+      still deals it the 40 impact damage, although the wall does not stop it. The fix is one
+      check in `KnockbackEffect`. It needs one more import for ability code
+      (`entities/isCollisionMover`, beside the `entities/unitFamilies` import it has), so the
+      import table in 02 §2 and `packages/core/AGENTS.md` gets one line. This is rare, and the
+      player sees it only as a missing 40 damage.
+      (4) **One test stand-in for the collision rule.** Seven tests write their own stand-in for
+      `CollisionQuery`, so each new method of it changes all seven. One `FakeCollisionQuery` class
+      beside the port (02 §8) would hold them. Test code only.
+      (5) **Named options in place of trailing optional parameters.** `Movement.advance` and
+      `StatusEffects.apply` take trailing optional numbers, and some callers pass `undefined` to
+      reach the last one. An options object (`{ durationTicks, steering }`) reads better and
+      stays stable when the next field comes.
+      Built in PR 6 from the same review, under the standing rule to build the better design now
+      (DEC-223, DEC-232); the player sees no change, sign-off asked: (a) the Berserk room check
+      asks `Transform.radiusAt` for the grown radius, so it no longer recomputes the built radius
+      from the size now. (b) The Berserk room check gets the grown size from the one status rule
+      (`StatusEffects.multiplierWith`), not from its own copy. The copy gave a wrong size when
+      two statuses both add to the size; no status does that today.
+      Options: (A) all five as follow-up PRs after the stack lands, and keep (a) and (b)
+      (recommended); (B) only some (name them in the note); (C) none, keep (a) and (b);
+      (D) other (note).
 - [ ] **HC-S14 — Scheduled: the map-object overlap check does not see placed walls (lane B PR 6,
       `feat/sentinel-kit`, critic N8, 2026-11-23).** Nothing to answer now.
       `NoMapObjectOverlapInvariant` checks that no unit stands inside a map object. It does not

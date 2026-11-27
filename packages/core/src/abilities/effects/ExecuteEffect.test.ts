@@ -85,7 +85,7 @@ describe('ExecuteEffect', () => {
     expect([hits, deaths]).toEqual([[], []]);
   });
 
-  it('kills only units when its spec says so: an enemy tower at or below the threshold is spared (reading, owner card PR6 R6)', () => {
+  it('kills only units when its spec says so: an enemy tower at or below the threshold is spared (DEC-382 (R6 A))', () => {
     const { state, caster, towerHealth, hits } = withTower();
 
     castSteps(state, caster.id, [{ ...EXECUTE, families: 'units' }]);
