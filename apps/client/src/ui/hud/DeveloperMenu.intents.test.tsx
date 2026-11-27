@@ -196,4 +196,25 @@ describe('DeveloperMenu buttons', () => {
       { kind: 'dev-command', command: { type: 'dev-remove-legend', entityId: 'entity-7' } },
     ]);
   });
+
+  it('Set phase sends exactly one dev-set-boss-phase with the typed id and the picked phase, and nothing without an id (DEC-417)', () => {
+    const { container, intents, stop } = mount();
+    click(container, 'Set phase');
+    expect(intents).toEqual([]);
+    type(container, 'Boss id', ' entity-9 ');
+    click(container, 'Set phase');
+    pick(container, 'Phase', 'healthy');
+    click(container, 'Set phase');
+    stop();
+    expect(intents).toEqual([
+      {
+        kind: 'dev-command',
+        command: { type: 'dev-set-boss-phase', entityId: 'entity-9', phase: 'hurt' },
+      },
+      {
+        kind: 'dev-command',
+        command: { type: 'dev-set-boss-phase', entityId: 'entity-9', phase: 'healthy' },
+      },
+    ]);
+  });
 });

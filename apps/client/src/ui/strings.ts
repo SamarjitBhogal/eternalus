@@ -1,5 +1,6 @@
 import type { InputAction } from '../bridge/Binding.types';
 import type { DetailSlot, RoleRatingAxis } from '../bridge/catalogue.types';
+import type { DevCommand } from '../bridge/developerMenu.types';
 import type { MatchVerdict } from '../bridge/domain.types';
 import type { MenuRoute, SessionPhase, SessionReason } from '../bridge/events';
 import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
@@ -223,6 +224,15 @@ export const STRINGS = {
     removeEntity: 'Remove entity',
     entityId: 'Entity id',
     remove: 'Remove',
+    bossPhase: 'Boss phase',
+    bossId: 'Boss id',
+    phase: 'Phase',
+    setPhase: 'Set phase',
+    /** The phases `dev-set-boss-phase` takes (DEC-417); the first is the picker's start. */
+    bossPhases: { hurt: 'Hurt', healthy: 'Healthy' } satisfies Record<
+      Extract<DevCommand, { readonly type: 'dev-set-boss-phase' }>['phase'],
+      string
+    >,
   },
   pause: { title: 'Paused', resume: 'Resume', settings: 'Settings', leave: 'Leave match' },
   /** The match viewport; the explorer labels show only with the developer flag (13 §4, DEC-32). */
