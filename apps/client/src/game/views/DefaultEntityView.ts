@@ -20,7 +20,10 @@ export class DefaultEntityView implements EntityView {
   protected readonly minimapGlyph: GlyphSpec | null = null;
 
   /** Draws the team-coloured disc, and the focus ring when focused. */
-  public draw({ entity, position, isFocused }: EntityDrawState, renderer: Renderer): void {
+  public draw(
+    { entity, position, isFocused }: EntityDrawState,
+    renderer: Renderer,
+  ): number | undefined {
     const diameter = (entity.transform?.radius ?? 0) * 2;
     renderer.drawWorldGlyph({ shape: 'dot', size: diameter }, position, this.colorOf(entity.team));
     if (isFocused) {
@@ -30,6 +33,7 @@ export class DefaultEntityView implements EntityView {
         FOCUS_RING_COLOR,
       );
     }
+    return undefined;
   }
 
   /**
