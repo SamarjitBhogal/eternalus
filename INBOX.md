@@ -3846,6 +3846,12 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Done
 
+- 2026-11-27 — **Your answer on HC-Q117: Avalanche at a wall (DEC-404)** (`feat/class-passives`):
+  "A: Avalanche breaks the wall segment or gate at once and goes through. The Sentinel loses no
+  health". During Avalanche, a hit on a breakable wall segment or gate breaks it at once, and the
+  Sentinel goes through. That hit costs the Sentinel no health. Outside Avalanche, the DEC-367 rules
+  apply. Not built yet: Avalanche comes with the Sentinel ultimates. Decision: DEC-404.
+
 - 2026-11-21 — **Your pick on HC-B17, a browser-support line** (`refactor/countdown-hud-units`):
   recorded as DEC-316. Architecture 13 §7 "Styling" now says, in your words: browser support is a
   baseline, plus newer CSS behind `@supports` with a fallback, as DEC-312 does. You named no
