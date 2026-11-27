@@ -1,12 +1,13 @@
 import { ContentCatalogue } from '../ContentCatalogue';
-import { HEAVY_TARGET_KINDS, WALL_TURRET } from '../ai/turret';
+import { HEAVY_TARGET_KINDS, LANE_TOWER, WALL_TURRET } from '../ai/turret';
 import type { AuthoredTurretAmmo } from './turrets.types';
 
 /**
  * The turret ammo table (architecture 07 §5; balancing.md "Turrets — MVP", which names this file):
- * one entry per ammo, so changing an ammo is one entry. Both are physical; an attack carries no
- * damage type yet. Each reach is the wall turret's range, so its attack reaches every target it
- * takes.
+ * one entry per ammo, so changing an ammo is one entry: the wall turret's two bolts and the lane
+ * tower's orb (DEC-342). Every ammo is physical; an attack carries no damage type yet. Each reach
+ * is the range of the profile of the turrets that carry it (the wall turret's for the bolts, the
+ * lane tower's for the orb), so its attack reaches every target it takes (`loadTurrets` checks it).
  */
 export const TURRET_AMMO = new ContentCatalogue<AuthoredTurretAmmo>([
   {
@@ -36,5 +37,24 @@ export const TURRET_AMMO = new ContentCatalogue<AuthoredTurretAmmo>([
       ],
     },
     preferredAgainst: HEAVY_TARGET_KINDS,
+  },
+  {
+    id: 'tower-orb',
+    displayName: 'Tower Orb',
+    attack: {
+      strategy: 'ranged-projectile',
+      damage: 120, // DEC-366 (card "ORB damage")
+      reach: LANE_TOWER.range, // a lane tower's reach is its range, as the wall turret's
+      interval: 2, // DEC-366 (card "ORB damage"); seconds
+      projectile: {
+        projectileId: 'tower-orb',
+        falloff: null,
+        // DEC-366 (card "ORB splash")
+        splash: { radius: 3, edgeMultiplier: 0.5 },
+      },
+    },
+    // The tower's one ammo fits every target (`loadTurrets`). It does not order targets: the
+    // lane-tower profile's `priority` does (DEC-366, card "ORB targets").
+    preferredAgainst: 'any',
   },
 ]);

@@ -14,6 +14,7 @@ export const KNIGHT = {
   roleLabel: null,
   description: null,
   roleRatings: null,
+  primaryWeaponId: 'dual-blades', // DEC-387 (W2); DEC-57
   detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
   kit: null, // the class default kit; no Legend has its own yet
 } as const satisfies LegendSpecDefinition;

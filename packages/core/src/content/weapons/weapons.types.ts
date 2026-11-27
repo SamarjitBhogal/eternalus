@@ -1,8 +1,8 @@
 import type { LegendKind } from '../legends/legends.types';
 import type { AuthoredUnitAttack, UnitAttack } from '../units/units.types';
 
-/** The weapon classes of reference 07 (architecture 05 §10). */
-type WeaponClass = 'glove' | 'bow' | 'sword' | 'spear' | 'battle-axe' | 'staff';
+/** The weapon classes of reference 07 (architecture 05 §10), and `shield` (DEC-407). */
+type WeaponClass = 'glove' | 'bow' | 'sword' | 'spear' | 'battle-axe' | 'staff' | 'shield';
 
 /** The fields of a weapon that are the same as authored and as loaded. */
 type WeaponBase = {

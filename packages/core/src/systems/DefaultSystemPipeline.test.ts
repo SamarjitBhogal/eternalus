@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { loadTurrets } from '../content/structures/loadTurrets';
 import { loadAbilities } from '../content/abilities/loadAbilities';
 import { CastValidator } from '../abilities/CastValidator';
 import { createDefaultAbilityRegistry } from '../abilities/defaultAbilityRegistry';
@@ -426,6 +427,8 @@ describe('DefaultSystemPipeline', () => {
       },
       undefined,
       loadWeapons(createDefaultGameConfig().tickRate),
+      null,
+      loadTurrets(30).ammo,
     );
     const pipeline = new DefaultSystemPipeline({
       invariants: new DefaultInvariantRunner({

@@ -8,6 +8,8 @@ import type { MapObject } from '../content/maps/mapObjects.types';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import type { Vec2 } from '../utils/geometry.types';
+import { BLOCKING_CELL_SIZE } from './WorldObjectStore.constants';
+import type { WorldObjectRecord } from './WorldObjectStore.types';
 
 /** A factory over every map-object definition, as the match builds it. */
 const fixtureFactory = (): EntityFactory => {
@@ -212,6 +214,73 @@ describe('WorldObjectStore', () => {
     expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBeNull();
   });
 
+  it("makes every body object of one structure share its health, keeps them out of a building's contents, and leaves each one a ruin once the structure is gone (DEC-386 (1))", () => {
+    const factory = fixtureFactory();
+    const entities = new EntityStore();
+    const stronghold = factory.create('obstacle', MAP_OBJECT_DEFINITIONS.rock.id, {
+      position: { x: 5, y: 5 },
+    });
+    entities.add(stronghold);
+    const square = (x: number): MapObject['footprints'] => [
+      [
+        { x, y: 0 },
+        { x: x + 2, y: 0 },
+        { x: x + 2, y: 2 },
+        { x, y: 2 },
+      ],
+    ];
+    const piece = (id: string, x: number, kind: MapObject['kind']): MapObject => ({
+      id,
+      kind,
+      isBlocking: true,
+      footprints: square(x),
+      buildingId: 'palace',
+    });
+    const world = new WorldObjectStore({
+      objects: [
+        piece('outer-wall', 0, 'wall'),
+        piece('throne', 10, 'furniture'),
+        piece('room-wall', 20, 'wall'),
+      ],
+      factory,
+      entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+      owners: new Map([
+        ['outer-wall', stronghold.id],
+        ['throne', stronghold.id],
+      ]),
+    });
+    const roomWall = world.snapshot()[2]?.entityId;
+
+    // One entity of its own: the room wall. The wall and the throne are the Stronghold's pool.
+    expect(entities.size).toBe(2);
+    stronghold.getComponent(Health).applyDamage(30);
+    expect(world.snapshot().slice(0, 2)).toEqual([
+      {
+        id: 'outer-wall',
+        entityId: stronghold.id,
+        health: { current: 70, max: 100 },
+        condition: 'standing',
+      },
+      {
+        id: 'throne',
+        entityId: stronghold.id,
+        health: { current: 70, max: 100 },
+        condition: 'standing',
+      },
+    ]);
+    // A collapse of the palace breaks the room wall, not the Stronghold's body.
+    expect(world.contentsOf('palace')).toEqual([roomWall]);
+    entities.remove(stronghold.id, 'died');
+    world.removed(stronghold.id);
+    expect(world.snapshot().slice(0, 2)).toEqual([
+      { id: 'outer-wall', entityId: null, health: null, condition: 'ruin' },
+      { id: 'throne', entityId: null, health: null, condition: 'ruin' },
+    ]);
+    expect(world.blockingAt({ x: 1, y: 1 }, 0.5)).toBe('outer-wall');
+    expect(world.blockingAt({ x: 11, y: 1 }, 0.5)).toBe('throne');
+  });
+
   it('skips an object whose footprint box misses the circle, without testing its shape', () => {
     let reads = 0;
     const corner = (x: number, y: number): Vec2 => ({
@@ -244,5 +313,68 @@ describe('WorldObjectStore', () => {
     reads = 0;
     expect(world.blockingAt({ x: 50, y: 50 }, 1)).toBeNull();
     expect(reads).toBe(0);
+  });
+
+  describe('its search grid', () => {
+    const square = (id: string, x: number, y: number, side: number): MapObject => ({
+      id,
+      kind: 'terrain',
+      isBlocking: true,
+      footprints: [
+        [
+          { x, y },
+          { x: x + side, y },
+          { x: x + side, y: y + side },
+          { x, y: y + side },
+        ],
+      ],
+    });
+    const worldOf = (...objects: MapObject[]) =>
+      new WorldObjectStore({
+        objects,
+        factory: fixtureFactory(),
+        entities: new EntityStore(),
+        definitions: MAP_OBJECT_DEFINITIONS,
+      });
+    const edge = BLOCKING_CELL_SIZE;
+
+    it('returns the earliest-placed blocker, though a later one is in a cell it reads first', () => {
+      // The circle crosses the line between two cells. The later object is in the first cell.
+      const world = worldOf(square('earlier', edge, 0, 8), square('later', edge - 8, 0, 7.5));
+
+      expect(world.blockingAt({ x: edge - 0.2, y: 4 }, 1)).toBe('earlier');
+    });
+
+    it('finds an object from every cell its box touches, at negative coordinates too', () => {
+      const world = worldOf(square('wide', -3 * edge, -3 * edge, 6 * edge));
+
+      expect(world.blockingAt({ x: -2.5 * edge, y: -2.5 * edge }, 0.5)).toBe('wide');
+      expect(world.blockingAt({ x: 2.5 * edge, y: 2.5 * edge }, 0.5)).toBe('wide');
+      expect(world.blockingAt({ x: 4 * edge, y: 0 }, 0.5)).toBeNull();
+    });
+
+    it('checks every record for a circle wider than the grid or at a broken position', () => {
+      const world = worldOf(square('rock', 0, 0, 4));
+
+      expect(world.blockingAt({ x: 2, y: 2 }, 1e9)).toBe('rock');
+      expect(world.blockingAt({ x: Number.NaN, y: 2 }, 1)).toBeNull();
+      expect(world.blockingAt({ x: Number.POSITIVE_INFINITY, y: 2 }, 1)).toBeNull();
+      expect(world.blockingAt({ x: 2, y: 2 }, Number.POSITIVE_INFINITY)).toBe('rock');
+    });
+
+    it('indexes records again when the record count changes', () => {
+      const world = worldOf(square('rock', 0, 0, 4));
+      expect(world.blockingAt({ x: 2, y: 2 }, 1)).toBe('rock');
+      // A path that adds a record after the first search (such as `WorldObjectStore.add` for
+      // ability walls, PR #134) is covered.
+      (world as unknown as { records: WorldObjectRecord[] }).records.push({
+        object: square('late', 3 * edge, 0, 4),
+        entityId: null,
+        health: null,
+        bounds: { x: 3 * edge, y: 0, width: 4, height: 4 },
+      });
+
+      expect(world.blockingAt({ x: 3 * edge + 2, y: 2 }, 1)).toBe('late');
+    });
   });
 });

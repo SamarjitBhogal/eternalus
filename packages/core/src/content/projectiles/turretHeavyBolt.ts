@@ -1,9 +1,9 @@
-import type { ProjectileDefinition } from './projectiles.types';
+import type { AuthoredProjectile } from './projectiles.types';
 
 /**
  * A wall turret's heavy bolt (architecture 07 §5, DEC-302): a slower shot at one target, no
- * splash. It flies straight until it hits something, or fizzles out at its range like the Magus
- * bolt.
+ * splash. It is an arc shot (DEC-341 (4), DEC-342): it flies over walls and bodies to its aim
+ * point, lands there and lodges in the ground.
  *
  * TUNE: `acceleration` and `mass` are not tuning: `MovementProfile` requires them, the loader
  * overwrites the first and flight ignores the second.
@@ -19,10 +19,12 @@ export const TURRET_HEAVY_BOLT = {
     mass: 0.05, // Required by `MovementProfile`; flight does not read it, any positive value
   },
   // TUNE: no reference value. A bolt starts at the turret's centre, so it covers the 8 m pylon, the
-  // 14 m range and the lead on a Sentinel at full speed (about 33 m). DEC-341 (HC-Q93): a bolt
-  // arcs down onto its aim point and lodges there; the tower-orb PR (Owner Calls "WT orb page",
-  // DEC-341 (4)) builds that model.
+  // 14 m range and the lead on the fastest Legend running away at top speed (pinned in
+  // `TurretController.test.ts`). DEC-341 (HC-Q93): a bolt arcs down onto its aim point and lodges
+  // there (`isArc`, DEC-341 (4)); its range is the cap, and the shot flies only as far as its aim
+  // point.
   range: 35,
-  slowFrom: 35, // equal to range: a bolt flies at full speed until it fizzles
+  slowFrom: 35, // equal to range: a bolt flies at full speed until it lands at its aim point
+  isArc: true,
   endDuration: 0.4, // TUNE: no reference value; seconds, as the Magus bolt's mist
-} as const satisfies ProjectileDefinition;
+} as const satisfies AuthoredProjectile;

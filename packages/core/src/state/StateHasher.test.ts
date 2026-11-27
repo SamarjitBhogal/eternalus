@@ -336,6 +336,98 @@ describe('StateHasher', () => {
     expect(later).not.toBe(ending);
   });
 
+  it("changes with a shot's range and where it slows, which an arc shot cuts to its aim point (DEC-342)", () => {
+    const hashWith = (range: number, slowFrom: number, shortenTo?: number): number => {
+      const { state, soldier } = stateWithSoldier();
+      soldier.addComponent(
+        new ProjectilePayload({
+          ownerId: 'a',
+          team: 'light',
+          ownerLevel: 1,
+          source: { attackerId: 'a', kind: 'weapon', definitionId: 'magus-staff' },
+          targetId: null,
+          impact: { kind: 'weapon', attack: SHOT_ATTACK },
+          origin: { x: 1, y: 0 },
+        }),
+      );
+      const flight = new ProjectileFlight(range, slowFrom, 5, true);
+      if (shortenTo !== undefined) flight.shortenTo(shortenTo);
+      soldier.addComponent(flight);
+      return hasher.hash(state);
+    };
+    const base = hashWith(100, 80);
+
+    expect(hashWith(100, 80)).toBe(base);
+    expect(hashWith(100, 60)).not.toBe(base);
+    expect(hashWith(100, 80, 90)).not.toBe(base);
+    // Cut below where it slows, both change: the same as a shot authored that way.
+    expect(hashWith(100, 80, 50)).toBe(hashWith(50, 50));
+  });
+
+  it('hashes an unlit shot as before shots could catch fire: only a lit shot adds a field (HC-Q89, DEC-345)', () => {
+    const { state, soldier } = stateWithSoldier();
+    soldier.addComponent(
+      new ProjectilePayload({
+        ownerId: 'a',
+        team: 'light',
+        ownerLevel: 1,
+        source: { attackerId: 'a', kind: 'weapon', definitionId: 'bow' },
+        targetId: null,
+        impact: { kind: 'weapon', attack: SHOT_ATTACK },
+        origin: { x: 1, y: 0 },
+      }),
+    );
+    soldier.addComponent(
+      new ProjectileFlight(100, 80, 5, false, [
+        { kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } },
+      ]),
+    );
+    // The soldier's fields, then the shot's as `StateHasher` hashed them before DEC-345.
+    const legacy = [
+      state.tick,
+      state.match.phase,
+      state.rng.getState(),
+      [
+        [
+          soldier.id,
+          soldier.kind,
+          soldier.definitionId,
+          'light',
+          [3, 4, 0.5],
+          [100, 100],
+          [0, 0, 0],
+          ['projectile', 'a', null, 'weapon', 'bow', 1, 0, -1, 100, 80],
+        ],
+      ],
+    ];
+
+    expect(hasher.hash(state)).toBe(fnv1a(JSON.stringify(legacy)));
+  });
+
+  it('changes when a shot catches fire (HC-Q89, DEC-345)', () => {
+    const { state, soldier } = stateWithSoldier();
+    soldier.addComponent(
+      new ProjectilePayload({
+        ownerId: 'a',
+        team: 'light',
+        ownerLevel: 1,
+        source: { attackerId: 'a', kind: 'weapon', definitionId: 'obsidian-bow' },
+        targetId: null,
+        impact: { kind: 'weapon', attack: SHOT_ATTACK },
+        origin: { x: 1, y: 0 },
+      }),
+    );
+    const flight = new ProjectileFlight(100, 80, 5, false, [
+      { kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } },
+    ]);
+    soldier.addComponent(flight);
+    const unlit = hasher.hash(state);
+
+    flight.light();
+
+    expect(hasher.hash(state)).not.toBe(unlit);
+  });
+
   it('adds a speed limit only once one is set, so an entity without one hashes as before', () => {
     const { state, soldier } = stateWithSoldier();
     const movement = soldier.getComponent(Movement);

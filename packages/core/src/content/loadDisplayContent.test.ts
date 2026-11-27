@@ -88,6 +88,7 @@ describe('loadDisplayContent', () => {
       'arrow',
       'turret-bolt',
       'turret-heavy-bolt',
+      'tower-orb',
     ]);
   });
 

@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -180,7 +180,9 @@ export type TurretState = {
 ```
 
 The turret's `StructureDefinition` names its ammo (best first) and its controller and AI profile
-(DEC-335); `switch-ammo` is a command, so the loaded ammo is hashed state.
+(DEC-335); `switch-ammo` is a command, so the loaded ammo is hashed state. The two lane towers
+(spawner and buff) shoot through the same path: their definitions name the same controller, a
+`lane-tower` profile and the `tower-orb` ammo (DEC-302, DEC-342; §13).
 
 `TurretController` (in `ai/`) drives auto mode: acquire the first enemy in range, keep it while
 alive and in range, prefer by a data priority list, switch ammo to the first
@@ -488,10 +490,11 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   ammo table of §5 is `content/structures/turretAmmo.ts` (`bolt-default`, `bolt-heavy`): each
   ammo is a `RangedAttack` plus `onHit` steps (the heavy bolt's concussion), with
   `preferredAgainst` for the ammo choice; `loadTurrets` converts its times to ticks and validates
-  it. Its projectiles are `turret-bolt` and `turret-heavy-bolt`. Their 35 m range is `TUNE` with
-  no reference value (a bolt starts at the turret's centre, so it covers the pylon, the turret's
-  range and the lead) until the arc shot of DEC-341 (HC-Q93) replaces the straight flight in the
-  tower-orb PR (Owner Calls "WT orb page", DEC-341 (4)).
+  it. Its projectiles are `turret-bolt` and `turret-heavy-bolt`. They are arc shots (05 §10,
+  DEC-341 (4), built in the tower-orb PR, DEC-342): a bolt flies over walls and bodies to its aim
+  point, lands there and lodges. Its `range` in `content/projectiles/` is only a cap (`TUNE`, no
+  reference value: a bolt starts at the turret's centre, so it covers the pylon, the turret's
+  range and the lead).
   `TurretController` picks the target
   and the ammo and computes the aim point (11 §4.5, §10). Part 2 (next item) builds the shot.
 - **Wall turrets, part 2 (`feat/wall-turrets`, 2026-11-22; §5, DEC-334).** Turrets fire. The
@@ -509,9 +512,17 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   turret as the killer (`definitionId` `turret`). The turret has no score row, no `Progression`
   and no ultimate meter, so the kill gives no kill points, no XP and no ultimate charge to anyone;
   Legends that hit the victim in the assist window still get their assists. `StateHasher` hashes
-  the loaded ammo. Not built: the arc shot of DEC-341 (HC-Q93; the tower-orb PR, Owner Calls
-  "WT orb page", DEC-341 (4), builds it; until then bolts fly their 35 m range), the `turret-control-changed` and `turret-fired` events, manual control
-  and tower orbs.
+  the loaded ammo. Not built: the `turret-control-changed` and `turret-fired` events, and manual
+  control.
+- **Tower orbs (`feat/tower-orbs`, 2026-11-23; §5, DEC-302, DEC-342).** The two lane towers (the
+  spawner tower and the buff tower) shoot orbs from their gem. They use the same `Structure` ammo
+  path as the wall turret: the definition names `controller: 'turret'`, an `aiProfile` and its
+  ammo, and `Structure` installs the `TurretState` and `Combat` for any definition with ammo (no
+  copy in `Turret`). The profile is `lane-tower` (`content/ai/turret.ts`, 11 §4.5) and the ammo is
+  `tower-orb` (`content/structures/turretAmmo.ts`): an arc shot with a splash (05 §10), so a fort
+  wall or a body in the way does not stop it. A tower's health, aura, waves and ruins do not
+  change. The orb numbers (range, damage, interval, blast, flight, target order) are the owner's
+  answers (DEC-366). The footprint, the lead margin and the burst time stay `TUNE`.
 
 **2026-10-27 (PR #30, map objects).** Generated map objects currently reuse the `Obstacle`
 entity with a `MapObjectBody` component while the full structure family remains planned.
@@ -563,6 +574,59 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   does not follow the owner yet (the minimap entity markers, SCRUM-151).
 - The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
   capture tracker); this PR publishes the presence and draws the split bar in the world.
+
+**Implementation status, 2026-11-23 (branch `feat/shots-over-lava`, DEC-345).** The launch-shape
+rule and the shapes that shots cross share one predicate, `doesShapeStopShot` (`utils/geometry.ts`,
+10 §7): a blocking shape does not stop a shot when shots can cross it (`canShotsCross`: a lake, a
+lava river) or when its blocking area holds the shot's launch point (DEC-334). The collision sweep
+(`CollisionResolver.shotReach`) and `WorldObjectStore.blockingAt` both use it, so
+`NoMapObjectOverlapInvariant` does not flag a shot over a lake or a lava river, and still flags a
+unit in one.
+
+**2026-11-26 (branch `feat/shots-over-lava`; HC-Q105, DEC-386 correction, HC-Q115).** `Outline`
+now has `canShotsFlyOver` (a walk-on outline, or a map object flagged `canShotsCross`).
+`StructureDefinition.canShotsFlyOver` reaches the structure's `Collider`, so a shot not aimed at the
+structure flies over its body. The forest camps set it. It has no effect on a structure with a map
+footprint, because the outline rule comes first. The rule is in 10 §7.
+
+**Implementation status, 2026-11-26 (branch `feat/palace-stronghold-pool`, DEC-386 (1)).** The
+Stronghold's outer wall ring and its throne are the Stronghold's body, as a lane tower's fort is
+the tower's body (one pool, DEC-185 (B)). This changes the 2026-11-05 note above ("only towers
+share one pool with their fort", DEC-217 (13)) for these objects only. The palace's inner ring,
+its room walls, its floor, its other furniture and the gates keep their own health. A map object
+names the structure it is part of with `MapObject.partOf`, which `MapPalaceWallsBuilder` and
+`MapBuildingInteriorBuilder` set. `Simulation.spawnStructures` adds the footprints of the blocking
+`partOf` objects to the structure's `Footprint` as solid polygons, and names them in the owners
+of `WorldObjectStore`, so they get no entity and no health of their own. An `Outline` now has the
+polygon lists `walkOn` and `solid` in place of `isWalkOn` (the 2026-11-20 note above), so one
+outline holds the walk-on palace floor and the solid outer walls and throne. Rule 1 of
+`AreaHitQuery` aims only by the walk-on polygons, and every hit that touches a solid polygon hits
+the body. `AreaHitQuery.shotPolygonsOf` gives the polygons that stop a shot, for
+`ProjectileSystem` and `LineOfFire`. A structure can own many body records in `WorldObjectStore`:
+`removed` leaves each one a ruin that blocks (DEC-341), and `contentsOf` skips a structure's body,
+so the collapse of the palace map object does not kill the Stronghold. The Stronghold's fort box
+(DEC-217 (16)) is now the box round its outer ring.
+
+**Implementation status, 2026-11-26, critic round 1 (branch `feat/palace-stronghold-pool`,
+DEC-386 (1) correction).** Three changes to the note above. (1) After the Stronghold falls, the
+match goes on (ADR 0021, DEC-71), so its outer walls and throne stay as ruins that block and never
+break for the rest of the match. No owner answer covers this: `INBOX.md` HC-Q122 asks it, and this
+is the interim until he answers. 2026-11-27: he answered with the fort rule (DEC-408); it comes
+with the merge where PR #98 (`StructureRuins`) meets this branch, and this interim stays until
+then. (2) The palace floor is not part of the Stronghold (DEC-344 (4)):
+the Stronghold's definition has no `hasMapFootprint`, and its `Footprint` is its outer walls and
+throne only, all solid (`Footprint.ofBody`, `map/structureBodyParts`). So a hit on the floor never
+takes the Stronghold's health, and a locked attack on the Stronghold lands on an outer wall or the
+throne. From outside, an aim at the floor hits the palace map object. Its fort box is still the box
+round the outer ring. (3) The client draws a body object by its own state, not by its building's:
+a standing outer wall keeps its art and its health bar after the palace map object falls, and a
+ruined one keeps its ruins (`SceneryView`, `WorldObjectsView`).
+
+**2026-11-26, merge of `feat/shots-over-lava` into `feat/palace-stronghold-pool` (Q104-9).** The
+shots-over-lava note above names `Outline.canShotsFlyOver`. The merge replaces it with the
+polygon list `Outline.shotsCross`, so the Stronghold's outer walls and throne still stop every
+shot not aimed at it. `StructureDefinition.canShotsFlyOver` and `Collider.canShotsFlyOver` stay
+as that note says. The rule is in the 10 §12 note of the same merge.
 
 ## Related
 

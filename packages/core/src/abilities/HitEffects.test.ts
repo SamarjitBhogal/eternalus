@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { Movement } from '../components/Movement';
+import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
+import type { AbilityEffectSpec } from '../content/abilities/AbilityDefinition.types';
 import { loadAbilities } from '../content/abilities/loadAbilities';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { loadTurrets } from '../content/structures/loadTurrets';
@@ -206,5 +208,43 @@ describe('HitEffects', () => {
     hits.afterHit(state, caster.id, struck.id, HEAVY_BOLT, SHOOTER);
 
     expect(applied).toEqual([]);
+  });
+
+  describe('runSteps (a lit arrow, HC-Q89, DEC-345)', () => {
+    const BURN: readonly AbilityEffectSpec[] = [
+      { kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } },
+    ];
+
+    it("runs the given steps on the struck body only, credited to the attacker, and not the attacker's statuses' steps", () => {
+      const { state, caster, struck, neighbour, applied, hits } = setUp('fury');
+
+      hits.runSteps(state, caster.id, struck.id, 'bow', BURN);
+
+      expect(applied).toEqual([{ entityId: struck.id, statusId: 'burn', sourceId: caster.id }]);
+      expect(neighbour.getComponent(StatusEffects).active).toEqual([]);
+      expect(pushOf(struck)).toEqual({ x: 0, y: 0 });
+    });
+
+    it('runs the steps from the shooter when the owner is gone, and nothing without one', () => {
+      const { state, caster, struck, applied, hits } = setUp('rallied');
+      state.entities.remove(caster.id, 'died');
+      applied.length = 0;
+
+      hits.runSteps(state, caster.id, struck.id, 'bow', BURN);
+      expect(applied).toEqual([]);
+      hits.runSteps(state, caster.id, struck.id, 'bow', BURN, SHOOTER);
+
+      expect(applied).toEqual([{ entityId: struck.id, statusId: 'burn', sourceId: caster.id }]);
+    });
+
+    it('runs nothing for no steps or a struck body that is gone', () => {
+      const { state, caster, struck, applied, hits } = setUp('rallied');
+
+      hits.runSteps(state, caster.id, struck.id, 'bow', []);
+      state.entities.remove(struck.id, 'died');
+      hits.runSteps(state, caster.id, struck.id, 'bow', BURN);
+
+      expect(applied).toEqual([]);
+    });
   });
 });

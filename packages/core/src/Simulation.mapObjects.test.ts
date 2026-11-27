@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Deploying } from './components/Deploying';
 import { Footprint } from './components/Footprint';
 import { MapObjectBody } from './components/MapObjectBody';
+import { TeamMembership } from './components/TeamMembership';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DEFAULT_MAP_LAYOUT } from './content/maps/defaultMapLayout';
 import type { MapObject } from './content/maps/mapObjects.types';
@@ -191,7 +192,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
     HORDE_WALK_TIMEOUT_MS,
   );
 
-  it("gives each lane tower its fort's footprint as its Footprint, the Stronghold its palace outline, and a gate its own outline (DEC-185, D; DEC-217 (17))", () => {
+  it("gives each lane tower its fort's footprint as its Footprint, the Stronghold its outer walls and throne but not the palace floor, and a gate its own outline (DEC-185, D; DEC-217 (17); DEC-386 (1); DEC-344 (4))", () => {
     const config = createDefaultGameConfig();
     const map = new MapGenerator().generate(config, 1);
     const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
@@ -216,10 +217,24 @@ describe('Simulation with a roster and map objects (as the client builds a match
     expect(fort).toBe(12);
     expect(shapes.get('spawner-tower')).toBe(fort);
     expect(shapes.get('buff-tower')).toBe(fort);
-    expect(shapes.get('stronghold')).toBe(
-      mapObjects.find(({ kind }) => kind === 'stronghold')?.footprints.length,
+    // The outer walls and the throne (`partOf`) are the Stronghold's whole outline, all solid. The
+    // palace floor is not part of it: a hit on the floor never takes its health (DEC-344 (4)).
+    const palace = mapObjects.find(({ id }) => id === 'light-stronghold');
+    const body = mapObjects.filter(({ partOf }) => partOf === 'light-stronghold');
+    let stronghold: Footprint | undefined;
+    entities.forEach((entity) => {
+      if (entity.kind === 'stronghold' && entity.findComponent(TeamMembership)?.team === 'light') {
+        stronghold = entity.findComponent(Footprint);
+      }
+    });
+    expect(palace?.footprints.length).toBeGreaterThan(0);
+    expect(body.length).toBeGreaterThan(40);
+    expect(stronghold?.walkOn).toEqual([]);
+    expect(stronghold?.solid).toEqual(body.flatMap(({ footprints }) => footprints));
+    expect(stronghold?.polygons.some((polygon) => palace?.footprints.includes(polygon))).toBe(
+      false,
     );
-    expect(shapes.get('stronghold')).toBeGreaterThan(0);
+    expect(shapes.get('stronghold')).toBe(stronghold?.solid.length);
     expect(shapes.get('gate')).toBe(
       mapObjects.find(({ kind }) => kind === 'gate')?.footprints.length,
     );
@@ -266,7 +281,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
     expect(new ReachQuery().isInReach(entities, legend?.id ?? '', structure?.id ?? '')).toBe(true);
   });
 
-  it('puts a melee Legend at the outside of the palace wall in reach of its Stronghold, past its 40 m circle (DEC-185 D)', () => {
+  it('puts a melee Legend at the outside of an outer wall in reach of its Stronghold, past its 40 m circle (DEC-185 D, DEC-386 (1))', () => {
     const config = createDefaultGameConfig();
     const map = new MapGenerator().generate(config, 1);
     const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
@@ -280,8 +295,11 @@ describe('Simulation with a roster and map objects (as the client builds a match
     const centre = map.features.find(
       ({ kind, team }) => kind === 'stronghold' && team === 'light',
     )?.position;
-    const outline = mapObjects.find(({ id }) => id === 'light-stronghold')?.footprints[0] ?? [];
-    // The palace corner farthest from the centre, and a point 0.6 m out from it.
+    // The outer walls are the Stronghold's walls (DEC-386 (1)).
+    const outline = mapObjects
+      .filter(({ partOf }) => partOf === 'light-stronghold')
+      .flatMap(({ footprints }) => footprints.flat());
+    // The outer-wall corner farthest from the centre, and a point 0.6 m out from it.
     const gap = ({ x, y }: Vec2): number => Math.hypot(x - (centre?.x ?? 0), y - (centre?.y ?? 0));
     const corner = outline.reduce((far, point) => (gap(point) > gap(far) ? point : far));
     const out = 0.6 / gap(corner);
@@ -307,7 +325,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
     expect(new ReachQuery().isInReach(entities, legend, stronghold?.id ?? '')).toBe(true);
   });
 
-  it("puts the palace and gate map objects on their structure's team: an own-team aim at the palace floor hits nothing, an enemy aim names the Stronghold and a sweep hits both (B8, DEC-322 (1))", () => {
+  it("puts the palace and gate map objects on their structure's team: an own-team aim at the palace floor hits nothing, an enemy aim names the palace object, not the Stronghold, and a sweep that touches everything hits both (B8, DEC-322 (1), DEC-344 (4))", () => {
     const config = createDefaultGameConfig();
     const map = new MapGenerator().generate(config, 1);
     const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
@@ -365,7 +383,9 @@ describe('Simulation with a roster and map objects (as the client builds a match
     expect(entities.teamOf(palaceObject ?? '')).toBe('light');
     expect(query.aimedBodyOf(entities, legendOf('light'), floor)).toBeNull();
     expect(sweep(legendOf('light'))).toEqual([]);
-    expect(query.aimedBodyOf(entities, legendOf('dark'), floor)).toBe(stronghold);
+    // The floor is the palace object's, not the Stronghold's (DEC-344 (4)); the sweep touches the
+    // Stronghold's outer walls too.
+    expect(query.aimedBodyOf(entities, legendOf('dark'), floor)).toBe(palaceObject);
     expect(sweep(legendOf('dark')).sort()).toEqual([stronghold, palaceObject].sort());
   });
 

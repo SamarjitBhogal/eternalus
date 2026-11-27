@@ -4,6 +4,7 @@ import { WALL_TURRET } from './content/ai/turret';
 import { MapGenerator } from './map/MapGenerator';
 import { MapObjectBuilder } from './map/MapObjectBuilder';
 import { MapPresentationBuilder } from './map/MapPresentationBuilder';
+import { Collider } from './components/Collider';
 import { Health } from './components/Health';
 import { isPointInAnyPolygon, isPointInBlockingArea } from './utils/geometry';
 import { doesCircleOverlapPolygon } from './utils/circlePolygon';
@@ -19,6 +20,7 @@ import {
   setUp,
   outside,
   LIGHT_TURRET,
+  FIRING_TURRET,
   COUNTDOWN,
   spawnDark,
 } from './__fixtures__/turretMatch';
@@ -55,13 +57,10 @@ describe('Simulation wall turrets: launch shape (DEC-334)', () => {
             health,
             membership: entity.findComponent(TeamMembership),
             outline,
+            collider: entity.findComponent(Collider),
           };
           expect(
-            areas.stopsShot(
-              state.entities,
-              { ownerId: turretId, team, targetId: null },
-              body,
-            ),
+            areas.stopsShot(state.entities, { ownerId: turretId, team, targetId: null }, body),
           ).toBe(false);
         });
       }
@@ -85,7 +84,7 @@ describe('Simulation wall turrets: launch shape (DEC-334)', () => {
           y: (neighbour.y - position.y) / length,
         };
         const reach =
-          state.collisions?.reach(
+          state.collisions?.shotReach(
             position,
             direction,
             WALL_TURRET.range,
@@ -129,6 +128,38 @@ describe('Simulation wall turrets: launch shape (DEC-334)', () => {
       expect(notHeld).toEqual([]);
     },
   );
+
+  it('lands its arc bolt on a still target ceil(flight) + 1 ticks after the decision that aims it (ARC_LAUNCH_DELAY_TICKS)', () => {
+    const match = setUp();
+    const { state, run, turretOf } = match;
+    const feature = FIRING_TURRET;
+    if (feature === undefined) throw new Error('The generated map has no light-turret-2.');
+    const turretId = turretOf(feature)?.id ?? '';
+    run(COUNTDOWN);
+    // 12.5 m from the turret's centre: the last of the bolt's 13 moves is a short one.
+    const dummyId = spawnDark(match, 'light-mob', 'training-dummy', outside(feature, 4.5));
+    const at = state.entities.placeOf(dummyId)?.position ?? feature.position;
+    let decided = -1;
+    let landed = -1;
+    state.events.on('damage-applied', ({ targetId, source }) => {
+      if (landed < 0 && targetId === dummyId && source.attackerId === turretId) landed = state.tick;
+    });
+    expect(state.ai.get(turretId)?.memory).toEqual({ targetId: null });
+
+    for (let tick = 0; tick < config.tickRate * 2 && landed < 0; tick += 1) {
+      const deciding = state.tick;
+      run(1);
+      if (decided < 0 && state.ai.get(turretId)?.memory.targetId === dummyId) decided = deciding;
+    }
+
+    // A default bolt, at full speed (m/tick) from the turret's centre to the dummy's.
+    const speed = TURRET_BOLT.movementProfile.maxSpeed / config.tickRate;
+    const flight = Math.ceil(
+      Math.hypot(at.x - feature.position.x, at.y - feature.position.y) / speed,
+    );
+    expect(decided).toBeGreaterThan(0);
+    expect(landed - decided).toBe(flight + 1);
+  });
 
   it('lets a bolt that starts on the joint of a wall segment and a gate leave its pylon, and the map object check passes it (light-turret-1, seed 1)', () => {
     const match = setUp();

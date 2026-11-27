@@ -47,7 +47,8 @@ const match = () => {
   const hits: string[] = [];
   scenario.sim.on('ultimate-charged', (change) => charged.push(change));
   scenario.sim.on('damage-applied', ({ targetId, amount, source }) => {
-    if (source.attackerId === vanguard && targetId !== '') {
+    // Bleed from the talons (DEC-387 W5) is not what this test checks: count weapon hits only.
+    if (source.attackerId === vanguard && source.kind === 'weapon' && targetId !== '') {
       hits.push(`${String(scenario.sim.tick)} ${targetId} ${String(amount)}`);
     }
   });

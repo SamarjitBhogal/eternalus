@@ -26,16 +26,23 @@ export class SceneryView implements WorldLayer {
 
   private paint(renderer: Renderer): void {
     for (const piece of this.pieces) {
-      if (
-        (piece.object !== undefined && this.isFallen(piece.object.id)) ||
-        (piece.buildingId !== undefined && this.isFallen(piece.buildingId))
-      )
-        continue;
+      if (this.isHidden(piece)) continue;
       const isOpen = piece.buildingId !== undefined && this.hiddenRoofs.has(piece.buildingId);
       if (piece.visibility === undefined || (piece.visibility === 'interior' ? isOpen : !isOpen)) {
         renderer.fillPolygon(piece.shape, piece.color);
       }
     }
+  }
+
+  /**
+   * Whether a piece's art is gone because what it shows fell. A piece of a map object follows that
+   * object's own state, so a structure's body that outlives its building stays drawn (the
+   * Stronghold's outer walls and throne when the palace falls, DEC-386 (1)). A piece with no
+   * object follows its building.
+   */
+  private isHidden(piece: MapDecoration): boolean {
+    if (piece.object !== undefined) return this.isFallen(piece.object.id);
+    return piece.buildingId !== undefined && this.isFallen(piece.buildingId);
   }
 
   /** The mini map shows the same scenery, scaled down. */

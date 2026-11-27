@@ -1,4 +1,5 @@
 import { Combat } from '../components/Combat';
+import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -24,13 +25,15 @@ import type { ReachQuery } from './ReachQuery';
  * (`ReachQuery.aimPointOf`): an outline's nearest point, which the shot touches there, or a unit's
  * centre, whose circle it touches its radius sooner. The line is clear when that contact is within
  * the shot's `range` and touched before the first wall (`isTouchedBeforeWall` on
- * `CollisionQuery.reach`): the rule `ProjectileSystem` lands a shot by, so a fort that is also a
- * wall reads clear. A body that takes no damage now (a forest camp) blocks the line too, when the
- * shot would stop on it (`AreaHitQuery.stopsShot`, the rule `ProjectileSystem` flies a shot by)
- * more than `BODY_BEFORE_WALL_MARGIN` before it touches the target, as `ProjectileSystem` breaks a
- * near tie for the target. A body that takes damage does not: the shot lands on it. An attack
+ * `CollisionQuery.shotReach`): the rule `ProjectileSystem` lands a shot by, so a fort that is also a
+ * wall reads clear. A body that takes no damage now (a wall turret before its rule) blocks the line
+ * too, when the shot would stop on it (`AreaHitQuery.stopsShot`, the rule `ProjectileSystem` flies
+ * a shot by) more than `BODY_BEFORE_WALL_MARGIN` before it touches the target, as
+ * `ProjectileSystem` breaks a near tie for the target. A forest camp's home does not: shots fly
+ * over it (HC-Q105). A body that takes damage does not either: the shot lands on it. An attack
  * needs a line only when it fires a projectile. An attacker inside the target's outline hits it at
- * once. The attacker's centre is the shot's launch point: a shape that holds it does not block
+ * once. An arc shot (`ProjectileDefinition.isArc`, DEC-342) needs no line: it flies over every wall
+ * and body, so it is clear within its range. The attacker's centre is the shot's launch point: a shape that holds it does not block
  * the line, as it does not stop the shot (DEC-334), so a wall turret sees past its own pylon.
  *
  * ponytail: the no-damage bodies are found by a walk over the store, O(entities) per call. Callers
@@ -48,12 +51,13 @@ export class LineOfFire implements LineOfFireQuery {
    * @param projectiles - The projectile definitions: a shot sweeps its `footprintRadius` and flies
    *   its `range`.
    * @param reach - The match's one aim rule (`Simulation`'s): the point a shot is aimed at.
-   * @param areas - The match's one hit rule for areas (`Simulation`'s): `stopsShot`.
+   * @param areas - The match's one hit rule for areas (`Simulation`'s): `stopsShot` and
+   *   `shotPolygonsOf`.
    */
   public constructor(
     private readonly projectiles: Pick<ContentCatalogue<ProjectileDefinition>, 'get'>,
     private readonly reach: Pick<ReachQuery, 'aimPointOf'>,
-    private readonly areas: Pick<AreaHitQuery, 'stopsShot'>,
+    private readonly areas: Pick<AreaHitQuery, 'stopsShot' | 'shotPolygonsOf'>,
   ) {}
 
   /** {@inheritDoc LineOfFireQuery.isClear} */
@@ -89,8 +93,12 @@ export class LineOfFire implements LineOfFireQuery {
     if (contact > shot.range) {
       return false;
     }
+    if (shot.isArc === true) {
+      // An arc shot flies over every wall and body (DEC-342): only its range matters.
+      return true;
+    }
     normalizeInto(this.aim, subInto(this.aim, this.aim, from));
-    const wall = state.collisions.reach(from, this.aim, contact, shot.footprintRadius, from);
+    const wall = state.collisions.shotReach(from, this.aim, contact, shot.footprintRadius, from);
     return (
       isTouchedBeforeWall(contact, wall) &&
       !this.isBlocked(state, attackerId, targetId, from, contact, shot.footprintRadius)
@@ -124,13 +132,20 @@ export class LineOfFire implements LineOfFireQuery {
       const transform = entity.findComponent(Transform);
       if (health === undefined || transform === undefined) return;
       const outline = state.entities.outlineOf(entity.id) ?? null;
-      const body = { entity, health, membership: entity.findComponent(TeamMembership), outline };
+      const body = {
+        entity,
+        health,
+        membership: entity.findComponent(TeamMembership),
+        outline,
+        collider: entity.findComponent(Collider),
+      };
       if (!this.areas.stopsShot(state.entities, shot, body)) return;
+      const polygons = this.areas.shotPolygonsOf(shot, body);
       isBlocked =
         outline === null
           ? distanceToSegment(transform.position, from, to) <= radius + transform.radius
-          : isPointInAnyPolygon(from, outline.polygons) ||
-            outline.polygons.some((polygon) => doesCapsuleReachPolygon(from, to, radius, polygon));
+          : isPointInAnyPolygon(from, polygons) ||
+            polygons.some((polygon) => doesCapsuleReachPolygon(from, to, radius, polygon));
     });
     return isBlocked;
   }

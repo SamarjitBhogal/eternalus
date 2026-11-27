@@ -82,8 +82,29 @@ export type ProjectileSnapshot = {
    * shot). The client draws an arrow's arc along it (DEC-322 (2)).
    */
   readonly flownShare: number;
+  /**
+   * Whether it is an arc shot (`ProjectileFlight.isArc`, DEC-342): the client draws it coming from
+   * above, with a shadow on its mark.
+   */
+  readonly isArc: boolean;
+  /**
+   * Metres from its origin to where it stops: the definition's range, or the distance to its aim
+   * point for an arc shot (`ProjectileFlight.range`). The arc's height scales with it.
+   */
+  readonly range: number;
+  /**
+   * The radius in metres of the blast where it lands (`ProjectileLaunch.splash`, DEC-342); `null`
+   * for a shot with no blast. The client draws its burst this wide.
+   */
+  readonly blastRadius: number | null;
   /** How far through its ending it is, 0 to 1 (`ProjectileFlight.endingShare`); `null` while it flies. */
   readonly ending: number | null;
+  /**
+   * Whether the shot is lit: it flew over a shape flagged `canLightShots` (a lava river, a camp
+   * fire) and burns what it lands on (`ProjectileFlight.isLit`, HC-Q89, DEC-345). The client draws
+   * it in a fire colour.
+   */
+  readonly isLit: boolean;
 };
 
 /** One active status as the client sees it: its id and how far through its time it is. */

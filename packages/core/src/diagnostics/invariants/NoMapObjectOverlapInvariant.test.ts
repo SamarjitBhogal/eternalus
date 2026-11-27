@@ -71,7 +71,7 @@ describe('NoMapObjectOverlapInvariant', () => {
     expect(invariant.check(state)).toEqual([]);
   });
 
-  it('passes a shot inside a shape that holds its own launch point (DEC-334), and flags one that does not', () => {
+  it('passes a straight shot inside a shape that holds its own launch point (DEC-334), flags one that does not, and passes an arc shot over a wall (DEC-342)', () => {
     const config = createDefaultGameConfig();
     const state = new GameState(config, 1);
     const units = loadDefaultContent(config.tickRate);
@@ -99,12 +99,13 @@ describe('NoMapObjectOverlapInvariant', () => {
       entities: state.entities,
       definitions: MAP_OBJECT_DEFINITIONS,
     });
-    const bolt = loadProjectiles(config.tickRate).get('turret-bolt');
+    const projectiles = loadProjectiles(config.tickRate);
     const ammo = loadTurrets(config.tickRate).ammo.get('bolt-default');
-    /** A bolt at `at`, launched at `origin`. */
-    const shotAt = (id: string, at: Vec2, origin: Vec2): Projectile => {
-      const shot = new Projectile(id, bolt.id);
-      shot.spawn({ definition: bolt, position: at, team: 'light' });
+    /** A shot of `projectileId` at `at`, launched at `origin`; an arrow flies straight. */
+    const shotAt = (id: string, at: Vec2, origin: Vec2, projectileId = 'arrow'): Projectile => {
+      const definition = projectiles.get(projectileId);
+      const shot = new Projectile(id, definition.id);
+      shot.spawn({ definition, position: at, team: 'light' });
       shot.addComponent(
         new ProjectilePayload({
           ownerId: 'turret',
@@ -127,6 +128,82 @@ describe('NoMapObjectOverlapInvariant', () => {
     shotAt('entering', { x: 3, y: 6 }, { x: -2, y: 6 });
     expect(invariant.check(state)).toEqual([
       expect.objectContaining({ entityId: 'entering', details: { objectId: 'wall' } }),
+    ]);
+
+    // An arc shot flies above the walls (DEC-342): over a wall it overlaps nothing.
+    state.entities.remove('entering', 'consumed');
+    shotAt('arcing', { x: 3, y: 7 }, { x: -20, y: 7 }, 'turret-bolt');
+    expect(invariant.check(state)).toEqual([]);
+  });
+
+  it('passes a shot over a shape shots can cross (a lake), and flags a unit in it and a shot over a mountain (DEC-345)', () => {
+    const config = createDefaultGameConfig();
+    const state = new GameState(config, 1);
+    const units = loadDefaultContent(config.tickRate);
+    const definitions = new Map(Object.values(MAP_OBJECT_DEFINITIONS).map((d) => [d.id, d]));
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      {
+        has: (id) => definitions.has(id) || units.has(id),
+        get: (id) => definitions.get(id) ?? units.get(id),
+      },
+      undefined,
+      loadWeapons(config.tickRate),
+    );
+    const square = (x: number): Vec2[] => [
+      { x, y: 0 },
+      { x: x + 6, y: 0 },
+      { x: x + 6, y: 10 },
+      { x, y: 10 },
+    ];
+    state.worldObjects = new WorldObjectStore({
+      objects: [
+        {
+          id: 'lake',
+          kind: 'terrain',
+          isBlocking: true,
+          canShotsCross: true,
+          footprints: [square(0)],
+        },
+        { id: 'mountain', kind: 'terrain', isBlocking: true, footprints: [square(20)] },
+      ],
+      factory,
+      entities: state.entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
+    // A straight shot: an arc shot (a turret bolt, DEC-342) is never a violation.
+    const bolt = loadProjectiles(config.tickRate).get('magus-bolt');
+    const ammo = loadTurrets(config.tickRate).ammo.get('bolt-default');
+    const launch = { x: -10, y: 5 };
+    /** A bolt at `at`, launched west of both shapes. */
+    const shotAt = (id: string, at: Vec2): Projectile => {
+      const shot = new Projectile(id, bolt.id);
+      shot.spawn({ definition: bolt, position: at, team: 'light' });
+      shot.addComponent(
+        new ProjectilePayload({
+          ownerId: 'archer',
+          team: 'light',
+          ownerLevel: 1,
+          source: { attackerId: 'archer', kind: 'weapon', definitionId: 'bow' },
+          targetId: null,
+          impact: { kind: 'weapon', attack: ammo.attack },
+          origin: launch,
+        }),
+      );
+      state.entities.add(shot);
+      return shot;
+    };
+    const invariant = new NoMapObjectOverlapInvariant();
+
+    shotAt('over-lake', { x: 3, y: 5 });
+    expect(invariant.check(state)).toEqual([]);
+
+    const unit = factory.create('warrior', 'warrior', { team: 'light', position: { x: 3, y: 5 } });
+    state.entities.add(unit);
+    shotAt('over-mountain', { x: 23, y: 5 });
+    expect(invariant.check(state)).toEqual([
+      expect.objectContaining({ entityId: unit.id, details: { objectId: 'lake' } }),
+      expect.objectContaining({ entityId: 'over-mountain', details: { objectId: 'mountain' } }),
     ]);
   });
 });

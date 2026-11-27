@@ -2,10 +2,15 @@ import { describe, expect, it } from 'vitest';
 
 import { Collider } from '../../components/Collider';
 import { ControllerBinding } from '../../components/ControllerBinding';
+import { Combat } from '../../components/Combat';
 import { Health } from '../../components/Health';
 import { TeamMembership } from '../../components/TeamMembership';
 import { Transform } from '../../components/Transform';
+import { TurretState } from '../../components/TurretState';
+import { loadTurrets } from '../../content/structures/loadTurrets';
 import type { StructureDefinition } from '../../content/structures/structures.types';
+import { BuffTower } from './BuffTower';
+import { SpawnerTower } from './SpawnerTower';
 import { Structure } from './Structure';
 
 class FakeTower extends Structure {
@@ -72,6 +77,21 @@ describe('Structure', () => {
     expect(gate.getComponent(Collider).isUnbreakable).toBe(true);
   });
 
+  it("gives its collider the definition's canShotsFlyOver, and none without it (a forest camp, HC-Q105)", () => {
+    const camp = new FakeTower('entity-1', 'fake-camp');
+    const tower = new FakeTower('entity-2', 'fake-buff-tower');
+
+    camp.spawn({
+      definition: { ...DEFINITION, canShotsFlyOver: true },
+      position: { x: 0, y: 0 },
+      team: 'neutral',
+    });
+    tower.spawn({ definition: DEFINITION, position: { x: 0, y: 0 }, team: 'dark' });
+
+    expect(camp.getComponent(Collider).canShotsFlyOver).toBe(true);
+    expect(tower.getComponent(Collider).canShotsFlyOver).toBe(false);
+  });
+
   it('keeps the map feature it was built from, and none without one', () => {
     const tower = new FakeTower('entity-1', 'fake-buff-tower');
     const spawned = new FakeTower('entity-2', 'fake-buff-tower');
@@ -119,5 +139,48 @@ describe('Structure', () => {
     expect(() => {
       tower.spawn({ definition: DEFINITION, position: { x: 0, y: 0 } });
     }).toThrow('needs a spawn context with a team');
+  });
+
+  describe('carrying ammo (a lane tower shoots as a wall turret does, DEC-302)', () => {
+    const AMMO = loadTurrets(30).ammo;
+    const armed = { ...DEFINITION, ammo: ['tower-orb'] } as const;
+    const context = (definition: StructureDefinition, ammo: unknown = AMMO) => ({
+      definition,
+      position: { x: 0, y: 0 },
+      team: 'light',
+      ammo,
+    });
+
+    it.each([
+      ['spawner tower', SpawnerTower],
+      ['buff tower', BuffTower],
+    ])(
+      'installs a TurretState and a weaponless Combat on a %s whose definition names ammo',
+      (_name, TowerClass) => {
+        const tower = new TowerClass('entity-1', 'fake-buff-tower');
+        tower.spawn(context(armed));
+
+        expect(tower.getComponent(TurretState).loadedId).toBe('tower-orb');
+        const combat = tower.getComponent(Combat);
+        expect(combat.attack).toBe(AMMO.get('tower-orb').attack);
+        expect(combat.weaponId).toBeNull();
+      },
+    );
+
+    it('installs neither without ammo in its definition, and fails at spawn when the ammo is missing', () => {
+      const unarmed = new FakeTower('entity-1', 'fake-buff-tower');
+      unarmed.spawn(context(DEFINITION));
+
+      expect(unarmed.findComponent(TurretState)).toBeUndefined();
+      expect(unarmed.findComponent(Combat)).toBeUndefined();
+      expect(() => {
+        new FakeTower('entity-2', 'fake-buff-tower').spawn(context(armed, null));
+      }).toThrow('Structure "entity-2" needs an ammo source to load its ammo.');
+      expect(() => {
+        new FakeTower('entity-3', 'fake-buff-tower').spawn(
+          context({ ...DEFINITION, ammo: ['no-such-orb'] }),
+        );
+      }).toThrow('Structure "entity-3": unknown ammo "no-such-orb".');
+    });
   });
 });

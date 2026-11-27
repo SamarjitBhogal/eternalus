@@ -67,7 +67,7 @@ const setUp = () => {
   const areas = new AreaHitQuery();
   const systems = [
     new MovementSystem(),
-    new ProjectileSystem(createDefaultProjectileImpacts(damage, null), areas),
+    new ProjectileSystem(createDefaultProjectileImpacts(damage, null, areas), areas),
     new CombatSystem({ damage, factory, areas, reach: new ReachQuery() }),
   ];
   const context: SystemContext = { state, logger: new NullLogger() };
@@ -138,7 +138,7 @@ describe('CombatSystem hit rules across systems (DEC-322, DEC-317 addendum)', ()
   });
 
   it.each([
-    ['a forest camp', 'neutral'],
+    ['a neutral body that takes no damage now', 'neutral'],
     ['an enemy body that takes no damage now (unbreakable)', 'dark'],
   ] as const)(
     'a bolt stops at %s in its path, with no damage to it or the body behind',

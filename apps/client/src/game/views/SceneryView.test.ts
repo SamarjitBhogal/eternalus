@@ -26,6 +26,45 @@ describe('SceneryView roof cutaways', () => {
     for (const piece of owned) expect(fill).not.toHaveBeenCalledWith(piece.shape, piece.color);
     expect(fill).toHaveBeenCalled();
   });
+  it("keeps a body piece drawn while only its building has fallen: the Stronghold's outer wall stands (Q104-2)", () => {
+    const wall = PRESENTATION.scenery.find(
+      (piece) =>
+        piece.layer === 'detail' &&
+        piece.object?.partOf === 'light-stronghold' &&
+        piece.object.kind === 'wall',
+    );
+    // Palace art with no map object (the interior floor); the open roof shows it.
+    const floor = PRESENTATION.scenery.find(
+      (piece) =>
+        piece.layer === 'detail' &&
+        piece.object === undefined &&
+        piece.buildingId === 'light-stronghold' &&
+        piece.visibility === 'interior',
+    );
+    if (wall?.object === undefined || floor === undefined) throw new Error('Missing pieces');
+    const wallId = wall.object.id;
+    const renderer = new RecordingRenderer();
+    const fill = vi.spyOn(renderer, 'fillPolygon');
+    const draw = (fallen: readonly string[]): void => {
+      new SceneryView(
+        PRESENTATION.scenery,
+        'detail',
+        new Set(['light-stronghold']),
+        undefined,
+        (id) => fallen.includes(id),
+      ).draw(renderer);
+    };
+
+    draw([]);
+    expect(fill).toHaveBeenCalledWith(floor.shape, floor.color);
+    fill.mockClear();
+    draw(['light-stronghold']);
+    expect(fill).toHaveBeenCalledWith(wall.shape, wall.color);
+    expect(fill).not.toHaveBeenCalledWith(floor.shape, floor.color);
+    fill.mockClear();
+    draw(['light-stronghold', wallId]);
+    expect(fill).not.toHaveBeenCalledWith(wall.shape, wall.color);
+  });
   it('swaps only the selected building roof for its interior and restores it on a second click', () => {
     const renderer = new RecordingRenderer();
     const fill = vi.spyOn(renderer, 'fillPolygon');

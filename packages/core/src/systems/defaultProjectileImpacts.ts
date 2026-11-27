@@ -1,6 +1,7 @@
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { ProjectileImpacts } from '../combat/ProjectileImpact.types';
 import { WeaponImpact } from '../combat/WeaponImpact';
+import type { AreaHitQuery } from '../state/AreaHitQuery';
 import type { HitRunner } from '../state/HitRunner.types';
 
 /**
@@ -10,10 +11,12 @@ import type { HitRunner } from '../state/HitRunner.types';
  *
  * @param damage - The match's one damage pipeline.
  * @param hits - Runs the owner's statuses' `onHit` steps after a weapon hit; `null` runs none.
+ * @param areas - The match's one hit rule for areas: a weapon shot's blast finds its units by it.
  */
 export function createDefaultProjectileImpacts(
   damage: DamagePipeline,
   hits: HitRunner | null,
+  areas: Pick<AreaHitQuery, 'find'>,
 ): ProjectileImpacts {
-  return { weapon: new WeaponImpact(damage, hits) };
+  return { weapon: new WeaponImpact(damage, hits, areas) };
 }

@@ -7,8 +7,8 @@ import type { LevelCurveDefinition } from './progression/progression.types';
 import type { UnitDefinition } from './units/units.types';
 import { TickRate } from '../utils/TickRate';
 import { ContentValidator } from './validation/ContentValidator';
+import type { WeaponAccessCatalogue } from './validation/ContentValidator.types';
 import { loadWeapons } from './weapons/loadWeapons';
-import type { WeaponDefinition } from './weapons/weapons.types';
 
 const perTick = (definition: UnitDefinition, tickRate: number, rate: TickRate): UnitDefinition => ({
   ...definition,
@@ -32,13 +32,14 @@ const perTick = (definition: UnitDefinition, tickRate: number, rate: TickRate): 
  *
  * @param tickRate - Ticks per second (`GameConfig.tickRate`).
  * @param curves - The level curves Legends may name; the shipped set by default.
- * @param weapons - The weapons Legends may name; the shipped set by default.
+ * @param weapons - The weapons Legends may name, each with the classes that may use it; the
+ *   shipped set by default.
  * @throws ContentValidationError listing every broken content rule.
  */
 export const loadDefaultContent = (
   tickRate: number,
   curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has'> = LEVEL_CURVE_CATALOGUE,
-  weapons: Pick<ContentCatalogue<WeaponDefinition>, 'has'> = loadWeapons(tickRate),
+  weapons: WeaponAccessCatalogue = loadWeapons(tickRate),
 ): ContentCatalogue<UnitDefinition> => {
   const authored = new ContentCatalogue<UnitDefinition>([
     ...LEGEND_CLASSES.all(),

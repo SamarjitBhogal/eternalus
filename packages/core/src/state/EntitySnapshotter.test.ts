@@ -185,9 +185,94 @@ describe('EntitySnapshotter', () => {
     flight.tickEnding();
     const ending = snapshotter.snapshotOf(shot).projectile;
 
-    expect(flying).toEqual({ flownShare: 0.05, ending: null });
-    expect(ending).toEqual({ flownShare: 1, ending: 0.25 });
+    expect(flying).toEqual({
+      flownShare: 0.05,
+      isArc: false,
+      range: 100,
+      blastRadius: null,
+      ending: null,
+      isLit: false,
+    });
+    expect(ending).toEqual({
+      flownShare: 1,
+      isArc: false,
+      range: 100,
+      blastRadius: null,
+      ending: 0.25,
+      isLit: false,
+    });
     expect(snapshotter.snapshotOf(unfired).projectile).toBeNull();
+    // An arc shot reports its flag and its shortened range, which the arc's height scales with.
+    flight.shortenTo(50);
+    const arc = new ProjectileFlight(100, 80, 4, true);
+    arc.shortenTo(50);
+    shot.addComponent(arc);
+    expect(snapshotter.snapshotOf(shot).projectile).toMatchObject({ isArc: true, range: 50 });
     expect(snapshotter.snapshotOf(new Bare('bare-1', 'x')).projectile).toBeNull();
+  });
+
+  it("snapshots a shot's blast radius from its launch, the same id with no blast as null (DEC-342)", () => {
+    const snapshotter = new EntitySnapshotter(3, CURVES, 0);
+    const shotWith = (attack: RangedAttack): Bare => {
+      const shot = new Bare('shot-1', 'tower-orb');
+      shot.addComponent(new Transform({ x: 0, y: 0 }, 0.2));
+      shot.addComponent(new ProjectileFlight(30, 30, 4, true));
+      shot.addComponent(
+        new ProjectilePayload({
+          ownerId: 'tower',
+          team: 'dark',
+          ownerLevel: 1,
+          source: { attackerId: 'tower', kind: 'weapon', definitionId: 'tower-orb' },
+          targetId: null,
+          impact: { kind: 'weapon', attack },
+          origin: { x: 0, y: 0 },
+        }),
+      );
+      return shot;
+    };
+    const splash = { radius: 3.5, edgeMultiplier: 0.5 };
+    const orb: RangedAttack = {
+      ...SHOT_ATTACK,
+      projectile: { projectileId: 'tower-orb', falloff: null, splash },
+    };
+    const plain: RangedAttack = {
+      ...SHOT_ATTACK,
+      projectile: { projectileId: 'tower-orb', falloff: null },
+    };
+
+    expect(snapshotter.snapshotOf(shotWith(orb)).projectile?.blastRadius).toBe(3.5);
+    expect(snapshotter.snapshotOf(shotWith(plain)).projectile?.blastRadius).toBeNull();
+  });
+
+  it('snapshots a lit shot as lit, and a shot that cannot catch fire as unlit (HC-Q89, DEC-345)', () => {
+    const snapshotter = new EntitySnapshotter(3, CURVES, 0);
+    const shotWith = (flight: ProjectileFlight) => {
+      const shot = new Bare('shot-1', 'arrow');
+      shot.addComponent(new Transform({ x: 13, y: 4 }, 0.15));
+      shot.addComponent(flight);
+      shot.addComponent(
+        new ProjectilePayload({
+          ownerId: 'owner',
+          team: 'light',
+          ownerLevel: 1,
+          source: { attackerId: 'owner', kind: 'weapon', definitionId: 'obsidian-bow' },
+          targetId: null,
+          impact: { kind: 'weapon', attack: SHOT_ATTACK },
+          origin: { x: 10, y: 0 },
+        }),
+      );
+      return shot;
+    };
+    const lit = new ProjectileFlight(100, 80, 4, false, [
+      { kind: 'debuff', statusId: 'burn', shape: { kind: 'hit' } },
+    ]);
+    const bolt = new ProjectileFlight(100, 80, 4);
+
+    expect(snapshotter.snapshotOf(shotWith(lit)).projectile?.isLit).toBe(false);
+    lit.light();
+    bolt.light();
+
+    expect(snapshotter.snapshotOf(shotWith(lit)).projectile?.isLit).toBe(true);
+    expect(snapshotter.snapshotOf(shotWith(bolt)).projectile?.isLit).toBe(false);
   });
 });

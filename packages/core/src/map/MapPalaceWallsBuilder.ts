@@ -11,7 +11,11 @@ import { distanceToSegment } from '../utils/geometry';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 import { placePalace } from './buildingPlacement';
 
-/** A segmented oval palace boundary with gaps aligned to its generated gate passages. */
+/**
+ * A segmented oval palace boundary with gaps aligned to its generated gate passages: an outer ring
+ * and the palace's inner ring. The outer ring's segments are part of the Stronghold's body
+ * (`partOf`, DEC-386 (1)); the inner ring's keep their own health.
+ */
 export class MapPalaceWallsBuilder extends MapDecorationBuilder {
   /** Keeps every lane entrance open while every other wall segment remains physical. */
   public build(
@@ -21,9 +25,9 @@ export class MapPalaceWallsBuilder extends MapDecorationBuilder {
   ): readonly MapDecoration[] {
     this.buildingId = feature.id;
     const gates = map.features.filter((f) => f.kind === 'gate' && f.team === feature.team);
-    for (const [boundary, rx, ry, thickness] of [
-      ['outer', G.stronghold.radiusX, G.stronghold.radiusY, G.stronghold.wallThickness],
-      ['palace', G.palace.floorRadiusX, G.palace.floorRadiusY, G.wallThickness],
+    for (const [boundary, rx, ry, thickness, isBody] of [
+      ['outer', G.stronghold.radiusX, G.stronghold.radiusY, G.stronghold.wallThickness, true],
+      ['palace', G.palace.floorRadiusX, G.palace.floorRadiusY, G.wallThickness, false],
     ] as const) {
       const point = (angle: number, inset: number) => ({
         x: feature.position.x + cos(angle) * (rx - inset),
@@ -50,12 +54,10 @@ export class MapPalaceWallsBuilder extends MapDecorationBuilder {
           )
         )
           continue;
-        this.blockPolygon(
-          `${feature.id}-${boundary}-boundary-${String(i)}`,
-          shape,
-          P.interiorWall,
-          'wall',
-        );
+        const id = `${feature.id}-${boundary}-boundary-${String(i)}`;
+        this.beginObject(id, 'wall', isBody ? { partOf: feature.id } : {});
+        this.blockPolygon(id, shape, P.interiorWall, 'wall');
+        this.endObject();
       }
     }
     return placePalace(this.pieces, feature, ring);

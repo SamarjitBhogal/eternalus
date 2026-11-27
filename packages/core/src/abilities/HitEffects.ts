@@ -26,7 +26,8 @@ import type { TargetQuery } from './TargetQuery';
  * (`weaponSourceOf`); a status's after the status. The attack strategy calls it where the hit
  * lands (`MeleeAttackStrategy` in the tick, `WeaponImpact` when a shot lands). A shot whose owner
  * left the store before it landed still runs its attack's steps, cast from the owner as it fired
- * (`Shooter`); the statuses' steps need the live owner, so they do not run.
+ * (`Shooter`); the statuses' steps need the live owner, so they do not run. `runSteps` runs any
+ * list of steps for a landed hit the same way, without the statuses': a lit arrow's burn.
  */
 export class HitEffects {
   /** What `afterHit` reads for an attacker with no `StatusEffects`. */
@@ -66,25 +67,18 @@ export class HitEffects {
     attack?: UnitAttack,
     shooter?: Shooter,
   ): void {
-    const attacker = state.entities.get(attackerId);
-    const active = attacker?.findComponent(StatusEffects)?.active ?? HitEffects.NO_STATUSES;
-    const struck = state.entities.get(targetId)?.findComponent(Transform)?.position;
+    const active =
+      state.entities.get(attackerId)?.findComponent(StatusEffects)?.active ??
+      HitEffects.NO_STATUSES;
     const steps = attack?.onHit ?? HitEffects.NO_STEPS;
-    if (struck === undefined || (steps.length === 0 && !HitEffects.hasOnHit(active))) {
+    if (steps.length === 0 && !HitEffects.hasOnHit(active)) {
       return;
     }
-    const caster = attacker === undefined ? shooter : HitEffects.liveShooter(state, attackerId);
-    if (caster === undefined) {
+    const landed = HitEffects.landing(state, attackerId, targetId, shooter);
+    if (landed === undefined) {
       return;
     }
-    const hit: LandedHit = {
-      casterId: attackerId,
-      casterLevel: caster.ownerLevel,
-      casterTeam: caster.team,
-      targetId,
-      from: { x: caster.origin.x, y: caster.origin.y },
-      to: { x: struck.x, y: struck.y },
-    };
+    const { hit, caster } = landed;
     if (steps.length > 0) {
       this.run(state, hit, caster.source.definitionId, steps);
     }
@@ -96,6 +90,61 @@ export class HitEffects {
         this.run(state, hit, definition.id, definition.onHit);
       }
     }
+  }
+
+  /**
+   * Runs `steps` as one cast named `id` for a hit that landed: the steps of a lit shot's
+   * `litOnHit` (HC-Q89, DEC-345). The attacker's statuses' steps do not run. Nothing runs for no
+   * steps, or when the struck body is gone or has no position, or the attacker has no position, or
+   * the attacker is gone and no `shooter` is given.
+   *
+   * @param id - The cast's name: the weapon that fired the shot (its `payload.source.definitionId`).
+   * @param shooter - A shot's owner as it fired: the steps run from it when the attacker is gone.
+   *   Ignored while the attacker is in the store.
+   */
+  public runSteps(
+    state: GameState,
+    attackerId: EntityId,
+    targetId: EntityId,
+    id: string,
+    steps: readonly AbilityEffectSpec[],
+    shooter?: Shooter,
+  ): void {
+    const landed = HitEffects.landing(state, attackerId, targetId, shooter);
+    if (landed !== undefined) {
+      this.run(state, landed.hit, id, steps);
+    }
+  }
+
+  /**
+   * The hit of `attackerId` on `targetId` as the steps cast it, and its caster: the attacker as it
+   * is now, or `shooter` when the attacker is gone. `undefined` when the struck body is gone or has
+   * no position, or the attacker has no position, or the attacker is gone and no `shooter` is
+   * given. The one look-up of `afterHit` and `runSteps`.
+   */
+  private static landing(
+    state: GameState,
+    attackerId: EntityId,
+    targetId: EntityId,
+    shooter: Shooter | undefined,
+  ): { readonly hit: LandedHit; readonly caster: Shooter } | undefined {
+    const struck = state.entities.get(targetId)?.findComponent(Transform)?.position;
+    const caster =
+      state.entities.get(attackerId) === undefined
+        ? shooter
+        : HitEffects.liveShooter(state, attackerId);
+    if (struck === undefined || caster === undefined) {
+      return undefined;
+    }
+    const hit: LandedHit = {
+      casterId: attackerId,
+      casterLevel: caster.ownerLevel,
+      casterTeam: caster.team,
+      targetId,
+      from: { x: caster.origin.x, y: caster.origin.y },
+      to: { x: struck.x, y: struck.y },
+    };
+    return { hit, caster };
   }
 
   /** Runs `steps` as one cast named `id`, by the attacker of `hit`, at the struck body. */

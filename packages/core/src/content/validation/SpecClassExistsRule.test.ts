@@ -13,6 +13,7 @@ const spec = (classId: string): LegendSpecDefinition => ({
   roleLabel: null,
   description: null,
   roleRatings: null,
+  primaryWeaponId: null,
   detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
   kit: null,
 });

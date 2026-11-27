@@ -2,6 +2,8 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { MapDefinition } from '../content/maps/maps.types';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import type { StructureDefinition } from '../content/structures/structures.types';
 import type { UnitDefinition } from '../content/units/units.types';
 import { TEST_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from '../diagnostics/MemoryLogger';
@@ -39,9 +41,26 @@ export const MARCHING_ONLY = new ContentCatalogue<UnitDefinition>(
 );
 
 /**
+ * The shipped structures with every lane tower's controller and carried ammo taken away, so a lane
+ * tower does not shoot the hordes that march on it (DEC-302): marching tests are about where a
+ * horde goes, not about the tower's orbs. The wall turret keeps its own: a turret needs its ammo
+ * (`TurretNeedsAmmoRule`), and the maps these tests march on have none.
+ */
+export const UNARMED_STRUCTURES = new ContentCatalogue<StructureDefinition>(
+  STRUCTURE_DEFINITIONS.all().map((definition) => {
+    if (definition.kind === 'turret') return definition;
+    const unarmed = { ...definition };
+    delete unarmed.controller;
+    delete unarmed.aiProfile;
+    delete unarmed.ammo;
+    return unarmed;
+  }),
+);
+
+/**
  * A match on `map`: one opening horde per lane and team at tick 0, and the first wave 180 s after
  * the countdown (DEC-87, DEC-127), so a test that stops before then sees only the opening hordes;
- * with `isMarchingOnly`, minions never fight.
+ * with `isMarchingOnly`, minions never fight and towers never shoot.
  */
 export const match = (map: MapDefinition, seed = 1, isMarchingOnly = false) => {
   const logger = new MemoryLogger();
@@ -52,7 +71,7 @@ export const match = (map: MapDefinition, seed = 1, isMarchingOnly = false) => {
     logger,
     debug: TEST_DEBUG_CONFIG,
     map,
-    ...(isMarchingOnly ? { content: MARCHING_ONLY } : {}),
+    ...(isMarchingOnly ? { content: MARCHING_ONLY, structures: UNARMED_STRUCTURES } : {}),
   });
   return { simulation, logger, config };
 };

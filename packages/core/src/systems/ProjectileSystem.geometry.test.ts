@@ -69,6 +69,8 @@ type BodySpec = {
   /** A map object's outline (`MapObjectBody`) instead. */
   readonly object?: readonly Polygon[];
   readonly isWalkOn: boolean;
+  /** With an outline: the solid polygons of its other body objects (DEC-386 (1)). */
+  readonly solid?: readonly Polygon[];
 };
 
 /** A body with health: a circle, a structure outline or a map object outline. */
@@ -76,11 +78,13 @@ class Body extends Entity {
   public readonly kind = 'dummy';
   public readonly family = 'mob';
   protected installComponents(context: unknown): void {
-    const { at, team, radius, outline, object, isWalkOn } = context as BodySpec;
+    const { at, team, radius, outline, object, isWalkOn, solid } = context as BodySpec;
     this.addComponent(new Transform(at, radius));
     this.addComponent(new Health(FULL_HEALTH));
     this.addComponent(new TeamMembership(team));
-    if (outline !== undefined) this.addComponent(new Footprint(outline, { isWalkOn }));
+    if (outline !== undefined) {
+      this.addComponent(new Footprint(outline, { isWalkOn, solid: solid ?? [] }));
+    }
     if (object !== undefined) {
       const kind = isWalkOn ? 'stronghold' : 'fort';
       this.addComponent(
@@ -105,7 +109,7 @@ const world = (
   const context = { state, logger: new NullLogger() };
   const areas = new AreaHitQuery();
   const projectiles = new ProjectileSystem(
-    createDefaultProjectileImpacts(new DamagePipeline(), null),
+    createDefaultProjectileImpacts(new DamagePipeline(), null, areas),
     areas,
   );
   const movement = new MovementSystem();
@@ -356,6 +360,32 @@ describe('ProjectileSystem on real geometry', () => {
       expect(scene.state.entities.has(shot.id)).toBe(false);
     });
 
+    it('flies over the floor of an outline with solid walls too, and lands on a solid wall it meets (DEC-386 (1))', () => {
+      // The Stronghold: a walk-on palace floor and a solid outer wall north of it.
+      const stronghold = {
+        at: { x: 10, y: 10 },
+        radius: 10,
+        outline: [floor],
+        solid: [box(0, 22, 20, 2)],
+        isWalkOn: true,
+      };
+      const over = world([]);
+      const overStronghold = over.addBody(stronghold);
+      const unit = over.addBody({ at: { x: 6, y: 5 } });
+      over.shoot({ x: -10, y: 5 }, { x: 1, y: 0 }, unit.id);
+      const into = world([]);
+      const intoStronghold = into.addBody(stronghold);
+      const shot = into.shoot({ x: -10, y: 23 }, { x: 1, y: 0 });
+
+      over.fly(12);
+      into.fly(12);
+
+      expect(over.healthOf(unit)).toBe(FULL_HEALTH - ATTACK.damage);
+      expect(over.healthOf(overStronghold)).toBe(FULL_HEALTH);
+      expect(into.healthOf(intoStronghold)).toBe(FULL_HEALTH - ATTACK.damage);
+      expect(into.state.entities.has(shot.id)).toBe(false);
+    });
+
     it('flies over it with a shot fired at no one', () => {
       const scene = world([]);
       const { structure, object } = palace(scene);
@@ -412,7 +442,7 @@ describe('ProjectileSystem on real geometry', () => {
       expect(scene.healthOf(behind)).toBe(FULL_HEALTH);
     });
 
-    it("still ends a shot fired from the seed 1 map's lava bridge at the lava, short of a body past it", () => {
+    it("flies a shot fired from the seed 1 map's lava bridge over the lava, onto the body past it (HC-Q89, DEC-345)", () => {
       const { collisions, onBridge, offTheSide } = lavaBridge();
       const scene = world([], collisions);
       const past = scene.addBody({
@@ -420,9 +450,9 @@ describe('ProjectileSystem on real geometry', () => {
       });
       const shot = scene.shoot(onBridge, offTheSide, past.id);
 
-      // 2 m per tick: one whole move, then the lava 3.46 m out.
-      expect(scene.fly(10, shot)).toHaveLength(1);
-      expect(scene.healthOf(past)).toBe(FULL_HEALTH);
+      // 2 m per tick: the lava no longer ends it: it flies two ticks, lands in the third.
+      expect(scene.fly(10, shot)).toHaveLength(2);
+      expect(scene.healthOf(past)).toBeLessThan(FULL_HEALTH);
     });
   });
 });

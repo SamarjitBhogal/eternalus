@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { loadAbilities } from '../content/abilities/loadAbilities';
+import { loadProjectiles } from '../content/projectiles/loadProjectiles';
 import { ContentValidationError } from '../content/ContentValidationError';
 import { loadTurrets } from '../content/structures/loadTurrets';
 import type { AbilityEffectSpec } from '../content/abilities/AbilityDefinition.types';
@@ -12,6 +13,7 @@ import { createDefaultAbilityRegistry } from './defaultAbilityRegistry';
 
 const WEAPONS = loadWeapons(30);
 const AMMO = loadTurrets(30).ammo;
+const PROJECTILES = loadProjectiles(30);
 const registry = createDefaultAbilityRegistry(loadAbilities(30), 30);
 const STAFF = WEAPONS.get('magus-staff');
 const HEAVY = AMMO.get('bolt-heavy');
@@ -24,10 +26,22 @@ const withOnHit = <A extends UnitAttack>(attack: A, onHit: readonly AbilityEffec
 });
 
 describe('checkAttackLinks', () => {
-  it("passes the shipped weapons and turret ammo: the heavy bolt's concussion is known", () => {
+  it("passes the shipped weapons, turret ammo and projectiles: the heavy bolt's concussion and the arrow's burn are known", () => {
     expect(() => {
-      checkAttackLinks(registry, WEAPONS.all(), AMMO.all());
+      checkAttackLinks(registry, WEAPONS.all(), AMMO.all(), PROJECTILES.all());
     }).not.toThrow();
+  });
+
+  it("rejects a projectile's litOnHit step with an unknown status (DEC-345)", () => {
+    const arrow = PROJECTILES.get('arrow');
+    const unknownStatus = {
+      ...arrow,
+      litOnHit: [{ kind: 'debuff', statusId: 'no-such-status', shape: { kind: 'hit' } }] as const,
+    };
+
+    expect(() => {
+      checkAttackLinks(registry, [], [], [unknownStatus]);
+    }).toThrow('Projectile "arrow" litOnHit: debuff status "no-such-status" is unknown');
   });
 
   it("rejects a weapon attack's onHit step with no strategy, or one its strategy refuses", () => {
@@ -40,21 +54,21 @@ describe('checkAttackLinks', () => {
     const knockback = { ...STAFF, attacks: [withOnHit(first, [KNOCKBACK_ON_HIT]), ...rest] };
 
     expect(() => {
-      checkAttackLinks(testAbilityRegistry([]), [knockback], []);
+      checkAttackLinks(testAbilityRegistry([]), [knockback], [], []);
     }).toThrow(ContentValidationError);
     expect(() => {
-      checkAttackLinks(testAbilityRegistry([]), [knockback], []);
+      checkAttackLinks(testAbilityRegistry([]), [knockback], [], []);
     }).toThrow(
       'Weapon "magus-staff" attack 1 onHit names effect "knockback" with no registered strategy',
     );
     expect(() => {
-      checkAttackLinks(registry, [shortPush], []);
+      checkAttackLinks(registry, [shortPush], [], []);
     }).toThrow('Weapon "magus-staff" attack 1 onHit: knockback distance must be positive.');
   });
 
   it("rejects a turret ammo's onHit step with no strategy", () => {
     expect(() => {
-      checkAttackLinks(testAbilityRegistry([]), [], [HEAVY]);
+      checkAttackLinks(testAbilityRegistry([]), [], [HEAVY], []);
     }).toThrow('Turret ammo "bolt-heavy" onHit names effect "debuff" with no registered strategy');
   });
 
@@ -72,6 +86,7 @@ describe('checkAttackLinks', () => {
         registry,
         [{ ...STAFF, attacks: [first, shortPush, ...rest] }],
         [brokenAmmo],
+        [],
       );
     }).toThrow(
       /Weapon "magus-staff" attack 2 onHit: knockback[^]*Turret ammo "bolt-heavy" onHit: knockback/,

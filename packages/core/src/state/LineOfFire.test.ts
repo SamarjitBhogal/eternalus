@@ -69,10 +69,14 @@ type BodySpec = {
   readonly outline?: readonly Polygon[];
   /** A team gives it a `TeamMembership`, `Health` and a collider: a body a shot can stop on. */
   readonly team?: Team;
-  /** With a team: it takes no damage now (a forest camp). */
+  /** With a team: it takes no damage now (a wall turret before its rule). */
   readonly isUnbreakable?: boolean;
+  /** With a team: its collider says a shot not aimed at it flies over it (a forest camp). */
+  readonly canShotsFlyOver?: boolean;
   /** With a team and an outline: units walk on it (a gate's passage). */
   readonly isWalkOn?: boolean;
+  /** With an outline: the solid polygons of its other body objects (DEC-386 (1)). */
+  readonly solid?: readonly Polygon[];
 };
 
 /** A circle, a shooter, or a structure with an outline. */
@@ -80,16 +84,21 @@ class Body extends Entity {
   public readonly kind = 'dummy';
   public readonly family = 'mob';
   protected installComponents(context: unknown): void {
-    const { at, radius, attack, outline, team, isUnbreakable, isWalkOn } = context as BodySpec;
+    const { at, radius, attack, outline, team, isUnbreakable, isWalkOn, solid, canShotsFlyOver } =
+      context as BodySpec;
     this.addComponent(new Transform(at, radius));
     if (attack !== undefined) this.addComponent(new Combat({ basic: attack }));
     if (outline !== undefined) {
-      this.addComponent(new Footprint(outline, { isWalkOn: isWalkOn === true }));
+      this.addComponent(
+        new Footprint(outline, { isWalkOn: isWalkOn === true, solid: solid ?? [] }),
+      );
     }
     if (team !== undefined) {
       this.addComponent(new TeamMembership(team));
       this.addComponent(new Health(100));
-      const collider = new Collider({ kind: 'circle', radius }, 'unit');
+      const collider = new Collider({ kind: 'circle', radius }, 'unit', false, {
+        canShotsFlyOver: canShotsFlyOver === true,
+      });
       collider.setUnbreakable(isUnbreakable === true);
       this.addComponent(collider);
     }
@@ -228,6 +237,22 @@ describe('LineOfFire', () => {
     expect(shortShots.isClear(state, from, far)).toBe(false);
   });
 
+  it('is clear behind a wall for an arc shot, which flies over it, but not past its range (DEC-342)', () => {
+    const arcShots = new LineOfFire(
+      { get: (id) => ({ ...PROJECTILES.get(id), isArc: true }) },
+      new ReachQuery(),
+      new AreaHitQuery(),
+    );
+    const { state, add, shooter } = world([box(5, -5, 0.5, 10)]);
+    const from = shooter({ x: 0, y: 0 });
+    const behind = add({ at: { x: 10, y: 0 }, radius: 1 });
+    const beyond = add({ at: { x: 300, y: 0 }, radius: 1 });
+
+    expect(lineOfFire.isClear(state, from, behind)).toBe(false);
+    expect(arcShots.isClear(state, from, behind)).toBe(true);
+    expect(arcShots.isClear(state, from, beyond)).toBe(false);
+  });
+
   it('tests the attack it is given, not the one the attacker has loaded (BTD-1)', () => {
     const SHORT: RangedAttack = {
       ...RANGED,
@@ -290,7 +315,7 @@ describe('LineOfFire', () => {
       expect(lineOfFire.isClear(state, from, target)).toBe(false);
     });
 
-    it("is still blocked by the lava from the seed 1 map's lava bridge", () => {
+    it("is clear across the lava from the seed 1 map's lava bridge: a shot flies over lava (HC-Q89, DEC-345)", () => {
       const { collisions, onBridge, offTheSide } = lavaBridge();
       const { state, add, shooter } = world(null, collisions);
       const from = shooter(onBridge);
@@ -299,12 +324,32 @@ describe('LineOfFire', () => {
         radius: 1,
       });
 
-      expect(lineOfFire.isClear(state, from, past)).toBe(false);
+      expect(lineOfFire.isClear(state, from, past)).toBe(true);
+    });
+  });
+
+  describe('lakes and mountains (HC-Q89, DEC-345)', () => {
+    const lake = { id: 'lake', polygon: box(4, -20, 4, 40), canShotsCross: true } as const;
+    const mountain = { id: 'mountain', polygon: box(4, -20, 4, 40) };
+    const sceneOf = (shape: typeof lake | typeof mountain) => {
+      const collisions = new CollisionResolver(new StaticCollisionIndex([shape]), BOUNDS);
+      const { state, add, shooter } = world(null, collisions);
+      const from = shooter({ x: 0, y: 0 });
+      const target = add({ at: { x: 12, y: 0 }, radius: 1 });
+      return { state, from, target };
+    };
+
+    it("is clear across a lake from a bot's attacker and blocked by a mountain", () => {
+      const over = sceneOf(lake);
+      const into = sceneOf(mountain);
+
+      expect(lineOfFire.isClear(over.state, over.from, over.target)).toBe(true);
+      expect(lineOfFire.isClear(into.state, into.from, into.target)).toBe(false);
     });
   });
 
   describe('bodies that take no damage (the rule that stops a shot, AreaHitQuery.stopsShot)', () => {
-    /** A light bot at the origin, a dark enemy at 10 and a neutral forest camp between them at 5. */
+    /** A light bot at the origin and a dark enemy at 10; a test adds a body between them at 5. */
     const scene = () => {
       const { state, add, shooter } = world([]);
       const bot = shooter({ x: 0, y: 0 }, RANGED, 'light');
@@ -312,26 +357,40 @@ describe('LineOfFire', () => {
       return { state, add, bot, enemy };
     };
 
-    it('is blocked by a camp that takes no damage between the bot and its enemy, and clear once it takes damage again (B9)', () => {
+    it('is blocked by a body that takes no damage between the bot and its enemy, and clear once it takes damage again (B9)', () => {
       const { state, add, bot, enemy } = scene();
-      const camp = add({ at: { x: 5, y: 0.5 }, radius: 1, team: 'neutral', isUnbreakable: true });
+      const body = add({ at: { x: 5, y: 0.5 }, radius: 1, team: 'neutral', isUnbreakable: true });
 
       expect(lineOfFire.isClear(state, bot, enemy)).toBe(false);
-      expect(lineOfFire.isClear(state, bot, camp)).toBe(true);
+      expect(lineOfFire.isClear(state, bot, body)).toBe(true);
 
-      state.entities.get(camp)?.getComponent(Collider).setUnbreakable(false);
+      state.entities.get(body)?.getComponent(Collider).setUnbreakable(false);
       expect(lineOfFire.isClear(state, bot, enemy)).toBe(true);
     });
 
-    it('is blocked when the shot width only grazes the camp, and clear past that width', () => {
+    it('is blocked when the shot width only grazes such a body, and clear past that width', () => {
       const grazed = scene();
       const passed = scene();
-      const camp = { radius: 1, team: 'neutral', isUnbreakable: true } as const;
-      grazed.add({ ...camp, at: { x: 5, y: 1 + SHOT_RADIUS / 2 } });
-      passed.add({ ...camp, at: { x: 5, y: 1 + SHOT_RADIUS * 1.5 } });
+      const body = { radius: 1, team: 'neutral', isUnbreakable: true } as const;
+      grazed.add({ ...body, at: { x: 5, y: 1 + SHOT_RADIUS / 2 } });
+      passed.add({ ...body, at: { x: 5, y: 1 + SHOT_RADIUS * 1.5 } });
 
       expect(lineOfFire.isClear(grazed.state, grazed.bot, grazed.enemy)).toBe(false);
       expect(lineOfFire.isClear(passed.state, passed.bot, passed.enemy)).toBe(true);
+    });
+
+    it("is not blocked by a forest camp's home, which shots fly over, and a camp aimed at is still clear (HC-Q105, HC-Q115)", () => {
+      const { state, add, bot, enemy } = scene();
+      const camp = add({
+        at: { x: 5, y: 0.5 },
+        radius: 1,
+        team: 'neutral',
+        isUnbreakable: true,
+        canShotsFlyOver: true,
+      });
+
+      expect(lineOfFire.isClear(state, bot, enemy)).toBe(true);
+      expect(lineOfFire.isClear(state, bot, camp)).toBe(true);
     });
 
     it('is not blocked by such a body that is the target, an ally, behind the target, or a walk-on outline it does not aim at', () => {
@@ -350,6 +409,28 @@ describe('LineOfFire', () => {
 
       expect(lineOfFire.isClear(state, bot, enemy)).toBe(true);
       expect(lineOfFire.isClear(state, bot, closedGate)).toBe(false);
+    });
+
+    it('is blocked by the solid polygons of an outline it does not aim at, not by its walk-on ones (DEC-386 (1))', () => {
+      const floorOnLine = scene();
+      const wallOnLine = scene();
+      // A Stronghold that takes no damage now: a walk-on floor and a solid outer wall.
+      const stronghold = { radius: 1, team: 'dark', isUnbreakable: true, isWalkOn: true } as const;
+      floorOnLine.add({
+        ...stronghold,
+        at: { x: 5, y: 0 },
+        outline: [box(4, -2, 2, 4)],
+        solid: [box(4, 4, 2, 1)],
+      });
+      wallOnLine.add({
+        ...stronghold,
+        at: { x: 5, y: 6 },
+        outline: [box(4, 4, 2, 4)],
+        solid: [box(4.5, -2, 1, 4)],
+      });
+
+      expect(lineOfFire.isClear(floorOnLine.state, floorOnLine.bot, floorOnLine.enemy)).toBe(true);
+      expect(lineOfFire.isClear(wallOnLine.state, wallOnLine.bot, wallOnLine.enemy)).toBe(false);
     });
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { loadTurrets } from '../content/structures/loadTurrets';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -20,7 +21,14 @@ const CONFIG = createDefaultGameConfig();
 /** A light gate on lane-0 behind three light BuffTowers, a light SpawnerTower and a dark Stronghold. */
 const setUp = () => {
   const state = new GameState(CONFIG, 1);
-  const factory = new EntityFactory(createDefaultEntityRegistry(), STRUCTURE_DEFINITIONS);
+  const factory = new EntityFactory(
+    createDefaultEntityRegistry(),
+    STRUCTURE_DEFINITIONS,
+    undefined,
+    null,
+    null,
+    loadTurrets(30).ammo,
+  );
   const spawn = (definitionId: string, team: 'light' | 'dark', laneId?: string): Entity => {
     const { kind } = STRUCTURE_DEFINITIONS.get(definitionId);
     const placement = { position: { x: 0, y: 0 }, team, ...(laneId !== undefined && { laneId }) };
