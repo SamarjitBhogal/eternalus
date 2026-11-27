@@ -61,6 +61,7 @@ describe('MatchTimeline', () => {
       { entryId: 'countdown-over', tick: 300 },
       { entryId: 'quarter-mark', tick: 13_800 },
       { entryId: 'mid-game', tick: 27_300 },
+      { entryId: 'gem-eruption', tick: 27_300 },
       { entryId: 'end-game', tick: 40_800 },
     ]);
   });

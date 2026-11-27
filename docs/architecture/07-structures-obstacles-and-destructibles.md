@@ -548,8 +548,30 @@ snapshot's `mapFeatureId`, not by position. Interim differences:
   holder, the gem system takes the capture zone whose area covers the gem's position; the next PR
   that changes the gem matches the zone by its `MapFeatureLink` instead (DEC-403). The gem system
   is off in a Duel until the follow-up PR builds the owner's Duel design (DEC-346). The `Cathedral`
-  building is not an entity yet: its `Spawner` and `Aura` (§1, §6), the gem's look over time and
-  the summon-greater-boss action are not built.
+  building is not an entity yet: its `Spawner` and `Aura` (§1, §6), and the gem's look over time
+  are not built.
+- **Gem eruption and the Greater Boss (2026-11-22, `feat/cathedral-eruption-boss`).** The
+  `summon-greater-boss` timeline action (12 §3) erupts the gem at mid-game. On the next tick, each in its own
+  pass after `greater-boss-summoned` (03 §Events), `SpawnSystem` fills the Greater Boss's post and
+  `CathedralGemSystem` removes the gem entity (`despawned`); its plinth is the map object the
+  gem carries (`carriedObjectId`), so it is destroyed with the gem and collision, the path grid
+  and the lane fields reopen there (§10). Earlier on that tick, with the other damage systems,
+  `GemEruptionSystem` kills every unit standing in the capture zone the gem stands in, Legends
+  too, as environment damage that credits no one (DEC-371 "BOSS guards").
+  Interim for the Cathedral's `Spawner` (§1, §6): the boss is a guard of the Cathedral capture
+  zone's guard plan (`content/structures/guardPlans.ts`, `cathedral-capture-point`), one post at
+  the zone's centre with `activation: { at: 'gem-eruption' }` (posts that `GuardRoster.activate`
+  fills for the summoned `bossId`) and `respawn: never`; `SpawnSystem` then emits
+  `boss-summoned`. Its leash is balancing.md's 25 m centre zone (`GUARD_LEASH.greaterBossZone`).
+  The boss is a neutral `heavy-mob` definition (`content/mobs/greaterBoss.ts`) on
+  `GuardController`, not doc 04's `GreaterBoss` class (11's implementation status), built by
+  #160 and #164 (DEC-370). It locks the Cathedral's capture while it lives (`ZONE_LOCKING_MOBS`,
+  DEC-371 E4), so no checkpoint is reached and no defenders come. Its health and hit are
+  multiples of the shared `refHealth(level)` and its movement and reach the shared
+  `HEAVY_MOB_BASE` (`content/mobs/bossReference.ts`, DEC-371 E6), as the capture point boss's.
+  Minions deal it a quarter of their hit (`BOSS_MINION_DAMAGE_TAKEN`); its kill reward is #164's
+  (DEC-371 E8). The blast kills every unit with no kill credit and the cut-scene's reach is 50 m
+  (DEC-415). In a Duel the action does nothing (DEC-36), so the gem stays and no boss comes.
 
 **2026-11-09 (`feat/bosses-p3`, corner camp boss, interim; updated 2026-11-17).** DEC-236
 approves corner camps for Phase 3, with the corner boss on `GuardController` as an interim

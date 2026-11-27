@@ -1,5 +1,9 @@
 import { CAPTURE_POINT_COURT } from '../zones/capturePointCourt';
+import { HEAVY_MOB_BASE, refHealth } from './bossReference';
 import type { MobDefinition } from './mobs.types';
+
+// balancing.md's MiniBoss row: the reference Legend at its expected level 4 (≈ 819).
+const REF_HEALTH = refHealth(4);
 
 /**
  * The outer capture point's mini-boss (reference 04 "Mini-bosses at the quarter mark", architecture
@@ -13,18 +17,20 @@ export const CAPTURE_POINT_BOSS = {
   id: 'capture-point-boss',
   kind: 'heavy-mob',
   displayName: 'Capture Point Boss',
-  baseHealth: 8200, // TUNE: balancing.md MiniBoss "10 × refHealth ≈ 8,200"
+  baseHealth: Math.round(10 * REF_HEALTH), // TUNE: balancing.md MiniBoss "10 × refHealth ≈ 8,200"
   footprintRadius: 1.2, // TUNE: no reference value; 1.5× the heavy minion so it reads as a boss
   visionRadius: CAPTURE_POINT_COURT.acquisitionRadius, // as far as its aggro reaches: the whole court
   movementStrategy: 'leashed-chase',
   controller: 'guard',
   aiProfile: 'capture-point-boss',
-  // TUNE: balancing.md MiniBoss "≈ 205 per hit, 1.5 s interval"; reach as the heavy minion
-  attack: { strategy: 'melee', damage: 205, reach: 1.5, interval: 1.5 },
-  xpValue: 0, // the killer earns nothing alone: its 500 XP is team-wide (XP_SOURCES.teamKills)
-  movementProfile: {
-    maxSpeed: 2.8, // TUNE: no reference value; as the heavy minion
-    acceleration: 14, // TUNE: as the heavy minion
-    mass: 3.125, // TUNE: as the heavy minion
+  // TUNE: balancing.md MiniBoss "0.25 × refHealth ≈ 205 per hit, 1.5 s interval"; reach as the
+  // heavy minion
+  attack: {
+    strategy: 'melee',
+    damage: Math.round(0.25 * REF_HEALTH),
+    reach: HEAVY_MOB_BASE.reach,
+    interval: 1.5,
   },
+  xpValue: 0, // the killer earns nothing alone: its 500 XP is team-wide (XP_SOURCES.teamKills)
+  movementProfile: HEAVY_MOB_BASE.movementProfile, // TUNE: no reference value; DEC-371 E6
 } as const satisfies MobDefinition;

@@ -369,17 +369,24 @@ describe('Match lifecycle', () => {
     expect(scheduler.hasPendingFrame).toBe(false);
     expect(simulation.tick).toBe(0);
     // The health bars' two subscriptions (DEC-195), the Legend bodies' `entity-removed` (DEC-295),
-    // the damage numbers' `damage-applied` (DEC-410) and the bridge's `match-ended`; each is
-    // dropped once.
-    const types = [
+    // the damage numbers' `damage-applied` (DEC-410), the cut-scene's `greater-boss-summoned` and
+    // the bridge's `match-ended`; each is dropped once, the cut-scene's before the Legend bodies'.
+    expect(on.mock.calls.map(([type]) => type)).toEqual([
       'damage-applied',
       'entity-removed',
+      'entity-removed',
+      'damage-applied',
+      'greater-boss-summoned',
+      'match-ended',
+    ]);
+    expect(dropped).toEqual([
+      'damage-applied',
+      'entity-removed',
+      'greater-boss-summoned',
       'entity-removed',
       'damage-applied',
       'match-ended',
-    ];
-    expect(on.mock.calls.map(([type]) => type)).toEqual(types);
-    expect(dropped).toEqual(types);
+    ]);
   });
 
   it("drops the sprites' listener too on destroy, when the player has a sprite sheet", () => {
@@ -395,18 +402,29 @@ describe('Match lifecycle', () => {
     match.destroy();
 
     // The sprites' `damage-applied` listener (DEC-378) joins the health bars' two, the Legend
-    // bodies' `entity-removed`, the damage numbers' `damage-applied` (DEC-410) and the bridge's
-    // `match-ended`; each is dropped once.
-    const types = [
+    // bodies' `entity-removed`, the damage numbers' `damage-applied` (DEC-410), the cut-scene's
+    // `greater-boss-summoned` and the bridge's `match-ended`; each is dropped once, the
+    // cut-scene's before the Legend bodies'.
+    const added = [
       'damage-applied',
       'damage-applied',
       'entity-removed',
+      'entity-removed',
+      'damage-applied',
+      'greater-boss-summoned',
+      'match-ended',
+    ];
+    const removed = [
+      'damage-applied',
+      'damage-applied',
+      'entity-removed',
+      'greater-boss-summoned',
       'entity-removed',
       'damage-applied',
       'match-ended',
     ];
-    expect(on.mock.calls.map(([type]) => type)).toEqual(types);
-    expect(dropped).toEqual(types);
+    expect(on.mock.calls.map(([type]) => type)).toEqual(added);
+    expect(dropped).toEqual(removed);
   });
 
   it('adds one sprite listener for all the Legends in the match, and drops it on destroy', () => {
@@ -445,17 +463,27 @@ describe('Match lifecycle', () => {
     match.destroy();
 
     // Three Legends with sprites, one sprites' `damage-applied` listener (DEC-378), next to the
-    // damage numbers' own (DEC-410); each listener is dropped once.
-    const types = [
+    // damage numbers' own (DEC-410) and the cut-scene's; each listener is dropped once.
+    const added = [
       'damage-applied',
       'damage-applied',
       'entity-removed',
+      'entity-removed',
+      'damage-applied',
+      'greater-boss-summoned',
+      'match-ended',
+    ];
+    const removed = [
+      'damage-applied',
+      'damage-applied',
+      'entity-removed',
+      'greater-boss-summoned',
       'entity-removed',
       'damage-applied',
       'match-ended',
     ];
     expect(match.snapshot.entities.filter(({ specId }) => specId !== undefined)).toHaveLength(3);
-    expect(on.mock.calls.map(([type]) => type)).toEqual(types);
-    expect(dropped).toEqual(types);
+    expect(on.mock.calls.map(([type]) => type)).toEqual(added);
+    expect(dropped).toEqual(removed);
   });
 });

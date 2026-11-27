@@ -579,7 +579,10 @@ That is why every ability, weapon, status tick and gate fire names a `DamageSour
 effective against Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `CombatSystem`.
 
 **Implementation status (sprint 2.2, PR #34).** `DamagePipeline.apply(state, targetId, amount,
-source)` is built and is the only caller of `Health.applyDamage`. Each modifier above is a
+source)` is built and, with `kill(state, targetId, source)`, is the only caller of
+`Health.applyDamage`. `kill` deals the target's whole health, shields included, past every step,
+with the same events and kill credit as a lethal `apply`; the gem eruption's blast uses it, so no
+modifier lets a unit in the zone live (DEC-371 "BOSS guards" C). Each modifier above is a
 `DamageStep` (`adjust(hit, state) → amount`, 0 blocks) and **the order is the list in
 `combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The steps today are
 `BreakabilityStep` (first: an unbreakable wall or gate rejects the hit before any multiplier,

@@ -1,4 +1,5 @@
 import { CORNER_CAMP_RING } from '../structures/cornerCampRing';
+import { refHealth } from './bossReference';
 import type { MobDefinition } from './mobs.types';
 
 /**
@@ -13,8 +14,9 @@ export const CORNER_BOSS = {
   kind: 'heavy-mob',
   displayName: 'Corner Camp Boss', // DEC-296 (2)
   // DEC-296 (1): balancing.md "Mini-boss and Greater Boss relative to Legends", MiniBoss row:
-  // 10 × refHealth ≈ 8,200 (refHealth ≈ 819 at the expected level 4).
-  baseHealth: 8200,
+  // 10 × refHealth at the expected level 4. DEC-415: the shared formula, the same 8,188 as the
+  // capture point boss.
+  baseHealth: Math.round(10 * refHealth(4)),
   footprintRadius: 1.5, // DEC-296 (1): about twice a heavy camp mob
   visionRadius: CORNER_CAMP_RING.acquisitionRadius, // as far as its aggro: the whole ring
   movementStrategy: 'leashed-chase',

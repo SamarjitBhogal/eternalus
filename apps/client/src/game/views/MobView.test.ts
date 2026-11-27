@@ -32,6 +32,7 @@ const MINION: EntitySnapshot = {
 };
 
 const AT = { x: 0, y: 0 };
+const SOUTH = { x: 0, y: 1 };
 
 const DIAMETER = (MINION.transform?.radius ?? 0) * 2 * MOB_VISUAL_SCALE;
 
@@ -55,6 +56,27 @@ describe('MobView', () => {
       },
       { op: 'drawWorldGlyph', args: [{ shape: 'dot', size: DIAMETER }, AT, TEAM_COLORS.light] },
     ]);
+  });
+
+  it('draws the neutral Greater Boss in the neutral colour, at the mob display scale (DEC-238)', () => {
+    const renderer = new RecordingRenderer();
+    const boss: EntitySnapshot = {
+      ...MINION,
+      kind: 'heavy-mob',
+      definitionId: 'greater-boss',
+      team: 'neutral',
+      transform: { x: 0, y: 0, radius: 2.5, facing: SOUTH },
+    };
+
+    new MobView().draw(
+      { entity: boss, position: AT, facing: SOUTH, isFocused: false, frameTick: 0 },
+      renderer,
+    );
+
+    expect(renderer.calls.at(-1)).toEqual({
+      op: 'drawWorldGlyph',
+      args: [{ shape: 'dot', size: 2.5 * 2 * MOB_VISUAL_SCALE }, AT, NEUTRAL_ENTITY_COLOR],
+    });
   });
 
   it('marks the minimap with a small team dot on a team outline (13 §7: not colour alone)', () => {
