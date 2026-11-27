@@ -180,6 +180,18 @@ decision table is in `docs/architecture/02-code-structure.md`.
 - Core behaviour also gets a determinism check (same seed + commands → same `StateHasher` hash);
   runtime invariants get a test that deliberately triggers them.
 
+## Writing style (ASD-STE100, DEC-329)
+
+Write at least 80% of the way to ASD-STE100 (Simplified Technical English). The text must still
+read naturally. The rule applies to messages to the owner and to other agents, Owner Calls cards,
+PR text, review comments, commit messages and docs. It does not apply to in-game text.
+
+- Use short sentences. Put one instruction or one fact in each sentence.
+- Use the active voice and common words. Use one term for one thing (`docs/reference/glossary.md`).
+- In Owner Calls cards and messages to the owner, say what the player sees first. Put code names
+  last.
+- If a reader must decode a sentence, write it again.
+
 ## Documentation
 
 - Every doc under `docs/` has YAML frontmatter (`title`, `description`, `audience`, `status`,
