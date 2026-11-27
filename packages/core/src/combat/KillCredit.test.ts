@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Health } from '../components/Health';
+import { LastEnemyHit } from '../components/LastEnemyHit';
 import { TeamMembership } from '../components/TeamMembership';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadScoring } from '../content/match/loadScoring';
@@ -149,6 +150,17 @@ describe('KillCredit (DEC-346)', () => {
     burnToDeath(victim);
 
     expect(deaths).toEqual([{ entityId: victim, killer: BURN }]);
+  });
+
+  it("records an execute as the victim's last enemy hit, as any landed hit (DEC-204)", () => {
+    const { state, damage, legend } = setUp();
+    const victim = legend('light');
+    const enemy = legend('dark');
+
+    damage.execute(state, victim, { attackerId: enemy, kind: 'ability', definitionId: 'execute' });
+
+    const last = state.entities.get(victim)?.findComponent(LastEnemyHit);
+    expect(last?.attackerIdWithin(state.tick, 0)).toBe(enemy);
   });
 
   it('leaves every other killer as it is: a hit with an attacker, and other status damage', () => {
