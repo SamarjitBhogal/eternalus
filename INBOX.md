@@ -13,6 +13,16 @@ review comments under "Feedback". Answered decisions are recorded in
 
 ## Decisions needed from Sam
 
+- [ ] **Better than the design, built, sign-off asked: the camera keeps the screen's aspect
+      (`fix/duel-camera-aspect`, 2026-11-27).** On a 4:3 tablet (an iPad over Tailscale) the
+      match was drawn squashed: the following camera always shows DEC-238's 96 × 54 m and the
+      renderer stretched it to the canvas. Built: `Camera.fitTo` keeps the 54 m height and takes the
+      screen's aspect for the width (72 m on 4:3, 96 m on 16:9, about 126 m on 21:9), before the
+      view is kept inside the map (architecture 08 §5). DEC-238 names a fixed 96 × 54, so a wider
+      screen now sees more of the map, also in an online Duel. Options: (A) keep as built;
+      (B) keep 96 × 54 on every screen and letterbox the rest (bars, no squash); (C) keep the width
+      and crop the height. Recommendation: A.
+
 - [ ] **Minion strength port (PR #82, 2026-11-25): sign off `LaneProgressOf`.** Built: `combat/`
       reads lane progress through a new port, `LaneProgressOf = (laneId, team, position) => number
 | null` (`MinionStrengthStep.types.ts`), which `LaneFlowFields.progress` implements and

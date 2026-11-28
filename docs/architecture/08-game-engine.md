@@ -176,6 +176,14 @@ export class MatchCamera implements Projection {}
 `MatchCamera` is the match's `Projection`: it holds the drawing size and turns a canvas point
 (CSS pixels) into a world point, so input never needs to know about cameras or screen sizes.
 
+The view keeps the screen's shape. The camera's base size sets the visible **height**; when the
+drawing size changes, `MatchCamera.resize` calls `Camera.fitTo`, and the visible width becomes that
+height times the screen's aspect, before the view is kept inside the map. So a 4:3 tablet shows a
+narrower slice of the world instead of a squashed 16:9 one, and every world-to-screen conversion
+uses the same rectangle. DEC-238's 96 × 54 m is the 16:9 shape; whether the width may follow the
+screen waits for the owner (`INBOX.md`, camera aspect). `MatchHost` resizes on a window `resize` and, where `ResizeObserver`
+exists, whenever the canvas's own box changes (a tablet browser's address bar, a turned device).
+
 `MinimapProjection` (`engine/camera/`, 06 §8) is a second, smaller thing. It is a per-frame value
 object for the local minimap view: a centre, a radius and a screen area. It works in device
 pixels, has no `Command`, and does not implement `Projection`. This is a better-than-design

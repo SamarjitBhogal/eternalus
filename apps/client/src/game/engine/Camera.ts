@@ -3,25 +3,38 @@ import type { Viewport } from './Camera.types';
 import type { WorldPoint, WorldRect } from './render/Renderer.types';
 
 /**
- * Decides which part of the world is on screen. It looks at a centre point and shows a width and
- * height of the world set by its base size and zoom, and never shows anything outside the world's
- * edges. It can follow a target smoothly (the player's Legend), and converts between world and
- * screen positions for the same view the renderer draws (architecture 08 §5).
+ * Decides which part of the world is on screen. It looks at a centre point and shows a height of
+ * the world set by its base size and zoom, and a width that keeps the screen's aspect (`fitTo`),
+ * so a 4:3 screen shows a narrower world instead of a squashed one; it never shows anything
+ * outside the world's edges. It can follow a target smoothly (the player's Legend), and converts
+ * between world and screen positions for the same view the renderer draws (architecture 08 §5).
  */
 export class Camera {
   private center: WorldPoint;
-  private readonly baseWidth: number;
   private readonly baseHeight: number;
   private zoomLevel = BASE_ZOOM;
+  private aspect: number;
 
   /**
-   * Creates a camera looking at `center`, showing `visibleWidth` world units across and
-   * `visibleHeight` world units top to bottom.
+   * Creates a camera looking at `center`, showing `visibleHeight` world units top to bottom and,
+   * until `fitTo` shapes it like a screen, `visibleWidth` world units across.
    */
   public constructor(center: WorldPoint, visibleWidth: number, visibleHeight: number) {
     this.center = center;
-    this.baseWidth = visibleWidth;
     this.baseHeight = visibleHeight;
+    this.aspect = visibleWidth / visibleHeight;
+  }
+
+  /**
+   * Shapes the view like a screen `width` × `height` (any unit): the visible height stays, the
+   * width follows the screen's aspect. Until it is called, the view keeps its base shape. A zero or
+   * non-finite size is ignored.
+   */
+  public fitTo(width: number, height: number): void {
+    const aspect = width / height;
+    if (Number.isFinite(aspect) && aspect > 0) {
+      this.aspect = aspect;
+    }
   }
 
   /** The current zoom: 1 shows the base size, 2 shows half as much world. */
@@ -31,7 +44,7 @@ export class Camera {
 
   /** How much of the world is visible left to right, in world units. */
   public get visibleWidth(): number {
-    return this.baseWidth / this.zoomLevel;
+    return (this.baseHeight * this.aspect) / this.zoomLevel;
   }
 
   /** How much of the world is visible top to bottom, in world units. */

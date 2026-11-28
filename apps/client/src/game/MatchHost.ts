@@ -75,6 +75,17 @@ export class MatchHost implements RunningMatch {
     try {
       this.resize();
       window.addEventListener('resize', this.resize);
+      // The canvas can change size with no window resize (Safari's address bar on a tablet, a
+      // turn of the device), so it is watched too where the browser can.
+      const { canvas } = viewport;
+      if (
+        typeof ResizeObserver !== 'undefined' &&
+        typeof Element !== 'undefined' &&
+        canvas instanceof Element
+      ) {
+        this.sizeWatch = new ResizeObserver(this.resize);
+        this.sizeWatch.observe(canvas);
+      }
       window.addEventListener('blur', this.releaseInput);
       window.addEventListener('keydown', this.runOneShotAction);
       document.addEventListener('visibilitychange', this.releaseInputWhenHidden);
@@ -120,6 +131,8 @@ export class MatchHost implements RunningMatch {
     this.isDestroyed = true;
     const { match, window, document, keyboard, mouse, adapters } = this.deps;
     window.removeEventListener('resize', this.resize);
+    this.sizeWatch?.disconnect();
+    this.sizeWatch = null;
     window.removeEventListener('blur', this.releaseInput);
     window.removeEventListener('keydown', this.runOneShotAction);
     document.removeEventListener('visibilitychange', this.releaseInputWhenHidden);
@@ -132,6 +145,9 @@ export class MatchHost implements RunningMatch {
       adapter.destroy();
     }
   }
+
+  /** Watches the canvas's own size (see `start`); `null` where `ResizeObserver` is missing. */
+  private sizeWatch: ResizeObserver | null = null;
 
   private readonly resize = (): void => {
     const { match, viewport, window } = this.deps;

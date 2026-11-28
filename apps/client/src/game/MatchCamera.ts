@@ -57,6 +57,7 @@ export class MatchCamera implements Projection {
     this.drawWidth = screenWidth;
     this.drawHeight = screenHeight;
     this.pixelRatio = pixelRatio;
+    this.camera.fitTo(screenWidth, screenHeight);
   }
 
   /**

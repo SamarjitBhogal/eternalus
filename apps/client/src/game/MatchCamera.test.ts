@@ -20,6 +20,15 @@ describe('MatchCamera', () => {
   it('starts the following camera farther out at a 96 by 54 world view', () => {
     expect(setUp().view.visibleArea()).toMatchObject({ width: 96, height: 54 });
   });
+
+  it('shapes the following view like the canvas, keeping its height', () => {
+    const { view } = setUp();
+
+    view.resize(2048, 1536, 2);
+
+    // A 4:3 canvas (an iPad): the same 54 units tall, 72 wide (54 × 4 / 3), not a squashed 96.
+    expect(view.visibleArea()).toMatchObject({ width: 72, height: 54 });
+  });
   it('exposes weather only while following the player, restoring it after free views', () => {
     const { view } = setUp();
     expect(view.isPlayerFollowing).toBe(true);

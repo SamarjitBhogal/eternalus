@@ -17,7 +17,10 @@ export const HUD_MINIMAP_RING: MiniMapRing = {
 /** The loop's frame clamp, in ticks: a frame may run at most this many (architecture 08 §2). */
 export const MAX_TICKS_PER_FRAME = 5;
 
-/** Following camera width in metres (DEC-238). */
+/**
+ * Following camera width in metres on a 16:9 screen (DEC-238); it sets the view's starting shape.
+ * On another screen the camera keeps the height and takes the screen's aspect (`Camera.fitTo`).
+ */
 export const FOLLOW_VIEW_WIDTH = 96;
 
 /**

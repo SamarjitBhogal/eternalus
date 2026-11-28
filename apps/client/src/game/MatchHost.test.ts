@@ -106,6 +106,28 @@ function setUp(
   };
 }
 
+/** A `ResizeObserver` stand-in: `report()` is the browser delivering an observation. */
+class FakeResizeObserver {
+  static readonly created: FakeResizeObserver[] = [];
+  readonly #callback: () => void;
+  target: unknown = null;
+  isConnected = false;
+  constructor(callback: () => void) {
+    this.#callback = callback;
+    FakeResizeObserver.created.push(this);
+  }
+  observe(target: unknown): void {
+    this.target = target;
+    this.isConnected = true;
+  }
+  disconnect(): void {
+    this.isConnected = false;
+  }
+  report(): void {
+    if (this.isConnected) this.#callback();
+  }
+}
+
 describe('MatchHost', () => {
   it('sizes the canvas in device pixels, attaches everything, then starts the match', () => {
     const { host, canvas, bus, match, atStart } = setUp();
@@ -118,6 +140,27 @@ describe('MatchHost', () => {
     expect(atStart.windowListeners).toBeGreaterThan(0);
     expect(atStart.canvasListeners).toBeGreaterThan(0);
     expect(atStart.busListeners).toBe(busBefore + 1);
+  });
+
+  it('resizes when the canvas box changes with no window resize, and stops watching on destroy', () => {
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+    vi.stubGlobal('Element', FakeViewportCanvas);
+    try {
+      const { host, canvas, match } = setUp();
+      host.start();
+      const observer = FakeResizeObserver.created.at(-1);
+      expect(observer?.target).toBe(canvas);
+
+      // A tablet browser hides its address bar: the canvas becomes 4:3 with no window event.
+      Object.defineProperty(canvas, 'clientWidth', { value: 480 });
+      observer?.report();
+      expect(match.resize).toHaveBeenLastCalledWith(960, 720, 2);
+
+      host.destroy();
+      expect(observer?.isConnected).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('attaches the keyboard and the developer hotkey to the window and the mouse to the canvas', () => {

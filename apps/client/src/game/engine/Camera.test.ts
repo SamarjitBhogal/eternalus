@@ -108,4 +108,48 @@ describe('Camera', () => {
     camera.zoomTo(0);
     expect(camera.zoom).toBe(MIN_ZOOM);
   });
+
+  it('keeps its base shape until it is fitted to a screen', () => {
+    const camera = new Camera({ x: 800, y: 450 }, 400, 300);
+
+    expect(camera.visibleArea(MAP_WIDTH, MAP_HEIGHT)).toMatchObject({ width: 400, height: 300 });
+  });
+
+  it('keeps the height and takes the screen shape, so a 4:3 screen is not squashed', () => {
+    // A 16:9 base view on a 4:3 screen: the same 90 units tall, 120 wide (90 × 4 / 3).
+    const camera = new Camera({ x: 800, y: 450 }, 160, 90);
+
+    camera.fitTo(2048, 1536);
+
+    expect(camera.visibleArea(MAP_WIDTH, MAP_HEIGHT)).toEqual({
+      x: 740,
+      y: 405,
+      width: 120,
+      height: 90,
+    });
+  });
+
+  it('fits the zoomed view the same way', () => {
+    const camera = new Camera({ x: 800, y: 450 }, 160, 90);
+    camera.fitTo(4, 3);
+    camera.zoomTo(2);
+
+    expect(camera.visibleArea(MAP_WIDTH, MAP_HEIGHT)).toMatchObject({ width: 60, height: 45 });
+  });
+
+  it('keeps a fitted view inside the map at its edge', () => {
+    const camera = new Camera({ x: 0, y: 0 }, 160, 90);
+    camera.fitTo(4, 3);
+
+    expect(camera.visibleArea(MAP_WIDTH, MAP_HEIGHT)).toMatchObject({ x: 0, y: 0, width: 120 });
+  });
+
+  it('ignores a screen with no size', () => {
+    const camera = new Camera({ x: 800, y: 450 }, 160, 90);
+
+    camera.fitTo(0, 0);
+    camera.fitTo(1280, 0);
+
+    expect(camera.visibleWidth).toBe(160);
+  });
 });
