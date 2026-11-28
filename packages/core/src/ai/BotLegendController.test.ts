@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { LANE_TOWER_FOOTPRINT_RADIUS } from '../content/maps/buildingGeometry';
 
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
@@ -287,12 +288,14 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     expect(decide().commands).toEqual([{ type: 'move', actorId: bot, direction: { x: 40, y: 0 } }]);
   });
 
-  // Dark's lane-0 SpawnerTower stands at x 140, radius 14: hordes gather at its near edge, x 126.
+  // Dark's lane-0 SpawnerTower stands at x 140, its radius following its fort (DEC-315): hordes
+  // gather at its near edge.
+  const nearEdge = 140 - LANE_TOWER_FOOTPRINT_RADIUS;
   const nextTower = (state: GameState) =>
     state.laneStructures.objectiveFor('lane-0', 'light', state.entities)?.id ?? '';
 
   it('Push: at its lane’s next enemy structure it attacks it, walks up to it, then holds in reach', () => {
-    const { state, bot, decide } = setUp({ x: 116, y: 20 });
+    const { state, bot, decide } = setUp({ x: nearEdge - 10, y: 20 });
     spawnMapStructures(state);
     const tower = nextTower(state);
 
@@ -300,7 +303,10 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
       { type: 'attack-target', actorId: bot, targetId: tower },
       { type: 'move', actorId: bot, direction: { x: 10, y: 0 } },
     ]);
-    state.entities.get(bot)?.getComponent(Transform).moveTo({ x: 125.5, y: 20 });
+    state.entities
+      .get(bot)
+      ?.getComponent(Transform)
+      .moveTo({ x: nearEdge - 0.5, y: 20 });
     expect(decide({ lane: 'lane-0', targetId: tower }).commands).toEqual([
       { type: 'move', actorId: bot, direction: { x: 0, y: 0 } },
     ]);
@@ -370,6 +376,157 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     const enemy = add('dark', 119);
 
     expect(decide().commands[0]).toEqual({ type: 'attack-target', actorId: bot, targetId: enemy });
+  });
+
+  // Light's lane-0 SpawnerTower stands at (60, 20) in a fort box x 44..76, y 12..28. It is under
+  // attack while an enemy unit within the engage radius of that box has it as its target
+  // (DEC-323 (2)): out to x 94 along the lane.
+  const FORT = { left: 44, right: 76, top: 12, bottom: 28 };
+  const defendArea = FORT.right + NORMAL_BOT.engageRadius;
+  const withFort = (state: GameState): void => {
+    spawnMapStructures(state, [
+      {
+        id: 'spawner-light-0',
+        kind: 'fort',
+        isBlocking: true,
+        footprints: [
+          [
+            { x: FORT.left, y: FORT.top },
+            { x: FORT.right, y: FORT.top },
+            { x: FORT.right, y: FORT.bottom },
+            { x: FORT.left, y: FORT.bottom },
+          ],
+        ],
+      },
+    ]);
+  };
+  const ownTower = (state: GameState, lane = 'lane-0') =>
+    state.laneStructures.onLane(lane, 'light')[0]?.id ?? '';
+
+  it('Defend: goes back down its lane to fight an enemy attacking its own tower, rather than push the enemy one (DEC-323 (2))', () => {
+    const { state, bot, add, decide } = setUp({ x: 130, y: 20 });
+    withFort(state);
+    // 40 m from the bot, beyond its engage radius; 30 m from its tower but 14 m from the fort box.
+    const attacker = add('dark', 90);
+    state.entities.setAttackTarget(attacker, ownTower(state));
+
+    expect(decide({ lane: 'lane-0' }, 'never-casts').commands).toEqual([
+      { type: 'attack-target', actorId: bot, targetId: attacker },
+      { type: 'move', actorId: bot, direction: { x: -40, y: 0 } },
+    ]);
+  });
+
+  it('Defend: leaves enemies by its tower alone while none attacks it there, and counts no tower on another lane (DEC-323 (2))', () => {
+    const { state, bot, add, decide } = setUp({ x: 130, y: 20 });
+    withFort(state);
+    const tower = ownTower(state);
+    const near = add('dark', 90);
+    state.entities.setAttackTarget(near, add('light', 88));
+    // Attacks the tower from 1 m beyond its area, and 35 m from the bot.
+    state.entities.setAttackTarget(add('dark', defendArea + 1), tower);
+    // Attacks light's lane-1 BuffTower at (50, 40), from inside the lane-0 tower's area.
+    state.entities.setAttackTarget(add('dark', 50, FORT.bottom + 16), ownTower(state, 'lane-1'));
+
+    expect(decide().commands[0]).toEqual({
+      type: 'attack-target',
+      actorId: bot,
+      targetId: nextTower(state),
+    });
+
+    state.entities.setAttackTarget(near, tower);
+    expect(decide().commands[0]).toEqual({ type: 'attack-target', actorId: bot, targetId: near });
+  });
+
+  /** The two-lane map with a second light BuffTower on lane-0 at `at`, under the feature id `id`. */
+  const withSecondTower = (id: string, at: { readonly x: number; readonly y: number }) => ({
+    ...TWO_LANE_MAP,
+    features: [
+      ...TWO_LANE_MAP.features,
+      {
+        id,
+        kind: 'buff-tower',
+        team: 'light',
+        definitionId: 'buff-tower',
+        position: at,
+        minimapGlyph: GLYPH,
+        laneId: 'lane-0',
+      } as const,
+    ],
+  });
+  const towerAt = (state: GameState, x: number, y = 20) =>
+    state.laneStructures.onLane('lane-0', 'light').find((entry) => entry.x === x && entry.y === y)
+      ?.id ?? '';
+
+  // Feature ids sort into lane order: `buff-light-0` before `spawner-light-0`, `tower-light-0` after.
+  it.each(['buff-light-0', 'tower-light-0'])(
+    'Defend: of two of its structures under attack, defends the one nearer the bot (second tower %s, DEC-323 (2))',
+    (id) => {
+      const { state, bot, add, decide } = setUp(
+        { x: 130, y: 20 },
+        withSecondTower(id, { x: 25, y: 20 }),
+      );
+      withFort(state);
+      // 15 m above the far tower, 20 m from the near tower's fort box: in the far tower's area only.
+      // Nearly dead, so the scorer would take it if it were a candidate.
+      const weak = add('dark', 25, 5);
+      const health = state.entities.get(weak)?.getComponent(Health);
+      health?.applyDamage(Math.floor(health.max * 0.9));
+      state.entities.setAttackTarget(weak, towerAt(state, 25));
+      const attacker = add('dark', 90);
+      state.entities.setAttackTarget(attacker, towerAt(state, 60));
+
+      expect(decide().commands[0]).toEqual({
+        type: 'attack-target',
+        actorId: bot,
+        targetId: attacker,
+      });
+    },
+  );
+
+  it('Defend: of two attacked structures as near the bot, defends the earlier in lane order (DEC-323 (2))', () => {
+    // The bot at (110, 30) is 50 m across and 10 m down from both the SpawnerTower at (60, 20) and
+    // a second tower at (60, 40), which comes later in lane order.
+    const { state, bot, add, decide } = setUp(
+      { x: 110, y: 30 },
+      withSecondTower('tower-light-0', { x: 60, y: 40 }),
+    );
+    withFort(state);
+    // 12 m above the fort box, 40 m from the second tower: in the SpawnerTower's area only.
+    const attacker = add('dark', 60, 0);
+    state.entities.setAttackTarget(attacker, towerAt(state, 60));
+    // 16 m below the second tower, 28 m below the fort box, and nearer the bot than `attacker`.
+    state.entities.setAttackTarget(add('dark', 60, 56), towerAt(state, 60, 40));
+
+    expect(decide().commands[0]).toEqual({
+      type: 'attack-target',
+      actorId: bot,
+      targetId: attacker,
+    });
+  });
+
+  it('Defend: counts no fallen tower, though an enemy still has it as its target (DEC-323 (2))', () => {
+    const { state, bot, add, decide } = setUp({ x: 130, y: 20 });
+    withFort(state);
+    const tower = ownTower(state);
+    // `CombatSystem` drops a dead target only when it next runs, after the bots decide.
+    state.entities.setAttackTarget(add('dark', 90), tower);
+    const health = state.entities.get(tower)?.getComponent(Health);
+    health?.applyDamage(health.total);
+
+    expect(decide().commands[0]).toEqual({
+      type: 'attack-target',
+      actorId: bot,
+      targetId: nextTower(state),
+    });
+  });
+
+  it('Fight before Defend: an enemy inside its engage radius is fought first, while its tower is attacked', () => {
+    const { state, bot, add, decide } = setUp({ x: 130, y: 20 });
+    withFort(state);
+    state.entities.setAttackTarget(add('dark', 90), ownTower(state));
+    const close = add('dark', 135);
+
+    expect(decide().commands[0]).toEqual({ type: 'attack-target', actorId: bot, targetId: close });
   });
 
   it('Push: walks with its horde while still short of the structure', () => {

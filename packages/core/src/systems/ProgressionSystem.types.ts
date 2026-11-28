@@ -19,6 +19,12 @@ export type ProgressionContent = {
    * each level (a Duel, `DUEL_RULES.legendsStartAtMaxLevel`, SCRUM-444). Mobs are untouched.
    */
   readonly legendsStartAtMaxLevel?: boolean;
+  /**
+   * When `false`, nothing earns match XP: no kill, destroyed structure, cleared camp, cleared
+   * checkpoint set or respawn pays any (a Duel, `DUEL_RULES.hasMatchXp`, DEC-380 (1)). Absent
+   * means XP is earned as normal.
+   */
+  readonly hasMatchXp?: boolean;
 };
 
 /** One kill waiting for this system's pass. */
@@ -38,20 +44,24 @@ type CheckpointAward = Omit<KillAward, 'kind'> & { readonly kind: 'checkpoint-cl
 
 /**
  * One team-wide award: `xp` for every Legend of `team`, for a structure it destroyed (DEC-186) or a
- * boss its unit killed (`team-kill`, DEC-237). `maxLevels` caps how far it lifts each Legend.
+ * boss its unit killed (`team-kill`, DEC-237). `maxLevels` caps how far it lifts each Legend;
+ * `levels` lifts each that far, keeping its share of its level (DEC-371 E8a), and `lastHitter` gets
+ * its own levels in all instead (DEC-371 E8b, DEC-416).
  */
-type TeamAward = {
+export type TeamAward = {
   readonly kind: 'structure-destroyed' | 'team-kill';
   readonly team: PlayableTeam;
   readonly victimId: EntityId;
   readonly victimTeam: Team;
   readonly xp: number;
   readonly maxLevels?: number;
+  readonly levels?: number;
+  readonly lastHitter?: { readonly id: EntityId; readonly levels: number };
 };
 
 /**
  * XP a Legend was owed while it waited to respawn, paid to it in the pass after it returns
- * (DEC-186 "pay on respawn"); `maxLevels` is the owed team-kill's cap, applied then.
+ * (DEC-186 "pay on respawn"); `maxLevels` and `levels` are the owed team-kill's, applied then.
  */
 type RespawnAward = {
   readonly kind: 'respawn';
@@ -60,6 +70,7 @@ type RespawnAward = {
   readonly victimTeam: Team;
   readonly xp: number;
   readonly maxLevels?: number;
+  readonly levels?: number;
 };
 
 /** An award paid to one Legend by id (its killer, or its share), owed while it waits to respawn. */

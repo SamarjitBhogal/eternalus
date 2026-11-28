@@ -1,6 +1,7 @@
 import type { MapDefinition, MapFeatureKind, Simulation, Snapshot } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
+import type { RetiredFeatures } from './RetiredFeatures';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
 
 /** What `Match` builds its `MatchBridge` from. */
@@ -24,4 +25,9 @@ export type MatchBridgeDeps = {
    * before it, so the bridge binds each structure tile here, by `EntitySnapshot.mapFeatureId`.
    */
   readonly firstSnapshot: Snapshot;
+  /**
+   * Which structures have fallen, read for a tile's 0 health. `Match` owns it and observes every
+   * snapshot into it before the bridge reads it (first the first snapshot, then once per tick).
+   */
+  readonly retired: Pick<RetiredFeatures, 'isRetired'>;
 };

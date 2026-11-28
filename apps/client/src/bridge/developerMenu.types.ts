@@ -22,4 +22,22 @@ export type DeveloperMenuState = {
   readonly isOpen: boolean;
   /** The map structures a horde can start at (the structures that sit on a lane). */
   readonly origins: readonly DeveloperMenuOption[];
+  /** The human's Legend, or `null` in sim mode (no human); sim mode's buttons read it. */
+  readonly humanLegendId: string | null;
+  /**
+   * The Legend the camera follows while no human is seated (sim mode's Follow, client-only), or
+   * `null` when it follows none.
+   */
+  readonly followedLegendId: string | null;
+  /** The Legends in the match, for sim mode's Follow picker. */
+  readonly legends: readonly DeveloperMenuOption[];
+  /**
+   * The controller ids sim mode's controls send (core's): the human's (`player`), and the bots' a
+   * developer can pick, the Rover's and the lane bot's.
+   */
+  readonly controllerIds: {
+    readonly player: string;
+    readonly rover: string;
+    readonly laner: string;
+  };
 };

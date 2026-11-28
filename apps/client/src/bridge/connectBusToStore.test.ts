@@ -43,7 +43,14 @@ describe('connectBusToStore', () => {
 
   it('copies developer-menu into its slice and clears it on the next match-setup', () => {
     const { bus, store } = connected();
-    bus.emit('developer-menu', { isOpen: true, origins: [] });
+    bus.emit('developer-menu', {
+      isOpen: true,
+      origins: [],
+      humanLegendId: null,
+      followedLegendId: null,
+      legends: [],
+      controllerIds: { player: 'player', rover: 'rover', laner: 'bot-legend' },
+    });
     expect(store.getState().developerMenu.isOpen).toBe(true);
     bus.emit('match-setup', null);
     expect(store.getState().developerMenu.isOpen).toBe(false);

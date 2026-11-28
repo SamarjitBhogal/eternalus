@@ -45,6 +45,7 @@ export class MapView implements WorldLayer {
     detailArea?: () => WorldRect,
     private readonly buildings: readonly MapBuilding[] = [],
     private readonly isDestroyed: (id: string) => boolean = () => false,
+    private readonly isRetired: (id: string) => boolean = () => false,
     private readonly featureSizes: Readonly<Partial<Record<MapFeatureKind, number>>> = {},
   ) {
     this.map = map;
@@ -61,7 +62,7 @@ export class MapView implements WorldLayer {
   public draw(renderer: Renderer): void {
     this.drawGround(renderer);
     for (const feature of this.map.features) {
-      if (this.isDestroyed(feature.id)) continue;
+      if (this.isGone(feature.id)) continue;
       const style = FEATURE_STYLES[feature.kind];
       const featureSize = this.featureSizes[feature.kind];
       if (
@@ -71,6 +72,7 @@ export class MapView implements WorldLayer {
         continue;
       if (this.hiddenRoofs.has(feature.id)) continue;
       if (this.buildings.some((building) => building.id === feature.id)) continue;
+      if (style.shape === 'entity') continue;
       const color = MapView.featureColor(feature);
       if (style.shape === 'footprint') {
         renderer.fillPolygon(feature.footprint ?? [], color);
@@ -85,9 +87,14 @@ export class MapView implements WorldLayer {
   public drawMinimap(renderer: Renderer): void {
     this.drawGround(renderer, true);
     for (const feature of this.map.features) {
-      if (this.isDestroyed(feature.id)) continue;
+      if (this.isGone(feature.id)) continue;
       renderer.drawGlyph(feature.minimapGlyph, feature.position, MapView.minimapColor(feature));
     }
+  }
+
+  /** A feature is gone when its map object is destroyed or its structure has fallen. */
+  private isGone(id: string): boolean {
+    return this.isDestroyed(id) || this.isRetired(id);
   }
 
   /** Team features use their team colour; neutral ones use the colour for their kind. */

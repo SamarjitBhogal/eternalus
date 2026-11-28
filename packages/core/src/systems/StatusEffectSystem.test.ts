@@ -6,10 +6,12 @@ import { Movement } from '../components/Movement';
 import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadScoring } from '../content/match/loadScoring';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
+import { RUINED_FORT_WALL_DEFINITION } from '../content/maps/mapObjectDefinitions';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../content/progression/xpSources';
@@ -34,7 +36,7 @@ const ASSIST_WINDOW_TICKS = loadScoring(createDefaultGameConfig().tickRate).assi
 
 const CONFIG = createDefaultGameConfig();
 const statusSystem = (applier: StatusEffectApplier) =>
-  new StatusEffectSystem(new DamagePipeline(), applier);
+  new StatusEffectSystem(new DamagePipeline(damageStepsWithoutLaneProgress()), applier);
 const STRUCTURES_PER_LANE = CONFIG.map.spawnTowersPerLane + CONFIG.map.buffTowersPerLane;
 
 /** A Warrior (light) at the origin next to a dark training dummy, an applier and an event log. */
@@ -96,6 +98,7 @@ const tickPipeline = (state: GameState): System => {
     },
     // Statuses are the subject here, not the match: no director moves the phase.
     director: { update: () => undefined },
+    ruinWall: RUINED_FORT_WALL_DEFINITION,
   });
   return {
     name: 'tick',

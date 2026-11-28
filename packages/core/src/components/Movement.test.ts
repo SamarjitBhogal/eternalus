@@ -5,6 +5,25 @@ import { Movement } from './Movement';
 const STATS = { maxSpeed: 3, acceleration: 1, mass: 2 };
 
 describe('Movement', () => {
+  it('adds a push to the next step only, on top of the velocity', () => {
+    const movement = new Movement(STATS);
+    movement.accelerateToward({ x: 1, y: 0 });
+
+    movement.pushBy({ x: 0, y: 2 });
+    movement.pushBy({ x: 0, y: 1 });
+    expect(movement.push).toEqual({ x: 0, y: 3 });
+    expect({ ...movement.takeStep() }).toEqual({ x: 1, y: 3 });
+    expect(movement.push).toEqual({ x: 0, y: 0 });
+    expect({ ...movement.takeStep() }).toEqual({ x: 1, y: 0 });
+    expect(movement.velocity).toEqual({ x: 1, y: 0 });
+  });
+
+  it('rejects a push that is not finite', () => {
+    expect(() => {
+      new Movement(STATS).pushBy({ x: Number.NaN, y: 0 });
+    }).toThrow('finite');
+  });
+
   it('starts stopped', () => {
     const movement = new Movement(STATS);
 

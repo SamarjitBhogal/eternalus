@@ -39,18 +39,21 @@ const feature = (id: string, kind: MapFeatureKind, laneId?: string): MapFeature 
   ...(laneId === undefined ? {} : { laneId }),
 });
 
-function setUp(isEnabled: boolean) {
+function setUp(isEnabled: boolean, human: string | null = 'entity-1') {
   const bus = new TypedEventBus<BridgeEventMap>();
   const enqueueCommand = vi.fn<Simulation['enqueueCommand']>();
   const states: BridgeEventMap['developer-menu'][] = [];
   bus.on('developer-menu', (state) => states.push(state));
+  const onFollow = vi.fn<() => void>();
   const controller = new DeveloperMenuController({
     isEnabled,
     simulation: { enqueueCommand },
     bus,
     map: { features: [feature('gate-a', 'gate', 'lane-1'), feature('camp-a', 'camp')] },
+    humanLegendId: () => human,
+    onFollow,
   });
-  return { bus, enqueueCommand, states, controller };
+  return { bus, enqueueCommand, states, controller, onFollow };
 }
 
 describe('DeveloperMenuController', () => {
@@ -76,12 +79,59 @@ describe('DeveloperMenuController', () => {
     expect(enqueueCommand).not.toHaveBeenCalled();
   });
 
+  it('follows a Legend with no human, sends no command and publishes the choice', () => {
+    const { bus, enqueueCommand, states, controller, onFollow } = setUp(true, null);
+    bus.emit('ui-intent', { kind: 'dev-follow', legendId: 'entity-4' });
+    expect(controller.followedLegendId).toBe('entity-4');
+    expect(onFollow).toHaveBeenCalledTimes(1);
+    bus.emit('ui-intent', { kind: 'dev-follow', legendId: null });
+    expect(controller.followedLegendId).toBeNull();
+    expect(onFollow).toHaveBeenCalledTimes(1);
+    expect(states.map((state) => state.followedLegendId)).toEqual(['entity-4', null]);
+    expect(enqueueCommand).not.toHaveBeenCalled();
+  });
+
+  it('publishes the Legends of a snapshot for Follow once, and again only when they change', () => {
+    const { states, controller } = setUp(true, null);
+    const legend = (id: string) => ({
+      id,
+      family: 'legend',
+      team: 'dark' as const,
+      definitionId: 'warrior',
+    });
+    const mob = { id: 'm1', family: 'mob', team: 'dark' as const, definitionId: 'minion' };
+    controller.observeLegends([legend('e1'), mob]);
+    controller.observeLegends([legend('e1'), mob]);
+    controller.observeLegends([legend('e1'), legend('e2')]);
+    expect(states.map((state) => state.legends.map(({ id }) => id))).toEqual([
+      ['e1'],
+      ['e1', 'e2'],
+    ]);
+  });
+
+  it('follows nothing while a human is seated, or while the menu is not enabled', () => {
+    const seated = setUp(true);
+    seated.bus.emit('ui-intent', { kind: 'dev-follow', legendId: 'entity-4' });
+    expect(seated.controller.followedLegendId).toBeNull();
+
+    const disabled = setUp(false, null);
+    disabled.bus.emit('ui-intent', { kind: 'dev-follow', legendId: 'entity-4' });
+    expect(disabled.controller.followedLegendId).toBeNull();
+    expect(disabled.onFollow).not.toHaveBeenCalled();
+    expect(disabled.states).toEqual([]);
+  });
+
   it('toggles open and closed, publishing only the structures on a lane', () => {
     const { controller, states } = setUp(true);
     controller.toggle();
     controller.toggle();
     expect(states.map((state) => state.isOpen)).toEqual([true, false]);
     expect(states[0]?.origins).toEqual([{ id: 'gate-a', label: 'gate-a (gate)' }]);
+    expect(states[0]?.controllerIds).toEqual({
+      player: 'player',
+      rover: 'rover',
+      laner: 'bot-legend',
+    });
   });
 
   it('does not open, and publishes nothing, while the menu is not enabled', () => {
@@ -101,7 +151,13 @@ describe('DeveloperMenuController', () => {
       map,
     });
     const bus = new TypedEventBus<BridgeEventMap>();
-    const controller = new DeveloperMenuController({ isEnabled: true, simulation, bus, map });
+    const controller = new DeveloperMenuController({
+      isEnabled: true,
+      simulation,
+      bus,
+      map,
+      humanLegendId: () => null,
+    });
     const states: BridgeEventMap['developer-menu'][] = [];
     bus.on('developer-menu', (state) => states.push(state));
     controller.publish();
@@ -137,7 +193,13 @@ describe('DeveloperMenuController', () => {
       map,
     });
     const bus = new TypedEventBus<BridgeEventMap>();
-    new DeveloperMenuController({ isEnabled: true, simulation, bus, map });
+    new DeveloperMenuController({
+      isEnabled: true,
+      simulation,
+      bus,
+      map,
+      humanLegendId: () => null,
+    });
     const rejected: string[] = [];
     simulation.on('command-rejected', ({ reason }) => rejected.push(reason));
     const legends = () =>
@@ -150,5 +212,41 @@ describe('DeveloperMenuController', () => {
     simulation.step();
     expect(legends()).toHaveLength(config.limits.maxLegendsPerTeam);
     expect(rejected).toEqual(['cap-exceeded']);
+  });
+
+  it("publishes sim mode's controller ids, which the real simulation accepts", () => {
+    const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
+    const { map } = prepareMatchWorld(config, 1);
+    const simulation = new Simulation({
+      seed: 1,
+      logger: new NullLogger(),
+      ...withPlayer(config, { legend: 'warrior', team: 'light' }),
+      map,
+    });
+    const bus = new TypedEventBus<BridgeEventMap>();
+    const humanId = simulation.snapshot().match.humanLegendId ?? '';
+    const controller = new DeveloperMenuController({
+      isEnabled: true,
+      simulation,
+      bus,
+      map,
+      humanLegendId: () => simulation.snapshot().match.humanLegendId,
+    });
+    const states: BridgeEventMap['developer-menu'][] = [];
+    bus.on('developer-menu', (state) => states.push(state));
+    controller.publish();
+    const ids = states[0]?.controllerIds;
+    const rejected: string[] = [];
+    simulation.on('command-rejected', ({ reason }) => rejected.push(reason));
+    const sent = [ids?.rover ?? '', ids?.player ?? '', ids?.laner ?? '', ids?.player ?? ''];
+    for (const controllerId of sent) {
+      bus.emit('ui-intent', {
+        kind: 'dev-command',
+        command: { type: 'dev-set-controller', entityId: humanId, controllerId },
+      });
+      simulation.step();
+    }
+    expect(rejected).toEqual([]);
+    expect(simulation.snapshot().match.humanLegendId).toBe(humanId);
   });
 });

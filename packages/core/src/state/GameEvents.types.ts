@@ -17,6 +17,18 @@ export type DamageSource = {
   readonly definitionId: string;
 };
 
+/**
+ * Where a hit came from, in world units (DEC-381). The body-part bonuses read it
+ * (`combat/BodyPartBonusStep`). Lives in `state/` beside `DamageSource` because the `entities/`
+ * damage port carries it too and `entities/` may not import `combat/` (02).
+ */
+export type HitPath = {
+  /** Where the hit came from: the melee attacker's position, or where a shot started. */
+  readonly origin: Vec2;
+  /** Where a shot struck; a melee hit leaves it out. */
+  readonly impactPoint?: Vec2;
+};
+
 /** A horde's announcement payload. */
 type HordePayload = {
   readonly hordeId: string;
@@ -49,6 +61,11 @@ export type GameEventMap = {
     readonly cause: RemovalCause;
     readonly killer?: DamageSource;
   };
+  /**
+   * Sim mode moved the `playerTeam` human seat (`dev-set-controller`, FR-099): `from` is the
+   * Legend that was the human's, `to` the one that is now; either is `null` for no human.
+   */
+  readonly 'human-reseated': { readonly from: EntityId | null; readonly to: EntityId | null };
   readonly 'damage-applied': {
     readonly targetId: EntityId;
     readonly amount: number;
@@ -200,6 +217,12 @@ export type GameEventMap = {
    * spawn.
    */
   readonly 'greater-boss-summoned': { readonly bossId: string };
+  /** The Greater Boss's entrance roar (reference 04), on its spawn tick; no gameplay effect yet. */
+  readonly 'boss-entrance': { readonly bossId: EntityId };
+  /** A boss began a move (11 §4.6); it lands `telegraphSeconds` later with `boss-move-executed`. */
+  readonly 'boss-telegraph': { readonly bossId: EntityId; readonly move: string };
+  /** A boss's move landed: its hits went through the damage pipeline this tick. */
+  readonly 'boss-move-executed': { readonly bossId: EntityId; readonly move: string };
   /** `command` is the rejected `Command` (typed loosely: `state/` sits below `commands/`). */
   readonly 'command-rejected': {
     readonly command: { readonly type: string };

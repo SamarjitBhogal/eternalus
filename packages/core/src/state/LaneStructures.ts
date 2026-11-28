@@ -8,6 +8,7 @@ import { compareById } from '../utils/compareById';
 import type { EntityStore } from './EntityStore';
 import type { LaneObjective, LaneStructureEntry } from './LaneStructures.types';
 import type { LaneRoutes } from './LaneRoutes';
+import { outlineBoxOf } from './outlineBoxOf';
 import { opponentOf, PLAYABLE_TEAMS, isPlayableTeam } from '../teams/playableTeams';
 
 /**
@@ -64,7 +65,14 @@ export class LaneStructures {
       const team = entity.findComponent(TeamMembership)?.team;
       const transform = entity.findComponent(Transform);
       const health = entity.findComponent(Health);
-      if (!(entity instanceof Structure) || !isPlayableTeam(team) || !transform || !health) {
+      const box = outlineBoxOf(entity);
+      if (
+        !(entity instanceof Structure) ||
+        !isPlayableTeam(team) ||
+        !transform ||
+        !health ||
+        !box
+      ) {
         return;
       }
       all.push({
@@ -75,6 +83,7 @@ export class LaneStructures {
         x: transform.position.x,
         y: transform.position.y,
         radius: transform.radius,
+        box,
         startingHealth: health.total,
       });
     });

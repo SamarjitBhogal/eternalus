@@ -25,6 +25,7 @@ export const WARRIOR = {
   passiveOptions: [],
   defaultAction: null,
   referenceHeight: 2.1, // TUNE: ~7 ft (Master Chief)
+  spriteWidth: 5.2, // TUNE: tuneable after game testing (DEC-424: the body ratio of DEC-06; DEC-238's size)
   footprintRadius: 0.5, // DEC-06
   visionRadius: 25, // TUNE:
   movementProfile: {
@@ -34,5 +35,10 @@ export const WARRIOR = {
   },
   defaultLoadout: { primaryWeaponId: 'raptor-talons' }, // TUNE: default weapon (05 §10 table) until the owner picks one (INBOX)
   levelCurveId: 'legend',
-  levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 }, // TUNE: balancing.md
+  levelScaling: {
+    healthPerLevel: 0.08, // TUNE: balancing.md
+    aetherPerLevel: 10, // TUNE: balancing.md
+    basicAttackPerLevel: 0.08, // TUNE: DEC-380 (2), keeps pace with health until playtests
+    basicAttackPerLevelOnStructures: 0.04, // TUNE: DEC-405 default, HC-Q119 option C's example
+  },
 } as const satisfies LegendDefinition;

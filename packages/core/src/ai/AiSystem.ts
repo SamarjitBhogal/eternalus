@@ -15,7 +15,7 @@ import { Perception } from './perception/Perception';
  *
  * - **Brains.** An entity whose definition names a controller gets a brain the first tick this
  *   system sees it, with its own RNG stream seeded from the match seed and its id; the brain goes
- *   when the entity is removed (on this system's next pass, 03 §4).
+ *   when the entity is removed or its binding changes (on this system's next pass, 03 §4).
  * - **Cadence.** An entity is due when `(tick + fnv1a(id)) % everyTicks[controller] === 0`, which
  *   spreads decisions across ticks (ids are strings, so their hash stands in for 11 §6's number).
  * - **Memory.** A controller returns its brain's memory and RNG state with its commands; this
@@ -25,11 +25,10 @@ import { Perception } from './perception/Perception';
  */
 export class AiSystem {
   public readonly name = 'ai';
-  private readonly removed: EntityId[] = [];
   private readonly perception: Perception;
 
   /**
-   * @param state - The match whose removals this system listens to.
+   * @param state - The match whose entities this system perceives.
    * @param controllers - Every controller, by id.
    * @param cadence - How often each controller decides, and the per-tick budget.
    * @param enqueue - Where decisions go: the simulation's command queue.
@@ -41,9 +40,6 @@ export class AiSystem {
     private readonly enqueue: (command: Command) => void,
   ) {
     this.perception = new Perception(state);
-    state.events.on('entity-removed', ({ entityId }) => {
-      this.removed.push(entityId);
-    });
   }
 
   /**
@@ -89,10 +85,18 @@ export class AiSystem {
    */
   public update({ state }: { readonly state: GameState }): void {
     const { ai, entities } = state;
-    for (const id of this.removed) {
+    // A brain follows its binding: an entity that is gone, unbound or bound to another controller
+    // or profile (the developer menu's sim mode, DEC-294) loses it, and gets a fresh one below.
+    const stale: EntityId[] = [];
+    ai.forEach((id, brain) => {
+      const binding = entities.controllerOf(id);
+      if (binding?.controllerId !== brain.controllerId || binding.profileId !== brain.profileId) {
+        stale.push(id);
+      }
+    });
+    for (const id of stale) {
       ai.delete(id);
     }
-    this.removed.length = 0;
     const waiting = new Set(ai.deferred);
     const due: EntityId[] = [];
     entities.forEach(({ id }) => {

@@ -10,6 +10,9 @@ import type {
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
+import { LEGEND_VISUAL_DIAMETER } from './views/entityViews.constants';
+import { LegendSpriteView } from './views/LegendSpriteView';
+import type { ViewRegistry } from './views/ViewRegistry';
 
 import type { IntentSource } from './Match.types';
 import { PlayerCommands } from './PlayerCommands';
@@ -69,6 +72,7 @@ const unit = (id: string, team: Team, x: number, y: number): EntitySnapshot => (
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 });
 const PLAYER: EntitySnapshot = { ...unit(ACTOR, 'light', 20, 20), family: 'legend' };
@@ -81,7 +85,7 @@ const snapshotOf = (
   mapObjects: readonly MapObjectSnapshot[] = HOUSE_STATES,
 ) => ({ entities, mapObjects });
 
-const setUp = () => {
+const setUp = (views: ViewRegistry = createDefaultViewRegistry()) => {
   const input = new ScriptedIntent();
   const enqueueCommand = vi.fn<Simulation['enqueueCommand']>();
   const commands = new PlayerCommands(
@@ -89,7 +93,7 @@ const setUp = () => {
     { enqueueCommand },
     { screenToWorld: (point) => point },
     [HOUSE],
-    createDefaultViewRegistry(),
+    views,
   );
   const queued = (type: Command['type']): number =>
     enqueueCommand.mock.calls.filter(([command]) => command.type === type).length;
@@ -127,6 +131,33 @@ describe('PlayerCommands', () => {
       targetId: minion.id,
     });
     expect(commands.attackUnitAt(ACTOR, { x: 2, y: -20 }, snapshot)).toBe(false);
+  });
+
+  it('picks a sprite Legend inside its 2.6 m click circle, not 3 m above its feet (DEC-238)', () => {
+    // The sprite stands about 4.8 m above the feet; its top must not reach the click test.
+    const legendView = new LegendSpriteView({
+      sizeOf: () => ({ width: LEGEND_VISUAL_DIAMETER, top: 4.8 }),
+      frameOf: () => ({ atlasId: 'knight-sprites', frame: 0 }),
+    });
+    const { commands } = setUp(createDefaultViewRegistry(undefined, legendView));
+    const foe = { ...unit('foe', 'dark', 10, 10), family: 'legend' };
+    const snapshot = snapshotOf([PLAYER, foe]);
+
+    expect(commands.attackUnitAt(ACTOR, { x: 10, y: 7 }, snapshot)).toBe(false);
+    expect(commands.attackUnitAt(ACTOR, { x: 10, y: 8 }, snapshot)).toBe(true);
+  });
+
+  it("picks a Sentinel's 13 m sprite inside half its width, 6.5 m (DEC-424)", () => {
+    const legendView = new LegendSpriteView({
+      sizeOf: () => ({ width: 13, top: 12 }),
+      frameOf: () => ({ atlasId: 'colossus-sprites', frame: 0 }),
+    });
+    const { commands } = setUp(createDefaultViewRegistry(undefined, legendView));
+    const foe = { ...unit('foe', 'dark', 10, 10), family: 'legend' };
+    const snapshot = snapshotOf([PLAYER, foe]);
+
+    expect(commands.attackUnitAt(ACTOR, { x: 10, y: 3 }, snapshot)).toBe(false);
+    expect(commands.attackUnitAt(ACTOR, { x: 10, y: 4 }, snapshot)).toBe(true);
   });
 
   it('queues one attack per target while held, and again after a release or a stop', () => {

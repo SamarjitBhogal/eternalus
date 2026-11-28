@@ -20,6 +20,7 @@ const legend = (height: number | null): EntitySnapshot => ({
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 });
 
@@ -30,19 +31,24 @@ const stateOf = (entity: EntitySnapshot): EntityDrawState => ({
   facing: { x: 1, y: 0 },
   height: entity.elevation?.height ?? 0,
   isFocused: false,
+  frameTick: 0,
+  time: 0,
 });
 
-/** Records where it was asked to draw and returns `top`. */
+/** Records where it was asked to draw; gives `top` as its artwork top, or no top. */
 class StubView implements EntityView {
   public readonly drawnAt: WorldPoint[] = [];
 
   public readonly minimapLayer = 3;
 
-  public constructor(private readonly top: number | undefined) {}
+  public readonly visualTopOf?: () => number;
 
-  public draw(state: EntityDrawState): number | undefined {
+  public constructor(top: number | undefined) {
+    if (top !== undefined) this.visualTopOf = () => top;
+  }
+
+  public draw(state: EntityDrawState): void {
     this.drawnAt.push(state.position);
-    return this.top;
   }
 
   public drawMinimap(state: EntityDrawState): void {
@@ -55,22 +61,27 @@ class StubView implements EntityView {
 }
 
 describe('AirborneView', () => {
-  it.each([null, 0])('draws a Legend with jump %s like the wrapped view, with no shadow', (h) => {
-    const inner = new StubView(7);
-    const renderer = new RecordingRenderer();
+  it.each([null, 0, -1])(
+    'draws a Legend with jump %s like the wrapped view, with no shadow',
+    (h) => {
+      const inner = new StubView(7);
+      const renderer = new RecordingRenderer();
+      const view = new AirborneView(inner);
 
-    const top = new AirborneView(inner).draw(stateOf(legend(h)), renderer);
+      view.draw(stateOf(legend(h)), renderer);
 
-    expect(top).toBe(7);
-    expect(inner.drawnAt).toEqual([{ x: 4, y: 10 }]);
-    expect(renderer.calls).toEqual([]);
-  });
+      expect(view.visualTopOf(stateOf(legend(h)))).toBe(7);
+      expect(inner.drawnAt).toEqual([{ x: 4, y: 10 }]);
+      expect(renderer.calls).toEqual([]);
+    },
+  );
 
   it('draws a ground shadow, then the Legend raised by its height (DEC-390)', () => {
     const inner = new StubView(7);
     const renderer = new RecordingRenderer();
+    const view = new AirborneView(inner);
 
-    const top = new AirborneView(inner).draw(stateOf(legend(1.5)), renderer);
+    view.draw(stateOf(legend(1.5)), renderer);
 
     expect(renderer.calls).toEqual([
       {
@@ -79,26 +90,22 @@ describe('AirborneView', () => {
       },
     ]);
     expect(inner.drawnAt).toEqual([{ x: 4, y: 8.5 }]);
-    expect(top).toBe(8.5);
+    expect(view.visualTopOf(stateOf(legend(1.5)))).toBe(8.5);
   });
 
   it('lifts by the interpolated height of the draw state, not the snapshot height', () => {
     const inner = new StubView(7);
+    const view = new AirborneView(inner);
+    const state = { ...stateOf(legend(1.5)), height: 0.5 };
 
-    const top = new AirborneView(inner).draw(
-      { ...stateOf(legend(1.5)), height: 0.5 },
-      new RecordingRenderer(),
-    );
+    view.draw(state, new RecordingRenderer());
 
     expect(inner.drawnAt).toEqual([{ x: 4, y: 9.5 }]);
-    expect(top).toBe(7.5);
+    expect(view.visualTopOf(state)).toBe(7.5);
   });
 
   it('lifts the health bar from the artwork radius when the wrapped view reports no top', () => {
-    const top = new AirborneView(new StubView(undefined)).draw(
-      stateOf(legend(1.5)),
-      new RecordingRenderer(),
-    );
+    const top = new AirborneView(new StubView(undefined)).visualTopOf(stateOf(legend(1.5)));
 
     expect(top).toBe(2.6 + 1.5);
   });

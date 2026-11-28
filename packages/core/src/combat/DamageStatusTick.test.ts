@@ -10,6 +10,7 @@ import { EntityFactory } from '../entities/EntityFactory';
 import type { GameEventMap } from '../state/GameEvents.types';
 import { GameState } from '../state/GameState';
 import { DamagePipeline } from './DamagePipeline';
+import { damageStepsWithoutLaneProgress } from './__fixtures__/damageSteps';
 import { DamageStatusTick } from './DamageStatusTick';
 
 const CONFIG = createDefaultGameConfig();
@@ -36,7 +37,10 @@ const setUp = (statusId: string, stacks: number) => {
   const tick = (spec: Parameters<DamageStatusTick['tick']>[0]) => {
     const [status] = statuses.active;
     if (status !== undefined) {
-      new DamageStatusTick().tick(spec, status, dummy.id, { state, damage: new DamagePipeline() });
+      new DamageStatusTick().tick(spec, status, dummy.id, {
+        state,
+        damage: new DamagePipeline(damageStepsWithoutLaneProgress()),
+      });
     }
   };
   return { dummy, hits, tick };

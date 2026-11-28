@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -53,10 +54,10 @@ const setUp = (assistWindowSeconds: number = SCORING.assistWindowSeconds) => {
   const scoring = new Scoring(
     state,
     createDefaultScoringRules(
-      loadScoring(state.config.tickRate, { weights: SCORING.weights, assistWindowSeconds }),
+      loadScoring(state.config.tickRate, { ...SCORING, assistWindowSeconds }),
     ),
   );
-  const damage = new DamagePipeline();
+  const damage = new DamagePipeline(damageStepsWithoutLaneProgress());
   let next = 0;
   /** Adds a unit and announces it with `entity-spawned`, as a spawn does. */
   const spawn = (
@@ -453,6 +454,20 @@ describe('Scoring', () => {
       expect(rowOf(killer)).toEqual({ ...EMPTY_ROW, entityId: killer, team: 'light' });
       expect(state.match.scoring.teams.light.score).toBe(0);
     });
+
+    it.each(SCORING.bossIds)(
+      'gives no points or counters for killing the %s, a heavy mob until the Boss family (DEC-79)',
+      (bossId) => {
+        const { state, spawn, legend, kill, endTick, rowOf } = setUp();
+        const killer = legend('light');
+
+        kill(killer, spawn('mob', 'heavy-mob', 'neutral', 100, bossId));
+        endTick();
+
+        expect(rowOf(killer)).toEqual({ ...EMPTY_ROW, entityId: killer, team: 'light' });
+        expect(state.match.scoring.teams.light.score).toBe(0);
+      },
+    );
 
     it.each<[string, PlayableTeam, PlayableTeam]>([
       ['stronghold', 'dark', 'light'],

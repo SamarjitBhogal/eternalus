@@ -123,7 +123,20 @@ flowchart LR
    parametric positions `t` spread evenly inside `laneBands.spawner`, and `buffTowersPerLane`
    `buff-tower` features inside `laneBands.buff`. `t` is the arc-length fraction from the team's
    own gate (`t = 0`) to the enemy gate (`t = 1`): "front line" and "second line" are bands, not
-   coordinates, so N per lane works for any N.
+   coordinates, so N per lane works for any N. Towers of one kind stand at least a fort box's
+   diagonal apart along the lane, so two forts on a straight stretch never overlap, whatever its
+   heading; a band too narrow for that widens round its middle (DEC-227). The fort box is
+   measured in world units: the sketch fort (`BUILDING_GEOMETRY.fort.laneTowerSize`) stretched
+   per axis to the world (`map/fortInWorld.ts`). After placement the generator checks every pair
+   of lane tower forts on the map, both teams and all lanes, as upright boxes in world units, so
+   forts on a bend or on neighbouring lanes are checked too (DEC-215 (1), DEC-239). It refuses
+   (`MapGenerationError`, naming both towers) a config whose forts would overlap. It also
+   refuses, naming the lane, the tower counts and the world size, a config whose placed towers
+   break a lane band rule, checked on the ground each kind occupies (first to last tower): a
+   tower off the lane, or the first SpawnerTower not ahead of the last BuffTower. A band that
+   widens without a tower passing the other kind's is accepted, and a lane with no tower of a
+   kind has no order to break. That rule set
+   (`map/laneBandRules.ts`) is the one `validateMapLayout` applies to the configured bands.
 4. **raiseWalls**: one `gate` centred on each lane's exit; `wall-segment`s fill the rest of the
    ring, split so that none spans more than a maximum arc; a `turret` sits on every ring corner.
    Gate count equals `numLanes` and every lane leaves through its own gate by construction; a
@@ -132,7 +145,10 @@ flowchart LR
    lanes as evenly as possible, leftovers to the middle corridors (DEC-14). In a corridor, camps
    spread across the team's half and step from one lane towards the other; a camp's weight class
    follows its depth into the Unknown, lighter near a lane and heavier deeper (DISC-42).
-   `cornerCamps` `corner-camp` features go in the map corners (MVP-if-time).
+   `cornerCamps` `corner-camp` features go in the map corners (MVP-if-time). A camp that would
+   touch a lane tower fort or its clearance steps the shortest way clear of it
+   (`clearCampOfForts`), so the camp keeps all its pieces when a step can clear it; a camp that no
+   step can clear keeps its place and loses the pieces that would stand in a fort.
 6. **placeCapturePoints**: one `capture-point` at `t = 0.5` of each lane; the middle lane's is
    emitted as `cathedral`.
 7. **carveRiftAndBounds**: the rift runs along the symmetry axis, centred on it (a preset may vary
@@ -261,7 +277,9 @@ order, object ownership and the pinned tower/camp footprints (DEC-238).
 `WorldMap` is the mutable per-match view of the map that systems read. It is built once from the
 `MapDefinition` and updated only through events (never by views or the client). `GameState.world`
 is a `MatchWorld` that holds the definition, its lane routes and this grid (03 §2), so `state/`
-imports `map/` types (02 §2):
+imports `map/` types (02 §2). `MatchWorld` takes only the `MatchGrid` (the grid with the rule that
+stamps and reopens it), which keeps the definition it was built from, so a world never pairs a
+grid with another map:
 
 ```ts
 // packages/core/src/map/WorldMap.ts (sketch)
@@ -287,17 +305,34 @@ export type FlowField = { readonly integration: Uint16Array; readonly direction:
 - A field also answers how far a point lies along its lane by path cost, from the team's own
   gate (0) to the enemy gate (1) (DEC-280). Minion strength by distance reads it through the
   `LaneProgressOf` port of `combat/` (`05-abilities-weapons-and-loadouts.md` §9, `18-minion-system.md`),
-  which falls back to the lane polyline where the field cannot say.
+  and the lane polyline is a second implementation of that port where the field cannot say; the
+  composition root composes the two (DEC-384).
 - Destructible terrain events (`07-structures-obstacles-and-destructibles.md` §10) re-flag cells
   through `stampFootprint`/`clearFootprint`; affected fields are marked dirty and rebuilt over
   several ticks with a cell budget (Dirty Flag; time slicing as in Supreme Commander 2).
 - Footprint stamps are reference-counted over a separate terrain layer, so clearing one
   footprint never re-opens a cell that another footprint or terrain still covers; every cell a
   shape touches is blocked, so a wall thinner than a cell leaves no gap (DEC-14).
-- `WorldMap.version` changes at every `stampFootprint` and `clearFootprint` call, even one that
-  changes no cell. A cache of searches over the grid (a bot's path cache and a stuck unit's
-  detour, 11 §6) stores the version it searched on and searches again when it differs (DEC-379,
-  DEC-392).
+- A lane tower's court is stamped as **court ground** (`stampCourt`, for a feature whose
+  definition `isCourt`), not as a footprint. Its cells are blocked for walking and straight
+  lines, but routable: A\* and the lane flow fields share one rule, `WorldMap.isRoutable`
+  (walkable or court ground), so a route may step on a court cell when no footprint holds the
+  cell's centre, and routes into, out of and through a court use its doorways (DEC-217 (15),
+  `10-physics.md` §9). The lane runs through a lane tower's fort by its west and east doorways,
+  so hordes march through the court round the tower's keep (DEC-315, amending DEC-185 (A)): no
+  lane corridor holds a standing lane fort's north or south wall band (`fortWallBands` in
+  `map/fortInWorld.ts`), so a field never leaves by the south doorway, which stays open to
+  walking and A\*. Every way through a court, doorways included, is at least 2 nav cells wide on
+  the conservative raster; the fort's side (`BUILDING_GEOMETRY.fort.laneTowerSize`) is chosen for
+  that (DEC-315). The centre rule is sound only while every fort
+  wall piece is an upright box thicker than a nav cell: a step across such a wall then always
+  lands on a cell whose centre the wall holds. `config.map.navCellSize` is set to keep that true
+  (DEC-227 (Q-A)), and a match that stamps a court refuses nav cells as thick as its thinnest
+  lane tower wall (`assertFortWallsResolve` in `map/fortInWorld.ts`, a `MapGenerationError`).
+- `WorldMap.version` changes at every `stampFootprint`, `clearFootprint`, `stampCourt` and
+  `clearCourt` call, even one that changes no cell. A cache of searches over the grid
+  (`CourtExitField`, a bot's path cache and a stuck unit's detour, 11 §6) stores the version it
+  searched on and searches again when it differs (DEC-379, DEC-392).
 - Typed arrays keep the hot data allocation-free and transferable (D8).
 
 ## 7. Generator tests (`packages/core/src/map/MapGenerator.test.ts`)
@@ -367,6 +402,7 @@ export type MinimapGlyph = {
 
 // apps/client/src/game/views/EntityView.types.ts (contract)
 export interface EntityView {
+  drawGround?(state: EntityDrawState, renderer: Renderer): void; // under every entity, or nothing
   draw(state: EntityDrawState, renderer: Renderer): void;
   drawMinimap(state: EntityDrawState, renderer: Renderer): void; // marker in CSS pixels, or nothing
   readonly minimapLayer?: number; // higher layers draw later; absent = 0
@@ -433,7 +469,7 @@ Still interim:
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | Minimap (§8)              | `MiniMapView` draws a local view (DEC-182) into the main canvas every frame, clipped to the HUD's ring by `Renderer.clipToEllipse`, with the ring from `bridge/minimapRing.ts` passed in by `Match`; `MapView` draws every feature's `minimapGlyph` and `EntityLayer` draws Legends and mobs through their views (DEC-187)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | The `'minimap'` renderer layer and the lower redraw cadence (§8)                                                        |
 | Kernel stand-ins (§1, §2) | `MapRandom`, a local `MapConfig` and `DEFAULT_MAP_CONFIG`, `validateMapConfig`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Session A's swap to session B's `SeededRandom`, `GameConfig` and `validateGameConfig` (`INBOX.md`)                      |
-| Grid resolution (§6)      | `MapLayout.navCellSize` (content)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Session A's swap to `config.map.navCellSize`                                                                            |
+| Grid resolution (§6)      | `Simulation` builds the grid at `config.map.navCellSize` (DEC-227 (Q-A)); `MapLayout.navCellSize` (content) still holds the same value for `validateMapLayout` and the `WorldMap` tests                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Session A's swap ends with `MapLayout.navCellSize` removed                                                              |
 | `WorldMap` (§6)           | Walkability grid with stamping, no cost grid. The flow fields (minion plan M4) sit beside it, not on it: `map/LaneFlowFields` holds a `FlowField` per (lane id, team) and rebuilds dirty ones through `FlowFieldBuilder`; `DefaultSystemPipeline` builds both and `PathingSystem` calls `rebuildDirty` each tick. `FlowField.progressAt` gives a point's lane progress by path cost, which the minion strength curve reads ([18](18-minion-system.md) status note). Nothing marks a field dirty yet: no terrain event exists                                                                                                                                                                                                                                                                                                         | Cost grid (Phase 3); the dirty trigger with gate and structure changes (07 §10)                                         |
 | Renderer port (08 §4)     | The `feat/map-view` method set plus glyph drawing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Session H's layers and sprites                                                                                          |
 | Map scenery (08 §4)       | `MapSceneryBuilder` dresses the generated map with presentation-only polygons authored in map-1's 1600 × 900 sketch (`content/maps/map1Scenery.ts`, `map1Landforms.ts`) and stretched to the world size; `MapView` draws the `ground` layer, `SceneryView` the `detail` layer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Per-preset scenery and sprite assets                                                                                    |
@@ -491,7 +527,9 @@ approved them, `INBOX.md` HC-T1), and this note gives the detail:
   explorer shown, a click (a press whose pointer travels less than the click slop in total before
   its release) is resolved once at its release point in this order (`MatchViewControls.clickAt`,
   DEC-183): a living enemy unit there is attacked; else a click that toggles a roof is a roof
-  click; else the click attacks the map object there. A drag does neither. When units overlap, the
+  click; else the click attacks the map object there. A drag does neither. A unit is there when
+  the point is inside its hit disc (DEC-183 (2)), or, for a big boss with a body shape, inside
+  that outline (`combatHitbox`, DEC-381, the exception to DEC-183 (2)). When units overlap, the
   one drawn on top wins (DEC-183). The held attack button aims the same way: a unit first, else a
   map object (`PlayerCommands`). In local matches, both inputs pick Legends and mobs by the
   hit radius reported by their registered view. Health bars use the same display extent.
@@ -701,6 +739,41 @@ drawing is not built, and is requested in `INBOX.md` ("Duel closed-door drawing"
 object and everything a side built (`DUEL_RULES.arena.omittedObjectKinds`, `omitsSideObjects`), and
 marks the Cathedral's walls `MapObject.isUnbreakable`, all in `match/duelArena.ts` before the walk
 grid is built; trees, houses and rocks stay. The dropped objects' art is still drawn.
+
+### 2026-11-21 — Lane tower markers and fallen structures (DEC-315, DEC-318)
+
+The main view marks a standing lane tower through `StructureView`, which draws its kind's marker
+(`STRUCTURE_MARKERS`, a square for a SpawnerTower and a diamond for a BuffTower) in the team colour
+on the entity layer, above the fort's court, so the two look different. The map layer's style for
+those kinds is `entity`: `MapView` draws no glyph. A fallen structure has no entity, so no marker.
+A lane tower's own fort object (its court, keep and banner art) falls with it: `StructureRuins`
+destroys that object, so its art goes through `isDestroyed` like that of any destroyed map object,
+and the fort's remaining wall pieces stand as its ruins (DEC-217 (12), 07 §13). `MapView` also drops
+the feature of every fallen structure, not only a tower (`isGone`), so the visuals match the logic
+(DEC-315 (5)): a fallen gate or Stronghold, whose feature is not a destroyed map object, through
+`RetiredFeatures` (a `mapFeatureId` seen standing in the snapshots and now gone); a fallen wall
+segment or turret, which has no structure entity, through its map object's `isDestroyed`. Each
+loses its main-view marker or footprint fill and its minimap glyph.
+
+### 2026-11-21 — The aura field on the ground (DEC-323 (3))
+
+A standing structure with an aura draws the field it covers: the ground within the aura's radius of
+its outline box (`EntitySnapshot.aura`), faintly filled and ringed in the team colour, with a few
+light particles drifting along the ring. `StructureView.drawGround` draws it; `EntityLayer` calls
+every view's optional `drawGround` before any `draw` (08 §8), so the field lies under every unit and
+tints none. The field is built once per structure, because a structure's box does not move, and the
+particles are a fixed number per structure, so the cost stays flat. A fallen structure draws no
+field. The mini map draws no field.
+
+### 2026-11-23 — No mountain on the Stronghold wall (DEC-340)
+
+No mountain's blocking mass touches the Stronghold wall, a gate or a wall turret. A mountain blocks
+units and shots, so a mountain on the wall would hide a turret in rock and narrow a gate.
+`MapSceneryBuilder` gives `MapMountainBuilder` the footprints of the wall's features
+(`WALL_RING_KINDS`) as keep-clear areas. A mountain whose mass touches one is drawn smaller about
+its anchor point, one size step at a time, until it is clear; its art shrinks with it. A mountain
+that is still not clear at its smallest step is left out. The cliffs behind the Stronghold, not the
+mountains, close the back of the base (DEC-158).
 
 ## Related
 

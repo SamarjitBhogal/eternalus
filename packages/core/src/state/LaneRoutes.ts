@@ -69,6 +69,18 @@ export class LaneRoutes {
   }
 
   /**
+   * Lane progress along the polyline: `distanceAlong` as a fraction of the lane's length, 0 at
+   * `team`'s own gate and 1 at the enemy's (0 on a lane of no length). A `LaneProgressOf`, which
+   * `DefaultSystemPipeline` uses where the lane flow field cannot say (DEC-384).
+   *
+   * @throws Error when the map has no such lane.
+   */
+  public progress(laneId: string, team: PlayableTeam, point: Vec2): number {
+    const length = this.length(laneId);
+    return length > 0 ? this.distanceAlong(laneId, team, point) / length : 0;
+  }
+
+  /**
    * Writes the lane point `along` world units from `team`'s gate into `point`, and the unit
    * walking direction there into `forward`. `along` is clamped to the lane. Allocates nothing.
    *

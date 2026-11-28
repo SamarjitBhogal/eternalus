@@ -1,15 +1,23 @@
 import { describe, expect, it } from 'vitest';
 
 import { Capturable } from '../components/Capturable';
+import { CombatHitbox } from '../components/CombatHitbox';
+import { Footprint } from '../components/Footprint';
 import { Jump } from '../components/Jump';
 import { MapFeatureLink } from '../components/MapFeatureLink';
 import { MapObjectBody } from '../components/MapObjectBody';
+import { Transform } from '../components/Transform';
 import { ZoneArea } from '../components/ZoneArea';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadLevelCurves } from '../content/progression/loadLevelCurves';
+import { loadWeapons } from '../content/weapons/loadWeapons';
 import { CAPTURE_POINT } from '../content/zones/capturePoint';
 import { Entity } from '../entities/Entity';
+import { Warrior } from '../entities/legends/Warrior';
+import { BuffTower } from '../entities/structures/BuffTower';
 import { Stronghold } from '../entities/structures/Stronghold';
 import { CapturePoint } from '../entities/zones/CapturePoint';
 import { EntitySnapshotter } from './EntitySnapshotter';
@@ -25,6 +33,9 @@ class Bare extends Entity {
 }
 
 const CURVES = new ContentCatalogue<LevelCurveDefinition>([]);
+/** The shipped curves, which a Legend's `Progression` levels along. */
+const LEVEL_CURVES = loadLevelCurves();
+const WARRIOR = loadDefaultContent(30).get('warrior');
 const SQUARE = [
   { x: 0, y: 0 },
   { x: 4, y: 0 },
@@ -77,6 +88,21 @@ describe('EntitySnapshotter', () => {
     expect(snapshotter.snapshotOf(new Bare('entity-2', 'bare'))).not.toHaveProperty('mapObjectId');
   });
 
+  it("puts a big boss's body outline where it stands, and leaves the key out for every other entity", () => {
+    const boss = new Bare('entity-1', 'greater-boss');
+    boss.addComponent(new Transform({ x: 10, y: 20 }, 2.5));
+    boss.addComponent(new CombatHitbox({ outline: SQUARE }));
+    const snapshotter = new EntitySnapshotter(4, CURVES);
+
+    expect(snapshotter.snapshotOf(boss).combatHitbox).toEqual([
+      { x: 10, y: 20 },
+      { x: 6, y: 20 },
+      { x: 6, y: 24 },
+      { x: 10, y: 24 },
+    ]);
+    expect(snapshotter.snapshotOf(new Bare('entity-2', 'bare'))).not.toHaveProperty('combatHitbox');
+  });
+
   it('names the map feature a structure was built from, and leaves the key out for every other entity', () => {
     const built = new Stronghold('entity-1', 'stronghold');
     built.spawn({
@@ -101,6 +127,45 @@ describe('EntitySnapshotter', () => {
     expect(structuredClone(snapshot)).toEqual(snapshot);
   });
 
+  it("carries a buff tower's aura radius from its definition, measured from its centre without a Footprint, and null for a structure without an aura (DEC-315 (4))", () => {
+    const tower = new BuffTower('entity-1', 'buff-tower');
+    tower.spawn({
+      definition: STRUCTURE_DEFINITIONS.get('buff-tower'),
+      position: { x: 5, y: 6 },
+      team: 'light',
+    });
+    const stronghold = new Stronghold('entity-2', 'stronghold');
+    stronghold.spawn({
+      definition: STRUCTURE_DEFINITIONS.get('stronghold'),
+      position: { x: 7, y: 8 },
+      team: 'light',
+    });
+    const snapshotter = new EntitySnapshotter(4, CURVES);
+
+    expect(snapshotter.snapshotOf(tower).aura).toEqual({
+      radius: 12,
+      box: { x: 5, y: 6, width: 0, height: 0 },
+    });
+    expect(snapshotter.snapshotOf(stronghold).aura).toBeNull();
+  });
+
+  it("carries the box a buff tower's aura is measured beyond: its Footprint box (DEC-323 (3))", () => {
+    const tower = new BuffTower('entity-1', 'buff-tower');
+    tower.spawn({
+      definition: STRUCTURE_DEFINITIONS.get('buff-tower'),
+      position: { x: 2, y: 2 },
+      team: 'dark',
+    });
+    const footprint = new Footprint([SQUARE, [...SQUARE.map(({ x, y }) => ({ x: x + 6, y }))]]);
+    tower.addComponent(footprint);
+
+    const snapshot = new EntitySnapshotter(4, CURVES).snapshotOf(tower);
+
+    expect(snapshot.aura).toEqual({ radius: 12, box: { x: 0, y: 0, width: 10, height: 4 } });
+    expect(snapshot.aura?.box).toEqual(footprint.bounds);
+    expect(structuredClone(snapshot)).toEqual(snapshot);
+  });
+
   it('names the map feature of every entity that links one, a capture zone too (DEC-231)', () => {
     const zoneAt = (id: string, mapFeatureId?: string): CapturePoint => {
       const zone = new CapturePoint(id, CAPTURE_POINT.id);
@@ -122,5 +187,25 @@ describe('EntitySnapshotter', () => {
     );
     expect(snapshotter.snapshotOf(zoneAt('entity-2'))).not.toHaveProperty('mapFeatureId');
     expect(snapshotter.snapshotOf(linked).mapFeatureId).toBe('light-gate-lane-0');
+  });
+
+  it("names a Legend's spec, and leaves the key out for a Legend without one and every other entity", () => {
+    const placement = {
+      position: { x: 1, y: 2 },
+      team: 'light',
+      weapons: loadWeapons(30),
+    } as const;
+    const knight = new Warrior('entity-1', 'warrior');
+    knight.spawn({ ...placement, definition: WARRIOR, specId: 'knight' });
+    const plain = new Warrior('entity-2', 'warrior');
+    plain.spawn({ ...placement, definition: WARRIOR });
+    const snapshotter = new EntitySnapshotter(4, LEVEL_CURVES);
+
+    const snapshot = snapshotter.snapshotOf(knight);
+
+    expect(snapshot.specId).toBe('knight');
+    expect(snapshotter.snapshotOf(plain)).not.toHaveProperty('specId');
+    expect(snapshotter.snapshotOf(new Bare('entity-3', 'bare'))).not.toHaveProperty('specId');
+    expect(structuredClone(snapshot)).toEqual(snapshot);
   });
 });

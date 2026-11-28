@@ -13,8 +13,8 @@ import type { StructureDefinition } from './content/structures/structures.types'
 import type { System } from './systems/System.types';
 import type { PlayableTeam } from './teams/teams.types';
 
-/** Where structure definitions are found by id (architecture 07 §1). */
-export type StructureSource = Pick<ContentCatalogue<StructureDefinition>, 'has' | 'get'>;
+/** Where structure definitions are found by id, and listed (architecture 07 §1). */
+export type StructureSource = Pick<ContentCatalogue<StructureDefinition>, 'has' | 'get' | 'all'>;
 
 /** Everything a `Simulation` is built from (architecture 03 §6). Only the first three are required. */
 export type SimulationOptions = {
@@ -26,7 +26,11 @@ export type SimulationOptions = {
   readonly seed: number;
   /** Where core's log records go. */
   readonly logger: Logger;
-  /** The tick's systems in execution order; the `DefaultSystemPipeline` when omitted. */
+  /**
+   * The tick's systems in execution order; the `DefaultSystemPipeline` when omitted. Custom
+   * systems replace all of it: without a `MapDestructionSystem` among them, a destroyed map
+   * object leaves no ruins and does not reopen the grid.
+   */
   readonly systems?: readonly System[];
   /** Invariant settings for the default pipeline; `RELEASE_DEBUG_CONFIG` when omitted. */
   readonly debug?: DebugConfig;
@@ -72,6 +76,12 @@ type RosterSlotBase = {
   readonly definitionId: string;
   /** A `laner` gets a lane at setup; the `rover` takes none and starts at its Stronghold (MS-20). */
   readonly role: BotRole;
+  /**
+   * The Legend (spec) of that class (DEC-198, ADR 0026 (PR #123)). The Legend keeps it and its
+   * snapshot names it, so the client draws its sprite (DEC-378 (2)). It gives no stats; absent =
+   * the slot names none.
+   */
+  readonly specId?: string;
 };
 
 /**

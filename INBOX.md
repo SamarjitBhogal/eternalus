@@ -13,15 +13,63 @@ review comments under "Feedback". Answered decisions are recorded in
 
 ## Decisions needed from Sam
 
-- [ ] **Minion strength port (PR #82, 2026-11-25): sign off `LaneProgressOf`.** Built: `combat/`
+- [ ] **Boss body parts: the built defaults (DEC-381, `feat/boss-hit-area` on PR #160,
+      2026-11-27).** You said: build defaults, then ask with options. Built: the Greater Boss's
+      body outline (from #161's colossus art) counts for clicks and attack reach. A hit from
+      behind (a 120-degree zone) does 15% more damage. A shot to the head does 25% more. When both
+      hold, only the larger applies. "Behind" is the side the art shows the boss's back. A bleed
+      or burn tick gets no bonus. A melee hit gets no head bonus. Each number is `TUNE` in
+      `content/mobs/bodyPartBonus.ts`. Sam answered cards (1) to (7) on 2026-11-27 (DEC-381 row).
+      Sam answered cards HC-B60 and HC-B61 on 2026-11-27 (DEC-421): a shot is a head shot when
+      its line of flight crosses the head (A, as built), and the boss hits from its whole drawn
+      body (B, built).
+      Open, for the agents (no answer needed): (a) no projectile deals damage yet. When ranged
+      attacks (#148, `feat/ranged-attacks`) and this branch are both on phase/3, the later PR
+      passes `{ origin: hit.origin, impactPoint: hit.point }` to `DamagePipeline.apply` in
+      `WeaponImpact`, and feeds `CombatHitbox` into #148's `Outline` (B2 below). Until then only
+      the tests reach the head bonus. (b) Play test: players now hit the boss from up to about
+      20 m (the outline's edge), and the boss hits players up to 1.5 m past the same outline
+      (DEC-421; DEC-371 E2 keeps the 1.5 m). (c) The outlines fit the idle art. When
+      #161's art lands (Unit 2), check that its other frames draw on the same anchor. (d) Interim
+      gap: until #161's view lands (Unit 2), `MobView` draws the boss as a disc of about 3.5 m,
+      but clicks and hits count on the outline of about 40 m.
+      Better than the design (the branch critic's items B1 to B4; sign-off asked): B1 (built) the
+      unit definition has one `bodyShape` (`outline`, `head`) in place of two loose polygons. B2
+      (not built; at #148's merge) `CombatHitbox` gives #148's `Outline` its world polygon, its
+      bounds and "not walkable", so a shot stops on the body shape, not the circle. B3 (part
+      built) a hit's path goes to `DamagePipeline.apply` as one object (`HitPath`); one object
+      for the whole hit is not built, because it changes every caller. B4 (built) a hit says
+      where it came from (`HitPath.origin`), so the bonus step needs no attacker lookup and no
+      status check: a hit without a path gets no bonus. From the pre-PR critic (2026-11-27,
+      sign-off asked): B5 (built) `HitPath` lives in `state/` beside `DamageSource`, so the
+      `entities/` damage port uses the same type and does not copy it. B6 (built) a content rule
+      (`BodyShapeRule`) checks every body shape at load (at least 3 finite corners, the head inside
+      the outline), so a bad shape fails at boot, not when the boss spawns in a match. B7 (not
+      built; `ponytail:` note) `EntityStore.outlineOf` builds a new body polygon on each call;
+      08 §9 says profile first, so it stays until a profile shows the cost. B6 also checks (DEC-421
+      critic, built) that the outline holds the whole footprint circle: the boss walks on its
+      circle but hits from its outline, so a circle past the outline would stop its chase short of
+      its reach. From the DEC-421 critic (2026-11-27, not built, sign-off asked): B8
+      `CombatHitbox.gapTo` works out the reach gap in local space, as `isHeadShot` does, so it
+      allocates nothing and the mirror rule stays in one class; one `utils/geometry` helper serves
+      the same "0 inside, else the nearest edge" pattern in `EntityStore` and a scenario test. B9
+      one "reach gap" query on `EntityStore`, used by every chase, so chase and hit share one rule
+      (04 §3) and `PathingSystem` needs no boss case; it costs one aim computation per chaser a
+      tick (profile first). B10 the reach and aim geometry (`isInReach`, `outlineOf`,
+      `aimPointOf`, about 120 lines) moves out of `EntityStore` into its own `state/` class, which
+      brings `EntityStore` under 300 lines; a `refactor(core)` change of its own.
+
+- [x] **Minion strength port (PR #82, 2026-11-25): sign off `LaneProgressOf`.** Built: `combat/`
       reads lane progress through a new port, `LaneProgressOf = (laneId, team, position) => number
 | null` (`MinionStrengthStep.types.ts`), which `LaneFlowFields.progress` implements and
       `DefaultSystemPipeline` injects. It keeps `combat/` from importing `map/` (core folder
       rules); DEC-280 fixes what it returns (`t` from the home gate, 0, to the enemy gate, 1). No DEC
       names the port itself (CodeRabbit, PR #82). Approve as built, or say what to change. HC-B45
       below asks whether the polyline fallback should become a second implementation of it.
+  - **Answered 2026-11-26 by DEC-384** (Owner Calls page v98, with HC-B45 below): "B: accept it,
+    and also build the critic's clean-up in this PR". The port is signed off as built.
 
-- [ ] **HC-B45 — Better than the design, not built, sign-off asked: minion strength depends only
+- [x] **HC-B45 — Better than the design, not built, sign-off asked: minion strength depends only
       on its lane-progress port** (PR #82 critic, 2026-11-22). Today `MinionStrengthStep` knows two
       ways to measure `t`: the injected `LaneProgressOf` (the lane flow field, DEC-280) and a
       built-in fallback to the `LaneRoutes` polyline; `createDefaultDamageSteps`, `DamagePipeline`
@@ -31,9 +79,98 @@ review comments under "Feedback". Answered decisions are recorded in
       the wiring by injection instead of the `vi.mock` in `DefaultSystemPipeline.strength.test.ts`
       (the only `vi.mock` in core). No gameplay number or behaviour changes. Approve (built in its
       own PR) or drop.
+  - **Answered 2026-11-26 by DEC-384** (Owner Calls page v98): "B: accept it, and also build the
+    critic's clean-up in this PR". PR #82 merged before the build was pushed, so it is built in
+    the follow-up PR from `refactor/lane-progress-port`: `LaneRoutes.progress`,
+    `DefaultSystemPipeline.laneProgressOf` composes "field, else polyline", the port is required
+    (`DamagePipeline` has no default steps), and the wiring test injects fake sources.
+
+- [ ] **HC-B68 — Better than the design, not built, sign-off asked: three tidy-ups to the
+      2-level limit tests (DEC-423)** (critic on `feat/corner-camp-clear-bonus`, 2026-11-27). No
+      gameplay number or behaviour changes. (a) One `Progression` method, for example
+      `cappedXp(xp, maxLevels, curve)`, holds the level-limit cap; `ProgressionSystem` and both
+      level-limit tests in `xpSources.test.ts` call it, so a test cannot drift from the game.
+      (b) The DEC-423 test takes each camp and its mini boss from `GUARD_PLANS` instead of naming
+      `corner-boss` and `corner-camp`, so a new camp is tested without a test edit. (c)
+      Architecture 05 §13 (Progression) states DEC-423 as a design rule: the 2-level limit of a
+      mini boss kill includes the camp clear bonus (your design text). Approve all three (built in
+      one follow-up PR after the demo), name the ones you want, or drop.
+
+- [ ] **HC-B66 — Better than the design, not built, sign-off asked: five clean-ups around the
+      damage numbers** (W5, DEC-410, `feat/damage-numbers` critics, 2026-11-27). No gameplay number
+      or behaviour changes. Approve each (built in its own PR) or drop it.
+      (1) `Match` repeats "observe after the first snapshot, observe after each step, destroy" for
+      the health bars, the damage numbers and the Legend bodies. One `DamageNumbers` collaborator,
+      or a `SnapshotObserver` list, removes the repeats and makes `Match.ts` (about 342 lines)
+      shorter. (2) Live settings reach a running match two ways: `MatchHost` pushes the key
+      bindings on the bus `settings` event, and `Match` pulls `SettingsController.current` for the
+      damage numbers. Pick one way for both. (3) Key the badge-kind map on the damage source kind,
+      so a later `environment` hazard (lava, camp fire) needs one entry. (4) One frame clock:
+      `Match.render` and `DamageBadgeLayer.show` each compute the frame tick; pass it in.
+      (5) `SettingsController` owns the rule "Reduce motion setting OR the system's
+      `prefers-reduced-motion`"; today the CSS and `matchSettingReaders` each hold it.
 
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
+
+- [x] **HC-B31 — A repair to a guardrail needs only a row in the decisions log (DEC-331 critic,
+      2026-11-22; better than the design, owner sign-off asked).** Owner: sholtzman.
+      `docs/process/guardrails.md` §4 and `docs/process/sdlc.md` §6 ask for an ADR for every
+      change to a guardrail. Three harness fixes did not write one: DEC-254 (CI timeout 25
+      minutes), DEC-276 (Stop hook checks only changed files) and DEC-331 (hook scripts named
+      from the project root). The owner waived the ADR for DEC-254 and DEC-276 one at a time;
+      the DEC-331 waiver is pending. Proposal: add one rule to both docs. A repair that makes a
+      guardrail do again what the docs already say needs only a row in the decisions log. A
+      change to what a guardrail does still needs an ADR. If signed off, this rule also covers
+      DEC-331.
+  - Answered 2026-11-23 (Owner Calls page, DEC-352): "A rule for all such repairs: a repair
+    that makes a guardrail do again what the docs say needs only a decisions-log row. A change
+    to what a guardrail does still needs an ADR. The rule also covers this fix". Applied on
+    `fix/hook-project-dir` (PR #155): the rule is in `docs/process/guardrails.md` §4 and
+    `docs/process/sdlc.md` §6, and the DEC-331 row cites DEC-352 in place of the pending waiver.
+
+- [x] **Better than design: five Legend sprite items (#170 pre-PR critic, 2026-11-25).** Not
+      built in #170; each would be a small follow-up PR if you agree. Owner Calls cards
+      PR170 (8) to (12) ask the same. (BTD1) Feet in the atlas data: each sheet's ground line
+      goes into the atlas data, and the renderer stands the sprite on it. The views then pass
+      only the unit's position, and `LegendSpriteView` loses its `groundOffset`. (BTD2) One
+      atlas group family: today a new Legend sheet needs a new group name in four files
+      (`AssetManifest.types.ts`, `bridge/events.ts`, `assetsSlice.ts`, `legendSpriteSheets.ts`)
+      and its own manifest group. One group family (load a sheet by its manifest id) needs one
+      manifest line and one table row. The manifest test then checks the real group files;
+      today it gives each sheet a pretend file of its own. (BTD3) A uniform grid: the manifest
+      entry carries `columns` and `rows`, and `SpriteAtlasLoader` checks them, in place of
+      architecture 14 §11's `'image'` type plus a JSON frame table. (BTD4) Scaling at draw time:
+      one `drawImage` with smoothing off scales the cell to the current zoom. Architecture 08 §4
+      pre-scales the frames when the atlas loads, which cannot give 1:1 copies at every zoom.
+      (BTD5) The frame time in `EntityDrawState`: the sprite view reads the frame tick that
+      `Match.render` sets through `LegendSprites.setFrameTick`, a hidden order dependency
+      on `render()`. Decision: …
+      Answered 2026-11-27 (DEC-398): "yes" to each of cards PR170 (8) to (12). BTD3 (card 10) and
+      BTD4 (card 11) were built as answered; BTD1 (card 8), BTD2 (card 9) and BTD5 (card 12) are
+      built in the #170 follow-up PR (`fix/legend-sprites-dec378`), and architecture 08 §4, §8 and
+      14 §11 now say it.
+
+- [x] **Better than design: two more Legend sprite items (#170 critic round 2, 2026-11-26).** Not
+      built in #170. Owner Calls cards PR170 (13) and (14) ask the same. (BTD7)
+      `visualRadiusOf?` serves two queries: the hit radius for pointer targeting and the anchor
+      for the health bar (the top of the art). They are equal for discs and differ for standing
+      sprites. Split it into `visualRadiusOf?` and `visualTopOf?`. It touches PR #90 and
+      PR #170. (BTD8) Architecture 14 §11 plans `get<T>(id): T`, which is an unchecked cast by
+      design. One typed accessor per asset type (as `atlases(group)` in #170) removes the cast.
+      This changes the design text, not the code. Decision: …
+      Answered 2026-11-27 (DEC-398 / DEC-424): BTD7 (card PR170 (13)) "A: keep two separate
+      sizes"; `visualTopOf?` and `visualRadiusOf?` are built in the #170 follow-up PR. BTD8 (card
+      PR170 (14)) "A: one checked lookup per kind of file"; architecture 14 §11 now says it.
+
+- [x] **Licence class of the Magus sprite sheets (#170 pre-PR critic S11, 2026-11-25).** A
+      contributor made the six Magus sheets (Catalyst, Oracle, Heretic; 1x and 2x) with AI from
+      your card art. The manifest gives them the licence `owner` ("Owner-made for Eternalus").
+      ADR 0028 gives contributor-made art its own class. Keep `owner`, or move them to a
+      contributor class (`user-authorised-art` or a new one)? Owner Calls card PR170 (7) asks
+      the same. Decision: …
+      Answered 2026-11-27 (DEC-398): "A: keep them under your licence (as built)". The Magus
+      sheets keep the licence `owner`; nothing changes.
 
 - [x] **The gem eruption and the Greater Boss: choices to confirm (Aryan Walanj, 2026-11-22,
       `feat/cathedral-eruption-boss`).** Sam (2026-11-15, chat): the boss is in, sprint 3.6 is
@@ -54,8 +191,8 @@ Reply inline (`Decision: …`).
       (3.125), and a vision radius of 25 m (the zone's radius): none has a reference value. (6) **Zone.** A 25 m circle
       around the Cathedral capture zone's centre (balancing.md "centre zone, radius 25 m"); the zone is
       the boss's guard home. Does it also lock the Cathedral's capture while it lives, as the
-      mini-boss locks its zone? (7) **Respawn.** None. (8) **Reward.** DEC-237's flat 5 levels is not built
-      in this PR (it comes with the boss's moves); it takes 25% of a minion's hit.
+      mini-boss locks its zone? (7) **Respawn.** None. (8) **Reward.** DEC-237's flat 5 levels (see "killer only
+      or whole team?"); it takes 25% of a minion's hit.
       (9) `boss-summoned` names its kind as `heavy-mob` until the `GreaterBoss` class lands.
       (10) **Other guards near the boss.** No other guard counts the boss in its leash sum. A map
       test checks that no other guard post on the default map (seeds 1 to 3) reaches its zone. But
@@ -90,6 +227,124 @@ Reply inline (`Decision: …`).
       Optional while `kill` has one caller: split the rules into gates (unbreakable walls, friendly
       fire), which `kill` would keep, and scalers (statuses, minion strength, boss share), which it
       skips.
+
+- [ ] **The Greater Boss kill on the scoreboard (PR #164 critic, 2026-11-27).** Today the
+      scoreboard shows no kill and no points for any boss kill (`MobDeathRule` skips
+      `SCORING.bossIds`). DEC-79 says only that bosses "give no personal points"; it does not say
+      whether the kill counts. DEC-416 quotes you: "if the legend is credited with the kill in the
+      scoreboard, they should get the 5." **A** (recommended): keep it as built; a boss kill shows
+      no kill and no points. **B**: the scoreboard shows the boss kill, with 0 points, for the
+      Legend that gets the 5 levels. B also overrides DEC-79's "A non-Legend last hit gives no
+      kill": when a minion or a tower lands the last hit, the kill shows for its team's Legend
+      that hit the boss last. With B, the critic's better design is one last-hitter rule that the
+      scoreboard and the 5 levels both read, so both name the same Legend.
+
+- [ ] **Better than design: `KillCredit` has two jobs (PR #164 critic, 2026-11-27).** For
+      sign-off; not built. `combat/KillCredit` decides who a death by the Cathedral gem counts for
+      (DEC-346), and it also keeps each team's last Legend hitter on a boss (`LastLegendHits`,
+      DEC-416). Proposal: `DamagePipeline` takes a list of hit recorders; the last-Legend-hitter
+      memory becomes its own recorder, and `KillCredit` keeps only the gem credit. Nothing a
+      player sees changes. It changes the `DamagePipeline` constructor that #160 and #164 use, so
+      it waits for both to merge.
+
+- [ ] **Better than design: one "is this a Legend?" test (PR #164 critic round 2, 2026-11-27).**
+      For sign-off; not built. Core answers "is this unit a Legend?" in two ways: a
+      `family === 'legend'` test in seven places (`KillCredit`, `CheckpointAwards` twice,
+      `match/Scoring`, `state/AllyDamageTally`, `OutOfCombatHealingSystem`, `TeamKillAwards`) and
+      `ProgressionSystem.legendOf` (the definition's kind). The Greater Boss award uses both: it
+      pays by `legendOf` and names the last hitter by family. The two agree for every unit a match
+      builds today, but nothing keeps them aligned. Proposal: one type guard (for example
+      `entities/isLegend.ts`, `entity is Legend`) that every place uses. Nothing a player sees
+      changes.
+
+- [ ] **The Greater Boss's BossController: slam and entrance roar (Aryan Walanj, 2026-11-16,
+      `feat/cathedral-boss-controller`).** Built per architecture 11 §4.6 for the Greater Boss
+      only: `entrance → roam → telegraph → execute → recover → roam`, the slam, and the roar as
+      its entrance. balancing.md gives "heavy move 0.45 × refHealth, 2.5 s" and "6 moves (two
+      sweeps, slam, beam, charge, roar)" but none of the numbers below, so each is `TUNE`
+      (`content/ai/bosses/greaterBoss.ts`); please confirm or replace. (1) Slam radius 4 m and
+      start range 4 m (the Sentinel's Slam radius, the only slam radius in the docs). (2) Slam
+      damage: the heavy move, 464. Which of the six moves are heavy and which light (0.15 ×)?
+      (3) Slam knockback and knockup: none yet (the Sentinel's Slam has 3 m and 0.8 s). Add them?
+      (4) Telegraph 1 s, recover 1 s, cooldown 2.5 s (balancing.md's interval, landing to
+      landing). (5) Roam: a new point every 3 s or on arrival (1 m), at least 3 m inside the
+      zone's edge; doc 11 says "every cadence" with no number. (6) Target: the nearest
+      non-neutral unit inside the 25 m zone, minions included. Doc 11 asks for a bias toward the
+      highest recent damage dealer: over what window, and how strong against distance? (7) The
+      slam hits every non-neutral unit whose centre is within 4 m (body edges ignored), never
+      structures or neutral camp mobs. (8) Entrance roar: balancing.md gives the GreaterBoss's roar
+      no effect (the MiniBoss's is a "concussion aura"), so the entrance is the `boss-entrance`
+      event and a 2 s pause with no gameplay effect. Should it knock back, stun or slow, with what
+      radius and length? (9) The boss's old melee `attack` stays in its definition, unused.
+      (10) Can a stun or other `cannot-cast` status stop a boss move? Today nothing stops one.
+
+- [ ] **The Greater Boss's sweep (Aryan Walanj, 2026-11-20, `feat/cathedral-boss-moves`).**
+      balancing.md gives the sweep "cone knockback" (the MiniBoss row) and the GreaterBoss's light
+      moves 0.15 × refHealth (155), nothing else, so these are `TUNE`
+      (`content/ai/bosses/greaterBoss.ts`); please confirm or replace. (1) Cone 6 m long, 60°
+      either side of the boss's facing (120° in all); it starts once the target is within 6 m.
+      (2) Knockback 3 m straight away from the boss (the Sentinel's Slam value, the only
+      knockback in the docs); mass is not read yet. (3) Telegraph 1 s, recover 1 s, cooldown
+      2.5 s (balancing.md gives an interval only for heavy moves). (4) The knockback is a
+      one-step push that stops at walls (doc 10's impulse, mass and friction model is not built);
+      OK as the interim? (5) The cone points where the boss faces when it lands (its last walk,
+      toward its target), so a Legend can sidestep during the telegraph. Should it aim at the
+      target instead?
+  - **(5) and the telegraph in (3) answered 2026-11-26 by DEC-371 E9** (Owner Calls v98). The cone
+    keeps pointing where the boss faces (as built), and the telegraph of both sweeps is 0.5 s.
+    Built in PR #164. The recover and the cooldown in (3) stay open.
+
+- [ ] **The Greater Boss's charge (Aryan Walanj, 2026-11-20, `feat/cathedral-boss-moves`).**
+      balancing.md gives only the heavy move (0.45 × refHealth, 464, every 2.5 s), so these are
+      `TUNE` (`content/ai/bosses/greaterBoss.ts`); please confirm or replace. (1) Length 10 m; it
+      starts once the target is within 10 m. (2) Width: the boss's own body (5 m); a unit whose
+      centre is on that path is hit. (3) The dash is one step (no dash speed in the docs), stops at
+      walls and is cut short at the 25 m zone's edge; hits are taken along the path inside the
+      zone, even past a wall that stops the boss. (4) No knockback on the units it hits. Add one?
+      (5) Telegraph 1 s, recover 1 s.
+
+- [ ] **The Greater Boss's second sweep and beam (Aryan Walanj, 2026-11-20,
+      `feat/cathedral-boss-moves`).** balancing.md names "two sweeps" and a "beam" and nothing
+      more, and doc 11 §4.6 gives only the move fields; so these are `TUNE`
+      (`content/ai/bosses/greaterBoss.ts`). (1) Nothing tells the two sweeps apart: the second is
+      the first with a wider cone, 90° either side (a half circle) instead of 60°. What should
+      the difference be? (2) The beam is the Magus's Death Ray size (30 m × 1.5 m, balancing.md),
+      the only beam in the docs, as one hit (no channel). (3) Is the beam heavy (0.45 ×
+      refHealth, 464, as built) or light (0.15 ×, 155)? (4) Walls do not stop the beam (core has
+      no line-of-sight trace yet). Should they? (5) Telegraph 1 s, recover 1 s; the beam's
+      cooldown is the heavy moves' 2.5 s.
+
+- [ ] **The Greater Boss's move rotation and roar (Aryan Walanj, 2026-11-20,
+      `feat/cathedral-boss-moves`).** At Aryan's request the boss uses its six moves in a fixed
+      rotation: slam, sweep, wide sweep, beam, charge, roar, then again. The next move waits (the
+      boss chases) until a target is in its range and it is off cooldown. (1) Doc 11 §4.6 asks for
+      a utility pick (distance, targets in the area, cooldown) with a seeded weighted pick. Keep
+      the rotation, or build that pick, and with what weights? (2) Which order? balancing.md lists
+      "two sweeps, slam, beam, charge, roar"; the slam comes first here. (3) The roar is a move
+      with no effect (range: the whole 25 m zone; telegraph 1 s, recover 1 s, cooldown 2.5 s, all
+      `TUNE`), as at the entrance. Should it stun, slow or knock back (the MiniBoss's roar is a
+      "concussion aura")?
+
+- [x] **The Greater Boss's kill reward: killer only or whole team? (Aryan Walanj, 2026-11-20,
+      `feat/cathedral-boss-moves`).** DEC-237: "Killing the middle boss puts you up 5 levels from
+      wherever you are, flat". Built as `XP_SOURCES.teamKills['greater-boss'] = { levels: 5 }`:
+      every Legend of the killer's team (killed by a minion too) goes up exactly 5 levels, up to the
+      level cap; the other team gets nothing; it replaces balancing.md's 1,500 XP. Who it goes to
+      is `TUNE`: DEC-237 says "you". Should it be the killer only, or the whole team (as
+      built, like the mini-boss's)? And should a Legend dead at the kill get it on respawn?
+  - **Answered 2026-11-27 by DEC-371 E8a to E8c and DEC-416** (Owner Calls v103). Every Legend of
+    the killer's team goes up 2.5 levels and the last hitter 5 in all, each keeping its share of
+    its level; after a minion's or a tower's last hit, the 5 goes to that team's Legend that hit
+    the boss last. A Legend dead at the kill gets its share when it respawns. Built in PR #164.
+
+- [ ] **Better than design: the BossController (Aryan Walanj, 2026-11-16, critic on
+      `feat/cathedral-boss-controller`).** (B1) Bind the boss to a zone owned by the Cathedral's
+      spawner (`zoneId`, 11 §4.6) instead of a guard post: `PathingSystem` would drop its
+      "controller is not `guard`" exemption, and `StuckSystem` and `VeterancySystem` would stop
+      treating the boss as a guard. (B2) One shared "living units in a circle" query in `physics/`
+      for `BossMoveSystem` and `Perception` (systems may not import `ai/`); `CathedralGemSystem`
+      could use it too. (B3) The boss FSM as a per-state handler table (State pattern, data still
+      in memory), so sweep and charge extend it instead of editing an `if` chain. Adopt any?
 
 - [x] **Better than design: shared boss numbers (Aryan Walanj, 2026-11-22, critic on
       `feat/cathedral-eruption-boss`).** For sign-off. (1) `greaterBoss.ts` copies balancing.md's
@@ -152,6 +407,39 @@ Reply inline (`Decision: …`).
       fine. Also: PR #118 adds `bridge/selectors/selectIsDuel.ts`; PR #145 carries the same file
       byte for byte, so one selector remains whichever merges first.
 
+- [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-sim-mode`) — developer menu, slice 3
+      (sim mode, FR-099) built; decisions for the owner.** (a) `dev-set-controller` takes
+      `player`, a bot's controller id (the Rover's, or `bot-legend` on a lane the game picks) or
+      `null` (the bot the Legend's team lacks); the Sim mode section has a Bot select (Game picks,
+      Lane bot, Rover) next to Remove human (DEC-356 (1)). Any other id is refused
+      `unknown-controller` (a new reject reason). A difficulty picker is out. (b) Making a Legend
+      the human while another one is: the old human becomes the bot its team lacks (DEC-356 (2)).
+      (c) A re-bound bot starts a fresh brain: its old memory is dropped, and a lane bot's memory
+      is the lane the game picks (DEC-356 (2); base doc: 11 section 2 defines brain memory as
+      controller-specific plain data). A bot that already plays the chosen controller keeps its
+      brain. (d) `humanLegendId` gets a second writer, `MatchRecord.reseatHuman`, which throws on
+      a move to the current seat; hashed state is unchanged without the command (follows from
+      DEC-294, which keeps the seat swap). (e) FR-099 is only PARTIALLY met: "a Match with no PlayerController runs to a
+      `MatchResult`" cannot be observed in `Simulation`, because no content marks a `WinObjective`,
+      so no `MatchResult` exists in sim mode. The vitest test runs 900 ticks bot-versus-bot with
+      no invariant violation and the same hash twice instead. Unblocked when a win objective
+      exists in content or a test fixture supplies one. (f) Spectate: with no human, a Follow select makes
+      the camera follow a Legend (your answer (4), Owner Calls page, 2026-11-23: "the developer can
+      choose to tether the camera (follow) any bot legend"); the HUD hides the player block.
+      `Take control` still takes a typed Legend id. Better than design, not built: (g) the menu
+      builds Legend labels from raw ids in `game/`; `ui/` could format them with team and class
+      names; (h) `Take control` could use the same select as Follow. Decision: DEC-294 (2026-11-20, Owner Calls page) answers (b): "Keep the swap;
+      update mechanics-ideas §6 in this PR" (note: "make sure this is architecturally-sound"). The
+      human's controller id is now `player` (PR #112 review S1), and a Legend off `playerTeam` is
+      refused (`not-player-team`, review B1). DEC-356 (2026-11-23 and 2026-11-26, Owner Calls
+      page) answers (a), (c) and (f), and gives the old human of (b) the bot its team lacks, not
+      the Rover. (d) follows the base docs named above; (e) is a status. Open: the proposals (g)
+      and (h); (i) two readings of DEC-356 (1) for the owner to confirm: a picked Rover can be a
+      team's second Rover, and a picked lane bot goes past `legendsPerLane` when every lane is
+      full (in the default 10v10 this is always so when the human leaves the Rover role); (j)
+      better than design (critic, DEC-139): one bot chooser with `null` for the missing role,
+      in a file named for both choosers (`simModeBots.ts`).
+
 - [ ] **BUG-4 / SCRUM-437 (2026-11-13, `feat/developer-menu-legends`) — developer menu, slice 2
       (add/remove Legends, FR-097) built; decisions for the owner.** (a) `dev-spawn-legend` takes
       `{ team, definitionId }`, not the `{ team, definitionId, controllerId, at? }` of 13 section
@@ -195,6 +483,21 @@ Reply inline (`Decision: …`).
       (online Duel) match must always keep the menu disabled (`Match.isDeveloperMenuEnabled` is
       optional and off by default, and the online match factory must not pass it), otherwise dev
       commands would be a cheat path.
+
+- [x] **HC-B32 — Better than the design, built under your standing rule (DEC-223), sign-off
+      asked: one queue rule for both path searches (`chore/horde-test-speed`, into PR #152,
+      critic round 1, 2026-11-22; MEMORY-CLEANUP-7); no decision blocks the PR.** Recorded as
+      DEC-357 (owner decisions log). The player sees
+      no difference: bots and hordes take the same paths as before. Two path searches (bot
+      Legends and the lane flow fields) keep a queue of map cells. Each search takes the cell
+      with the lowest sort value first; on a tie, the lower cell index goes first (11 §5). For a
+      bot, the sort value is the cost so far plus the estimate to the goal. Each search had its
+      own copy of that rule. Now the queue (`CellHeap`) keeps each queued cell's sort value and
+      owns the rule, so the rule is in one place. Proof: the match state hashes and the flow
+      fields are the same before and after. No design doc names the queue, so no doc changes.
+      Options: (A) keep it (recommended, built); (B) undo it; (C) other (note). A, B or C?
+  - **Answered 2026-11-23 by DEC-357** (Owner Calls page): "Keep it (built)".
+
 - [ ] **Dependency audit (re-run 2026-11-20): approve one upgrade PR for the `eslint` family and
       `zod`, and say whether to turn on Dependabot alerts.** PR #113 already moved `vite` to 8.3.8
       and `vitest` to 5.1.0. `npm audit` on `phase/3-sprint-3-work` (`5a7cc8dc`) now reports 10
@@ -212,6 +515,45 @@ Reply inline (`Decision: …`).
       with `npm run check`)? Also: GitHub answers "Dependabot alerts are disabled for this
       repository" (HTTP 403). Turn them on (repository settings, owner), or keep relying on a manual
       `npm audit`?
+
+- [ ] **HC-B49 move `DefinitionSource` to `content/` (`feat/legend-level-damage` critic round 2,
+      2026-11-26; better than the design, owner sign-off pending)** — `DefinitionSource` is the
+      port that looks up a definition by id. It lives in `entities/EntityFactory.types.ts`.
+      `entities/` and `systems/` use it. The level damage step in `combat/` needs the same lookup,
+      but architecture 02 §2 does not let `combat/` import `entities/`. So that branch types it as
+      `Pick<ContentCatalogue<EntityDefinitionBase>, 'has' | 'get'>`, the same shape under a second
+      name. Proposal: move `DefinitionSource` to `content/` (for example beside
+      `ContentCatalogue`), so every layer uses one name and no import rule changes. A later
+      `refactor(core)` PR; it touches files that branch does not. Decision: …
+- [ ] **HC-B59 one award-source list in `ProgressionSystem` (`feat/legend-level-damage` merge
+      critic, 2026-11-27; better than the design, owner sign-off pending)** — (1)
+      `ProgressionSystem.ts` has 346 lines (the limit is about 300). It buffers awards in two ways:
+      four inline listeners (kill, structure, camp, respawn) and `CheckpointAwards` (checkpoint
+      shares). It reads `hasMatchXp` twice, and its `checkpoints` field is nullable. Proposal: an
+      `AwardSource` port (`flush(state): Award[]`, the shape `CheckpointAwards` already has), one
+      implementation for each source, held in one list. A match with no match XP gets an empty
+      list, so the Duel gate is in one place. (2) Optional, low value:
+      `createDefaultDamageSteps(progressOf, units)` has two optional positional parameters, so a
+      caller that gives only `units` must give `null` first. An options object
+      (`{ progressOf?, units? }`) removes that. A later `refactor(core)` PR; no behaviour changes.
+      Decision: …
+- [ ] **HC-B63 one "is this a structure" rule for level damage and scoring
+      (`feat/legend-level-damage` DEC-405 critic, 2026-11-27; better than the design, owner
+      sign-off pending)** — The player sees no change today. (1) A high-level Legend's weapon hit
+      grows less on a structure (DEC-405). To know what is a structure, the code tests the target's
+      family, and for walls, turrets, gates and the palace (still map objects, 07 §13) a list of
+      map-object kinds. Proposal: each target's own definition says what share of the level
+      bonus it takes, as 07 §4 `damageMultipliers` do. Then walls and towers can be tuned apart,
+      and the step has no family test. Cost: a definition source for map-object targets in the
+      damage step. (2) The scoring rule for damage to structures (`defaultScoringRules.ts`,
+      `StructureHitRule`) tests only the `structure` family. So a hit on a wall or turret map
+      object scores no structure damage today. Proposal: one shared "is a structure target"
+      predicate for both. A later `refactor(core)` PR; (2) changes the scores. Decision: …
+- [ ] **`refactor/tower-ruins-followups` critic (2026-11-14), better than the design — one item
+      for the tidy PR (DEC-218), sign-off.** Not built: this branch stays small. (BT2) One `Band`
+      type in `content/maps/maps.types.ts` (`readonly [number, number]`, a stretch of a lane as
+      fractions) serves `MapLayout.laneBands` and `camps.band`, instead of `LaneBand` in
+      `map/laneBandRules.ts` and the repeated tuple types.
 
 - [ ] **`feat/gate-reach` critic (2026-11-13), better than the design — two items for the tidy
       PR (DEC-218), sign-off per item.** Not built: the branch is a split from PR #98 and stays
@@ -364,7 +706,7 @@ Reply inline (`Decision: …`).
       keep them aligned; one interim block on the mob, shaped like 04's planned
       `BossDefinition.rewards`, would make sprint 3.6 a move. (3) **The XP cap in its own type.** A
       `TeamKillAward` with a required `maxLevels` (or `Progression.cappedXp`) instead of the
-      optional field `ProgressionSystem.grant` branches on. (4) **A `GuardStore` query**
+      optional field `TeamKillAwards.cappedXp` branches on. (4) **A `GuardStore` query**
       (`postsOf(homeId)`) instead of `CaptureSystem.lockOf`'s hand-rolled scan of every post.
 
 - [ ] **A named `GuardPlanSource` type (`feat/capture-point-boss` critic round 2 finding 8,
@@ -429,6 +771,7 @@ Reply inline (`Decision: …`).
       break. No spec gives the inner walls their own value. Should the `'wall'` features inside the
       Stronghold ring keep the WallSegment value, or get their own (which number)?
   - **Answered 2026-11-13 by DEC-247** (chat, PR #96). Not built yet (BUG-2).
+  - **(3) answered 2026-11-20 by DEC-288** (Owner Calls page). Not built yet (BUG-2).
   - Where it lives: the inner walls are `'wall'` map objects built by
     `packages/core/src/map/MapBuildingInteriorBuilder.ts` (cathedral partitions, chapel and apse
     walls) and `packages/core/src/map/MapPalaceRoomsBuilder.ts` (palace room walls); their health
@@ -485,6 +828,94 @@ Reply inline (`Decision: …`).
     better-than-design items (DEC-287): the loader also turns the held minute into ticks, so
     `createDefaultScoringRules` takes no tick rate, and the authored and loaded scoring types
     share one `weights` base.
+
+- [ ] **HC-B37 — Better than the design, built under your standing rule, sign-off asked: HC-Q95
+      critic (`feat/map-work-forts-towers`, 2026-11-23); no decision blocks the PR.**
+      Recorded as DEC-358 (owner decisions log). The map scenery is drawn on a 1600 × 900 sketch
+      and then stretched to the world. The scenery builder keeps a sketch copy of the map. In that
+      copy, the building positions were in sketch units, but the building outlines stayed in world
+      units. The outlines are now in sketch units too, so the copy uses one unit everywhere. No
+      scenery moves. The mountains that must stay off the Stronghold wall (HC-Q95) read the wall
+      outlines from that copy. A test on a stretched 2000 × 900 world fails when the outlines stay
+      in world units (deliberate break, recorded). Approve, or say to undo it. _Code:
+      `map/MapSceneryBuilder.ts` (constructor, `wallFootprints`)._
+
+- [x] **HC-Q95 — A corner mountain covers the end of the Stronghold wall
+      (`feat/map-work-forts-towers`, 2026-11-23; found by PR-REVIEW-ASSIST-34 in PR 4 (wall
+      turrets); card by PR-38-HELPER-51; Owner Calls card "HC-Q95 corner mountain on wall").**
+      At each end of the Stronghold wall, one corner mountain can grow over the wall. On every
+      test map (seeds 1 to 8), the north mountain covers the end turret; on 3 of 8 it also
+      covers the centre of the next turret. On some test maps the south mountain touches the
+      other end turret, and on 5 of 8 the north mountain also covers part of the lane 0 gate. The mountain blocks units and shots, so a turret inside it shoots
+      through rock and the lane 0 gate is narrower. Both sides are the same (mirrored). With PR 4,
+      every bolt of a turret that the mountain touches logs one error (seed 2: about one each
+      second for the whole match). In every option the cliffs behind the Stronghold stay, so the
+      back of the base stays closed. Options: (A) leave that mountain out: if a corner mountain
+      would touch the wall, a turret or a gate, the map does not draw it; the cliff behind is
+      still there (recommended; camps use a similar rule: a camp piece that cannot move clear of
+      a fort is left out); (B) make that mountain smaller until it is clear of the wall; (C) cut
+      the mountain in a straight line along the wall (new shape-cutting code, the largest
+      change). A, B or C? _Code: `map/MapMountainBuilder.ts` (`mountain-corner-nw-93-278` and
+      `mountain-corner-sw-93-278` and their mirrors); `MapSceneryBuilder.build` moves art under
+      the wall to the ground layer but keeps its block; the seal is `map/strongholdCliffs.ts`.
+      The bug is also on `phase/3-sprint-3-work`._
+  - **Answered 2026-11-23 by DEC-340** (Owner Calls page): "B: make that mountain smaller".
+    **Built** on `feat/map-work-forts-towers`: a mountain whose blocking mass touches the wall, a
+    turret or a gate is drawn a tenth smaller each time until it is clear. On the test maps (seeds
+    1 to 8, 3 and 5 lanes) a shrunk mountain keeps 40 % to 80 % of its width. A mountain that is
+    still not clear at a tenth of its size is left out; no test map needs this step.
+
+- [ ] **Lane minion acquisition radius raised to the leash (`feat/map-work-forts-towers`,
+      DEC-323 (2), 2026-11-21) — FYI for SamarjitBhogal (minion owner); no decision needed.**
+      Sam's answer on the Owner Calls page asked to raise the bot and minion engage radii ("your
+      decision on exact amount, but current is too restrictive"). `LANE_MINION_AGGRO`
+      `acquisitionRadius` (`content/ai/aggro/laneMinion.ts`) goes from 5.4 to the leash radius
+      (8.625): `LeashBehaviour` takes a target only inside a leash anchored where the minion
+      stands, so a radius larger than the leash takes no unit target from farther out. Effects: the call for help
+      (`callForHelpRadius`, also the leash) no longer reaches farther than the minion's own
+      acquisition; `MinionController` takes the next lane objective when its edge, or the horde's
+      gathering line, is within 8.625 m instead of 5.4 m. Architecture 18 copies no value, so it
+      is unchanged. Tests: `LeashBehaviour.test.ts` "takes an enemy anywhere inside its leash, and
+      none beyond it"; the call-for-help test now runs on a fixture profile that keeps the old
+      5.4 m reach (`short-reach`). Say if you want another number.
+
+- [x] **HC-B24 — Better than the design, built under your standing rule, sign-off asked: map-work
+      critic round 3 (`feat/map-work-forts-towers`, 2026-11-21); no decision blocks the PR.**
+      Recorded as DEC-321 (owner decisions log). Built after the last critic loop, so no critic
+      has reviewed them; each has a test that a deliberate break turned red. (1) A camp's art
+      sizes (clearing, tents, fire, supplies) live in one place in the building geometry content;
+      the camp art and the ground the generator keeps clear for a camp both read it, so they
+      cannot drift apart. No camp moves. (2) The map generator checks every obstacle choice
+      against the map feature definitions before it builds, so a wrong id fails for every seed,
+      not only for a seed that happens to pick it. Approve, or say which to undo.
+  - **Answered 2026-11-22 by DEC-324** (Owner Calls page): "A: sign off (1) and (2) as built".
+    His note asks for a quick mini critic run if nothing waits; it runs with the DEC-324 critic.
+
+- [x] **HC-B23 — Better than the design, built under your standing rule, sign-off asked: map-work
+      critic round 2 (`feat/map-work-forts-towers`, 2026-11-21); no decision blocks the PR.**
+      Recorded as DEC-320 (owner decisions log). (1) A fallen lane tower's banner goes with its
+      own fort object, which is destroyed when the tower falls, so one rule hides all of a fallen
+      tower's art; the separate banner flag and its 2 tests are removed with that code. (2) `Match`
+      feeds each snapshot to the one fallen-structure rule (`RetiredFeatures`); the HUD bridge only
+      reads it. (3) Each fort wall carries a typed role, and the lane corridors pick a fort's wall
+      bands by that role, not by reading wall ids. Approve, or say which to undo.
+  - **Answered 2026-11-22 by DEC-324** (Owner Calls page): "A: sign off (1)-(3) as built".
+
+- [x] **HC-B21 — Better than the design, built under your standing rule, sign-off asked: map-work
+      critic round 1 (`feat/map-work-forts-towers`, 2026-11-21); no decision blocks the PR.**
+      Recorded as DEC-318 (owner decisions log). (1) One `Aura` component holds a structure's
+      whole aura; the aura system and the snapshot (`EntitySnapshot.aura`) read only it.
+      (2) The aura system keeps no state: each pass ends the aura statuses that no living tower
+      covers now, unit by unit in store order. (3) One client rule finds a fallen structure
+      (`RetiredFeatures`, fed by `MatchBridge`). (4) Map generation moves camps clear of the lane
+      forts, so a camp keeps all its pieces. A camp that moves can change its weight class (its
+      class follows its new depth, DISC-42): 6 of 256 camps in 8 seeds on 3 and 5 lanes, all on
+      5-lane maps; card `camp-class-after-move` asks which position the class follows. (5) A
+      building's interior is built once, and the lane
+      corridors read a fort's wall bands from its wall objects. (6) The tower-exit test checks the
+      first tick at which every horde member is out. Approve, or say which to undo.
+  - **Answered 2026-11-22 by DEC-324** (Owner Calls page): "A: sign off (1)-(6) as built".
+    Card `camp-class-after-move` (4): "A: the class of its new position (as built)".
 
 - [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
@@ -814,13 +1245,120 @@ Reply inline (`Decision: …`).
       `eternalus-agent-work/playtest-2026-11-04/critic-chevron-r3.md` and
       `eternalus-agent-work/playtest-2026-11-04/session-2383bba1-reports.md`. Approve all,
       approve some, or say no.
-- [ ] **Generated forts overlap when a lane has two or more towers of one kind (map generator).**
+- [x] **Generated forts overlap when a lane has two or more towers of one kind (map generator).**
       Found on `feat/out-of-combat-heal` (2026-11-05). With `spawnTowersPerLane` or
       `buffTowersPerLane` at 2 or more, the generator puts towers of one kind 28 to 38 m apart,
       but a fort box is 32 m wide. The forts and their heal zones then overlap, and DEC-215 (1)
       says an overlap is a bug. The default (one tower of each kind per lane) has no overlap, and
       the heal-zone overlap test covers only the default. Fix the generator now (towers of one
       kind at least one fort box apart), or with the map work? Decision: …
+  - **Answered 2026-11-09 by DEC-227** (question dialog, "Tower-ruins map PR"): fixed on
+    `feat/tower-ruins-and-routes`. `laneStructures.ts` keeps towers of one kind at least a fort
+    box's diagonal apart along the lane (a band too narrow widens round its middle), so two forts
+    never overlap on any lane heading. The fort box is measured in world units (the sketch fort,
+    `BUILDING_GEOMETRY.fort.laneTowerSize`, stretched by the larger world/sketch scale). The
+    generator refuses (`MapGenerationError`) a config whose lane towers of different kinds would
+    come closer than that.
+    `MapGenerator.test.ts` checks every lane tower fort pair at 2 and 3 towers per kind.
+    Correction (critic r2, DEC-239): spacing along the lane does not keep forts apart on a bend or
+    on neighbouring lanes near the gates (critic probe: 3200x900, 7 lanes, 1 + 9 towers, four
+    overlapping pairs). The generator now checks every pair of lane tower forts on the map in
+    world units after placement (`assertLaneFortsApart` in `laneStructures.ts`).
+    Correction (DEC-239 rules critique, 2026-11-13): towers of different kinds only must not
+    overlap (no diagonal gap), and the fort box is stretched per axis (`fortInWorld`), not by the
+    larger scale. Towers of one kind are spaced by the box's diagonal, `hypot(width, height)`;
+    until 2026-11-13 the code used the larger side times root 2, which over-spaced a non-square
+    box (3200x900: 90.5 m for 71.6 m). The neighbouring-lanes probe is now 1 + 11 towers.
+- [x] **Tower-ruins critic round 1 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
+      design — five items.** (B1) one way-out search per court cell instead of one per court mob
+      per tick; (B2) move the ruin rule out of `WorldObjectStore`; (B3) one owner of the
+      court-or-footprint stamping rule; (B4) one A\* search loop; (B5) one "lane tower fort in
+      world units" helper, with a check that nav cells stay thinner than the fort walls. Full
+      findings: `eternalus-agent-work/tower-ruins-and-routes/critic-r1.md`. Decision: …
+  - **Answered 2026-11-10 by DEC-235** (question dialog for B1 and B2; B3 to B5 under the standing
+    no-tech-debt rule): all five built on `feat/tower-ruins-and-routes`. B1 is an exit field in
+    `AStarPathfinder`, filled on demand and reset when `WorldMap.version` changes; B2 is
+    `state/StructureRuins.ts`, run by `MapDestructionSystem`; B3 is `MatchWorld.build` and
+    `MatchWorld.reopen`; B5 is `map/fortInWorld.ts`. Docs 06 §3 and §6, 07 and 10 §9 updated.
+    Later (critic r2, DEC-239): the B3 stamping rule moved to `map/MatchGrid.ts` and the B1 exit
+    field to `map/CourtExitField.ts`.
+- [x] **Tower-ruins critic round 2 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
+      design — four items.** (D1) check lane tower forts on the whole map in world units, not
+      per lane in lane fractions; (D2) the stamping rule in a `map/` class, since `state/` may
+      import `map/` as types only; (D3) the court exit field in its own class; (D4) one
+      point-in-rectangle helper. Full findings:
+      `eternalus-agent-work/tower-ruins-and-routes/critic-r2.md`. Decision: …
+  - **Answered 2026-11-10 by DEC-239** (standing no-tech-debt rule, not asked): all four built on
+    `feat/tower-ruins-and-routes`. D1 is `assertLaneFortsApart` in `map/laneStructures.ts`; D2 is
+    `map/MatchGrid.ts`; D3 is `map/CourtExitField.ts`; D4 is `utils/geometry.isPointInRect`.
+    Confirmed by the owner 2026-11-14 (**DEC-246**, "Confirm"), after a critique found the four
+    generator rules within the design.
+    Docs 03, 06 §3, 07 and 10 §9 updated.
+- [x] **Bot A\* search cap on 2.5 m cells (`feat/tower-ruins-and-routes`, 2026-11-10).** With a
+      horde at every lane tower, bot Legends' A\* failed 190 to 273 times in 300 ticks:
+      `map.pathMaxExpansions` 6000 settles too few 2.5 m cells (DEC-227 (Q-A)) for routes of
+      about 470 m, and a failed search stops the bot. (A) raise the cap to 24000; (B) 12000;
+      (C) keep it and add a bot path cache later. Evidence:
+      `eternalus-agent-work/tower-ruins-and-routes/astar-finding-2026-11-10.md`. Decision: …
+  - **Answered 2026-11-10 by DEC-240** (question dialog): A, plus a request for a bot path cache
+    ("Requests for the agent" below). Built on `feat/tower-ruins-and-routes`:
+    `config/defaultGameConfig.ts`, test in `map/AStarPathfinder.test.ts`.
+- [x] **Tower-ruins critic round 3 (`feat/tower-ruins-and-routes`, 2026-11-10), better than the
+      design — four follow-ups, no decision blocks the PR.** (BTD1) Set the A\* cap as a search
+      area in world units (m², divided by `navCellSize`²), or validate the two together, so the
+      next cell-size change cannot shrink the search again (DEC-240 was needed for this reason).
+      (BTD3) Make `DefaultSystemPipelineOptions.ruinWall` required, as the round-1 ruling said:
+      about 12 test call sites add one line, and the type check replaces the run-time throw.
+      (BTD4) One `doRectsOverlap` in `utils/geometry` for `assertLaneFortsApart`,
+      `MapSceneryBuilder`, `StaticCollisionIndex` and two copies in `MapGenerator.test.ts`.
+      (BTD5) `MatchWorld` takes the definition and a `MatchGrid` that another definition could
+      have built: let `MatchGrid` keep its definition and `MatchWorld` take only the grid.
+      Full findings: `eternalus-agent-work/tower-ruins-and-routes/critic-r3.md`. Approve: one
+      follow-up branch builds all four. Decision: …
+  - **Answered 2026-11-14** (question dialog, 2026-11-13 answer 3: "A: follow-up branch now"):
+    BTD3 and BTD5 built on `refactor/tower-ruins-followups` (**DEC-245**), with the layout band
+    rules on the placed towers ("Build now"). BTD1 = DEC-243 on `refactor/astar-search-area`;
+    BTD4 = DEC-244 on `refactor/fort-geometry-helpers`.
+- [x] **Map work has no plan entry (2026-11-20, DEC-311).** Owner rulings send items to "the map
+      work": bigger forts (DEC-185 (A), "bigger forts (b) come when map work resumes") and a
+      walkable inside for houses (DEC-311); the item "Generated forts overlap when a lane has two
+      or more towers of one kind" asks whether the fort-overlap fix goes there too. No phase doc
+      or sprint in `docs/plan/` names the map work, so none of these is scheduled. Which phase or
+      sprint gets the map work? Agents then add its tasks (bigger forts, house insides, and the
+      overlap fix if it goes there) to that phase doc, citing DEC-185 and DEC-311. Decision: …
+  - **Answered 2026-11-20 by DEC-313** (Owner Calls page): bigger forts, the fort-overlap fix and
+    the tower visuals go in the PR of `docs/dec-288-interior-bonus-buildings`, the buff tower's
+    buff and debuff too if time; walkable houses are post-MVP. That PR schedules the work, so no
+    phase doc gets a map-work entry. The question's overlap premise was stale: DEC-227 had
+    already answered the overlap item, and PR #98 builds the fix. To the owner's "any other
+    items?": a search for "map work" in the repository (2026-11-20) finds no other item; the
+    nearest unscheduled item is "Walkable walls — deferred by the owner" (DEC-188). Open
+    questions: the next item.
+- [x] **Map work in the DEC-288 PR (DEC-313): open questions (2026-11-20).** Cards
+      `map-work-branch`, `forts-hordes-court`, `forts-size` and `buff-tower-aura` on the Owner
+      Calls page. (1) Branch: bigger forts need PR #98 (fort spacing, the fort size in
+      `BUILDING_GEOMETRY`, 2.5 m navigation cells), and PR #122 is stacked on #98. Build the forts
+      and tower fixes on a new branch stacked on #122 and keep the DEC-288 PR docs only, stack the
+      DEC-288 PR on #122, or wait for #98 and #122 to merge? (2) Do hordes walk through a bigger
+      fort's court (west and east doorways), or go round it as built? (3) Fort size: 56 m gives
+      corridors 2 navigation cells wide, 48 m gives 1. (4) If time: the buff tower's numbers.
+      FR-029 gives the debuff as −10 % health and damage (`TUNE`);
+      `docs/reference/suggestions/balancing.md` "Auras" recommends a 12 m radius, enemies inside
+      dealing 10 % less damage with 10 % less max health and debuffs on them lasting 25 % longer,
+      and allies inside dealing 10 % more damage and regaining aether 50 % faster. There is no
+      max-health stat, so the card offers +10 % damage taken in its place. Approve, or give
+      numbers. (5) The agent's reading of "fixing the current towers so the visuals match the
+      logic" (correct it if more is meant): a destroyed tower keeps its map glyph and banner
+      (`WorldObjectStore.removed` keeps a dead structure's fort standing, so `MapView` never hides
+      the glyph; PR #98 turns the fort's walls into ruins, and the glyph and banner stay), and the
+      spawner and buff tower glyphs are drawn under the fort court, so the two kinds look the
+      same. Decision: …
+  - **Answered 2026-11-21 by DEC-315** (Owner Calls page): (1) a new branch stacked on PR #122,
+    `feat/map-work-forts-towers`; the DEC-288 PR stays docs only. (2) Hordes go through the court
+    by the west and east doorways. (3) 56 m. (4) The aura as read in DEC-315 (4), if time.
+    (5) No correction, so the fixes are built as read (DEC-315 (5)). A fifth card,
+    `BUG-2-build`, asked on the page (not in this item) whether the same branch builds the ×1.25
+    inside bonus: yes (DEC-315 (6)).
 
 - [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"
@@ -1000,6 +1538,32 @@ Reply inline (`Decision: …`).
     (`apps/server/src/match/CoreDuelSimulationFactory.ts`). The replay setup then keeps it, so (3)
     goes away, and `Simulation` no longer reads `DUEL_RULES` for it. To build in a follow-up to
     PR #142 if the owner answers A or B on the Owner Calls card "PR142 (1) Duel max level".
+  - 2026-11-26: (4) and (5) answered (DEC-380, Owner Calls v98 "PR142 (1)" and "(2)"). This also
+    answers 2026-11-12 (7). (4) A Duel earns no match XP (`DUEL_RULES.hasMatchXp: false`).
+    (5) Damage grows with level: a Legend's weapon hit by its class's `basicAttackPerLevel`, its
+    abilities by their own `perLevel`. Built in `feat/legend-level-damage`, except ability
+    scaling, which #136, #162 and #175 build (see the DEC-380 row). Three points for you: (a) 0.08 per level is the build's default,
+    not your number. It is the same as `healthPerLevel` (`TUNE`). Confirm it or give another.
+    (b) The scaled weapon hit lands on every target: Legends, mobs, structures, bosses, camps and
+    the Cathedral gem. A tower's, a boss's or the gem's health does not grow to match. So a level-10 Legend hits a tower
+    or a boss 1.72 times as hard as at level 1, and a level-50 Legend 4.92 times. Keep that, or
+    scale only hits on Legends? (Owner Calls card HC-Q119.) (c) Architecture 05 §13 is your design text. It does not name
+    `hasMatchXp` or say that a weapon hit reads the level when it lands. Only the §18 status note
+    says so. Add it to §13 if you want it in the design. Decision: …
+  - 2026-11-27: (b) answered (DEC-405, Owner Calls v103 HC-Q119): full rate on Legends, mobs and
+    bosses; a lower rate on structures (`basicAttackPerLevelOnStructures`, 0.04 per level, `TUNE`,
+    built in `feat/legend-level-damage`). (a) and (c) are still open.
+    A high-level Legend's weapon bonus is smaller against walls (the Cathedral's too), turrets,
+    gates, the palace and the 2 capture-point forts. Against trees, rocks, houses, furniture and
+    camp props it is full. This list is the build's reading of your "etc", not your words. Correct
+    it after playtests if an item is wrong: one `true` or `false` per item in
+    `content/maps/mapObjectDefinitions.ts` (DEC-405 row).
+  - 2026-11-27: HC-Q130 answered (DEC-422, Owner Calls v108): a Legend's ability hit on a tower,
+    gate or wall also grows at the lower structure rate (`basicAttackPerLevelOnStructures`,
+    `TUNE`). Not built yet: ability damage (`DamageEffect`) is in `feat/ability-framework`
+    (PR #123), and the structure rate is in `feat/legend-level-damage`. A small follow-up PR
+    builds it after both are on phase/3. Naming (your call): the field then covers ability hits
+    too, so that PR can rename it to `perLevelOnStructures`. Say if you want the new name.
 - [ ] **HC-B46 — Duel max-level start: two better-than-design items (critic on
       `chore/duel-max-level-gate-followups`, 2026-11-26; owner sign-off asked).** Owner: sholtzman.
       (1) Architecture 03 §4 says a listener that must change state defers the change to its own
@@ -3317,6 +3881,7 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
+- [ ] DEC-298 (5), (7) — Selected-subclass portrait follow-up. Carry the credited Juggernaut portrait with its notice intact for the class-project MVP and replace it after delivery. Build the selected, forward-facing character cutouts using the Oracle reference and propose their actual encoded bytes for review. DEC-378 (4) (2026-11-26) adds the five non-Magus sprite sheets of PR #170 (Zealot, Templar, Paladin, Colossus, Bulwark; 1x and 2x): they ship for the class project, and they are replaced after the MVP too.
 - [ ] **Build DEC-420 (4), (7) and (9): no ability casts in the air, the Fury dash on Q, one
       movement path (2026-11-27).** Owners: (4) the session that merges the second of PR #183
       (the jump) and PR #123 (the ability framework) into phase/3; (7) and (9) the session that
@@ -3326,6 +3891,10 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       (`granted`, PR #136) moves from Space to Q. (9) Jump momentum, the dash and knockback move
       a Legend through one shared path; build the "held in place" check (the countdown hold or
       `cannot-move`) once there, as `JumpSystem` and `MovementSystem` now each have their own.
+      The knockback is `Movement.pushBy` (#164): today a push moves a Legend in the air once and
+      the Legend keeps its takeoff velocity (`MovementSystem`). That is today's behaviour, not an
+      owner ruling: the shared path keeps it until doc 10 §3's impulse model or an owner call
+      changes it.
       Traps: #136 binds `granted: Space` on its own line of `keybindings.ts`, so the merge shows
       no text conflict and leaves two actions on Space; `InputMapper.test.ts` uses `KeyQ` as its
       unbound sample key (move the sample to another unbound key; keep the test). **Owner answer
@@ -3334,16 +3903,31 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       owner has not ruled on that. Done when the three are built with tests and the PRs are in
       phase/3.
 
-- [ ] **Make the tower horde test faster (DEC-289, 2026-11-20).** Owner: to be assigned.
+- [ ] **Make the tower horde test and the Duel kill-target test faster (DEC-289, 2026-11-20;
+      widened to both slow whole-match tests by DEC-325, 2026-11-22).** Owner: to be assigned.
+      Both core tests build a whole map and match, then play for many ticks.
       `Simulation.mapObjects.test.ts`, "walks every tower horde out of its tower and on up its
-      lane within 10 seconds (DEC-133, seed %i)", builds a whole map and match for each of its
-      three seeds (1, 2, 10), steps the countdown, then 10 s of play. One seed takes about 3 s
-      locally without coverage, but up to 65 s under coverage on the windows-latest CI runner
-      (PR #122, run 44714237495, 2026-11-20). DEC-289 gave this test its own 120 s time limit
-      (`HORDE_WALK_TIMEOUT_MS`) until it is faster. Where the time goes is not measured yet. Done
-      when the test runs well under 60 s on windows-latest CI and `HORDE_WALK_TIMEOUT_MS` is
-      removed, with every assertion and all three seeds kept (seed 10 covers critic round 3,
-      M-A).
+      lane within 12 seconds (DEC-133, seed %i)", does this for each of its three seeds (1, 2,
+      10): the countdown, then up to 12 s of play. One seed takes about 3 s locally without coverage,
+      but up to 65 s under coverage on the windows-latest CI runner (PR #122, run 44714237495,
+      2026-11-20). `Simulation.duel.test.ts`, "ends the match for the first team to reach the
+      kill target", fights a Duel to two kills; it took up to 61.7 s under coverage on the
+      ubuntu-latest runner (PR #122, run 44872612846, 2026-11-21). DEC-289 and DEC-325 gave the
+      two tests their own 120 s time limits (`HORDE_WALK_TIMEOUT_MS`, `KILL_TARGET_TIMEOUT_MS`)
+      until they are faster. A CPU profile of the slow Duel tests (2026-11-21) puts most of the
+      time in building the map: `WorldMap.stampFootprint` and `cellsInside`, and
+      `LaneFlowFields`; DEC-227's 2.5 m nav cells made that build about 3 times slower. Done when
+      both tests run well under 60 s on both CI runners and both constants are removed, with every
+      assertion kept, all three horde seeds kept (seed 10 covers critic round 3, M-A) and the Duel
+      still fought to its kill target.
+  - **2026-11-22, horde test step 1 done (`chore/horde-test-speed`, into PR #152):** the A\*
+    queue keeps each queued cell's estimate, so a queue compare no longer computes the heuristic
+    again (HC-B32 moved that key into the shared queue); state hashes do not change. Horde test,
+    local, with coverage, per seed: 12.2-12.6 s before, 8.6-9.0 s after. The rest of the cost:
+    after the tower hordes spawn, no straight line is clear, so every bot Legend decision runs an
+    A\* search to its goal. Next step: remove `HORDE_WALK_TIMEOUT_MS` after PR #84 (bot A\*
+    waypoint cache) reaches PR #152's line (both together: 5.0-5.1 s locally), with CI times on
+    both runners as the proof. The Duel test part is not started.
 - [ ] **PR #30 renderer follow-up** — Owner: Gurshaan. Separate caching/batching and close-view
       material detail from the map PR; retain all renderer-specific tests with that change.
       Keep draw order inside SceneView, address renderer file length and the capture layer,
@@ -3587,6 +4171,18 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
       sign-off pending). Update the docs check row in `docs/process/guardrails.md`. Close this
       item when its PR merges.
 
+- [ ] **Bot path cache (DEC-240, 2026-11-10)** — Owner: unassigned, own branch. A bot searches
+      A\* again on each blocked decision. On 2.5 m cells (DEC-227 (Q-A)) a search costs about 4
+      times what it cost on 5 m cells: with a horde at every lane tower, 13.6 ms a tick against
+      5.2 ms (a full normal match shows no change). Keep each bot's path and re-plan only when its
+      goal moves or `WorldMap.version` changes (architecture 11 §6 names this as the next step).
+      Note: on seed 1, nine routes of 650 to 810 m between tower forts on opposite sides of the map
+      still settle more than 24000 cells; no bot took such a route in the test. Also (critic r3
+      BTD2): one A\* work budget a tick, counted in searched cells and shared by bot searches and
+      `StuckSystem` plans; `maxDecisionsPerTick` and `STUCK_DETECTION.maxPlansPerTick` count
+      searches, and DEC-240 makes one failed search up to 4 times dearer. Evidence:
+      `eternalus-agent-work/tower-ruins-and-routes/astar-finding-2026-11-10.md`.
+
 ## Feedback
 
 - [ ] Answered below questions, or called out in section header.
@@ -3611,6 +4207,17 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-27 — **Your answer HC-Q131: the 2-level limit of a mini boss kill includes the corner
+  camp's clear bonus (DEC-423)** (`feat/corner-camp-clear-bonus`, with DEC-393): nothing changes
+  in play. A new test in `xpSources.test.ts` fails if a later tuning lets the corner boss's XP
+  plus the corner camp's bonus give a Legend a third level. Decision: DEC-423.
+
+- 2026-11-27 — **Your answers HC-B55 and PR153 (1b), (2b) and (2c): the corner camp pays the clear
+  bonus too (DEC-393)** (`feat/corner-camp-clear-bonus`, a follow-up to PR #153): DEC-375 stands
+  (only the Legend that killed the camp's last mob gets the bonus), and the corner camp now pays
+  it like a forest camp. Its mini boss still pays its XP to the whole team. Your "near the camp"
+  defaults (PR153 (1b)) are recorded; under DEC-375 they change nothing. Decision: DEC-393.
 
 - 2026-11-27 — **Your answers HC-B54 and HC-B50: a unit plans again when the map changes
   (DEC-379, DEC-392)** (`fix/bot-replan-on-map-change`, a follow-up to PR #84): your v98 answer
@@ -4061,5 +4668,3 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
   `docs/inbox-decisions-2026-10-03`.
 - 2026-09-30 — Phase 0 documentation + harness written on `docs/phase-0-foundation`
   (merged as PR #3; see `docs/changelog/2026-09-30-phase-0-foundation.md`).
-
-- [ ] DEC-298 (5), (7) — Selected-subclass portrait follow-up. Carry the credited Juggernaut portrait with its notice intact for the class-project MVP and replace it after delivery. Build the selected, forward-facing character cutouts using the Oracle reference and propose their actual encoded bytes for review.

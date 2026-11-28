@@ -1,4 +1,3 @@
-import { MAGUS_SPRITE_ASSETS } from './magusSpriteAssets';
 import { LEGEND_SPRITE_ASSETS } from './legendSpriteAssets';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
@@ -13,6 +12,7 @@ import type {
   AssetManifestEntry,
   RasterBox,
   RenditionKey,
+  SpriteAtlasGroup,
 } from './AssetManifest.types';
 import { BOOT_ASSETS } from './bootAssets';
 import { MATCH_ASSETS } from './matchAssets';
@@ -23,7 +23,8 @@ import { SELECTION_PRIMARY_RASTER_ASSETS } from './selectionPrimaryRasterAssets'
 import { SELECTION_RASTER_ASSETS } from './selectionRasterAssets';
 
 /**
- * Shipped groups (14 §14); a new `AssetGroup` member fails the `expectTypeOf` case until added.
+ * Shipped named groups (14 §14), beside the sprite sheet family (`SpriteAtlasGroup`); a new
+ * `AssetGroup` member fails the `expectTypeOf` case until added.
  */
 const GROUPS = [
   'boot',
@@ -33,17 +34,9 @@ const GROUPS = [
   'selection-raster',
   'selection-primary-raster',
   'match',
-  'atlas-assassin',
-  'atlas-knight',
-  'atlas-paladin',
-  'atlas-colossus',
-  'atlas-juggernaut',
-  'atlas-catalyst',
-  'atlas-oracle',
-  'atlas-necromancer',
 ] as const satisfies readonly AssetGroup[];
 
-/** Each group's file, in `ASSET_MANIFEST` order. */
+/** Each named group's file, in `ASSET_MANIFEST` order. */
 const GROUP_FILES: readonly (readonly [AssetGroup, readonly AssetManifestEntry[]])[] = [
   ['boot', BOOT_ASSETS],
   ['selection', SELECTION_ASSETS],
@@ -52,10 +45,16 @@ const GROUP_FILES: readonly (readonly [AssetGroup, readonly AssetManifestEntry[]
   ['selection-raster', SELECTION_RASTER_ASSETS],
   ['selection-primary-raster', SELECTION_PRIMARY_RASTER_ASSETS],
   ['match', MATCH_ASSETS],
-  ...[...LEGEND_SPRITE_ASSETS, ...MAGUS_SPRITE_ASSETS].map(
-    (asset) => [asset.group, [asset]] as const,
-  ),
 ];
+
+/** The one file of the sprite sheet group family, last in `ASSET_MANIFEST` (DEC-398). */
+const SPRITE_ATLAS_FILE = LEGEND_SPRITE_ASSETS;
+
+/** The family group of a sheet: its own asset id (`SpriteAtlasGroup`). */
+const sheetGroupOf = (entry: AssetManifestEntry): SpriteAtlasGroup => `sprite-atlas:${entry.id}`;
+
+/** Whether `group` belongs to the sprite sheet group family. */
+const isSheetGroup = (group: AssetGroup): boolean => group.startsWith('sprite-atlas:');
 
 /** The WebP files, read inline as data URLs, for their RIFF chunk. */
 const INLINE_IMAGES = import.meta.glob<string>('../../assets/**/*.webp', {
@@ -165,23 +164,42 @@ describe('ASSET_MANIFEST', () => {
     expect(files.filter((file) => !/^[0-9a-f]{64}$/.test(file.hash))).toEqual([]);
   });
 
-  it('licenses every entry and requires a Figma node or HTTPS source for non-attachments', () => {
+  it('licenses every entry and names its Figma node or download in its source', () => {
     expect(assets.filter((entry) => !(entry.licence in ASSET_LICENCES))).toEqual([]);
-    const nonAttachments = assets.filter(
-      ({ attachmentReferenceId }) => attachmentReferenceId === undefined,
-    );
-    expect(nonAttachments.filter((entry) => !/\b\d+:\d+\b|https:\/\//.test(entry.source))).toEqual(
-      [],
-    );
+    expect(
+      assets.filter(
+        (entry) =>
+          entry.attachmentReferenceId === undefined && !/\b\d+:\d+\b|https:\/\//.test(entry.source),
+      ),
+    ).toEqual([]);
   });
 
-  it('validates each registered attachment against its provenance record (ADR 0028)', () => {
-    const attachments = assets.filter(
-      ({ attachmentReferenceId }) => attachmentReferenceId !== undefined,
-    );
-    expect(attachments).toHaveLength(Object.keys(ATTACHMENT_REFERENCES).length);
+  it('types an attachment id as a registered reference, so a typo fails the type check', () => {
+    expectTypeOf<NonNullable<AssetManifestEntry['attachmentReferenceId']>>().toEqualTypeOf<
+      keyof typeof ATTACHMENT_REFERENCES
+    >();
+    expectTypeOf<keyof typeof ATTACHMENT_REFERENCES>().not.toEqualTypeOf<string>();
+    // The same rule at run time: every id the manifest names is registered.
     expect(
-      attachments.filter(
+      assets.flatMap(({ attachmentReferenceId: id }) =>
+        id === undefined || id in ATTACHMENT_REFERENCES ? [] : [id],
+      ),
+    ).toEqual([]);
+  });
+
+  it('binds each attachment entry to its registered, documented reference (ADR 0028, DEC-298)', () => {
+    const attached = assets.filter((entry) => entry.attachmentReferenceId !== undefined);
+    // Every registered reference has its entry: no reference is left unused.
+    expect(attached).toHaveLength(Object.keys(ATTACHMENT_REFERENCES).length);
+    expect(attached.map(({ id }) => id)).toEqual([
+      'assassin-sprites',
+      'knight-sprites',
+      'paladin-sprites',
+      'colossus-sprites',
+      'juggernaut-sprites',
+    ]);
+    expect(
+      attached.filter(
         (entry) =>
           !hasAssetProvenance(entry, ATTACHMENT_REFERENCES, {
             'docs/reference/legend-sprite-provenance.md': legendProvenance,
@@ -213,11 +231,15 @@ describe('ASSET_MANIFEST', () => {
     expect(ASSET_LICENCES.owner.text).toBeNull();
   });
 
-  it('uses only the declared asset groups', () => {
-    expectTypeOf<(typeof GROUPS)[number]>().toEqualTypeOf<AssetGroup>();
-    expect(assets.filter((entry) => !(GROUPS as readonly string[]).includes(entry.group))).toEqual(
-      [],
-    );
+  it('uses only the declared asset groups: a named group, or a sheet in its own family group', () => {
+    expectTypeOf<(typeof GROUPS)[number] | SpriteAtlasGroup>().toEqualTypeOf<AssetGroup>();
+    expect(
+      assets.filter(
+        (entry) =>
+          !(GROUPS as readonly string[]).includes(entry.group) &&
+          !(entry.type === 'sprite-atlas' && entry.group === sheetGroupOf(entry)),
+      ),
+    ).toEqual([]);
   });
 
   it('keeps each group in exactly one group file, whose entries all carry that group', () => {
@@ -230,11 +252,27 @@ describe('ASSET_MANIFEST', () => {
     );
 
     expect(misplaced).toEqual([]);
-    expect(filesPerGroup).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+    expect(filesPerGroup).toEqual([1, 1, 1, 1, 1, 1, 1]);
   });
 
-  it('is the concatenation of the declared group files', () => {
-    expect(assets).toEqual(GROUP_FILES.flatMap(([, entries]) => entries));
+  it('keeps the whole sprite sheet family in its one file, each sheet in the group of its id', () => {
+    const outside = GROUP_FILES.flatMap(([, entries]) =>
+      entries.filter((entry) => isSheetGroup(entry.group)).map((entry) => entry.id),
+    );
+    const wrongGroup = SPRITE_ATLAS_FILE.filter(
+      (entry) => entry.type !== 'sprite-atlas' || entry.group !== sheetGroupOf(entry),
+    ).map((entry) => entry.id);
+
+    expect(SPRITE_ATLAS_FILE.length).toBeGreaterThan(0);
+    expect(outside).toEqual([]);
+    expect(wrongGroup).toEqual([]);
+  });
+
+  it('is the concatenation of the declared group files, the sheet family last', () => {
+    expect(assets).toEqual([
+      ...GROUP_FILES.flatMap(([, entries]) => entries),
+      ...SPRITE_ATLAS_FILE,
+    ]);
   });
 
   it('puts only the alternate layout art in the selection-alternate group', () => {
@@ -299,6 +337,23 @@ describe('ASSET_MANIFEST', () => {
 
     expect(boxedFiles().length).toBeGreaterThan(0);
     expect(unboxed).toEqual([]);
+  });
+
+  it('cuts every sprite atlas file into square cells, as the sprite view and ground offset assume', () => {
+    const atlases = assets.flatMap((entry) => (entry.type === 'sprite-atlas' ? [entry] : []));
+    const notSquare = atlases.flatMap((entry) =>
+      [entry.file, ...(entry.file2x === undefined ? [] : [entry.file2x])].flatMap(({ url }) => {
+        const { width, height } = webpSize(url);
+        return width / entry.columns === height / entry.rows
+          ? []
+          : [
+              `${entry.id}: ${String(width)}×${String(height)} in ${String(entry.columns)}×${String(entry.rows)}`,
+            ];
+      }),
+    );
+
+    expect(atlases.length).toBeGreaterThan(0);
+    expect(notSquare).toEqual([]);
   });
 
   it("gives every draw box integer px at or past the artboard origin and its 1x file's pixel size", () => {

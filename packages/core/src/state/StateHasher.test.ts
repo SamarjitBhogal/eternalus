@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Aether } from '../components/Aether';
+import { BossMoveCast } from '../components/BossMoveCast';
 import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
 import { Collider } from '../components/Collider';
@@ -11,6 +12,7 @@ import { Movement } from '../components/Movement';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { CombatClock } from '../components/CombatClock';
 import { LastEnemyHit } from '../components/LastEnemyHit';
+import { LastLegendHits } from '../components/LastLegendHits';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -20,6 +22,7 @@ import { Vision } from '../components/Vision';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { CAPTURE_POINT } from '../content/zones/capturePoint';
 import { Entity } from '../entities/Entity';
+import type { Legend } from '../entities/Legend';
 import { CapturePoint } from '../entities/zones/CapturePoint';
 import { SeededRandom } from '../utils/SeededRandom';
 import { fnv1a } from '../utils/fnv1a';
@@ -138,6 +141,34 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(before);
   });
 
+  it('changes while a push waits, and is back to before once the step uses it up', () => {
+    const { state, soldier } = stateWithSoldier();
+    const before = hasher.hash(state);
+    const movement = soldier.getComponent(Movement);
+
+    movement.pushBy({ x: 1, y: 0 });
+    expect(hasher.hash(state)).not.toBe(before);
+    movement.takeStep();
+    expect(hasher.hash(state)).toBe(before);
+  });
+
+  it('changes when a boss starts a move, with its move and landing tick, and again when it lands', () => {
+    const { state, soldier } = stateWithSoldier();
+    const before = hasher.hash(state);
+
+    state.entities.beginBossMove(soldier.id, 'slam', 10);
+    const waiting = hasher.hash(state);
+    expect(waiting).not.toBe(before);
+    state.entities.beginBossMove(soldier.id, 'sweep', 10);
+    expect(hasher.hash(state)).not.toBe(waiting);
+    state.entities.beginBossMove(soldier.id, 'slam', 11);
+    expect(hasher.hash(state)).not.toBe(waiting);
+    state.entities.beginBossMove(soldier.id, 'slam', 10);
+    expect(hasher.hash(state)).toBe(waiting);
+    soldier.getComponent(BossMoveCast).clear();
+    expect(hasher.hash(state)).not.toBe(waiting);
+  });
+
   it('hashes an entity the same with or without a map-feature link: setup the replay carries (DEC-231)', () => {
     const { state: plain } = stateWithSoldier();
     const { state: linked, soldier } = stateWithSoldier();
@@ -238,6 +269,43 @@ describe('StateHasher', () => {
     expect(hit).not.toBe(bare);
     expect(byAnother).not.toBe(hit);
     expect(hasher.hash(state)).not.toBe(byAnother);
+  });
+
+  it("changes with a team's last Legend hitter, with which Legend, and with each team (DEC-416)", () => {
+    const { state, soldier } = stateWithSoldier();
+    const bare = hasher.hash(state);
+    const hits = new LastLegendHits();
+    soldier.addComponent(hits);
+    hits.record('light', 'entity-7');
+    const light = hasher.hash(state);
+    hits.record('light', 'entity-8');
+    const byAnother = hasher.hash(state);
+
+    hits.record('dark', 'entity-9');
+
+    expect(light).not.toBe(bare);
+    expect(byAnother).not.toBe(light);
+    expect(hasher.hash(state)).not.toBe(byAnother);
+  });
+
+  it('changes when only the levels a waiting Legend is owed differ (DEC-371 E8a)', () => {
+    // A flat share's XP is unbounded, so its `levels` alone tells two owed shares apart.
+    const owedLevels = (levels: number): number => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+      const soldier = new Soldier('entity-1', 'soldier-definition');
+      soldier.spawn({});
+      state.respawns.add(soldier as unknown as Legend, 'light', 300);
+      state.respawns.owe(soldier.id, {
+        cause: 'team-kill',
+        victimId: 'entity-8',
+        victimTeam: 'neutral',
+        xp: Number.POSITIVE_INFINITY,
+        levels,
+      });
+      return hasher.hash(state);
+    };
+
+    expect(owedLevels(5)).not.toBe(owedLevels(2.5));
   });
 
   it('hashes a jump only while its key is held or it flies, then with each field (DEC-390)', () => {

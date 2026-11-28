@@ -23,6 +23,7 @@ const unit = (
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 });
 

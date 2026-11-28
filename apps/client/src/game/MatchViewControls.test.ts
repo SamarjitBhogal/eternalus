@@ -75,6 +75,7 @@ const unit = (id: string, team: 'light' | 'dark', at: Vec2): EntitySnapshot => (
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 });
 /** The player's Legend, away from the point the camera looks at. */
@@ -131,7 +132,7 @@ const setUp = (
     commands,
     miniMap,
     onMiniMapShownChanged,
-    playerId,
+    playerId: () => playerId,
     snapshot: () => ({ entities: units, mapObjects: HOUSE_STATES }),
   });
   const sent = (): Command[] => enqueueCommand.mock.calls.map(([command]) => command);

@@ -10,8 +10,9 @@ import type { GameState } from '../GameState';
 /**
  * Builds the map's structures the way `Simulation` does, with ids from 1001 up so the units a test
  * spawns keep `entity-1`, `entity-2`, …, then indexes them. As in `Simulation.spawnStructures`, a
- * structure whose definition `hasMapFootprint` gets the `Footprint` of its feature's map object of
- * the same id in `mapObjects` (a lane tower's fort, the Stronghold's palace), blocking or not.
+ * structure whose definition `hasMapFootprint` gets as its `Footprint` the footprints of its
+ * feature's map object of the same id in `mapObjects` and of the objects that are `partOf` it (a
+ * lane tower's fort walls; the Stronghold's palace), blocking or not.
  */
 export const spawnMapStructures = (
   state: GameState,
@@ -25,17 +26,22 @@ export const spawnMapStructures = (
   const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
     compareById(a.id, b.id),
   );
-  const bodies = new Map(mapObjects.map((object) => [object.id, object]));
   for (const { id, definitionId, position, team, laneId } of features) {
     if (STRUCTURE_DEFINITIONS.has(definitionId)) {
       const { kind, hasMapFootprint } = STRUCTURE_DEFINITIONS.get(definitionId);
       const structure = factory.create(kind, definitionId, {
         position,
         team,
+        mapFeatureId: id,
         ...(laneId !== undefined && { laneId }),
       });
-      const body = hasMapFootprint === true ? bodies.get(id) : undefined;
-      if (body !== undefined) structure.addComponent(new Footprint(body.footprints));
+      const body =
+        hasMapFootprint === true
+          ? mapObjects.filter((object) => object.id === id || object.partOf === id)
+          : [];
+      if (body.length > 0) {
+        structure.addComponent(new Footprint(body.flatMap(({ footprints }) => footprints)));
+      }
       state.entities.add(structure);
     }
   }

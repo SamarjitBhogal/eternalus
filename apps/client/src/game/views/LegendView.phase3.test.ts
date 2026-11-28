@@ -30,6 +30,7 @@ const WARRIOR: EntitySnapshot = {
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 };
 
@@ -42,7 +43,7 @@ describe('LegendView', () => {
     const renderer = new RecordingRenderer();
 
     new LegendView().draw(
-      { entity: WARRIOR, position: AT, facing: SOUTH, isFocused: false },
+      { entity: WARRIOR, position: AT, facing: SOUTH, isFocused: false, frameTick: 0, time: 0 },
       renderer,
     );
 
@@ -70,7 +71,7 @@ describe('LegendView', () => {
     const renderer = new RecordingRenderer();
 
     new LegendView().draw(
-      { entity: WARRIOR, position: AT, facing: SOUTH, isFocused: true },
+      { entity: WARRIOR, position: AT, facing: SOUTH, isFocused: true, frameTick: 0, time: 0 },
       renderer,
     );
 
@@ -84,7 +85,10 @@ describe('LegendView', () => {
     const renderer = new RecordingRenderer();
     const view = new LegendView();
 
-    view.drawMinimap({ entity: WARRIOR, position: AT, facing: SOUTH, isFocused: false }, renderer);
+    view.drawMinimap(
+      { entity: WARRIOR, position: AT, facing: SOUTH, isFocused: false, frameTick: 0, time: 0 },
+      renderer,
+    );
 
     expect(renderer.calls).toEqual([
       { op: 'drawGlyph', args: [expect.anything(), AT, MINI_MAP_OUTLINE_COLORS.light] },

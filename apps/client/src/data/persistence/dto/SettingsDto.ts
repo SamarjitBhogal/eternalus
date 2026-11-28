@@ -25,6 +25,8 @@ export type PersistedSettings = {
   readonly audio: { readonly master: number; readonly music: number; readonly effects: number };
   readonly video: { readonly fullscreen: boolean; readonly renderScale: number };
   readonly accessibility: { readonly reduceMotion: boolean; readonly colourBlindMode: boolean };
+  /** Optional, so records saved before it (W5c, DEC-410) still read as version 1 (DEC-125). */
+  readonly hud?: { readonly shouldShowEveryHit: boolean };
 };
 
 /** The `settings` store record, one per profile (architecture 14 §7). */
@@ -104,7 +106,10 @@ function settingsProblem(value: unknown, knownActions: ReadonlySet<string>): str
     groupProblem('accessibility', value.accessibility, {
       reduceMotion: isBoolean,
       colourBlindMode: isBoolean,
-    })
+    }) ??
+    (value.hud === undefined
+      ? null
+      : groupProblem('hud', value.hud, { shouldShowEveryHit: isBoolean }))
   );
 }
 

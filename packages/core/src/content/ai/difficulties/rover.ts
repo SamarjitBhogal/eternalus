@@ -8,7 +8,7 @@ export const ROVER_BOT = {
   id: 'rover',
   retreatHealthFraction: 0.2, // TUNE: no reference value; holds on longer than `normal`
   rejoinHealthFraction: 0.8, // TUNE: no reference value
-  engageRadius: 16, // TUNE: no reference value
+  engageRadius: 24, // TUNE: DEC-323 (2) raised from 16; keeps 4/3 of `normal`'s
   arrivalDistance: 2, // TUNE: no reference value; one formation slot
   utilityWeights: { closeness: 1, weakness: 2 }, // TUNE: no reference value; finishes the weak
   abilityUseChance: 0.6, // TUNE: no reference value

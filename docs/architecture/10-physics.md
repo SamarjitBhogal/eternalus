@@ -249,6 +249,18 @@ Order in `SystemPipeline`: `MovementSystem` → `CollisionSystem` → `SpaceSyst
 - A lane's field also covers the blocked cells of its corridor: every one reachable from open
   ground points the shortest way out, so a horde spawned inside its structure's footprint
   ([18](18-minion-system.md) §3.2) or a unit pushed into a wall is led back to open ground (MS-31).
+- A lane tower's court is court ground (`06-map-and-minimap.md` §6): routable, so A\* and its
+  string pulling and the lane fields walk it, and a route into, out of or through a court goes
+  through a doorway. A lane's field runs through the court from the west doorway to the east one
+  (DEC-315, amending DEC-185 (A)), so a marching horde member in a court follows its field. Any
+  other mob that stands in a court (on court ground, or on a wall cell beside it; other blocked
+  ground in a fort box, such as the palace's, is no court), and does not chase a target inside
+  the same fort, steers by no lane field. It heads for its stuck-chase waypoint, else for
+  `AStarPathfinder.exitWaypoint`, the way out by the nearest doorway (DEC-217 (15)). The way out of each blocked cell is searched
+  once and kept until the grid next changes (`CourtExitField`, reset by `WorldMap.version`), so a crowd in a court costs one
+  search per cell, not one per unit per tick. String pulling never heads for the centre of the
+  walker's own cell: from court ground no straight line is clear, so that centre would hold the
+  walker in place.
 - Flow fields rebuild time-sliced after terrain changes (`06-map-and-minimap.md` §6); ORCA is
   an optional `AvoidanceStrategy` if playtests show shuffling, not an MVP item.
 
@@ -290,6 +302,14 @@ Order in `SystemPipeline`: `MovementSystem` → `CollisionSystem` → `SpaceSyst
 
 ## 12. Implementation status
 
+Knockback (§3) is interim (2026-11-22, `feat/greater-boss-moves`): no `pendingImpulse`, mass
+or friction yet. A knockback is a one-step displacement, `Movement.pushBy`, added to the unit's
+next step by `MovementSystem` (held or not, without turning it) and swept by `CollisionSystem`
+like a walk, so it stops at walls; `StateHasher` hashes a push while it waits. A push on a Legend
+in the air (DEC-390) moves it once, on top of its takeoff velocity, and does not change that
+velocity. The Greater Boss's sweep (on the units it hits) and charge (on the boss itself) are its
+only users. The impulse model replaces it when a second pusher (the Sentinel's Slam) lands.
+
 `physics/SpatialHash` (minion plan M1, M2a) has §5's `rebuild` and an exact, ascending
 `queryCircle`, over points only: no radii and no `queryRect` yet.
 `physics/SpaceIndex` wraps it as `state.space` (11 §3), rebuilt by `SpaceSystem` after
@@ -314,9 +334,10 @@ Unit-to-unit momentum, SAT and the remaining physics described above are still p
 in §1's `Transform.height`. The height is only drawn: no physics reads it, and §1 keeps
 `Transform.height` for a real altitude (the Flying class, post-MVP). While a Legend is in the air,
 `MovementSystem` moves it by the velocity it had at takeoff, and `CollisionSystem` sweeps that move
-against walls and footprints, so a jump crosses nothing that a walk cannot. Units do not block
-units yet (above), so a jump passes through units as a walk does. A stun (`cannot-move`) ends a
-jump in the air at once; a slow does not change it (DEC-420). The snapshot group is
+against walls and footprints, so a jump crosses nothing that a walk cannot. A knockback (the
+interim push above) moves a Legend in the air once; the Legend keeps its takeoff velocity. Units do
+not block units yet (above), so a jump passes through units as a walk does. A stun (`cannot-move`)
+ends a jump in the air at once; a slow does not change it (DEC-420). The snapshot group is
 `elevation: { height }`, named for what the view draws (DEC-420).
 
 ## Related

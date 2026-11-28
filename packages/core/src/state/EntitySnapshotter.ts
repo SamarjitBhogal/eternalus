@@ -1,6 +1,8 @@
 import { Aether } from '../components/Aether';
+import { Aura } from '../components/Aura';
 import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
+import { CombatHitbox } from '../components/CombatHitbox';
 import { Health } from '../components/Health';
 import { Jump } from '../components/Jump';
 import { MapFeatureLink } from '../components/MapFeatureLink';
@@ -12,12 +14,15 @@ import { ZoneArea } from '../components/ZoneArea';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import type { Entity } from '../entities/Entity';
+import { Legend } from '../entities/Legend';
+import { outlineBoxOf } from './outlineBoxOf';
 import type { EntitySnapshot } from './Snapshot.types';
 
 /**
  * Projects one entity into its `EntitySnapshot` (architecture 03 §5): one group per component,
- * `null` when the entity has no such component (DEC-17); `mapObjectId` and `mapFeatureId` are
- * left out instead. A new component group is added here, never in `GameState` (DEC-232).
+ * `null` when the entity has no such component (DEC-17); `mapObjectId`, `mapFeatureId`, `specId`
+ * and `combatHitbox` are left out instead. A new component group is added here, never in
+ * `GameState` (DEC-232).
  */
 export class EntitySnapshotter {
   /**
@@ -33,11 +38,14 @@ export class EntitySnapshotter {
   /** The entity as plain, structured-clone-safe data. */
   public snapshotOf(entity: Entity): EntitySnapshot {
     const transform = entity.findComponent(Transform);
+    const hitbox = entity.findComponent(CombatHitbox);
     const health = entity.findComponent(Health);
     const jump = entity.findComponent(Jump);
     const progression = entity.findComponent(Progression);
     const aether = entity.findComponent(Aether);
     const capture = entity.findComponent(Capturable);
+    const aura = entity.findComponent(Aura);
+    const auraBox = aura === undefined ? undefined : outlineBoxOf(entity);
     const link = entity.findComponent(MapFeatureLink);
     const gem = entity.findComponent(CathedralGemState);
     return {
@@ -49,6 +57,11 @@ export class EntitySnapshotter {
         ? {}
         : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
       ...(link !== undefined && { mapFeatureId: link.featureId }),
+      ...(entity instanceof Legend && entity.specId !== null && { specId: entity.specId }),
+      ...(hitbox !== undefined &&
+        transform !== undefined && {
+          combatHitbox: hitbox.polygonAt(transform.position, transform.facing),
+        }),
       team: entity.findComponent(TeamMembership)?.team ?? null,
       transform:
         transform === undefined
@@ -81,6 +94,10 @@ export class EntitySnapshotter {
               lockedBy: capture.lockedBy,
               presence: capture.presence,
             },
+      aura:
+        aura === undefined || auraBox === undefined
+          ? null
+          : { radius: aura.definition.radius, box: auraBox },
       gem:
         gem === undefined
           ? null

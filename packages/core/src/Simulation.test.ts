@@ -121,6 +121,7 @@ describe('Simulation', () => {
         aether: { current: 100, max: 100 },
         area: null,
         capture: null,
+        aura: null,
         gem: null,
       },
     ]);

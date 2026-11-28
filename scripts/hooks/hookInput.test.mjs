@@ -1,20 +1,36 @@
 /**
- * Checks the hooks' command runner (zero dependencies).
+ * Checks the hooks' command runner and project-root lookup (zero dependencies).
  *
  *   node --test scripts/hooks/hookInput.test.mjs
  */
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
-import { run } from './hookInput.mjs';
+import { editedFile, projectRoot, run } from './hookInput.mjs';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
+const checkout = path.resolve(here, '../..');
+
+/** Runs git in `cwd` and fails the test when it fails. */
+const git = (cwd, ...args) => {
+  const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+};
 
 const isAlive = (pid) => {
   try {
@@ -88,3 +104,66 @@ test(
     }
   },
 );
+
+test('a session in a subfolder of this checkout acts on its top level', () => {
+  assert.equal(projectRoot(path.join(checkout, 'docs')), checkout);
+});
+
+test('a session outside any git repository acts on the checkout that holds the scripts', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'hook-root-'));
+  try {
+    assert.equal(projectRoot(dir), checkout);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a session in another git repository acts on the checkout that holds the scripts', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'hook-root-'));
+  try {
+    git(dir, 'init', '-q');
+    assert.equal(projectRoot(dir), checkout);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a session in another worktree of the same repository acts on that worktree', () => {
+  // realpath: on macOS the temp folder is reached through the /var -> /private/var link.
+  const dir = realpathSync(mkdtempSync(path.join(tmpdir(), 'hook-root-')));
+  const main = path.join(dir, 'main');
+  const worktree = path.join(dir, 'worktree');
+  try {
+    mkdirSync(path.join(main, 'sub'), { recursive: true });
+    git(main, 'init', '-q');
+    git(
+      main,
+      ...'-c user.name=t -c user.email=t@t -c commit.gpgsign=false commit -q --allow-empty -m i'.split(
+        ' ',
+      ),
+    );
+    git(main, 'worktree', 'add', '-q', '--detach', worktree);
+    // GIT_TRACE writes to stderr; it must not change the answer.
+    process.env.GIT_TRACE = '1';
+    assert.equal(projectRoot(worktree, main), worktree);
+    assert.equal(projectRoot(path.join(main, 'sub'), worktree), main);
+  } finally {
+    delete process.env.GIT_TRACE;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('editedFile gives the real path, also through a symlink, and null for a missing file', () => {
+  const dir = realpathSync(mkdtempSync(path.join(tmpdir(), 'hook-file-')));
+  try {
+    mkdirSync(path.join(dir, 'real'));
+    writeFileSync(path.join(dir, 'real', 'a.ts'), '');
+    symlinkSync(path.join(dir, 'real'), path.join(dir, 'link'), 'junction');
+    const edit = (file) => editedFile({ tool_input: { file_path: file }, cwd: dir });
+    assert.equal(edit(path.join(dir, 'link', 'a.ts')), path.join(dir, 'real', 'a.ts'));
+    assert.equal(edit('link/a.ts'), path.join(dir, 'real', 'a.ts'));
+    assert.equal(edit(path.join(dir, 'missing.ts')), null);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

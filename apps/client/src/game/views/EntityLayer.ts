@@ -5,15 +5,18 @@ import type { WorldPoint } from '../engine/render/Renderer.types';
 import type { HealthBarRule } from './EntityLayer.types';
 import type { EntityDrawState } from './EntityView.types';
 import { HealthBarView } from './HealthBarView';
+import { lerpPoint } from './lerpPoint';
 import type { WorldLayer } from './SceneView.types';
 import type { ViewRegistry } from './ViewRegistry';
 
 /**
  * The scene layer that draws every entity of the latest snapshot through the `ViewRegistry`
- * (architecture 08 §8), in the main view and on the mini map (06 §8). In the main view positions,
- * facings and jump heights (DEC-390) are interpolated between the previous and current snapshot by
- * `alpha`; an entity that appeared this tick draws where it is (no ghost from the origin). It draws
- * back to front by `y`. A mini map dot sits at the snapshot position (DEC-187 (C)).
+ * (architecture 08 §8), in the main view and on the mini map (06 §8). Each view gets the frame
+ * time with the other draw data (`EntityDrawState.frameTick` and `time`). In the main view
+ * positions, facings and jump heights (DEC-390) are interpolated between the previous and current
+ * snapshot by `alpha`; an entity that appeared this tick draws where it is (no ghost from the
+ * origin). It draws back to front by `y`. A mini map dot sits at the snapshot position (DEC-187
+ * (C)).
  */
 export class EntityLayer implements WorldLayer {
   private states: readonly EntityDrawState[] = [];
@@ -46,38 +49,50 @@ export class EntityLayer implements WorldLayer {
     focusId: string | null,
   ): void {
     const before = new Map(previous?.entities.map((entity) => [entity.id, entity]) ?? []);
+    const frameTick = current.tick + alpha;
+    const time =
+      previous === null ? current.tick : previous.tick + (current.tick - previous.tick) * alpha;
     this.states = current.entities.flatMap((entity) => {
       const now = entity.transform;
       if (entity.mapObjectId !== undefined || now === null) return [];
       const earlier = before.get(entity.id);
       const then = earlier?.transform ?? now;
-      const position = EntityLayer.lerp(then, now, alpha);
+      const position = lerpPoint(then, now, alpha);
       const facing = EntityLayer.turn(then.facing, now.facing, alpha);
       const height = EntityLayer.mix(
         EntityLayer.heightOf(earlier ?? entity),
         EntityLayer.heightOf(entity),
         alpha,
       );
-      return [{ entity, position, facing, height, isFocused: entity.id === focusId }];
+      return [
+        { entity, position, facing, height, isFocused: entity.id === focusId, frameTick, time },
+      ];
     });
   }
 
   /**
-   * Draws every entity, back to front by `y`, so lower entities overlap higher ones. The health
-   * bars (`HealthBarView`) come after every entity of this layer, so no entity hides a bar.
+   * Draws every entity, back to front by `y`, so lower entities overlap higher ones. What lies on
+   * the ground (`EntityView.drawGround`, an aura field) comes before every entity, so no unit is
+   * tinted by it. The health bars (`HealthBarView`) come after every entity of this layer, so no
+   * entity hides a bar.
    */
   public draw(renderer: Renderer): void {
     const ordered = [...this.states].sort((a, b) => a.position.y - b.position.y);
-    const heights = ordered.map((state) => this.views.viewFor(state.entity).draw(state, renderer));
-    ordered.forEach((state, index) => {
+    for (const state of ordered) {
+      this.views.viewFor(state.entity).drawGround?.(state, renderer);
+    }
+    for (const state of ordered) {
+      this.views.viewFor(state.entity).draw(state, renderer);
+    }
+    for (const state of ordered) {
       const side = this.healthBarOf(state.entity);
       if (side !== null) {
-        // A sprite reports how tall it drew; any other view falls back to its artwork radius.
+        // The top of the art, else its radius; `HealthBarView` falls back to the footprint.
         const view = this.views.viewFor(state.entity);
-        const above = heights[index] ?? view.visualRadiusOf?.(state.entity);
+        const above = view.visualTopOf?.(state) ?? view.visualRadiusOf?.(state.entity);
         this.healthBars.draw(state, side, renderer, above);
       }
-    });
+    }
   }
 
   /**
@@ -98,10 +113,6 @@ export class EntityLayer implements WorldLayer {
     }
   }
 
-  private static lerp(from: WorldPoint, to: WorldPoint, alpha: number): WorldPoint {
-    return { x: EntityLayer.mix(from.x, to.x, alpha), y: EntityLayer.mix(from.y, to.y, alpha) };
-  }
-
   /** Height above the ground (a jump, DEC-390); 0 for an entity that cannot leave it. */
   private static heightOf(entity: EntitySnapshot): number {
     return entity.elevation?.height ?? 0;
@@ -116,7 +127,7 @@ export class EntityLayer implements WorldLayer {
    * the midpoint (a zero blend takes `to`).
    */
   private static turn(from: WorldPoint, to: WorldPoint, alpha: number): WorldPoint {
-    const { x, y } = EntityLayer.lerp(from, to, alpha);
+    const { x, y } = lerpPoint(from, to, alpha);
     const size = Math.hypot(x, y);
     return size === 0 ? to : { x: x / size, y: y / size };
   }

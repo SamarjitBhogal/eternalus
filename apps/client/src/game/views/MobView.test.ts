@@ -28,6 +28,7 @@ const MINION: EntitySnapshot = {
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 };
 
@@ -41,7 +42,14 @@ describe('MobView', () => {
     const renderer = new RecordingRenderer();
 
     new MobView().draw(
-      { facing: { x: 1, y: 0 }, entity: MINION, position: AT, isFocused: false },
+      {
+        facing: { x: 1, y: 0 },
+        entity: MINION,
+        position: AT,
+        isFocused: false,
+        frameTick: 0,
+        time: 0,
+      },
       renderer,
     );
 
@@ -68,7 +76,10 @@ describe('MobView', () => {
       transform: { x: 0, y: 0, radius: 2.5, facing: SOUTH },
     };
 
-    new MobView().draw({ entity: boss, position: AT, facing: SOUTH, isFocused: false }, renderer);
+    new MobView().draw(
+      { entity: boss, position: AT, facing: SOUTH, isFocused: false, frameTick: 0, time: 0 },
+      renderer,
+    );
 
     expect(renderer.calls.at(-1)).toEqual({
       op: 'drawWorldGlyph',
@@ -84,6 +95,8 @@ describe('MobView', () => {
       entity: { ...MINION, team },
       position: AT,
       isFocused: false,
+      frameTick: 0,
+      time: 0,
     });
 
     view.drawMinimap(at('light'), renderer);

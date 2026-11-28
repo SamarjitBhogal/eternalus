@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { damageStepsWithoutLaneProgress } from '../../combat/__fixtures__/damageSteps';
 import { DamagePipeline } from '../../combat/DamagePipeline';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { timelineFrameOf } from '../../config/timelineFrameOf';
-import { timelineMarkTick } from '../../config/timelineMarkTick';
+import { GREATER_BOSS_PROFILE } from '../../content/ai/bosses/greaterBoss';
 import { ContentValidationError } from '../../content/ContentValidationError';
 import { LEGEND_CLASSES } from '../../content/legends/legendCatalogue';
 import { MOB_DEFINITIONS } from '../../content/mobs/mobCatalogue';
@@ -14,74 +15,18 @@ import { MapGenerator } from '../../map/MapGenerator';
 import { MapObjectBuilder } from '../../map/MapObjectBuilder';
 import { MapPresentationBuilder } from '../../map/MapPresentationBuilder';
 import { Simulation } from '../../Simulation';
-import type { GameConfig } from '../../config/GameConfig.types';
-import type { GameState } from '../../state/GameState';
-import type { EntitySnapshot } from '../../state/Snapshot.types';
+import {
+  BOSS,
+  bossesOf,
+  markTick,
+  match,
+  spawnWarrior,
+  stateOf,
+  stepTo,
+  theBoss,
+} from './__fixtures__/greaterBossMatch';
 
-const BOSS = MOB_DEFINITIONS.get('greater-boss');
-
-/** The tick `config`'s timeline entry `id` comes due. */
-const markTick = (config: GameConfig, id: string): number => {
-  const entry = config.match.timeline.find((mark) => mark.id === id);
-  if (entry === undefined) throw new Error(`No ${id} entry`);
-  return timelineMarkTick(entry.at, timelineFrameOf(config));
-};
-
-/** A match with no countdown and a `plannedMatchSeconds` plan (20 s: mid-game after 10 s). */
-const match = (plannedMatchSeconds = 20, seed = 1) => {
-  const config = createDefaultGameConfig({
-    match: { countdownSeconds: 0, plannedMatchSeconds },
-  });
-  const map = new MapGenerator().generate(config, seed);
-  const simulation = new Simulation({
-    config,
-    seed,
-    logger: new MemoryLogger(),
-    debug: TEST_DEBUG_CONFIG,
-    map,
-    mapObjects: new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map)),
-  });
-  const feature = map.features.find(({ definitionId }) => definitionId === 'cathedral');
-  if (feature === undefined) throw new Error('No Cathedral');
-  const eruptionTick = markTick(config, 'gem-eruption');
-  // The gem erupts on `eruptionTick`; `SpawnSystem` spawns the boss on its next pass (03 §Events).
-  return { simulation, config, eruptionTick, spawnTick: eruptionTick + 1, feature };
-};
-
-const stepTo = (simulation: Simulation, tick: number): void => {
-  while (simulation.tick < tick) simulation.step();
-};
-
-const bossesOf = (simulation: Simulation): EntitySnapshot[] =>
-  simulation.snapshot().entities.filter(({ definitionId }) => definitionId === BOSS.id);
-
-const theBoss = (simulation: Simulation): EntitySnapshot => {
-  const [boss, ...others] = bossesOf(simulation);
-  if (boss === undefined || others.length > 0) throw new Error('Not exactly one Greater Boss');
-  return boss;
-};
-
-/** Spawns a Light Warrior at `at` and returns its id. */
-const spawnWarrior = (simulation: Simulation, at: { x: number; y: number }): string => {
-  const before = new Set(simulation.snapshot().entities.map(({ id }) => id));
-  simulation.enqueueCommand({
-    type: 'dev-spawn',
-    kind: 'warrior',
-    definitionId: 'warrior',
-    team: 'light',
-    at,
-    count: 1,
-  });
-  simulation.step();
-  const warrior = simulation
-    .snapshot()
-    .entities.find(({ id, kind }) => kind === 'warrior' && !before.has(id));
-  if (warrior === undefined) throw new Error('No warrior');
-  return warrior.id;
-};
-
-const stateOf = (simulation: Simulation): GameState =>
-  (simulation as unknown as { readonly state: GameState }).state;
+const [SLAM] = GREATER_BOSS_PROFILE.moves;
 
 describe('the Greater Boss spawns at the gem eruption (scenario, 12 §3)', () => {
   it('does not exist before the tick after the eruption, then exactly one exists from it on', () => {
@@ -144,12 +89,12 @@ describe('the Greater Boss spawns at the gem eruption (scenario, 12 §3)', () =>
     expect(BOSS.attack?.interval).toBe(2.5);
   });
 
-  it('fights back: a Legend that attacks it takes its content hit', () => {
+  it('fights back: a Legend that attacks it takes its slam', () => {
     const { simulation, config, spawnTick, feature } = match();
     stepTo(simulation, spawnTick + 1);
     const boss = theBoss(simulation);
     const warriorId = spawnWarrior(simulation, {
-      x: feature.position.x - 4,
+      x: feature.position.x - (SLAM.radius - 1),
       y: feature.position.y,
     });
     const hits: number[] = [];
@@ -158,10 +103,12 @@ describe('the Greater Boss spawns at the gem eruption (scenario, 12 §3)', () =>
     });
     simulation.enqueueCommand({ type: 'attack-target', actorId: warriorId, targetId: boss.id });
 
-    stepTo(simulation, simulation.tick + 3 * config.tickRate);
+    // Its entrance roar, then the slam's telegraph, with a second to spare.
+    const seconds = GREATER_BOSS_PROFILE.entranceSeconds + SLAM.telegraphSeconds + 1;
+    stepTo(simulation, simulation.tick + seconds * config.tickRate);
 
     expect(hits.length).toBeGreaterThan(0);
-    expect(hits[0]).toBe(BOSS.attack?.damage);
+    expect(hits[0]).toBe(SLAM.damage);
     const bossNow = theBoss(simulation);
     expect(bossNow.health?.current).toBeLessThan(BOSS.baseHealth);
   });
@@ -188,14 +135,10 @@ describe('the Greater Boss spawns at the gem eruption (scenario, 12 §3)', () =>
         : Math.hypot(at.x - warrior.transform.x, at.y - warrior.transform.y);
     };
     let farthest = 0;
-    // Just outside the boss's hit (centre to centre), so the Legend turns before it is struck.
-    const runAway =
-      BOSS.footprintRadius +
-      (BOSS.attack?.reach ?? 0) +
-      LEGEND_CLASSES.get('warrior').footprintRadius +
-      0.5;
+    // Just outside the slam's range (centre to centre), so the Legend turns before it is struck.
+    const runAway = SLAM.range + LEGEND_CLASSES.get('warrior').footprintRadius + 0.5;
     // The boss walks out to the Legend; once it is close, the Legend backs out of the zone, faster
-    // than the boss, which chases it to the leash.
+    // than the boss, which follows it until it leaves the leash.
     for (let tick = 0; tick < 15 * config.tickRate && gapToWarrior() > runAway; tick += 1) {
       simulation.step();
       farthest = Math.max(farthest, fromCentre());
@@ -224,11 +167,16 @@ describe('the Greater Boss spawns at the gem eruption (scenario, 12 §3)', () =>
     const died: string[] = [];
     simulation.on('entity-died', ({ entityId }) => died.push(entityId));
     // A Legend's lethal hit, through the damage pipeline as a weapon hit would land.
-    new DamagePipeline().apply(stateOf(simulation), boss.id, BOSS.baseHealth, {
-      attackerId: warriorId,
-      kind: 'weapon',
-      definitionId: 'raptor-talons',
-    });
+    new DamagePipeline(damageStepsWithoutLaneProgress()).apply(
+      stateOf(simulation),
+      boss.id,
+      BOSS.baseHealth,
+      {
+        attackerId: warriorId,
+        kind: 'weapon',
+        definitionId: 'raptor-talons',
+      },
+    );
 
     // 10 s: past any respawn a TUNE value would give a boss, without a minute of simulation.
     stepTo(simulation, simulation.tick + 10 * config.tickRate);

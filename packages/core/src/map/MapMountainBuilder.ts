@@ -1,25 +1,41 @@
 import { MAP_MOUNTAIN_GEOMETRY } from '../content/maps/mountainArt';
 import { MAP_PALETTE as P } from '../content/maps/map1Scenery';
 import type { BiomeKind, MapDecoration, MapDefinition } from '../content/maps/maps.types';
-import type { Vec2 } from '../utils/geometry.types';
+import { doPolygonsOverlap } from '../utils/geometry';
+import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 import { BIOME_PALETTES, BIOME_PROFILES } from '../content/maps/biomeScenery';
 import { BIOME_MOUNTAIN_ART } from '../content/maps/biomeGroundArt';
 import { sceneryBiomeAt } from './sceneryBiome';
 /** Builds overlapping, individually shaped mountain masses around the battlefield. */
 export class MapMountainBuilder extends MapDecorationBuilder {
-  /** Returns varied peaks, foothills and rocky slopes without changing collision. */
+  /** The sizes a mountain tries to clear a keep-clear area: full, then a tenth smaller each time. */
+  private static readonly SIZE_STEPS = 10;
+  /** The size of the map being built (`build`), which every mountain point is clamped onto. */
+  private size = { width: 0, height: 0 };
+
+  /**
+   * Creates a builder whose mountains stay clear of `keepClear` (HC-Q95, DEC-340: the Stronghold
+   * wall, its turrets and gates), in the units of the map `build` gets.
+   */
+  public constructor(private readonly keepClear: readonly Polygon[] = []) {
+    super();
+  }
+
+  /**
+   * Returns varied peaks, foothills and rocky slopes; each mountain's mass blocks. A mountain
+   * whose mass touches a keep-clear polygon gets smaller, a tenth of its size at a time, until
+   * its mass is clear. A mountain that is still not clear at a tenth of its size is left out.
+   */
   public build({ seed, width, height }: MapDefinition): readonly MapDecoration[] {
     this.isMirrored = true;
+    this.size = { width, height };
     this.borders(seed, width, height);
     this.corners(seed, width, height);
     this.hills(seed);
     return this.pieces.map((piece) => ({
       ...piece,
-      shape: piece.shape.map((p) => ({
-        x: Math.max(0, Math.min(width, p.x)),
-        y: Math.max(0, Math.min(height, p.y)),
-      })),
+      shape: piece.shape.map((p) => this.clampToMap(p)),
     }));
   }
 
@@ -116,6 +132,16 @@ export class MapMountainBuilder extends MapDecorationBuilder {
         this.variation(seed, i),
       );
   }
+
+  /** A point moved onto the map `build` gets. */
+  private clampToMap({ x, y }: Vec2): Vec2 {
+    return {
+      x: Math.max(0, Math.min(this.size.width, x)),
+      y: Math.max(0, Math.min(this.size.height, y)),
+    };
+  }
+
+  /** Draws the mountain at the largest size step whose mass is clear of every keep-clear area. */
   private mountain(
     id: string,
     x: number,
@@ -124,6 +150,29 @@ export class MapMountainBuilder extends MapDecorationBuilder {
     ry: number,
     n: number,
     mirrorId = `${id}-mirror`,
+  ): void {
+    const start = this.pieces.length;
+    for (let step = 0; step < MapMountainBuilder.SIZE_STEPS; step++) {
+      const scale = 1 - step / MapMountainBuilder.SIZE_STEPS;
+      this.drawMountain(id, x, y, rx * scale, ry * scale, n, mirrorId);
+      const masses = this.pieces
+        .slice(start)
+        .filter(({ object }) => object?.isFootprint === true)
+        .map(({ shape }) => shape.map((p) => this.clampToMap(p)));
+      if (!masses.some((mass) => this.keepClear.some((area) => doPolygonsOverlap(mass, area))))
+        return;
+      this.pieces.splice(start);
+    }
+  }
+
+  private drawMountain(
+    id: string,
+    x: number,
+    y: number,
+    rx: number,
+    ry: number,
+    n: number,
+    mirrorId: string,
   ): void {
     const start = this.pieces.length;
     const biome = sceneryBiomeAt({ x, y });

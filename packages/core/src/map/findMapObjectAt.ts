@@ -10,7 +10,8 @@ export const findMapObjectAt = (
 ): string | null => {
   const candidates = new Map(
     states
-      .filter((state) => !state.isDestroyed && state.health !== null)
+      // A fort wall shows no pool of its own while its tower stands; its entity is the tower's.
+      .filter((state) => !state.isDestroyed && state.entityId !== null)
       .map((state) => [state.id, state.entityId]),
   );
   let selected: string | null = null;

@@ -1,5 +1,7 @@
 import { ContentCatalogue } from '../ContentCatalogue';
 import { MAP_FEATURE_DEFINITIONS } from '../maps/mapFeatureDefinitions';
+import { TOWER_AURA_BUFF } from '../status-effects/towerAuraBuff';
+import { TOWER_AURA_DEBUFF } from '../status-effects/towerAuraDebuff';
 import type { StructureDefinition } from './structures.types';
 
 /** The footprint the map generator stamps for `id`, so the collider and the nav grid agree. */
@@ -62,6 +64,11 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       breakability: { kind: 'always' },
       hasMapFootprint: true, // DEC-185: reach to the fort's walls; one pool, DEC-185 B
       hasFortBox: true, // DEC-185: a chase closes in on a unit inside the fort
+      aura: {
+        radius: 12, // TUNE: DEC-315 (4), balancing.md 12 m
+        allyStatusId: TOWER_AURA_BUFF.id,
+        enemyStatusId: TOWER_AURA_DEBUFF.id,
+      },
     },
     {
       id: 'gate',

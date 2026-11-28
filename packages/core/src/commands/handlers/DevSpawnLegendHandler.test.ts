@@ -11,7 +11,7 @@ import { Entity } from '../../entities/Entity';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { EntityRegistry } from '../../entities/EntityRegistry';
 import { Legend } from '../../entities/Legend';
-import { WorldMap } from '../../map/WorldMap';
+import { MatchGrid } from '../../map/MatchGrid';
 import { GameState } from '../../state/GameState';
 import { MatchWorld } from '../../state/MatchWorld';
 import { TWO_LANE_MAP } from '../../state/__fixtures__/twoLaneMap';
@@ -55,10 +55,7 @@ const contextWith = (limits = { maxUnitsPerTeam: 144, maxLegendsPerTeam: 2 }, ha
   registry.register('hero', Hero);
   registry.register('prop', Prop);
   const world = hasMap
-    ? new MatchWorld(
-        TWO_LANE_MAP,
-        WorldMap.fromDefinition(TWO_LANE_MAP, 2, () => false),
-      )
+    ? new MatchWorld(MatchGrid.build(TWO_LANE_MAP, [], { cellSize: 2, features: {} }))
     : null;
   const context: CommandContext = {
     state: new GameState(createDefaultGameConfig({ limits }), 1, world),

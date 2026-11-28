@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { Jump } from '../components/Jump';
@@ -32,7 +33,7 @@ class Fighter extends Entity {
 const setUp = (killTarget = 10) => {
   const state = new GameState(createDefaultGameConfig(), 1);
   state.match.startDuel(killTarget);
-  const damage = new DamagePipeline();
+  const damage = new DamagePipeline(damageStepsWithoutLaneProgress());
   const system = new DuelRoundSystem(STARTS);
   let next = 0;
   const add = (team: PlayableTeam | 'neutral', isSeat: boolean): Entity => {

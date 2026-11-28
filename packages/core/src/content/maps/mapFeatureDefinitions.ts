@@ -1,3 +1,4 @@
+import { LANE_TOWER_FOOTPRINT_RADIUS } from './buildingGeometry';
 import type { MapFeatureDefinition } from './maps.types';
 
 /**
@@ -20,16 +21,18 @@ export const MAP_FEATURE_DEFINITIONS: Readonly<Record<string, MapFeatureDefiniti
     id: 'spawner-tower',
     kind: 'spawner-tower',
     minimapGlyph: { shape: 'square', size: 5, colourRole: 'team' },
-    footprintRadius: 14,
+    footprintRadius: LANE_TOWER_FOOTPRINT_RADIUS, // follows the fort (DEC-315)
     isBlocking: true,
+    isCourt: true, // DEC-217 (15), DEC-315: routes into, out of and through the court use its doorways
     displayName: 'Production Tower', // names pending HC-Q4
   },
   'buff-tower': {
     id: 'buff-tower',
     kind: 'buff-tower',
     minimapGlyph: { shape: 'diamond', size: 5, colourRole: 'team' },
-    footprintRadius: 14,
+    footprintRadius: LANE_TOWER_FOOTPRINT_RADIUS, // follows the fort (DEC-315)
     isBlocking: true,
+    isCourt: true, // DEC-217 (15), DEC-315: routes into, out of and through the court use its doorways
     displayName: 'Buff Tower', // names pending HC-Q4
   },
   'wall-segment': {

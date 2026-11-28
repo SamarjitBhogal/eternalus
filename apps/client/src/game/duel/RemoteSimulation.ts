@@ -48,8 +48,8 @@ export class RemoteSimulation implements MatchSimulation {
 
   /**
    * No game events reach the client online: the server sends snapshots only (ADR 0016 point 1), so
-   * listeners never fire. ponytail: health bars stay hidden in a Duel; send the tick's events (or
-   * derive hits from health changes) when the Duel needs them.
+   * listeners never fire. ponytail: health bars and damage numbers stay hidden in a Duel; send the
+   * tick's events (or derive hits from health changes) when the Duel needs them.
    */
   public on(): Unsubscribe {
     return RemoteSimulation.NO_LISTENER;

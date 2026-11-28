@@ -4,7 +4,7 @@ description: The Definition of Done for agent tasks, the AI-PR review checklist,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-22
 tags: [agents, process, review, checklist]
 related:
   [
@@ -57,6 +57,8 @@ written with an agent (AI-PR review), check a design (architecture review) or cl
 - [ ] Determinism in core: no `Math.random`, `Date`, timers, `Map`/`Set` iteration whose order
       depends on timing, or comparator-less sorts.
 - [ ] Docs, frontmatter and progress entry file present; PR template complete.
+- [ ] PR text, commit messages and new or changed docs follow `AGENTS.md` "Writing style"
+      (ASD-STE100, DEC-329).
 - [ ] Verdict written as `approve` or `request-changes` with findings by severity.
 
 ## 3. Architecture review checklist (designs, new folders, new families)

@@ -4,7 +4,7 @@ description: Generation references, source hashes and packing notes for the thre
 audience: [humans, agents]
 status: draft
 owner: gurshaan
-last-reviewed: 2026-11-11
+last-reviewed: 2026-11-26
 tags: [assets, provenance, magus]
 ---
 
@@ -41,3 +41,9 @@ Alpha was preserved; no background recolouring or replacement asset was used.
 Match byte allowance approved by Gurshaan on 2026-11-11; atlases registered under draft ADR 0029.
 
 ```
+
+The record above is from PR #134. Its draft ADR 0029 is not part of the PR #170 rebuild; the
+number 0029 now belongs to a different ADR (the tick bench). The byte budget for these atlases
+is in ADR 0027, which the owner accepted on 2026-11-26 (DEC-378 (3)). The approval of Gurshaan
+named above is not an owner approval. Since DEC-378 (2), the match loads the atlas of every
+Legend in it, each in its own asset group.

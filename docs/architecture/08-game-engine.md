@@ -13,6 +13,13 @@ paths:
     'apps/client/src/game/Match.ts',
     'apps/client/src/game/HealthBarVisibility.ts',
     'apps/client/src/game/LegendBodies.ts',
+    'apps/client/src/game/LegendAnimation*',
+    'apps/client/src/game/LegendSprites*',
+    'apps/client/src/game/legendSpriteSheets*',
+    'apps/client/src/game/matchLegendSheets*',
+    'apps/client/src/game/followViewFor*',
+    'apps/client/src/game/legendSpriteWidthsOf*',
+    'apps/client/src/game/DamageBadges.ts',
   ]
 related:
   [
@@ -124,7 +131,7 @@ export interface Renderer {
   resize(cssWidth: number, cssHeight: number, dpr: number): void;
   beginFrame(): void; // clears 'entities' and 'overlay'; 'terrain' only where chunks are dirty
   layer(name: RenderLayer): void; // subsequent draw calls go to this layer
-  drawSprite(sprite: SpriteRef, feet: WorldPoint, size: number): boolean;
+  drawSprite(sprite: SpriteRef, x: number, y: number, options?: SpriteOptions): void;
   drawPolygon(points: readonly Vec2Like[], style: PolygonStyle): void;
   drawText(text: string, x: number, y: number, style: TextStyle): void;
   drawGlyph(glyph: GlyphSpec, x: number, y: number, colour: string): void; // minimap markers
@@ -145,8 +152,15 @@ export interface Renderer {
   all game code stays in CSS pixels; `resize` is driven by a `ResizeObserver` in `GameCanvas.tsx`.
 - **Integer coordinates**: positions are interpolated in world space and rounded once at draw
   time (`(0.5 + n) | 0`), so sub-pixel anti-aliasing never runs.
-- **Sprite atlas, no scaling at draw time**: `SpriteRef` is `{ atlasId, frame }`; frames are
-  pre-scaled per DPR when the atlas loads, so `drawImage` copies 1:1.
+- **Sprite atlas, scaled at draw time**: `SpriteRef` is `{ atlasId, frame }`. One `drawImage`
+  scales the frame's cell to the current zoom with smoothing off (nearest neighbour), so pixel
+  art stays sharp at every zoom, and the screen box is rounded to whole pixels. The renderer keeps
+  no pre-scaled frames (DEC-398, card PR170 (11)).
+- **A sprite stands on its feet**: a view passes the unit's position and the sprite's width. The
+  renderer puts the feet of the cell on that position; the sheet's own data says where the feet
+  stand (`groundOffset` in its manifest entry, [14](14-persistence-and-resources.md) §11), and
+  `spriteTop` gives the height of the top above the feet. A new sheet needs no number in the code
+  (DEC-398, card PR170 (8)).
 - **Viewport culling**: `SceneView` asks the snapshot's spatial index (`SnapshotSpatialIndex`, a
   copy of the `SpatialHash` tables, `10-physics.md` §5) for entities inside the camera rectangle
   plus a margin; terrain chunks outside the view are skipped.
@@ -246,13 +260,20 @@ flowchart LR
   order (`apps/client/AGENTS.md`): terrain layer → entities sorted by interpolated `y` → overlay.
 - `ViewRegistry` (Registry pattern) maps entity `kind` → `EntityView`; `DefaultEntityView` draws
   a definition sprite for kinds without a bespoke view. Views read snapshots through `import type`
-  only and never mutate state (rule 6). The `EntityView.draw` contract returns
-  `number | undefined`: a view may report its rendered height above its anchor for health-bar
-  placement. An undefined height uses the snapshot radius.
+  only and never mutate state (rule 6).
+- Each view gets one `EntityDrawState` per entity: the snapshot, the interpolated position,
+  facing and jump height (DEC-390, §11), whether the player controls it, and the frame time
+  (`frameTick`: the snapshot's tick plus `alpha`). A view that animates picks its frame by the frame time, so no view reads time
+  from `Match` (DEC-398, card PR170 (12)).
 - Interpolation: views draw `prev + (current - prev) × alpha` for position. The facing uses the
   same blend, scaled back to length 1 (`EntityLayer.turn`), and snaps at the midpoint when the two
   facings are opposite (a zero blend takes `current`). Entities that appeared this tick draw at `current` (no ghost from the
   origin).
+- Ground pass: before the `y`-sorted draws, `EntityLayer` has each view's optional `drawGround`
+  paint what lies on the ground, such as a structure's aura field (DEC-323 (3), 06 §8), so no unit
+  is tinted by a ground fill drawn after it. `EntityDrawState.time` is the moment the frame shows,
+  in ticks (the previous snapshot's tick plus the interpolation), for motion the snapshot does not
+  hold, such as the aura's particles; the same tick draws the same.
 - World health bars: `EntityLayer` has `HealthBarView` draw a unit's bar after every entity of
   its layer, so no entity hides it. Which units show one, and on which side, is decided in `game/`
   by `HealthBarVisibility` (DEC-195), which reads `damage-applied` and `entity-removed` through
@@ -262,6 +283,15 @@ flowchart LR
   through `Simulation.on` and keeps where each Legend last stood, from the latest snapshot; the
   view draws those bodies greyed out for the rest of the match (DEC-295). Presentation only: core
   keeps no bodies, and a respawned Legend is a living entity again.
+- Damage numbers (W5, DEC-410): `DamageBadges` (`game/`) reads `damage-applied` through
+  `Simulation.on`, as `HealthBarVisibility` does. It decides which hits show (by default the hits
+  the player's Legend deals and takes; the `settingsSlice.hud` setting "show every hit" shows all)
+  and which badge kind each part of a hit gets. `DamageBadgeLayer` draws each badge as a shape with
+  its number on top of the scene (the overlay role of §4). The look of each kind is one entry in a
+  registry beside the layer, and its numbers are `// TUNE:` constants there. `Match` injects the
+  badges into the layer, because views read only snapshots. It gives `DamageBadges` a reader of
+  the current settings and the layer `isReducedMotion` (the Reduce motion setting or the system's
+  `prefers-reduced-motion`, 13 §7).
 - `MinimapView` runs at a lower cadence into the `'minimap'` layer (`06-map-and-minimap.md` §8).
 
 ## 9. Performance budget and how it is measured
@@ -343,12 +373,51 @@ The design keeps the move cheap:
 
 ## 11. Implementation status
 
-The selected player's Legend uses atlas frames for idle, movement, and basic attacks.
-The renderer prepares destination-size frames lazily in a bounded cache and returns whether
-it drew the sprite. The Legend view falls back to the standard drawing when the atlas is
-unavailable. The health bar sits above the height a view reports it drew, else above the view's
-`visualRadiusOf`, else above the footprint. Only the human player's Legend draws a sprite; the
-owner ships this in Phase 3 (DEC-374).
+Legend sprites (PR #170, `feat/character-sprites-phase3`, 2026-11-25):
+
+- The port has `drawSprite(sprite, feet, width): void` (the frame `width` world units wide, the
+  feet of its cell on `feet`, the height from the atlas cell) and the queries `hasSprite(sprite)`
+  and `spriteTop(sprite, width)`. `RecordingRenderer` answers both by the same rules
+  (`atlasWithFrame`, `spriteMeasures.ts`). §4's sketch takes `x, y` and `options`; the built port
+  takes a `WorldPoint`, as its other methods do. The first PR that needs `SpriteOptions` (§4)
+  adds it.
+- Every Legend in the match gets its sprite (DEC-378 (2), 2026-11-26). `match-loading` loads the
+  sheet of every Legend in the filled rosters by its id (its `sprite-atlas:<id>` group) after
+  `match`
+  ([13](13-game-interface.md) §2, `matchAssetGroups` over `matchLegendSheets`), and
+  `createBrowserMatch` gives their atlases to `Canvas2dRenderer.fromCanvas` (§6: constructor
+  injection). Each Legend's snapshot names its sub-class (`EntitySnapshot.specId`), which picks
+  its sheet. A Legend without a sheet, or whose atlas did not load, stays a disc on its own; the
+  other Legends keep their sprites. Each sheet whose atlas did not load logs one WARN; the match
+  still starts.
+- Each class has its own sprite width: core content `LegendDefinition.spriteWidth` (DEC-424, the
+  body ratio of DEC-06), which `main.tsx` passes to the match factory. The player's following
+  camera zooms out by the player's own width over `LEGEND_VISUAL_DIAMETER`
+  (`entityViews.constants.ts`: DEC-238's Legend size, approved with the follow view
+  `FOLLOW_VIEW_WIDTH` x `FOLLOW_VIEW_HEIGHT` in `Match.constants.ts`), so the player's
+  Legend looks the same size on screen for every class (`followViewFor`). A Legend drawn as a
+  disc keeps `LEGEND_VISUAL_DIAMETER`.
+- `EntityView` has two optional sizes. `visualRadiusOf?` (PR #90) is the click area
+  (`PlayerCommands`). `visualTopOf?` is how far the top of the art stands above the ground
+  position in the frame's draw state: the health bar (`EntityLayer`). `AirborneView` adds a
+  jumping Legend's height (DEC-390), so the bar rises with the Legend. The bar uses
+  `visualTopOf`, else `visualRadiusOf`, else the footprint radius. `LegendSpriteView` gives the sprite top from `visualTopOf` and half the
+  sprite's width from `visualRadiusOf` (DEC-424), so a click picks a Legend only inside that
+  circle; a Warrior keeps DEC-238's 2.6 m. `draw` returns `void`. Card PR170 (13), option A
+  (DEC-424), keeps the two sizes.
+- `game/LegendSprites.ts` holds the sprite wiring of every Legend: one `LegendAnimation` per
+  Legend (by entity id), one `damage-applied` listener for all of them, and the
+  `LegendSpriteView`, to which it answers each Legend's sprite size and frame. The view gets the
+  frame time from its `EntityDrawState` (§8). Each `LegendAnimation` keeps its Legend's last place and tick, so a Legend
+  that was not in the last snapshot (after a respawn) does not walk. `Match` builds it from
+  `MatchDeps.legendSheets`, which the match factory gets from `matchLegendSheets`. An online Duel
+  passes none, so its Legends are discs: the Duel server's roster names no sub-class.
+- Every Legend draws a full sprite: one sprite draw a frame per Legend (two teams of
+  `GameConfig.match.legendsPerTeam`, about 20) and up to one sheet in memory per sub-class in
+  `LEGEND_SPRITE_SHEETS` (8) (§9). If in-game performance drops, the player keeps full fidelity
+  and the bots can drop a little (DEC-378 (2)). How they drop is not decided: for example, the
+  bots draw at 1x or at a lower frame rate. The `ponytail:` note in `LegendSprites.ts` marks the
+  place.
 
 HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
 
@@ -439,6 +508,16 @@ draws a ground shadow at the position, then the Legend raised by its height, so 
 rises too. `EntityLayer.show` interpolates the height like the position
 (`EntityDrawState.height`). The mini map marker stays at the ground position. The team and focus
 rings are part of the Legend view, so they rise with it.
+
+### 2026-11-27 — Damage numbers (DEC-410)
+
+The renderer has no `layer()` call yet, so `DamageBadgeLayer` is the last `WorldLayer` that
+`Match` gives `SceneView`; drawn last, it takes §4's overlay role for its text. `Renderer.drawText`
+takes a world centre and a `TextStyle` (height in world units, outline in CSS pixels), not the
+sketch's `x, y`. Status ticks already carry `source.kind 'status'` and the status id, so the badge
+kind is a client map by status id and core did not change. An online Duel shows no damage
+numbers: `RemoteSimulation.on` never fires (the server sends snapshots only), as for the health
+bars.
 
 ## Related
 

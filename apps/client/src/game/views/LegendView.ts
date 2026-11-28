@@ -30,7 +30,7 @@ export class LegendView extends DefaultEntityView {
   }
 
   /** Draws the white outline and the facing chevron, then the team disc and focus ring on top. */
-  public override draw(state: EntityDrawState, renderer: Renderer): number | undefined {
+  public override draw(state: EntityDrawState, renderer: Renderer): void {
     const visual = withVisualRadius(state, this.visualRadiusOf());
     const diameter = (visual.entity.transform?.radius ?? 0) * 2;
     renderer.drawWorldGlyph(
@@ -46,6 +46,5 @@ export class LegendView extends DefaultEntityView {
         state.position,
         FOCUS_RING_COLOR,
       );
-    return undefined;
   }
 }

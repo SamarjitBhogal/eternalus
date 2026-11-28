@@ -4,7 +4,7 @@ description: The coding-agent harness as it exists in the repository (instructio
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-19
+last-reviewed: 2026-11-22
 tags: [architecture, agents, harness, hooks, skills, verification]
 paths: ['.claude/**', '.agents/**', 'scripts/hooks/**', 'docs/agents/**']
 related:
@@ -130,11 +130,17 @@ best-effort (`git -C . push` is not matched), so the git hooks and CI remain the
 rules apply before the workspace-trust dialog, allow rules after it (research §2).
 
 **Hooks.** All three are `type: command` in exec form (`"command": "node", "args": [...]`) so
-they spawn on Windows without a shell, and all read one JSON object on stdin (`tool_name`,
-`tool_input.file_path`, `cwd`, `stop_hook_active`) through `scripts/hooks/hookInput.mjs`, which
-never throws on empty or malformed input, runs commands with `CI=1` and `FORCE_COLOR=0`, uses a
-shell only on Windows so `npm.cmd` resolves, and trims output with `tail()` so the model sees the
-last lines rather than a wall of text.
+they spawn on Windows without a shell. Each script path starts with `${CLAUDE_PROJECT_DIR}/`,
+because Claude Code runs a hook in the session's current folder, which can be a subfolder or
+another folder (DEC-331). For the same reason, all three find the checkout to act on with
+`projectRoot()`: the git top level of the start folder when it is in this repository (any
+worktree), else the checkout that holds the scripts. The start folder is the session's folder,
+except for `post-edit.mjs`, which starts from the real path of the edited file's folder, so a
+file in another worktree is formatted and linted with that worktree's config. All three read one
+JSON object on stdin (`tool_name`, `tool_input.file_path`, `cwd`, `stop_hook_active`) through
+`scripts/hooks/hookInput.mjs`, which never throws on empty or malformed input, runs commands with
+`CI=1` and `FORCE_COLOR=0`, uses a shell only on Windows so `npm.cmd` resolves, and trims output
+with `tail()` so the model sees the last lines rather than a wall of text.
 
 | Event (matcher)               | Script (timeout)           | Does                                                                                                                                                                                                                                                                                                                                                              | Exit codes                                                                                                         |
 | ----------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |

@@ -13,44 +13,45 @@ import {
   UNREACHED,
 } from './FlowField.constants';
 import type { FlowField } from './FlowField';
+import { bodyObjectsOf, fortBox, sideOf } from './__fixtures__/fortBody';
+import { fortWallBands } from './fortInWorld';
 import { LaneFlowFields } from './LaneFlowFields';
 import { MapGenerator } from './MapGenerator';
 import { MapObjectBuilder } from './MapObjectBuilder';
 import { MapPresentationBuilder } from './MapPresentationBuilder';
-import { WorldMap } from './WorldMap';
+import { MatchGrid } from './MatchGrid';
+import type { GameConfig } from '../config/GameConfig.types';
 import { LaneRoutes } from '../state/LaneRoutes';
+import { WorldMap } from './WorldMap';
 
 const isBlocking = (definitionId: string): boolean =>
   MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false;
+
+/**
+ * A generated map with its map objects, its grid as the match stamps it (`MatchGrid`) and its lane
+ * fields with the lane tower forts' wall bands (`fortWallBands`) and boxes.
+ */
+const matchFields = (config: GameConfig, seed: number) => {
+  const map = new MapGenerator().generate(config, seed);
+  const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+  const { grid } = MatchGrid.build(map, objects, {
+    cellSize: config.map.navCellSize,
+    features: MAP_FEATURE_DEFINITIONS,
+  });
+  const towers = map.features.filter(
+    ({ definitionId }) => MAP_FEATURE_DEFINITIONS[definitionId]?.isCourt === true,
+  );
+  const boxes = towers.map(({ id }) => fortBox(objects, id));
+  const closed = towers.flatMap(({ id }) => fortWallBands(bodyObjectsOf(objects, id)));
+  const fields = new LaneFlowFields(grid, map, config.map.flowFieldCorridorHalfWidth, closed);
+  return { map, grid, fields, towers, boxes };
+};
 
 /** The generated map for `numLanes`, its grid and its fields. */
 const world = (numLanes: number) => {
   const config = createDefaultGameConfig({ map: { numLanes } });
   const map = new MapGenerator().generate(config, 1);
   const grid = WorldMap.fromDefinition(map, config.map.navCellSize, isBlocking);
-  const fields = new LaneFlowFields(grid, map, config.map.flowFieldCorridorHalfWidth);
-  return { config, map, grid, fields };
-};
-
-/**
- * The match grid as `Simulation.buildWorld` makes it, with its fields: walkable map objects
- * unstamped, blocking ones stamped.
- */
-const stampedWorld = (numLanes: number, seed: number) => {
-  const config = createDefaultGameConfig({ map: { numLanes } });
-  const map = new MapGenerator().generate(config, seed);
-  const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
-  const walkable = new Set(objects.filter((object) => !object.isBlocking).map(({ id }) => id));
-  const grid = WorldMap.fromDefinition(
-    { ...map, features: map.features.filter(({ id }) => !walkable.has(id)) },
-    config.map.navCellSize,
-    isBlocking,
-  );
-  for (const object of objects.filter((candidate) => candidate.isBlocking)) {
-    for (const footprint of object.footprints) {
-      grid.stampFootprint(footprint, object.passages);
-    }
-  }
   const fields = new LaneFlowFields(grid, map, config.map.flowFieldCorridorHalfWidth);
   return { config, map, grid, fields };
 };
@@ -290,7 +291,8 @@ describe('LaneFlowFields', () => {
   it.each([1, 2])(
     'reaches every walkable lane point from both ends with the map objects stamped (seed %i, DEC-121 (d))',
     (seed) => {
-      const { map, grid, fields } = stampedWorld(createDefaultGameConfig().map.numLanes, seed);
+      // The grid as the match stamps it (`MatchGrid.build`), the lane forts' courts as court ground.
+      const { map, grid, fields } = matchFields(createDefaultGameConfig(), seed);
 
       const stranded = map.lanes.flatMap((lane) =>
         lane.path.flatMap((point) => {
@@ -308,6 +310,57 @@ describe('LaneFlowFields', () => {
         }),
       );
       expect(stranded).toEqual([]);
+    },
+  );
+
+  it.each([
+    [3, 1, 1],
+    [3, 1234, 2],
+    [5, 1, 1],
+    [5, 1, 2],
+  ])(
+    'routes every lane field through each lane tower fort it crosses, in by one of its west and east doorways and out by the other (DEC-315; %i lanes, seed %i, %i towers of each kind)',
+    (numLanes, seed, towersPerKind) => {
+      const config = createDefaultGameConfig({
+        map: { numLanes, spawnTowersPerLane: towersPerKind, buffTowersPerLane: towersPerKind },
+      });
+      const { map, fields, towers, boxes } = matchFields(config, seed);
+      const routes = new LaneRoutes(map);
+      const crossings = towers.flatMap((tower, index) => {
+        const box = boxes[index] ?? { x: 0, y: 0, width: 0, height: 0 };
+        const lane = tower.laneId ?? '';
+        return (['light', 'dark'] as const).map((team) => {
+          // Follow the field from 70 m up-lane of the tower until it leaves the fort's box.
+          const at = { x: 0, y: 0 };
+          routes.pose(lane, team, routes.distanceAlong(lane, team, tower.position) - 70, at, {
+            x: 0,
+            y: 0,
+          });
+          const field = fields.field(lane, team);
+          const step = { x: 0, y: 0 };
+          const isIn = (point: { x: number; y: number }): boolean =>
+            point.x > box.x &&
+            point.x < box.x + box.width &&
+            point.y > box.y &&
+            point.y < box.y + box.height;
+          let entry = 'none';
+          let exit = 'none';
+          for (let walked = 0; walked < 300 && exit === 'none'; walked += 0.4) {
+            if (field?.directionAt(at.x, at.y, step) !== true) break;
+            const next = { x: at.x + step.x * 0.4, y: at.y + step.y * 0.4 };
+            if (isIn(next) && !isIn(at)) entry = sideOf(next, box);
+            if (!isIn(next) && isIn(at)) exit = sideOf(at, box);
+            at.x = next.x;
+            at.y = next.y;
+          }
+          return `${tower.id} ${team}: ${entry} -> ${exit}`;
+        });
+      });
+
+      // Light marches east, Dark west, each through every fort on its lane.
+      expect(crossings).toEqual(
+        towers.flatMap(({ id }) => [`${id} light: west -> east`, `${id} dark: east -> west`]),
+      );
     },
   );
 
@@ -358,10 +411,14 @@ describe('LaneFlowFields.progress', () => {
   /** One diagonal step's cost over the lane's cost: the most a cell boundary can move `t`. */
   const oneStep = (field: FlowField): number => stepCost(4) / (field.integration[field.start] ?? 1);
   /**
-   * The largest gaps measured between field and polyline `t`: 1.4% (3 lanes), 1.6% (5 lanes) on
-   * the bare grid; 1.95% on the match grid with the map objects stamped.
+   * The largest gaps measured between field and polyline `t` at the 2.5 m nav cells of DEC-227
+   * (Q-A), seed 1: 1.38% (3 lanes) and 1.83% (5 lanes) on the bare grid; on the match grid
+   * (`MatchGrid`, with the lane tower forts' wall bands closed), 1.22% (3 lanes) and 1.53%
+   * (5 lanes). The owner allowed 2.5% on the 5-lane match grid (DEC-391), when the grid with only
+   * the map objects stamped measured 2.13% there.
    */
   const POLYLINE_AGREEMENT = 0.02;
+  const FIVE_LANE_MATCH_GRID_AGREEMENT = 0.025;
 
   /** Points along `path`, eight per segment, with the polyline's own `t` for each. */
   const samples = (world: Pick<typeof THREE, 'map'>, laneId: string, team: 'light' | 'dark') => {
@@ -404,13 +461,21 @@ describe('LaneFlowFields.progress', () => {
   });
 
   it.each([
-    ['3 lanes', THREE],
-    ['5 lanes', FIVE],
-    ['3 lanes, match grid', stampedWorld(3, 1)],
-    ['5 lanes, match grid', stampedWorld(5, 1)],
+    ['3 lanes', THREE, POLYLINE_AGREEMENT],
+    ['5 lanes', FIVE, POLYLINE_AGREEMENT],
+    [
+      '3 lanes, match grid',
+      matchFields(createDefaultGameConfig({ map: { numLanes: 3 } }), 1),
+      POLYLINE_AGREEMENT,
+    ],
+    [
+      '5 lanes, match grid',
+      matchFields(createDefaultGameConfig({ map: { numLanes: 5 } }), 1),
+      FIVE_LANE_MATCH_GRID_AGREEMENT,
+    ],
   ] as const)(
-    'agrees with the lane polyline within 2%% wherever the field can say: %s',
-    (_, world) => {
+    'agrees with the lane polyline within its bound wherever the field can say: %s',
+    (_, world, bound) => {
       let largest = 0;
       for (const lane of world.map.lanes) {
         for (const team of ['light', 'dark'] as const) {
@@ -420,7 +485,7 @@ describe('LaneFlowFields.progress', () => {
           }
         }
       }
-      expect(largest).toBeLessThanOrEqual(POLYLINE_AGREEMENT);
+      expect(largest).toBeLessThanOrEqual(bound);
     },
   );
 
@@ -464,7 +529,7 @@ describe('LaneFlowFields.progress', () => {
   ] as const)(
     'keeps every lane’s cost from its own end well below UNREACHED: %i lanes, seed %i',
     (numLanes, seed) => {
-      const world = stampedWorld(numLanes, seed);
+      const world = matchFields(createDefaultGameConfig({ map: { numLanes } }), seed);
       for (const lane of world.map.lanes) {
         for (const team of ['light', 'dark'] as const) {
           const field = world.fields.field(lane.id, team);

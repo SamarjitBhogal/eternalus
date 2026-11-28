@@ -74,7 +74,7 @@ export type SessionPhase =
   | 'loading' // start-match loading: themed background, assets for the selection screens
   | 'character-select' // 60 s countdown; cancel to 'menu' if nothing selected (owner flow, 2026-10-03)
   | 'pre-launch' // 10 s reveal of the allied team (enemy team top right)
-  | 'match-loading' // waits for the `match` asset group; both rosters shown
+  | 'match-loading' // waits for the `match` group and every Legend's sprite sheet group; both rosters shown
   | 'match'
   | 'results';
 export type MenuRoute = 'main' | 'loadouts' | 'profile' | 'settings' | 'about';
@@ -110,9 +110,9 @@ export class SessionController {
 | `loading`          | `character-select` / `menu`  | selection-screen asset group loaded / cancelled or failed                                                                                                                                                                                                                                                                                                                                                                                                               | loads the selection asset groups (themed background set for the player's team): the `selection` group, the group of the class step's layout and, with the Figma-raster effects, the plate groups ([14](14-persistence-and-resources.md) §11; DEC-52, DEC-54) and shows `LoadingScreen`; the `MatchSetup` draft (seed, config, `playerTeam`) already exists from `menu`                                                                                                                                                                                                                                                                                                                                                             |
 | `character-select` | `pre-launch` / `menu`        | the 60 s `SessionClock` countdown ended after LOCK IN: it always runs the full 60 s, and LOCK IN locks the pick, fills the bots and shows the locked view without ending it (DEC-60, DEC-61) / it ended before LOCK IN, with or without a class: no match starts, and the home screen shows the select-timeout popup (`reason: 'select-timeout'`, DEC-102)                                                                                                              | records the class pick and then the Legend pick, in two steps of one screen (DEC-49; `Recommendation:`, INBOX HC-F1); Back clears the class (`clear-class-selection`); `SessionController` holds the selection and `canConfirmSelection` (`bridge/selectionRules.ts`) decides LOCK IN; starts the countdown through the injected `SessionClock`; LOCK IN locks the pick, gives each bot a Legend of its class from the seed's roster stream and the enemy Rover a copy of the pick (`fillRosters`; DEC-61, DEC-102; the Legend copy is `Recommendation:`), publishes the rosters (`selection-locked`) and shows the locked view (DEC-60); the rosters' classes and `playerTeam` come from the setup built in `menu` (DEC-34, SD-2) |
 | `pre-launch`       | `match-loading`              | 10 s `SessionClock` reveal elapsed                                                                                                                                                                                                                                                                                                                                                                                                                                      | shows the allied team on pedestals and the enemy roster top right; no cancel                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `match-loading`    | `match` / `results` / `menu` | `match` asset group loaded and the match world prepared / the server ended an online Duel during the load (its `match-ended` message; the session publishes `duel-ended`) / either failed, or the Duel's connection was not back within the reconnect window (DEC-349)                                                                                                                                                                                                  | prepares the match world (`prepareWorld`: the map from `setup.seed`) once the `match` group has loaded; on failure logs and returns to `menu` with a banner. The `Match` is created in `match` (DEC-50)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `match-loading`    | `match` / `results` / `menu` | `match` asset group and every Legend's sprite sheet group loaded and the match world prepared / the server ended an online Duel during the load (its `match-ended` message; the session publishes `duel-ended`) / either failed, or the Duel's connection was not back within the reconnect window (DEC-349)                                                                                                                                                            | prepares the match world (`prepareWorld`: the map from `setup.seed`) once the `match` group and every Legend's sprite sheet group (`matchAssetGroups`, DEC-378 (2); a sheet file that fails only warns, and that sheet's Legends are discs) have loaded; on failure logs and returns to `menu` with a banner. The `Match` is created in `match` (DEC-50)                                                                                                                                                                                                                                                                                                                                                                           |
 | `match`            | `results` / `menu`           | the running match's end (the match observer's `ended`, called after the tick whose step emitted `match-ended`), the server ending an online Duel (its `match-ended` message; the session publishes `duel-ended`), `forfeit` / `leave-match`, a Duel connection not back within the reconnect window (`duel-unavailable`; a drop first shows "Reconnecting..." while `DuelSession` retries on its own, DEC-349), a crash (a tick, a frame or the screen throws; DEC-106) | when the match screen's viewport attaches, `createMatch(request, viewport)` builds and starts the match, and its detach destroys it (DEC-50); releases the selection asset groups (`Recommendation:`, the owner's Keep of 2026-10-28, INBOX HC-F9); pauses the match while an overlay is open (single player); after the match's end the world runs on for `RESULTS_DELAY_MS` (DEC-92) (an open overlay does not stop it, DEC-134 (2)), timed on the `SessionClock` so the match is never destroyed inside its own loop frame; `persistence.saveMatchResult(…)` in one unit of work ([14](14-persistence-and-resources.md) §6); `match.destroy()` on exit: 0 listeners, 0 frames                                                   |
-| `results`          | `menu` / `loading`           | the `SessionClock` countdown (`RESULTS_COUNTDOWN_MS`, DEC-78; a Duel's `results` has none, DEC-347) ends, `continue` skips it, or `navigate` / `start-match` (rematch with the same setup; `canRepeatSetup` (`bridge/matchSetupRules.ts`) allows it after a local match only, `Recommendation:`)                                                                                                                                                                        | on entry releases the `match` asset group (the match is already destroyed), loads the `selection` group (the screen reuses the selection art; if it fails to load, the screen shows without it) and starts the countdown; on exit stops both and releases `selection`                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `results`          | `menu` / `loading`           | the `SessionClock` countdown (`RESULTS_COUNTDOWN_MS`, DEC-78; a Duel's `results` has none, DEC-347) ends, `continue` skips it, or `navigate` / `start-match` (rematch with the same setup; `canRepeatSetup` (`bridge/matchSetupRules.ts`) allows it after a local match only, `Recommendation:`)                                                                                                                                                                        | on entry releases the `match` asset group and every Legend's sprite sheet group (the match is already destroyed), loads the `selection` group (the screen reuses the selection art; if it fails to load, the screen shows without it) and starts the countdown; on exit stops both and releases `selection`                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 **The screen-crash exit is not a table edge (DEC-149; DEC-141).** A screen that throws
 (`report-screen-crash`) leaves every phase except `menu` and `match` through one method,
@@ -582,6 +582,17 @@ difference is registered in
 
 ## 10. Implementation status
 
+Sim mode (2026-11-13, FR-099): the developer menu's Sim mode section sends `dev-set-controller` (Remove
+human: the human Legend to the bot picked in the Bot select, a lane bot or the Rover, or with "Game
+picks" to the bot role its team lacks, DEC-356; Take control: a typed Legend id to
+`player`, swapping the seat if a human exists, DEC-294). With no human, Follow (client-only, no
+`Command`: a `dev-follow` intent to `DeveloperMenuController`, not §4's `dev-toggle` spectate
+row) makes the camera follow the Legend picked in a select fed from the live snapshot; "None"
+ends it. The menu reads the three controller ids from the `developer-menu` state. `Match` reads the
+human Legend from each snapshot, so with none the HUD player block and the attack clicks stand
+idle, the camera too unless Follow names a Legend, and the match runs on. Not built: `SinglePlayerBrainInvariant` (cited by the sim-mode row of the
+table in section 4); a Legend with no human is not checked for it.
+
 Built (Sprint 1, sessions D and F): the bridge (`bridge/`), the session shell and menu screens,
 and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver`, `InputMapper`,
 `KeyboardDevice` and `MouseDevice`, `SettingsController`, `settingsSlice`, `KeyGlyph`, `Prompt`,
@@ -614,8 +625,8 @@ opened by `toggle-developer-menu` (F1). Built controls: spawn mobs (`dev-spawn-m
 entity by id (`dev-remove-entity`), each sent as a `dev-command` intent that `Match` enqueues. The
 mob picker lists the lane minions of core's display content (`DisplayContent.laneMinions`). Core
 refuses `dev-remove-entity` for a Legend in a human seat (`human-legend`): the human is removed
-only in sim mode (the "Add / remove a Legend" row above). Not built: sim mode, `dev-toggle`,
-invariant level, timeline jump, config overrides,
+only in sim mode (the "Add / remove a Legend" row above). Not built: `dev-toggle`, invariant
+level, timeline jump, config overrides,
 and showing core's refusals in the UI. `bridge/events.ts` has no `dev-toggle` yet.
 
 HUD (2026-10-18): the `AbilityBar` cooldown sweep of §3 is the owner's Figma look, a vertical fill
@@ -651,7 +662,9 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   After a select timeout the menu shows the popup `SelectTimeoutNotice` (DEC-102). `MatchScreen`
   holds the HUD and the pause overlay. `ui/App.tsx` registers both in `PHASE_SCREENS`, and only
   `MatchScreen` renders the viewport, so no canvas exists outside `match`.
-- **`Match` lifetime (DEC-50).** `match-loading` loads the `match` group, then calls `prepareWorld`
+- **`Match` lifetime (DEC-50).** `match-loading` loads the `match` group and the sprite sheet
+  group of every Legend in the filled rosters (`game/session/matchAssetGroups.ts`, DEC-378 (2)),
+  then calls `prepareWorld`
   (`game/prepareMatchWorld.ts`: the map from `setup.seed`). In `match`, `MatchState.attachViewport`
   creates the match through the injected factory `createMatch(request, viewport)`
   (`game/createBrowserMatch.ts`, bound only by `main.tsx`), which builds the adapters, `Simulation`,
@@ -723,9 +736,9 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   IN filled); the session countdowns are one record by kind in `matchSetupSlice`, with one
   action (`countdownChanged`) and one selector (`selectCountdownSeconds(kind)`; DEC-213); §5's
   `capture-state` is now
-  published; `loading-progress` names seven asset groups ([14](14-persistence-and-resources.md)
-  §14); `hud-state` is `{ player }` with no
-  `spectatedLegendId` (no spectate producer yet). The display types live in
+  published; `loading-progress` names the seven shared asset groups and the sprite sheet group
+  family (`sprite-atlas:<asset id>`, one group per sheet; [14](14-persistence-and-resources.md) §14); `hud-state` is `{ player }` with no
+  `spectatedLegendId` (sim mode's Follow moves only the camera; see the sim mode note above). The display types live in
   `bridge/catalogue.types.ts` and `bridge/hud.types.ts`; `bridge/` also gains `selectionRules.ts`,
   `matchSetupRules.ts`, `minimapRing.ts`, `legendNames.ts` and `opponentOf.ts`, and `assetsSlice`. The HUD data is in
   `hudSlice` (the Sprint 1 contract), `matchSlice.clock` is nullable, and `match-setup` resets the
@@ -846,6 +859,13 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   Still bound but unhandled: `toggle-perf-overlay` (no overlay exists), `sprint`, `interact`,
   `turret-toggle-control`, `turret-switch-ammo` (`INBOX.md`). `toggle-developer-menu` is handled
   since the developer menu (#107): F1 opens it once `?dev=1` enabled it.
+- **The `hud` settings group (2026-11-27, DEC-410).** `settingsSlice.hud` exists with one field,
+  `shouldShowEveryHit` (W5c: show the damage number of every hit, not only the player's). It is
+  persisted (14 §13 and §14: an optional group, no version bump). The settings screen has no HUD tab, so
+  the toggle sits on the Video tab. `minimapVisible` is not in the group yet (the bullet above).
+  `Match` reads the group through `SettingsController.current`, which the match factories pass in.
+  The factories also pass `isReducedMotion`: the Reduce motion setting or the system's
+  `prefers-reduced-motion` (§7), so the badges stop moving under either.
 
 - **Jump (2026-11-27, DEC-390).** `InputAction` (`bridge/Binding.types.ts`) also has `jump`
   (Space, held), which the §6.1 table predates. `InputMapper` reports it as `InputIntent.isJumping`, and `PlayerCommands` sends

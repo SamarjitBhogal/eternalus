@@ -10,6 +10,7 @@ function render(tab: 'audio' | 'video' | 'accessibility'): string {
       audio: { master: 0.8, music: 0.25, effects: 1 },
       video: { fullscreen: true, renderScale: 0.75 },
       accessibility: { reduceMotion: true, colourBlindMode: false },
+      hud: { shouldShowEveryHit: true },
     },
   });
 }
@@ -28,6 +29,12 @@ describe('SettingsScreenOptions', () => {
 
     expect(html).toMatch(/Fullscreen<\/span><input type="checkbox" checked=""/);
     expect(html).toMatch(/<option value="0.75" selected="">75%<\/option>/);
+  });
+
+  it('shows the "every hit" damage numbers toggle on the Video tab (W5c, DEC-410)', () => {
+    expect(render('video')).toMatch(
+      /Damage numbers for every hit<\/span><input type="checkbox" checked=""/,
+    );
   });
 
   it('shows the accessibility toggles', () => {

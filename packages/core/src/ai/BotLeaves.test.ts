@@ -30,13 +30,19 @@ const STUB_PATHS: PathQuery = {
     out.y = isBlocked ? 34 : goal.y;
     return true;
   },
+  exitWaypoint: () => false,
   // Blocked past x 50, except the line to the stub's own waypoint.
   isLineClear: (_start, end) => end.x <= 50 || (end.x === 60 && end.y === 34),
   version: 0,
 };
 
 /** A pathfinder stub that never finds a way. */
-const NO_WAY: PathQuery = { waypoint: () => false, isLineClear: () => false, version: 0 };
+const NO_WAY: PathQuery = {
+  waypoint: () => false,
+  exitWaypoint: () => false,
+  isLineClear: () => false,
+  version: 0,
+};
 
 /** A turn for a bot at `position` on the blocked-lane map, with or without pathfinding. */
 const turnAt = (
@@ -183,6 +189,7 @@ describe('BotLeaves.moveTo (A* for Legends, 10 §9)', () => {
         x: 60,
         y: 20,
         radius: 5,
+        box: { x: 55, y: 15, width: 10, height: 10 },
         startingHealth: 3000,
         progress: 60,
         frontProgress: 55,
@@ -237,6 +244,7 @@ describe('BotLeaves.moveTo (A* for Legends, 10 §9)', () => {
         x: 60,
         y: 20,
         radius: 5,
+        box: { x: 55, y: 15, width: 10, height: 10 },
         startingHealth: 3000,
         progress: 60,
         frontProgress: 55,
@@ -260,6 +268,7 @@ describe('BotLeaves.moveTo path cache (11 §6)', () => {
         calls.searches += 1;
         return STUB_PATHS.waypoint(start, goal, out);
       },
+      exitWaypoint: () => false,
       isLineClear: (start, end) => isClear && STUB_PATHS.isLineClear(start, end),
       version: 0,
     };

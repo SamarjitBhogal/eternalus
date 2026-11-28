@@ -37,7 +37,7 @@ export class DevSpawnLegendHandler implements CommandHandler<'dev-spawn-legend'>
     ) {
       return 'cap-exceeded';
     }
-    legends.spawn(state, definitionId, team, position, this.controller);
+    legends.spawn(state, definitionId, team, position, { controller: this.controller });
     return null;
   }
 }

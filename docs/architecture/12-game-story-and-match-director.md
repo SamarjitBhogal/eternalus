@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-26
+last-reviewed: 2026-11-27
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -270,7 +270,8 @@ the owner's values (`TUNE`, DEC-79): a Legend kill, an assist, a death (no point
 holds FR-007's objective points (DEC-84 (2)) at the owner's values (DEC-131): a destroyed
 structure (team-only, DEC-212), a capture per checkpoint and a hold per full minute of a team's
 held time pooled over its points (both team-only, DEC-214). Bosses and the sovereign give no
-personal points. A hit on or a kill of a unit on the attacker's own team, itself
+personal points; a boss built as a mob (until doc 04's `Boss` family) is listed by definition in
+`SCORING.bossIds`, which the mob death rule skips. A hit on or a kill of a unit on the attacker's own team, itself
 included, counts for nothing, as for XP (DEC-130; O5, `05` §18). The assist window sits beside the weights in `SCORING`, so `Simulation` passes one value; `loadScoring` turns the scoring times into ticks once: the assist window from `SCORING` (it rejects a negative or non-finite one) and the minute that hold points count in (`03` §8, DEC-241, DEC-285 (2), DEC-287), so the scoring rules and their factory see only ticks. Listeners only append to a per-tick buffer; `fold(ctx)` applies it
 inside the director's pass ("listeners defer state changes to their own system's pass", `03` §4),
 and the `ScoreBook`'s data sits in `state.match` so it is hashed. Achievements (**MVP-if-time**) are pure
@@ -549,7 +550,9 @@ Not built yet: `atmosphere` in `MatchState` (the interim is the boolean
 that carries `WinObjective` (the sovereign); `MatchResult.timeline` and `achievements` (with
 their producers); the other §5 counters and `TeamStats` fields; a condition for `forfeit` or
 `aborted` (the ids exist); the timeline actions other than `enter-phase` and
-`summon-greater-boss`; `dev-set-phase`; the announcer; the other invariants of §12.
+`summon-greater-boss`; the Greater Boss turning its killer into an Eternal (§7;
+`BossController` with its six moves and entrance roar, and its team reward (DEC-237, DEC-371 E8,
+DEC-416), are built); `dev-set-phase`; the announcer; the other invariants of §12.
 
 The gem eruption (§3) is built (2026-11-22, `feat/cathedral-eruption-boss`): the default
 timeline's `gem-eruption` entry, at `mid-game`'s fraction and right after it (DEC-81), runs

@@ -4,7 +4,7 @@ description: Reference mapping, permission confirmation, hashes and packing for 
 audience: [humans, agents]
 status: draft
 owner: gurshaan
-last-reviewed: 2026-11-13
+last-reviewed: 2026-11-26
 tags: [assets, provenance, legends]
 related: [docs/decisions/0027-additional-legend-asset-budget.md]
 ---
@@ -88,3 +88,27 @@ Sentinel playback covers Shield Wall, Sunder, Colossus Roar and Meteor Fall. Dec
 scars expire, and the cast history has a hard cap. HUD CSS uses per-character motifs and honours
 reduced motion. Existing weapon damage still triggers the attack animation, including scenery
 hits, but cannot interrupt an active combat ability preview.
+
+## 2026-11-24 — What the PR #170 rebuild plays
+
+This note corrects the section above for the sprites-only rebuild (PR #170). The match plays
+rows 0 to 5 only: idle, the four walk directions and the basic attack. Rows 6 to 9 (the
+class-action and ultimate previews) ship in the atlases, but no code plays them. DEC-298 (2)
+drops #134's ability code; the kit PRs on top of #123 bring the previews back when the
+abilities exist. The rebuild has no code-drawn combat effects, no ground scars, no cast history
+and no HUD CSS motifs.
+
+## 2026-11-26 — Licence answer and every Legend's sheet (DEC-378)
+
+This note records the owner's answers of 2026-11-26 (Owner Calls v98, DEC-378). It does not
+change the sections above.
+
+- Licence, card PR170 (4), the owner's words: "A: yes; ship them for the class project and
+  replace them after the MVP". So DEC-298 covers the five sheets of this record (Zealot, Templar,
+  Paladin, Colossus, Bulwark; 1x and 2x), as it covers the Bulwark portrait. They ship for the
+  class project, and the team replaces them after the MVP. The replacement is in the `INBOX.md`
+  item "DEC-298 (5), (7)".
+- Card PR170 (1) ships the sprites now as stand-in art (DEC-378 (1)).
+- Since DEC-378 (2), a match loads the sheet of every Legend in it, not only the selected one.
+  The sentence "The rebuild loads only the selected atlas in its own group" above is out of date.
+- ADR 0027 is accepted (DEC-378 (3)): its budgets are the sizes it lists, lossless as written.

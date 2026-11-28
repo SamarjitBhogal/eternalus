@@ -3,13 +3,17 @@ import { describe, expect, it } from 'vitest';
 import {
   boundsOf,
   distance,
+  distanceSquaredToRect,
   doRectsOverlap,
   doesPolygonOverlapRect,
+  doPolygonsOverlap,
   distanceToPath,
   distanceToSegment,
+  doesRayCrossPolygon,
   isPointInAnyPolygon,
   isPointInPolygon,
   isPointInRect,
+  isPolygon,
   lerpPoint,
   nearestPointOnPolygons,
   polarPoint,
@@ -55,6 +59,26 @@ describe('geometry', () => {
     expect(isPointInPolygon({ x: 5, y: -1 }, SQUARE)).toBe(false);
   });
 
+  it('accepts a polygon of at least 3 finite corners only', () => {
+    expect(isPolygon(SQUARE)).toBe(true);
+    expect(isPolygon(SQUARE.slice(0, 2))).toBe(false);
+    expect(isPolygon([...SQUARE.slice(0, 3), { x: Number.NaN, y: 0 }])).toBe(false);
+    expect(isPolygon([...SQUARE.slice(0, 3), { x: 0, y: Infinity }])).toBe(false);
+  });
+
+  it('tells whether a ray crosses a polygon ahead of its start, and never behind it', () => {
+    expect(doesRayCrossPolygon({ x: -5, y: 5 }, { x: 1, y: 0 }, SQUARE)).toBe(true);
+    expect(doesRayCrossPolygon({ x: -5, y: 0 }, { x: 1, y: 1 }, SQUARE)).toBe(true);
+    // From inside, the ray always crosses on its way out.
+    expect(doesRayCrossPolygon({ x: 5, y: 5 }, { x: 0, y: -3 }, SQUARE)).toBe(true);
+    // The square is behind the start.
+    expect(doesRayCrossPolygon({ x: -5, y: 5 }, { x: -1, y: 0 }, SQUARE)).toBe(false);
+    // The ray meets the lines of two edges (x = 0 at y = 15, y = 10 at x = -2.5), but off the edges.
+    expect(doesRayCrossPolygon({ x: -5, y: 5 }, { x: 1, y: 2 }, SQUARE)).toBe(false);
+    expect(doesRayCrossPolygon({ x: -5, y: 15 }, { x: 1, y: 0 }, SQUARE)).toBe(false);
+    expect(doesRayCrossPolygon({ x: -5, y: 5 }, { x: 0, y: 0 }, SQUARE)).toBe(false);
+  });
+
   it('tells whether a point is in an upright rectangle, edges included', () => {
     const rect = { x: 10, y: 20, width: 30, height: 40 };
     expect(isPointInRect({ x: 25, y: 40 }, rect)).toBe(true);
@@ -64,6 +88,16 @@ describe('geometry', () => {
     expect(isPointInRect({ x: 40.1, y: 40 }, rect)).toBe(false);
     expect(isPointInRect({ x: 25, y: 19.9 }, rect)).toBe(false);
     expect(isPointInRect({ x: 25, y: 60.1 }, rect)).toBe(false);
+  });
+
+  it('measures the squared distance to an upright rectangle: 0 inside, to an edge or a corner outside', () => {
+    const rect = { x: 10, y: 20, width: 30, height: 40 };
+    expect(distanceSquaredToRect({ x: 25, y: 40 }, rect)).toBe(0);
+    expect(distanceSquaredToRect({ x: 40, y: 60 }, rect)).toBe(0);
+    expect(distanceSquaredToRect({ x: 4, y: 40 }, rect)).toBe(36);
+    expect(distanceSquaredToRect({ x: 25, y: 65 }, rect)).toBe(25);
+    expect(distanceSquaredToRect({ x: 43, y: 64 }, rect)).toBe(25);
+    expect(distanceSquaredToRect({ x: 7, y: 16 }, rect)).toBe(25);
   });
 
   it('tells whether two upright rectangles overlap, touching edges included', () => {
@@ -140,6 +174,29 @@ describe('geometry', () => {
         cell,
       ),
     ).toBe(true);
+  });
+
+  it('tells whether two polygons share any point (HC-Q95)', () => {
+    const triangle = (x: number, y: number) => [
+      { x, y },
+      { x: x + 4, y },
+      { x: x + 2, y: y + 4 },
+    ];
+    // Crossing edges with no corner inside the other polygon: a thin bar across SQUARE.
+    const bar = [
+      { x: -5, y: 4 },
+      { x: 15, y: 4 },
+      { x: 15, y: 6 },
+      { x: -5, y: 6 },
+    ];
+
+    expect(doPolygonsOverlap(SQUARE, bar)).toBe(true);
+    expect(doPolygonsOverlap(SQUARE, triangle(3, 3))).toBe(true);
+    expect(doPolygonsOverlap(triangle(3, 3), SQUARE)).toBe(true);
+    expect(doPolygonsOverlap(SQUARE, triangle(10, 0))).toBe(true);
+    expect(doPolygonsOverlap(SQUARE, triangle(30, 30))).toBe(false);
+    expect(doPolygonsOverlap(SQUARE, [{ x: 5, y: 5 }])).toBe(true);
+    expect(doPolygonsOverlap(SQUARE, [{ x: 50, y: 5 }])).toBe(false);
   });
 
   it('writes the nearest point of several outlines into out, closing edges included', () => {

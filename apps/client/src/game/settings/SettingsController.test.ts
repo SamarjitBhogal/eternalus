@@ -131,6 +131,37 @@ describe('SettingsController', () => {
     },
   );
 
+  it('exposes the current settings: none before start, then the published ones (DEC-410)', async () => {
+    const persistence = new PersistenceController({
+      adapter: new MemoryStorageAdapter(),
+      knownActions: new Set(INPUT_ACTIONS),
+      now: () => 0,
+      warn: () => undefined,
+    });
+    await persistence.open();
+    const bus = new TypedEventBus<BridgeEventMap>();
+    const published: SettingsSliceState[] = [];
+    bus.on('settings', (settings) => published.push(settings));
+    const controller = new SettingsController({
+      bus,
+      persistence,
+      logger: new NullLogger(),
+      isApplePlatform: false,
+      themeRoot: { dataset: {} },
+    });
+    expect(controller.current).toBeNull();
+
+    await controller.start();
+    bus.emit('ui-intent', {
+      kind: 'update-settings',
+      patch: { hud: { shouldShowEveryHit: true } },
+    });
+
+    expect(controller.current).toBe(published.at(-1));
+    expect(controller.current?.hud.shouldShowEveryHit).toBe(true);
+    expect((await persistence.loadSettings())?.hud).toEqual({ shouldShowEveryHit: true });
+  });
+
   it('applies audio, video and accessibility changes', async () => {
     const { bus, published } = await started();
 

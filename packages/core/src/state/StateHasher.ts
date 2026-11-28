@@ -1,4 +1,5 @@
 import { Aether } from '../components/Aether';
+import { BossMoveCast } from '../components/BossMoveCast';
 import { Capturable } from '../components/Capturable';
 import { CathedralGemState } from '../components/CathedralGemState';
 import { ChaseWatch } from '../components/ChaseWatch';
@@ -6,6 +7,7 @@ import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { CombatClock } from '../components/CombatClock';
 import { LastEnemyHit } from '../components/LastEnemyHit';
+import { LastLegendHits } from '../components/LastLegendHits';
 import { Health } from '../components/Health';
 import { Jump } from '../components/Jump';
 import { Movement } from '../components/Movement';
@@ -107,12 +109,13 @@ export class StateHasher {
         waiting.push([
           team,
           returnsAtTick,
-          owedXp.map(({ cause, victimId, victimTeam, xp, maxLevels }) => [
+          owedXp.map(({ cause, victimId, victimTeam, xp, maxLevels, levels }) => [
             cause,
             victimId,
             victimTeam,
             xp,
             maxLevels ?? null,
+            levels ?? null,
           ]),
           StateHasher.fieldsOf(legend),
         ]);
@@ -179,6 +182,11 @@ export class StateHasher {
         ...health.shields.flatMap((bar) => [bar.sourceId, bar.current, bar.max]),
       ]);
     }
+    // A push waiting for the next step (a knockback landed this tick) is added only while it
+    // waits, so entities without one hash as before.
+    if (movement !== undefined && (movement.push.x !== 0 || movement.push.y !== 0)) {
+      fields.push(['push', movement.push.x, movement.push.y]);
+    }
     // Only a facing other than INITIAL_FACING is added (a turn, DEC-192, or a start facing,
     // DEC-216 (6)), so entities that keep it hash as before.
     if (
@@ -202,6 +210,10 @@ export class StateHasher {
     const combat = entity.findComponent(Combat);
     if (combat !== undefined && (combat.targetId !== null || combat.readyAtTick > 0)) {
       fields.push(['combat', combat.targetId, combat.readyAtTick]);
+    }
+    const cast = entity.findComponent(BossMoveCast);
+    if (cast !== undefined) {
+      fields.push(['boss-move', ...cast.fields]);
     }
     const vision = entity.findComponent(Vision);
     if (vision !== undefined) {
@@ -277,6 +289,11 @@ export class StateHasher {
     const jump = entity.findComponent(Jump);
     if (jump !== undefined && (jump.isHeld || jump.isAirborne)) {
       fields.push(['jump', ...jump.fields]);
+    }
+    // Names the Legend a boss's last-hitter levels go to (DEC-416).
+    const lastLegendHits = entity.findComponent(LastLegendHits);
+    if (lastLegendHits !== undefined) {
+      fields.push(['last-legend-hits', ...lastLegendHits.fields]);
     }
     return fields;
   }

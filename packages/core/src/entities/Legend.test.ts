@@ -21,6 +21,16 @@ const ARMED_WARRIOR = { ...WARRIOR, defaultLoadout: { primaryWeaponId: 'test-tal
 const PLACEMENT = { position: { x: 0, y: 0 }, team: 'light' } as const;
 
 describe('Legend', () => {
+  it('keeps the spec its spawn context names, and null without one (DEC-378 (2))', () => {
+    const knight = new Warrior('entity-1', 'warrior');
+    const plain = new Warrior('entity-2', 'warrior');
+
+    knight.spawn({ ...PLACEMENT, definition: ARMED_WARRIOR, weapons: WEAPONS, specId: 'knight' });
+    plain.spawn({ ...PLACEMENT, definition: ARMED_WARRIOR, weapons: WEAPONS });
+
+    expect([knight.specId, plain.specId]).toEqual(['knight', null]);
+  });
+
   it('builds its Combat from its default weapon', () => {
     const legend = new Warrior('entity-1', 'warrior');
 

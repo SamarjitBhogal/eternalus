@@ -13,7 +13,7 @@ type AssetsSliceState = {
   readonly credits: readonly CreditEntry[];
 };
 
-/** Every group, nothing loaded. */
+/** Every named group, nothing loaded; a sprite sheet group (`sprite-atlas:<id>`) is added when published. */
 const NO_GROUPS: ByGroup<never> = {
   boot: {},
   selection: {},
@@ -22,14 +22,6 @@ const NO_GROUPS: ByGroup<never> = {
   'selection-raster': {},
   'selection-primary-raster': {},
   match: {},
-  'atlas-assassin': {},
-  'atlas-knight': {},
-  'atlas-paladin': {},
-  'atlas-colossus': {},
-  'atlas-juggernaut': {},
-  'atlas-catalyst': {},
-  'atlas-oracle': {},
-  'atlas-necromancer': {},
 };
 
 const initialState: AssetsSliceState = {

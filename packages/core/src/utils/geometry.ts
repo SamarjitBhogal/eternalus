@@ -51,9 +51,42 @@ export const isPointInPolygon = (point: Vec2, polygon: Polygon): boolean => {
   return isInside;
 };
 
+/** Whether `polygon` has at least 3 corners and every corner is finite. */
+export const isPolygon = (polygon: Polygon): boolean =>
+  polygon.length >= 3 && polygon.every(({ x, y }) => Number.isFinite(x) && Number.isFinite(y));
+
+/**
+ * Whether the ray from `start` along `direction` (each `start + t × direction` with t ≥ 0)
+ * crosses an edge of `polygon`, closing edge included. A start inside the polygon always crosses
+ * on its way out. An edge parallel to the ray is skipped; a zero direction is no ray (`false`).
+ */
+export const doesRayCrossPolygon = (start: Vec2, direction: Vec2, polygon: Polygon): boolean =>
+  polygon.some((corner, index) => {
+    const next = polygon[(index + 1) % polygon.length] ?? corner;
+    const edge = { x: next.x - corner.x, y: next.y - corner.y };
+    const cross = direction.x * edge.y - direction.y * edge.x;
+    if (cross === 0) {
+      return false;
+    }
+    const offset = { x: corner.x - start.x, y: corner.y - start.y };
+    const t = (offset.x * edge.y - offset.y * edge.x) / cross;
+    const u = (offset.x * direction.y - offset.y * direction.x) / cross;
+    return t >= 0 && u >= 0 && u <= 1;
+  });
+
 /** Whether `point` lies in the upright rectangle `rect`, edges included. */
 export const isPointInRect = ({ x, y }: Vec2, rect: Rect): boolean =>
   x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
+
+/**
+ * The squared distance from `point` to the upright rectangle `rect`: 0 inside it or on its edge,
+ * else to its nearest edge or corner. Squared, so a caller compares it with a squared radius.
+ */
+export const distanceSquaredToRect = ({ x, y }: Vec2, rect: Rect): number => {
+  const dx = Math.max(rect.x - x, 0, x - (rect.x + rect.width));
+  const dy = Math.max(rect.y - y, 0, y - (rect.y + rect.height));
+  return dx * dx + dy * dy;
+};
 
 /** Whether two upright rectangles overlap or touch, edges included. */
 export const doRectsOverlap = (a: Rect, b: Rect): boolean =>
@@ -192,3 +225,17 @@ export const doesPolygonOverlapRect = (polygon: Polygon, rect: Rect): boolean =>
     );
   });
 };
+
+/**
+ * Whether two polygons share any point: a corner of one inside the other, or crossing edges
+ * (touching edges count). A one-point polygon is a point.
+ */
+export const doPolygonsOverlap = (a: Polygon, b: Polygon): boolean =>
+  a.some((point) => isPointInPolygon(point, b)) ||
+  b.some((point) => isPointInPolygon(point, a)) ||
+  a.some((start, index) => {
+    const end = a[(index + 1) % a.length] ?? start;
+    return b.some((corner, cornerIndex) =>
+      doSegmentsIntersect(start, end, corner, b[(cornerIndex + 1) % b.length] ?? corner),
+    );
+  });

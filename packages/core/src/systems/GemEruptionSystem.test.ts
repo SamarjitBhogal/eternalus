@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -67,7 +68,11 @@ const setUp = (world: MatchWorld | null = null, gemAt = GEM_AT) => {
   state.entities.add(zone);
   const gem = factory.create('cathedral-gem', 'cathedral', { position: gemAt, team: 'neutral' });
   state.entities.add(gem);
-  const system = new GemEruptionSystem(state, new DamagePipeline(), CATHEDRAL_GEM.eruption);
+  const system = new GemEruptionSystem(
+    state,
+    new DamagePipeline(damageStepsWithoutLaneProgress()),
+    CATHEDRAL_GEM.eruption,
+  );
   const add = (kind: string, id: string, at: { x: number; y: number }): Entity => {
     const entity = factory.create(kind, id, { position: at, team: 'light' });
     state.entities.add(entity);

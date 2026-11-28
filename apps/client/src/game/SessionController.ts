@@ -136,6 +136,7 @@ export class SessionController {
         this.clearMatchSetup();
       },
       selection: () => this.selection,
+      rosters: () => this.rosters,
       recordSelection: (selection) => {
         this.selection = selection;
         deps.bus.emit('class-selection', selection);

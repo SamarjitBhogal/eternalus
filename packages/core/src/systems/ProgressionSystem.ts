@@ -7,26 +7,30 @@ import type { LegendDefinition } from '../content/legends/legends.types';
 import type { LevelScalingDefinition } from '../content/progression/progression.types';
 import { MOB_KINDS } from '../content/mobs/mobKinds';
 import type { Entity } from '../entities/Entity';
+import type { EntityId } from '../state/EntityStore.types';
+import type { DamageSource } from '../state/GameEvents.types';
 import type { GameState } from '../state/GameState';
 import type { OwedXp } from '../state/RespawnQueue.types';
 import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
 import { CheckpointAwards } from './CheckpointAwards';
 import type { System, SystemContext } from './System.types';
 import type { Award, PersonalAward, ProgressionContent } from './ProgressionSystem.types';
+import { TeamKillAwards } from './TeamKillAwards';
 
 /**
  * Turns kills into XP and levels (architecture 05 §13). It listens to `entity-died`, prices the kill
  * while the victim is still in the store, and in its own pass gives the XP to the killer's
  * `Progression`. A destroyed structure (`structure-destroyed`) pays every Legend of the opposing
  * team (DEC-186), and a boss in `xpSources.teamKills` pays every Legend of its killer's playable
- * team instead of the killer, lifting none more than the reward's `maxLevels` (DEC-237); a Legend
- * the cap leaves nothing to pay gets no award. A cleared camp (`camp-cleared`) pays the Legend
- * that killed its last mob the camp's `xpSources.campCleared` entry; a camp without one (a corner
- * camp) pays no bonus. A cleared checkpoint set (`checkpoint-cleared`) pays its XP shared among
- * the clearing team's Legends near its last defender, biased toward the damage each dealt to the
- * set (`CheckpointAwards`, 07 §7). Self-kills and ally kills pay nothing (O5). Each
- * level gained raises max health by the class's share of its base health (O3) and max aether,
- * heals and refills by the raise only while the Legend is alive (O4), and emits `level-up`.
+ * team instead of the killer, with a last hitter's share (`TeamKillAwards`, DEC-237, DEC-371 E8,
+ * DEC-416); a Legend the cap leaves nothing to pay gets no award. A cleared camp (`camp-cleared`)
+ * pays the Legend that killed its last mob the camp's `xpSources.campCleared` entry; a camp
+ * without one pays no bonus. A cleared checkpoint set (`checkpoint-cleared`)
+ * pays its XP shared among the clearing team's Legends near its last defender, biased toward the
+ * damage each dealt to the set (`CheckpointAwards`, 07 §7). Self-kills and ally kills pay
+ * nothing (O5). Each level gained raises max health by the class's share of its base health (O3)
+ * and max aether, heals and refills by the raise only while the Legend is alive (O4), and emits
+ * `level-up`.
  * With `content.legendsStartAtMaxLevel` (a Duel, SCRUM-444) each Legend that spawns is raised to its
  * curve's cap at once, with the same per-level raises; that start is no award, so it emits no
  * `xp-gained` and no `level-up`.
@@ -34,60 +38,53 @@ import type { Award, PersonalAward, ProgressionContent } from './ProgressionSyst
  * structure and boss awards, and a kill its projectile or damage over time lands after it died.
  * It gets that XP once it is back (`legend-respawned`, DEC-186 "pay on respawn"): the listener
  * buffers it and the next tick's pass pays it by the same path, with the cause `respawn`.
+ * With `content.hasMatchXp: false` (a Duel, DEC-380 (1)) it listens for none of these awards, so
+ * nothing earns match XP; the max-level start still applies.
  */
 export class ProgressionSystem implements System {
   public readonly name = 'progression';
 
   private readonly pending: Award[] = [];
-  private readonly checkpoints: CheckpointAwards;
+  /** The checkpoint XP buffer; `null` when the match has no match XP (DEC-380 (1)). */
+  private readonly checkpoints: CheckpointAwards | null;
+  private readonly teamKills: TeamKillAwards;
 
   /**
-   * @param state - The match whose `entity-died` events this system listens to.
+   * @param state - The match whose events this system listens to: the award events unless
+   * `content.hasMatchXp` is false, and `entity-spawned` when `legendsStartAtMaxLevel` is set.
    * @param content - The unit definitions, level curves and XP sources it prices and levels with.
    */
   public constructor(
     state: GameState,
     private readonly content: ProgressionContent,
   ) {
-    this.checkpoints = new CheckpointAwards(state, content.xpSources.checkpointCleared);
-    state.events.on('entity-died', ({ entityId, killer }) => {
-      const victim = state.entities.get(entityId);
-      const killerId = killer.attackerId;
-      if (killerId === null || victim === undefined) {
-        return;
-      }
-      const victimTeam = victim.findComponent(TeamMembership)?.team;
-      // A killer waiting to respawn is out of the store but keeps its team.
-      const killerTeam = (
-        state.entities.get(killerId) ?? state.respawns.legendOf(killerId)
-      )?.findComponent(TeamMembership)?.team;
-      if (victimTeam === undefined || killerTeam === victimTeam) {
-        // O5: no reward for an ally kill or a self-kill (a killer is on its own team); teams are
-        // compared, so neutral camp mobs still pay.
-        return;
-      }
-      const teamKill = content.xpSources.teamKills[victim.definitionId];
-      if (teamKill !== undefined) {
-        // shortcut: the team is the killer's, read from the store or the respawn queue, so a boss
-        // killed by a hit from a mob already removed (e.g. its projectile) pays nobody; upgrade
-        // when `DamageSource` carries the attacker's team (INBOX.md capture point mini-boss
-        // interim (d)).
-        if (isPlayableTeam(killerTeam)) {
-          this.pending.push({
-            kind: 'team-kill',
-            team: killerTeam,
-            victimId: entityId,
-            victimTeam,
-            xp: teamKill.xp,
-            maxLevels: teamKill.maxLevels,
-          });
+    // No match XP (DEC-380 (1)): no award listener, and no checkpoint damage is tracked.
+    const hasMatchXp = content.hasMatchXp !== false;
+    this.checkpoints = hasMatchXp
+      ? new CheckpointAwards(state, content.xpSources.checkpointCleared)
+      : null;
+    this.teamKills = new TeamKillAwards(content.xpSources.teamKills);
+    if (hasMatchXp) {
+      this.listenForAwards(state);
+    }
+    if (content.legendsStartAtMaxLevel === true) {
+      state.events.on('entity-spawned', ({ entityId }) => {
+        const entity = state.entities.get(entityId);
+        if (entity !== undefined) {
+          this.startAtMaxLevel(entity);
         }
-        return;
-      }
-      const xp = this.xpFor(victim);
-      if (xp > 0) {
-        this.pending.push({ kind: 'kill', killerId, victimId: entityId, victimTeam, xp });
-      }
+      });
+    }
+  }
+
+  /**
+   * Buffers every award except a checkpoint share (`CheckpointAwards`): a kill (`entity-died`), a
+   * destroyed structure, a cleared camp and XP owed to a Legend that has respawned. Not called
+   * when the match has no match XP (DEC-380 (1)).
+   */
+  private listenForAwards(state: GameState): void {
+    state.events.on('entity-died', ({ entityId, killer }) => {
+      this.priceKill(state, entityId, killer);
     });
     // DEC-186: a destroyed structure pays every Legend of the opposing playable team, whoever or
     // whatever landed the last hit. Buildings are map objects, not structures: no event, no XP.
@@ -98,7 +95,7 @@ export class ProgressionSystem implements System {
           team: opponentOf(team),
           victimId: entityId,
           victimTeam: team,
-          xp: content.xpSources.structureDestroyed,
+          xp: this.content.xpSources.structureDestroyed,
         });
       }
     });
@@ -114,7 +111,8 @@ export class ProgressionSystem implements System {
           : (state.entities.get(killerId) ?? state.respawns.legendOf(killerId));
       const camp = state.entities.get(entityId);
       const campTeam = camp?.findComponent(TeamMembership)?.team;
-      const xp = camp === undefined ? undefined : content.xpSources.campCleared[camp.definitionId];
+      const xp =
+        camp === undefined ? undefined : this.content.xpSources.campCleared[camp.definitionId];
       if (
         killer === undefined ||
         campTeam === undefined ||
@@ -131,18 +129,10 @@ export class ProgressionSystem implements System {
         xp,
       });
     });
-    if (content.legendsStartAtMaxLevel === true) {
-      state.events.on('entity-spawned', ({ entityId }) => {
-        const entity = state.entities.get(entityId);
-        if (entity !== undefined) {
-          this.startAtMaxLevel(entity);
-        }
-      });
-    }
     // The listener only buffers: the XP is paid in this system's own pass on the next tick, as
     // architecture 03 §4 requires of a listener that changes state.
     state.events.on('legend-respawned', ({ entityId, owedXp }) => {
-      for (const { victimId, victimTeam, xp, maxLevels } of owedXp) {
+      for (const { victimId, victimTeam, xp, maxLevels, levels } of owedXp) {
         this.pending.push({
           kind: 'respawn',
           recipientId: entityId,
@@ -150,14 +140,51 @@ export class ProgressionSystem implements System {
           victimTeam,
           xp,
           ...(maxLevels !== undefined && { maxLevels }),
+          ...(levels !== undefined && { levels }),
         });
       }
     });
   }
 
+  /**
+   * Buffers the award for the kill of `entityId` by `killer`, priced while the victim is still in
+   * the store: a team-wide award for a boss in `xpSources.teamKills`, else the victim's XP for the
+   * killer. An ally kill, a self-kill or a kill with no attacker pays nothing (O5).
+   */
+  private priceKill(state: GameState, entityId: EntityId, killer: DamageSource): void {
+    const victim = state.entities.get(entityId);
+    const killerId = killer.attackerId;
+    if (killerId === null || victim === undefined) {
+      return;
+    }
+    const victimTeam = victim.findComponent(TeamMembership)?.team;
+    // A killer waiting to respawn is out of the store but keeps its team.
+    const attacker = state.entities.get(killerId) ?? state.respawns.legendOf(killerId);
+    const killerTeam = attacker?.findComponent(TeamMembership)?.team;
+    if (victimTeam === undefined || killerTeam === victimTeam) {
+      // O5: no reward for an ally kill or a self-kill (a killer is on its own team); teams are
+      // compared, so neutral camp mobs still pay.
+      return;
+    }
+    if (this.teamKills.isTeamKill(victim)) {
+      // shortcut: the team is the killer's, read from the store or the respawn queue, so a boss
+      // killed by a hit from a mob already removed (e.g. its projectile) pays nobody; upgrade
+      // when `DamageSource` carries the attacker's team (INBOX.md capture point mini-boss
+      // interim (d)).
+      if (attacker !== undefined && isPlayableTeam(killerTeam)) {
+        this.pending.push(this.teamKills.awardFor(victim, victimTeam, attacker, killerTeam));
+      }
+      return;
+    }
+    const xp = this.xpFor(victim);
+    if (xp > 0) {
+      this.pending.push({ kind: 'kill', killerId, victimId: entityId, victimTeam, xp });
+    }
+  }
+
   /** Gives this tick's XP, in the order it was earned, and applies each level gained. */
   public update({ state }: SystemContext): void {
-    this.pending.push(...this.checkpoints.flush(state));
+    this.pending.push(...(this.checkpoints?.flush(state) ?? []));
     for (const award of this.pending.splice(0)) {
       if (award.kind === 'respawn') {
         const recipient = state.entities.get(award.recipientId);
@@ -183,12 +210,15 @@ export class ProgressionSystem implements System {
           entity.findComponent(TeamMembership)?.team === award.team &&
           this.legendOf(entity) !== undefined
         ) {
-          this.grant(entity, award, state);
+          this.grant(entity, TeamKillAwards.shareOf(award, entity.id), state);
         }
       });
       state.respawns.forEach(({ legend, team }) => {
         if (team === award.team) {
-          state.respawns.owe(legend.id, ProgressionSystem.owed(award));
+          state.respawns.owe(
+            legend.id,
+            ProgressionSystem.owed(TeamKillAwards.shareOf(award, legend.id)),
+          );
         }
       });
     }
@@ -209,6 +239,7 @@ export class ProgressionSystem implements System {
       victimTeam: award.victimTeam,
       xp: award.xp,
       ...('maxLevels' in award && { maxLevels: award.maxLevels }),
+      ...('levels' in award && { levels: award.levels }),
     };
   }
 
@@ -219,16 +250,12 @@ export class ProgressionSystem implements System {
       return;
     }
     const curve = this.content.curves.get(progression.curveId);
-    const capped =
-      ProgressionSystem.isPersonal(award) || award.maxLevels === undefined
-        ? award
-        : {
-            ...award,
-            xp: Math.min(
-              award.xp,
-              progression.xpToReach(progression.level + award.maxLevels, curve),
-            ),
-          };
+    const capped = {
+      ...award,
+      xp: ProgressionSystem.isPersonal(award)
+        ? award.xp
+        : TeamKillAwards.cappedXp(award, progression, curve),
+    };
     if (capped.kind !== 'kill' && capped.kind !== 'structure-destroyed' && capped.xp <= 0) {
       return;
     }

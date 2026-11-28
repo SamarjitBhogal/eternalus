@@ -40,9 +40,20 @@ describe('legend XP design intent (DEC-190)', () => {
     }
   });
 
-  it('a team-kill reward names a mob that pays its killer nothing alone, and lifts at most 2 levels (DEC-237)', () => {
-    for (const [mobId, { xp, maxLevels }] of Object.entries(XP_SOURCES.teamKills)) {
+  it('a team-kill reward names a mob that pays its killer nothing alone (DEC-237)', () => {
+    for (const mobId of Object.keys(XP_SOURCES.teamKills)) {
       expect({ mobId, xpValue: MOB_DEFINITIONS.get(mobId).xpValue }).toEqual({ mobId, xpValue: 0 });
+    }
+  });
+
+  it('the Greater Boss pays its team 2.5 levels and its last hitter 5 in all (DEC-371 E8b)', () => {
+    expect(XP_SOURCES.teamKills['greater-boss']).toEqual({ levels: 2.5, lastHitterLevels: 5 });
+  });
+
+  it('a mini-boss team-kill reward lifts at most 2 levels (DEC-237)', () => {
+    for (const [mobId, reward] of Object.entries(XP_SOURCES.teamKills)) {
+      if ('levels' in reward) continue;
+      const { xp, maxLevels } = reward;
       expect({ mobId, isAtMostTwo: maxLevels <= 2 }).toEqual({ mobId, isAtMostTwo: true });
       for (const level of levels) {
         // As ProgressionSystem pays it: no more than brings the Legend `maxLevels` levels up.
@@ -66,6 +77,28 @@ describe('legend XP design intent (DEC-190)', () => {
         kind: 'camp',
         isPaid: true,
       });
+    }
+  });
+
+  it('the corner boss’s team XP plus the corner camp’s clear bonus lifts at most 2 levels, at every level (owner, DEC-423)', () => {
+    const reward = XP_SOURCES.teamKills['corner-boss'];
+    const { xp, maxLevels } =
+      reward !== undefined && 'xp' in reward ? reward : { xp: 0, maxLevels: 0 };
+    const bonus = XP_SOURCES.campCleared['corner-camp'] ?? 0;
+    // A missing content entry must fail here, not pass as 0 (ADR 0023).
+    expect({ isBossPaid: xp > 0, isBonusPaid: bonus > 0 }).toEqual({
+      isBossPaid: true,
+      isBonusPaid: true,
+    });
+    for (const level of levels) {
+      // One XP short of the next level is the worst start: the capped team XP then ends at the
+      // start of `level + maxLevels`, and ProgressionSystem pays the clear bonus uncapped on top.
+      const progression = new Progression(LEGEND_LEVEL_CURVE.id);
+      progression.addXp(xpAtLevel(level + 1) - 1, LEGEND_LEVEL_CURVE);
+      const paid = Math.min(xp, progression.xpToReach(level + maxLevels, LEGEND_LEVEL_CURVE));
+      const gained =
+        progression.addXp(paid, LEGEND_LEVEL_CURVE) + progression.addXp(bonus, LEGEND_LEVEL_CURVE);
+      expect(gained, `level ${String(level)}`).toBeLessThanOrEqual(maxLevels);
     }
   });
 });

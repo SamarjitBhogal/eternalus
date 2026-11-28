@@ -8,6 +8,7 @@ describe('loadScoring', () => {
   it('converts the assist window and the held minute to ticks at load and keeps the weights', () => {
     expect(loadScoring(10, { ...SCORING, assistWindowSeconds: 2.04 })).toEqual({
       weights: SCORING.weights,
+      bossIds: SCORING.bossIds,
       assistWindowTicks: 20,
       minuteTicks: 600,
     });
@@ -16,6 +17,7 @@ describe('loadScoring', () => {
   it('loads the shipped values by default: 30 s and one minute at 30 ticks a second', () => {
     expect(loadScoring(30)).toEqual({
       weights: SCORING.weights,
+      bossIds: SCORING.bossIds,
       assistWindowTicks: 900,
       minuteTicks: 1800,
     });

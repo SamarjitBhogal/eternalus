@@ -31,6 +31,7 @@ const WARRIOR: EntitySnapshot = {
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 };
 
@@ -56,12 +57,17 @@ describe('LegendView', () => {
           },
         };
         const renderer = new RecordingRenderer();
-        registry
-          .viewFor(troop)
-          .draw(
-            { facing: { x: 1, y: 0 }, entity: troop, position: AT, isFocused: false },
-            renderer,
-          );
+        registry.viewFor(troop).draw(
+          {
+            facing: { x: 1, y: 0 },
+            entity: troop,
+            position: AT,
+            isFocused: false,
+            frameTick: 0,
+            time: 0,
+          },
+          renderer,
+        );
         const points = renderer.calls.flatMap((call) =>
           call.op === 'fillPolygon' ? call.args[0] : [],
         );
@@ -86,9 +92,17 @@ describe('LegendView', () => {
         };
         const before = structuredClone(hero);
         const renderer = new RecordingRenderer();
-        registry
-          .viewFor(hero)
-          .draw({ facing: { x: 1, y: 0 }, entity: hero, position: AT, isFocused: false }, renderer);
+        registry.viewFor(hero).draw(
+          {
+            facing: { x: 1, y: 0 },
+            entity: hero,
+            position: AT,
+            isFocused: false,
+            frameTick: 0,
+            time: 0,
+          },
+          renderer,
+        );
         const disc = renderer.calls.find(
           (call) => call.op === 'drawWorldGlyph' && call.args[2] === TEAM_COLORS[team],
         );
@@ -109,6 +123,8 @@ describe('LegendView', () => {
         entity: { ...WARRIOR, transform: null },
         position: AT,
         isFocused: false,
+        frameTick: 0,
+        time: 0,
       },
       renderer,
     );
@@ -121,7 +137,14 @@ describe('LegendView', () => {
     const renderer = new RecordingRenderer();
 
     new LegendView().draw(
-      { facing: { x: 1, y: 0 }, entity: WARRIOR, position: AT, isFocused: false },
+      {
+        facing: { x: 1, y: 0 },
+        entity: WARRIOR,
+        position: AT,
+        isFocused: false,
+        frameTick: 0,
+        time: 0,
+      },
       renderer,
     );
 
@@ -149,7 +172,14 @@ describe('LegendView', () => {
     const renderer = new RecordingRenderer();
 
     new LegendView().draw(
-      { facing: { x: 1, y: 0 }, entity: WARRIOR, position: AT, isFocused: true },
+      {
+        facing: { x: 1, y: 0 },
+        entity: WARRIOR,
+        position: AT,
+        isFocused: true,
+        frameTick: 0,
+        time: 0,
+      },
       renderer,
     );
 
@@ -163,7 +193,14 @@ describe('LegendView', () => {
     const view = new LegendView();
 
     view.drawMinimap(
-      { facing: { x: 1, y: 0 }, entity: WARRIOR, position: AT, isFocused: false },
+      {
+        facing: { x: 1, y: 0 },
+        entity: WARRIOR,
+        position: AT,
+        isFocused: false,
+        frameTick: 0,
+        time: 0,
+      },
       renderer,
     );
 

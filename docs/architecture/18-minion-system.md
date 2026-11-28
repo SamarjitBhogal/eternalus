@@ -105,8 +105,10 @@ spawn's own controller and starting memory (`Placement.controller`, holding the 
 Pull request M5a adds the MVP minion modifiers (MS-16): `MinionStrengthStep` in the damage steps
 (strength by distance, floored at base stats per DISC-24, its base-stat point moving toward the
 enemy for each lane tower the enemy has lost there; lane progress is the path cost on the lane's
-flow field, gate to gate as the polyline measured it (DEC-280), through `LaneFlowFields.progress` injected as the `LaneProgressOf` port, with the
-lane polyline as the fallback off the corridor) and `EnragedSystem`, its own system right after
+flow field, gate to gate as the polyline measured it (DEC-280), read only through the injected
+`LaneProgressOf` port; the lane polyline is a second implementation of the port
+(`LaneRoutes.progress`), and `DefaultSystemPipeline.laneProgressOf` composes "field, else
+polyline" for points off the corridor, DEC-384) and `EnragedSystem`, its own system right after
 `SpawnSystem` (one `enraged` stack per lost SpawnerTower or BuffTower on the lane; the losses are
 kept per team and lane in `TeamState.towersLostByLane`, which the strength step reads too). The
 damage pipeline (`combat/DamagePipeline`) is built. Pull request `feat/minion-structures` adds the
@@ -151,13 +153,20 @@ apart from the levels a zone granted. The minion-stack follow-ups (`fix/minion-s
 `StuckSystem` with its `ChaseWatch` component (§5.2, DEC-193). A unit that chases a lane tower,
 the Stronghold or a gate aims at its `Footprint` (07 §13), so minions that target a tower now
 reach its fort wall and hit it (DEC-185), and reach to a gate is measured to its polygon (DEC-217
-(17)). The nav grid still blocks a tower's whole court: hordes never path
-through a court, and an A\* way to a unit inside one ends on the open ground nearest it (DEC-185
-(A)). Pull request A1 (`feat/zone-guard-homes`) lets a zone be a guard home (§7.1) and adds the
-`never` respawn (`systems/NeverGuardRespawn.ts`, a third respawn rule) and an activation
-`delaySeconds` after the countdown. Pull request A2 (`feat/capture-point-boss`) gives each outer
-capture point its mini-boss as a zone guard plan, and `feat/capture-point-boss-guards` adds its
-support mobs to that plan.
+(17)). A standing tower's court is court ground in the nav grid (06 §6): routable, so a lane's flow
+field runs through it from the fort's west doorway to its east one and hordes march through the
+court round the keep (DEC-315, amending DEC-185 (A)), and an A\* route to a unit inside a court
+goes in by a doorway. A marching horde member in a court follows its field; any other mob in a
+court that does not chase a target inside the same fort leaves by the nearest doorway (DEC-217
+(15), 10 §9). At the default world a tower's radius, and so its guard ring and where a horde
+gathers before it, follows its fort's side (`LANE_TOWER_FOOTPRINT_RADIUS`, DEC-315; a larger
+world stretches the fort, not the radius). A fallen
+tower's court opens; every wall except the one that took the killing hit stands until it is
+destroyed (DEC-217 (12), 07 §13). Pull request A1 (`feat/zone-guard-homes`) lets a zone be a
+guard home (§7.1) and adds the `never` respawn (`systems/NeverGuardRespawn.ts`, a third respawn
+rule) and an activation `delaySeconds` after the countdown. Pull request A2
+(`feat/capture-point-boss`) gives each outer capture point its mini-boss as a zone guard plan,
+and `feat/capture-point-boss-guards` adds its support mobs to that plan.
 Interim, against "the minion system never controls a boss" above: until Phase 3 sprint 3.6 builds
 `MiniBoss` and `BossController` (11 §4.6, 04), the boss is a `heavy-mob` (`capture-point-boss`)
 held by `GuardController`, with one melee hit and no moves, roaming or damage-dealer bias, and its
@@ -472,7 +481,8 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
   Stronghold's palace, a gate, 07 §13) aims at the nearest point of its outline, the point attack
   reach is measured to (`EntityStore.aimPointOf`); a mob that stands inside the outline is in reach
   already, so it holds there, as every chase stops at reach (DEC-234); it faces the building's
-  centre (DEC-220 (1)). The blocked
+  centre (DEC-220 (1)). A unit with a body shape (a big boss) reaches from its drawn body, so its
+  chase holds once the target is in that reach (DEC-421). The blocked
   ground under the target (a fort's cells, under the structure or under a unit inside its court,
   or a map object's cells)
   never holds or turns a chase: the mob closes in until collision stops it at a wall, in reach

@@ -77,6 +77,7 @@ export class MatchRecord implements MatchState {
   public holdIdle(isHeld: boolean): void; // the countdown phase only (DEC-88)
   public endMatch(result: MatchResult): void; // MatchDirector only, once; a second call throws
   public seatHuman(legendId: EntityId): void; // Simulation only, once, when the human slot's Legend spawns
+  public reseatHuman(legendId: EntityId | null): void; // DevSetControllerHandler only (sim mode, DEC-294); emits 'human-reseated'
   public advanceTimeline(): void; // MatchDirector only, once per fired timeline entry
   // the scoring data's only writer (DEC-211): written by Scoring only, in its fold (12 §5)
   public readonly scoreBook: ScoreBook; // addRow, award, awardTeam, recordHit, takeAssists
@@ -149,7 +150,7 @@ export type Command =
   | {
       readonly type: 'dev-set-controller';
       readonly entityId: EntityId;
-      readonly controllerId: ControllerId;
+      readonly controllerId: ControllerId | null; // null: the bot the Legend's team lacks
     }
   | { readonly type: 'dev-set-assert-level'; readonly level: AssertLevel };
 ```
@@ -201,6 +202,7 @@ first).
 | `entity-spawned`                    | `{ entityId, kind, team }`                                                    | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster; `RespawnSystem` for a returning Legend | `SnapshotSystem`, views, `Scoring` (a row per Legend); `ProgressionSystem` raises a Duel Legend to max level at once (05 §18, DEC-406)                            |
 | `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`                                  | `DeathSystem` only                                                                                      | `HordeSystem`, `ProjectilePool`, invariants                                                                                                                       |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }`                        | `DamagePipeline`                                                                                        | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage)                                                                          |
+| `human-reseated`                    | `{ from: EntityId \| null, to: EntityId \| null }`                            | `MatchRecord.reseatHuman` (sim mode, DEC-294)                                                           | `Scoring`                                                                                                                                                         |
 | `damage-blocked`                    | `{ targetId, source: DamageSource }`                                          | `DamagePipeline` (a step took the hit to 0)                                                             | `CathedralGemSystem` (DEC-292)                                                                                                                                    |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                                          | `DeathResolver`                                                                                         | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                                                                                           |
 | `structure-destroyed`               | `{ entityId, kind, team, lane }`                                              | `StructureSystem`                                                                                       | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212)                                                                           |
@@ -225,6 +227,9 @@ first).
 | `team-changed`                      | `{ entityId, from, to, cause }`                                               | `Team` component                                                                                        | `HordeSystem`, views                                                                                                                                              |
 | `greater-boss-summoned`             | `{ bossId }`                                                                  | `MatchRecord.eruptGem` (the `summon-greater-boss` timeline action)                                      | `GemEruptionSystem` (the blast, DEC-371), `SpawnSystem` (spawns the boss), `CathedralGemSystem` (removes the gem), client `CathedralCutscene`                     |
 | `boss-summoned`                     | `{ entityId, kind }`                                                          | `SpawnSystem` (on `greater-boss-summoned`)                                                              | `Announcer`, `AiSystem` (camps turn aggressive)                                                                                                                   |
+| `boss-entrance`                     | `{ bossId }`                                                                  | `SpawnSystem` (the Greater Boss spawn)                                                                  | views and audio (later; the roar, reference 04)                                                                                                                   |
+| `boss-telegraph`                    | `{ bossId, move }`                                                            | `BossMoveHandler` (a `boss-move` command from `BossController`, 11 §4.6)                                | views (later; the move's warning), tests                                                                                                                          |
+| `boss-move-executed`                | `{ bossId, move }`                                                            | `BossMoveSystem` (the move lands, 11 §4.6)                                                              | views (later), tests                                                                                                                                              |
 | `command-rejected`                  | `{ command, reason }`                                                         | `applyCommand`                                                                                          | `DeveloperMenu`, tests                                                                                                                                            |
 | `collision-anomaly`                 | `{ entityId, from, to, colliderId }`                                          | `CollisionSystem`                                                                                       | `InvariantSystem`, `Logger`                                                                                                                                       |
 | `invariant-violated`                | `{ invariantId, tick, details }`                                              | `InvariantRunner`                                                                                       | `Logger`, `PerfOverlay`, tests (throw)                                                                                                                            |
@@ -262,6 +267,8 @@ export type EntitySnapshot = {
   readonly family: EntityFamily;
   readonly definitionId: string;
   readonly mapFeatureId?: string; // a structure's or zone's map feature (MapFeatureLink; DEC-212, DEC-231)
+  readonly specId?: string; // a Legend's sub-class from its roster slot, so the client draws its sprite (DEC-378 (2), DEC-397)
+  readonly combatHitbox?: Polygon; // a big boss's body outline in world units, mirrored to its facing; a click inside it selects the unit (DEC-381)
   readonly team: Team | null;
   readonly transform: {
     readonly x: number;
@@ -499,13 +506,28 @@ each closed by the session or phase named:
   a log of the external commands and replay checkpoints, both outside the hashed state); no
   `dispose()` yet.
 - `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
-  `AttackTargetHandler`). `jump { actorId, isHeld }` (2026-11-27, DEC-390; not in the §3 sketch)
-  has `JumpHandler`, which sets the held jump key through `EntityStore.holdJump` (rejected
-  `cannot-jump` for an entity without `Jump`); `JumpSystem`, before `MovementSystem`, flies each jump
-  and starts the held ones on the ground; a stun (`cannot-move`) ends a jump in the air at once
-  (DEC-420). `cast-ability`, `intent` and `dev-set-controller` are routed to
+  `AttackTargetHandler`). `boss-move { actorId, moveId }` (`BossMoveHandler`) is an interim
+  command, not in the sketch above: a boss's move until bosses cast through `cast-ability` (11's
+  Implementation status). Until then `boss-telegraph` comes from `BossMoveHandler` and
+  `boss-move-executed` from `BossMoveSystem`. `jump { actorId, isHeld }` (2026-11-27, DEC-390; not
+  in the §3 sketch) has `JumpHandler`, which sets the held jump key through `EntityStore.holdJump`
+  (rejected `cannot-jump` for an entity without `Jump`); `JumpSystem`, before `MovementSystem`,
+  flies each jump and starts the held ones on the ground; a stun (`cannot-move`) ends a jump in the
+  air at once (DEC-420). `cast-ability` and `intent` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
+- `dev-set-controller` (2026-11-13, FR-099) has `DevSetControllerHandler`: `controllerId` `player`
+  makes a Legend of `playerTeam` the human's (no `ControllerBinding`, no brain; the seat moves,
+  DEC-294); a bot's id (`rover`, or `bot-legend` on the lane with the fewest of its team's lane
+  bots, past `legendsPerLane` if every lane is full) binds that bot, and `null` binds the bot the
+  Legend's team lacks: the Rover if the team has no Rover bot, otherwise a `bot-legend` laner on
+  the free lane (`assignLanes` with `occupied`). On the human's Legend, a bot id or `null` leaves
+  no human (`humanLegendId` null; DEC-356). The Legend a seat move leaves also becomes the bot its
+  team lacks. Both choosers are in `state/missingRoleChooser.ts`, built by `Simulation` from
+  content. A refused command changes nothing. Refused `unknown-entity`,
+  `not-a-legend`, `not-player-team` (DEC-173), `unknown-controller` or, in a Duel,
+  `not-supported`. `MatchRecord.reseatHuman` is the second writer of `humanLegendId`; each seat
+  move emits `human-reseated`, which `Scoring` folds into the rows' `controller`. A bot re-bound loses its brain memory.
 - `dev-spawn-legend` (2026-11-13) is built as `{ team, definitionId }` (a bot Legend at the
   Stronghold, Rover controller); it is in `Command.types.ts`.
   `dev-remove-legend { entityId }` (2026-11-20, DEC-293) removes a Legend through
@@ -517,16 +539,20 @@ each closed by the session or phase named:
 - `GameState.snapshot()` builds the snapshot, each entity through `EntitySnapshotter`, until
   `SnapshotSystem` exists; `Snapshot` carries
   `tick`, `match`, `entities`, `hordes` and `teams` (the team counters, since minion plan M1),
-  and `EntitySnapshot` its identity, `team`, `transform`
+  and `EntitySnapshot` its identity (with a Legend's sub-class, `specId`, when its roster slot
+  names one: DEC-378 (2); the Legend keeps it, and the replay's roster carries it, so
+  `StateHasher` does not hash it), `team`, `transform`
   (`x`, `y`, `radius`, `facing`), `health` (`current`, `max`), `elevation` (a Legend's jump
   `height` above the ground, DEC-390; named for what the view draws, DEC-420), `progression` (a Legend's `level`,
   the `xp` inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the
   level curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
-  `area` (a zone's polygons), `capture` (a capture point's state and presence) and `gem` (the
-  Cathedral gem's holder and glow) groups only.
+  `area` (a zone's polygons), `capture` (a capture point's state and presence), `aura` (a
+  structure's aura `radius` and the outline `box` it is measured beyond, `null` without an `Aura`,
+  DEC-315 (4), DEC-323 (3)) and `gem` (the Cathedral gem's holder and glow) groups only.
   `MatchPhase` lives in `config/matchPhases.ts`; the match director is built (12 §13).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
-  `WorldMap` grid) with no structures index yet (minion plan M2c), and the grid keeps no flow
+  `WorldMap` grid, stamped and reopened by `map/MatchGrid`, which the composition root builds, so
+  `state/` imports `map/` types only) with no structures index yet (minion plan M2c), and the grid keeps no flow
   fields (`PathingSystem` caches them); `GameState` has `hordes` and `teams` (the spawn counters
   only) since minion plan M1, and `ai`, `space` and `hordeRequests` since M2a (11, 18); `EntityFactory` keeps its
   own id counter until session C switches it to `IdGenerator`. `MatchConfig` has no

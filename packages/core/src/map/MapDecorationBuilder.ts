@@ -1,7 +1,7 @@
 import { cos, sin } from '../utils/deterministicMath';
 import type { MapDecoration, MapDecorationLayer } from '../content/maps/maps.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
-import type { MapObjectArt, MapObjectKind } from '../content/maps/mapObjects.types';
+import type { FortWallRole, MapObjectArt, MapObjectKind } from '../content/maps/mapObjects.types';
 
 /** Shared polygon assembly for authored map scenery and interior architecture. */
 export abstract class MapDecorationBuilder {
@@ -13,9 +13,24 @@ export abstract class MapDecorationBuilder {
   protected isFootprint: true | undefined;
   private object: MapObjectArt | undefined;
 
-  /** Assigns physical ownership explicitly while the object's art is authored. */
-  protected beginObject(id: string, kind: MapObjectKind): void {
-    this.object = { id, kind, isFootprint: false };
+  /**
+   * Assigns physical ownership explicitly while the object's art is authored; `partOf` names the
+   * feature whose structure the object is part of the body of (`MapObject.partOf`), and
+   * `fortWall` says which piece of that fort it is.
+   */
+  protected beginObject(
+    id: string,
+    kind: MapObjectKind,
+    partOf?: string,
+    fortWall?: FortWallRole,
+  ): void {
+    this.object = {
+      id,
+      kind,
+      isFootprint: false,
+      ...(partOf === undefined ? {} : { partOf }),
+      ...(fortWall === undefined ? {} : { fortWall }),
+    };
   }
 
   /** Subsequent ground marks belong to no physical object. */
@@ -57,7 +72,7 @@ export abstract class MapDecorationBuilder {
     kind: MapObjectKind = 'furniture',
   ): void {
     const owner = this.object;
-    this.object = { id: owner?.id ?? id, kind: owner?.kind ?? kind, isFootprint: true };
+    this.object = { ...owner, id: owner?.id ?? id, kind: owner?.kind ?? kind, isFootprint: true };
     this.polygon(id, shape, color);
     this.object = owner;
   }

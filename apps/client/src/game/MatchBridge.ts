@@ -174,7 +174,9 @@ export class MatchBridge {
     return this.structures.map((structure) => {
       const bound = this.boundHealth.get(structure.structureId);
       if (bound === undefined) return structure;
-      const health = live.get(structure.structureId) ?? { current: 0, max: bound.max };
+      const health = this.deps.retired.isRetired(structure.structureId)
+        ? { current: 0, max: bound.max }
+        : (live.get(structure.structureId) ?? null);
       return { ...structure, health };
     });
   }

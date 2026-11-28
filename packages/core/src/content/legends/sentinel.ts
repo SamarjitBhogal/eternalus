@@ -24,6 +24,7 @@ export const SENTINEL = {
   passiveOptions: ['wrecking-run'],
   defaultAction: null,
   referenceHeight: 4.6, // TUNE: ~15 ft (an elephant)
+  spriteWidth: 13, // TUNE: tuneable after game testing (DEC-424: the body ratio of DEC-06; the Warrior's x 2.5)
   footprintRadius: 1.25, // DEC-06
   visionRadius: 25, // TUNE:
   movementProfile: {
@@ -33,5 +34,10 @@ export const SENTINEL = {
   },
   defaultLoadout: { primaryWeaponId: 'wuuthrad' }, // TUNE: default weapon (05 §10 table) until the owner picks one (INBOX)
   levelCurveId: 'legend',
-  levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 }, // TUNE: balancing.md
+  levelScaling: {
+    healthPerLevel: 0.08, // TUNE: balancing.md
+    aetherPerLevel: 10, // TUNE: balancing.md
+    basicAttackPerLevel: 0.08, // TUNE: DEC-380 (2), keeps pace with health until playtests
+    basicAttackPerLevelOnStructures: 0.04, // TUNE: DEC-405 default, HC-Q119 option C's example
+  },
 } as const satisfies LegendDefinition;

@@ -17,6 +17,7 @@ import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { FakeMessageTransport } from './engine/net/FakeMessageTransport';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeRunningMatch } from './FakeRunningMatch';
+import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import { SessionController } from './SessionController';
 import type { SessionControllerDeps } from './SessionController.types';
@@ -32,15 +33,23 @@ const MICROTASK_ROUNDS = 20;
 export const TEST_SELECTION_BOX = { left: 10, top: 20, width: 30, height: 40 } as const;
 
 /**
- * Resources whose every group holds one small image (`test-<group>`; `test-selection` with the
- * draw box `TEST_SELECTION_BOX`), loaded by a `FakeAssetLoader` that keeps each load pending
- * until `loader.resolveAll()` (no timers).
+ * Resources whose every group (the Legend sprite sheet groups too) holds one small image
+ * (`test-<group>`; `test-selection` with the draw box `TEST_SELECTION_BOX`), loaded by a
+ * `FakeAssetLoader` that keeps each load pending until `loader.resolveAll()` (no timers). The
+ * image of each of `failingGroups` fails to load.
  */
-export function testResources(): {
+export function testResources(failingGroups: readonly AssetGroup[] = []): {
   readonly resources: ResourceController;
   readonly loader: FakeAssetLoader;
 } {
-  const groups: readonly AssetGroup[] = ['boot', ...SELECTION_ASSET_GROUPS, 'match'];
+  const groups: readonly AssetGroup[] = [
+    'boot',
+    ...SELECTION_ASSET_GROUPS,
+    'match',
+    ...Object.values(LEGEND_SPRITE_SHEETS).map(
+      ({ atlasId }): AssetGroup => `sprite-atlas:${atlasId}`,
+    ),
+  ];
   const manifest: AssetManifest = {
     version: 'test',
     assets: groups.map((group) => ({
@@ -53,7 +62,9 @@ export function testResources(): {
       ...(group === 'selection' ? { box: TEST_SELECTION_BOX } : {}),
     })),
   };
-  const loader = new FakeAssetLoader();
+  const loader = new FakeAssetLoader({
+    failingUrls: failingGroups.map((group) => `/test/${group}.webp`),
+  });
   const resources = new ResourceController({
     manifest,
     loaders: [loader],

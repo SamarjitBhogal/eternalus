@@ -5,6 +5,7 @@ import {
   MapPresentationBuilder,
   MemoryLogger,
   NullLogger,
+  type RosterSlot,
   Simulation,
   type Vec2,
 } from '@eternalus/core';
@@ -13,11 +14,15 @@ import { describe, expect, it, vi } from 'vitest';
 import type { BridgeEventMap } from '../bridge/events';
 import { MINI_MAP_DESIGN_FRAME, MINI_MAP_RING } from '../bridge/minimapRing';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { shapesOf } from './__fixtures__/sheetShapes';
+import { sheetsFor } from './__fixtures__/sheetsFor';
+import { SHIPPED_SPRITE_WIDTHS } from './__fixtures__/spriteWidths';
 import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import type { Projection } from './engine/input/Projection.types';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
+import type { LegendSpriteSheet } from './legendSpriteSheets.types';
 import { CUTSCENE } from './CathedralCutscene.constants';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
@@ -28,6 +33,26 @@ import { FOCUS_RING_COLOR } from './views/entityViews.constants';
 
 const SEED = 1;
 const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
+/** The player as a Knight (a warrior sub-class), so its snapshot names the Knight's sheet. */
+const KNIGHT_PLAYER: PlayerChoice = { ...PLAYER, specId: 'knight' };
+const KNIGHT_GRID = shapesOf('knight-sprites');
+/** The dark Rover bot, an Oracle (a magus sub-class). */
+const ORACLE_BOT: RosterSlot = {
+  pilot: 'bot',
+  team: 'dark',
+  definitionId: 'magus',
+  role: 'rover',
+  difficulty: 'rover',
+  specId: 'oracle',
+};
+
+/** What a sprite test adds to a match: the sheets, the loaded atlases, the player and the bots. */
+type SpriteSetUp = {
+  readonly legendSheets?: ReadonlyMap<string, LegendSpriteSheet>;
+  readonly atlases?: ConstructorParameters<typeof RecordingRenderer>[0];
+  readonly player?: PlayerChoice;
+  readonly bots?: readonly RosterSlot[];
+};
 
 /**
  * The centre of the HUD minimap ring on the tests' 1280 × 720 canvas (device pixels), from the
@@ -98,9 +123,11 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
 const setUp = (
   content?: Content,
   withMapObjects = false,
+  sprites: SpriteSetUp = {},
   plannedMatchSeconds?: number,
-  playerSpecId: string | null = null,
+  isDeveloperMenuEnabled = false,
 ) => {
+  const { legendSheets, atlases = {}, player = PLAYER, bots = [] } = sprites;
   // No countdown: core's countdown holds all movement, and these tests walk from the start.
   const config = createDefaultGameConfig({
     match: {
@@ -114,17 +141,19 @@ const setUp = (
     seed: SEED,
     logger: new NullLogger(),
     ...(content === undefined
-      ? { ...withPlayer(config, PLAYER), map: generated }
+      ? { ...withPlayer(config, player, bots), map: generated }
       : { config, content }),
     ...(withMapObjects ? { mapObjects: world.mapObjects } : {}),
   });
   const scheduler = new FakeFrameScheduler();
-  const renderer = new RecordingRenderer();
+  const renderer = new RecordingRenderer(atlases);
   const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
   const input = new ScriptedIntent();
   const logger = new MemoryLogger();
+  const bus = new TypedEventBus<BridgeEventMap>();
   const match = new Match({
-    playerSpecId,
+    legendSheets,
+    legendSpriteWidths: SHIPPED_SPRITE_WIDTHS,
     simulation,
     world,
     tickRate: config.tickRate,
@@ -134,9 +163,10 @@ const setUp = (
     input,
     logger,
     observer: { crashed: () => undefined, ended: () => undefined },
+    isDeveloperMenuEnabled,
     // A bus nobody listens to, at the shipped cadence.
     bridge: {
-      bus: new TypedEventBus<BridgeEventMap>(),
+      bus,
       publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
       captureKinds: [],
     },
@@ -147,6 +177,7 @@ const setUp = (
   );
   return {
     match,
+    bus,
     simulation,
     renderer,
     camera,
@@ -199,6 +230,84 @@ describe('Match', () => {
     renderer.calls.length = 0;
     match.render(0);
     expect(fills()).not.toContainEqual(house.shape);
+    match.destroy();
+  });
+  it('stops drawing a tower, its minimap glyph and its banner once the tower entity is gone', () => {
+    const { match, simulation, renderer, map, world } = setUp(undefined, true);
+    const { presentation } = world;
+    match.tick();
+    const tower = match.snapshot.entities.find(
+      (entity) => entity.kind === 'buff-tower' && entity.mapFeatureId !== undefined,
+    );
+    const feature = map.features.find(({ id }) => id === tower?.mapFeatureId);
+    const banner = presentation.scenery.find(
+      (piece) => piece.id === `${feature?.id ?? ''}-fort-banner`,
+    );
+    if (tower === undefined || feature === undefined) throw new Error('Missing tower');
+    if (banner === undefined) throw new Error('Missing banner');
+    const glyphAt = () =>
+      renderer.calls.some((call) => call.op === 'drawGlyph' && call.args[1] === feature.position);
+    const bannerFills = () =>
+      renderer.calls.some((call) => call.op === 'fillPolygon' && call.args[0] === banner.shape);
+    match.render(0);
+    expect(glyphAt()).toBe(true);
+    expect(bannerFills()).toBe(true);
+
+    simulation.enqueueCommand({ type: 'dev-remove-entity', entityId: tower.id });
+    match.tick();
+    renderer.calls.length = 0;
+    match.render(0);
+    expect(glyphAt()).toBe(false);
+    expect(bannerFills()).toBe(false);
+    match.destroy();
+  });
+  it('stops drawing a gate and its minimap glyph once its structure has fallen', () => {
+    const { match, simulation, renderer, map } = setUp(undefined, true);
+    match.tick();
+    const gate = match.snapshot.entities.find(
+      (entity) => entity.kind === 'gate' && entity.mapFeatureId !== undefined,
+    );
+    const feature = map.features.find(({ id }) => id === gate?.mapFeatureId);
+    if (gate === undefined || feature?.footprint === undefined) throw new Error('Missing gate');
+    const { footprint, position } = feature;
+    const drawn = () =>
+      renderer.calls.some(
+        (call) =>
+          (call.op === 'fillPolygon' && call.args[0] === footprint) ||
+          (call.op === 'drawGlyph' && call.args[1] === position),
+      );
+    match.render(0);
+    expect(drawn()).toBe(true);
+
+    simulation.enqueueCommand({ type: 'dev-remove-entity', entityId: gate.id });
+    match.tick();
+    renderer.calls.length = 0;
+    match.render(0);
+    expect(drawn()).toBe(false);
+    match.destroy();
+  });
+  it('stops drawing a gate that falls on the first tick: the first snapshot counts as seen', () => {
+    const { match, simulation, renderer, map } = setUp(undefined, true);
+    const gate = match.snapshot.entities.find(
+      (entity) => entity.kind === 'gate' && entity.mapFeatureId !== undefined,
+    );
+    const feature = map.features.find(({ id }) => id === gate?.mapFeatureId);
+    if (gate === undefined || feature?.footprint === undefined) throw new Error('Missing gate');
+    const { footprint, position } = feature;
+    const drawn = () =>
+      renderer.calls.some(
+        (call) =>
+          (call.op === 'fillPolygon' && call.args[0] === footprint) ||
+          (call.op === 'drawGlyph' && call.args[1] === position),
+      );
+    match.render(0);
+    expect(drawn()).toBe(true);
+
+    simulation.enqueueCommand({ type: 'dev-remove-entity', entityId: gate.id });
+    match.tick();
+    renderer.calls.length = 0;
+    match.render(0);
+    expect(drawn()).toBe(false);
     match.destroy();
   });
   it('queues no attack while the canvas gestures own the press (a minimap click or the explorer)', () => {
@@ -269,6 +378,45 @@ describe('Match', () => {
     const player = match.snapshot.entities.find((entity) => entity.id === match.playerEntityId);
     expect(player).toMatchObject({ kind: 'warrior', family: 'legend', team: 'light' });
     expect(player?.transform).toMatchObject(lightStronghold?.position ?? {});
+  });
+
+  it("follows the developer menu's Follow Legend with no human, and the human first (13 §4)", () => {
+    const { match, bus, simulation, camera, map } = setUp(undefined, false, {}, undefined, true);
+    const human = match.playerEntityId ?? '';
+    // A dark bot Legend at the dark Stronghold, far from the light human.
+    simulation.enqueueCommand({ type: 'dev-spawn-legend', team: 'dark', definitionId: 'warrior' });
+    match.tick();
+    const bot = match.snapshot.entities.find(
+      ({ family, team }) => family === 'legend' && team === 'dark',
+    );
+    const shows = (id: string): boolean => {
+      const at = match.snapshot.entities.find((entity) => entity.id === id)?.transform;
+      return at !== undefined && at !== null && camera.contains(at, map.width, map.height);
+    };
+    const frames = (count: number): void => {
+      for (let frame = 0; frame < count; frame += 1) {
+        match.tick();
+        match.render(0);
+      }
+    };
+    expect(bot).toBeDefined();
+    bus.emit('ui-intent', { kind: 'dev-follow', legendId: bot?.id ?? '' });
+    frames(60);
+    // A human is seated: the camera stays on the human's Legend.
+    expect(match.developerMenu.followedLegendId).toBeNull();
+    expect(shows(human)).toBe(true);
+    expect(shows(bot?.id ?? '')).toBe(false);
+
+    simulation.enqueueCommand({
+      type: 'dev-set-controller',
+      entityId: human,
+      controllerId: 'rover',
+    });
+    frames(120);
+    expect(match.playerEntityId).toBeNull();
+    expect(match.developerMenu.followedLegendId).toBe(bot?.id);
+    expect(shows(bot?.id ?? '')).toBe(true);
+    match.destroy();
   });
 
   it("points the camera at the human slot's Legend from construction, before any tick or frame", () => {
@@ -488,10 +636,102 @@ describe('Match', () => {
     expect(aim?.y).toBeCloseTo(view.y + view.height / 2);
   });
 
+  it('renders the selected Knight through the live match view registry', () => {
+    const { match, renderer, logger } = setUp(undefined, false, {
+      legendSheets: sheetsFor('knight'),
+      atlases: KNIGHT_GRID,
+      player: KNIGHT_PLAYER,
+    });
+    match.render(0);
+    expect(
+      renderer.calls.filter((call) => call.op === 'drawSprite').map((call) => call.args[0]),
+    ).toContainEqual({ atlasId: 'knight-sprites', frame: 0 });
+    expect(logger.records.filter(({ severityText }) => severityText === 'WARN')).toEqual([]);
+    match.destroy();
+  });
+
+  it("draws a walk frame of the render's tick once the player's Legend has moved", () => {
+    const { match, renderer, input } = setUp(undefined, false, {
+      legendSheets: sheetsFor('knight'),
+      atlases: KNIGHT_GRID,
+      player: KNIGHT_PLAYER,
+    });
+    input.move = { x: 1, y: 0 };
+    for (let tick = 0; tick < 10; tick += 1) match.tick();
+    renderer.calls.length = 0;
+
+    // Tick 10 plus half a tick is 0.35 s: the 0.84 s walk row has 6 frames, so frame 2 of it.
+    match.render(0.5);
+
+    const drawn = renderer.calls.findLast((call) => call.op === 'drawSprite')?.args[0];
+    const frame = drawn?.frame ?? Number.NaN;
+    expect(drawn?.atlasId).toBe('knight-sprites');
+    // Rows 1 to 4 are the walk rows; row 0 is idle, and frame 0 is where an unset clock stays.
+    expect(Math.floor(frame / 6)).toBeGreaterThanOrEqual(1);
+    expect(Math.floor(frame / 6)).toBeLessThanOrEqual(4);
+    expect(frame % 6).toBe(2);
+    match.destroy();
+  });
+
+  it('draws the selected Knight as a disc, with one WARN, when the renderer has no atlas', () => {
+    const { match, renderer, logger } = setUp(undefined, false, {
+      legendSheets: sheetsFor('knight'),
+      player: KNIGHT_PLAYER,
+    });
+    match.render(0);
+
+    expect(renderer.calls.some((call) => call.op === 'drawSprite')).toBe(false);
+    expect(
+      logger.records.map(({ severityText, scope, attributes }) => [
+        severityText,
+        scope,
+        attributes,
+      ]),
+    ).toEqual([['WARN', 'client.views', { atlasId: 'knight-sprites' }]]);
+    match.destroy();
+  });
+
+  it("draws a bot Legend from its own sub-class's sheet, as the player's from its own", () => {
+    const { match, renderer, logger } = setUp(undefined, false, {
+      legendSheets: sheetsFor('knight', 'oracle'),
+      atlases: shapesOf('knight-sprites', 'oracle-sprites'),
+      player: KNIGHT_PLAYER,
+      bots: [ORACLE_BOT],
+    });
+    match.render(0);
+
+    const atlases = renderer.calls.flatMap((call) =>
+      call.op === 'drawSprite' ? [call.args[0].atlasId] : [],
+    );
+    expect(atlases.sort()).toEqual(['knight-sprites', 'oracle-sprites']);
+    expect(logger.records.filter(({ severityText }) => severityText === 'WARN')).toEqual([]);
+    match.destroy();
+  });
+
+  it("draws a bot Legend whose sheet did not load as a disc, while the player's gets its sprite", () => {
+    const { match, renderer, logger } = setUp(undefined, false, {
+      legendSheets: sheetsFor('knight', 'oracle'),
+      atlases: KNIGHT_GRID,
+      player: KNIGHT_PLAYER,
+      bots: [ORACLE_BOT],
+    });
+    match.render(0);
+
+    const atlases = renderer.calls.flatMap((call) =>
+      call.op === 'drawSprite' ? [call.args[0].atlasId] : [],
+    );
+    expect(atlases).toEqual(['knight-sprites']);
+    expect(
+      logger.records.map(({ severityText, attributes }) => [severityText, attributes]),
+    ).toEqual([['WARN', { atlasId: 'oracle-sprites' }]]);
+    expect(match.snapshot.entities.filter(({ specId }) => specId === 'oracle')).toHaveLength(1);
+    match.destroy();
+  });
+
   it('keeps a player far from the Cathedral on their own Legend through the eruption (DEC-371 E1)', () => {
     // A 20 s plan: the gem erupts at 10 s. The player starts at their Stronghold, far from the
     // Cathedral, so the cut-scene never takes the camera (`CathedralCutscene` tests the near case).
-    const { match, camera, map } = setUp(undefined, false, 20);
+    const { match, camera, map } = setUp(undefined, false, {}, 20);
     const { tickRate } = createDefaultGameConfig();
     const gem = match.snapshot.entities.find(({ kind }) => kind === 'cathedral-gem')?.transform;
     if (gem == null) throw new Error('No gem');
@@ -512,13 +752,4 @@ describe('Match', () => {
 
     expect(farthest).toBeLessThan(FOLLOW_VIEW_WIDTH / 10);
   });
-});
-
-it('renders the selected Knight through the live match view registry', () => {
-  const { match, renderer } = setUp(undefined, false, undefined, 'knight');
-  match.render(0);
-  expect(
-    renderer.calls.filter((call) => call.op === 'drawSprite').map((call) => call.args[0]),
-  ).toContainEqual({ atlasId: 'knight-sprites', frame: 0 });
-  match.destroy();
 });

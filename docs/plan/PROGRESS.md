@@ -7269,6 +7269,74 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   check passed.". This entry was added after it.
 - Next step: push; PR #86 merges this head.
 
+### 2026-11-05 — Phase 3 / tower ruins and gate reach (DEC-217 (12), (15), (17)) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: on `feat/tower-ruins-and-routes` (from `fix/minion-stack-followups` at
+  `ebedddb`), DEC-217 (12) with DEC-219 (a), and DEC-217 (17). DEC-217 (15) is not built (see
+  below). One line per commit:
+  - `af76b90`: reach to a gate is measured to its polygon (`hasMapFootprint` on the gate,
+    DEC-217 (17)); the gate's map object does not block, so the gate keeps its own health
+    (DEC-217 (13)); the new content flag `hasFortBox` keeps a gate's box out of the chase rule's
+    fort boxes (towers and the palace keep theirs, DEC-217 (16)).
+  - `6ae13ac`: a lane tower's fort walls are each their own `wall` map object `partOf` the tower;
+    when the tower dies, its own object and the wall that took the killing hit fall (none when
+    the keep was nearer the killer), and each other wall stands as teamless scenery at half a
+    wall's health (`RUINED_FORT_WALL_DEFINITION`, TUNE, DEC-217 (12), DEC-219 (a)) and blocks
+    until it falls on its own. The grid reopens what fell, the court's ground included.
+  - `b0053f9`: architecture 07 (Implementation status) and 18 (status note, §5.2) for the above.
+  - `a4a76df`: the ruined-wall fraction is module-private (knip).
+- Not built: DEC-217 (15), the routes out of a standing tower's court. A grid-only fix (court
+  ground that A\* may cross, a way out through the doorways for mobs and guards) works on 2 m test
+  cells, but on the 5 m nav cells almost every cell inside a court touches a wall or the keep, so
+  A\* still snaps a unit there to the open ground behind the nearest wall. The work in progress is
+  saved as a patch and a stash (`eternalus-agent-work/tower-ruins-and-routes/`); the options go to
+  the orchestrator.
+- Checks run: `npm run check` at `a4a76df` → exit 0 (log `check-final.log` in
+  `eternalus-agent-work/tower-ruins-and-routes/`): "All matched files use Prettier code style!";
+  core "Tests 1163 passed (1163)"; client "Tests 1754 passed (1754)"; "✓ built in 581ms";
+  "Documentation check passed."; "check exit 0". Each new test was seen red with its fix broken
+  on purpose. This line was filled in after that run (docs-only); `prettier --check` and
+  `docs:check` were re-run on it.
+- Next step: an owner or orchestrator decision on (15), then the critic, ponytail and the PR
+  after `fix/minion-stack-followups` and #75 merge.
+
+### 2026-11-10 — Phase 3 / tower ruins, critic round 1 rework (DEC-227, DEC-235) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: the commits since the branch merged `fix/minion-stack-followups` (`6609b56f`),
+  one line each, then the critic round 1 rework (critic report
+  `eternalus-agent-work/tower-ruins-and-routes/critic-r1.md`):
+  - `60636558`: decisions-log batch 2026-11-09 (DEC-225 to DEC-227), as on #86 and #79.
+  - `19e10fd9`: a lane tower's 4 corner towers are fort walls too, 11 pieces (DEC-227 (Q-C)).
+    Seen red: `MapObjectBuilder.test` on the old builder.
+  - `7b1d20f3`: navigation cells 2.5 m, from 5 m (DEC-227 (Q-A)). Seen red: the Stronghold
+    step-out test with `pathSnapCells` 10.
+  - `b2091978`: units in a lane tower's court leave by its doorways (DEC-217 (15)). No break was
+    recorded at commit time; on the rework tree, A\* without court ground turns 8 court tests red
+    and a `courtMove` that always stays turns 3 red.
+  - `0725607f`, `654f959a`, `2f47bc6a`: lane tower forts kept apart (DEC-227), its INBOX answer and
+    architecture 06, 07, 10 and 18.
+  - Rework, `1639a2a7` (B5, S1, S2), `62ff2387` (B2, B3), `d375ec6c` (nits), `32ad4437` (B1, B4,
+    S4, S5), `8f76fd07` (architecture docs), `523d0039` (DEC-235, INBOX): S1, S2 and B5 (`map/fortInWorld.ts`: the fort in world units; tower
+    spacing scales with the world and throws for any two towers too close; a court match refuses
+    nav cells as thick as the thinnest fort wall); B2 and B3 (`WorldObjectStore` keeps identity and
+    destroyed state; `state/StructureRuins.ts` is the ruin rule, run by `MapDestructionSystem`,
+    which also reopens the grid; `MatchWorld.build`/`reopen` own the stamping rule); B1 and B4 (an
+    exit field in `AStarPathfinder`, reset by `WorldMap.version`; one search loop); S5 (the court
+    rule applies on court ground or a wall cell beside it, `WorldMap.isCourtSideAt`, not on the
+    palace); S4 (horde member, waypoint and palace-guard court tests); nits N1 to N6, N9, N10;
+    ponytail cuts 1 to 4; docs 06, 07, 10 §9, 18; DEC-235 and its INBOX entry.
+- Red-first: every new test was seen red with its rule broken on purpose; the breaks are listed in
+  `eternalus-agent-work/tower-ruins-and-routes/red-first-rework-session2.md` and, for Part A,
+  in the 2026-11-10 handoff (unscaled spacing, no throw, unscaled wall, never-throw).
+- Checks run: `npm run check` on the rework tree before these commits (log
+  `eternalus-agent-work/tower-ruins-and-routes/check-rework.log`, branch line
+  `feat/tower-ruins-and-routes`): "All matched files use Prettier code style!"; core "Tests 1426
+  passed (1426)"; client "Tests 1799 passed (1799)"; "✓ built in 260ms"; "Documentation check
+  passed."; "check exit 0". The first run failed Prettier on two files (line breaks only, fixed).
+  This entry was added after it (docs-only); `prettier --check` and `docs:check` re-run on it.
+- Next step: critic round 2 on the rework (base `2f47bc6a`), ponytail review, re-check, then the
+  PR (base `fix/minion-stack-followups`, or phase/3 once #85 merges).
+
 ### 2026-11-05 — Phase 3 / out-of-combat healing, owner answers DEC-215 — feat/out-of-combat-heal — sholtzman + Claude Code
 
 - What was done: the owner-approved merge of `fix/minion-stack-followups` (`ebedddb`) into this
@@ -8334,6 +8402,25 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 - Checks run: full `npm run check` exit 0: core `Tests 1331 passed (1331)`, client `Tests 1849 passed (1849)`, `Documentation check passed.`
 - Next step: slice 3 (`dev-set-controller`, sim mode) after the owner answers the `INBOX.md` item.
 
+### 2026-11-13 — Phase 3 / combat sprint: developer menu, slice 3: sim mode (BUG-4 / SCRUM-437) — feat/developer-menu-sim-mode — Claude Code
+
+- What was done: core `dev-set-controller { entityId, controllerId }` (`DevSetControllerHandler`,
+  replaces the `unsupported` route): `human` detaches the Legend's AI binding and brain and seats
+  it as the human's (the old human becomes a Rover bot); the Rover's id binds the Rover (on the
+  human's Legend: no human). Refused `unknown-entity`, `not-a-legend`, `unknown-controller`.
+  `MatchRecord.reseatHuman` is the guarded second writer of `humanLegendId`. Client: the menu has a
+  Sim mode section (Remove human, Take control by Legend id); `Match` reads the human Legend from
+  each snapshot, so a match with none keeps running (camera idle, HUD player block hidden). Left
+  out (`INBOX.md`): spectate UI, controller picker, CLI runner, a verdict in `Simulation`.
+- Checks run: full `npm run check` exit 0: core `Tests 1341 passed (1341)`, client `Tests 1852 passed (1852)`, `Documentation check passed.`
+- Next step: owner answers the `INBOX.md` item; the remaining FR-098/110 controls.
+
+## 2026-11-13 — Merge feat/developer-menu-legends into sim mode (PR #112)
+
+- Done: merged the Legends slice and the Duel seat model (ADR 0016) into sim mode. `MatchRecord.reseatHuman` now moves the `playerTeam` seat in the per-team seat map; `Match.playerId` reads the Duel's own Legend (`deps.remote`) first, else the snapshot's human, and passes it to the health bars.
+- Decision: `dev-set-controller` is refused with `not-supported` when the other team has a human seated (a Duel), with a test. Sim mode stays solo.
+- Checks run: full `npm run check` exit 0: core `Tests 1357 passed (1357)`, protocol `18`, client `Tests 1920 passed (1920)`, server `79`, `Documentation check passed.`
+
 ### 2026-11-13 — Phase 3 / dependencies — chore/deps-vite-vitest — claudiodh + Claude Code
 
 - What was done: bumped `vite` 8.3.1 → 8.3.8 (`apps/client`, `apps/server`) and `vitest` and `@vitest/coverage-v8` 5.0.2 → 5.1.0 (`apps/client`, `apps/server`, `packages/core`, `packages/protocol`), both non-major, exact versions, installed per workspace with `npm install -D --save-exact` so `package-lock.json` was regenerated by npm (never edited by hand). The lockfile's other changes are only those packages' own dependencies (rolldown 1.2.11 → 1.2.19, postcss, source-map-js 1.2.1 → 1.2.2, tinybench, chai, magic-string, std-env, nanoid, tinyrainbow and their platform bindings). Nothing else was touched: not `eslint`, `typescript-eslint` or `minimatch`, whose suggested audit fixes are downgrades.
@@ -8635,6 +8722,217 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   server "Tests 79 passed (79)", "Documentation check passed.".
 - Next step: push; PR against `fix/minion-stack-followups` (#85, head `2e8df5bc`).
 
+### 2026-11-10 — Phase 3 / tower ruins, critic round 2 rework (DEC-239) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: the rest of the critic r2 items. SF2: the DEC-235 row names the capture-point
+  zones (commit `1639a2a7`'s subject says "heal zones" too). SF3/D1: the generator checks every
+  pair of lane tower forts on the map in world units after placement (`assertLaneFortsApart`),
+  the per-lane gap check goes, the on-lane check stays; new tests for neighbouring lanes (3200x900,
+  7 lanes, 1 + 9 towers) and a band past the lane end. D4: `utils/geometry.isPointInRect`. n2 and
+  ponytail cut 4: `FortWall` options object. n4, n5 (`DefaultSystemPipelineOptions.ruinWall`
+  from `Simulation`, throws when missing), n8 (`systems` TSDoc). Ponytail cuts 2 and 5. Docs: 06 §3,
+  decisions log (DEC-239 row), INBOX (DEC-227 correction, H1 note, DEC-235 pointer, DEC-239 entry).
+  Red-first breaks: `eternalus-agent-work/tower-ruins-and-routes/red-first-r2.md`.
+- Checks run: `npm run check:quick` on every commit (pre-commit hook); core tests from
+  `packages/core` pass. Full `npm run check` not yet run.
+- Next step: `npm run check`; critic r3 (last loop); ponytail; PR. Bot A\* finding (below) waits
+  on the owner: on 2.5 m cells `pathMaxExpansions` 6000 fails bot routes of about 470 m.
+
+### 2026-11-10 — Phase 3 / tower ruins, bot A\* search cap (DEC-240) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: the owner chose option A for the bot A\* finding (question dialog, DEC-240):
+  `GameConfig.map.pathMaxExpansions` goes from 6000 to 24000, so on 2.5 m cells one search covers
+  the area 6000 covered on 5 m cells. New test in `map/AStarPathfinder.test.ts`: a route of about
+  560 m between two lane tower forts on a generated map with its map objects; red at 6000 and
+  12000, green at 24000 (`eternalus-agent-work/tower-ruins-and-routes/red-first-r2.md`). Docs:
+  decisions log (DEC-240 batch), INBOX (answered entry; bot path cache request), 03 (source
+  column). The first full `npm run check` on the r2 rework failed at `prettier --check` on the
+  decisions log: this branch's DEC-239 and DEC-235 edits left two table headers unpadded
+  (the file is clean on `a35da809` and on #85's head). Fixed with `prettier --write` on that file
+  (8 header and separator lines).
+- Checks run: see the next entry or the PR description.
+- Next step: `npm run check`; critic r3 (last loop); ponytail; PR.
+
+### 2026-11-10 — Phase 3 / tower ruins, critic round 3 and ponytail r3 (pre-PR gate) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: critic round 3 (last loop; `eternalus-agent-work/tower-ruins-and-routes/critic-r3.md`)
+  on `a35da809..9b22c8c7`: APPROVE, no blockers. Fixed in `17d5478f`: SF1 (placement keeps towers
+  of one kind a fort box's diagonal apart; towers of different kinds on one lane only must not
+  overlap; DEC-239 row and `laneStructures` TSDoc), N2 (`MatchGrid.test` builds its own map),
+  N3 (`MatchWorld.matchGrid`), N4 (DEC-240 "follows DEC-227 (Q-A)", 470 m), N5 (touch comment).
+  Better-than-design BTD1, BTD3 to BTD5: one INBOX item for a follow-up branch; BTD2 added to the
+  bot path cache request. Ponytail r3 (`ponytail-review-r3.md`): one cut (BTD3), not applied (it
+  deletes a test; waits in INBOX). The `npm run check` of `9b22c8c7` passed (log
+  `check-dec240.log`: EXIT 0, core 1442 tests, client 1800 tests, "Documentation check passed.").
+- Checks run: `npm run check` on `17d5478f` with this entry in place (log
+  `eternalus-agent-work/tower-ruins-and-routes/check-r3-final.log`): EXIT 0, core "Test Files
+  244 passed (244)", "Tests 1442 passed (1442)", client "Tests 1800 passed (1800)",
+  "Documentation check passed.".
+- Next step: push and open the PR on `fix/minion-stack-followups` (#85, head `2f100e87`).
+
+### 2026-11-11 — Phase 3 / tower ruins: merge #85's round 4 head — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: PR #85 (`fix/minion-stack-followups`, this branch's PR base) moved from
+  `2f100e87` to `65c4d436` (merge of phase/3 `1b25f586` with #89 and #92, the CodeRabbit fixes).
+  This branch merged `65c4d436`. Four conflicts, all in docs. `PROGRESS.md` and the decisions log
+  keep both sides, the base's first; the log's batches stay newest number first (DEC-232, DEC-230,
+  then DEC-225 to DEC-227). 07 §status keeps this branch's tower paragraph: #85's interim note
+  ("the ruins ... are built on a later branch (DEC-219 (d))") names this branch, which builds them.
+  10's `last-reviewed` takes 2026-11-11.
+- Checks run: full `npm run check` with this entry in place, merge not yet committed (log
+  `eternalus-agent-work/tower-ruins-and-routes/check-merge85-r4.log`): EXIT=0, core "Tests 1447
+  passed (1447)", client "Tests 1818 passed (1818)", "Documentation check passed.".
+- Next step: push and open the PR on `fix/minion-stack-followups` (#85, head `65c4d436`).
+
+### 2026-11-13 — Phase 3 / tower ruins: PR #98 review response — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: claudiodh requested changes on PR #98 (2026-11-13). This branch merged #85's
+  `c09507f6` (`65482701`). The owner asked for a critique of the DEC-239 generator rules
+  (`eternalus-agent-work/tower-ruins-and-routes/critic-dec239-rules-2026-11-13.md`): all four are
+  within the design. Its one nit is fixed in `fa7808ce`: towers of one kind are spaced by the fort
+  box diagonal, `hypot(width, height)`, not `max(width, height) * sqrt(2)` (DEC-227). The owner
+  ruled "Split it" (DEC-242, written here): gate reach, the A\* search cap and the geometry
+  helpers move to `feat/gate-reach`, `refactor/astar-search-area` and
+  `refactor/fort-geometry-helpers`.
+- Red-first: "spaces a widened band by the fort box diagonal" failed (1 failed) before the fix.
+- Checks run: full `npm run check` on `fa7808ce` (log
+  `eternalus-agent-work/tower-ruins-and-routes/check-hypot-fa7808ce.log`): EXIT=0, core "Tests
+  1448 passed (1448)", client "Tests 1818 passed (1818)", "Documentation check passed.".
+- Next step: the owner's call on the DEC-239 rules (DEC-246), the reply on #98, the BTD3 and BTD5
+  branch (DEC-245), and the merge of #85's next head.
+
+### 2026-11-13 — Phase 3 / tower ruins: merge #85's phase/3 head — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: PR #85 (`fix/minion-stack-followups`, this branch's PR base) moved to `2e8df5bc`
+  (phase/3 `76d1007d` with #97, the duel server, and #81). This branch merged it. Two conflicts.
+  This file keeps both sides, the base's first. `Simulation.ts`: #97 builds the walkability grid
+  in `map/MatchPathfinderFactory` with the stamping rule this branch replaced by `MatchGrid`. The
+  factory now builds through `MatchGrid.build` and returns `matchGrid` beside `grid` and `paths`;
+  `Simulation` uses the factory. So the match and the server's scripted player
+  (`apps/server/src/bots/BotNavigatorSource.ts`) read the same ground, courts included. The
+  server's copy is built once: it does not reopen a dead tower's ruins.
+- Red-first: "stamps a lane tower inside its fort as court ground, as the match does" failed
+  (1 failed, 3 passed) with the factory passing no map objects to `MatchGrid.build`
+  (`eternalus-agent-work/tower-ruins-and-routes/red-first-r2.md`).
+- Checks run: full `npm run check` with the merge in place, before this entry (log
+  `eternalus-agent-work/tower-ruins-and-routes/check-merge85-r6.log`): EXIT=0, core "Tests 1480
+  passed (1480)", protocol "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server
+  "Tests 79 passed (79)", "Documentation check passed.".
+- Next step: push; the owner's call on the DEC-239 rules (DEC-246) and the reply on #98.
+
+### 2026-11-14 — Phase 3 / tower ruins: the owner confirms the DEC-239 rules (DEC-246) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: the owner confirmed the four DEC-239 generator rules in the question dialog
+  ("Confirm"), after the critique of 2026-11-13 found them within the design. New batch and row
+  DEC-246 in the decisions log; a dated line under the INBOX answer. DEC-239's row is not
+  changed. The owner also answered "Build now" for the layout band rules on the widened bands:
+  that goes on the BTD3 and BTD5 branch (DEC-245). Answers verbatim:
+  `eternalus-agent-work/tower-ruins-and-routes/OWNER-ANSWERS-2026-11-14.md`. Docs only.
+- Checks run: `npx prettier --check` on the three files and `npm run docs:check`: "All matched
+  files use Prettier code style!", "Documentation check passed.". No code changed since the full
+  `npm run check` in the entry above (EXIT=0).
+- Next step: push (`push-98.sh`); post the reply on #98; build the BTD3 and BTD5 branch with the
+  band rules (DEC-245).
+
+### 2026-11-14 — Phase 3 / tower ruins: follow-ups BTD3, BTD5 and the band rules (DEC-245) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: built off `feat/tower-ruins-and-routes` (PR #98), three commits. (BTD3)
+  `DefaultSystemPipelineOptions.ruinWall` is required; the run-time throw is gone, and so is the
+  one test that asserted only that throw ("refuses a match with map objects but no ruinWall"):
+  the type check replaces it (this removal is why the item waited for the owner: "A: follow-up
+  branch now", DEC-245). Nine test call sites pass `ruinWall`. No other test was weakened or
+  deleted. (BTD5) `MatchGrid` keeps its `definition`; `MatchWorld` takes only the grid. (Band
+  rules, "Build now") `map/laneBandRules.ts` holds the one rule set (each band inside [0, 1];
+  spawner band ahead of buff band); `validateMapLayout` and `laneTowerSpecs` both use it, the
+  latter on the widened bands, with a message naming the cause, lane, tower counts and world
+  size. `assertTowersOnLane` is removed. Refused on the default world: 3 lanes, 1 spawner and 6
+  buff towers. The "neighbouring lanes" fort test moved to 9 lanes, 1 spawner, 4 buff towers
+  (same assertion): its old config now breaks the band rule first. Docs: 03 and 06 each had one
+  sentence made false and fixed (06 §3 placement refusal list; 03 `MatchWorld`), `last-reviewed`
+  bumped; decisions log batch and DEC-245; INBOX item ticked with a dated answer line.
+- Red-first: `eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/red-first.md`
+  (typecheck red at 9 call sites; copied definition turns 2 tests red; rule off turns 2 red;
+  spawner-ahead rule off turns 2 red).
+- Checks run: full `npm run check` (log `.../tower-ruins-followups/check-1.log`): EXIT=0, core
+  "Tests 1485 passed (1485)", protocol "Tests 18 passed (18)", client "Tests 1883 passed
+  (1883)", server "Tests 79 passed (79)", "Documentation check passed.". Critic and ponytail
+  not run (pre-PR gate is for the session that opens the PR).
+- Next step: critic and ponytail on this branch, then the PR after #98.
+- Correction, 2026-11-14 (critic r1, appended, not an edit): this entry and the DEC-245 row first
+  said the 3-lane, 1 spawner, 6 buff config on the default world was "refused only later, as
+  forts over each other". False: it generates at `f3f649db`. The band rules were also checked on
+  the widened band edges, which can be empty ground, so 406 configs that generated at base were
+  refused. Fixed in the next entry.
+
+### 2026-11-14 — Phase 3 / tower ruins: critic round 1 on the follow-ups — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: critic r1 (REQUEST CHANGES, 2 blockers; `eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/critic-r1.md`).
+  (B1) `laneTowerSpecs` now runs `brokenLaneBandRules` on the ground the towers occupy (first to
+  last tower of each kind; the configured band for a kind with none), so the rules mean: every
+  tower on the lane, and the first SpawnerTower ahead of the last BuffTower. Placement
+  (`towerBand`, `bandPositions`) is unchanged. (B2, N1) the false "refused only later" text is
+  corrected in the DEC-245 row, the test comment and architecture 06 §3; the neighbouring-lane
+  test is called "the same kind of assertion". (S1, ponytail 1 and 3) the rule array is typed,
+  `half` is computed only when a band widens. (N2) "keeps the definition it was built from" moved
+  from the 03 status note to 06 §6. Not built: one shared `Band` type (INBOX item for the tidy PR,
+  DEC-218); a getter for `MatchWorld.definition` (rejected, the field stays).
+- Probe (`.../tower-ruins-followups/probe/`, seed 1234, 4800 configs: 2 grounds x 5 worlds x
+  lanes 1/3/5/7/9 x spawn 1-6 x buff 1-16): accepted at `f3f649db` 922, at the new HEAD 922;
+  accepted at base and refused now 0; refused at base and accepted now 0. The new message fires
+  on 2280 configs, all refused at base too (696 as forts over each other, 1584 as off the lane):
+  it is a clearer message, not a new refusal. Default world, 3 lanes: 1/6 generates, 1/10 is
+  refused with the new message.
+- Red-first: `.../tower-ruins-followups/red-first.md` section 4.
+- Checks run: full `npm run check` (log `.../check-2.log`, run with only the docs and this entry
+  uncommitted): EXIT=0, core "Tests 1486 passed (1486)", protocol "Tests 18 passed (18)", client
+  "Tests 1883 passed (1883)", server "Tests 79 passed (79)", "Documentation check passed.".
+- Next step: critic r2 on the changed lines, then the PR after #98.
+
+### 2026-11-14 — Phase 3 / tower-ruins follow-ups: critic round 2 — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: critic round 2 (architecture-reviewer) on `22dfd48d..48c5d74f`: request changes,
+  2 blockers. (1) A kind with no tower used its configured band, so 108 probed configs that
+  generate on `f3f649db` were refused (for example the default world, 3 lanes, 0 SpawnerTowers
+  and 8 BuffTowers). Now a kind with no tower has no band, and `brokenLaneBandRules` skips a rule
+  about a missing band (`LaneBands` in `map/laneBandRules.ts`). (2) The DEC-245 row and a test
+  comment said the neighbouring-lane fort test had to move; with the rule on tower positions its
+  old config gives the old error again. The test is restored exactly as on `f3f649db`. Also: the
+  row's title says "placed towers", not "widened bands"; `laneTowerSpecs` computes the two
+  position lists first (no dead fallback). Rejected nit: the message names `laneBands.*`; one
+  rule set has one message, and the text before it says the placed towers broke it. The
+  correction line above (2026-11-14, under the first entry of this branch) said the
+  neighbouring-lane test moved: it did not, in the end.
+- Red-first: "generates a lane with no SpawnerTower" and "applies the order rule only when both
+  bands are given" failed (2 failed, 77 passed) on `48c5d74f`'s code
+  (`eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/red-first.md`, section 5).
+- Probe: the critic's two scripts (copied to
+  `eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/probe/`), base `f3f649db`
+  against this tree. Counts 0 to 16 with one kind at 0: 1584 configs, 654 accepted at both, 0
+  changed either way, 0 hash differences. Counts 1 to 6 by 1 to 16: 4800 configs, 1156 accepted
+  at both, 0 changed either way, 0 hash differences.
+- Checks run: full `npm run check` on this tree, before the commit (log
+  `eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/check-3.log`): EXIT=0, core
+  "Tests 1488 passed (1488)", protocol "Tests 18 passed (18)", client "Tests 1883 passed
+  (1883)", server "Tests 79 passed (79)", "Documentation check passed.". This line was added
+  after the run; prettier and `docs:check` pass on it.
+- Next step: critic round 3 (the last) on this delta; then push and a PR on
+  `feat/tower-ruins-and-routes`.
+
+### 2026-11-14 — Phase 3 / tower-ruins follow-ups: pre-PR gate passed — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: critic round 3 (architecture-reviewer) on `48c5d74f..c982e3a0`: approve, 0
+  blockers; both round-2 blockers fixed, the rejected message nit accepted. Its own probes, base
+  `f3f649db` against `c982e3a0` (three scripts, 11298 configs, seeds 1, 42, 1234 and 987654):
+  no config changes between accepted and refused, and no output differs. Ponytail
+  (`eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/ponytail-review-r1.md`):
+  cuts 1 and 3 applied in `f98af117`; cut 2 (a getter for `MatchWorld.definition`) rejected, a
+  readonly field beside `grid` is as short. The round-2 fix changed lines, not structure.
+  Critic reports: `critic-r1.md`, `critic-r2-r3.md` in the same folder.
+- Checks run: the full `npm run check` of the entry above covers the code (`check-3.log`,
+  EXIT=0); the commits after it change docs only. `npx prettier --check` and `npm run
+docs:check` pass on this entry.
+- Next step: push after `feat/tower-ruins-and-routes` (`f3f649db`) is on origin; PR against it.
+
 ### 2026-11-14 — Phase 3 / minion follow-ups: merge phase/3 (#96) — fix/minion-stack-followups — sholtzman + Claude Code
 
 - What was done: merged phase/3 `a99c3129` (#96 bug tracker, docs only). This file and the
@@ -8662,6 +8960,29 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
   kept. No code change.
 - Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
   (`eternalus-agent-work/tower-ruins-and-routes/gate-reach/check-merge85-2.log`): core "Tests 1417 passed (1417)", protocol
+  "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry.
+- Next step: push.
+
+### 2026-11-14 — Phase 3 / tower ruins: merge #85's #96 head — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` `2129a73e` (PR #85; it adds only the
+  merge of phase/3 `a99c3129`, the #96 bug tracker, docs only). This file and the owner decisions log (the DEC-247 to DEC-249 batch sits between the DEC-246 and the DEC-242 batch, by date) conflicted; both sides are
+  kept. No code change.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-merge85-r7.log`): core "Tests 1480 passed (1480)", protocol
+  "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
+  "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
+  entry.
+- Next step: push.
+
+### 2026-11-14 — Phase 3 / tower-ruins follow-ups: merge #98's #96 head — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` `16c7fe2d` (PR #98) (it adds only the #96 bug tracker, docs only). This file and `INBOX.md` conflicted;
+  both sides are kept. No code change.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/check-merge98.log`): core "Tests 1488 passed (1488)", protocol
   "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server "Tests 79 passed (79)",
   "Documentation check passed."; then `prettier --check` and `npm run docs:check` with this
   entry.
@@ -8967,6 +9288,12 @@ passed.` (`eternalus-agent-work/combat-health-bars/check-5.log`).
 ### 2026-11-15 — Phase 3 / developer menu: sync with feat/developer-menu (PR #109) — feat/developer-menu-legends — claudiodh + Claude Code
 
 - What was done: merged `feat/developer-menu` (the text-field key fix and the `phase/3-sprint-3-work` sync) into this branch. Conflicts: `Simulation.ts` (kept `LegendSpawner`; the spawn's start facing, DEC-216 (6), moved into `LegendSpawner.spawn` so the roster and `dev-spawn-legend` both face the enemy Stronghold), `MatchWorld.test.ts` (kept the `strongholdOf` and `startFacing` tests) and `PROGRESS.md` (both sides kept).
+- Checks run: `npm run check` (result in the PR).
+- Next step: reviewer approval.
+
+### 2026-11-15 — Phase 3 / developer menu: sync with feat/developer-menu-legends (PR #112) — feat/developer-menu-sim-mode — claudiodh + Claude Code
+
+- What was done: merged `feat/developer-menu-legends` (which carries the text-field key fix, so the sim-mode "Legend id" field can be typed into) into this branch. Conflicts: `MatchRecord.test.ts` and `PROGRESS.md` (both sides kept) and `11-game-ai.md` (later `last-reviewed`).
 - Checks run: `npm run check` (result in the PR).
 - Next step: reviewer approval.
 
@@ -10481,6 +10808,20 @@ Duel` > "starts both Legends at max level and spawns minions at their normal lev
 - Checks run: `npm run check` (result in the PR comment).
 - Next step: merge into `feat/developer-menu-sim-mode` (#112); reviewer re-review.
 
+### 2026-11-20 — Phase 3 / sprint 3 review fixes — feat/developer-menu-sim-mode (PR #112) — claudiodh + Claude Code
+
+- What was done: merged `feat/developer-menu-legends` (the #107/#109 review fixes, DEC-293);
+  sim mode is its own menu section (`DeveloperSimMode`). swholtzman's review of 2026-11-19 and
+  DEC-294 ("Keep the swap; update mechanics-ideas §6 in this PR"): B1 refuses a Legend off
+  `playerTeam` (`not-player-team`, DEC-173); B2 keeps the swap, with the DEC-294 row and §6
+  updated; S1 the human's controller id is `player`, published to the menu with the Rover's; N1
+  `human-reseated` moves the scoring rows' `controller`; N2 `opponentOf`; N3 `previousPlayerId`;
+  N4 a replay test of a menu-driven sim-mode match. Correction to the 2026-11-13 merge entry of
+  this branch: its heading lacks the branch and author, and its "Decision:" on the Duel refusal is
+  an agent guard, not an owner decision.
+- Checks run: `npm run check` (result in the PR comment).
+- Next step: reviewer re-review; the architecture critic's verdict on the seat swap goes in the PR.
+
 ### 2026-11-21 — Phase 3 / the match-start countdown: merge of phase/3 (`a3550159`, #140) — feat/match-start-countdown — sholtzman + Claude Code
 
 - What was done: merged `origin/phase/3-sprint-3-work` at `a3550159` (#140, DEC-289: the tower
@@ -11041,6 +11382,110 @@ tick)`), and a minion records the point that granted its levels (`Veterancy.gran
 - Next step: push (the coordinator). If #149 merges before #137, #137's own phase/3 merge takes
   this branch's entries; if #137 merges first, #149 needs one more phase/3 merge.
 
+### 2026-11-20 — Phase 3 / DEC-288: the inside bonus covers forts and houses (DEC-247 (3)) — docs/dec-288-interior-bonus-buildings — sholtzman + Claude Code
+
+- What was done: recorded the owner's answer of 2026-11-20 (Owner Calls page) to DEC-247 (3) as
+  DEC-288, in a new top batch of the decisions log (`last-reviewed` 2026-11-20). The DEC-247 row
+  keeps its text and gains a closing pointer "(3) answered
+  2026-11-20 by DEC-288", as DEC-193 got "Amended 2026-11-13 by DEC-248" (`44fb45fc`).
+  `INBOX.md` BUG-2 gains a pointer line; the BUG-2 row of `docs/plan/bugs.md` cites DEC-288
+  (`last-reviewed` 2026-11-20). Docs only. Critic (`architecture-reviewer`): request-changes, 2
+  should-fix items (this entry's check line, `last-reviewed` on `bugs.md`) and 5 nits; all
+  applied. Ponytail: 3 wording cuts (no repeated building list in the DEC-247 pointer), applied.
+- Checks run: full `npm run check` exit 0 before the critic fixes
+  (`eternalus-agent-work/dec-288/check-1.log`) and again after the critic and ponytail fixes,
+  before this line was edited (core 275 files / 1674 tests, protocol 1 / 29, client 298 / 2011,
+  server 21 / 84, "Documentation check passed."; `eternalus-agent-work/dec-288/check-2.log`);
+  then `prettier --check` and `npm run docs:check` on this file.
+- Next step: push the branch and open its PR into `phase/3-sprint-3-work`. BUG-2 is still not
+  scheduled.
+
+### 2026-11-20 — Phase 3 / DEC-311: houses get an inside with the map work — docs/dec-288-interior-bonus-buildings — sholtzman + Claude Code
+
+- What was done: recorded the owner's answer of 2026-11-20 (Owner Calls page) to the DEC-288
+  follow-up as DEC-311, in the same batch of the decisions log; the DEC-288 row points to it.
+  The map work has no plan entry, so `INBOX.md` gains the open item "Map work has no plan entry"
+  (bigger forts of DEC-185 (A) and DEC-311 wait for it) instead of a plan item that would pick
+  its phase. Docs only.
+  Critic (`architecture-reviewer`, delta on `85227ab8`): request-changes, no blockers; 3
+  should-fix items (an exact DEC-185 (A) quote, "the inside is not built before the map work",
+  this check line) and 5 nits, all applied. Ponytail: 1 cut (DEC-311 no longer repeats the DEC-288 clause), applied.
+- Checks run: full `npm run check` exit 0 before the critic fixes (core 275 files / 1674 tests,
+  protocol 1 / 29, client 298 / 2011, server 21 / 84, "Documentation check passed.";
+  `eternalus-agent-work/dec-288/check-3.log`); after the fixes, which touch Markdown only,
+  `prettier --check` and `npm run docs:check` on the four files.
+- Next step: the owner pushes the branch (DEC-288 and DEC-311) and answers "Map work has no plan
+  entry".
+
+### 2026-11-20 — Phase 3 / DEC-313: the map work goes in the DEC-288 PR — docs/dec-288-interior-bonus-buildings — sholtzman + Claude Code
+
+- What was done: recorded the owner's answer of 2026-11-20 (Owner Calls page) to `INBOX.md`
+  "Map work has no plan entry" as DEC-313, in the DEC-288 batch: bigger forts, the fort-overlap
+  fix (DEC-227, built on PR #98, taken from there) and the tower visuals go in this branch's PR,
+  the buff tower's buff and debuff too if time; walkable houses are post-MVP. DEC-311 gets an
+  amendment note, the INBOX item is answered (with the stale overlap premise named), the open
+  questions of the work are the new INBOX item "Map work in the DEC-288 PR (DEC-313): open
+  questions", `docs/plan/backlog-post-mvp.md` gains the row "Walkable house interiors", and
+  BUG-2 says houses are post-MVP. Docs only.
+  Critic (`architecture-reviewer`, delta on `eec6f3ca`): request-changes; 1 blocker (prettier
+  on the decisions log), 4 should-fix items (the DEC-227 overlap ruling and PR #98 named, the
+  owner's tower words kept as said, one INBOX item for the open questions, the "any other
+  items?" reply moved out of the DEC row) and 4 nits, all applied except the BUG-2 part of one should-fix (does this PR build the bonus?), which goes to the owner in chat. Round 2: approve after 1 should-fix (name the `balancing.md` "Auras" recommendations) and 3 nits, all applied. Its round-1 claim that the tower glyphs already hide on death was checked and is wrong (`WorldObjectStore.removed` keeps a dead structure's fort); round 2 agrees. Ponytail: 1 cut (a repeated house clause in DEC-313), applied.
+- Checks run: full `npm run check` exit 0 after the round-1 fixes (core 275 files / 1674 tests, protocol 1 / 29, client 298 / 2011, server 21 / 84, "Documentation check passed."; `eternalus-agent-work/dec-288/check-4.log`); after the round-2 fixes, which touch Markdown only, `prettier --check .` and `npm run docs:check`.
+- Next step: the owner answers the open questions; then the forts and tower visuals are built.
+
+### 2026-11-21 — Phase 3 / DEC-315: the map-work answers — docs/dec-288-interior-bonus-buildings — sholtzman + Claude Code
+
+- What was done: merged phase/3 `a3550159` into this branch (`f4b94bea`; two append conflicts,
+  both sides kept). Recorded DEC-315 (the owner's answers of 2026-11-21 to the DEC-313 open
+  questions and the `BUG-2-build` card) as a new batch; details in the log row.
+  DEC-185 (A) and DEC-313 get amendment notes; the INBOX open-questions item is answered; BUG-2
+  is Scheduled. Correction to the DEC-313 entry above: the BUG-2 question did not stay in chat; it
+  went to the Owner Calls page as card `BUG-2-build` (the owner's rule: questions go on the page).
+  Docs only.
+- Checks run: full `npm run check` twice on the same tree. Run 1 (load ~28,
+  `eternalus-agent-work/dec-288/check-5.log`): exit 1; core "Tests 3 failed | 1671 passed
+  (1674)", all three "Test timed out" (`Simulation.duel.test.ts` ×2 at 60000 ms,
+  `diagnostics/replay.test.ts` at 20000 ms); protocol, client and server passed. Run 2 (load
+  14-18, `check-6.log`): exit 0; core "Tests 1674 passed (1674)", protocol "Tests 29 passed
+  (29)", client "Tests 2011 passed (2011)", server "Tests 84 passed (84)", "Documentation check
+  passed.". Critic (`architecture-reviewer`, DEC-315 delta): round 1 request-changes, 1 blocker
+  (the DEC-313 amendment sat in a third table cell), 3 should-fix items and 4 nits, all applied;
+  its proposed wording for the visuals reading could not be checked, so DEC-315 (5) says only
+  that no correction came. Round 2: approve, no findings. Ponytail: 2 wording cuts (the INBOX
+  answer and this entry point to the log row), applied. This check line changes only this file:
+  `prettier --check` and `npm run docs:check`.
+- Next step: push this branch and open its PR; build the map work on `feat/map-work-forts-towers`.
+
+### 2026-11-21 — Phase 3 / DEC-288 PR: merge of phase/3 (`2a5058f7`) — docs/dec-288-interior-bonus-buildings — sholtzman + Claude Code
+
+- What was done: PR #147 was CONFLICTING with phase/3 `2a5058f7`. Merged it into the branch.
+  Two conflicts, both sides kept: the decisions log, where both sides added top batches (now
+  newest first: DEC-316, DEC-315, DEC-288/311/313, then phase/3's DEC-312 and older batches), and
+  this file (phase/3's entries first, then this branch's). A line check against both parents
+  found no line lost; the 6 base lines the merge dropped are the ones this branch had changed (the
+  DEC-185 amendment, the DEC-247 pointer, the re-padded table).
+- Checks run: full `npm run check` exit 0
+  (`eternalus-agent-work/dec-288/check-147-merge-2a5058f7.log`): "All matched files use Prettier
+  code style!"; core "Tests 1679 passed (1679)", protocol "Tests 29 passed (29)", client "Tests
+  2077 passed (2077)", server "Tests 84 passed (84)"; "✓ built in 328ms"; "Documentation check
+  passed.". This entry: `prettier --check` and `npm run docs:check`.
+- Next step: push; a teammate approves #147.
+
+### 2026-11-21 — Phase 3 / DEC-288 PR: merge of phase/3 (`54615afa`, #135) — docs/dec-288-interior-bonus-buildings — PR-38-HELPER-37 (Claude Code)
+
+- What was done: after #135 merged, PR #147 (head `8e5f7027`) was CONFLICTING with phase/3
+  `54615afa`. Merged it into the branch. One conflict, in this file: both sides kept, phase/3's
+  entries first, then this branch's, so the branch only appends. The decisions log and `INBOX.md`
+  merged without conflict. A diff of this file against both parents shows no removed line.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry
+  (`eternalus-agent-work/dec-288/check-147-merge-54615afa.log`): "All matched files use Prettier
+  code style!"; core "Tests 1679 passed (1679)", protocol "Tests 29 passed (29)", client "Tests
+  2077 passed (2077)", server "Tests 84 passed (84)"; "✓ built in 422ms"; "Documentation check
+  passed."; `node --test` on the two hook test files from #135: pass 8, fail 0. This entry:
+  `prettier --check` and `npm run docs:check`.
+- Next step: push; a teammate approves #147.
+
 ### 2026-11-20 — Phase 3 / sprint 3: respawn review round 3 and DEC-295 — fix/legend-respawn (PR #100) — claudiodh + Claude Code
 
 - What was done: answered swholtzman's CHANGES_REQUESTED review and the owner's DEC-295. A dead Legend now waits as itself: `DeathSystem` withdraws it (`EntityStore.withdraw`, not retired), `RespawnQueue` holds the same object and `StateHasher` hashes its fields; on return it gets full health and aether, no statuses, movement or target, faces the enemy Stronghold (S1), and a bot laner re-plans its lane (`assessLanes`). `createWithId` and `Progression.restore` are gone. DEC-186 "pay on respawn" (B1): a waiting Legend is owed its team's structure and boss XP and late kill XP, paid on `legend-respawned` with cause `respawn`, which `level-matches-xp` accepts only for a Legend back this tick. `RespawnSystem` is registered in every match, after the Duel round (a Duel test pins it, S4). Client: `LegendBodies` and `LegendBodyLayer` leave a greyed body where a Legend fell. Docs: DEC-295 row, BUG-6 `Fixed`, the INBOX item moved to Done, this file's #97 entry made whole again (B2). Not done: the design-doc updates of review S3 and N4.
@@ -11437,6 +11882,35 @@ tick)`), and a minion records the point that granted its levels (`Veterancy.gran
 - Next step: merge phase/3 (PROGRESS conflict, keep both sides), refresh the PR body, re-request
   review.
 
+### 2026-11-22 — Phase 3 / sprint 3.6: the Greater Boss's BossController and its six moves — feat/greater-boss-moves — Aryan Walanj + Claude Code
+
+- What was done: stacked on `feat/cathedral-eruption-boss` (`c11e168a`). Ported Aryan's local
+  `feat/cathedral-boss-controller` and `feat/cathedral-boss-moves` (`803ffc8f` to `3bada812`) as
+  their final state: the files they add as they are, the files they change merged by hand onto
+  this line (the deferred spawn, the gem entity, the Cathedral capture zone as the boss's home).
+  The Greater Boss now runs on `BossController` (11 §4.6): an entrance roar (`boss-entrance`, on
+  `SpawnSystem`'s spawn pass), then `roam → telegraph → execute → recover`, its six moves in a
+  fixed rotation (slam, sweep, wide sweep, beam, charge, roar) through the interim `boss-move`
+  command, `BossMoveCast` and `BossMoveSystem` with one `BossMoveEffect` per shape. Its kill lifts
+  the killer's team exactly 5 levels (DEC-237, `XP_SOURCES.teamKills` `{ levels: 5 }`). Its old
+  `greater-boss` aggro profile is removed. Docs 03, 05, 07, 10, 11 and 12 and the moves branch's
+  `INBOX.md` items for Sam carried over.
+  Critic (`architecture-reviewer`): PASS, no blockers; nits applied (the `ponytail:` marker in
+  `Movement.pushBy`, doc 10's branch and date, the pipeline order TSDoc). Left for the PR or
+  `INBOX.md`: `PathingSystem`'s controller-id opt-out (interim), directional moves aiming where the
+  boss last walked (an open question for Sam), and the DRY nits. Ponytail review: ship; one
+  nice-to-have (the boss's unused `attack` and `movementStrategy`, already asked in `INBOX.md`).
+- Checks run: `npm run check` (2026-11-22 03:28-03:51) exit 1: format "All matched files use
+  Prettier code style!", `check:no-js`, lint, typecheck and knip passed; core "Test Files 1 failed
+  | 286 passed (287)", "Tests 1 failed | 1772 passed (1773)", the same `Simulation.modifiers.test.ts`
+  "enrages the lane of a tower lost in play" timeout ("Test timed out in 60000ms") as on
+  `feat/cathedral-eruption-boss`; protocol "Tests 29 passed (29)"; client "Test Files 306 passed
+  (306)", "Tests 2096 passed (2096)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)".
+  Then (03:53-04:06), after the critic's nits: lint of the edited files exit 0; core coverage with
+  `--maxWorkers=2` "Test Files 287 passed (287)", "Tests 1773 passed (1773)"; build exit 0;
+  "Documentation check passed."
+- Next step: push both branches and open the stacked PRs (the push was blocked for the agent).
+
 ### 2026-11-19 — Phase 3 / GL-16: merge phase/3 (#126, #121, #120, #119 merged) — refactor/map-feature-link — sholtzman + Claude Code
 
 - What was done: PR #129 became conflicting again when the stacked chain #126 → #121 → #120 →
@@ -11473,3 +11947,515 @@ tick)`), and a minion records the point that granted its levels (`Veterancy.gran
   (`git diff --diff-filter=D 564fbf13 e34152f6` is empty).
 - Next step: the owner pushes with `push-gl16-merge-5a7cc8dc.sh`; PR #129's body (v7) names the
   new base, head and check.
+
+### 2026-11-19 — Phase 3 / sprint 3 work: land DEC-38 and the DEC-11 weapon clarification — docs/land-dec-38 (from `af54fe96`) — sholtzman + Claude Code
+
+- What was done: the owner asked to land commit `f27a1a17` (2026-10-10, on
+  `docs/sprint-2-requirements-and-planning`), which was never pushed: PR #27 merged its parent
+  `d971f391`. Its content, re-applied by hand on phase/3 because the decisions table has grown:
+  - `13-owner-decisions-log.md`: the DEC-11 row gains the owner's 2026-10-10 chat clarification
+    that a loadout also includes a weapon under the existing rules; new row DEC-38 (changeable
+    team-based Legend skins, a full-game stretch goal), the number that the log already reserved
+    for it ("DEC-38 (Legend skins, `docs/sprint-2-requirements-and-planning`)").
+  - `08-loadout.md` pool rule and the Legend team brief: the same weapon sentence.
+  - `backlog-post-mvp.md`: a DEC-38 skins row (Jira SCRUM-411).
+  - The 2026-10-10 Jira work that `f27a1a17`'s own entry recorded: epics SCRUM-390 (Duel) and
+    SCRUM-391 (server and scalability); tasks SCRUM-392…SCRUM-411 and ability subtasks
+    SCRUM-412…SCRUM-423, labelled `planning-2026-10-10` (SCRUM-406 is the volatile-crystal
+    subtask of SCRUM-178); SCRUM-347/348/349 moved to Done with comments; comments on SCRUM-164,
+    SCRUM-290 and SCRUM-160.
+- Checks run: `npm run check` (2026-11-19) → exit 0: "All matched files use Prettier code style!"; core "Test Files 267 passed (267)", "Tests 1637 passed (1637)"; protocol "Tests 29 passed (29)"; client "Test Files 298 passed (298)", "Tests 2014 passed (2014)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 431ms"; "Documentation check passed." Critic (architecture-reviewer): PASS WITH NOTES, its three notes fixed (DEC-38 provenance note, this check line, the full Jira record). Ponytail: no cuts.
+- Next step: push `docs/land-dec-38`, open the PR into phase/3; it merges after one teammate
+  approval and green CI.
+
+### 2026-11-19 — Phase 3 / sprint 3 work: merge phase/3 (`d85bc2f5`) into docs/land-dec-38 (PR #133) — docs/land-dec-38 — sholtzman + Claude Code
+
+- What was done: PR #133 reported a conflict after phase/3 moved from `af54fe96` to `d85bc2f5`.
+  Merged `origin/phase/3-sprint-3-work` into the branch. The only conflict was this file; the
+  resolution keeps phase/3's entries and appends the DEC-38 entries. The decisions log merged
+  without a conflict and keeps one DEC-38 row.
+- Checks run: `npm run check` (2026-11-19) → exit 0: "All matched files use Prettier code style!"; core "Test Files 268 passed (268)", "Tests 1647 passed (1647)"; protocol "Tests 29 passed (29)"; client "Test Files 298 passed (298)", "Tests 2011 passed (2011)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 883ms"; "Documentation check passed."
+- Next step: push `docs/land-dec-38`; PR #133 merges after one teammate approval and green CI.
+
+### 2026-11-20 — Phase 3 / sprint 3 work: PR #133 review round 1 (merge phase/3 `a3550159`, B1, S1–S5, N1, N2) — docs/land-dec-38 — sholtzman + Claude Code
+
+- What was done: claudiodh's request-changes review on `9669cc66`.
+  - B1: merged `origin/phase/3-sprint-3-work` (`a3550159`, after #125 and #140) into the branch.
+    Conflicts were this file (phase/3's entries kept, ours appended) and the decisions-log
+    frontmatter (phase/3's `last-reviewed`).
+  - S1: the DEC-38 quote now reads "[affecting]": the owner typed "effecting" in `f27a1a17`; his
+    standing rule is to correct typos, and the brackets mark the edit in a verbatim quote.
+  - S2: the DEC-38 row says that Jira SCRUM-411 is a paraphrase of the quote and that the verbatim
+    text was recorded in `f27a1a17`.
+  - S3: the DEC-38 backlog row is folded into the existing team-skins row (one row per feature).
+  - S4, S5: `last-reviewed` bumped on the Legend team brief; `08-loadout.md` (skin row) and
+    `10-art-and-lore.md` (skin paragraph) now name DEC-38.
+  - N1: the second DEC-11 clarification starts "Also confirmed the same day (the owner's words)".
+  - N2: `07-weapons-and-artifacts.md` states that only the class and its subclasses can use its
+    unique weapon (DEC-11), which the DEC-11 row now lists under Changes.
+- Checks run: `npm run check` (2026-11-20) → exit 0: "All matched files use Prettier code style!"; core "Test Files 275 passed (275)", "Tests 1674 passed (1674)"; protocol "Tests 29 passed (29)"; client "Test Files 298 passed (298)", "Tests 2011 passed (2011)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 458ms"; "Documentation check passed." No critic or ponytail re-run: docs-only fixes the reviewer asked for, and the reviewer re-reviews them.
+- Next step: push, reply to the review, re-request review from claudiodh.
+
+### 2026-11-21 — Phase 3 / sprint 3 work: merge phase/3 (`2a5058f7`) into docs/land-dec-38 (PR #133) — docs/land-dec-38 — sholtzman + Claude Code
+
+- What was done: phase/3 moved to `2a5058f7` (#138, #143) before the round-1 push. Merged it into
+  the branch. The only conflict was this file: phase/3's entries kept, the DEC-38 entries appended.
+  The decisions log merged without a conflict; the DEC-11 and DEC-38 rows are unchanged.
+- Checks run: `npm run check` (2026-11-21) → exit 0: "All matched files use Prettier code style!"; core "Test Files 276 passed (276)", "Tests 1679 passed (1679)"; protocol "Tests 29 passed (29)"; client "Test Files 303 passed (303)", "Tests 2077 passed (2077)"; server "Test Files 21 passed (21)", "Tests 84 passed (84)"; "✓ built in 484ms"; "Documentation check passed."
+- Next step: push with the review reply; claudiodh re-reviews.
+
+### 2026-11-21 — Phase 3 / sprint 3 work: merge phase/3 (`54615afa`, #135) into docs/land-dec-38 (PR #133) — docs/land-dec-38 — sholtzman + Claude Code
+
+- What was done: #135 merged into phase/3 (`54615afa`) before the round-1 push. Merged it into the
+  branch. The only conflict was this file: phase/3's entries kept, the DEC-38 entries appended. No
+  line of either side was lost (line multiset check: 0 missing against each parent). The decisions
+  log merged without a conflict; the DEC-11 and DEC-38 rows are unchanged.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/cleanup-2026-11-19/check-133-merge-54615afa.log`): "All matched files use
+  Prettier code style!"; core "Tests 1679 passed (1679)"; protocol "Tests 29 passed (29)"; client
+  "Tests 2077 passed (2077)"; server "Tests 84 passed (84)"; "Documentation check passed."; then
+  `prettier --check` and `npm run docs:check` with this entry.
+- Next step: push with the review reply; claudiodh re-reviews. After #137 (DEC-277) merges, one
+  more phase/3 merge moves these entries into `docs/plan/progress/`.
+
+### 2026-11-14 — Phase 3 / tower ruins: merge phase/3 (#85, #86) and retarget — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: #85 and #86 merged into phase/3 (`88f5afd8`), so this PR's base moved from
+  `fix/minion-stack-followups` to `phase/3-sprint-3-work` (`gh pr edit --base`) and phase/3 was
+  merged in. Conflicts, both sides kept: `systems/DefaultSystemPipeline.ts` (#86's
+  `OUT_OF_COMBAT_HEALING` import kept; the `MAP_FEATURE_DEFINITIONS` import dropped, as this
+  branch moved its one use to `StructureRuins`), architecture 06 (`last-reviewed`) and this file.
+  One semantic conflict: #86's `state/__fixtures__/spawnMapStructures.ts` copied the old
+  `Simulation.spawnStructures` rule (only the map object of the same id), so a lane tower's
+  `Footprint` was its own box, not its fort, and two `HealingZones.test.ts` cases failed ("makes a
+  spawner-tower's / buff-tower's zone the box round its fort walls"). The fixture now follows this
+  branch's rule: the object of the same id and the objects `partOf` it.
+- Red first: the two cases failed on the merged tree before the fixture change
+  (`eternalus-agent-work/tower-ruins-and-routes/check-merge-phase3-88f5afd8.log`, "Tests 2 failed
+  | 1520 passed (1522)").
+- Checks run: full `npm run check` exit 0 after the fix and before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-merge-phase3-88f5afd8-r2.log`): core "Tests
+  1522 passed (1522)", protocol "Tests 18 passed (18)", client "Tests 1883 passed (1883)", server
+  "Tests 79 passed (79)", "Documentation check passed."; then `prettier --check` and
+  `npm run docs:check` with this entry.
+- Next step: push; merge into `refactor/tower-ruins-followups` (#122).
+
+### 2026-11-15 — Phase 3 / tower ruins and routes: merge phase/3 (#79, #93) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `8dc7d962` (#79 unit facing chevron). Conflicts, both sides
+  kept: this file; the imports and class TSDoc of `PathingSystem.ts` (#79's guard facing
+  paragraph after this branch's court paragraph); `MatchWorld.test.ts` (this branch's reopen
+  test and #79's two start-facing tests). Semantic conflict: #79's two tests built `MatchWorld`
+  from a `WorldMap`, but this branch's constructor takes a `MatchGrid`
+  (`TS2304: Cannot find name 'WorldMap'` after the merge). They now pass
+  `MatchGrid.build(map, [], { cellSize: 2, features: {} })`, as this file's first test does: no
+  blocking feature, like the `() => false` rule they used. Their assertions are unchanged.
+  #79's facing at spawn is for Legends only, so `__fixtures__/spawnMapStructures.ts` still
+  follows `Simulation.spawnStructures`.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-merge-phase3-8dc7d962.log`): core
+  "Tests 1555 passed (1555)", protocol "Tests 18 passed (18)", client "Tests 1890 passed
+  (1890)", server "Tests 79 passed (79)", "Documentation check passed."; then
+  `prettier --check` and `npm run docs:check` with this entry.
+  Then merged phase/3 at `fcc48a7b` (#93 match scoring). Conflicts, both sides kept: this file
+  and the owner decisions log (#93's DEC-250 batch above this branch's DEC-246 batch, both of
+  2026-11-14, as the higher number is the newer). Semantic: #93 gives each structure its
+  `mapFeatureId` in `Simulation.spawnStructures`, and `__fixtures__/spawnMapStructures.ts`, which
+  builds structures "the way `Simulation` does", now passes it too. Full `npm run check` exit 0
+  (`eternalus-agent-work/tower-ruins-and-routes/check-merge-phase3-fcc48a7b.log`): core
+  "Tests 1647 passed (1647)", protocol 18, client 1979, server 79, docs passed.
+- Next step: push; then merge this head into `refactor/tower-ruins-followups` (#122).
+
+### 2026-11-14 — Phase 3 / tower-ruins follow-ups: merge #98's phase/3 head — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` `a95efbb0` (PR #98 with phase/3
+  `88f5afd8`: #85 and #86, and the `spawnMapStructures` fixture fix for the fort `Footprint`).
+  Only this file conflicted; both sides are kept. No code change on this branch.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/check-merge98-a95efbb0.log`):
+  core "Tests 1530 passed (1530)", protocol "Tests 18 passed (18)", client "Tests 1883 passed
+  (1883)", server "Tests 79 passed (79)", "Documentation check passed."; then `prettier --check`
+  and `npm run docs:check` with this entry.
+- Next step: push.
+
+### 2026-11-15 — Phase 3 / tower ruins follow-ups: merge #98's head (phase/3 with #79, #93) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged the local head of `feat/tower-ruins-and-routes` (`3b35621e`), which
+  merges phase/3 at `8dc7d962` (#79 unit facing chevron). Conflicts, both sides kept: this file;
+  `MatchWorld.ts`, where this branch's one-argument constructor (the map comes from
+  `matchGrid.definition`) now also fills #79's Stronghold positions from `this.definition`, and
+  #79's `startFacing` stays. Semantic conflicts, found by `tsc`: #79's two start-facing tests
+  passed the map as well (`TS2554`), now `new MatchWorld(matchGrid)` as this branch's other
+  tests do; #79's DEC-192 pipeline test had no `ruinWall`, which this branch made required
+  (`TS2345`), now `RUINED_FORT_WALL_DEFINITION` as every other test in that file. Assertions
+  unchanged.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/check-merge98-3b35621e.log`):
+  core "Tests 1563 passed (1563)", protocol "Tests 18 passed (18)", client "Tests 1890 passed
+  (1890)", server "Tests 79 passed (79)", "Documentation check passed."; then
+  `prettier --check` and `npm run docs:check` with this entry.
+  Then merged #98's next head (`d8d89bf7`, phase/3 at `fcc48a7b`, #93 match scoring). Only the
+  owner decisions log conflicted: #93's DEC-250 batch above this branch's DEC-245/246 batch,
+  both of 2026-11-14, as the higher number is the newer. `tsc` found no API drift. Full
+  `npm run check` exit 0
+  (`eternalus-agent-work/tower-ruins-and-routes/tower-ruins-followups/check-merge98-d8d89bf7.log`):
+  core "Tests 1655 passed (1655)", protocol 18, client 1979, server 79, docs passed.
+- Next step: push after #98.
+
+### 2026-11-19 — Phase 3 / tower ruins and routes: merge phase/3 (the DEC-242 split PRs #121, #120, #119 and #127, #113, #102, #101, #99, #126) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `d85bc2f5`. 21 files conflicted (15 code, 6 docs). Rule: this
+  branch still held its own copies of the code that DEC-242 split into #119 (gate reach), #120
+  (fort geometry helpers) and #121 (A\* search area); for those hunks phase/3's reviewed version
+  wins, and this branch's own content (ruins, court routes, 2.5 m cells, fort spacing) stays.
+  Code: `fortInWorld.ts` and its test (add/add) keep this branch's version, which is #120's plus
+  `assertFortWallsResolve`; `utils/geometry.ts` and its test take #120's (with
+  `doRectsOverlap`); `PathingSystem.ts` keeps this branch's `courtMove`/`fortAt`, which already
+  use `isPointInRect`; `AStarPathfinder.ts` keeps this branch's `CourtExitField` and #121's cap
+  from `maxSearchArea`, and its tests keep both sides; `DefaultSystemPipeline` keeps this
+  branch's `ruinWall` (import, `requireRuinWall`, its test) with #99's `GuardPlanDefinition`
+  import and #119's test name; the `Simulation.spawnStructures` and `Footprint` TSDoc keep the
+  `partOf` objects with #119's gate outline wording; `buildingGeometry.ts` keeps
+  `laneTowerSize` (this branch) and #99's keep divisors (the same keep size as before, so the
+  golden map hash 4_128_499_639 is unchanged). DEC-243 rename on this branch's own sites:
+  `MatchPathfinderFactory`, the two default-config tests and the `LIMITS` tests in
+  `AStarPathfinder.test.ts`, and `PathingSystem.court`/`.guards` tests (`maxSearchArea: 40_000`,
+  10000 cells of 2 m); `config.map.pathMaxSearchArea` is 150000 m², 24000 cells of 2.5 m, so
+  DEC-240's own 24000 is gone (the 2.5 m `pathSnapCells` comment stays). Docs: `INBOX.md` (H1
+  note) takes phase/3's DEC-244 text; 03 takes the `pathMaxSearchArea` row (DEC-243) and the later
+  `last-reviewed`; the 07 status note has #119's gate-reach bullet, this branch's ruins bullet
+  without its gate sentence, and the court-routes bullet; the 18 status note keeps this branch's
+  court text and phase/3's A1/A2 and boss interim text; the owner decisions log keeps every
+  batch, newest date first and the higher DEC first within a date (244, 243, 242; 240, 239, 237,
+  235); this file keeps both sides (one region that git split through shared lines keeps the
+  shared tail under each side's last entry). A line count shows this file and the decisions log
+  keep every line of both sides.
+- Checks run: full `npm run check` exit 0 on the merged tree before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-merge-phase3-d85bc2f5.log`): core
+  "Tests 1707 passed (1707)", protocol "Tests 29 passed (29)", client "Tests 2011 passed
+  (2011)", server "Tests 84 passed (84)", "Documentation check passed."; then
+  `prettier --check` and `npm run docs:check` with this entry.
+- Next step: push; claudiodh re-reviews #98; merge this head into `refactor/tower-ruins-followups`
+  (#122).
+
+### 2026-11-19 — Phase 3 / tower ruins follow-ups: merge #98's head (phase/3 `d85bc2f5`) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` at `86d70353` (its merge of phase/3
+  `d85bc2f5`: the DEC-242 split PRs #119, #120, #121 and #99, #101, #102, #113, #126, #127) as
+  `3293d7c6`. Three files conflicted, all docs; in each both sides added text at the same place:
+  `INBOX.md` keeps this branch's BT2 item, then #98's new items; `03-game-model.md` takes the
+  later `last-reviewed` (2026-11-14); this file keeps both sides, oldest first. No code
+  conflicts. This branch's required `DefaultSystemPipelineOptions.ruinWall` (BTD3) and its
+  one-grid `MatchWorld` hold at phase/3's new call sites: every `new DefaultSystemPipeline`
+  passes `ruinWall` and every `new MatchWorld` takes one `MatchGrid`. This branch's own diff
+  over its base is unchanged by the merge (sorted added and removed lines of `d8d89bf7..c671628b`
+  and `86d70353..3293d7c6` compared: only doc 03's base `last-reviewed` and one blank line after
+  the BT2 item in `INBOX.md` differ).
+- Checks run: `npm ci`, then full `npm run check` exit 0 on the merged tree `1639473a` before
+  this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-122-merge-86d70353.log`): core "Tests 1715
+  passed (1715)", protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server
+  "Tests 84 passed (84)", "Documentation check passed."; then `prettier --check` and
+  `npm run docs:check` with this entry.
+- Next step: push after #98's head `86d70353` is on origin; claudiodh re-reviews #98, then #122.
+
+### 2026-11-20 — Phase 3 / tower ruins and routes: merge phase/3 (#125, content durations at load) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `5a7cc8dc` (#125, DEC-241) as `5502dc94`. Three files
+  conflicted. `DefaultSystemPipeline.ts`, imports only: this branch drops the unused
+  `MAP_FEATURE_DEFINITIONS` import and phase/3 renames the healing import to
+  `loadOutOfCombatHealing`, which the merged file calls; the merged file keeps that one import.
+  The owner decisions log keeps every batch, newest date first (DEC-242 2026-11-13, DEC-241
+  2026-11-11, DEC-240 and DEC-239 2026-11-10), with phase/3's later `last-reviewed`
+  (2026-11-16). This file keeps both sides, phase/3's entries first. A line comparison shows
+  both files keep every line of both sides except this branch's older `last-reviewed`.
+- Checks run: full `npm run check` exit 0 on the merge commit before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-98-merge-5a7cc8dc.log`): core "Tests 1734
+  passed (1734)", protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server
+  "Tests 84 passed (84)", "Documentation check passed."; then `prettier --check` and
+  `npm run docs:check` with this entry.
+- Next step: push; claudiodh re-reviews #98; then #122 takes this head.
+
+### 2026-11-20 — Phase 3 / tower ruins follow-ups: merge #98's head (phase/3 `5a7cc8dc`) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` at `5502dc94` (its merge of phase/3
+  `5a7cc8dc`, #125, DEC-241) as `56f68caf`, with no conflicts; then #98's PROGRESS entry
+  (`3bc24d27`) as `c3cc2dbf`, where this file keeps both sides, oldest first. This branch's own diff
+  over its base is unchanged (sorted added and removed lines of `86d70353..0e6bc844` and
+  `5502dc94..56f68caf` are identical), and #125 adds no `DefaultSystemPipeline` or
+  `MatchWorld` call site, so this branch's required `ruinWall` (BTD3) and one-grid
+  `MatchWorld` need no change.
+- Checks run: full `npm run check` exit 0 on `56f68caf`
+  (`eternalus-agent-work/tower-ruins-and-routes/check-122-merge-5502dc94.log`): core "Tests 1742
+  passed (1742)", protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server
+  "Tests 84 passed (84)", "Documentation check passed."; the later merge and this entry change
+  only this file: `prettier --check` and `npm run docs:check`.
+- Next step: push after #98's head `3bc24d27`; claudiodh re-reviews #98, then #122.
+
+### 2026-11-20 — Phase 3 / tower ruins and routes: merge phase/3 (#140, DEC-289) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `a3550159` (#140, DEC-289, the tower horde test's own 120 s
+  time limit). Only this file conflicted: both sides appended entries; it keeps both, phase/3's
+  entry first. `Simulation.mapObjects.test.ts`, `INBOX.md` and the owner decisions log merged
+  without conflict: `HORDE_WALK_TIMEOUT_MS` is the horde `it.each` argument, and the DEC-289
+  batch (2026-11-20) is the newest. `git diff` against each parent shows no removed line in this
+  file. This entry is part of the merge commit.
+- Checks run: full `npm run check` exit 0 on the merge before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-98-merge-a3550159.log`): core "Tests 1734
+  passed (1734)", protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server
+  "Tests 84 passed (84)", "Documentation check passed."; then `prettier --check` and
+  `npm run docs:check` with this entry.
+- Next step: push; claudiodh re-reviews #98; #122 takes this head.
+
+### 2026-11-20 — Phase 3 / tower ruins follow-ups: merge #98's head (phase/3 `a3550159`, #140) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` at `aa01127f` (its merge of phase/3
+  `a3550159`, #140, DEC-289). Only this file conflicted: both sides appended entries; it keeps
+  this branch's entry for the `5a7cc8dc` merge first, then #98's new entry. `INBOX.md`, the owner
+  decisions log and `Simulation.mapObjects.test.ts` merged without conflict. Against `56bcd64b`
+  the merge changes only those three files and this one, so no code under test changes. This
+  entry is part of the merge commit.
+- Checks run: full `npm run check` on the merge before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-122-merge-aa01127f.log`) under load average
+  27 to 29 (36 min): core "Tests 1742 passed (1742)", protocol "Tests 29 passed (29)", client
+  "Tests 2011 passed (2011)", server "Tests 2 failed | 82 passed (84)", EXIT=1. The two failures
+  are `CoreDuelSimulationFactory.test.ts` "Test timed out in 5000ms" (7.5 s and 9.2 s); a re-run
+  of the server tests failed the same way (6.8 s and 8.2 s), and the same file with
+  `--testTimeout=60000` passed "Tests 2 passed (2)". The server code is the same as on
+  `56bcd64b`, whose CI passed on ubuntu and windows. `prettier --check` and `npm run docs:check`
+  with this entry. CI on the pushed head is the full check.
+- Next step: push after #98's head `aa01127f`; claudiodh re-reviews #98, then #122.
+
+### 2026-11-20 — Phase 3 / map work: DEC-315 forts and towers — feat/map-work-forts-towers — sholtzman + Claude Code
+
+- What was done: lane tower forts 32 → 56 m (DEC-315) with every way through a court 2 nav cells
+  wide; a tower's radius follows its fort (`LANE_TOWER_FOOTPRINT_RADIUS`). Court ground is routable
+  for lane fields as for A\* (`WorldMap.isRoutable`) and no corridor holds a fort's north or south
+  wall band, so hordes march through a court by its west and east doorways (`ec319dcf`). Houses,
+  camp pieces and lakes keep out of lane forts (`laneFortKeepOuts`, `1bbe97b3`). Docs 06, 07, 10, 18.
+- Checks run: full `npm run check` exit 1
+  (`eternalus-agent-work/dec-288/map-work-forts-check.log`): format, no-js, lint, typecheck and knip
+  pass; core "Tests 14 failed | 1738 passed (1752)", protocol "Tests 29 passed (29)", client "Tests
+  2011 passed (2011)", server "Tests 84 passed (84)"; build not reached; `npm run docs:check` →
+  "Documentation check passed.". The 14 need decisions: 56 m forts no longer fit 7 lanes (unless
+  3200 x 1400), 3 towers of a kind, or 1 + 5 and more buff towers (10 tests), and two time budgets
+  (10 s tower exit, 150 s heal and rejoin) are too short for a 56 m fort (4 tests).
+- Next step: the coordinator or the owner decides those configs and budgets; then the pre-PR gate.
+
+### 2026-11-21 — Phase 3 / map work: DEC-315 failing tests — feat/map-work-forts-towers — sholtzman + Claude Code
+
+- What was done: committed the previous runner's staged docs as they were (`3694cf34`) and merged
+  #122's head `ce0ce423` (`668d7e84`; PROGRESS conflict, both sides kept). Root-caused the 14
+  failing core tests of the entry before: its "the 14 need decisions" was wrong for 12 of them.
+  The tower horde exit test (seeds 1, 2, 10) has no stuck member: a 56 m fort adds 12 m to the walk
+  out of it, about 4 s; every member is out from 11.2 s (7.2 s with 32 m forts), so its budget
+  goes from 10 s to 12 s, with the evidence in the test. Seeds 1 and 2 gave the same positions
+  because map-1's lanes and forts do not change with the seed. 9 generator tests checked another
+  rule and hit the fort overlap or a lane band rule first; they get configs where forts fit and the
+  same rule decides (7-lane cases 2400 wide, no towers for the gate turret and the 1600 x 1400
+  lane tests, fewer BuffTowers for the band, order and neighbouring-lane tests; `21afe8c8`). Two
+  tests still fail and need owner calls: "3 towers of each kind" in the default world (56 m forts
+  fit at most 2 of each kind there), and the heal-and-rejoin test. That one is no court-routing
+  fault and no budget too short for the walk: the horde besieging a tower holds 27 m from its
+  centre, beyond a healed bot's 12 m `engageRadius`, so the bot does not fight again until the
+  tower falls (153.4 s, budget 150 s).
+- Checks run: full `npm run check` exit 1 (`eternalus-agent-work/dec-288/map-work-forts-check-2.log`):
+  format, no-js, lint, typecheck and knip pass; core "Tests 2 failed | 1750 passed (1752)" (the
+  two above), protocol "Tests 29 passed (29)", client "Tests 2011 passed (2011)", server "Tests
+  84 passed (84)"; build not reached. Single-file runs: the tower test file "Tests 3 passed | 18
+  skipped (21)" at 12 s, red at 11 s and with a 64 m fort; 5 converted generator tests red under a
+  deliberate code break each. This entry: `prettier --check` and `npm run docs:check`.
+- Next step: the owner rules on the fort-capacity and healed-bot cards (forts runner report,
+  `eternalus-agent-work/dec-288/reports/forts-runner.md`); then the pre-PR gate.
+
+### 2026-11-21 — Phase 3 / map work: critic round 1 fixes on the merged branch — feat/map-work-forts-towers — sholtzman + Claude Code
+
+- What was done: one entry for the whole merged branch (critic round 1, S5). Its parts: lane tower
+  forts are 56 m and hordes cross a court by its west and east doorways (`ec319dcf`, `1bbe97b3`);
+  an attacker inside a building deals ×1.25 to its walls (`4fa2c93e`, DEC-247 (2), DEC-288); a
+  fallen tower shows no marker, banner or minimap glyph, and the two tower kinds look different
+  (`51d906ed`, `8f005e94`); the BuffTower aura and its ring (`5181f61b`, `1adcc786`), all under
+  DEC-315. Critic round 1 (request-changes, 1 blocker) fixes: the aura never applied in a match,
+  because `SpaceSystem` indexes only units; `StructureAuraSystem` now reads the emitter's
+  `Transform`, with a whole-`Simulation` test (B1). Its six better-than-design items are built
+  (DEC-318, `INBOX.md` HC-B21): one `Aura` component and `EntitySnapshot.aura`, a stateless aura
+  system, one client `RetiredFeatures` rule fed by `MatchBridge`, camps moved clear of the lane
+  forts at generation, each building interior built once with fort wall bands read from the wall
+  objects, and a first-tick tower-exit test. Also: a load test of the aura status ids, scattered
+  rocks and trees kept off the forts, a gate fall test in `Match`, BUG-2 In progress and new BUG-8
+  (a tower horde on blocked ground) in `docs/plan/bugs.md`. Docs 05, 06, 07, 10, 18.
+  `MapGenerator` golden hash 3_073_897_995 → 2_379_214_471 (camps and obstacles moved).
+- Checks run: full `npm run check` exit 1
+  (`eternalus-agent-work/dec-288/check-8.log`): format, no-js, lint, typecheck and knip pass;
+  core "Tests 2 failed | 1801 passed (1803)" (the two of the entry before: "3 towers of each
+  kind" and the heal-and-rejoin test), protocol "Tests 29 passed (29)", client "Tests 2025 passed
+  (2025)", server "Tests 84 passed (84)"; build not reached. Run apart: `npm run build` exit 0,
+  `npm run docs:check` → "Documentation check passed.". The run before (`check-7.log`) failed on
+  Prettier only (one line wrap in `StructureAuraSystem.test.ts`).
+- Next step: critic round 2 and ponytail on the delta from `3e9f7c9d`; the owner rules on the
+  Owner Calls cards (fort-map-sizes, bot-defend-tower, aura-radius-origin, inside-bonus-scope)
+  and on HC-B21.
+
+### 2026-11-21 — Phase 3 / map work: critic round 2 fixes — feat/map-work-forts-towers — sholtzman + Claude Code
+
+- What was done: critic round 2 (approve, 0 blockers) fixes on the delta from `3e9f7c9d`. Its three
+  better-than-design items are built (DEC-320, `INBOX.md` HC-B23): a fallen lane tower's banner
+  falls with its own fort object, so `MapDecoration.flagOf`, `flagLastOf` and `SceneryView`'s
+  `isRetired` check go, with their 2 tests (`SceneryView` "hides a fallen structure's banner and
+  keeps the rest of its fort"; `MapPresentationBuilder` "tags a structure fort banner as that
+  structure flag, and a capture point banner as no flag"); `Match` feeds `RetiredFeatures` and
+  `MatchBridge` only reads it; fort walls carry a typed role (`MapObject.fortWall`) that
+  `fortWallBands` reads. Also: `radiusOf` throws for an obstacle choice that is no feature
+  definition (R2-N6), `notOutNow` reads `Transform` (R2-N3), a test ties the camp art to
+  `CAMP_HALF_EXTENT` (R2-N2), ponytail r2 cuts 1, 2 and 4. Fail-first (R2-S2,
+  `eternalus-agent-work/dec-288/aura-breaks.log`): 8 breaks of the aura code each turned its
+  tests red (sources read from the neighbour index; dead sources kept; no removal; every status
+  stripped; covered aura statuses stripped; an unknown status id in the catalogue; any radius
+  accepted; no aura system in the pipeline), and 2 breaks turned the camp-extent test red (tents 1
+  unit wider apart; extent y 18 → 17); all green on restore. Docs: 06 §3 step 5 and a dated §10
+  section on fallen lane towers (R2-S1, R2-N4, R2-N5), the 03 `aura` group (R2-N7), the camp class
+  effect in DEC-318 (BTD4) and HC-B21 (4) (R2-S3), BUG-8 wording. Golden hash unchanged.
+- Checks run: full `npm run check` exit 1 (`eternalus-agent-work/dec-288/check-9.log`): format,
+  no-js, lint, typecheck and knip pass; core "Tests 2 failed | 1802 passed (1804)" (the same two:
+  "keeps every lane tower fort apart with 3 towers of each kind per lane" and "heals a bot that
+  retreated hurt back to the rejoin line, and it fights again"), protocol "Tests 29 passed (29)",
+  client "Tests 2024 passed (2024)", server "Tests 84 passed (84)"; build not reached. Run apart:
+  `npm run build` exit 0, `npm run docs:check` → "Documentation check passed.".
+- Next step: critic round 3 (the last loop) on `aa3c117a..HEAD`; the owner rules on the Owner
+  Calls cards (fort-map-sizes, bot-defend-tower, aura-radius-origin, inside-bonus-scope,
+  camp-class-after-move) and on HC-B21 and HC-B23.
+
+### 2026-11-21 — Phase 3 / map work: critic round 3 nits and better-than-design items — feat/map-work-forts-towers — sholtzman + Claude Code
+
+- What was done: critic round 3 (the owner's last loop: approve, 0 blockers, 0 should-fix) follow-ups
+  on top of `f44a2ea2`. Nits: TSDoc of `CampLayoutInput.clearance` and `FortWall.role` (R3-N1,
+  R3-N2); `fortWallBands` selects by a typed `BAND_ROLES` (R3-N3); a `Match` test drops a gate
+  before the first tick and expects it not drawn, which guards the constructor's
+  `RetiredFeatures.observe` (R3-N4). Its two better-than-design items are built under the owner's
+  standing rule of 2026-11-09 (DEC-321, `INBOX.md` HC-B24): one camp geometry entry
+  (`BUILDING_GEOMETRY.camp`) that the camp art reads and the camp clearance box derives from
+  (`CAMP_HALF_EXTENT` removed); `MapGenerator.generate` rejects an unknown obstacle choice before
+  it builds, for every seed (`radiusOf` is a plain lookup again). The test "rejects a feature that
+  names an unknown definition" drops only the Stronghold's definition now, so it still reaches
+  `createMapFeature` (assertion unchanged). No 4th critic loop. Fail-first
+  (`eternalus-agent-work/dec-288/r3-breaks.log`): the constructor's `observe` removed (new `Match`
+  case red); a typo role (`tsc` TS2820); the new obstacle test red before the up-front check, and
+  both obstacle tests red with it removed; camp tents drawn 1 unit wider than the entry, and
+  `halfExtent.x` without the tents (camp tests red each time); all restored. A scratchpad probe
+  found map, scenery and map objects identical before and after the camp change at 18
+  configurations. Golden hash unchanged.
+- Checks run: full `npm run check` exit 1 (`eternalus-agent-work/dec-288/check-10.log`): format,
+  no-js, lint, typecheck and knip pass; core "Tests 2 failed | 1803 passed (1805)" (the same two
+  owner-card tests: "keeps every lane tower fort apart with 3 towers of each kind per lane" and
+  "heals a bot that retreated hurt back to the rejoin line, and it fights again"), protocol "Tests
+  29 passed (29)", client "Tests 2025 passed (2025)", server "Tests 84 passed (84)"; build not
+  reached. Run apart (`build-10.log`): `npm run build` exit 0, `npm run docs:check` →
+  "Documentation check passed.".
+- Next step: the owner rules on the Owner Calls cards (fort-map-sizes, bot-defend-tower,
+  aura-radius-origin, inside-bonus-scope, camp-class-after-move) and signs off HC-B21, HC-B23 and
+  HC-B24; then push and open the PR (stacked on #122, docs in #147).
+
+### 2026-11-21 — Phase 3 / map work: DEC-323 owner answers built — feat/map-work-forts-towers — sholtzman + Claude Code
+
+- What was done: the owner's three Owner Calls answers of 2026-11-21 (DEC-323), built after the
+  last architecture loop. (1) fort-map-sizes: the generator does not change; the "3 towers of each
+  kind" test moves to a 2400-wide world, with forts sized by `fortInWorld`. (2) bot-defend-tower:
+  the laner tree gets `Defend` after `Fight` and before `Push` (`ai/BotTargeting`, split out of
+  `BotLeaves`): the bot defends the nearest of its own lane towers or gate that an enemy within
+  `engageRadius` of its box (`LaneStructureEntry.box`, the whole fort) attacks. Engage radii rise
+  (`TUNE`): `normal` 12 → 18, `rover` 16 → 24, Rover hunt 20 → 30, lane minion acquisition 5.4 →
+  its leash. (3) aura-radius-origin: the BuffTower aura reaches 12 m beyond its fort box
+  (`state/outlineBoxOf`, `utils/geometry.distanceSquaredToRect`); `EntitySnapshot.aura` carries
+  the box; `StructureView.drawGround` draws a team-coloured field with drifting particles in a
+  ground pass under every unit. The two owner-card red tests are green. Routing critics instead of
+  a 4th architecture loop: ponytail (cuts and rejections in
+  `eternalus-agent-work/dec-288/reports/dec-323-ponytail.md`); correctness r1 (F1, F2, F3, F5, F7,
+  F8 fixed; F6 rejected: an ability's range is the guard for a far cast); correctness r2 on the
+  `Defend` change (no code defect; F1–F3 test gaps fixed). Fail-first breaks in
+  `eternalus-agent-work/dec-288/dec-323-breaks.log` and `dec-323-aura-breaks.log`.
+- Checks run: full `npm run check` exit 0 (`eternalus-agent-work/dec-288/check-11.log`): format,
+  no-js, lint, typecheck and knip pass; core "Tests 1821 passed (1821)", protocol "Tests 29
+  passed (29)", client "Tests 2039 passed (2039)", server "Tests 84 passed (84)"; build passes;
+  "Documentation check passed.".
+- Next step: the owner rules on inside-bonus-scope and camp-class-after-move and signs off HC-B21,
+  HC-B23 and HC-B24; then push and open the PR (stacked on #122, docs in #147).
+
+### 2026-11-21 — Phase 3 / tower ruins and routes: merge phase/3 (#138, #143) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `2a5058f7` (#138 the match-start countdown, #143 its HUD
+  units). Only this file conflicted: both sides appended entries; it keeps both, phase/3's entries
+  first. `Simulation.ts`, `INBOX.md`, `03-game-model.md` and the owner decisions log merged without
+  conflict (the log's batch order is phase/3's). `git diff` against each parent shows no removed
+  line in this file. This entry is part of the merge commit.
+- Checks run: full `npm run check` exit 0 on the merge before this entry was added, load average
+  about 3 (`eternalus-agent-work/tower-ruins-and-routes/check-98-merge-2a5058f7.log`): core
+  "Tests 1739 passed (1739)", protocol "Tests 29 passed (29)", client "Tests 2077 passed (2077)",
+  server "Tests 84 passed (84)", "Documentation check passed."; then `prettier --check` and
+  `npm run docs:check` with this entry.
+- Next step: push; #122 takes this head. The ubuntu CI time-outs on `aa01127f` and `ce0ce423`
+  (server `CoreDuelSimulationFactory` at Vitest's 5 s default, core `Simulation.duel.test.ts` at
+  60 s) wait for the owner's answers (Owner Calls cards server-test-timeout and
+  core-duel-test-timeout).
+
+### 2026-11-21 — Phase 3 / tower ruins follow-ups: merge #98's head (phase/3 `2a5058f7`, #138, #143) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` at `a510655a` (its merge of phase/3
+  `2a5058f7`, #138 the match-start countdown, #143 its HUD units). Two files conflicted. This file:
+  both sides appended entries; it keeps this branch's entry for the `a3550159` merge first, then
+  #98's new entry. `docs/architecture/03-game-model.md`: only `last-reviewed`; it takes the later
+  date (2026-11-19), and the file is now the same as on #98. `Simulation.ts`, `INBOX.md`, the owner
+  decisions log and `objectiveLost.scenario.test.ts` merged without conflict. `git diff` against
+  each parent shows no removed line in this file. This entry is part of the merge commit.
+- Checks run: full `npm run check` exit 0 on the merge before this entry was added, load average
+  about 20 (`eternalus-agent-work/tower-ruins-and-routes/check-122-merge-a510655a.log`): core
+  "Tests 1747 passed (1747)", protocol "Tests 29 passed (29)", client "Tests 2077 passed (2077)",
+  server "Tests 84 passed (84)", "Documentation check passed."; then `prettier --check` and
+  `npm run docs:check` with this entry.
+- Next step: push after #98's head `a510655a`. The ubuntu CI time-outs wait for the owner's
+  answers (Owner Calls cards server-test-timeout and core-duel-test-timeout).
+
+### 2026-11-21 — Phase 3 / tower ruins and routes: merge phase/3 (#135, DEC-276) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `54615afa` (#135, DEC-276, the stop hook checks only changed
+  files). Only this file conflicted: both sides appended entries; it keeps both, phase/3's entries
+  first. `INBOX.md` and the owner decisions log merged without conflict. `git diff` against each
+  parent shows no removed line in this file. This entry is part of the merge commit.
+- Checks run: full `npm run check` exit 0 on the merge before this entry was added
+  (`eternalus-agent-work/tower-ruins-and-routes/check-98-merge-54615afa.log`): core "Tests 1739
+  passed (1739)", protocol "Tests 29 passed (29)", client "Tests 2077 passed (2077)", server
+  "Tests 84 passed (84)", "Documentation check passed."; then `prettier --check` and
+  `npm run docs:check` with this entry.
+- Next step: push; #122 takes this head. The ubuntu CI time-outs (server
+  `CoreDuelSimulationFactory` at Vitest's 5 s default, core `Simulation.duel.test.ts` at 60 s) wait
+  for the owner's answers (Owner Calls cards server-test-timeout and core-duel-test-timeout).
+
+### 2026-11-21 — Phase 3 / tower ruins follow-ups: merge #98's head (phase/3 `54615afa`, #135) — refactor/tower-ruins-followups — sholtzman + Claude Code
+
+- What was done: merged `feat/tower-ruins-and-routes` at `a5b55fa1` (its merge of phase/3
+  `54615afa`, #135, DEC-276, the stop hook checks only changed files). Only this file conflicted:
+  both sides appended entries; it keeps this branch's entry for the `2a5058f7` merge first, then
+  #98's new entries. The owner decisions log merged without conflict. `git diff` against each
+  parent shows no removed line in this file. This entry is part of the merge commit.
+- Checks run: full `npm run check` exit 0 on the merge before this entry was added, load average
+  about 10 (`eternalus-agent-work/tower-ruins-and-routes/check-122-merge-a5b55fa1.log`): core
+  "Tests 1747 passed (1747)", protocol "Tests 29 passed (29)", client "Tests 2077 passed (2077)",
+  server "Tests 84 passed (84)", "Documentation check passed."; then `prettier --check` and
+  `npm run docs:check` with this entry.
+- Next step: push after #98's head `a5b55fa1`. The ubuntu CI time-outs wait for the owner's
+  answers (Owner Calls cards server-test-timeout and core-duel-test-timeout).
+
+### 2026-11-22 — Phase 3 / tower ruins and routes: the Duel test time limits (DEC-325) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: DEC-325 (owner, Owner Calls page): `apps/server/vitest.config.ts` gets
+  `testTimeout: 60_000` as core and client have; `Simulation.duel.test.ts` "ends the match for the
+  first team to reach the kill target" gets its own 120 s (`KILL_TARGET_TIMEOUT_MS`, as DEC-289).
+  DEC-325 batch in the decisions log; the `INBOX.md` request "Make the tower horde test faster"
+  now covers both slow whole-match tests. Deliberate breaks (each limit set to 1) failed the tests
+  with "Test timed out in 1ms", then passed. Critic (`architecture-reviewer`): approve; findings
+  applied except a shared constant (the owner asked for the test's own limit, as DEC-289).
+- Checks run: `npm run check` → exit 0: core "Tests 1739 passed (1739)", protocol 29, client
+  2077, server 84, "Documentation check passed."
+  (`eternalus-agent-work/tower-ruins-and-routes/check-98-dec325.log`); then `prettier --check .`
+  and `npm run docs:check` with this entry.
+- Next step: merge phase/3 after #137 and #139, then #122 takes this head; push when the
+  coordinator confirms the owner's final answers (DEC-325 is provisional until then).

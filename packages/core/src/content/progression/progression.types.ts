@@ -16,6 +16,14 @@ export type LevelScalingDefinition = {
   readonly healthPerLevel: number;
   /** Flat max aether added per level. */
   readonly aetherPerLevel: number;
+  /** Fraction of a basic-attack (weapon) hit added per level (0.08 = +8%). */
+  readonly basicAttackPerLevel: number;
+  /**
+   * The same on a structure: a `structure` entity, or a map object of a kind in
+   * `STRUCTURE_MAP_OBJECT_KINDS` (a wall, turret, gate, fort or the palace). A middle ground, never
+   * above `basicAttackPerLevel` (DEC-405).
+   */
+  readonly basicAttackPerLevelOnStructures: number;
 };
 
 /** How much XP a kill is worth (06 "XP sources"); a mob's own XP is its `xpValue` (04 §5). */
@@ -44,14 +52,29 @@ export type XpSourcesDefinition = {
   };
   /**
    * The mobs whose kill pays every Legend of the killer's team instead of the killer, by mob
-   * definition id: `xp` each, but never more than lifts a Legend `maxLevels` levels (DEC-237).
+   * definition id: `xp` each, but never more than lifts a Legend `maxLevels` levels, or `levels`
+   * levels whatever the XP (DEC-237), with a last hitter's `lastHitterLevels` (DEC-371 E8b).
    */
   readonly teamKills: Readonly<Record<string, TeamKillReward>>;
 };
 
 /** A team-wide kill reward (balancing.md boss table, DEC-237). */
-type TeamKillReward = {
-  readonly xp: number;
-  /** The most levels one award may lift a Legend; XP past that point is not paid. */
-  readonly maxLevels: number;
-};
+type TeamKillReward =
+  | {
+      readonly xp: number;
+      /** The most levels one award may lift a Legend; XP past that point is not paid. */
+      readonly maxLevels: number;
+    }
+  | {
+      /**
+       * Lifts each Legend this many levels from where it stands, keeping its share of its level
+       * (up to the curve's cap), "flat" (DEC-237, DEC-371 E8a).
+       */
+      readonly levels: number;
+      /**
+       * The levels the team's last hitter gets in all, instead of `levels` (DEC-371 E8b): the
+       * killing Legend, or for a last hit by a minion or a tower its team's Legend that hit last
+       * (DEC-416).
+       */
+      readonly lastHitterLevels?: number;
+    };

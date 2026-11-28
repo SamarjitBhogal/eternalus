@@ -57,6 +57,7 @@ const GEM: EntitySnapshot = {
   aether: null,
   area: null,
   capture: null,
+  aura: null,
   gem: null,
 };
 

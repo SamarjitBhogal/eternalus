@@ -198,6 +198,7 @@ export const STRINGS = {
     renderScale: 'Render scale',
     reduceMotion: 'Reduce motion',
     colourBlindMode: 'Colour-blind mode',
+    showEveryHit: 'Damage numbers for every hit',
   },
   /**
    * The confirmation before leaving an online Duel: leaving forfeits (DEC-250 (4)), the opponent
@@ -226,6 +227,17 @@ export const STRINGS = {
     removeEntity: 'Remove entity',
     entityId: 'Entity id',
     remove: 'Remove',
+    simMode: 'Sim mode',
+    legendId: 'Legend id',
+    removeHuman: 'Remove human',
+    bot: 'Bot',
+    botGamePicks: 'Game picks',
+    botLaner: 'Lane bot',
+    botRover: 'Rover',
+    takeControl: 'Take control',
+    follow: 'Follow',
+    followNone: 'None',
+    followAway: 'not in the match now',
   },
   pause: { title: 'Paused', resume: 'Resume', settings: 'Settings', leave: 'Leave match' },
   /** The match viewport; the explorer labels show only with the developer flag (13 §4, DEC-32). */

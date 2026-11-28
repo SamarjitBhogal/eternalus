@@ -85,7 +85,9 @@ describe('HealingZones', () => {
     ['1 lane', { numLanes: 1, campsPerSide: 0 }],
     ['3 lanes', {}],
     ['5 lanes', { numLanes: 5 }],
-    ['7 lanes', { numLanes: 7 }],
+    // 56 m lane tower forts (DEC-315) on 7 lanes overlap in the default 1600-wide world, which the
+    // generator refuses (DEC-246 (1)); 7 lanes fit 2400 wide. DEC-215 (1) holds in any world.
+    ['7 lanes, 2400 wide', { numLanes: 7, worldWidth: 2400 }],
   ])(
     'gives no two structures overlapping zones on the generated map (%s, DEC-215 (1))',
     (_name, map) => {

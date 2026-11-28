@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { damageStepsWithoutLaneProgress } from '../combat/__fixtures__/damageSteps';
 import { Health } from '../components/Health';
+import { LastLegendHits } from '../components/LastLegendHits';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { RUINED_FORT_WALL_DEFINITION } from '../content/maps/mapObjectDefinitions';
 import { loadScoring } from '../content/match/loadScoring';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../content/progression/xpSources';
@@ -38,6 +41,7 @@ const setUp = (assistWindowTicks = loadScoring(config.tickRate).assistWindowTick
     state,
     progression: { units: UNITS, curves: loadLevelCurves(), xpSources: XP_SOURCES },
     director: { update: () => undefined },
+    ruinWall: RUINED_FORT_WALL_DEFINITION,
     assistWindowTicks,
   });
   const registry = createDefaultEntityRegistry();
@@ -64,7 +68,7 @@ const setUp = (assistWindowTicks = loadScoring(config.tickRate).assistWindowTick
       state.advanceTick();
     }
   };
-  return { state, gem, victim, enemy, deaths, hits, runUntil };
+  return { state, units, gem, victim, enemy, deaths, hits, runUntil };
 };
 
 describe('DefaultSystemPipeline kill credit (DEC-346)', () => {
@@ -77,7 +81,7 @@ describe('DefaultSystemPipeline kill credit (DEC-346)', () => {
     expect(deaths).toEqual([]);
     // Too little health left to live through the burn; this damage has no attacker to credit.
     const left = victim.getComponent(Health).current - 30;
-    new DamagePipeline().apply(state, victim.id, left, {
+    new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, victim.id, left, {
       attackerId: null,
       kind: 'status',
       definitionId: 'bleed',
@@ -108,5 +112,21 @@ describe('DefaultSystemPipeline kill credit (DEC-346)', () => {
         killer: { attackerId: null, kind: 'status', definitionId: 'gem-burn' },
       },
     ]);
+  });
+});
+
+describe('DefaultSystemPipeline last Legend hitter (DEC-416)', () => {
+  it("keeps the Greater Boss's last Legend hitter of its team, which the boss's reward pays", () => {
+    const { state, units, enemy, hits, runUntil } = setUp();
+    const boss = units.create('heavy-mob', 'greater-boss', {
+      position: { x: -10, y: 0 },
+      team: 'neutral',
+    });
+    state.entities.add(boss);
+    state.entities.setAttackTarget(enemy.id, boss.id);
+
+    runUntil(() => hits.some(({ targetId }) => targetId === boss.id), 5 * config.tickRate);
+
+    expect(boss.findComponent(LastLegendHits)?.of('dark')).toBe(enemy.id);
   });
 });

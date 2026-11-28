@@ -1,6 +1,7 @@
 import type { MapLayout, ObstacleChoice } from '../content/maps/maps.types';
 import { distance, distanceToPath, isPointInPolygon } from '../utils/geometry';
-import type { Polygon, Vec2 } from '../utils/geometry.types';
+import type { Polygon, Rect, Vec2 } from '../utils/geometry.types';
+import { isInLaneFortKeepOut } from './fortInWorld';
 import type { ObstacleSlot } from './MapBuilder.types';
 import type { Rng } from './Rng.types';
 
@@ -13,7 +14,18 @@ export type ScatterArea = {
   readonly occupied: readonly Vec2[];
   /** A circle obstacles stay out of (the Stronghold and its wall ring). */
   readonly keepOut: { readonly centre: Vec2; readonly radius: number };
+  /** The ground round every lane tower fort (`laneFortKeepOuts`, DEC-315). */
+  readonly fortKeepOuts: readonly Rect[];
+  /** The footprint radius of an obstacle definition, so its whole body stays off the forts. */
+  readonly radiusOf: (definitionId: string) => number;
 };
+
+const bodyBox = ({ x, y }: Vec2, radius: number): Rect => ({
+  x: x - radius,
+  y: y - radius,
+  width: 2 * radius,
+  height: 2 * radius,
+});
 
 const pickChoice = (roll: number, choices: readonly ObstacleChoice[]): string | undefined => {
   const total = choices.reduce((sum, choice) => sum + choice.weight, 0);
@@ -27,7 +39,8 @@ const pickChoice = (roll: number, choices: readonly ObstacleChoice[]): string | 
 /**
  * Scatters obstacles over the Light half with the seeded RNG. Every sample draws exactly three
  * numbers whether or not it is kept, so the output depends only on the seed and the inputs.
- * Samples inside terrain, near a lane, near a feature or near another obstacle are rejected.
+ * Samples inside terrain, near a lane, near a feature or near another obstacle, or whose body
+ * would stand on the ground round a lane tower fort, are rejected.
  */
 export const scatterObstacles = (
   rng: Rng,
@@ -40,6 +53,7 @@ export const scatterObstacles = (
   for (let sample = 0; sample < samples; sample += 1) {
     const position = { x: rng.next() * halfWidth, y: rng.next() * area.height };
     const definitionId = pickChoice(rng.next(), rules.choices);
+    if (definitionId === undefined) continue;
     const isClear =
       position.x < halfWidth - rules.featureClearance &&
       !area.blocked.some((polygon) => isPointInPolygon(position, polygon)) &&
@@ -47,10 +61,9 @@ export const scatterObstacles = (
       [...area.occupied, ...placed.map((slot) => slot.position)].every(
         (other) => distance(position, other) >= rules.featureClearance,
       ) &&
-      distance(position, area.keepOut.centre) >= area.keepOut.radius;
-    if (isClear && definitionId !== undefined) {
-      placed.push({ definitionId, position });
-    }
+      distance(position, area.keepOut.centre) >= area.keepOut.radius &&
+      !isInLaneFortKeepOut(bodyBox(position, area.radiusOf(definitionId)), area.fortKeepOuts);
+    if (isClear) placed.push({ definitionId, position });
   }
   return placed;
 };

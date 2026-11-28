@@ -14,6 +14,8 @@ import { ViewRegistry } from './ViewRegistry';
  * `createDefault<Registry>()`). The one place a view is registered.
  *
  * @param onUnknownKind - Told once per kind drawn with the default view.
+ * @param legend - The Legend family's view (the match passes its sprite view from
+ *   `LegendSprites`); the ordinary `LegendView` when left out.
  */
 export const createDefaultViewRegistry = (
   onUnknownKind?: (kind: string) => void,

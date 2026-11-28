@@ -28,6 +28,10 @@ export class Movement {
 
   private readonly currentHeading: MutableVec2 = { x: 0, y: 0 };
 
+  private readonly pendingPush: MutableVec2 = { x: 0, y: 0 };
+
+  private readonly currentStep: MutableVec2 = { x: 0, y: 0 };
+
   /**
    * Creates a stopped movement component from a unit's movement profile.
    *
@@ -70,6 +74,42 @@ export class Movement {
   /** The direction the entity wants to move in: a unit vector, or zero when it wants to stop. */
   public get heading(): Vec2 {
     return this.currentHeading;
+  }
+
+  /** The push waiting for the next `takeStep` (a knockback), or zero. */
+  public get push(): Vec2 {
+    return this.pendingPush;
+  }
+
+  /**
+   * Adds `delta` to the next step only (a knockback). ponytail: a displacement, not 10 §3's
+   * impulse over mass with friction; upgrade when a second pusher (the Sentinel's Slam) lands.
+   * It is not velocity: it ignores the top speed and statuses, and `CollisionSystem` sweeps it
+   * with the step, so it stops at walls.
+   *
+   * @throws Error when `delta` is not a finite vector.
+   */
+  public pushBy(delta: Vec2): void {
+    if (!Number.isFinite(delta.x) || !Number.isFinite(delta.y)) {
+      throw new Error(
+        `Movement push must be finite, got (${String(delta.x)}, ${String(delta.y)}).`,
+      );
+    }
+    this.pendingPush.x += delta.x;
+    this.pendingPush.y += delta.y;
+  }
+
+  /**
+   * This tick's step: `base` (the velocity by default; an airborne entity's takeoff velocity,
+   * DEC-390) plus the pending push, which it uses up. Read it, but do not keep it: the next call
+   * reuses it.
+   */
+  public takeStep(base: Vec2 = this.currentVelocity): Vec2 {
+    this.currentStep.x = base.x + this.pendingPush.x;
+    this.currentStep.y = base.y + this.pendingPush.y;
+    this.pendingPush.x = 0;
+    this.pendingPush.y = 0;
+    return this.currentStep;
   }
 
   /**

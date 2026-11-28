@@ -1,4 +1,4 @@
-import { distance, isPointInAnyPolygon } from '../utils/geometry';
+import { distance, isPointInAnyPolygon, isPolygon } from '../utils/geometry';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 
 /**
@@ -12,7 +12,7 @@ export class ZoneArea {
    * not finite.
    */
   public constructor(public readonly polygons: readonly Polygon[]) {
-    if (polygons.length === 0 || !polygons.every((polygon) => ZoneArea.isPolygon(polygon))) {
+    if (polygons.length === 0 || !polygons.every(isPolygon)) {
       throw new Error('A zone area needs polygons of at least 3 finite points.');
     }
   }
@@ -28,11 +28,5 @@ export class ZoneArea {
   /** How far the area reaches from `center`: a circle of this radius around it holds the area. */
   public reachFrom(center: Vec2): number {
     return Math.max(...this.polygons.flat().map((point) => distance(center, point)));
-  }
-
-  private static isPolygon(polygon: Polygon): boolean {
-    return (
-      polygon.length >= 3 && polygon.every(({ x, y }) => Number.isFinite(x) && Number.isFinite(y))
-    );
   }
 }

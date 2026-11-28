@@ -45,10 +45,10 @@ export class MinionView extends MobView {
   }
 
   /** Draws at the interpolated position; the snapshot and physical footprint are never modified. */
-  public override draw(state: EntityDrawState, renderer: Renderer): number | undefined {
+  public override draw(state: EntityDrawState, renderer: Renderer): void {
     super.draw({ ...state, isFocused: false }, renderer);
     const radius = state.entity.transform?.radius ?? 0;
-    if (radius <= 0) return undefined;
+    if (radius <= 0) return;
     const scale = this.figureScale(state.entity);
     const team = state.entity.team ?? 'neutral';
     const key = team + ':' + String(scale);
@@ -87,6 +87,5 @@ export class MinionView extends MobView {
         state.position,
         FOCUS_RING_COLOR,
       );
-    return undefined;
   }
 }

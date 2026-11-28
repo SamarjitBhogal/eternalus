@@ -54,6 +54,17 @@ export class ScoreBook {
   }
 
   /**
+   * Marks who plays the Legend now (`human` or `bot`), after sim mode moved the human seat. A
+   * Legend with no row is left alone: its row, added at the fold, reads the seat then.
+   */
+  public setController(legendId: EntityId, controller: LegendStats['controller']): void {
+    const row = this.findRow(legendId);
+    if (row !== undefined) {
+      row.controller = controller;
+    }
+  }
+
+  /**
    * Raises the Legend's counter and adds the points to its score and to its team's total. An id
    * with no row is a bug (`Scoring` checks `rowOf` first) and throws.
    */

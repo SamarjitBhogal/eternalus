@@ -13,7 +13,10 @@ const LEASH = 8.625;
 export const LANE_MINION_AGGRO = {
   id: 'lane-minion',
   controller: 'minion',
-  acquisitionRadius: 5.4, // TUNE: League/Dota 500 units, scaled by minion speed
+  // TUNE: DEC-323 (2) raised from 5.4 (League/Dota 500 units, scaled by minion speed) to the
+  // leash: a unit target taken farther out would break the leash at once. The lane objective
+  // (`MinionController.objectiveCandidate`) reads it too.
+  acquisitionRadius: LEASH,
   priority: [
     'legend-attacking-ally-legend',
     'minion-attacking-ally-legend',

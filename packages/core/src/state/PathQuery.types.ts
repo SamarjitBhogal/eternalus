@@ -13,6 +13,11 @@ export interface PathQuery {
    * searched waypoint, which it caches, from the goal itself.
    */
   waypoint(start: Vec2, goal: Vec2, out: MutableVec2): boolean;
+  /**
+   * Writes into `out` where a walker standing on blocked ground in a lane tower's court should
+   * head next to leave it by a doorway (DEC-217 (15)); `false` on open ground or with no way out.
+   */
+  exitWaypoint(start: Vec2, out: MutableVec2): boolean;
 
   /**
    * Changes whenever a waypoint may change (the grid under the searches changed), so a cached
