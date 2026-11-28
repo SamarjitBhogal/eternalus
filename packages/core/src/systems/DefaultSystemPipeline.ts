@@ -1,74 +1,108 @@
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { createDefaultDamageSteps } from '../combat/defaultDamageSteps';
+import { KillCredit } from '../combat/KillCredit';
+import type { LaneProgressOf } from '../combat/MinionStrengthStep.types';
+import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
+import { BOSS_MOVES } from '../content/ai/bosses/bossProfiles';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
+import { LEGEND_RESPAWN_SECONDS } from '../content/progression/legendRespawn';
+import { loadStuckDetection } from '../content/ai/loadStuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
-import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
+import { loadOutOfCombatHealing } from '../content/healing/loadOutOfCombatHealing';
+import { loadLegendJump } from '../content/legends/loadLegendJump';
 import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
-import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
-import type { InvariantRunner } from '../diagnostics/InvariantRunner';
-import type { EntityFactory } from '../entities/EntityFactory';
-import type { SpaceIndex } from '../physics/SpaceIndex';
+import { CATHEDRAL_GEM } from '../content/structures/cathedralGem';
+import { loadSpawnWaves } from '../content/structures/loadSpawnWaves';
+import { OPENING_WAVE } from '../content/structures/spawnWaves';
+import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { StructureDefinition } from '../content/structures/structures.types';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
+import { Structure } from '../entities/structures/Structure';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
+import type { Rect } from '../utils/geometry.types';
+import { BossMoveSystem } from './BossMoveSystem';
+import { createDefaultBossMoveEffects } from './defaultBossMoveEffects';
+import { CaptureSystem } from './CaptureSystem';
+import { CathedralGemSystem } from './CathedralGemSystem';
 import { CombatSystem } from './CombatSystem';
 import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
+import type { DefaultSystemPipelineOptions } from './DefaultSystemPipeline.types';
+import { DuelRoundSystem } from './DuelRoundSystem';
+import { GemEruptionSystem } from './GemEruptionSystem';
 import { EnragedSystem } from './EnragedSystem';
 import { HordeSystem } from './HordeSystem';
 import { InvariantSystem } from './InvariantSystem';
+import { JumpSystem } from './JumpSystem';
+import { MatchDirectorSystem } from './MatchDirectorSystem';
+import { MinionLevelSystem } from './MinionLevelSystem';
 import { MovementSystem } from './MovementSystem';
+import { OutOfCombatHealingSystem } from './OutOfCombatHealingSystem';
 import { PathingSystem } from './PathingSystem';
 import { ProgressionSystem } from './ProgressionSystem';
-import type { ProgressionContent } from './ProgressionSystem.types';
+import { RespawnSystem } from './RespawnSystem';
 import { SpaceSystem } from './SpaceSystem';
 import { SpawnSystem } from './SpawnSystem';
+import { fortWallBands } from '../map/fortInWorld';
+import { StructureSystem } from './StructureSystem';
+import { StuckSystem } from './StuckSystem';
+import { StructureAuraSystem } from './StructureAuraSystem';
+import { VeterancySystem } from './VeterancySystem';
+import { ZoneLevelUpSystem } from './ZoneLevelUpSystem';
+import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { CHECKPOINT_DEFENDER_LIMIT, CHECKPOINT_DEFENDERS } from '../content/structures/guardPlans';
+import { ZONE_LOCKING_MOBS } from '../content/zones/zoneLocks';
+import { loadStructureAuraCadence } from '../content/structures/loadStructureAuraCadence';
+import { TickRate } from '../utils/TickRate';
+import { loadGuardPlans } from '../content/structures/loadGuardPlans';
+import { loadZoneLevelUp } from '../content/zones/loadZoneLevelUp';
 import { StatusEffectSystem } from './StatusEffectSystem';
-import type { System } from './System.types';
 import { SystemPipeline } from './SystemPipeline';
+import { TeamKillAwards } from './TeamKillAwards';
 
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
- * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
- * positions), the neighbour index, steering, combat, map destruction, progression (kill XP),
- * spawning, enraging, death, then invariants last. This is the one place a system is added, at its position
- * in the tick (architecture 02 §9).
- * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
- * effects loaded for this match's config) and hands them to the systems that need them, so a damage
- * step applies to every hit and every status event comes from one place.
+ * progress, statuses, jumps (DEC-390: an airborne entity moves by its takeoff velocity), movement,
+ * collision (DEC-121 (c): every later reader sees resolved positions), the neighbour index, stuck
+ * detection (DEC-193), steering, combat, boss moves, map destruction, the gem eruption's blast
+ * (DEC-371), progression (kill XP), minion veterancy, structure auras (DEC-315), structure losses
+ * and breakability, spawning (none in a Duel, SCRUM-445), enraging, out-of-combat healing
+ * (DEC-188), respawn (queues the dead Legends, FR-051), death, capture points, the Cathedral gem,
+ * the match director, then invariants last.
+ * Combat runs after movement, so a unit with a target in reach faces it, not its own way
+ * (DEC-192). This is the one place a system is added, at its position in the tick (architecture
+ * 02 §9). It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the
+ * status effects loaded for this match's config) and hands them to the systems that need them, so
+ * a damage step applies to every hit and every status event comes from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
-  /**
-   * Creates the pipeline.
-   *
-   * @param invariants - The runner the last system checks with.
-   * @param state - The match; its config sets the tick rate and lane structure count statuses load
-   *   with, and systems that listen to its events subscribe here.
-   * @param progression - The content kills are priced and levels applied with, injected.
-   * @param hordes - The factory (and its definitions), neighbour index and AI the horde systems
-   *   (architecture 11, 18) need; without them nothing decides, marches, steers or spawns on lanes.
-   */
-  public constructor(
-    invariants: InvariantRunner,
-    state: GameState,
-    progression: ProgressionContent,
-    hordes?: {
-      readonly factory: EntityFactory;
-      /** The index `state.space` exposes; `null` for a match without a map. */
-      readonly space: SpaceIndex | null;
-      /** Runs first: the AI, which `systems/` may not import, so `Simulation` composes it. */
-      readonly decide: readonly System[];
-      readonly collisions?: readonly System[];
-    },
-  ) {
+  /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
+  public constructor({
+    invariants,
+    state,
+    progression,
+    director,
+    duelStarts,
+    spawnsMobs = true,
+    hordes,
+    structures = STRUCTURE_DEFINITIONS,
+    ruinWall,
+    assistWindowTicks,
+  }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
-    const damage = new DamagePipeline();
-    const statuses = new StatusEffectApplier(
-      loadStatusEffects(tickRate, map.spawnTowersPerLane + map.buffTowersPerLane),
+    const veterancy = loadMinionVeterancy(tickRate);
+    const loadedStatuses = loadStatusEffects(
+      tickRate,
+      map.spawnTowersPerLane + map.buffTowersPerLane,
     );
+    const statuses = new StatusEffectApplier(loadedStatuses);
+    const forts = DefaultSystemPipeline.fortsOf(state, structures);
     const flowFields =
       hordes === undefined || state.world === null
         ? null
@@ -76,64 +110,144 @@ export class DefaultSystemPipeline extends SystemPipeline {
             state.world.grid,
             state.world.definition,
             map.flowFieldCorridorHalfWidth,
+            forts.laneWalls,
           );
-    const world = state.world?.grid ?? null;
-    const features = state.world?.definition.features ?? [];
-    if (world !== null && state.worldObjects !== undefined) {
-      // A destroyed blocking map object reopens its cells and the lane fields over them (07 §10).
-      state.events.on('entity-removed', ({ entityId }) => {
-        const object = state.worldObjects?.objectFor(entityId);
-        if (object?.isBlocking !== true) return;
-        const cells = object.footprints.flatMap((footprint) =>
-          world.clearFootprint(footprint, object.passages),
-        );
-        // `Simulation.buildWorld`'s rule: the grid also stamps the blocking feature behind an
-        // object (a wall segment, turret or rock shares its feature's id), so clear that stamp too.
-        const backing = features.find(
-          ({ id, definitionId }) =>
-            id === object.id && MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking === true,
-        )?.footprint;
-        if (backing !== undefined) cells.push(...world.clearFootprint(backing));
-        flowFields?.markDirty(cells);
-      });
-    }
+    // Minion strength reads lane progress from the lane fields, else the polyline (05 §9, DEC-384).
+    // A death by the gem counts for the victim's last enemy damager in the assist window (DEC-346);
+    // a boss whose kill pays a last hitter keeps each team's last Legend hitter (DEC-416).
+    const damage = new DamagePipeline(
+      createDefaultDamageSteps(
+        DefaultSystemPipeline.laneProgressOf(flowFields, state.world?.routes ?? null),
+        progression.units,
+      ),
+      new KillCredit(
+        assistWindowTicks,
+        CATHEDRAL_GEM.statusIds,
+        TeamKillAwards.lastHitterBossIds(progression.xpSources.teamKills),
+      ),
+    );
     super([
-      ...(hordes === undefined
-        ? []
-        : [...hordes.decide, new HordeSystem(state, HORDE_STEERING.marchSpeedFactor)]),
+      ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
       new StatusEffectSystem(damage, statuses),
+      new JumpSystem(loadLegendJump(tickRate)),
       new MovementSystem(),
       ...(hordes?.collisions ?? []),
       ...(hordes === undefined
         ? []
         : [
             ...(hordes.space === null ? [] : [new SpaceSystem(hordes.space)]),
+            new StuckSystem(loadStuckDetection(tickRate)),
             new PathingSystem(
               createDefaultStrategyRegistry().movement,
               FORMATIONS,
               HORDE_STEERING.slotArrivalRadius,
-              flowFields,
+              { flowFields, forts: forts.all },
             ),
           ]),
       new CombatSystem(damage),
-      ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
+      new BossMoveSystem(damage, BOSS_MOVES, createDefaultBossMoveEffects()),
+      ...(state.worldObjects === undefined
+        ? []
+        : [
+            new MapDestructionSystem({
+              state,
+              damage,
+              flowFields,
+              ruinWall,
+            }),
+          ]),
+      // The eruption's blast kills before progression and death (DEC-371); none in a Duel (DEC-36).
+      ...(duelStarts === undefined
+        ? [new GemEruptionSystem(state, damage, CATHEDRAL_GEM.eruption)]
+        : []),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
+      new VeterancySystem(state, statuses, veterancy),
+      new StructureAuraSystem(statuses, structures, loadStructureAuraCadence(tickRate)),
+      new StructureSystem(structures),
       ...(hordes === undefined
         ? []
         : [
-            new SpawnSystem(state, hordes.factory, {
-              definitions: hordes.factory.definitions,
-              openingWave: OPENING_WAVE,
-              waves: SPAWN_WAVES,
-              steering: HORDE_STEERING,
-              weights: LANE_ASSESSMENT_WEIGHTS,
-              formationId: RANKS_FORMATION.id,
-            }),
+            ...(spawnsMobs
+              ? [
+                  new SpawnSystem(state, hordes.factory, {
+                    definitions: hordes.factory.definitions,
+                    openingWave: OPENING_WAVE,
+                    waves: loadSpawnWaves(tickRate),
+                    steering: HORDE_STEERING,
+                    weights: LANE_ASSESSMENT_WEIGHTS,
+                    formationId: RANKS_FORMATION.id,
+                    guards: loadGuardPlans(tickRate, hordes.guards),
+                    defenders: CHECKPOINT_DEFENDERS,
+                    defenderLimit: CHECKPOINT_DEFENDER_LIMIT,
+                  }),
+                ]
+              : []),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
+      // Before death, so a fallen Duel Legend is healed and moved instead of removed.
+      ...(duelStarts === undefined ? [] : [new DuelRoundSystem(duelStarts)]),
+      new OutOfCombatHealingSystem(state, loadOutOfCombatHealing(tickRate)),
+      // After the Duel round, which heals a fallen Duel Legend, so it is never queued; queues the
+      // Legends that died this tick before `DeathSystem` withdraws them.
+      new RespawnSystem(
+        new TickRate(tickRate).toTicks(LEGEND_RESPAWN_SECONDS),
+        LANE_ASSESSMENT_WEIGHTS,
+      ),
       new DeathSystem(),
+      new CaptureSystem(state.config.match.capturePoints, tickRate, ZONE_LOCKING_MOBS),
+      // Off in a Duel: the world around the arena is switched off there (DEC-36), and the gem's
+      // Duel design waits on the owner's numbers (DEC-346, a follow-up PR).
+      ...(duelStarts === undefined
+        ? [new CathedralGemSystem(state, statuses, loadedStatuses, CATHEDRAL_GEM)]
+        : []),
+      ...(hordes === undefined ? [] : [new ZoneLevelUpSystem(state, loadZoneLevelUp(tickRate))]),
+      // After every level source, so kill and zone levels land on the tick they are announced.
+      new MinionLevelSystem(state, statuses, progression.units, veterancy),
+      // After death, so an objective lost this tick can end the match this tick (12 §1).
+      new MatchDirectorSystem(director),
       new InvariantSystem(invariants),
     ]);
+  }
+
+  /**
+   * Lane progress for the minion strength curve (05 §9, DEC-384): the lane flow field's path cost
+   * (`balancing.md`), else the lane polyline where the field cannot say (no field, or a unit off
+   * its corridor), else `null` (no map).
+   *
+   * @param fields - The lane flow fields, or `null` in a match without hordes or a map.
+   * @param routes - The lane polylines (`LaneRoutes`), or `null` in a match without a map.
+   */
+  public static laneProgressOf(
+    fields: { readonly progress: LaneProgressOf } | null,
+    routes: { readonly progress: LaneProgressOf } | null,
+  ): LaneProgressOf {
+    return (laneId, team, position) =>
+      fields?.progress(laneId, team, position) ?? routes?.progress(laneId, team, position) ?? null;
+  }
+
+  /**
+   * The box of the `Footprint` of every structure whose definition `hasFortBox` (`all`,
+   * `PathingWorld.forts`; not a gate's, DEC-217 (17)), and the north and south wall bands of the
+   * lane tower forts a lane field crosses by their west and east doorways (`laneWalls`, DEC-315;
+   * `fortWallBands` of the structure's body; not the palace). `Simulation` builds the structures
+   * and the world objects before the pipeline, so they are read here once, while every one stands.
+   */
+  private static fortsOf(
+    state: GameState,
+    structures: Pick<ContentCatalogue<StructureDefinition>, 'get'>,
+  ): { readonly all: readonly Rect[]; readonly laneWalls: readonly Rect[] } {
+    const all: Rect[] = [];
+    const laneWalls: Rect[] = [];
+    state.entities.forEach((entity) => {
+      const box = entity.findComponent(Footprint)?.bounds;
+      if (box !== undefined && structures.get(entity.definitionId).hasFortBox === true) {
+        all.push(box);
+        if (entity instanceof Structure && entity.laneId !== null) {
+          laneWalls.push(...fortWallBands(state.worldObjects?.bodyOf(entity.id) ?? []));
+        }
+      }
+    });
+    return { all, laneWalls };
   }
 }

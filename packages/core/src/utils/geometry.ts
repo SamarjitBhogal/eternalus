@@ -1,5 +1,6 @@
 import { cos, sin } from './deterministicMath';
 import type { Polygon, Rect, Vec2 } from './geometry.types';
+import type { MutableVec2 } from './vec2.types';
 
 /** Radians per degree; angles in content are authored in degrees. */
 export const RADIANS_PER_DEGREE = Math.PI / 180;
@@ -50,6 +51,54 @@ export const isPointInPolygon = (point: Vec2, polygon: Polygon): boolean => {
   return isInside;
 };
 
+/** Whether `polygon` has at least 3 corners and every corner is finite. */
+export const isPolygon = (polygon: Polygon): boolean =>
+  polygon.length >= 3 && polygon.every(({ x, y }) => Number.isFinite(x) && Number.isFinite(y));
+
+/**
+ * Whether the ray from `start` along `direction` (each `start + t × direction` with t ≥ 0)
+ * crosses an edge of `polygon`, closing edge included. A start inside the polygon always crosses
+ * on its way out. An edge parallel to the ray is skipped; a zero direction is no ray (`false`).
+ */
+export const doesRayCrossPolygon = (start: Vec2, direction: Vec2, polygon: Polygon): boolean =>
+  polygon.some((corner, index) => {
+    const next = polygon[(index + 1) % polygon.length] ?? corner;
+    const edge = { x: next.x - corner.x, y: next.y - corner.y };
+    const cross = direction.x * edge.y - direction.y * edge.x;
+    if (cross === 0) {
+      return false;
+    }
+    const offset = { x: corner.x - start.x, y: corner.y - start.y };
+    const t = (offset.x * edge.y - offset.y * edge.x) / cross;
+    const u = (offset.x * direction.y - offset.y * direction.x) / cross;
+    return t >= 0 && u >= 0 && u <= 1;
+  });
+
+/** Whether `point` lies in the upright rectangle `rect`, edges included. */
+export const isPointInRect = ({ x, y }: Vec2, rect: Rect): boolean =>
+  x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
+
+/**
+ * The squared distance from `point` to the upright rectangle `rect`: 0 inside it or on its edge,
+ * else to its nearest edge or corner. Squared, so a caller compares it with a squared radius.
+ */
+export const distanceSquaredToRect = ({ x, y }: Vec2, rect: Rect): number => {
+  const dx = Math.max(rect.x - x, 0, x - (rect.x + rect.width));
+  const dy = Math.max(rect.y - y, 0, y - (rect.y + rect.height));
+  return dx * dx + dy * dy;
+};
+
+/** Whether two upright rectangles overlap or touch, edges included. */
+export const doRectsOverlap = (a: Rect, b: Rect): boolean =>
+  a.x <= b.x + b.width && a.x + a.width >= b.x && a.y <= b.y + b.height && a.y + a.height >= b.y;
+
+/**
+ * Whether `point` lies inside any of `polygons`: the one point-in-footprint test shared by a
+ * capture zone's floor (`ZoneArea.contains`) and the building at a point (`findBuildingAt`).
+ */
+export const isPointInAnyPolygon = (point: Vec2, polygons: readonly Polygon[]): boolean =>
+  polygons.some((polygon) => isPointInPolygon(point, polygon));
+
 /** The point of the segment from `a` to `b` nearest to `point`. */
 export const closestPointOnSegment = (point: Vec2, a: Vec2, b: Vec2): Vec2 => {
   const lengthSquared = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
@@ -72,6 +121,55 @@ export const distanceToPath = (point: Vec2, path: readonly Vec2[]): number =>
       next === undefined ? distance(point, current) : distanceToSegment(point, current, next);
     return Math.min(best, candidate);
   }, Number.POSITIVE_INFINITY);
+
+/**
+ * Writes into `out` the point of the polygons' outlines (closing edges included) nearest to
+ * `point` and returns its distance; `Infinity`, leaving `out` as it was, without corners. A point
+ * inside a polygon gets its nearest edge too. Allocates nothing, for per-unit steering.
+ */
+export const nearestPointOnPolygons = (
+  point: Vec2,
+  polygons: readonly Polygon[],
+  out: MutableVec2,
+): number => {
+  let best = Number.POSITIVE_INFINITY;
+  for (const polygon of polygons) {
+    for (let index = 0; index < polygon.length; index += 1) {
+      const a = polygon[index];
+      const b = polygon[(index + 1) % polygon.length];
+      if (a === undefined || b === undefined) continue;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const lengthSquared = dx * dx + dy * dy;
+      const along = ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared;
+      const t = lengthSquared === 0 ? 0 : Math.min(Math.max(along, 0), 1);
+      const x = a.x + dx * t;
+      const y = a.y + dy * t;
+      const gapSquared = (point.x - x) * (point.x - x) + (point.y - y) * (point.y - y);
+      if (gapSquared < best) {
+        best = gapSquared;
+        out.x = x;
+        out.y = y;
+      }
+    }
+  }
+  return Math.sqrt(best);
+};
+
+/**
+ * The smallest axis-aligned rectangle around a set of points. With no points, `x` and `y` are
+ * `Infinity` and `width` and `height` are `-Infinity`, so no other box overlaps it.
+ */
+export const boundsOf = (points: readonly Vec2[]): Rect => {
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  return {
+    x: Math.min(...xs),
+    y: Math.min(...ys),
+    width: Math.max(...xs) - Math.min(...xs),
+    height: Math.max(...ys) - Math.min(...ys),
+  };
+};
 
 /** Which side of the line `a`→`b` the point `c` is on: positive, negative or 0 (on the line). */
 const orientation = (a: Vec2, b: Vec2, c: Vec2): number =>
@@ -114,12 +212,10 @@ const rectCorners = (rect: Rect): Polygon => [
  */
 export const doesPolygonOverlapRect = (polygon: Polygon, rect: Rect): boolean => {
   const corners = rectCorners(rect);
-  const isInsideRect = (point: Vec2): boolean =>
-    point.x >= rect.x &&
-    point.x <= rect.x + rect.width &&
-    point.y >= rect.y &&
-    point.y <= rect.y + rect.height;
-  if (polygon.some(isInsideRect) || corners.some((corner) => isPointInPolygon(corner, polygon))) {
+  if (
+    polygon.some((point) => isPointInRect(point, rect)) ||
+    corners.some((corner) => isPointInPolygon(corner, polygon))
+  ) {
     return true;
   }
   return polygon.some((start, index) => {
@@ -129,3 +225,17 @@ export const doesPolygonOverlapRect = (polygon: Polygon, rect: Rect): boolean =>
     );
   });
 };
+
+/**
+ * Whether two polygons share any point: a corner of one inside the other, or crossing edges
+ * (touching edges count). A one-point polygon is a point.
+ */
+export const doPolygonsOverlap = (a: Polygon, b: Polygon): boolean =>
+  a.some((point) => isPointInPolygon(point, b)) ||
+  b.some((point) => isPointInPolygon(point, a)) ||
+  a.some((start, index) => {
+    const end = a[(index + 1) % a.length] ?? start;
+    return b.some((corner, cornerIndex) =>
+      doSegmentsIntersect(start, end, corner, b[(cornerIndex + 1) % b.length] ?? corner),
+    );
+  });

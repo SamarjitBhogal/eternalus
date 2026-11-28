@@ -11,13 +11,20 @@ import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { GameState } from '../state/GameState';
 import { MinionStrengthStep } from './MinionStrengthStep';
+import type { LaneProgressOf } from './MinionStrengthStep.types';
 
 /** The shipped curve with `balancing.md`'s 0.75 floor, so the far end shows the clamp. */
 const CURVE = { ...MINION_STRENGTH, min: 0.75 };
 
-/** A light minion in a light horde on lane-0 (160 m from x 20 to x 180), and a Warrior. */
+/**
+ * A light minion in a light horde on lane-0 (160 m from x 20 to x 180), a Warrior, and lane
+ * progress along the lane polyline (`LaneRoutes.progress`).
+ */
 const setUp = () => {
-  const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
+  const world = matchWorldOf(TWO_LANE_MAP);
+  const state = new GameState(createDefaultGameConfig(), 1, world);
+  const polyline: LaneProgressOf = (laneId, team, position) =>
+    world.routes.progress(laneId, team, position);
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     loadDefaultContent(30),
@@ -43,13 +50,13 @@ const setUp = () => {
   const walk = (x: number) => {
     minion.getComponent(Transform).moveTo({ x, y: 20 });
   };
-  return { state, minion: minion.id, legend: legend.id, walk };
+  return { state, minion: minion.id, legend: legend.id, walk, polyline };
 };
 
 describe('MinionStrengthStep', () => {
   it('follows m(t) = clamp(1 + k(1 − 2t)): 1.5 at home, 1 mid-lane, clamped at the far end', () => {
-    const { state, minion, legend, walk } = setUp();
-    const step = new MinionStrengthStep(CURVE);
+    const { state, minion, legend, walk, polyline } = setUp();
+    const step = new MinionStrengthStep(CURVE, polyline);
     const hit = (from: string, to: string) =>
       step.adjust(
         {
@@ -71,8 +78,8 @@ describe('MinionStrengthStep', () => {
   });
 
   it('never goes below base stats with the shipped curve (DISC-24), and leaves Legends at 1', () => {
-    const { state, minion, legend, walk } = setUp();
-    const step = new MinionStrengthStep(MINION_STRENGTH);
+    const { state, minion, legend, walk, polyline } = setUp();
+    const step = new MinionStrengthStep(MINION_STRENGTH, polyline);
     walk(180);
 
     expect(
@@ -98,8 +105,8 @@ describe('MinionStrengthStep', () => {
   });
 
   it('moves the base-stat point toward the enemy per tower the enemy lost (DISC-24), capped', () => {
-    const { state, minion, legend, walk } = setUp();
-    const step = new MinionStrengthStep(MINION_STRENGTH);
+    const { state, minion, legend, walk, polyline } = setUp();
+    const step = new MinionStrengthStep(MINION_STRENGTH, polyline);
     const hit = () =>
       step.adjust(
         {
@@ -135,15 +142,18 @@ describe('MinionStrengthStep', () => {
   });
 
   it('refuses a base-stat point outside the lane', () => {
-    expect(() => new MinionStrengthStep({ ...MINION_STRENGTH, basePoint: 0 })).toThrow('basePoint');
-    expect(() => new MinionStrengthStep({ ...MINION_STRENGTH, maxBasePoint: 0.4 })).toThrow(
+    const progressOf: LaneProgressOf = () => null;
+    expect(() => new MinionStrengthStep({ ...MINION_STRENGTH, basePoint: 0 }, progressOf)).toThrow(
       'basePoint',
     );
+    expect(
+      () => new MinionStrengthStep({ ...MINION_STRENGTH, maxBasePoint: 0.4 }, progressOf),
+    ).toThrow('basePoint');
   });
 
-  it('is 1 for everyone in a match without a map', () => {
+  it('is 1 for a hit between units outside any horde', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
-    const step = new MinionStrengthStep(CURVE);
+    const step = new MinionStrengthStep(CURVE, () => null);
 
     expect(
       step.adjust(
@@ -155,5 +165,31 @@ describe('MinionStrengthStep', () => {
         state,
       ),
     ).toBe(10);
+  });
+
+  it('reads t from the injected lane progress, and is 1 where it cannot say (DEC-384)', () => {
+    const { state, minion, legend, walk } = setUp();
+    let reported: number | null = 0.5;
+    const step = new MinionStrengthStep(CURVE, (laneId, team) =>
+      laneId === 'lane-0' && team === 'light' ? reported : null,
+    );
+    const dealt = () =>
+      step.adjust(
+        {
+          targetId: legend,
+          amount: 100,
+          source: { attackerId: minion, kind: 'weapon', definitionId: 'x' },
+        },
+        state,
+      );
+    walk(20);
+    expect(dealt()).toBeCloseTo(100);
+    reported = 0;
+    walk(100);
+    expect(dealt()).toBeCloseTo(150);
+    // At home the polyline would say 0 (1.5); the step has no polyline of its own any more.
+    reported = null;
+    walk(20);
+    expect(dealt()).toBeCloseTo(100);
   });
 });

@@ -1,0 +1,285 @@
+import { describe, expect, it, vi } from 'vitest';
+
+import type {
+  AssetGroup,
+  AssetUrls,
+  FilledRosters,
+  SessionPhase,
+  UiIntent,
+} from '../bridge/events';
+import { assetsSlice } from '../bridge/slices/assetsSlice';
+import { firstAvailableSpecId, shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
+import { LEGEND_SPRITE_SHEETS } from './legendSpriteSheets';
+import { matchLegendSheets } from './matchLegendSheets';
+import type {
+  SessionContext,
+  SessionControllerDeps,
+  SessionState,
+} from './SessionController.types';
+import { createDefaultSessionStates } from './session/defaultSessionStates';
+import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTiming.constants';
+import { flushMicrotasks, TEST_SELECTION_BOX, testSession } from './testSessionDeps';
+
+const SELECTION_GROUPS: readonly AssetGroup[] = [
+  'selection',
+  'selection-primary',
+  'selection-raster',
+  'selection-primary-raster',
+];
+
+/**
+ * A session whose real match state also hands the test its context (to reach results) and still
+ * handles its intents (`leave-match`).
+ */
+function sessionWithResults(overrides: Partial<SessionControllerDeps> = {}) {
+  const captured: { context: SessionContext | null } = { context: null };
+  const real = createDefaultSessionStates();
+  const states = {
+    ...real,
+    match: {
+      phase: 'match',
+      enter: (context: SessionContext) => {
+        real.match.enter?.(context);
+        captured.context = context;
+      },
+      exit: (context: SessionContext) => {
+        real.match.exit?.(context);
+      },
+      handleIntent: (intent: UiIntent, context: SessionContext) => {
+        real.match.handleIntent?.(intent, context);
+      },
+    },
+  } satisfies Record<SessionPhase, SessionState>;
+  const session = testSession({ states, ...overrides });
+  const emptied: AssetUrls[] = [];
+  session.bus.on('asset-urls', (event) => {
+    if (Object.keys(event.urls).length === 0) emptied.push(event);
+  });
+  const toMatch = async (): Promise<void> => {
+    session.intent({ kind: 'start-match' });
+    await session.resolveLoads();
+    session.intent({
+      kind: 'select-class',
+      classId: 'magus',
+      specId: firstAvailableSpecId('magus'),
+    });
+    session.intent({ kind: 'confirm-selection' });
+    // DEC-60: LOCK IN holds the full select countdown; the reveal follows it.
+    session.clock.advance(SELECT_COUNTDOWN_MS);
+    session.clock.advance(REVEAL_COUNTDOWN_MS);
+    await session.resolveLoads();
+  };
+  const toResults = (): void => {
+    captured.context?.transition('results');
+  };
+  return { ...session, emptied, toMatch, toResults };
+}
+
+describe('SessionController asset groups', () => {
+  it('publishes the credits once at boot, before the menu', async () => {
+    const { controller, bus, resolveLoads } = testSession();
+    const seen: string[] = [];
+    const licences: string[] = [];
+    bus.on('credits', ({ entries }) => {
+      seen.push('credits');
+      licences.push(...entries.map((entry) => entry.licenceId));
+    });
+    bus.on('session-phase', ({ phase }) => seen.push(phase));
+
+    controller.start();
+    await resolveLoads();
+
+    expect(seen).toEqual(['boot', 'credits', 'menu']);
+    expect(licences).toEqual(expect.arrayContaining(['ofl-cinzel', 'mit-phosphor']));
+  });
+
+  it('opens the menu with load-failed and one error when a boot load rejects (a bug)', async () => {
+    const rejecting = {
+      isLoaded: () => false,
+      progress: (group: AssetGroup) => ({
+        group,
+        loaded: 0,
+        total: 1,
+        loadedBytes: 0,
+        totalBytes: 9,
+      }),
+      load: () => Promise.reject(new Error('loader bug')),
+      urls: () => ({}),
+      boxes: () => ({}),
+      release: () => undefined,
+    };
+    const { controller, store, logger, phases } = testSession({ resources: rejecting });
+
+    controller.start();
+    await flushMicrotasks();
+
+    expect(phases).toEqual(['boot', 'menu']);
+    expect(store.getState().session.reason).toBe('load-failed');
+    expect(store.getState().loading).toMatchObject({ group: 'boot', status: 'failed' });
+    expect(logger.records.map(({ severityText, scope }) => [severityText, scope])).toEqual([
+      ['ERROR', 'client.session'],
+    ]);
+  });
+
+  it('releases the loaded selection groups when the match starts, never the unloaded one', async () => {
+    const session = sessionWithResults();
+    session.controller.start();
+    await session.resolveLoads();
+
+    await session.toMatch();
+
+    expect(session.controller.phase).toBe('match');
+    expect(session.emptied.map(({ group }) => group)).toEqual(SELECTION_GROUPS);
+  });
+
+  it('reloads the selection groups for a rematch and shows their art again', async () => {
+    const session = sessionWithResults();
+    const load = vi.spyOn(session.resources, 'load');
+    session.controller.start();
+    await session.resolveLoads();
+    await session.toMatch();
+    session.toResults();
+
+    session.intent({ kind: 'start-match' });
+    await session.resolveLoads();
+
+    const calls = load.mock.calls.map(([group]) => group);
+    // `selection` also loads for the win/lose screen in between (game-loop plan §4.5, §8).
+    for (const group of SELECTION_GROUPS) {
+      expect(calls.filter((called) => called === group)).toHaveLength(
+        group === 'selection' ? 3 : 2,
+      );
+    }
+    expect(calls).not.toContain('selection-alternate');
+    expect(session.controller.phase).toBe('character-select');
+    expect(assetsSlice.selectors.selectAssetUrl(session.store.getState(), 'test-selection')).toBe(
+      '/test/selection.webp',
+    );
+  });
+
+  it("publishes a loaded group's draw boxes with its URLs, and empties both on release", async () => {
+    const session = sessionWithResults();
+    const published: AssetUrls[] = [];
+    session.bus.on('asset-urls', (event) => published.push(event));
+    session.controller.start();
+    await session.resolveLoads();
+    session.intent({ kind: 'start-match' });
+    await session.resolveLoads();
+    const atSelect = assetsSlice.selectors.selectAssetBox(
+      session.store.getState(),
+      'test-selection',
+    );
+
+    await session.toMatch();
+
+    expect(atSelect).toEqual(TEST_SELECTION_BOX);
+    expect(
+      published.find(({ group, urls }) => group === 'selection' && 'test-selection' in urls),
+    ).toMatchObject({ boxes: { 'test-selection': TEST_SELECTION_BOX } });
+    expect(session.emptied.map(({ boxes }) => boxes)).toEqual(SELECTION_GROUPS.map(() => ({})));
+    expect(
+      assetsSlice.selectors.selectAssetBox(session.store.getState(), 'test-selection'),
+    ).toBeNull();
+  });
+
+  it("empties the match group's URLs once from match through results to the menu", async () => {
+    const session = sessionWithResults();
+    session.controller.start();
+    await session.resolveLoads();
+    await session.toMatch();
+
+    session.toResults();
+    session.intent({ kind: 'navigate', route: 'home' });
+
+    expect(session.controller.phase).toBe('menu');
+    expect(session.emptied.filter(({ group }) => group === 'match')).toHaveLength(1);
+  });
+
+  it("frees the player's sprite sheet group when the player leaves the match for the menu", async () => {
+    const sheet = LEGEND_SPRITE_SHEETS[firstAvailableSpecId('magus')];
+    if (sheet === undefined) throw new Error('the first Magus pick has no sprite sheet');
+    const session = sessionWithResults();
+    session.controller.start();
+    await session.resolveLoads();
+    await session.toMatch();
+    const group = `sprite-atlas:${sheet.atlasId}` as const;
+    const isLoadedInMatch = session.resources.isLoaded(group);
+
+    session.intent({ kind: 'leave-match' });
+
+    expect(session.controller.phase).toBe('menu');
+    expect(isLoadedInMatch).toBe(true);
+    expect(session.resources.isLoaded(group)).toBe(false);
+  });
+
+  it('loads the sheet group of every Legend in the filled rosters, and frees each on leave-match', async () => {
+    const session = sessionWithResults();
+    const locked: FilledRosters[] = [];
+    session.bus.on('selection-locked', (rosters) => locked.push(rosters));
+    session.controller.start();
+    await session.resolveLoads();
+    await session.toMatch();
+    const groups = [...matchLegendSheets(locked[0] ?? null).values()].map(
+      ({ atlasId }) => `sprite-atlas:${atlasId}` as const,
+    );
+    const loadedInMatch = groups.filter((group) => session.resources.isLoaded(group));
+
+    session.intent({ kind: 'leave-match' });
+
+    // The player's sheet and the bots' sheets: more than one group (DEC-378 (2)).
+    expect(groups.length).toBeGreaterThan(1);
+    expect(loadedInMatch).toEqual(groups);
+    expect(groups.filter((group) => session.resources.isLoaded(group))).toEqual([]);
+  });
+
+  it('shows the selection group on the win/lose screen and empties it on the way to the menu', async () => {
+    const session = sessionWithResults();
+    session.controller.start();
+    await session.resolveLoads();
+    await session.toMatch();
+
+    session.toResults();
+    await session.resolveLoads();
+    const atResults = assetsSlice.selectors.selectAssetUrl(
+      session.store.getState(),
+      'test-selection',
+    );
+    session.intent({ kind: 'continue' });
+
+    expect(atResults).toBe('/test/selection.webp');
+    expect(session.controller.phase).toBe('menu');
+    expect(
+      assetsSlice.selectors.selectAssetUrl(session.store.getState(), 'test-selection'),
+    ).toBeNull();
+    expect(session.emptied.map(({ group }) => group).slice(-1)).toEqual(['selection']);
+  });
+
+  it("marks the catalogue's colour set on the theme root while the session runs", () => {
+    const figma = testSession();
+    figma.controller.start();
+    expect(figma.themeRoot.dataset.contrast).toBe('figma');
+    figma.controller.destroy();
+    expect(figma.themeRoot.dataset.contrast).toBeUndefined();
+
+    const minimums = testSession({
+      catalogue: { load: () => ({ ...shippedCatalogue().load(), contrastMode: 'minimums' }) },
+    });
+    minimums.controller.start();
+    expect(minimums.themeRoot.dataset.contrast).toBe('minimums');
+  });
+
+  // ui-enhancements-plan §2 rule 1: a space-separated list, so CSS scopes each id with `~=`.
+  it("marks the catalogue's UI enhancements on the theme root while the session runs", () => {
+    const shipped = testSession();
+    shipped.controller.start();
+    expect(shipped.themeRoot.dataset.uiEnhancements).toBe('countdown-urgency');
+    shipped.controller.destroy();
+    expect(shipped.themeRoot.dataset.uiEnhancements).toBeUndefined();
+
+    const original = testSession({
+      catalogue: { load: () => ({ ...shippedCatalogue().load(), uiEnhancements: [] }) },
+    });
+    original.controller.start();
+    expect(original.themeRoot.dataset.uiEnhancements).toBe('');
+  });
+});

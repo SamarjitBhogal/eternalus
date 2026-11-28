@@ -1,21 +1,38 @@
 import type { SessionPhase, UiIntent } from '../../../bridge/events';
 import type { SessionContext, SessionState } from '../../SessionController.types';
+import { matchAssetGroups } from '../matchAssetGroups';
 
 /** Menu: the home screen and its sub-routes; "Start match" builds the setup and starts loading. */
 export class MenuState implements SessionState {
   public readonly phase: SessionPhase = 'menu';
 
-  /** Drops any previous setup and shows the home route. */
+  /**
+   * Releases the match's assets (`matchAssetGroups`; `leave-match` skips results; a no-op once
+   * released), drops any previous setup and shows the home route.
+   */
   public enter(context: SessionContext): void {
+    for (const group of matchAssetGroups(context.rosters())) {
+      context.releaseAssets(group);
+    }
     context.clearMatchSetup();
     context.bus.emit('menu-route', { route: 'home' });
   }
 
-  /** `start-match` → `loading` with a new setup; `navigate` changes the menu route. */
+  /**
+   * `start-match` → `loading` with a new setup; `start-duel` joins the Duel queue under the entered name and shows its
+   * waiting screen (the session moves on when the server pairs the player); `cancel-duel` leaves
+   * the queue and shows home; `navigate` changes the menu route.
+   */
   public handleIntent(intent: UiIntent, context: SessionContext): void {
     if (intent.kind === 'start-match') {
       context.newMatchSetup();
       context.transition('loading');
+    } else if (intent.kind === 'start-duel') {
+      context.joinDuelQueue(intent.name);
+      context.bus.emit('menu-route', { route: 'duel-queue' });
+    } else if (intent.kind === 'cancel-duel') {
+      context.leaveDuelQueue();
+      context.bus.emit('menu-route', { route: 'home' });
     } else if (intent.kind === 'navigate') {
       context.bus.emit('menu-route', { route: intent.route });
     }

@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-27
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -106,6 +106,7 @@ that `SpatialHash` exposes on the state (see [10-physics](./10-physics.md)), thr
 // packages/core/src/ai/perception/Perception.types.ts (sketch)
 export type UnitFilter = {
   readonly hostileTo?: Team;
+  readonly neutralAttackersOf?: EntityId; // with hostileTo: also a neutral unit attacking this one (DEC-166)
   readonly kinds?: readonly EntityKind[];
   readonly aliveOnly?: boolean;
 };
@@ -155,9 +156,20 @@ tree (root `ActiveSelector`):
 1. `Survive`: health below `retreatHealthFraction` → move to the nearest allied tower or the
    Stronghold; use a defensive ability if it scores.
 2. `Fight`: a hostile unit inside `engageRadius` → the `UtilityScorer` picks target and action.
-3. `Push`: advance with the lane's horde toward the next enemy structure; attack structures when
-   no units are in range.
-4. `Regroup`: return to the lane corridor.
+   A neutral camp mob counts only while it attacks the bot; bot camp farming comes later
+   (DEC-166). An enemy that stands inside a tower is chased in, not waited for at the edge
+   (DEC-189).
+3. `Defend`: a hostile unit attacks one of the bot's own towers or its gate on its lane → the bot
+   fights the enemies within `engageRadius` of that structure's box (`LaneStructureEntry.box`: a
+   tower's whole fort), picked as in `Fight`, wherever on the lane it stands (DEC-323 (2)). `Fight` comes first, so a near enemy is fought
+   before a far structure is defended. The Stronghold, which has no lane, is not defended by this
+   step.
+4. `Push`: advance with the lane's horde toward the next enemy structure; attack structures when
+   no units are in range. The bot approaches a structure from the side that faces it (DEC-189).
+5. `Regroup`: return to the lane corridor.
+
+A bot whose chase of its target is stuck goes round on the A\* waypoint that stuck detection gives
+it (18 §5.2, DEC-193).
 
 Utility scoring (`ai/utility/`): `Consideration`s (distance, target health fraction, threat,
 cooldown ready, aether cost, allies nearby) return 0..1; a `UtilityScorer` combines them with
@@ -179,12 +191,25 @@ acquisition radius 500 units in both League and Dota (our world units differ, so
 map); League's priority list (1) enemy Legends attacking an allied Legend, (2) enemy minions
 attacking an allied Legend, (3) enemy minions attacking an allied minion, (4) enemy turrets
 attacking an allied minion, (5) closest enemy minion, (6) closest enemy Legend; Dota's aggro
-duration 2.3 s (≈ 69 ticks) and cooldown 3 s (90 ticks). "Call for help": an enemy Legend that
-basic-attacks an allied Legend inside the radius becomes priority 1.
+cooldown 3 s (90 ticks). Dota's 2.3 s aggro duration is not used: the owner's leash rule,
+"distance, then time" (18 §6.1, DEC-144), replaces it. "Call for help": an enemy Legend that
+basic-attacks an allied Legend inside the radius becomes priority 1, and an enemy that attacks a
+horde-mate is in reach out to `callForHelpRadius` (DEC-144). The cooldown, after a leash break,
+leaves alone only the enemy that escaped (DEC-144 F).
+
+Each aggro profile names the one controller that reads it (`controller`), and a controller
+accepts only its own profiles. The shared fields are `AggroRuleDefinition`; a horde minion's
+profile (`HordeAggroRuleDefinition`) adds `leashRadius` and `callForHelpRadius`, and a guard's,
+camp mob's or guard-post boss's (`GuardAggroRuleDefinition`) adds nothing, since its leash and its
+mates come from its post's guard plan (18 §7; DEC-168 B2). Durations are seconds in content (the
+`Authored…` forms of these types) and are turned into ticks once, at load, with the match's tick
+rate by `loadAggroRules`, which `Simulation` calls before it builds the controllers (03 §8), so the
+controllers read only ticks; `ghostFirstWaveTicks` is the exception, already in ticks.
 
 ```ts
 // packages/core/src/content/ai/aggro/lane-minion.ts (sketch)
 export const laneMinionAggro = {
+  controller: 'minion', // only MinionController reads it
   acquisitionRadius: 500, // TUNE: League/Dota reference; world units to be scaled
   priority: [
     'legend-attacking-ally-legend',
@@ -196,11 +221,12 @@ export const laneMinionAggro = {
     'lane-objective', // the horde's next standing structure (18 §6.2)
   ],
   reevaluateEveryTicks: 15, // TUNE
-  leashRadius: 700, // TUNE
-  aggroDurationTicks: 69, // TUNE: Dota 2.3 s
-  aggroCooldownTicks: 90, // TUNE: Dota 3 s
+  leashRadius: 805, // TUNE: 700 × 1.15, DEC-193: +15 % for lane minions (laneMinion.ts `LEASH`)
+  leashGraceSeconds: 3, // TUNE: owner DEC-144, 3 s of chase outside the leash before it breaks
+  aggroCooldownSeconds: 3, // TUNE: Dota 3 s
+  callForHelpRadius: 805, // TUNE: owner DEC-144; the leash
   ghostFirstWaveTicks: 0, // 0 = off; League ghosts the first wave for 18–28 s
-} satisfies AggroRuleDefinition;
+} satisfies AuthoredHordeAggroRule;
 ```
 
 Ghosted first wave (**MVP-if-time**, `Recommendation:`): while `ghostFirstWaveTicks` runs after
@@ -282,27 +308,54 @@ error, highest weights; cadence every 3rd tick. `Recommendation:` the allied Rov
 | `boss`       | 3               | Few instances                                                           |
 
 All cadences are `TUNE` values in `content/ai/cadence.ts` (`Recommendation:` starting points).
-Staggering: a brain is due when `(tick + entityId) % cadence === 0`, which spreads 288 mobs and
+Staggering: a brain is due when `(tick + entityId) % cadence === 0`, which spreads the mobs and
 20 Legends across ticks instead of bunching them. Budget: `AiSystem` takes `maxDecisionsPerTick`
 (`TUNE`; `Recommendation:` 96, since 288 mobs / 5 plus Legends and turrets is about 70) and stops
 when it is spent; the round-robin cursor lives in `state.ai.cursor`, so deferral is deterministic
-and the skipped brains go first next tick. A decision is atomic and cheap: radius-bounded queries,
-no allocation in hot paths, scratch vectors reused. A bot's A\* is the exception: bots steer by
-`move` commands, so A\* is a `PathQuery` (`state.paths`) its leaves call when the straight line is
-blocked, its cost inside the decision budget and capped by `GameConfig.map.pathMaxExpansions` (a
-path cache in the brain is the next step if profiling shows the cost). Other heavy work (flow
+and the skipped brains go first next tick. At the unit cap (`GameConfig.limits.maxUnitsPerTeam`
+per team, DEC-137, plus the camp mobs) more brains are in play than that estimate, so a deferred
+brain can wait up to `floor((brains − 1) / maxDecisionsPerTick)` ticks. The owner kept the budget;
+the guard leash tolerance covers the wait instead (DEC-181, 18 §7). A decision is atomic and
+cheap: radius-bounded queries, no allocation in hot paths, scratch vectors reused. A bot's A\* is
+the exception: bots steer by `move` commands, so A\* is a `PathQuery` (`state.paths`) its leaves
+call when the straight line is blocked. Its cost is inside the decision budget, and
+`GameConfig.map.pathMaxSearchArea` (DEC-243) caps each search. The brain caches the last search's
+destination and waypoint as plain memory and reuses the waypoint, without a new search, while the
+bot heads to the same place (within its `arrivalDistance`), the straight line to that place is
+still blocked, the waypoint is not yet reached and is still on the way (nearer than the
+destination), and the bot still sees it in a straight line (`PathQuery.isLineClear`). A clear line
+to the destination caches nothing, so a moving destination is followed live; arriving, or a search
+that finds no way, clears the cache. The cache also holds the version of the map it was searched
+on (`PathQuery.version`, which changes whenever the grid is stamped or cleared: `WorldMap.version`,
+06 §6), and a cache from an older version is searched again: a way that opens, or closes, while
+the bot walks a cached leg is found at its next decision (owner, DEC-379 and DEC-392, which
+replace DEC-373). `StuckSystem` is a second A\* consumer, outside the decision budget:
+`STUCK_DETECTION.maxPlansPerTick` caps its plans a tick, and `pathMaxSearchArea` caps each plan.
+Its detour waypoints follow the same map-version rule as the bot's cache: one planned on an older
+version is planned again at once (`ChaseWatch.isWayStale`, owner, DEC-392).
+Requests over the cap wait (`ChaseWatch.isPlanDue`), served in store order; the upgrade path is a
+round-robin cursor. Other heavy work (flow
 fields) belongs to `PathingSystem`, which time-slices its rebuilds
 [research §3](../research/game-architecture-and-performance-research.md#3-pathfinding-and-movement-for-lane-minions-and-large-unit-counts).
 
 ## 7. Sim mode (MVP)
 
-`MatchConfig.humanLegendId: EntityId | null`. With `null`, every Legend gets `bot-legend` (or
-`rover`) and nobody reads input: the match plays itself. This is a first-class feature, not a
+The human is the roster's one `human` slot (a `RosterSlot` with `pilot: 'human'`,
+`Simulation.types.ts`; DEC-173), on `MatchConfig.playerTeam` (`config/GameConfig.types.ts`); the
+client gives it its team's Rover role (DISC-51). `state.match.humanLegendId: EntityId | null` is the
+Legend `Simulation` spawns for that slot when the match is built, from the same roster and by the
+same role rule as the bots (18 §8) but with no controller, so it needs the map. A human slot that
+names no Legend definition leaves `humanLegendId` `null` and logs an error; the match plays on.
+With no human slot, `humanLegendId` is `null` and every Legend gets `bot-legend` (or `rover`) and
+nobody reads input: the match plays itself. This is a first-class feature, not a
 debug hack. Soak tests ([15-diagnostics](./15-diagnostics-and-runtime-testing.md)) run sim mode
 headless in Node for thousands of ticks; balancing runs many seeds and compares `MatchResult`s;
 the developer menu's "remove/add user-controlled Legend" (requirements: "sim game") is a
 `dev-set-controller` command `{ entityId, controllerId }` applied by `CommandApplySystem`, so the
-switch is recorded in the replay like everything else.
+switch is recorded in the replay like everything else. `controllerId` is `player` (the human
+plays the Legend), a bot's id (that bot plays it; for a lane bot the game picks the lane) or
+`null` (the bot its team lacks, 18 §8); a Legend the human leaves for another Legend also becomes
+the bot its team lacks (DEC-356).
 
 ## 8. Testability
 
@@ -337,9 +390,58 @@ and utility better
 
 ## 10. Implementation status
 
+`dev-set-controller` (2026-11-13, FR-099) is applied by `DevSetControllerHandler` from the queue, not
+by a `CommandApplySystem`; it moves the `ControllerBinding` and drops the brain (03, status). The
+human's controller id is `player` (§2); taking control while a human exists swaps the seat (DEC-294).
+A Legend the human leaves takes the bot the developer picks (the Rover, or a laner on the lane
+the game picks), or with no pick the role its team lacks (the Rover, else a laner on the free lane;
+DEC-356). Both choosers are in `state/missingRoleChooser.ts`, injected by `Simulation`, and
+`AiSystem` gives the Legend a fresh brain.
+
 Minion plan pull request M2a builds §1–§3, §5 and §6 with these differences, each closed by the
 work named:
 
+- §4.6 `BossController` is built for the Greater Boss only (below). Until the `MiniBoss` class
+  lands the capture point mini-boss runs on `GuardController`; the interim is recorded in
+  [18's implementation status note](18-minion-system.md#minion-system).
+
+- `BossController` (§4.6) drives the Greater Boss only (sprint 3.6, owner 2026-11-15); no
+  `MiniBoss` exists on this line yet, and every other mob keeps its controller. Its profile is a
+  `BossProfileDefinition` (`content/ai/bosses/greaterBoss.ts`: entrance, roam cadence, arrival,
+  zone margin, moves), its memory the FSM (`entrance`, then `roam → telegraph → execute → recover
+→ roam`, one state per decision), timers, roam point and a ready tick per move. Its zone is its
+  Cathedral capture zone guard post's circle (home edge plus leash, the 25 m centre zone); the boss still
+  spawns through the guard plan (07's Implementation status), but `PathingSystem` steers only
+  `GuardController`'s guards, so the boss steers itself with `move`. Differences from §4.6, each
+  closed by the work named: the six moves (balancing.md: two sweeps, slam, beam, charge, roar)
+  rotate in profile order, one after another (2026-11-20, so every move comes up), and the next
+  move waits, the boss chasing, until a target is in its range and it is off cooldown; the
+  rotation's place is the brain's `next` memory (the utility pick and the seeded weighted pick
+  are not built); the target is
+  the nearest non-neutral unit inside the zone, with no damage-dealer bias (no window or weight in
+  the docs; `INBOX.md`); a move is not cast through `cast-ability` and an `AbilityEffect`
+  (abilities are Phase 4) but through the interim `boss-move { actorId, moveId }` command:
+  `BossMoveHandler` accepts it only from a boss and only for a move of its own profile, records a
+  `BossMoveCast` landing the move's telegraph later and emits `boss-telegraph`, and
+  `BossMoveSystem` lands it on that tick exactly (`boss-move-executed`), so the telegraph's lead
+  time does not depend on the AI cadence. Moves and the profile are authored in seconds and turned
+  into ticks with `TickRate` where they are read, not as §4.6's `telegraphTicks`/`cooldownTicks`.
+  A move's `effect` is §4.6's `effectId`: `BossMoveSystem` hands the move to the strategy
+  registered under it (`systems/defaultBossMoveEffects.ts`, `BossMoveEffect`), not to a doc 05
+  `AbilityEffect` yet. `area` (the slam) hits every unit within `radius`, with no knockback or
+  knockup; `cone` (the sweep, 2026-11-20) hits every unit within `radius` and
+  `halfAngleDegrees` of the boss's facing and pushes each `knockback` metres away (10's
+  Implementation status); `charge` (2026-11-20) dashes the boss `length` metres along its facing
+  (a push on itself, cut short at its zone's edge) and hits every unit on that path, within
+  `width / 2` of its line (`unitsAlong`); `line` (the beam, 2026-11-20) hits every unit on a line
+  `length` long and `width` wide from the boss, which does not move, and walls do not stop it.
+  The second sweep is the sweep with a wider cone. `roar` lands with no effect (only
+  `boss-move-executed`): balancing.md gives the GreaterBoss's roar none. The facing is the boss's own at landing: it last walked toward its
+  target and stands still through the telegraph. The entrance roar is
+  `boss-entrance` from `SpawnSystem` on its spawn pass and an `entranceSeconds` pause with no
+  gameplay effect: balancing.md gives the GreaterBoss's roar none. The pause counts from the
+  boss's first decision, at most one cadence after the spawn tick. Its numbers are `TUNE`
+  (`INBOX.md`, the BossController item).
 - `AiSystem` lives in `ai/` and fits the `System` contract by shape; `Simulation` puts it first in
   the pipeline, because `systems/` may not import `ai/` (where it lives is the owner's open
   PROTO-01 question). It is second, after `CommandApplySystem` (§1), once that system heads the
@@ -350,8 +452,9 @@ work named:
   it.
 - The stagger hashes the string id (`(tick + fnv1a(id)) % cadence`); a budget-deferred queue in
   `state.ai` replaces the round-robin cursor, with the same order (deferred first, then id order).
-- The registry holds `MinionController` (M2b) and `BotLegendController` (M3); the other
-  controllers are absent until their phases, so it is a partial map.
+- The registry holds `MinionController` (M2b), `GuardController` (M2c), `BotLegendController`
+  (M3) and `RoverController` (M8); the other controllers are absent until their phases, so it is
+  a partial map.
 - `BotLegendController` (M3) plays the `laner` tree of §4.2 with the nodes it needs
   (`ai/bt/`: `Sequence`, `ActiveSelector`, `Condition`, `Action`; `Selector` and `Cooldown` join
   with their first use) and a `UtilityScorer` (`ai/utility/`) over two considerations, closeness
@@ -373,17 +476,32 @@ work named:
   stream, at most every `castIntervalTicks`; the cast handler refuses casts until abilities land
   (Phase 4), with no controller change needed then.
 - A\* for Legends (M8, §6) is `map/AStarPathfinder` behind the `PathQuery` port (`state.paths`).
-  One `WorldMap` serves it and the lane flow fields. No path cache yet: a bot searches again on
-  each blocked decision.
-- A brain's `profileId` names the controller's own content directly: an `AggroRuleDefinition`
-  (`content/ai/aggro/`) for `MinionController`, a `BotDifficultyDefinition`
+  One `WorldMap` serves it and the lane flow fields. The path cache (§6) is `BotMemory`'s
+  `pathGoal*`, `pathStep*` and `pathVersion` fields, kept by `BotMovement.moveTo`;
+  `PathQuery.isLineClear` and `PathQuery.version` are port members rather than reads of
+  `state.world.grid` so the leaves' tests stub one object.
+- The bot leaves also read the nav grid directly (`state.world.grid`). A bot sent to a point on
+  blocked ground (a tower's centre) stops at the edge of that ground on its side
+  (`BotMovement.moveTo`, the leaves' navigation in `ai/BotMovement.ts`). To fight an enemy on
+  blocked ground, or to push a structure, it goes by A\* to that edge and then straight in
+  (`closeIn`), so the collision system stops it at the real walls (DEC-189). While stuck
+  detection has a detour waypoint for it, a fighting or pushing bot heads there
+  (`EntityStore.detourWaypointOf`, DEC-193). A bot that already stands still sends no new halt
+  (`isHalted` in its memory).
+- A brain's `profileId` names the controller's own content directly: an aggro profile
+  (`content/ai/aggro/`) for `MinionController` and `GuardController`, each accepting only a profile
+  whose `controller` names it, and a `BotDifficultyDefinition`
   (`content/ai/difficulties/`) for `BotLegendController`. The `AiProfileDefinition` of §2, which
   would group aggro, cadence and difficulty under one id, arrives when a controller needs more
   than one of them. `AiSystem.assertRegistered` checks each definition's profile at construction.
 - A definition that names an unregistered controller stops `Simulation` at construction (shipped
   content) or the first tick `AiSystem` sees the entity (injected content).
-- `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for structure entities
-  (M2c).
+- `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for a controller that
+  needs it (M2c reads lane objectives from `state.laneStructures`).
+- **2026-11-12 (corner camp boss).** §4.6 places corner-camp bosses post-MVP; DEC-236 approves
+  corner camps for Phase 3 instead. Until `BossController` (Phase 3 sprint 3.6), the corner boss
+  (`corner-boss`) is a guard of the `corner-camp` guard plan held by `GuardController` (§4.4),
+  with no moves or roaming; doc 07's implementation status lists the rest it lacks.
 
 ## Related
 

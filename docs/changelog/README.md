@@ -4,16 +4,16 @@ description: One entry per phase (and per large change) recording exactly what w
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-11-19
 tags: [changelog, process]
-related: ['docs/process/sdlc.md', 'docs/plan/PROGRESS.md']
+related: ['docs/process/sdlc.md', 'docs/plan/progress/README.md']
 ---
 
 # Changelog index
 
 **Purpose.** Read this to find the record of what changed in the repository and why. Entries
 are written by whoever makes the change (human or agent) and are part of the Definition of
-Done for a phase (`docs/process/sdlc.md` §2). `docs/plan/PROGRESS.md` is the day-to-day log;
+Done for a phase (`docs/process/sdlc.md` §2). `docs/plan/progress/` is the day-to-day log (one file per entry);
 this folder is the curated, per-change explanation.
 
 ## Format
@@ -25,15 +25,16 @@ in `docs/reviews/`.
 
 ## Entries
 
-| Date       | Entry                                                                                              | Scope                                                                                               |
-| ---------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| 2026-09-30 | [Phase 0 — documentation and harness foundation](2026-09-30-phase-0-foundation.md)                 | Docs tree, ADRs 0003–0009, agent harness, docs check, root file updates                             |
-| 2026-09-30 | [Phase 0 pull request body](2026-09-30-phase-0-pull-request.md)                                    | Ready-to-paste PR description for the Phase 0 PR                                                    |
-| 2026-10-03 | [INBOX decisions and Sprint 1 session prompts](2026-10-03-inbox-decisions-and-sprint-1-prompts.md) | Owner decisions recorded, plan re-cut to 2026-11-27, Warrior rename, screen flow, Ultracode prompts |
-| 2026-10-05 | [PR: feat/map-generator](pr-feat-map-generator.md)                                                 | Map audit and config-driven `MapGenerator`, `WorldMap`, `Renderer` port; reviewer Aryan Walanj      |
+| Date       | Entry                                                                                              | Scope                                                                                                             |
+| ---------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 2026-09-30 | [Phase 0 — documentation and harness foundation](2026-09-30-phase-0-foundation.md)                 | Docs tree, ADRs 0003–0009, agent harness, docs check, root file updates                                           |
+| 2026-09-30 | [Phase 0 pull request body](2026-09-30-phase-0-pull-request.md)                                    | Ready-to-paste PR description for the Phase 0 PR                                                                  |
+| 2026-10-03 | [INBOX decisions and Sprint 1 session prompts](2026-10-03-inbox-decisions-and-sprint-1-prompts.md) | Owner decisions recorded, plan re-cut to 2026-11-27, Warrior rename, screen flow, Ultracode prompts               |
+| 2026-10-05 | [PR: feat/map-generator](pr-feat-map-generator.md)                                                 | Map audit and config-driven `MapGenerator`, `WorldMap`, `Renderer` port; reviewer Aryan Walanj                    |
+| 2026-10-25 | [PR: feat/hud-and-character-select](pr-feat-hud-and-character-select.md)                           | Deviation table DV-01 to DV-138, the applied ADR 0018 rows, and a definition of every working id the branch cites |
 
 ## Related
 
 - [`../process/sdlc.md`](../process/sdlc.md)
-- [`../plan/PROGRESS.md`](../plan/PROGRESS.md)
+- [`../plan/progress/`](../plan/progress/README.md)
 - [`../reviews/2026-09-30-scaffold-review.md`](../reviews/2026-09-30-scaffold-review.md)

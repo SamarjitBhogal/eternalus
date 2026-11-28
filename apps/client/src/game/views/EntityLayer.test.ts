@@ -4,23 +4,52 @@ import { describe, expect, it } from 'vitest';
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { EntityLayer } from './EntityLayer';
+import type { HealthBarSide } from './HealthBarView.types';
+import {
+  LEGEND_VISUAL_DIAMETER,
+  MINI_MAP_LEGEND_GLYPH,
+  MINI_MAP_MOB_GLYPH,
+} from './entityViews.constants';
+import {
+  HEALTH_BAR_FILL_COLORS,
+  HEALTH_BAR_GAP,
+  HEALTH_BAR_TRACK_COLOR,
+} from './HealthBarView.constants';
 import type { WorldLayer } from './SceneView.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
+import { LegendSpriteView } from './LegendSpriteView';
 import { ViewRegistry } from './ViewRegistry';
 
-const unit = (id: string, x: number, y: number): EntitySnapshot => ({
+const EAST = { x: 1, y: 0 };
+
+const SOUTH = { x: 0, y: 1 };
+
+const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot => ({
   id,
   kind: 'light-mob',
   family: 'mob',
   definitionId: 'training-dummy',
   team: 'dark',
-  transform: { x, y, radius: 0.4 },
+  transform: { x, y, radius: 0.4, facing },
   health: null,
+  elevation: null,
+  progression: null,
+  aether: null,
+  area: null,
+  capture: null,
+  aura: null,
+  gem: null,
 });
 
 const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
   tick,
-  phase: 'countdown',
+  match: {
+    phase: 'countdown',
+    phaseEnteredTick: 0,
+    upcoming: [],
+    countdownEndTick: 0,
+    humanLegendId: null,
+  },
   entities,
   hordes: [],
   teams: {
@@ -36,12 +65,79 @@ class SpyView implements EntityView {
   public draw(state: EntityDrawState): void {
     this.drawn.push(state);
   }
+
+  public drawMinimap(): void {
+    // The main-view tests below record `draw` only.
+  }
 }
 
+/** A view that draws nothing and reports a fixed artwork radius, as a drawn sprite does. */
+class TallView implements EntityView {
+  public constructor(private readonly radius: number) {}
+
+  public draw(): void {
+    // The health-bar test below needs only the radius.
+  }
+
+  public drawMinimap(): void {
+    // The health-bar test below needs the main view only.
+  }
+
+  public visualRadiusOf(): number {
+    return this.radius;
+  }
+}
+
+/** One entity of `family` at (x, 0) with `current` health. */
+const member = (id: string, family: string, x: number, current = 10): EntitySnapshot => ({
+  ...unit(id, x, 0),
+  kind: family,
+  family,
+  health: { current, max: 10 },
+});
+
+/** Every minimap glyph the layer draws with the shipped views: [glyph, x] in drawing order. */
+const minimapGlyphs = (layer: EntityLayer): [unknown, number][] => {
+  const renderer = new RecordingRenderer();
+  const asSceneLayer: WorldLayer = layer;
+  asSceneLayer.drawMinimap(renderer);
+  return renderer.calls.flatMap((call) =>
+    call.op === 'drawGlyph' ? [[call.args[0], call.args[1].x]] : [],
+  );
+};
+
+/** The unit markers among them (each also has an outline under it). */
+const minimapMarks = (layer: EntityLayer): [unknown, number][] =>
+  minimapGlyphs(layer).filter(
+    ([glyph]) => glyph === MINI_MAP_MOB_GLYPH || glyph === MINI_MAP_LEGEND_GLYPH,
+  );
+
 describe('EntityLayer', () => {
+  it("hands every view the frame time: the snapshot's tick plus alpha (DEC-398, card PR170 (12))", () => {
+    const spy = new SpyView();
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      () => false,
+      () => null,
+    );
+    layer.show(
+      snapshot(6, [unit('a', 0, 0)]),
+      snapshot(7, [unit('a', 1, 0), unit('b', 5, 0)]),
+      0.25,
+      null,
+    );
+    layer.draw(new RecordingRenderer());
+
+    expect(spy.drawn.map((state) => state.frameTick)).toEqual([7.25, 7.25]);
+  });
+
   it('interpolates positions between the last two snapshots by alpha', () => {
     const spy = new SpyView();
-    const layer = new EntityLayer(new ViewRegistry(spy));
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      () => false,
+      () => null,
+    );
 
     layer.show(snapshot(1, [unit('a', 0, 0)]), snapshot(2, [unit('a', 10, 4)]), 0.25, null);
     layer.draw(new RecordingRenderer());
@@ -49,9 +145,115 @@ describe('EntityLayer', () => {
     expect(spy.drawn.map((state) => state.position)).toEqual([{ x: 2.5, y: 1 }]);
   });
 
+  it('gives every entity the moment the frame shows, in ticks: the previous tick plus alpha (DEC-323 (3))', () => {
+    const spy = new SpyView();
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      () => false,
+      () => null,
+    );
+    const times = (previous: Snapshot | null, current: Snapshot, alpha: number): number[] => {
+      spy.drawn.length = 0;
+      layer.show(previous, current, alpha, null);
+      layer.draw(new RecordingRenderer());
+      return spy.drawn.map(({ time }) => time);
+    };
+    const units = [unit('a', 0, 0), unit('b', 0, 1)];
+
+    expect(times(null, snapshot(0, units), 0.75)).toEqual([0, 0]);
+    expect(times(snapshot(6, units), snapshot(7, units), 0.25)).toEqual([6.25, 6.25]);
+    expect(times(snapshot(6, units), snapshot(7, units), 0.999)[0]).toBeCloseTo(7, 2);
+    expect(times(snapshot(7, units), snapshot(8, units), 0)).toEqual([7, 7]);
+  });
+
+  it('draws what lies on the ground for every entity before any entity, so no unit is tinted (DEC-323 (3))', () => {
+    const order: string[] = [];
+    const grounded: EntityView = {
+      drawGround: ({ entity }) => order.push(`ground ${entity.id}`),
+      draw: ({ entity }) => order.push(`draw ${entity.id}`),
+      drawMinimap: () => undefined,
+    };
+    const layer = new EntityLayer(
+      new ViewRegistry(grounded),
+      () => false,
+      () => null,
+    );
+
+    layer.show(null, snapshot(1, [unit('tower', 0, 5), unit('north', 0, 1)]), 0, null);
+    layer.draw(new RecordingRenderer());
+
+    expect(order).toEqual(['ground north', 'ground tower', 'draw north', 'draw tower']);
+  });
+
+  it('interpolates a jump height like the position; a new entity starts at its height (DEC-390)', () => {
+    const spy = new SpyView();
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      () => false,
+      () => null,
+    );
+    const lifted = (id: string, height: number): EntitySnapshot => ({
+      ...unit(id, 0, 0),
+      elevation: { height },
+    });
+
+    layer.show(
+      snapshot(1, [lifted('a', 0.4), unit('mob', 5, 0)]),
+      snapshot(2, [lifted('a', 1.2), unit('mob', 5, 0), lifted('new', 1)]),
+      0.25,
+      null,
+    );
+    layer.draw(new RecordingRenderer());
+
+    expect(spy.drawn.map((state) => [state.entity.id, state.height])).toEqual([
+      ['a', 0.6],
+      ['mob', 0],
+      ['new', 1],
+    ]);
+  });
+
+  it('turns the facing between the last two snapshots by alpha, as a unit vector (08 §8)', () => {
+    const spy = new SpyView();
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      () => false,
+      () => null,
+    );
+
+    layer.show(snapshot(1, [unit('a', 0, 0)]), snapshot(2, [unit('a', 0, 0, SOUTH)]), 0.5, null);
+    layer.draw(new RecordingRenderer());
+
+    expect(spy.drawn[0]?.facing.x).toBeCloseTo(Math.SQRT1_2);
+    expect(spy.drawn[0]?.facing.y).toBeCloseTo(Math.SQRT1_2);
+  });
+
+  it('faces a new entity, or one that turned right round, the way it faces now', () => {
+    const spy = new SpyView();
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      () => false,
+      () => null,
+    );
+    const west = { x: -1, y: 0 };
+
+    layer.show(
+      snapshot(1, [unit('turned', 0, 0)]),
+      snapshot(2, [unit('turned', 0, 0, west), unit('new', 0, 1, SOUTH)]),
+      0.5,
+      null,
+    );
+    layer.draw(new RecordingRenderer());
+
+    expect(spy.drawn.map((state) => state.facing)).toEqual([west, SOUTH]);
+  });
+
   it('draws a new entity where it is, without a ghost from the origin', () => {
     const spy = new SpyView();
-    const layer = new EntityLayer(new ViewRegistry(spy));
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      () => false,
+      () => null,
+    );
 
     layer.show(snapshot(1, []), snapshot(2, [unit('new', 50, 50)]), 0.5, null);
     layer.draw(new RecordingRenderer());
@@ -61,7 +263,11 @@ describe('EntityLayer', () => {
 
   it('draws back to front by y, marks the focused entity, and skips entities without a place', () => {
     const spy = new SpyView();
-    const layer = new EntityLayer(new ViewRegistry(spy));
+    const layer = new EntityLayer(
+      new ViewRegistry(spy),
+      () => false,
+      () => null,
+    );
     const placeless = { ...unit('ghost', 0, 0), transform: null };
 
     layer.show(null, snapshot(1, [unit('low', 0, 9), unit('high', 0, 1), placeless]), 0, 'low');
@@ -73,14 +279,160 @@ describe('EntityLayer', () => {
     ]);
   });
 
-  it('leaves the minimap alone (entity markers belong to the minimap work)', () => {
-    const layer = new EntityLayer(createDefaultViewRegistry());
+  it('marks Legends and mobs on the minimap at the snapshot position, Legends last', () => {
+    // DEC-187 (C): "a dot sits at the snapshot position", not the interpolated one.
+    const layer = new EntityLayer(
+      createDefaultViewRegistry(),
+      () => false,
+      () => null,
+    );
+    const legend = member('l', 'legend', 10);
+
+    layer.show(
+      snapshot(1, [legend, member('m', 'mob', 0)]),
+      snapshot(2, [
+        { ...legend, transform: { x: 20, y: 0, radius: 0.5, facing: { x: 1, y: 0 } } },
+        member('m', 'mob', 4),
+      ]),
+      0.5,
+      null,
+    );
+
+    expect(minimapMarks(layer)).toEqual([
+      [MINI_MAP_MOB_GLYPH, 4],
+      [MINI_MAP_LEGEND_GLYPH, 20],
+    ]);
+  });
+
+  it('marks no player, no dead (the injected rule), no structure, no boss on the minimap', () => {
+    // The injected rule, not one of the layer's own: here 7 health counts as dead.
+    const layer = new EntityLayer(
+      createDefaultViewRegistry(),
+      (health) => health?.current === 7,
+      () => null,
+    );
+    const units = [
+      member('me', 'legend', 1),
+      member('dead', 'mob', 2, 7),
+      member('gate', 'structure', 3),
+      member('wyrm', 'boss', 4),
+      member('alive', 'mob', 5, 0),
+    ];
+
+    layer.show(null, snapshot(1, units), 0, 'me');
+
+    expect(minimapMarks(layer)).toEqual([[MINI_MAP_MOB_GLYPH, 5]]);
+    // Nothing else is drawn: only that mob's outline and dot.
+    expect(minimapGlyphs(layer).map(([, x]) => x)).toEqual([5, 5]);
+  });
+
+  it('draws the bars the injected rule picks, in their side colour, over their units', () => {
+    // 'foe' is an enemy at (10, 20), 'pal' an ally; 'calm' draws no bar. HealthBarView.test checks
+    // the bar's shape.
+    const sides: Readonly<Record<string, HealthBarSide>> = { foe: 'enemy', pal: 'ally' };
+    const layer = new EntityLayer(
+      createDefaultViewRegistry(),
+      () => false,
+      (entity) => sides[entity.id] ?? null,
+    );
+    const foe = {
+      ...member('foe', 'mob', 10, 3),
+      transform: { x: 10, y: 20, radius: 0.5, facing: EAST },
+    };
+    layer.show(
+      null,
+      snapshot(1, [foe, member('pal', 'mob', 30), member('calm', 'mob', 50)]),
+      0,
+      null,
+    );
     const renderer = new RecordingRenderer();
+    layer.draw(renderer);
+    const { calls } = renderer;
 
-    layer.show(null, snapshot(1, [unit('a', 1, 1), unit('b', 2, 2)]), 0, null);
-    const asSceneLayer: WorldLayer = layer;
-    asSceneLayer.drawMinimap(renderer);
+    const polygons = calls.flatMap((call) => (call.op === 'fillPolygon' ? [call.args] : []));
+    // Back to front by y: the ally at y 0 first, then the foe at y 20.
+    expect(polygons.map(([, color]) => color)).toEqual([
+      HEALTH_BAR_TRACK_COLOR,
+      HEALTH_BAR_FILL_COLORS.ally,
+      HEALTH_BAR_TRACK_COLOR,
+      HEALTH_BAR_FILL_COLORS.enemy,
+    ]);
+    // The foe's bar is centred over the foe, just above it.
+    const track = polygons[2]?.[0];
+    expect(((track?.[0]?.x ?? 0) + (track?.[1]?.x ?? 0)) / 2).toBeCloseTo(10);
+    expect(track?.[2]?.y).toBeLessThan(20 - 0.5 * 1.4);
+    // The bars come after all three units, so no unit hides one.
+    expect(calls.findIndex((call) => call.op === 'fillPolygon')).toBe(calls.length - 4);
+  });
 
-    expect(renderer.calls).toEqual([]);
+  it('lifts a bar above the radius its view reports, not the footprint (a drawn sprite)', () => {
+    const layer = new EntityLayer(
+      new ViewRegistry(new TallView(3)),
+      () => false,
+      () => 'enemy',
+    );
+    const foe = {
+      ...member('foe', 'mob', 10),
+      transform: { x: 10, y: 20, radius: 0.5, facing: EAST },
+    };
+    layer.show(null, snapshot(1, [foe]), 0, null);
+    const renderer = new RecordingRenderer();
+    layer.draw(renderer);
+    const [track] = renderer.calls.flatMap((call) =>
+      call.op === 'fillPolygon' ? [call.args[0]] : [],
+    );
+
+    expect(track?.[2]?.y).toBeCloseTo(20 - 3 - HEALTH_BAR_GAP);
+  });
+
+  it("puts a sprite Legend's bar on the sprite top, not on its 2.6 m click radius", () => {
+    // The sprite's top stands 0.9 of its width above the feet (the sheet's data gives it).
+    const sprites = {
+      sizeOf: () => ({ width: LEGEND_VISUAL_DIAMETER, top: LEGEND_VISUAL_DIAMETER * 0.9 }),
+      frameOf: () => ({ atlasId: 'knight-sprites', frame: 0 }),
+    };
+    const layer = new EntityLayer(
+      createDefaultViewRegistry(undefined, new LegendSpriteView(sprites)),
+      () => false,
+      () => 'enemy',
+    );
+    const foe = {
+      ...member('foe', 'legend', 10),
+      transform: { x: 10, y: 20, radius: 0.75, facing: EAST },
+    };
+    layer.show(null, snapshot(1, [foe]), 0, null);
+    const renderer = new RecordingRenderer();
+    layer.draw(renderer);
+    const [track] = renderer.calls.flatMap((call) =>
+      call.op === 'fillPolygon' ? [call.args[0]] : [],
+    );
+
+    expect(track?.[2]?.y).toBeCloseTo(20 - LEGEND_VISUAL_DIAMETER * 0.9 - HEALTH_BAR_GAP);
+  });
+
+  it("raises a jumping sprite Legend's bar by the interpolated jump height (DEC-390)", () => {
+    const sprites = {
+      sizeOf: () => ({ width: LEGEND_VISUAL_DIAMETER, top: LEGEND_VISUAL_DIAMETER * 0.9 }),
+      frameOf: () => ({ atlasId: 'knight-sprites', frame: 0 }),
+    };
+    const layer = new EntityLayer(
+      createDefaultViewRegistry(undefined, new LegendSpriteView(sprites)),
+      () => false,
+      () => 'enemy',
+    );
+    const foe = (height: number): EntitySnapshot => ({
+      ...member('foe', 'legend', 10),
+      transform: { x: 10, y: 20, radius: 0.75, facing: EAST },
+      elevation: { height },
+    });
+    // Half way from 1 m to 2 m: the sprite and its bar both stand 1.5 m up.
+    layer.show(snapshot(1, [foe(1)]), snapshot(2, [foe(2)]), 0.5, null);
+    const renderer = new RecordingRenderer();
+    layer.draw(renderer);
+    const [track] = renderer.calls.flatMap((call) =>
+      call.op === 'fillPolygon' ? [call.args[0]] : [],
+    );
+
+    expect(track?.[2]?.y).toBeCloseTo(20 - LEGEND_VISUAL_DIAMETER * 0.9 - 1.5 - HEALTH_BAR_GAP);
   });
 });

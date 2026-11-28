@@ -1,12 +1,30 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
+import type { DisplayCatalogue, UiEnhancementId } from '../catalogue.types';
 import type { Team } from '../domain.types';
-import type { DisplayCatalogue } from '../events';
 
 const initialState: DisplayCatalogue = {
   legendClasses: [],
   backgroundSets: [],
   profileDisplayName: '',
+  classSelectLayout: 'primary',
+  selectionBannerAssetId: null,
+  selectClassChromeAssetId: null,
+  lockInChromeAssetId: null,
+  effectsRenderer: 'figma-raster',
+  contrastMode: 'figma',
+  uiEnhancements: [],
+  hud: { structureKinds: [], objectiveKinds: [], chrome: null },
+  laneMinions: [],
+  teamNames: { light: '', dark: '' },
+  botRoster: {
+    id: '',
+    laners: [],
+    enemyRover: 'mirror-player',
+    difficulties: { laner: '', rover: '' },
+  },
+  verdictLines: {},
+  sovereignNames: { light: '', dark: '' },
 };
 
 /** Display-ready content, projected once at boot from the catalogue source. */
@@ -22,5 +40,19 @@ export const contentSlice = createSlice({
     /** The first background set for `team`, or `undefined` before content loads. */
     selectBackgroundSet: (state, team: Team) =>
       state.backgroundSets.find((set) => set.team === team),
+    selectClassSelectLayout: (state) => state.classSelectLayout,
+    selectSelectionBannerAssetId: (state) => state.selectionBannerAssetId,
+    selectSelectClassChromeAssetId: (state) => state.selectClassChromeAssetId,
+    selectLockInChromeAssetId: (state) => state.lockInChromeAssetId,
+    /**
+     * Whether the UI enhancement `id` is on (ui-enhancements-plan §2 rule 1): read only where its
+     * markup must change (a live region, a `key`); its styling is scoped in CSS.
+     */
+    selectIsUiEnhancementOn: (state, id: UiEnhancementId) => state.uiEnhancements.includes(id),
+    selectHudCatalogue: (state) => state.hud,
+    selectLaneMinions: (state) => state.laneMinions,
+    selectTeamNames: (state) => state.teamNames,
+    selectVerdictLines: (state) => state.verdictLines,
+    selectSovereignNames: (state) => state.sovereignNames,
   },
 });

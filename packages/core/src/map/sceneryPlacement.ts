@@ -5,10 +5,15 @@ import { LAKES } from '../content/maps/map1Landforms';
 import { RANDOM_SCENERY_SETTINGS as S } from '../content/maps/map1Scenery';
 import { SeededRandom } from '../utils/SeededRandom';
 import { distance, distanceToPath } from '../utils/geometry';
+import { isInLaneFortKeepOut, laneFortKeepOuts } from './fortInWorld';
 
-/** Places west-half lake templates from the match seed, outside lanes and landmark precincts. */
+/**
+ * Places west-half lake templates from the match seed, outside lanes, landmark precincts and the
+ * ground round every lane tower fort (`laneFortKeepOuts`, DEC-315).
+ */
 export function placeSceneryLakes(map: MapDefinition): readonly SceneryLake[] {
   const rng = new SeededRandom(map.seed).fork('scenery-lakes');
+  const keepOuts = laneFortKeepOuts(map.features);
   return LAKES.filter((lake) => lake.x < map.width / 2).flatMap((lake) => {
     for (let attempt = 0; attempt < S.attempts; attempt++) {
       const point = {
@@ -29,6 +34,14 @@ export function placeSceneryLakes(map: MapDefinition): readonly SceneryLake[] {
         )
       )
         continue;
+      // The lake's blocking water is its `rx` x `ry` ellipse; its box stays off every lane fort.
+      const water = {
+        x: point.x - lake.rx,
+        y: point.y - lake.ry,
+        width: 2 * lake.rx,
+        height: 2 * lake.ry,
+      };
+      if (isInLaneFortKeepOut(water, keepOuts)) continue;
       if (
         ((point.x - G.cathedral.x) / (G.cathedral.precinct.radiusX + lake.rx)) ** 2 +
           ((point.y - G.cathedral.y) / (G.cathedral.precinct.radiusY + lake.ry)) ** 2 <

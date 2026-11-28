@@ -1,5 +1,6 @@
 import type { ControllerId } from '../ai/ai.types';
 import type { EntityDefinitionBase } from '../EntityDefinition.types';
+import type { Polygon } from '../../utils/geometry.types';
 
 /**
  * How a unit moves. All values must be positive. Content files author speeds per second (the game
@@ -19,7 +20,7 @@ export type MovementProfile = {
  * How a unit steers: one `MovementStrategy` per id in `entities/strategies/defaultStrategyRegistry.ts`
  * (architecture 04 §4).
  */
-export type MovementStrategyId = 'lane-follow';
+export type MovementStrategyId = 'lane-follow' | 'leashed-chase';
 
 /** How an attack is carried out; one `AttackStrategy` per id in `entities/strategies/defaultStrategyRegistry.ts`. */
 export type AttackStrategyId = 'melee';
@@ -38,12 +39,28 @@ export type UnitAttack = {
   readonly interval: number;
 };
 
+/**
+ * A big boss's body shape (DEC-381), in local world units for the art's left-facing pose
+ * (`CombatHitbox` mirrors it when the unit faces right).
+ */
+export type BodyShape = {
+  /** The body outline: clicks, attack reach and hits count on it instead of the collider circle. */
+  readonly outline: Polygon;
+  /** The head inside the outline: a shot whose flight line crosses it gets the head-shot bonus. */
+  readonly head?: Polygon;
+};
+
 /** What every unit definition (Legend or mob) has. Shared, immutable and keyed by `id`. */
 export type UnitDefinition = EntityDefinitionBase & {
   /** Full base health. */
   readonly baseHealth: number;
   /** Collider circle radius in world units. */
   readonly footprintRadius: number;
+  /**
+   * The body shape of a big boss (DEC-381); `CombatHitbox` holds it. Leave it out for a unit that
+   * is only its circle (DEC-183).
+   */
+  readonly bodyShape?: BodyShape;
   /** Sight radius in world units. */
   readonly visionRadius: number;
   /** Top speed, acceleration and mass; `movementStrategy` says how the unit steers. */

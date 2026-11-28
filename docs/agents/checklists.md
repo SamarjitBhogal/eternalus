@@ -4,7 +4,7 @@ description: The Definition of Done for agent tasks, the AI-PR review checklist,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-22
 tags: [agents, process, review, checklist]
 related:
   [
@@ -31,7 +31,7 @@ written with an agent (AI-PR review), check a design (architecture review) or cl
 - [ ] New kinds are added through the registries (`EntityRegistry`, `AbilityRegistry`,
       `ViewRegistry`, `SystemPipeline`), not through edits scattered across files.
 - [ ] Docs updated where behaviour, layout or workflow changed; frontmatter `last-reviewed`
-      bumped; `docs/plan/PROGRESS.md` entry appended; the sprint checkbox ticked.
+      bumped; new entry file in `docs/plan/progress/`; the sprint checkbox ticked.
 - [ ] Commits (if the human asked for them) are Conventional Commits with an allowed scope, on
       a task branch off the phase branch. Nothing was pushed by the agent.
 - [ ] Then the pre-PR gate (`AGENTS.md` "Before opening a PR", ADR 0010): critic against the
@@ -56,7 +56,9 @@ written with an agent (AI-PR review), check a design (architecture review) or cl
       reference doc, requirement or `TUNE` marker.
 - [ ] Determinism in core: no `Math.random`, `Date`, timers, `Map`/`Set` iteration whose order
       depends on timing, or comparator-less sorts.
-- [ ] Docs, frontmatter and PROGRESS entry present; PR template complete.
+- [ ] Docs, frontmatter and progress entry file present; PR template complete.
+- [ ] PR text, commit messages and new or changed docs follow `AGENTS.md` "Writing style"
+      (ASD-STE100, DEC-329).
 - [ ] Verdict written as `approve` or `request-changes` with findings by severity.
 
 ## 3. Architecture review checklist (designs, new folders, new families)
@@ -80,7 +82,7 @@ written with an agent (AI-PR review), check a design (architecture review) or cl
 ## 4. Phase exit checklist
 
 - [ ] Every sprint checklist in the phase doc is ticked or explicitly deferred to the backlog.
-- [ ] Success metrics in the phase doc measured and recorded in `PROGRESS.md` (numbers, not adjectives).
+- [ ] Success metrics in the phase doc measured and recorded in `docs/plan/progress/` (numbers, not adjectives).
 - [ ] Coverage thresholds raised to the phase target; soak/replay corpus green.
 - [ ] Docs gardened (`npm run docs:check` green; `last-reviewed` refreshed on touched docs).
 - [ ] Changelog entry for the phase in `docs/changelog/`; ADRs for decisions made during the phase.

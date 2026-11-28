@@ -5,20 +5,31 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
+import type { MapDefinition } from '../content/maps/maps.types';
+import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { GameState } from '../state/GameState';
 import { DamagePipeline } from './DamagePipeline';
+import { damageStepsWithoutLaneProgress } from './__fixtures__/damageSteps';
 import type { DamageSource } from '../state/GameEvents.types';
 
 const SOURCE: DamageSource = { attackerId: 'entity-9', kind: 'weapon', definitionId: 'sword' };
 
-const setUp = (): GameState => {
-  const state = new GameState(createDefaultGameConfig(), 1);
+const setUp = (map: MapDefinition | null = null): GameState => {
+  const state = new GameState(
+    createDefaultGameConfig(),
+    1,
+    map === null ? null : matchWorldOf(map),
+  );
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     loadDefaultContent(createDefaultGameConfig().tickRate),
   );
   state.entities.add(
     factory.create('light-mob', 'training-dummy', { position: { x: 0, y: 0 }, team: 'dark' }),
+  );
+  state.entities.add(
+    factory.create('light-mob', 'training-dummy', { position: { x: 0, y: 0 }, team: 'light' }),
   );
   return state;
 };
@@ -36,7 +47,12 @@ describe('DamagePipeline', () => {
     const state = setUp();
     healthOf(state).addShield('entity-50', 10);
 
-    const result = new DamagePipeline().apply(state, 'entity-1', 15, SOURCE);
+    const result = new DamagePipeline(damageStepsWithoutLaneProgress()).apply(
+      state,
+      'entity-1',
+      15,
+      SOURCE,
+    );
 
     expect(result).toEqual({ applied: true, amount: 5, absorbed: 10, killed: false });
     expect(healthOf(state).current).toBe(healthOf(state).max - 5);
@@ -45,7 +61,7 @@ describe('DamagePipeline', () => {
 
   it('names the killer on the hit that takes health to 0, and only that hit', () => {
     const state = setUp();
-    const pipeline = new DamagePipeline();
+    const pipeline = new DamagePipeline(damageStepsWithoutLaneProgress());
 
     const lethal = pipeline.apply(state, 'entity-1', 1_000_000, SOURCE);
     const after = pipeline.apply(state, 'entity-1', 1, SOURCE);
@@ -57,11 +73,28 @@ describe('DamagePipeline', () => {
     expect(died[0]?.payload).toEqual({ entityId: 'entity-1', killer: SOURCE });
   });
 
+  it("counts a lethal hit, before the body is removed, as its team's ally damage (DEC-89)", () => {
+    const state = setUp(TWO_LANE_MAP);
+
+    new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, 'entity-1', 1_000_000, {
+      ...SOURCE,
+      attackerId: 'entity-2',
+    });
+
+    const counted: string[] = [];
+    state.allyDamage.forEach((team, lane, amount) => {
+      counted.push(`${team} ${lane} ${String(amount)}`);
+    });
+    expect(counted).toEqual([`dark lane-0 ${String(healthOf(state).max)}`]);
+  });
+
   it('blocks a hit between teammates (friendly fire)', () => {
     const state = setUp();
     const ally = { attackerId: 'entity-1', kind: 'weapon', definitionId: 'sword' } as const;
 
-    expect(new DamagePipeline().apply(state, 'entity-1', 15, ally)).toEqual({
+    expect(
+      new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, 'entity-1', 15, ally),
+    ).toEqual({
       applied: false,
       reason: 'blocked',
     });
@@ -71,15 +104,50 @@ describe('DamagePipeline', () => {
   it('applies nothing for a zero-damage hit', () => {
     const state = setUp();
 
-    expect(new DamagePipeline().apply(state, 'entity-1', 0, SOURCE)).toEqual({
+    expect(
+      new DamagePipeline(damageStepsWithoutLaneProgress()).apply(state, 'entity-1', 0, SOURCE),
+    ).toEqual({
       applied: false,
       reason: 'zero-damage',
     });
     expect(state.events.recentEvents()).toEqual([]);
   });
 
+  it('kills with one hit no step can change, with the same events as a lethal hit', () => {
+    const state = setUp();
+    const health = healthOf(state);
+    new DamagePipeline(damageStepsWithoutLaneProgress()).apply(
+      state,
+      'entity-1',
+      health.max - 64,
+      SOURCE,
+    );
+    // 64 + 0.1 − 0.1 < 64 in floating point: a hit of `health.total` would leave a sliver alive.
+    health.addShield('entity-50', 0.1);
+    const blockEverything = { name: 'block-everything', adjust: () => 0 };
+    const pipeline = new DamagePipeline([blockEverything]);
+
+    const result = pipeline.kill(state, 'entity-1', SOURCE);
+
+    expect(result).toEqual({ applied: true, amount: 64, absorbed: 0.1, killed: true });
+    expect(health.current).toBe(0);
+    expect(state.events.recentEvents().map((event) => event.type)).toEqual([
+      'damage-applied',
+      'damage-applied',
+      'entity-died',
+    ]);
+    const died = state.events.recentEvents().filter((event) => event.type === 'entity-died');
+    expect(died[0]?.payload).toEqual({ entityId: 'entity-1', killer: SOURCE });
+    expect(pipeline.kill(state, 'entity-1', SOURCE)).toEqual({
+      applied: false,
+      reason: 'already-dead',
+    });
+  });
+
   it('rejects a missing target without throwing', () => {
-    expect(new DamagePipeline().apply(setUp(), 'entity-404', 5, SOURCE)).toEqual({
+    expect(
+      new DamagePipeline(damageStepsWithoutLaneProgress()).apply(setUp(), 'entity-404', 5, SOURCE),
+    ).toEqual({
       applied: false,
       reason: 'no-target',
     });

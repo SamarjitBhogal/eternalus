@@ -27,6 +27,24 @@ describe('validateSettingsDto', () => {
     expect(validateSettingsDto(VALID, KNOWN_ACTIONS)).toEqual({ ok: true, dto: VALID });
   });
 
+  it('accepts a keyboard chord with modifier keys (DEC-105)', () => {
+    const chord = {
+      device: 'keyboard',
+      code: 'F3',
+      label: 'Ctrl+Shift+F3',
+      modifiers: ['Control', 'Shift'],
+    } as const;
+    const record = { ...VALID, bindings: [{ action: 'attack', chords: [chord] }] };
+    expect(validateSettingsDto(record, KNOWN_ACTIONS)).toEqual({ ok: true, dto: record });
+  });
+
+  it('accepts a record with the hud group, and one saved before it existed (DEC-410)', () => {
+    const record = { ...VALID, hud: { shouldShowEveryHit: true } };
+
+    expect(validateSettingsDto(record, KNOWN_ACTIONS)).toEqual({ ok: true, dto: record });
+    expect('hud' in VALID).toBe(false);
+  });
+
   it.each([
     ['a non-object', 'settings', 'not an object'],
     ['a future version', { ...VALID, schemaVersion: 2 }, 'schemaVersion: unsupported version 2'],
@@ -51,6 +69,32 @@ describe('validateSettingsDto', () => {
       'bindings[0].chords: invalid chord',
     ],
     [
+      'a chord with an unknown modifier',
+      {
+        ...VALID,
+        bindings: [
+          {
+            action: 'attack',
+            chords: [{ device: 'keyboard', code: 'F3', label: 'F3', modifiers: ['Hyper'] }],
+          },
+        ],
+      },
+      'bindings[0].chords: invalid chord',
+    ],
+    [
+      'a chord whose modifiers are not a list',
+      {
+        ...VALID,
+        bindings: [
+          {
+            action: 'attack',
+            chords: [{ device: 'keyboard', code: 'F3', label: 'F3', modifiers: 'Shift' }],
+          },
+        ],
+      },
+      'bindings[0].chords: invalid chord',
+    ],
+    [
       'a volume above 1',
       { ...VALID, audio: { ...VALID.audio, music: 3 } },
       'audio.music: invalid value',
@@ -65,6 +109,12 @@ describe('validateSettingsDto', () => {
       'a non-boolean toggle',
       { ...VALID, accessibility: { ...VALID.accessibility, reduceMotion: 'yes' } },
       'accessibility.reduceMotion: invalid value',
+    ],
+    ['a hud group that is not an object', { ...VALID, hud: 3 }, 'hud: not an object'],
+    [
+      'a non-boolean hud toggle',
+      { ...VALID, hud: { shouldShowEveryHit: 'yes' } },
+      'hud.shouldShowEveryHit: invalid value',
     ],
   ])('rejects %s and names the field', (_case, value, reason) => {
     expect(reasonFor(value)).toBe(reason);

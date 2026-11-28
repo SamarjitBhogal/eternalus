@@ -4,8 +4,8 @@ import type { Binding, InputAction } from '../../bridge/Binding.types';
 import type { InputSnapshot } from '../engine/input/InputDevice.types';
 import type { Projection } from '../engine/input/Projection.types';
 import { BindingResolver } from './BindingResolver';
-import { CAST_SLOTS } from './InputMapper.constants';
-import type { ActionState } from './InputMapper.types';
+import { CAST_SLOTS, MODIFIER_FLAGS } from './InputMapper.constants';
+import type { ActionState, KeyPress } from './InputMapper.types';
 
 /**
  * Turns raw device state into actions through the bindings, then actions into core's
@@ -33,6 +33,16 @@ export class InputMapper {
     return this.resolver.actionsFor({ device: 'keyboard', code }).length > 0;
   }
 
+  /**
+   * Whether one key press is a chord of `action`, its held modifiers included: a modifier chord
+   * (DEC-105's Cmd/Ctrl+Shift+F3) matches only with exactly its modifiers held.
+   */
+  public isActionKey(action: InputAction, key: KeyPress): boolean {
+    const modifiers = MODIFIER_FLAGS.filter(([, flag]) => key[flag]).map(([modifier]) => modifier);
+    const chord = { device: 'keyboard', code: key.code, modifiers } as const;
+    return this.resolver.actionsFor(chord).includes(action);
+  }
+
   /** The actions `snapshot` activates: any chord of any device activates its actions. */
   public resolve(snapshot: InputSnapshot): ActionState {
     const held = new Set<InputAction>();
@@ -54,8 +64,9 @@ export class InputMapper {
   }
 
   /**
-   * The intent for this frame: one normalised move vector (screen axes, y down), the world
-   * point under the pointer and the ability and gadget slots pressed this frame.
+   * The intent for this frame: one normalised move vector (screen axes, y down), whether attack
+   * and jump are held, the world point under the pointer and the ability and gadget slots pressed
+   * this frame.
    */
   public toIntent(actions: ActionState, projection: Projection): InputIntent {
     const { held, pressed, pointer } = actions;
@@ -66,6 +77,7 @@ export class InputMapper {
     const scale = x !== 0 && y !== 0 ? Math.SQRT1_2 : 1;
     return {
       ...(held.has('attack') ? { isAttacking: true } : {}),
+      ...(held.has('jump') ? { isJumping: true } : {}),
       move: { x: x * scale, y: y * scale },
       aim: pointer === null ? null : projection.screenToWorld(pointer),
       triggered: CAST_SLOTS.filter((slot) => pressed.has(slot)),

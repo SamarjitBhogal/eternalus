@@ -4,7 +4,7 @@ description: The product owner's design for the MVP screens - home menu, start-m
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-03
+last-reviewed: 2026-11-02
 tags: [reference, game-design, ui, hud, screens]
 related:
   [
@@ -42,24 +42,31 @@ directly.
 1. **Start-match loading screen** — a dynamic, themed background (image(s), slow motion,
    mood). Graphics are configurable and swappable as content, never hardcoded.
 2. **Character / class selection** — once the background assets are loaded. The player picks a
-   class and the sub-class they want (MVP: three classes; sub-class slots shown but post-MVP).
+   class and the sub-class they want (MVP: three classes plus a locked card, DEC-48;
+   sub-classes are MVP, picked as setup data first, ADR 0018).
    The screen shows **which team you are on** (Light or Dark; **randomly assigned** in the MVP;
    matchmaking by skill/profile level is full-game). Allied Legends stand on **pedestals** with
    their loadout applied; background and pedestals follow the team (light architecture for
-   Light, hellish architecture for Dark). A **60 s countdown** runs; if the player has not
-   selected a character when it reaches 0, the match boot is **cancelled** and the player
-   returns to the home screen.
+   Light, hellish architecture for Dark). A **60 s countdown** runs, always its full 60 s;
+   **LOCK IN** locks the pick and shows a locked view until it ends (DEC-60). If the player has
+   not locked in a character when it reaches 0, the match boot is **cancelled** and the player
+   returns to the home screen, where a themed popup says so (DEC-102).
 3. **Pre-launch reveal (10 s)** — after the countdown the friendly team is shown on its
    pedestals for 10 seconds with a timer counting down into launch; the enemy team appears in
-   the **top right**.
+   the **top right**. The reveal has no cancel: a screen crash ends it early, to the menu
+   (DEC-141); the countdown's end also leaves it.
 4. **Match loading screen** — stays until everything for the match is loaded. Both teams'
    characters are shown: friendly team on **top**, enemy team on the **bottom**.
 5. **Match** — the game loads in and the HUD appears around the screen.
 
 ## 3. HUD
 
-Battlefield 6 / Destiny 2 inspired. A basic placeholder for now; detailed design is in the
-works. Name tags above characters; bots carry a special, non-spoofable icon before their name
+Battlefield 6 / Destiny 2 inspired. The detailed design is the owner's Figma frame HUD Draft
+(62:231); the selection screens are frames 62:125 (class, with 62:70 as a data-selected
+alternate, DEC-52) and 58:271 (Legend);
+[15-figma-frames-and-creative-decisions.md](15-figma-frames-and-creative-decisions.md) lists them
+and every registered difference.
+Name tags above characters; bots carry a special, non-spoofable icon before their name
 (decision log, Naming).
 
 ## 4. Side notes from the owner
@@ -71,15 +78,15 @@ works. Name tags above characters; bots carry a special, non-spoofable icon befo
 
 ## 5. Engineering reading (implemented by `13-game-interface.md`)
 
-| Owner's step        | `SessionPhase`     | Screen component           | Timer source                             | Data it needs (slices)                                     |
-| ------------------- | ------------------ | -------------------------- | ---------------------------------------- | ---------------------------------------------------------- |
-| Home screen         | `menu`             | `MainMenuScreen`           | —                                        | `profileSlice` (name), `settingsSlice`                     |
-| Start-match loading | `loading`          | `LoadingScreen`            | asset progress (`loading-progress`)      | `loadingSlice`, `themeSlice` (background set from content) |
-| Character select    | `character-select` | `CharacterSelectScreen`    | `SessionClock` (injected, fake in tests) | `matchSetupSlice` (team, roster, selection, countdown)     |
-| Pre-launch reveal   | `pre-launch`       | `PreLaunchScreen`          | `SessionClock`                           | `matchSetupSlice`                                          |
-| Match loading       | `match-loading`    | `MatchLoadingScreen`       | asset progress (`match` group)           | `loadingSlice`, `matchSetupSlice`                          |
-| Match + HUD         | `match`            | `MatchScreen` + `ui/hud/*` | `GameLoop` via the bridge                | `matchSlice`, `hudSlice`, `diagnosticsSlice`               |
-| Results             | `results`          | `ResultsScreen`            | —                                        | `matchSlice.result`                                        |
+| Owner's step        | `SessionPhase`     | Screen component                                                                                                                                                                                                      | Timer source                             | Data it needs (slices)                                     |
+| ------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------- |
+| Home screen         | `menu`             | `MainMenuScreen`                                                                                                                                                                                                      | —                                        | `profileSlice` (name), `settingsSlice`                     |
+| Start-match loading | `loading`          | `LoadingScreen`                                                                                                                                                                                                       | asset progress (`loading-progress`)      | `loadingSlice`, `themeSlice` (background set from content) |
+| Character select    | `character-select` | `CharacterSelectScreen` (class step, then Legend step, then a locked view from LOCK IN until the countdown ends; one 60 s countdown that LOCK IN does not end, and no match without LOCK IN; DEC-49, DEC-60, DEC-102) | `SessionClock` (injected, fake in tests) | `matchSetupSlice` (team, roster, selection, countdown)     |
+| Pre-launch reveal   | `pre-launch`       | `PreLaunchScreen`                                                                                                                                                                                                     | `SessionClock`                           | `matchSetupSlice`                                          |
+| Match loading       | `match-loading`    | `MatchLoadingScreen`                                                                                                                                                                                                  | asset progress (`match` group)           | `loadingSlice`, `matchSetupSlice`                          |
+| Match + HUD         | `match`            | `MatchScreen` + `ui/hud/*`                                                                                                                                                                                            | `GameLoop` via the bridge                | `matchSlice`, `hudSlice`, `diagnosticsSlice`               |
+| Results             | `results`          | `ResultsScreen`                                                                                                                                                                                                       | —                                        | `matchSlice.result`                                        |
 
 Rules that follow from the design:
 
@@ -90,8 +97,12 @@ Rules that follow from the design:
   stream so a replay reproduces it). The player is their team's Rover (decision log, DISC-51).
 - **Rosters are data**: the nine allied bots and ten enemy bots are built from content
   definitions (class, specialisation placeholder, loadout) when the match setup is created, so
-  the selection screens can render them before the simulation exists.
-- **Cancel-on-timeout** is a transition `character-select → menu` with a reason, not an error.
+  the selection screens can render them before the simulation exists; LOCK IN fills each bot's
+  specialisation (a Legend of its class) and gives the enemy's tenth bot the player's pick
+  (DEC-61, DEC-102).
+- **Cancel-on-timeout** is a transition `character-select → menu` with a reason, not an error:
+  a countdown that ends before LOCK IN, with or without a class, starts no match, and the home
+  screen shows the reason as a popup (DEC-102).
 - **Background sets** (loading screen images, pedestal architecture per team) are an asset
   manifest group per team with a content key, swapped by changing content.
 - **The HUD is prop-driven** and reads only selectors; every control label goes through

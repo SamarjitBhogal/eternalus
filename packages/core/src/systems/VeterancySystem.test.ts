@@ -1,0 +1,362 @@
+import { describe, expect, it } from 'vitest';
+
+import { Health } from '../components/Health';
+import { StatusEffects } from '../components/StatusEffects';
+import { Transform } from '../components/Transform';
+import { Veterancy } from '../components/Veterancy';
+import { StatusEffectApplier } from '../combat/StatusEffectApplier';
+import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadMinionVeterancy } from '../content/mobs/loadMinionVeterancy';
+import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
+import { VETERAN } from '../content/status-effects/veteran';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
+import { NullLogger } from '../diagnostics/NullLogger';
+import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
+import { EntityFactory } from '../entities/EntityFactory';
+import { SpaceIndex } from '../physics/SpaceIndex';
+import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
+import { GameState } from '../state/GameState';
+import { StateHasher } from '../state/StateHasher';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
+import { MinionLevelSystem } from './MinionLevelSystem';
+import { VeterancySystem } from './VeterancySystem';
+
+const setUp = (config = createDefaultGameConfig()) => {
+  const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
+  const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP), { space });
+  const units = loadDefaultContent(30);
+  const factory = new EntityFactory(createDefaultEntityRegistry(), units);
+  const statuses = new StatusEffectApplier(loadStatusEffects(30, 2));
+  const rules = loadMinionVeterancy(config.tickRate);
+  const system = new VeterancySystem(state, statuses, rules);
+  const levels = new MinionLevelSystem(state, statuses, units, rules);
+  const add = (team: 'light' | 'dark' | 'neutral', x: number, mobId = 'light-minion') => {
+    const entity = factory.create('light-mob', mobId, { team, position: { x, y: 20 } });
+    state.entities.add(entity);
+    return entity;
+  };
+  const killer = add('light', 50);
+  const neighbour = add('light', 52);
+  const far = add('light', 60);
+  const enemy = add('dark', 53);
+  state.hordes.add({
+    id: 'horde-1',
+    team: 'light',
+    weightClass: 'light',
+    lane: 'lane-0',
+    formationId: 'ranks',
+    memberIds: [killer.id, neighbour.id, far.id],
+    progress: 0,
+  });
+  let hordes = 1;
+  const kill = (isMinion = true, killerId = killer.id) => {
+    const victim = add('dark', 51);
+    if (isMinion) {
+      hordes += 1;
+      state.hordes.add({
+        id: `horde-${String(hordes)}`,
+        team: 'dark',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        memberIds: [victim.id],
+        progress: 0,
+      });
+    }
+    victim.getComponent(Health).applyDamage(1e6);
+    state.events.emit('entity-died', {
+      entityId: victim.id,
+      killer: { attackerId: killerId, kind: 'weapon', definitionId: 'light-minion' },
+    });
+  };
+  /**
+   * Puts a new `mobId` of `unitTeam` on a post of `team` (a tower guard; a camp mob on a `neutral`
+   * post) whose plan can level (`canLevel`) or not.
+   */
+  const guard = (
+    team: 'light' | 'dark' | 'neutral',
+    mobId: string,
+    unitTeam: 'light' | 'dark' | 'neutral' = 'light',
+    canLevel = true,
+  ) => {
+    const entity = add(unitTeam, 48, mobId);
+    state.guards.add({
+      id: `post-${String(state.guards.size)}`,
+      homeId: 'home',
+      team,
+      mobId,
+      row: 0,
+      indexInRow: 0,
+      postX: 48,
+      postY: 20,
+      homeX: 48,
+      homeY: 18,
+      homeRadius: 1,
+      leashRadius: 6,
+      leashTolerance: 1,
+      respawnTicks: 30,
+      canLevel,
+    });
+    state.guards.fill(state.guards.size - 1, entity.id);
+    return entity;
+  };
+  const step = () => {
+    space.begin(state.entities.size);
+    state.entities.forEach((entity) => {
+      const { x, y } = entity.getComponent(Transform).position;
+      space.add(entity.id, x, y);
+    });
+    space.commit();
+    system.update({ state, logger: new NullLogger() });
+    levels.update({ state, logger: new NullLogger() });
+  };
+  return { state, system, killer, neighbour, far, enemy, add, kill, guard, step };
+};
+
+const statusesOf = (entity: {
+  findComponent: (type: typeof StatusEffects) => StatusEffects | undefined;
+}) =>
+  entity
+    .findComponent(StatusEffects)
+    ?.active.map(({ definition, stacks }) => [definition.id, stacks]) ?? [];
+
+describe('VeterancySystem', () => {
+  it('announces a level every two mob kills (minion-level-earned), applied by MinionLevelSystem', () => {
+    const { state, killer, kill, step } = setUp();
+    const earned: string[] = [];
+    state.events.on('minion-level-earned', ({ entityId }) => earned.push(entityId));
+    kill();
+    step();
+    expect(earned).toEqual([]);
+    kill();
+    step();
+    expect(earned).toEqual([killer.id]);
+  });
+
+  it('levels a horde minion up every two mob kills: more health, a veteran stack', () => {
+    const { killer, kill, step } = setUp();
+    kill();
+    step();
+    expect(killer.getComponent(Veterancy).level).toBe(0);
+    expect(killer.getComponent(Health).max).toBe(150);
+
+    kill();
+    step();
+
+    expect(killer.getComponent(Veterancy).level).toBe(1);
+    expect(killer.getComponent(Health).max).toBeCloseTo(165);
+    expect(killer.getComponent(Health).current).toBeCloseTo(165);
+    expect(statusesOf(killer)).toContainEqual(['veteran', 1]);
+  });
+
+  it('rallies the friendly horde minions within the aura radius, and no one else', () => {
+    const { killer, neighbour, far, enemy, kill, step } = setUp();
+    kill();
+    kill();
+    step();
+    step(); // the aura reads the level `MinionLevelSystem` applied on the first pass
+
+    expect(statusesOf(neighbour)).toContainEqual(['rallied', 1]);
+    expect(statusesOf(far)).toEqual([]);
+    expect(statusesOf(enemy)).toEqual([]);
+    expect(statusesOf(killer).map(([id]) => id)).not.toContain('rallied');
+  });
+
+  it('does not count a kill of a unit in no horde and on no post, nor a kill by a non-leveller', () => {
+    const { state, killer, enemy, kill, step } = setUp();
+    kill(false); // an enemy mob in no horde and on no post
+    state.events.emit('entity-died', {
+      entityId: killer.id,
+      killer: { attackerId: enemy.id, kind: 'weapon', definitionId: 'light-minion' },
+    });
+    step();
+
+    expect(killer.findComponent(Veterancy)).toBeUndefined();
+    expect(enemy.findComponent(Veterancy)).toBeUndefined();
+  });
+
+  it('stops at the level cap, with one veteran stack per level', () => {
+    const { killer, kill, step } = setUp();
+    for (let count = 0; count < 2 * MINION_VETERANCY.maxLevel + 2; count += 1) {
+      kill();
+    }
+    step();
+
+    expect(killer.getComponent(Veterancy).level).toBe(MINION_VETERANCY.maxLevel);
+    expect(killer.getComponent(Health).max).toBeCloseTo(
+      150 * (1 + 0.1 * MINION_VETERANCY.maxLevel),
+    );
+    expect(statusesOf(killer)).toContainEqual(['veteran', MINION_VETERANCY.maxLevel]);
+    // The veteran status caps its stacks where the levels stop.
+    expect(VETERAN.maxStacks).toBe(MINION_VETERANCY.maxLevel);
+  });
+
+  it('adds +10% damage per level, not compounding: x1.1, x1.2, x1.3 (DEC-164)', () => {
+    const { killer, kill, step } = setUp();
+    const damage = [1, 2, 3].map(() => {
+      kill();
+      kill();
+      step();
+      return killer.getComponent(StatusEffects).multiplier('damageDealt').toFixed(6);
+    });
+
+    expect(damage).toEqual(['1.100000', '1.200000', '1.300000']);
+  });
+
+  it('multiplies the additive veteran bonus by the rally: x1.3 x 1.05 = x1.365 at level 3 (DEC-219 (c))', () => {
+    const { killer, neighbour, kill, step } = setUp();
+    for (let count = 0; count < 2 * MINION_VETERANCY.maxLevel; count += 1) {
+      kill();
+    }
+    kill(true, neighbour.id);
+    kill(true, neighbour.id);
+    step();
+    step(); // the aura reads the levels applied on the first pass
+
+    expect(statusesOf(killer)).toContainEqual(['veteran', MINION_VETERANCY.maxLevel]);
+    expect(statusesOf(killer)).toContainEqual(['rallied', 1]);
+    expect(killer.getComponent(StatusEffects).multiplier('damageDealt')).toBeCloseTo(1.365, 6);
+  });
+
+  it('levels a tower guard and a neutral camp mob whose posts can level, but no guard whose post cannot (DEC-165, DEC-260)', () => {
+    const { guard, kill, step } = setUp();
+    const towerGuard = guard('light', 'light-guard');
+    const campMob = guard('neutral', 'light-camp-mob', 'neutral');
+    const fixed = guard('light', 'light-guard', 'light', false);
+    for (const id of [towerGuard.id, towerGuard.id, campMob.id, campMob.id, fixed.id, fixed.id]) {
+      kill(true, id);
+    }
+    step();
+
+    expect(towerGuard.getComponent(Veterancy).level).toBe(1);
+    expect(towerGuard.getComponent(Health).max).toBeCloseTo(165);
+    expect(statusesOf(towerGuard)).toContainEqual(['veteran', 1]);
+    expect(campMob.getComponent(Veterancy).level).toBe(1);
+    expect(statusesOf(campMob)).toContainEqual(['veteran', 1]);
+    expect(fixed.findComponent(Veterancy)).toBeUndefined();
+    expect(fixed.getComponent(Health).max).toBe(150);
+  });
+
+  it('rallies a friendly guard in range of a levelled minion only when its post can level (DEC-165, DEC-260)', () => {
+    const { guard, kill, step } = setUp();
+    const towerGuard = guard('light', 'light-guard');
+    const fixed = guard('light', 'light-guard', 'light', false);
+    kill();
+    kill();
+    step();
+    step(); // the aura reads the level applied on the first pass
+
+    expect(statusesOf(towerGuard)).toContainEqual(['rallied', 1]);
+    expect(statusesOf(fixed)).toEqual([]);
+  });
+
+  it('counts a killed enemy tower guard and a killed camp mob as kills (DEC-165, owner 2026-11-04)', () => {
+    const { guard, killer, state, step } = setUp();
+    const died = (entityId: string) => {
+      state.events.emit('entity-died', {
+        entityId,
+        killer: { attackerId: killer.id, kind: 'weapon', definitionId: 'light-minion' },
+      });
+    };
+    const towerGuard = guard('dark', 'light-guard', 'dark');
+    const campMob = guard('neutral', 'light-camp-mob', 'neutral');
+    died(towerGuard.id);
+    step();
+    expect(killer.getComponent(Veterancy).level).toBe(0);
+
+    died(campMob.id);
+    step();
+
+    expect(killer.getComponent(Veterancy).level).toBe(1);
+  });
+
+  it('levels from kills on top of the levels it has from another source, never past the cap (DEC-168)', () => {
+    const { killer, kill, step } = setUp();
+    // Levels set outside the system (no effects); only the cap is under test.
+    const veterancy = new Veterancy();
+    veterancy.gainLevels(2, MINION_VETERANCY.maxLevel);
+    killer.addComponent(veterancy);
+
+    kill();
+    kill();
+    step();
+    expect(veterancy.level).toBe(MINION_VETERANCY.maxLevel);
+    expect(killer.getComponent(Health).max).toBeCloseTo(165);
+    expect(statusesOf(killer)).toContainEqual(['veteran', 1]);
+
+    kill();
+    kill();
+    step();
+    expect(veterancy.level).toBe(MINION_VETERANCY.maxLevel);
+    expect(veterancy.kills).toBe(4);
+    expect(killer.getComponent(Health).max).toBeCloseTo(165);
+    expect(statusesOf(killer)).toContainEqual(['veteran', 1]);
+  });
+
+  it('rallies every friendly horde minion in range, however small the unit cap', () => {
+    const { state, killer, add, kill, step } = setUp(
+      createDefaultGameConfig({ limits: { maxUnitsPerTeam: 1 } }),
+    );
+    kill();
+    kill();
+    const late = add('light', 53.5); // queried last: its cell comes after the killer's
+    state.hordes.add({
+      id: 'horde-late',
+      team: 'light',
+      weightClass: 'light',
+      lane: 'lane-0',
+      formationId: 'ranks',
+      memberIds: [late.id],
+      progress: 0,
+    });
+    step();
+    step(); // the aura reads the level applied on the first pass
+
+    expect(killer.getComponent(Veterancy).level).toBe(1);
+    expect(statusesOf(late)).toContainEqual(['rallied', 1]);
+  });
+
+  it('spreads the aura only on its cadence', () => {
+    const { state, neighbour, kill, step } = setUp();
+    kill();
+    kill();
+    state.advanceTick(); // tick 1: off the cadence (every 15 ticks)
+
+    step();
+
+    expect(statusesOf(neighbour)).toEqual([]);
+
+    // 0.5 s at 30 ticks a second: the next spread is at tick 15, not before.
+    for (let tick = 2; tick < 15; tick += 1) {
+      state.advanceTick();
+      step();
+      expect(statusesOf(neighbour)).toEqual([]);
+    }
+    state.advanceTick();
+    step();
+
+    expect(statusesOf(neighbour)).toContainEqual(['rallied', 1]);
+  });
+
+  it('hashes a levelled-up minion the same in two runs, and a further kill differently', () => {
+    const levelled = () => {
+      const run = setUp();
+      run.kill();
+      run.kill();
+      run.step();
+      expect(run.killer.getComponent(Veterancy).level).toBe(1);
+      return run;
+    };
+    const hasher = new StateHasher();
+    const first = levelled();
+    const second = levelled();
+
+    expect(hasher.hash(first.state)).toBe(hasher.hash(second.state));
+
+    // A third kill stays inside level 1, so only the kill count differs from the other run.
+    second.killer.getComponent(Veterancy).recordKill(MINION_VETERANCY.killsPerLevel);
+    expect(second.killer.getComponent(Veterancy).level).toBe(1);
+    expect(hasher.hash(first.state)).not.toBe(hasher.hash(second.state));
+  });
+});

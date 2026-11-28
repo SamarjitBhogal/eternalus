@@ -17,11 +17,45 @@ export const MAP_OBJECT_HEALTH = {
   terrain: null,
   stronghold: 10000,
   cathedral: null,
+  // Unused: a lane tower's own map object (its keep) is always its body, and
+  // shares its one health pool (DEC-185 B; DEC-217 (13): only towers share a pool, the palace and
+  // gates keep their own health).
   'spawner-tower': 3000,
   'buff-tower': 2500,
   turret: 600,
   gate: 3000,
 } as const satisfies Record<MapObjectKind, number | null>;
+
+/**
+ * Whether each map-object kind is a structure (DEC-405: "towers, gates, walls, etc"); every kind
+ * must choose. Walls, turrets, gates and the palace stand in for the structure family (07 §1,
+ * §13). A fort counts for its walls: a lane tower's fort is the tower's own body, and a capture
+ * point's fort is walls like the Cathedral's. Scenery is not a structure. Which kinds count is
+ * the build's reading of the owner's "etc" (DEC-405 row), not his words.
+ */
+const IS_STRUCTURE_MAP_OBJECT = {
+  tree: false,
+  rock: false,
+  house: false,
+  wall: true,
+  furniture: false,
+  fort: true,
+  camp: false,
+  terrain: false,
+  stronghold: true,
+  cathedral: false, // no health; its walls are `wall` objects
+  'spawner-tower': true,
+  'buff-tower': true,
+  turret: true,
+  gate: true,
+} as const satisfies Record<MapObjectKind, boolean>;
+
+/** The map-object kinds a Legend's weapon hit treats as a structure (DEC-405). */
+export const STRUCTURE_MAP_OBJECT_KINDS: ReadonlySet<MapObjectKind> = new Set(
+  (Object.keys(IS_STRUCTURE_MAP_OBJECT) as MapObjectKind[]).filter(
+    (kind) => IS_STRUCTURE_MAP_OBJECT[kind],
+  ),
+);
 
 /** Obstacle definitions reuse the existing entity family; exact polygons are supplied by the map. */
 export const MAP_OBJECT_DEFINITIONS = Object.fromEntries(
@@ -39,3 +73,21 @@ export const MAP_OBJECT_DEFINITIONS = Object.fromEntries(
     } satisfies ObstacleDefinition,
   ]),
 ) as Readonly<Record<MapObjectKind, ObstacleDefinition>>;
+
+/**
+ * The part of a wall's own health (`wall` above) that each standing wall of a lane tower's fort
+ * keeps when its tower falls (DEC-217 (12), DEC-219 (a), DEC-227 (Q-B); owner: "the fort walls
+ * have half-health unless that wall was what was attacked to destroy the tower").
+ */
+const RUINED_FORT_WALL_HEALTH_FRACTION = 0.5; // TUNE: DEC-217 (12), DEC-219 (a), DEC-227 (Q-B)
+
+/**
+ * What a standing wall of a lane tower's fort becomes when its tower falls: scenery that blocks
+ * until it is destroyed on its own, with `RUINED_FORT_WALL_HEALTH_FRACTION` of a wall's health.
+ */
+export const RUINED_FORT_WALL_DEFINITION: ObstacleDefinition = {
+  ...MAP_OBJECT_DEFINITIONS.wall,
+  id: 'map-object-ruined-fort-wall',
+  displayName: 'ruined fort wall',
+  health: MAP_OBJECT_HEALTH.wall * RUINED_FORT_WALL_HEALTH_FRACTION,
+};

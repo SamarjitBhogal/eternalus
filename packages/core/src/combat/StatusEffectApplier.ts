@@ -1,7 +1,10 @@
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
-import type { StatusEffectDefinition } from '../content/status-effects/statusEffects.types';
+import type {
+  StatusEffectDefinition,
+  StatusExpireSpec,
+} from '../content/status-effects/statusEffects.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 
@@ -17,7 +20,8 @@ export class StatusEffectApplier {
 
   /**
    * Applies status `statusId` to `targetId`, credited to `sourceId`. Returns whether it landed: a
-   * missing or dead target, or one without `StatusEffects` (a structure), is immune.
+   * missing or dead target, or one without `StatusEffects` (a structure), is immune, and so is a
+   * `control-immune` target to hard control.
    *
    * @throws UnknownDefinitionError when no status has the id `statusId`.
    */
@@ -33,7 +37,8 @@ export class StatusEffectApplier {
     if (
       target === undefined ||
       statuses === undefined ||
-      target.findComponent(Health)?.isDead === true
+      target.findComponent(Health)?.isDead === true ||
+      (definition.controlClass === 'hard' && statuses.has('control-immune'))
     ) {
       return false;
     }
@@ -56,12 +61,43 @@ export class StatusEffectApplier {
     return true;
   }
 
-  /** Removes every status on `targetId` that is over at `state.tick`, emitting `status-expired` for each, oldest first. */
+  /**
+   * Takes `count` stacks off status `statusId` on `targetId` (a lost minion level) with one event:
+   * `status-expired` when no stack is left, else `status-stacks-lost` with the stacks left.
+   * Returns whether it was active.
+   */
+  public removeStacks(
+    state: GameState,
+    targetId: EntityId,
+    statusId: string,
+    count: number,
+  ): boolean {
+    const statuses = state.entities.get(targetId)?.findComponent(StatusEffects);
+    const sourceId = statuses?.active.find((status) => status.definition.id === statusId)?.sourceId;
+    const stacks = sourceId === undefined ? undefined : statuses?.removeStacks(statusId, count);
+    if (sourceId === undefined || stacks === undefined) {
+      return false;
+    }
+    if (stacks === 0) {
+      state.events.emit('status-expired', { entityId: targetId, statusId, sourceId });
+    } else {
+      state.events.emit('status-stacks-lost', { entityId: targetId, statusId, sourceId, stacks });
+    }
+    return true;
+  }
+
+  /**
+   * Removes every status on `targetId` that is over at `state.tick`, emitting `status-expired` for
+   * each, oldest first, then runs their `onExpire` (stun → `control-immune`), credited to the same
+   * source.
+   */
   public expire(state: GameState, targetId: EntityId): void {
     const statuses = state.entities.get(targetId)?.findComponent(StatusEffects);
     if (statuses === undefined) {
       return;
     }
+    // Allocated only when a status with an onExpire times out, never per tick (NFR-023).
+    let followUps: [StatusExpireSpec, EntityId | null][] | undefined;
     for (const status of statuses.active) {
       if (status.hasExpired(state.tick)) {
         state.events.emit('status-expired', {
@@ -69,8 +105,17 @@ export class StatusEffectApplier {
           statusId: status.definition.id,
           sourceId: status.sourceId,
         });
+        for (const spec of status.definition.onExpire) {
+          (followUps ??= []).push([spec, status.sourceId]);
+        }
       }
     }
     statuses.expire(state.tick);
+    if (followUps === undefined) {
+      return;
+    }
+    for (const [spec, sourceId] of followUps) {
+      this.apply(state, targetId, spec.statusId, sourceId);
+    }
   }
 }

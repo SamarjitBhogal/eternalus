@@ -1,0 +1,12 @@
+/**
+ * The guard leashes and post gap (architecture 18 §7, 07 §6), named once so the guard plans and
+ * the guard aggro profiles derive from the same numbers (AI56-F4, DEC-168). Metres.
+ */
+export const GUARD_LEASH = {
+  tower: 8, // TUNE: balancing.md "leash radius 8 m"
+  camp: 6, // TUNE: balancing.md camp leash
+  postGap: 2, // TUNE: no reference value; just outside the footprint
+  checkpointPostRing: 2, // TUNE: no reference value; defenders' posts around a capture point's centre
+  // TUNE: balancing.md GreaterBoss "centre zone, radius 25 m", from the Cathedral's centre
+  greaterBossZone: 25,
+} as const;

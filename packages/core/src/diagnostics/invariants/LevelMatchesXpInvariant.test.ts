@@ -47,10 +47,38 @@ const setUp = () => {
     });
   };
   const gained = (entityId: string, victimId: string, victimTeam: Team) => {
-    state.events.emit('xp-gained', { entityId, amount: 10, victimId, victimTeam });
+    state.events.emit('xp-gained', { entityId, amount: 10, victimId, victimTeam, cause: 'kill' });
+  };
+  const gainedFromStructure = (entityId: string, victimId: string, victimTeam: Team) => {
+    state.events.emit('xp-gained', {
+      entityId,
+      amount: 300,
+      victimId,
+      victimTeam,
+      cause: 'structure-destroyed',
+    });
+  };
+  const gainedFromTeamKill = (entityId: string, victimId: string) => {
+    state.events.emit('xp-gained', {
+      entityId,
+      amount: 200,
+      victimId,
+      victimTeam: 'neutral',
+      cause: 'team-kill',
+    });
   };
   const check = () => new LevelMatchesXpInvariant(CURVES).check(state).map((v) => v.message);
-  return { state, hero, enemy, died, gained, check };
+  return {
+    state,
+    hero,
+    enemy,
+    spawn,
+    died,
+    gained,
+    gainedFromStructure,
+    gainedFromTeamKill,
+    check,
+  };
 };
 
 describe('LevelMatchesXpInvariant', () => {
@@ -79,6 +107,205 @@ describe('LevelMatchesXpInvariant', () => {
 
     expect(check()).toEqual([
       'Entity "entity-1" gained XP for "entity-2" without killing it this tick.',
+    ]);
+  });
+
+  it('rule 2: passes a team-wide structure award for a structure that is gone (DEC-186)', () => {
+    const { hero, gainedFromStructure, check } = setUp();
+    gainedFromStructure(hero.id, 'entity-77', 'dark');
+
+    expect(check()).toEqual([]);
+  });
+
+  it('rule 2: flags a structure award for a structure still standing', () => {
+    const { hero, enemy, gainedFromStructure, check } = setUp();
+    gainedFromStructure(hero.id, enemy.id, 'dark');
+
+    expect(check()).toEqual([
+      'Entity "entity-1" gained structure XP for "entity-2", which is still standing.',
+    ]);
+  });
+
+  it("rule 4: flags a structure award for the recipient's own structure", () => {
+    const { hero, gainedFromStructure, check } = setUp();
+    gainedFromStructure(hero.id, 'entity-77', 'light');
+
+    expect(check()).toEqual([
+      'Entity "entity-1" gained XP for killing itself or an ally ("entity-77").',
+    ]);
+  });
+
+  it("rule 2: passes a team-kill award when the recipient's teammate killed the boss (DEC-237)", () => {
+    const { hero, spawn, died, gainedFromTeamKill, check } = setUp();
+    const mate = spawn('entity-3', 'light');
+    const boss = spawn('entity-4', 'neutral');
+    died(boss.id, mate.id);
+    gainedFromTeamKill(hero.id, boss.id);
+
+    expect(check()).toEqual([]);
+  });
+
+  it('rule 2: flags a team-kill award when another team killed the boss, or nobody did', () => {
+    const { hero, enemy, spawn, died, gainedFromTeamKill, check } = setUp();
+    const boss = spawn('entity-4', 'neutral');
+    died(boss.id, enemy.id);
+    gainedFromTeamKill(hero.id, boss.id);
+    gainedFromTeamKill(hero.id, 'entity-never-died');
+
+    expect(check()).toEqual([
+      'Entity "entity-1" gained team XP for "entity-4", which its team did not kill this tick.',
+      'Entity "entity-1" gained team XP for "entity-never-died", which its team did not kill this tick.',
+    ]);
+  });
+
+  describe('camp award', () => {
+    /**
+     * Camp `entity-5` with two guard posts; `held` posts are filled by `entity-6`, `entity-7`. With
+     * `hasDefender`, a third post on the same home is a checkpoint defender's, held by `entity-8`.
+     */
+    const campWith = (held: number, hasDefender = false) => {
+      const fixture = setUp();
+      const camp = fixture.spawn('entity-5', 'neutral');
+      for (let post = 0; post < (hasDefender ? 3 : 2); post += 1) {
+        const isDefender = post === 2;
+        fixture.state.guards.add({
+          ...(isDefender ? { checkpoint: 1 } : {}),
+          id: `post-${String(post)}`,
+          homeId: camp.id,
+          team: 'neutral',
+          mobId: 'light-camp-mob',
+          row: 0,
+          indexInRow: post,
+          postX: 0,
+          postY: 0,
+          homeX: 0,
+          homeY: 0,
+          homeRadius: 1,
+          leashRadius: 6,
+          leashTolerance: 0,
+          respawnTicks: 3600,
+          canLevel: false,
+        });
+        if (post < held || isDefender) {
+          fixture.state.guards.fill(post, `entity-${String(6 + post)}`);
+        }
+      }
+      fixture.state.events.emit('xp-gained', {
+        entityId: fixture.hero.id,
+        amount: 50,
+        victimId: camp.id,
+        victimTeam: 'neutral',
+        cause: 'camp-cleared',
+      });
+      return fixture;
+    };
+
+    it('rule 2: passes a camp award for a camp with no guard left', () => {
+      expect(campWith(0).check()).toEqual([]);
+    });
+
+    it('rule 2: passes a camp award while a checkpoint defender on the same home stands', () => {
+      expect(campWith(0, true).check()).toEqual([]);
+    });
+
+    it('rule 2: flags a camp award for a camp that still has a guard', () => {
+      expect(campWith(1).check()).toEqual([
+        'Entity "entity-1" gained camp XP for "entity-5", which is no cleared camp.',
+      ]);
+    });
+
+    it('rule 2: flags a camp award for an entity with no guard posts', () => {
+      const { hero, enemy, state, check } = setUp();
+      state.events.emit('xp-gained', {
+        entityId: hero.id,
+        amount: 50,
+        victimId: enemy.id,
+        victimTeam: 'dark',
+        cause: 'camp-cleared',
+      });
+
+      expect(check()).toEqual([
+        'Entity "entity-1" gained camp XP for "entity-2", which is no cleared camp.',
+      ]);
+    });
+  });
+
+  describe('checkpoint award (07 §7)', () => {
+    /**
+     * Point `entity-5` with one checkpoint-1 defender post: held by `entity-6`, emptied by a clear
+     * (`cleared`), or emptied by a cancel (DEC-350), which clears no set.
+     */
+    const pointWith = (post: 'held' | 'cleared' | 'cancelled') => {
+      const fixture = setUp();
+      const point = fixture.spawn('entity-5', 'neutral');
+      fixture.state.guards.add(
+        {
+          checkpoint: 1,
+          defenceId: 'set-1',
+          id: 'post-0',
+          homeId: point.id,
+          team: 'neutral',
+          mobId: 'medium-assist-mob',
+          row: 0,
+          indexInRow: 0,
+          postX: 0,
+          postY: 0,
+          homeX: 0,
+          homeY: 0,
+          homeRadius: 0,
+          leashRadius: 6,
+          leashTolerance: 0,
+          respawnTicks: 0,
+          canLevel: true,
+        },
+        0,
+      );
+      fixture.state.guards.fill(0, 'entity-6');
+      if (post !== 'held') {
+        fixture.state.guards.vacate(0, null);
+      }
+      if (post === 'cleared') {
+        fixture.state.guards.markCleared('set-1');
+      }
+      fixture.state.events.emit('xp-gained', {
+        entityId: fixture.hero.id,
+        amount: 36,
+        victimId: point.id,
+        victimTeam: 'neutral',
+        cause: 'checkpoint-cleared',
+      });
+      return fixture;
+    };
+
+    it('rule 2: passes a checkpoint award for a point with a cleared defender set', () => {
+      expect(pointWith('cleared').check()).toEqual([]);
+    });
+
+    it('rule 2: flags a checkpoint award for a point whose defenders stand, or were only cancelled', () => {
+      for (const post of ['held', 'cancelled'] as const) {
+        expect(pointWith(post).check()).toEqual([
+          'Entity "entity-1" gained checkpoint XP for "entity-5", which has no cleared defender set.',
+        ]);
+      }
+    });
+  });
+
+  it('rule 2: passes owed XP paid to a Legend that is back, and flags one still waiting (DEC-186)', () => {
+    const { state, hero, check } = setUp();
+    const owed = (entityId: string) => {
+      state.events.emit('xp-gained', {
+        entityId,
+        amount: 120,
+        victimId: 'entity-77',
+        victimTeam: 'dark',
+        cause: 'respawn',
+      });
+    };
+    owed(hero.id);
+    owed('entity-3');
+
+    expect(check()).toEqual([
+      'Entity "entity-3" gained owed XP for "entity-77" while it is not in the match.',
     ]);
   });
 

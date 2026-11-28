@@ -1,6 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
+import type { ChordModifier } from '../../bridge/Binding.types';
 import { settingsSlice } from '../../bridge/slices/settingsSlice';
+import {
+  type PersistedSettings,
+  validateSettingsDto,
+} from '../../data/persistence/dto/SettingsDto';
+import { MODIFIER_FLAGS } from '../input/InputMapper.constants';
 import { DEFAULT_CHORDS, PRESETS } from '../input/keybindings';
 import { applySettingsIntent, settingsWithDefaults } from './settingsState';
 
@@ -28,6 +34,18 @@ describe('settingsWithDefaults', () => {
     expect(settings.bindings.find((binding) => binding.action === 'move-down')?.chords).toEqual(
       DEFAULT_CHORDS['move-down'],
     );
+  });
+});
+
+describe('settingsWithDefaults and the hud group (DEC-410)', () => {
+  it('gives a save from before the hud group the default, and keeps a saved one', () => {
+    const { audio, video, accessibility } = settingsSlice.getInitialState();
+    const old = { bindings: [], audio, video, accessibility };
+
+    expect(settingsWithDefaults(old).hud).toEqual({ shouldShowEveryHit: false });
+    expect(settingsWithDefaults({ ...old, hud: { shouldShowEveryHit: true } }).hud).toEqual({
+      shouldShowEveryHit: true,
+    });
   });
 });
 
@@ -71,5 +89,36 @@ describe('applySettingsIntent', () => {
     expect(next.accessibility).toEqual({ ...start.accessibility, reduceMotion: true });
     expect(next.video).toEqual(start.video);
     expect(next.bindings).toBe(start.bindings);
+  });
+
+  it('merges a hud patch (DEC-410)', () => {
+    const next = applySettingsIntent(start, {
+      kind: 'update-settings',
+      patch: { hud: { shouldShowEveryHit: true } },
+    });
+
+    expect(next.hud).toEqual({ shouldShowEveryHit: true });
+    expect(next.accessibility).toEqual(start.accessibility);
+  });
+});
+
+// bridge/ and data/ never import each other, so each states the chord modifiers; game/ sees both.
+describe('stored chord modifiers', () => {
+  it('are the bridge ChordModifier set, no more and no fewer (DEC-105)', () => {
+    type StoredModifier = NonNullable<
+      PersistedSettings['bindings'][number]['chords'][number]['modifiers']
+    >[number];
+
+    expectTypeOf<StoredModifier>().toEqualTypeOf<ChordModifier>();
+    const modifiers = MODIFIER_FLAGS.map(([modifier]) => modifier);
+    const record = {
+      ...settingsWithDefaults(null),
+      schemaVersion: 1,
+      profileId: 'local',
+      bindings: [
+        { action: 'attack', chords: [{ device: 'keyboard', code: 'F3', label: 'F3', modifiers }] },
+      ],
+    };
+    expect(validateSettingsDto(record, new Set(['attack'])).ok).toBe(true);
   });
 });

@@ -1,3 +1,4 @@
+import { Aura } from '../../components/Aura';
 import { Collider } from '../../components/Collider';
 import { Health } from '../../components/Health';
 import { TeamMembership } from '../../components/TeamMembership';
@@ -10,7 +11,8 @@ import { SpawnContextReader } from '../SpawnContextReader';
 /**
  * Abstract base for static things with health: buildings, walls, gates, turrets, camps and the
  * Cathedral. Installs `Transform`, `Health`, `TeamMembership` and a static `Collider` from a
- * `StructureDefinition`. Concrete structures and their extra components arrive in Phase 2.
+ * `StructureDefinition`; `EntityFactory` adds a `MapFeatureLink` when it is built from a map
+ * feature. Concrete structures and their extra components arrive in Phase 2.
  *
  * @see docs/architecture/07-structures-obstacles-and-destructibles.md (The Structure family)
  */
@@ -20,6 +22,8 @@ export abstract class Structure extends Entity {
 
   /** Always `'structure'`. */
   public readonly family: EntityFamily = 'structure';
+
+  private lane: string | null = null;
 
   /**
    * @param id - Unique id of this entity instance.
@@ -33,21 +37,34 @@ export abstract class Structure extends Entity {
     super(id, definitionId);
   }
 
+  /** The lane this structure stands on (`MapLane.id`), or `null` off the lanes. */
+  public get laneId(): string | null {
+    return this.lane;
+  }
+
   /**
    * Installs the structure components from a placed spawn context.
    *
    * @throws Error when the context is not a placed context for this structure's definition.
    */
   protected installComponents(context: unknown): void {
-    const { definition, position, team } = new SpawnContextReader(this).placed<StructureDefinition>(
-      context,
-    );
+    const reader = new SpawnContextReader(this);
+    const { definition, position, team } = reader.placed<StructureDefinition>(context);
+    this.lane = reader.laneId(context);
 
     this.addComponent(new Transform(position, definition.footprintRadius));
     this.addComponent(new Health(definition.baseHealth));
     this.addComponent(new TeamMembership(team));
-    this.addComponent(
-      new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'structure', true),
+    const collider = new Collider(
+      { kind: 'circle', radius: definition.footprintRadius },
+      'structure',
+      true,
     );
+    // Walls and gates start the match unbreakable; `StructureSystem` flips it when the rule passes.
+    collider.setUnbreakable(definition.breakability.kind !== 'always');
+    this.addComponent(collider);
+    if (definition.aura !== undefined) {
+      this.addComponent(new Aura(definition.aura));
+    }
   }
 }

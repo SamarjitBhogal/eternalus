@@ -1,0 +1,159 @@
+import { MemoryLogger } from '@eternalus/core';
+import { describe, expect, it } from 'vitest';
+import { PlayerRatings } from '../rating/PlayerRatings';
+import { FakeTickScheduler } from '../time/FakeTickScheduler';
+import { FakeConnection } from '../transport/FakeConnection';
+import { DuelHost } from './DuelHost';
+import { FakeDuelSimulation } from './FakeDuelSimulation';
+
+const INTENT = { move: { x: 0, y: 1 }, aim: null, triggered: [] };
+
+function setup(fails = false) {
+  const simulation = new FakeDuelSimulation();
+  const scheduler = new FakeTickScheduler();
+  const logger = new MemoryLogger();
+  const ratings = new PlayerRatings();
+  const host = new DuelHost({
+    factory: {
+      create: () => {
+        if (fails) throw new Error('no map');
+        return simulation;
+      },
+    },
+    scheduler,
+    tickIntervalMs: 33,
+    versusMs: 0,
+    logger,
+    ratings,
+  });
+  return { host, simulation, scheduler, logger, ratings };
+}
+
+describe('DuelHost', () => {
+  it('starts a match, routes intents and forgets it when it ends', () => {
+    const { host, simulation, scheduler } = setup();
+    const a = new FakeConnection();
+    const b = new FakeConnection();
+    host.start(
+      { connection: a, name: 'Ana', guestId: 'ga' },
+      { connection: b, name: 'Ben', guestId: 'gb' },
+    );
+    expect(host.isInMatch(a)).toBe(true);
+    expect(host.submit(b, 1, INTENT)).toBe(true);
+    expect(simulation.intents[0]?.team).toBe('dark');
+    simulation.result = { winner: 'light' };
+    scheduler.tick();
+    expect(host.isInMatch(a)).toBe(false);
+    expect(host.submit(a, 2, INTENT)).toBe(false);
+  });
+
+  it('rates both players when the match ends, and counts a leaver as the loser', () => {
+    const { host, simulation, scheduler, ratings } = setup();
+    const [a, b] = [new FakeConnection(), new FakeConnection()];
+    host.start(
+      { connection: a, name: 'Ana', guestId: 'ga' },
+      { connection: b, name: 'Ben', guestId: 'gb' },
+    );
+    simulation.result = { winner: 'light' };
+    scheduler.tick();
+    expect(ratings.get('ga')).toMatchObject({ wins: 1, matches: 1 });
+    expect(ratings.get('gb')).toMatchObject({ losses: 1, matches: 1 });
+    const [c, d] = [new FakeConnection(), new FakeConnection()];
+    host.start(
+      { connection: c, name: 'Cy', guestId: 'gc' },
+      { connection: d, name: 'Di', guestId: 'gd' },
+    );
+    host.leave(c);
+    expect(ratings.get('gc')).toMatchObject({ losses: 1 });
+    expect(ratings.get('gd')).toMatchObject({ wins: 1 });
+  });
+
+  it('still cleans the match up when rating it throws', () => {
+    const { host, simulation, scheduler, ratings, logger } = setup();
+    ratings.recordMatch = () => {
+      throw new Error('boom');
+    };
+    const [a, b] = [new FakeConnection(), new FakeConnection()];
+    host.start(
+      { connection: a, name: 'Ana', guestId: 'ga' },
+      { connection: b, name: 'Ben', guestId: 'gb' },
+    );
+    simulation.result = { winner: 'light' };
+    scheduler.tick();
+    expect(host.isInMatch(a)).toBe(false);
+    expect([a.isClosed, b.isClosed]).toEqual([true, true]);
+    expect(logger.records.some((record) => record.body.includes('could not be rated'))).toBe(true);
+  });
+
+  it('closes both connections after the verdict and cleans up once their close handlers run', () => {
+    const { host, simulation, scheduler } = setup();
+    const a = new FakeConnection();
+    const b = new FakeConnection();
+    // The gateway's close handler: a closing player leaves the host.
+    a.onClose(() => {
+      host.leave(a);
+    });
+    b.onClose(() => {
+      host.leave(b);
+    });
+    host.start(
+      { connection: a, name: 'Ana', guestId: 'ga' },
+      { connection: b, name: 'Ben', guestId: 'gb' },
+    );
+    simulation.result = { winner: 'light' };
+    scheduler.tick();
+    expect([a.isClosed, b.isClosed]).toEqual([true, true]);
+    expect(a.sentOfType('match-ended')).toHaveLength(1);
+    expect(b.sentOfType('match-ended')).toHaveLength(1);
+    expect([host.isInMatch(a), host.isInMatch(b)]).toEqual([false, false]);
+  });
+
+  it('ends the match when a player leaves', () => {
+    const { host } = setup();
+    const a = new FakeConnection();
+    const b = new FakeConnection();
+    host.start(
+      { connection: a, name: 'Ana', guestId: 'ga' },
+      { connection: b, name: 'Ben', guestId: 'gb' },
+    );
+    host.leave(a);
+    expect(b.sent.at(-1)).toMatchObject({ reason: 'opponent-left' });
+    expect(host.isInMatch(b)).toBe(false);
+    host.leave(new FakeConnection());
+  });
+
+  it('closes both connections when the match cannot be built', () => {
+    const { host, logger } = setup(true);
+    const a = new FakeConnection();
+    const b = new FakeConnection();
+    host.start(
+      { connection: a, name: 'Ana', guestId: 'ga' },
+      { connection: b, name: 'Ben', guestId: 'gb' },
+    );
+    expect([a.isClosed, b.isClosed]).toEqual([true, true]);
+    expect(logger.records).toHaveLength(1);
+    expect(host.isInMatch(a)).toBe(false);
+  });
+
+  it('ends the match cleanly when a seat closes while it is being told match-found', () => {
+    const { host, scheduler } = setup();
+    class ClosesOnSend extends FakeConnection {
+      public override send(message: Parameters<FakeConnection['send']>[0]): void {
+        super.send(message);
+        this.close();
+      }
+    }
+    const a = new ClosesOnSend();
+    const b = new FakeConnection();
+    a.onClose(() => {
+      host.leave(a);
+    });
+    host.start(
+      { connection: a, name: 'Ana', guestId: 'ga' },
+      { connection: b, name: 'Ben', guestId: 'gb' },
+    );
+    expect(b.sent).toEqual([{ type: 'match-ended', reason: 'opponent-left', winner: 'dark' }]);
+    expect([host.isInMatch(a), host.isInMatch(b)]).toEqual([false, false]);
+    expect(scheduler.activeCount).toBe(0);
+  });
+});

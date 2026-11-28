@@ -1,0 +1,97 @@
+/* 62:135 / 58:281 "Countdown (from 60)": Cinzel Bold 64, centred in the box (901, 104) 118 × 83;
+   four 15 % glows at (±6, 0) and (0, ±6), Figma radius 8, as the sel-glow-countdown def at σ 4
+   (as a text-shadow they left an orange ring around the numerals that Figma does not draw).
+   The look of every countdown numeral: the pre-match overlay draws it at its own size (.match,
+   DEC-278, DEC-282). */
+.countdown {
+  margin: 0;
+  color: var(--selection-countdown);
+  font-family: var(--font-game);
+  font-weight: 700;
+  font-size: max(64px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-64) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  white-space: nowrap;
+  filter: url(#sel-glow-countdown);
+  pointer-events: none;
+}
+
+/* On the selection artboard. Chrome draws the numerals 1 px above Figma's in the same 83 px box:
+   at the Figma 104 px the glyph rows (R−G > 150) were 118–163 on 62:125's "42" (Figma 119–164) and
+   118–166 on 58:271's "31" (Figma 119–167); 105 px gives zero shift on 62:125, 62:70 and 58:271
+   (the visual audit). */
+.artboard {
+  position: absolute;
+  left: 901px;
+  top: 105px;
+  width: 118px;
+  height: 83px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* DEC-278: the pre-match overlay's numeral, centred by its veil. DEC-299 (2): the select numeral
+   itself (the font size above, in the px the glow def is sized for), enlarged by `scale` about its
+   centre, so the glow grows with it: 216 HUD units (Recommendation, CD-49: the owner's "slightly
+   smaller" read as 10 % below the first 240). DEC-312: `--stage-scale` is the HUD frame's scale as
+   a number (`--hud-u` / 1px, typed arithmetic), so the font floor above reads it as it reads the
+   artboard's. `scale` composes with UE-01's `transform` keyframes. At least the select box's
+   width, so a narrow "1" still gives the glow region the box the def's overlay user is checked
+   with (SelectionDefs.constants.ts). */
+.match {
+  --stage-scale: calc(var(--hud-u) / 1px);
+  min-width: 118px;
+  text-align: center;
+  scale: calc(var(--stage-scale) * 216 / 64);
+  line-height: 1;
+}
+
+/* DEC-312 (2): where px / px is no number (Safari before 26, Firefox before 158) both
+   `--stage-scale` uses above are invalid at computed time, so the numeral takes the same HUD units
+   as its font size, unscaled; its glow then stays at the select size. After `.countdown`, so this
+   font size wins at the same specificity. */
+@supports not (scale: calc(1px / 1px)) {
+  .match {
+    font-size: max(calc(216 * var(--hud-u)), var(--text-min));
+    scale: none;
+  }
+}
+
+/* UE-01 countdown urgency (ui-enhancements-plan §3.2, DEC-100, DEC-282), only while the switch
+   holds its id: one tick per second change from 10 s (the numeral is keyed on its value, so 1 Hz);
+   from 5 s a larger pulse and the urgent glow (the countdown glow at 30 %). Tick 1.08, pulse 1.12
+   and the 30 % glow are kept by the owner (DEC-299 (1)). The Figma red stays. */
+:root[data-ui-enhancements~='countdown-urgency'] .countdown[data-urgent] {
+  animation: tick var(--motion-tick) ease-out;
+}
+
+:root[data-ui-enhancements~='countdown-urgency'] .countdown[data-urgent='final'] {
+  animation: pulse var(--motion-tick) ease-out;
+  filter: url(#sel-glow-countdown-urgent);
+}
+
+@keyframes tick {
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes pulse {
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+/* Reduced motion: no tick and no pulse; the urgent glow and the lines stay. */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-ui-enhancements~='countdown-urgency'] .countdown[data-urgent] {
+    animation: none;
+  }
+}
+
+/* UE-03: the in-game reduce-motion setting, the same as the OS query. */
+:root[data-reduce-motion][data-ui-enhancements~='countdown-urgency'] .countdown[data-urgent] {
+  animation: none;
+}

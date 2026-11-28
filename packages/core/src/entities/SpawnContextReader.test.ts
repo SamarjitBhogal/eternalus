@@ -79,11 +79,36 @@ describe('SpawnContextReader', () => {
     }
   });
 
+  it('reads the spawn’s start facing, and refuses one that is not a finite vector (DEC-216 (6))', () => {
+    const base = { definition: DEFINITION, position: POSITION, team: 'light' };
+
+    expect(reader.placed<typeof DEFINITION>({ ...base, facing: { x: 0, y: -2 } }).facing).toEqual({
+      x: 0,
+      y: -2,
+    });
+    expect(reader.placed<typeof DEFINITION>(base)).not.toHaveProperty('facing');
+    const nonFinite = [
+      { x: Number.NaN, y: 1 },
+      { x: Number.POSITIVE_INFINITY, y: 0 },
+    ];
+    for (const bad of ['east', 1, null, {}, { x: '0', y: 1 }, ...nonFinite]) {
+      expect(() => reader.placed<typeof DEFINITION>({ ...base, facing: bad })).toThrow(
+        'Entity "entity-1" was given a spawn facing that is not a finite vector.',
+      );
+    }
+  });
+
   it('reads the weapon source only when it has has() and get()', () => {
     const weapons = { has: () => false, get: () => undefined };
 
     expect(reader.weapons({ weapons })).toBe(weapons);
     expect(reader.weapons({})).toBeNull();
     expect(reader.weapons({ weapons: { has: 'nope' } })).toBeNull();
+  });
+
+  it('reads the Legend spec a context names, or null', () => {
+    expect(reader.specId({ specId: 'oracle' })).toBe('oracle');
+    expect(reader.specId({ specId: 7 })).toBeNull();
+    expect(reader.specId({})).toBeNull();
   });
 });

@@ -1,7 +1,8 @@
 import type { LegendDefinition } from './legends.types';
 
 /**
- * Warrior (formerly Assault): lighter, lower health, faster.
+ * Warrior (formerly Assault): lighter, lower health, faster. Its title is `displayName` (DEC-58).
+ * The content id stays `warrior` (17 R26).
  *
  * TUNE: health and movement are placeholders that only keep the class ordering from
  * `01-classes-and-subclasses.md` (Warrior fastest to top speed, lightest). The radius is DEC-06.
@@ -9,8 +10,13 @@ import type { LegendDefinition } from './legends.types';
 export const WARRIOR = {
   id: 'warrior',
   kind: 'warrior',
-  displayName: 'Warrior',
+  displayName: 'Vanguard', // DEC-58
   roleBlurb: 'Lighter, lower health, faster.',
+  roleLabel: 'Assault', // Figma 72:858: a role label, not the class name
+  tagline: null,
+  description: null,
+  alternateLayoutDescription: null,
+  detailNames: { signature: null, proficiency: null, specialty: null },
   baseHealth: 600, // TUNE:
   baseAether: 100, // TUNE: balancing.md (level 1)
   weaponBias: 'light',
@@ -19,6 +25,7 @@ export const WARRIOR = {
   passiveOptions: [],
   defaultAction: null,
   referenceHeight: 2.1, // TUNE: ~7 ft (Master Chief)
+  spriteWidth: 5.2, // TUNE: tuneable after game testing (DEC-424: the body ratio of DEC-06; DEC-238's size)
   footprintRadius: 0.5, // DEC-06
   visionRadius: 25, // TUNE:
   movementProfile: {
@@ -28,5 +35,10 @@ export const WARRIOR = {
   },
   defaultLoadout: { primaryWeaponId: 'raptor-talons' }, // TUNE: default weapon (05 §10 table) until the owner picks one (INBOX)
   levelCurveId: 'legend',
-  levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 }, // TUNE: balancing.md
+  levelScaling: {
+    healthPerLevel: 0.08, // TUNE: balancing.md
+    aetherPerLevel: 10, // TUNE: balancing.md
+    basicAttackPerLevel: 0.08, // TUNE: DEC-380 (2), keeps pace with health until playtests
+    basicAttackPerLevelOnStructures: 0.04, // TUNE: DEC-405 default, HC-Q119 option C's example
+  },
 } as const satisfies LegendDefinition;

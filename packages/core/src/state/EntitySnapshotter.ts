@@ -1,0 +1,112 @@
+import { Aether } from '../components/Aether';
+import { Aura } from '../components/Aura';
+import { Capturable } from '../components/Capturable';
+import { CathedralGemState } from '../components/CathedralGemState';
+import { CombatHitbox } from '../components/CombatHitbox';
+import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
+import { MapFeatureLink } from '../components/MapFeatureLink';
+import { MapObjectBody } from '../components/MapObjectBody';
+import { Progression } from '../components/Progression';
+import { TeamMembership } from '../components/TeamMembership';
+import { Transform } from '../components/Transform';
+import { ZoneArea } from '../components/ZoneArea';
+import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { LevelCurveDefinition } from '../content/progression/progression.types';
+import type { Entity } from '../entities/Entity';
+import { Legend } from '../entities/Legend';
+import { outlineBoxOf } from './outlineBoxOf';
+import type { EntitySnapshot } from './Snapshot.types';
+
+/**
+ * Projects one entity into its `EntitySnapshot` (architecture 03 §5): one group per component,
+ * `null` when the entity has no such component (DEC-17); `mapObjectId`, `mapFeatureId`, `specId`
+ * and `combatHitbox` are left out instead. A new component group is added here, never in
+ * `GameState` (DEC-232).
+ */
+export class EntitySnapshotter {
+  /**
+   * @param checkpoints - How many checkpoints a full capture passes (`GameConfig.match.capturePoints`).
+   * @param curves - The level curves a `Progression` levels along (the catalogue
+   *   `ProgressionSystem` uses), to report the XP inside each level.
+   */
+  public constructor(
+    private readonly checkpoints: number,
+    private readonly curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>,
+  ) {}
+
+  /** The entity as plain, structured-clone-safe data. */
+  public snapshotOf(entity: Entity): EntitySnapshot {
+    const transform = entity.findComponent(Transform);
+    const hitbox = entity.findComponent(CombatHitbox);
+    const health = entity.findComponent(Health);
+    const jump = entity.findComponent(Jump);
+    const progression = entity.findComponent(Progression);
+    const aether = entity.findComponent(Aether);
+    const capture = entity.findComponent(Capturable);
+    const aura = entity.findComponent(Aura);
+    const auraBox = aura === undefined ? undefined : outlineBoxOf(entity);
+    const link = entity.findComponent(MapFeatureLink);
+    const gem = entity.findComponent(CathedralGemState);
+    return {
+      id: entity.id,
+      kind: entity.kind,
+      family: entity.family,
+      definitionId: entity.definitionId,
+      ...(entity.findComponent(MapObjectBody) === undefined
+        ? {}
+        : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
+      ...(link !== undefined && { mapFeatureId: link.featureId }),
+      ...(entity instanceof Legend && entity.specId !== null && { specId: entity.specId }),
+      ...(hitbox !== undefined &&
+        transform !== undefined && {
+          combatHitbox: hitbox.polygonAt(transform.position, transform.facing),
+        }),
+      team: entity.findComponent(TeamMembership)?.team ?? null,
+      transform:
+        transform === undefined
+          ? null
+          : {
+              x: transform.position.x,
+              y: transform.position.y,
+              radius: transform.radius,
+              facing: { x: transform.facing.x, y: transform.facing.y },
+            },
+      elevation: jump === undefined ? null : { height: jump.height },
+      health: health === undefined ? null : { current: health.current, max: health.max },
+      progression:
+        progression === undefined
+          ? null
+          : {
+              level: progression.level,
+              ...progression.levelProgress(this.curves.get(progression.curveId)),
+            },
+      aether: aether === undefined ? null : { current: aether.current, max: aether.max },
+      area: entity.findComponent(ZoneArea)?.polygons ?? null,
+      capture:
+        capture === undefined
+          ? null
+          : {
+              owner: capture.owner,
+              progress: capture.progress,
+              checkpoint: capture.checkpoint,
+              checkpoints: this.checkpoints,
+              lockedBy: capture.lockedBy,
+              presence: capture.presence,
+            },
+      aura:
+        aura === undefined || auraBox === undefined
+          ? null
+          : { radius: aura.definition.radius, box: auraBox },
+      gem:
+        gem === undefined
+          ? null
+          : {
+              holder: gem.holder,
+              glowTicksLeft: gem.glowTicksLeft,
+              glowHits: gem.glowHits,
+              ticksSinceHit: gem.ticksSinceHit,
+            },
+    };
+  }
+}

@@ -18,11 +18,29 @@ export type MapObjectKind =
   | 'turret'
   | 'gate';
 
+/**
+ * Which piece of a lane tower's fort a wall object is: the 7 walls by side (the lane gates split
+ * the west and east walls, the south gate splits the south wall) and the 4 corner towers.
+ */
+export type FortWallRole =
+  | 'top'
+  | 'left'
+  | 'left-lower'
+  | 'right'
+  | 'right-lower'
+  | 'bottom-left'
+  | 'bottom-right'
+  | 'corner-tower';
+
 /** Authored ownership: all art of one object changes together when that object is destroyed. */
 export type MapObjectArt = {
   readonly id: string;
   readonly kind: MapObjectKind;
   readonly isFootprint: boolean;
+  /** The feature whose structure this object is part of the body of (`MapObject.partOf`). */
+  readonly partOf?: string;
+  /** Which piece of the fort this wall is (`MapObject.fortWall`). */
+  readonly fortWall?: FortWallRole;
 };
 
 /** Exact world geometry shared by collision, targeting and destruction presentation. */
@@ -35,11 +53,34 @@ export type MapObject = {
   readonly isInterior?: true;
   readonly passages?: readonly Polygon[];
   /**
+   * The id of the feature whose structure this object is part of the body of: a wall of a lane
+   * tower's fort. While the tower stands, the wall shares the tower's one health pool and reach to
+   * it is reach to the tower (DEC-185 B). When the tower falls, the wall that took the killing hit
+   * falls with it and each other wall stands as scenery with health of its own (DEC-217 (12),
+   * DEC-219 (a)).
+   */
+  readonly partOf?: string;
+  /**
+   * Which piece of its tower's fort a wall that is `partOf` the tower is; read by `fortWallBands`
+   * and `courtBoxOf`.
+   */
+  readonly fortWall?: FortWallRole;
+  /**
    * The side that built it: its Stronghold and everything of that palace, its gates, wall
    * segments, turrets and lane towers. Only the other side may break it (DEC-121 (a)). Absent on
    * scenery (trees, rocks, houses, camps, forts), which anyone may break.
    */
   readonly team?: PlayableTeam;
+  /**
+   * A doorway that blocks only in a Duel whose rules close the Cathedral (SCRUM-450): `isBlocking`
+   * is `false` here, and `Simulation` makes it blocking for such a Duel.
+   */
+  readonly isDuelBarrier?: true;
+  /**
+   * Takes no damage (`BreakabilityStep`): set only by `duelMapObjects` on the Cathedral's walls in a
+   * Duel (DEC-348). Absent everywhere else, where the kind's health decides.
+   */
+  readonly isUnbreakable?: true;
 };
 
 /** Mutable object state projected from the simulation; geometry stays in the map definition. */

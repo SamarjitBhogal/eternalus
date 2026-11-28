@@ -1,10 +1,19 @@
 import type { DtoCheck } from './DtoCheck.types';
+import { isRecord } from './isRecord';
+
+/** The modifier keys a stored keyboard chord may name (`bridge/Binding.types.ts` `ChordModifier`). */
+const CHORD_MODIFIERS = ['Alt', 'Control', 'Meta', 'Shift'] as const;
 
 /** A stored chord: the same shape as `bridge/Binding.types.ts` `InputChord`. */
 type ChordDtoV1 = {
   readonly device: 'keyboard' | 'mouse' | 'gamepad';
   readonly code: string;
   readonly label: string;
+  /**
+   * Optional, so records saved before modifier chords (DEC-105) still read as version 1. An
+   * optional field that old saves lack needs no `schemaVersion` bump (DEC-125).
+   */
+  readonly modifiers?: readonly (typeof CHORD_MODIFIERS)[number][];
 };
 
 /** A stored binding. `action` is a plain string here: `data/` does not know the action list. */
@@ -16,6 +25,8 @@ export type PersistedSettings = {
   readonly audio: { readonly master: number; readonly music: number; readonly effects: number };
   readonly video: { readonly fullscreen: boolean; readonly renderScale: number };
   readonly accessibility: { readonly reduceMotion: boolean; readonly colourBlindMode: boolean };
+  /** Optional, so records saved before it (W5c, DEC-410) still read as version 1 (DEC-125). */
+  readonly hud?: { readonly shouldShowEveryHit: boolean };
 };
 
 /** The `settings` store record, one per profile (architecture 14 §7). */
@@ -32,8 +43,9 @@ const isVolume: FieldCheck = (value) => typeof value === 'number' && value >= 0 
 const isScale: FieldCheck = (value) =>
   typeof value === 'number' && Number.isFinite(value) && value > 0;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+function isModifierList(value: unknown): boolean {
+  const known: readonly unknown[] = CHORD_MODIFIERS;
+  return value === undefined || (Array.isArray(value) && value.every((key) => known.includes(key)));
 }
 
 function isChord(value: unknown): boolean {
@@ -41,7 +53,8 @@ function isChord(value: unknown): boolean {
     isRecord(value) &&
     CHORD_DEVICES.includes(value.device) &&
     typeof value.code === 'string' &&
-    typeof value.label === 'string'
+    typeof value.label === 'string' &&
+    isModifierList(value.modifiers)
   );
 }
 
@@ -93,7 +106,10 @@ function settingsProblem(value: unknown, knownActions: ReadonlySet<string>): str
     groupProblem('accessibility', value.accessibility, {
       reduceMotion: isBoolean,
       colourBlindMode: isBoolean,
-    })
+    }) ??
+    (value.hud === undefined
+      ? null
+      : groupProblem('hud', value.hud, { shouldShowEveryHit: isBoolean }))
   );
 }
 

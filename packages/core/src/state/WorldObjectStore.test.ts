@@ -3,11 +3,47 @@ import { WorldObjectStore } from './WorldObjectStore';
 import { EntityStore } from './EntityStore';
 import { EntityFactory } from '../entities/EntityFactory';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
-import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
+import {
+  MAP_OBJECT_DEFINITIONS,
+  RUINED_FORT_WALL_DEFINITION,
+} from '../content/maps/mapObjectDefinitions';
+import { fixtureFactory, fortFixture } from './__fixtures__/fortTower';
 import type { MapObject } from '../content/maps/mapObjects.types';
 import { Health } from '../components/Health';
+import type { Vec2 } from '../utils/geometry.types';
 
 describe('WorldObjectStore', () => {
+  it('retires a carried map object with its carrier, which then blocks nothing (12 §3)', () => {
+    const plinth: MapObject = {
+      id: 'plinth',
+      kind: 'cathedral',
+      isBlocking: true,
+      footprints: [
+        [
+          { x: 0, y: 0 },
+          { x: 4, y: 0 },
+          { x: 4, y: 4 },
+          { x: 0, y: 4 },
+        ],
+      ],
+    };
+    const world = new WorldObjectStore({
+      objects: [plinth],
+      factory: fixtureFactory(),
+      entities: new EntityStore(),
+      definitions: MAP_OBJECT_DEFINITIONS,
+      carriers: new Map([['plinth', 'gem']]),
+    });
+    expect(world.blockingAt({ x: 2, y: 2 }, 1)).toBe('plinth');
+    expect(world.objectFor('gem')).toBe(plinth);
+
+    world.removed('gem');
+
+    expect(world.blockingAt({ x: 2, y: 2 }, 1)).toBeNull();
+    expect([...world.destroyedIds]).toEqual(['plinth']);
+    expect(world.snapshot()[0]?.isDestroyed).toBe(true);
+  });
+
   it('uses injected content policy instead of global map-object defaults', () => {
     const definitions = {
       ...MAP_OBJECT_DEFINITIONS,
@@ -24,27 +60,17 @@ describe('WorldObjectStore', () => {
         return definition;
       },
     });
-    const world = new WorldObjectStore(
-      [{ id: 'house', kind: 'house', isBlocking: true, footprints: [[{ x: 0, y: 0 }]] }],
+    const world = new WorldObjectStore({
+      objects: [{ id: 'house', kind: 'house', isBlocking: true, footprints: [[{ x: 0, y: 0 }]] }],
       factory,
-      new EntityStore(),
+      entities: new EntityStore(),
       definitions,
-    );
+    });
     expect(world.snapshot()[0]?.health).toEqual({ current: 275, max: 275 });
   });
 
   it('keeps health on obstacle entities and retains destroyed state after retirement', () => {
-    const definitions = new Map(
-      Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
-    );
-    const factory = new EntityFactory(createDefaultEntityRegistry(), {
-      has: (id) => definitions.has(id),
-      get: (id) => {
-        const definition = definitions.get(id);
-        if (definition === undefined) throw new Error('Unknown fixture');
-        return definition;
-      },
-    });
+    const factory = fixtureFactory();
     const entities = new EntityStore();
     const object: MapObject = {
       id: 'house',
@@ -59,12 +85,12 @@ describe('WorldObjectStore', () => {
         ],
       ],
     };
-    const world = new WorldObjectStore(
-      [object, { ...object, id: 'mountain', kind: 'terrain' }],
+    const world = new WorldObjectStore({
+      objects: [object, { ...object, id: 'mountain', kind: 'terrain' }],
       factory,
       entities,
-      MAP_OBJECT_DEFINITIONS,
-    );
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
     const house = world.snapshot()[0];
     expect(house?.health).toEqual({ current: 100, max: 100 });
     expect(world.snapshot()[1]?.health).toBeNull();
@@ -82,5 +108,127 @@ describe('WorldObjectStore', () => {
       health: { current: 0, max: 100 },
     });
     expect(world.destroyedIds.has('house')).toBe(true);
+  });
+
+  it('makes a lane tower and its fort walls one health pool while the tower stands (DEC-185 B)', () => {
+    const { world, entities, tower } = fortFixture();
+
+    // No entity of its own for any of them: hits on the walls are hits on the tower.
+    expect(entities.size).toBe(1);
+    tower.getComponent(Health).applyDamage(40);
+    expect(world.snapshot()).toEqual([
+      { id: 'fort', entityId: tower.id, health: { current: 60, max: 100 }, isDestroyed: false },
+      // A wall shows no pool of its own; the tower's object carries the one bar.
+      { id: 'fort-wall-top', entityId: tower.id, health: null, isDestroyed: false },
+      { id: 'fort-wall-bottom', entityId: tower.id, health: null, isDestroyed: false },
+    ]);
+    expect(world.objectFor(tower.id)).toBeUndefined();
+    // The tower dies: until its body is retired, its fort still blocks.
+    tower.getComponent(Health).applyDamage(60);
+    expect(world.blockingAt({ x: 5, y: 0.5 }, 0.5)).toBe('fort-wall-top');
+    expect(world.blockingAt({ x: 5, y: 5 }, 0.5)).toBe('fort');
+    // Retiring the tower entity alone changes nothing: its body is the caller's to retire.
+    world.removed(tower.id);
+    expect(world.destroyedIds.size).toBe(0);
+    expect(world.blockingAt({ x: 5, y: 5 }, 0.5)).toBe('fort');
+  });
+
+  it('lists the objects of a structure body in record order, and none for any other id', () => {
+    const { world, tower, objects } = fortFixture();
+
+    expect(world.bodyOf(tower.id)).toEqual(objects);
+    expect(world.bodyOf('unknown')).toEqual([]);
+  });
+
+  it("builds a fort's interior (the court inside its wall band, DEC-324 (2)) once, and keeps it when a wall falls", () => {
+    const { world, objects } = fortFixture();
+    const court = [
+      { x: 0, y: 1 },
+      { x: 10, y: 1 },
+      { x: 10, y: 9 },
+      { x: 0, y: 9 },
+    ];
+    const first = world.interiorOf('fort');
+    const top = objects[1];
+    if (top === undefined) throw new Error('No fixture wall');
+
+    world.destroy(top);
+
+    expect(first).toEqual([court]);
+    expect(world.interiorOf('fort')).toBe(first);
+    expect(world.interiorOf('unknown')).toEqual([]);
+  });
+
+  it('destroys one object of a body for good, leaving the others standing', () => {
+    const { world, tower, objects } = fortFixture();
+    const [keep, top] = objects;
+    if (keep === undefined || top === undefined) throw new Error('No fixture objects');
+
+    world.destroy(top);
+
+    expect(world.snapshot()[1]).toEqual({
+      id: 'fort-wall-top',
+      entityId: null,
+      health: null,
+      isDestroyed: true,
+    });
+    expect(world.destroyedIds).toEqual(new Set(['fort-wall-top']));
+    expect(world.snapshot()[0]).toMatchObject({ id: 'fort', entityId: tower.id });
+    tower.getComponent(Health).applyDamage(100);
+    expect(world.blockingAt({ x: 5, y: 0.5 }, 0.4)).toBeNull();
+    expect(world.blockingAt({ x: 5, y: 5 }, 0.5)).toBe('fort');
+  });
+
+  it('stands one object of a body alone as an obstacle of the given definition', () => {
+    const { world, entities, tower, objects } = fortFixture();
+    const bottom = objects[2];
+    if (bottom === undefined) throw new Error('No fixture wall');
+
+    world.standAlone(bottom, RUINED_FORT_WALL_DEFINITION);
+
+    const record = world.snapshot()[2];
+    expect(record).toMatchObject({ id: 'fort-wall-bottom', health: { current: 1000, max: 1000 } });
+    expect(record?.entityId).not.toBe(tower.id);
+    expect(entities.get(record?.entityId ?? '')?.definitionId).toBe(RUINED_FORT_WALL_DEFINITION.id);
+    expect(world.objectFor(record?.entityId ?? '')).toBe(bottom);
+    // Its own pool now: it blocks until it is retired itself.
+    tower.getComponent(Health).applyDamage(100);
+    expect(world.blockingAt({ x: 5, y: 9.5 }, 0.4)).toBe('fort-wall-bottom');
+    world.removed(record?.entityId ?? '');
+    expect(world.destroyedIds.has('fort-wall-bottom')).toBe(true);
+  });
+
+  it('skips an object whose footprint box misses the circle, without testing its shape', () => {
+    let reads = 0;
+    const corner = (x: number, y: number): Vec2 => ({
+      get x() {
+        reads += 1;
+        return x;
+      },
+      get y() {
+        reads += 1;
+        return y;
+      },
+    });
+    const world = new WorldObjectStore({
+      objects: [
+        {
+          id: 'rock',
+          kind: 'terrain',
+          isBlocking: true,
+          footprints: [[corner(0, 0), corner(4, 0), corner(4, 4)]],
+        },
+      ],
+      factory: fixtureFactory(),
+      entities: new EntityStore(),
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
+    expect(world.blockingAt({ x: 2.5, y: 1 }, 0.5)).toBe('rock');
+    // Centre outside the box, circle across its edge: the box test counts the radius.
+    expect(world.blockingAt({ x: 2, y: -0.4 }, 0.5)).toBe('rock');
+
+    reads = 0;
+    expect(world.blockingAt({ x: 50, y: 50 }, 1)).toBeNull();
+    expect(reads).toBe(0);
   });
 });

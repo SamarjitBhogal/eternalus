@@ -3,6 +3,8 @@ import type { MinionStrengthCurve } from '../content/mobs/mobs.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { DamageHit, DamageStep } from './DamageStep.types';
+import type { LaneProgressOf } from './MinionStrengthStep.types';
+import { opponentOf } from '../teams/playableTeams';
 
 /**
  * Lane minions are stronger near home (architecture 05 §9, 18 MS-16, DISC-24): a horde member's
@@ -12,17 +14,23 @@ import type { DamageHit, DamageStep } from './DamageStep.types';
  * each lane tower the enemy has lost on that lane (DISC-24), up to `maxBasePoint`. Health never
  * rescales, so a health bar never jumps. Anything outside a horde (Legends included) is 1.
  *
- * @remarks ponytail: `t` follows the lane polyline; the flow-field distance `balancing.md`
- * recommends replaces it with minion plan M4.
+ * `t` runs from the home gate (0) to the enemy gate (1) (DEC-280) and comes only from the injected
+ * `LaneProgressOf`; where it cannot say (`null`), the strength is 1. The composition root decides
+ * how `t` is measured: `DefaultSystemPipeline` gives the lane flow field's path cost
+ * (`balancing.md`), and the lane polyline where the field cannot say (DEC-384).
  */
 export class MinionStrengthStep implements DamageStep {
   public readonly name = 'minion-strength';
 
   /**
    * @param curve - The curve's slope, clamps and base-stat point, from content.
+   * @param progressOf - Where a horde member is along its lane (DEC-384).
    * @throws Error when the base-stat point is not inside the lane (`0 < basePoint ≤ maxBasePoint ≤ 1`).
    */
-  public constructor(private readonly curve: MinionStrengthCurve) {
+  public constructor(
+    private readonly curve: MinionStrengthCurve,
+    private readonly progressOf: LaneProgressOf,
+  ) {
     if (!(
       curve.basePoint > 0 &&
       curve.basePoint <= curve.maxBasePoint &&
@@ -41,14 +49,15 @@ export class MinionStrengthStep implements DamageStep {
   private strengthOf(id: EntityId, state: GameState): number {
     const horde = state.hordes.hordeOf(id);
     const position = state.entities.get(id)?.findComponent(Transform)?.position;
-    const routes = state.world?.routes;
-    if (horde === undefined || position === undefined || routes === undefined) {
+    if (horde === undefined || position === undefined) {
       return 1;
     }
-    const length = routes.length(horde.lane);
-    const t = length > 0 ? routes.distanceAlong(horde.lane, horde.team, position) / length : 0;
+    const t = this.progressOf(horde.lane, horde.team, position);
+    if (t === null) {
+      return 1;
+    }
     const { k, min, max, basePoint, shiftPerTowerLost, maxBasePoint } = this.curve;
-    const enemy = horde.team === 'light' ? 'dark' : 'light';
+    const enemy = opponentOf(horde.team);
     const lost = state.teams[enemy].towersLostByLane[horde.lane] ?? 0;
     const c = Math.min(maxBasePoint, basePoint + shiftPerTowerLost * lost);
     return Math.min(max, Math.max(min, 1 + k * (1 - t / c)));

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { stampWalledCourt, WALLED_COURT } from './__fixtures__/walledCourt';
 
 import { DEFAULT_MAP_CONFIG } from '../content/maps/defaultMapConfig';
 import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
@@ -105,6 +106,14 @@ const SQUARE = [
   { x: 0, y: 50 },
 ];
 
+/** A 1 m square round `at`. */
+const SQUARE_AT = ({ x, y }: { readonly x: number; readonly y: number }) => [
+  { x: x - 0.5, y: y - 0.5 },
+  { x: x + 0.5, y: y - 0.5 },
+  { x: x + 0.5, y: y + 0.5 },
+  { x: x - 0.5, y: y + 0.5 },
+];
+
 describe('WorldMap', () => {
   it('sizes the grid from the map and the cell size', () => {
     const grid = WorldMap.fromDefinition(SMALL_MAP, 10, isBlocking);
@@ -151,6 +160,102 @@ describe('WorldMap', () => {
     const cleared = grid.clearFootprint(SQUARE);
     expect([...cleared].sort((a, b) => a - b)).toEqual([30, 31, 40, 41]);
     expect(grid.walkable).toEqual(before);
+  });
+
+  it('closes a court to walking and lines but marks its cells as court until a footprint or a clear changes them (DEC-217 (15))', () => {
+    const grid = WorldMap.fromDefinition({ ...BLOCKED_LANE_MAP, terrain: [] }, 2, () => false);
+    stampWalledCourt(grid);
+    const { inside } = WALLED_COURT;
+    const cell = grid.cellAt(inside) ?? { col: -1, row: -1 };
+
+    expect(grid.isWalkable(cell.col, cell.row)).toBe(false);
+    expect(grid.isCourt(cell.col, cell.row)).toBe(true);
+    // A wall cell and an open cell are no court cells.
+    expect(grid.isCourt(10, 10)).toBe(false);
+    expect(grid.isCourt(30, 10)).toBe(false);
+    // A footprint over a court cell's centre makes it a wall cell until it is cleared.
+    const centre = { x: (cell.col + 0.5) * grid.cellSize, y: (cell.row + 0.5) * grid.cellSize };
+    grid.stampFootprint(SQUARE_AT(centre));
+    expect(grid.isCourt(cell.col, cell.row)).toBe(false);
+    grid.clearFootprint(SQUARE_AT(centre));
+    expect(grid.isCourt(cell.col, cell.row)).toBe(true);
+    grid.clearCourt(WALLED_COURT.court);
+    expect(grid.isWalkable(cell.col, cell.row)).toBe(true);
+    expect(grid.isCourt(cell.col, cell.row)).toBe(false);
+  });
+
+  it('tells court ground and the wall cells beside it from open ground and other blocked ground (isCourtSideAt, DEC-217 (15))', () => {
+    const grid = WorldMap.fromDefinition({ ...BLOCKED_LANE_MAP, terrain: [] }, 2, () => false);
+    stampWalledCourt(grid);
+    grid.stampFootprint(SQUARE_AT({ x: 81, y: 21 }));
+
+    expect(grid.isCourtSideAt(WALLED_COURT.inside.x, WALLED_COURT.inside.y)).toBe(true);
+    // The west wall's cell beside the court, and a corner cell whose court neighbour is diagonal.
+    expect(grid.isCourtSideAt(21, 20)).toBe(true);
+    expect(grid.isCourtSideAt(21, 11)).toBe(true);
+    // The doorway and the ground outside are open; a footprint far from any court is no court.
+    expect(grid.isCourtSideAt(39, 19)).toBe(false);
+    expect(grid.isCourtSideAt(10, 20)).toBe(false);
+    expect(grid.isCourtSideAt(81, 21)).toBe(false);
+  });
+
+  it('starts a new version on every stamp and clear of a footprint or a court, so a search cache knows to start again', () => {
+    const grid = WorldMap.fromDefinition({ ...BLOCKED_LANE_MAP, terrain: [] }, 2, () => false);
+    const versions = [grid.version];
+    const record = () => versions.push(grid.version);
+
+    grid.stampFootprint(SQUARE_AT({ x: 81, y: 21 }));
+    record();
+    grid.clearFootprint(SQUARE_AT({ x: 81, y: 21 }));
+    record();
+    grid.stampCourt(WALLED_COURT.court);
+    record();
+    grid.clearCourt(WALLED_COURT.court);
+    record();
+
+    expect(new Set(versions).size).toBe(versions.length);
+  });
+
+  it('keeps a court cell a wall only touches as court, so a corridor narrower than two cells stays open to A* (DEC-227 (Q-A))', () => {
+    const grid = WorldMap.fromDefinition({ ...BLOCKED_LANE_MAP, terrain: [] }, 2.5, () => false);
+    // A 3.8 m corridor (x 13.6..17.4) off the 2.5 m grid: walls touch both its columns.
+    const west = [
+      { x: 10, y: 10 },
+      { x: 13.6, y: 10 },
+      { x: 13.6, y: 30 },
+      { x: 10, y: 30 },
+    ];
+    const east = west.map(({ x, y }) => ({ x: x + 7.4, y }));
+    grid.stampFootprint(west);
+    grid.stampFootprint(east);
+    grid.stampCourt([
+      { x: 10, y: 10 },
+      { x: 30, y: 10 },
+      { x: 30, y: 30 },
+      { x: 10, y: 30 },
+    ]);
+    const row = 6;
+
+    // Columns 5 and 6 (x 12.5..17.5) touch a wall but their centres lie in the corridor.
+    expect([4, 5, 6, 7].map((col) => grid.isWalkable(col, row))).toEqual([
+      false,
+      false,
+      false,
+      false,
+    ]);
+    expect([4, 5, 6, 7].map((col) => grid.isCourt(col, row))).toEqual([false, true, true, false]);
+    grid.clearFootprint(west);
+    expect(grid.isCourt(4, row)).toBe(true);
+  });
+
+  it('changes its version at every stamp and clear, so a path cache knows to search again (DEC-379)', () => {
+    const grid = WorldMap.fromDefinition(SMALL_MAP, 10, isBlocking);
+    const built = grid.version;
+
+    grid.stampFootprint(SQUARE);
+    expect(grid.version).toBe(built + 1);
+    grid.clearFootprint(SQUARE);
+    expect(grid.version).toBe(built + 2);
   });
 
   it('blocks every cell a wall thinner than a cell passes through, leaving no gap', () => {
@@ -237,18 +342,20 @@ describe('WorldMap', () => {
     expect(isWalkableAt(grid, at('capture-point-lane-0'))).toBe(true);
   });
 
+  // 56 m lane tower forts (DEC-315) on 7 lanes of map-1 ground overlap in the default 1600-wide
+  // world, which the generator refuses (DEC-246 (1)); they fit 2400 wide.
   it.each([
-    [1, 'map-1'],
-    [3, 'map-1'],
-    [5, 'map-1'],
-    [7, 'map-1'],
-    [3, 'generated'],
-    [5, 'generated'],
-    [7, 'generated'],
+    [1, 'map-1', 1600],
+    [3, 'map-1', 1600],
+    [5, 'map-1', 1600],
+    [7, 'map-1', 2400],
+    [3, 'generated', 1600],
+    [5, 'generated', 1600],
+    [7, 'generated', 1600],
   ] as const)(
-    'connects each Stronghold to the enemy one along every lane (%i lanes, %s ground)',
-    (numLanes, ground) => {
-      const map = generate({ numLanes, campsPerSide: numLanes > 1 ? 6 : 0 }, ground);
+    'connects each Stronghold to the enemy one along every lane (%i lanes, %s ground, %i wide)',
+    (numLanes, ground, worldWidth) => {
+      const map = generate({ numLanes, campsPerSide: numLanes > 1 ? 6 : 0, worldWidth }, ground);
       const grid = WorldMap.fromDefinition(map, DEFAULT_MAP_LAYOUT.navCellSize, isBlocking);
 
       for (const lane of map.lanes) {
@@ -280,5 +387,15 @@ describe('WorldMap', () => {
     expect(map.isLineClear(10, 20, 100, 20)).toBe(false);
     expect(map.isLineClear(10, 20, 100, 20, 30)).toBe(true);
     expect(map.isLineClear(10, 5, 100, 5)).toBe(true);
+  });
+
+  it('measures how far blocked ground under a point reaches toward another, sampled as lines are', () => {
+    // 2 m cells; the rift block covers x 50..70, so the first open sample west of it is x 49.5.
+    const map = WorldMap.fromDefinition(BLOCKED_LANE_MAP, 2, () => false);
+
+    expect(map.blockedRun(60, 20, 30, 20)).toBe(10.5);
+    expect(map.blockedRun(40, 20, 60, 20)).toBe(0);
+    // No open ground between: the whole span.
+    expect(map.blockedRun(60, 20, 65, 20)).toBe(5);
   });
 });

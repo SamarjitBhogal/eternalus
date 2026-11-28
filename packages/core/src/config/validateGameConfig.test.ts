@@ -17,6 +17,50 @@ const failurePath = (overrides: DeepPartial<GameConfig>): string | null => {
   }
 };
 
+/** The rule a default config breaks with `timeline` in place of its own; `null` when valid. */
+const timelineFailure = (timeline: unknown): string | null => {
+  const config = createDefaultGameConfig();
+  try {
+    validateGameConfig({ ...config, match: { ...config.match, timeline } });
+    return null;
+  } catch (error) {
+    if (error instanceof ConfigValidationError && error.path === 'match.timeline') {
+      return error.rule;
+    }
+    throw error;
+  }
+};
+
+const enterAt = (at: unknown, phase: string, id = phase) => ({
+  id,
+  at,
+  action: { kind: 'enter-phase', phase },
+});
+
+const SHAPE_RULE =
+  'must be an array of entries whose ids are non-empty strings, unique in the timeline';
+const MARK_RULE =
+  'every entry must be at one mark: { atTick: a whole number >= 0 } or { atFraction: 0 to 1 }';
+const ACTION_RULE = 'every action must be of a known kind with valid fields';
+const ORDER_RULE = 'entries must be in tick order';
+const PHASE_RULE =
+  'enter-phase entries must move forward through the match phases, after countdown';
+const TERMINAL_RULE =
+  'enter-phase entries must not enter a terminal phase (victory, defeat): only a verdict does';
+const HAS_PHASE_ENTRY_RULE =
+  'must have at least one enter-phase entry: the first one ends the countdown';
+const COUNTDOWN_END_RULE =
+  'the first enter-phase entry ends the countdown, so it must be at tick round(match.countdownSeconds * tickRate)';
+
+/** The default 10 s countdown at 30 ticks/s: the tick the first enter-phase entry must be at. */
+const COUNTDOWN_TICKS = 300;
+
+const SUMMON_AT_COUNTDOWN = {
+  id: 'gem-eruption',
+  at: { atTick: COUNTDOWN_TICKS },
+  action: { kind: 'summon-greater-boss', bossId: 'greater-boss' },
+};
+
 const withoutKey = (record: object, key: string): object =>
   Object.fromEntries(Object.entries(record).filter(([name]) => name !== key));
 
@@ -28,6 +72,10 @@ describe('validateGameConfig', () => {
 
   it('accepts a unit cap that exactly fits the initial hordes', () => {
     expect(failurePath({ limits: { maxUnitsPerTeam: 48 } })).toBeNull();
+  });
+
+  it('accepts an A* search area of exactly one nav cell', () => {
+    expect(failurePath({ map: { navCellSize: 2.5, pathMaxSearchArea: 6.25 } })).toBeNull();
   });
 
   it('accepts a five-lane map with two spawner towers per lane', () => {
@@ -50,7 +98,7 @@ describe('validateGameConfig', () => {
     ['tickRate', { tickRate: 60 }],
     ['limits.maxLegendsPerTeam', { limits: { maxLegendsPerTeam: 11 } }],
     ['limits.maxLegendsPerTeam', { limits: { maxLegendsPerTeam: 0 } }],
-    ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 145 } }],
+    ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 301 } }],
     ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 1.5 } }],
     ['map.numLanes', { map: { numLanes: 0 } }],
     ['map.numLanes', { map: { numLanes: 4 } }],
@@ -67,7 +115,9 @@ describe('validateGameConfig', () => {
     ['map.flowFieldCorridorHalfWidth', { map: { flowFieldCorridorHalfWidth: 0 } }],
     ['map.flowFieldCellBudget', { map: { flowFieldCellBudget: 0 } }],
     ['map.flowFieldCellBudget', { map: { flowFieldCellBudget: 12.5 } }],
-    ['map.pathMaxExpansions', { map: { pathMaxExpansions: 0 } }],
+    ['map.pathMaxSearchArea', { map: { pathMaxSearchArea: 0 } }],
+    ['map.pathMaxSearchArea', { map: { pathMaxSearchArea: Infinity } }],
+    ['map.pathMaxSearchArea', { map: { navCellSize: 5, pathMaxSearchArea: 24 } }],
     ['map.pathSnapCells', { map: { pathSnapCells: -1 } }],
     ['map.presetId', { map: { presetId: '' } }],
     ['match.legendsPerTeam', { match: { legendsPerTeam: 0 } }],
@@ -78,8 +128,26 @@ describe('validateGameConfig', () => {
     ['match.hordeSizes.medium', { match: { hordeSizes: { medium: 0.5 } } }],
     ['match.hordeSizes.heavy', { match: { hordeSizes: { heavy: Number.NaN } } }],
     ['match.plannedMatchSeconds', { match: { plannedMatchSeconds: 0 } }],
+    ['match.capturePoints.checkpoints', { match: { capturePoints: { checkpoints: 0 } } }],
+    ['match.capturePoints.checkpoints', { match: { capturePoints: { checkpoints: 2.5 } } }],
+    ['match.capturePoints.captureSeconds', { match: { capturePoints: { captureSeconds: 0 } } }],
+    ['match.capturePoints.revertSeconds', { match: { capturePoints: { revertSeconds: -1 } } }],
+    ['match.capturePoints.maxMargin', { match: { capturePoints: { maxMargin: Infinity } } }],
+    [
+      'match.capturePoints.weights.legend',
+      { match: { capturePoints: { weights: { legend: 0 } } } },
+    ],
+    [
+      'match.capturePoints.weights.unit',
+      { match: { capturePoints: { weights: { unit: Number.NaN } } } },
+    ],
+    [
+      'match.capturePoints.weights.legend',
+      { match: { capturePoints: { weights: { legend: 1, unit: 1 } } } },
+    ],
+    ['match.countdownSeconds', { match: { countdownSeconds: 1801 } }],
     ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 47 } }],
-    ['limits.maxUnitsPerTeam', { match: { hordeSizes: { light: 49 } } }],
+    ['limits.maxUnitsPerTeam', { match: { hordeSizes: { light: 101 } } }],
   ])('rejects a bad %s', (path, overrides) => {
     expect(failurePath(overrides)).toBe(path);
   });
@@ -93,6 +161,22 @@ describe('validateGameConfig', () => {
     expect(validateGameConfig({ ...config, map: mapWithoutPreset }).map.presetId).toBeUndefined();
   });
 
+  it.each(['light', 'dark'] as const)('accepts %s as the player team', (playerTeam) => {
+    expect(failurePath({ match: { playerTeam } })).toBeNull();
+  });
+
+  it.each(['neutral', 'Light', '', undefined])(
+    'rejects a player team that is not playable (%s)',
+    (playerTeam) => {
+      const config = createDefaultGameConfig();
+      expect(() =>
+        validateGameConfig({ ...config, match: { ...config.match, playerTeam } }),
+      ).toThrow(
+        new ConfigValidationError('match.playerTeam', "must be a playable team: 'light' or 'dark'"),
+      );
+    },
+  );
+
   it('rejects a config with a missing section', () => {
     expect(() => validateGameConfig(withoutKey(createDefaultGameConfig(), 'match'))).toThrow(
       new ConfigValidationError(
@@ -100,5 +184,148 @@ describe('validateGameConfig', () => {
         'must be a whole number from 1 to limits.maxLegendsPerTeam',
       ),
     );
+  });
+  describe('match.timeline (architecture 12 §3)', () => {
+    it('accepts the default timeline, a skipped phase and two entries on one tick', () => {
+      expect(timelineFailure(createDefaultGameConfig().match.timeline)).toBeNull();
+      expect(
+        timelineFailure([
+          enterAt({ atTick: COUNTDOWN_TICKS }, 'mid-game'),
+          enterAt({ atTick: COUNTDOWN_TICKS }, 'end-game'),
+        ]),
+      ).toBeNull();
+    });
+
+    it('reads only enter-phase entries for the phase rules: a summon before them is fine', () => {
+      expect(
+        timelineFailure([
+          { ...SUMMON_AT_COUNTDOWN, at: { atTick: 0 } },
+          enterAt({ atTick: COUNTDOWN_TICKS }, 'early-game'),
+        ]),
+      ).toBeNull();
+    });
+
+    it('accepts a countdown that ends on a fraction mark: the mark is resolved to a tick first', () => {
+      // Fractions count from the countdown's end (DEC-282), so `atFraction: 0` is the end itself:
+      // 450 s * 30 = tick 13,500.
+      const config = createDefaultGameConfig({
+        match: {
+          countdownSeconds: 450,
+          timeline: [
+            {
+              id: 'countdown-over',
+              at: { atFraction: 0 },
+              action: { kind: 'enter-phase', phase: 'early-game' },
+            },
+          ],
+        },
+      });
+
+      expect(validateGameConfig(config)).toBe(config);
+    });
+
+    it('rejects a countdown the timeline does not end on (SpawnSystem reads countdownSeconds)', () => {
+      const config = createDefaultGameConfig();
+
+      expect(() =>
+        validateGameConfig({ ...config, match: { ...config.match, countdownSeconds: 20 } }),
+      ).toThrow(new ConfigValidationError('match.timeline', COUNTDOWN_END_RULE));
+    });
+
+    it('names match.countdownSeconds, not the timeline, for a countdown longer than the planned match', () => {
+      // The default timeline follows the override, so its countdown-over entry is out of tick order
+      // too; the countdown rule runs first, so the error names the field that is wrong.
+      expect(() =>
+        validateGameConfig(createDefaultGameConfig({ match: { countdownSeconds: 1801 } })),
+      ).toThrow(
+        new ConfigValidationError(
+          'match.countdownSeconds',
+          'must not exceed match.plannedMatchSeconds (the countdown is part of the planned match)',
+        ),
+      );
+    });
+
+    it.each<[string, unknown, string]>([
+      ['not an array', 'soon', SHAPE_RULE],
+      ['an entry that is not an object', [7], SHAPE_RULE],
+      ['an empty id', [enterAt({ atTick: 1 }, 'early-game', '')], SHAPE_RULE],
+      [
+        'a repeated id',
+        [enterAt({ atTick: 1 }, 'early-game', 'x'), enterAt({ atTick: 2 }, 'mid-game', 'x')],
+        SHAPE_RULE,
+      ],
+      ['a fraction above 1', [enterAt({ atFraction: 1.5 }, 'early-game')], MARK_RULE],
+      ['a negative fraction', [enterAt({ atFraction: -0.1 }, 'early-game')], MARK_RULE],
+      ['a negative tick', [enterAt({ atTick: -1 }, 'early-game')], MARK_RULE],
+      ['a fractional tick', [enterAt({ atTick: 2.5 }, 'early-game')], MARK_RULE],
+      ['two marks at once', [enterAt({ atTick: 1, atFraction: 0.5 }, 'early-game')], MARK_RULE],
+      ['no mark', [enterAt({}, 'early-game')], MARK_RULE],
+      [
+        'an unknown action kind',
+        [{ id: 'boss', at: { atTick: 1 }, action: { kind: 'summon-dragon' } }],
+        ACTION_RULE,
+      ],
+      [
+        'a summon-greater-boss without a bossId',
+        [{ id: 'boss', at: { atTick: 1 }, action: { kind: 'summon-greater-boss' } }],
+        ACTION_RULE,
+      ],
+      [
+        'only a summon-greater-boss (no enter-phase entry ends the countdown)',
+        [SUMMON_AT_COUNTDOWN],
+        HAS_PHASE_ENTRY_RULE,
+      ],
+      [
+        'two summon-greater-boss entries (the gem erupts once)',
+        [
+          enterAt({ atTick: COUNTDOWN_TICKS }, 'early-game'),
+          SUMMON_AT_COUNTDOWN,
+          { ...SUMMON_AT_COUNTDOWN, id: 'second-eruption' },
+        ],
+        'must have at most one summon-greater-boss entry: the gem erupts once (architecture 12 §3)',
+      ],
+      [
+        'an action kind inherited from Object',
+        [{ id: 'proto', at: { atTick: 1 }, action: { kind: 'toString' } }],
+        ACTION_RULE,
+      ],
+      ['an unknown phase', [enterAt({ atTick: 1 }, 'overtime')], ACTION_RULE],
+      ['a missing action', [{ id: 'none', at: { atTick: 1 } }], ACTION_RULE],
+      [
+        'unsorted entries',
+        [enterAt({ atFraction: 0.5 }, 'early-game'), enterAt({ atFraction: 0.25 }, 'mid-game')],
+        ORDER_RULE,
+      ],
+      ['an entry into the starting phase', [enterAt({ atTick: 1 }, 'countdown')], PHASE_RULE],
+      [
+        'a phase entered twice',
+        [enterAt({ atTick: 1 }, 'early-game', 'a'), enterAt({ atTick: 2 }, 'early-game', 'b')],
+        PHASE_RULE,
+      ],
+      [
+        'an earlier phase after a later one',
+        [enterAt({ atTick: 1 }, 'mid-game'), enterAt({ atTick: 2 }, 'quarter-mark')],
+        PHASE_RULE,
+      ],
+      [
+        'an entry into victory',
+        [enterAt({ atTick: COUNTDOWN_TICKS }, 'early-game'), enterAt({ atTick: 9000 }, 'victory')],
+        TERMINAL_RULE,
+      ],
+      ['an entry into defeat', [enterAt({ atTick: COUNTDOWN_TICKS }, 'defeat')], TERMINAL_RULE],
+      ['an empty timeline (the countdown would never end)', [], HAS_PHASE_ENTRY_RULE],
+      [
+        'a first entry before the countdown ends',
+        [enterAt({ atTick: COUNTDOWN_TICKS - 1 }, 'early-game')],
+        COUNTDOWN_END_RULE,
+      ],
+      [
+        'a first entry after the countdown ends',
+        [enterAt({ atFraction: 0.25 }, 'early-game')],
+        COUNTDOWN_END_RULE,
+      ],
+    ])('rejects %s', (_case, timeline, rule) => {
+      expect(timelineFailure(timeline)).toBe(rule);
+    });
   });
 });

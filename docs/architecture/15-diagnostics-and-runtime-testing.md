@@ -4,7 +4,7 @@ description: Testing while the game is running - the Invariant interface and the
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-25
 tags: [architecture, diagnostics, invariants, logging, performance, replays, soak-tests, testing]
 paths: ['packages/core/src/diagnostics/**']
 related:
@@ -122,15 +122,17 @@ canonical (`07` §11, `05` §16 and `12` §12 use them).
 | `NoDeathWithoutKillerInvariant` (`no-death-without-killer`)                            | tick           | error        | every `entity-died` carries a `DamageSource` of kind `entity`, `structure`, `status` (with its applier), `environment`, `self` or `script`, resolvable in the store or in this tick's removals; a missing or unknown source is the violation, not a non-entity one (DISC-46)                                                                                                                                 | requirements, 05 §9         |
 | `HealthWithinBoundsInvariant` (`health-within-bounds`)                                 | tick           | error        | `0 ≤ Health.current ≤ Health.base`; every shield bar `0 ≤ current ≤ max`; the effective total never exceeds `base + Σ bar.max`; bar count ≤ living allied `BuffTower`s is the periodic `ShieldBarsMatchLivingTowersInvariant` (07 §11)                                                                                                                                                                       | 04 §3, 07 §2                |
 | `TeamUnitCapInvariant` (`team-unit-cap`)                                               | tick           | error        | living `Unit`s per playable team ≤ `config.limits.maxUnitsPerTeam` (144, `TUNE`); living `Legend`s per team ≤ `config.limits.maxLegendsPerTeam` (10, `TUNE`); `spawn-suppressed` counted, never exceeded                                                                                                                                                                                                     | requirements                |
-| `FiniteTransformsInvariant` (`finite-transforms`)                                      | tick           | fatal        | `Number.isFinite` for every `Transform.position`, `facing` and `Movement.velocity` component; `\|velocity\| ≤ maxSpeed + impulse bound`                                                                                                                                                                                                                                                                      | 10 §11                      |
+| `FiniteTransformsInvariant` (`finite-transforms`)                                      | tick           | fatal        | `Number.isFinite` for every `Transform.position`, `facing` and `Movement.velocity` component; `facing` has length 1 within `FACING_TOLERANCE` (`FiniteTransformsInvariant.constants.ts`); `\|velocity\| ≤ maxSpeed + impulse bound`                                                                                                                                                                          | 10 §11                      |
 | `HordeMembershipConsistentInvariant` (`horde-membership-consistent`)                   | periodic       | error        | every id in a `Horde` is a living `Mob`, or is in `entities.removedThisTick` (`HordeSystem` prunes it on its next pass, 18 §4), and `state.hordes.hordeOf` files it under that horde; the leader is the lowest surviving id in string order; no empty horde exists (it must have dissolved with `horde-dissolved`)                                                                                           | 18 §4                       |
-| `GuardWithinLeashInvariant` (`guard-within-leash`)                                     | periodic       | error        | every tower guard is within its structure's `GuardPlan.leashRadius` plus a `TUNE` tolerance (the distance it can cover between two decisions) of that structure                                                                                                                                                                                                                                              | 18 §7                       |
-| `CaptureProgressBoundsInvariant` (`capture-progress-bounds`)                           | tick           | error        | `0 ≤ Capturable.progress ≤ 1`, `checkpoint ∈ {1, 2, 3}`, `ownerTeam` a `Team`; a locked zone (living mini-boss) never changes owner (`LockedZoneOwnerInvariant`, 12 §12)                                                                                                                                                                                                                                     | 04 §3, 07 §7                |
+| `GuardWithinLeashInvariant` (`guard-within-leash`)                                     | periodic       | error        | every guard post's mob (tower guards, camp mobs, zone guards) is within its home's `GuardPlan.leashRadius` plus a `TUNE` tolerance (the distance it can cover between two decisions, plus the farthest it stands from a target in reach: a guard fighting at the circle's edge stands beyond its target; DEC-144) of that home                                                                               | 18 §7                       |
+| `CaptureProgressBoundsInvariant` (`capture-progress-bounds`)                           | tick           | error        | `-1 ≤ Capturable.progress ≤ 1`, `checkpoint` a whole number from 0 to `GameConfig.match.capturePoints.checkpoints`, `owner` a `Team`; a locked zone (living mini-boss) never changes owner (`LockedZoneOwnerInvariant`, 12 §12)                                                                                                                                                                              | 04 §3, 07 §7                |
+| `MapFeatureGroupsUniqueInvariant` (`map-feature-groups-unique`)                        | periodic       | error        | for every map feature, at most one entity whose `MapFeatureLink` names it carries each group a consumer reads by feature id (the groups are core's `FeatureKeyedGroup`, beside `EntitySnapshot`; `MapFeatureGroupsUniqueInvariant.constants.ts` maps each to its component and must name exactly them, DEC-255, DEC-256); one feature may back several entities (a zone and a structure, DEC-233)            | 04 §3, DEC-252, DEC-256     |
 | `CooldownAndAetherBoundsInvariant` (`cooldown-aether-bounds`)                          | tick           | error        | for every `AbilityRuntime`: `0 ≤ cooldownRemainingTicks ≤ cooldownTicks`; `0 ≤ aether ≤ maxAether`; ultimate charge `∈ [0, 1]` (formerly 05 §16's `AetherWithinBounds`, folded in)                                                                                                                                                                                                                           | 05 §6                       |
 | `SnapshotHashMatchesStateInvariant` (`snapshot-hash-matches-state`)                    | periodic       | fatal        | `StateHasher.hashSnapshot(snapshot)` over the canonical subset (tick, ids, positions, health, team, phase) equals `StateHasher.hash(state)` over the same subset: `SnapshotSystem` dropped or staled nothing; runs after the snapshot of the previous tick, so it lags by one                                                                                                                                | 03 §5, §9                   |
 | `TickAdvancedOnceInvariant` (`tick-advanced-once`)                                     | tick           | fatal        | the newest `tick-completed` in `recentEvents` carries `tick - 1` (the runner executes before `SnapshotSystem` and the emit) and the `CommandQueue` holds nothing stamped ≤ `tick` (drained)                                                                                                                                                                                                                  | research C1                 |
+| `PhaseMonotonicInvariant` (`phase-monotonic`)                                          | tick           | error        | every `phase-changed` of this tick moves the match forward in `MATCH_PHASES`, never back, never into the phase it is in, never out of a terminal phase                                                                                                                                                                                                                                                       | 12 §12                      |
 | `UniqueEntityIdsInvariant`, `DanglingReferencesInvariant`                              | tick, periodic | fatal, error | ids unique in the store; `Combat.targetId`, `Carry.carriedId`, `Spawner.guardIds`, brain targets and `Horde` members reference living entities or `null`                                                                                                                                                                                                                                                     | research C1                 |
-| Contributed by other docs                                                              | as listed      | as listed    | `PhaseMonotonicInvariant`, `BossIsNeutralInvariant`, `RewardTargetsAliveInvariant`, `SinglePlayerBrainInvariant` (12 §12); `NoCastWhileNotReadyInvariant`, `StatusStacksWithinMaxInvariant`, `UltimateNeverFillsPassivelyInvariant`, `LoadoutValidOnSpawnInvariant`, `LevelMatchesXpInvariant` (05 §16); `BreakabilityMatchesRuleInvariant`, `GateFootprintMatchesStateInvariant` (07 §11)                   | 05, 07, 12                  |
+| Contributed by other docs                                                              | as listed      | as listed    | `BossIsNeutralInvariant`, `RewardTargetsAliveInvariant`, `SinglePlayerBrainInvariant` (12 §12); `NoCastWhileNotReadyInvariant`, `StatusStacksWithinMaxInvariant`, `UltimateNeverFillsPassivelyInvariant`, `LoadoutValidOnSpawnInvariant`, `LevelMatchesXpInvariant` (05 §16); `BreakabilityMatchesRuleInvariant`, `GateFootprintMatchesStateInvariant` (07 §11)                                              | 05, 07, 12                  |
 
 Every invariant is **MVP**: it is the requirements doc's runtime monitoring. Everything a check
 needs is already in `GameState` (`entities.removedThisTick`, the `recentCommands` and
@@ -214,6 +216,15 @@ level filter is one comparison; scope filters let the overlay show `core.invaria
 short sink names are the ones in [01](01-layered-oop-model.md) §3,
 [09](09-hardware-abstraction.md) §1 and §8, the plan and the research.
 
+The error reports of DEC-106 sit beside the sinks in `data/logging/` (ADR 0025 §3).
+`ErrorReporter` is a `LogSink`: it saves each record its rule table (`ErrorReporter.constants.ts`)
+lists as a report without a note (the silent path, §5), and the session hands it a crash
+(`reportCrash`), whose popup asks for a note. It saves through the `ReportWriter` port
+(`DevServerReportWriter`, which sends the report to the endpoint of the dev and preview servers,
+and `MemoryReportWriter`, the test double); a report that cannot be saved is offered to copy, and
+a database later is one more adapter. The reports land in `logs/errors/` at the repository root,
+out of git, one JSON file each.
+
 ## 5. From a violation to the screen
 
 `InvariantRunner.report(v, state)` does two things in a fixed order: it emits
@@ -226,8 +237,9 @@ of ring buffers that hold 512, `TUNE`, plan Phase 1). That record is the bug rep
 
 - recent commands reproduce the moment, and `Simulation.exportReplay()` reproduces the whole match.
 
-In the browser the record reaches `RingBufferSink` (kept for "copy repro") and `OverlaySink`,
-which publishes `diagnostic` on the bridge; `diagnosticsSlice.violations` collects them and
+In the browser the record reaches `RingBufferSink` (kept for "copy repro"), `ErrorReporter`
+(which saves it as an error report without a note, §4; ADR 0025 §6) and `OverlaySink`, which
+publishes `diagnostic` on the bridge; `diagnosticsSlice.violations` collects them and
 `PerfOverlay` shows the last N with a "copy repro" button whose payload equals the `LogRecord`
 (plan Phase 5, sprint 5.5). `DeveloperMenu` shows the count per invariant, the current level and
 a "dump replay" action; `MatchBridge` may also raise a one-line `announce` for `fatal` (dev only,
@@ -251,25 +263,34 @@ other than `NullProfiler` is injected (plan Phase 6, sprint 6.1); `Match` wraps 
 which satisfies the port structurally (L1 may not import core; `Match.test.ts` asserts the
 assignability) and implements it with `performance.mark`/`performance.measure(name, { start,
 end, detail: { devtools } })`, so measures appear on a custom track in Chrome's Performance
-panel; a fixed-bucket histogram per label (< 8, < 16, < 33, < 50, ≥ 50 ms); a
+panel; a fixed-bucket histogram per label (< 8, < 16, < 33, < 50, ≥ 50 ms); a frame-interval
+histogram with the bucket edges of [08](08-game-engine.md) §9 (DEC-336); a
 `PerformanceObserver` on `{ type: 'long-animation-frame', buffered: true }` (feature-detected via
 `PerformanceObserver.supportedEntryTypes`; the buffer holds 200 entries, so observe rather than
 poll) keeping the last frame's `blockingDuration` and script attribution; and, only when
 `crossOriginIsolated`, `performance.measureUserAgentSpecificMemory()` sampled at a random
 interval to spot leaks over a session ([research C2](../research/persistence-input-diagnostics-research.md#c2-structured-logging-timing-memory-and-a-developer-overlay)).
 `Match` publishes a `perf-sample` every 30 ticks; `PerfOverlay` renders it against the budget
-table of [08](08-game-engine.md) §9 (tick ≤ 8 ms p95, render ≤ 8 ms p95, no frame > 50 ms). The
+table of [08](08-game-engine.md) §9 (tick ≤ 8 ms p95, render ≤ 8 ms p95, median frame ≤ one
+60 Hz frame, no missed frame, no frame > 50 ms). The
 headless bench (`npm run bench`, plan Phase 1) injects a `Profiler` backed by `process.hrtime`.
 
 ## 7. Replay-hash regression tests
 
-A replay is seed + `GameConfig` + versions + the externally enqueued commands + checkpoint
+A replay is its setup (seed, `GameConfig` and, when the match had them, the map, the map objects
+and the roster) + versions + the externally enqueued commands + checkpoint
 hashes ([03](03-game-model.md) §9; [research C3](../research/persistence-input-diagnostics-research.md#c3-testing-a-running-game-properties-replays-golden-hashes-soak-tests)).
 Recording captures every command that enters through `Simulation.enqueueCommand` and a
-`StateHasher` checkpoint every `checkpointEvery` ticks (`TUNE` 100 in fixtures); bots are
-regenerated from the seed. `StateHasher` is FNV-1a 32-bit (offset basis `0x811c9dc5`, prime
-`0x01000193`, `Math.imul`) over its own canonical serialisation: tick, phase, RNG state, then every
-entity in store order with its component fields ([03](03-game-model.md) §9).
+`StateHasher` checkpoint every `checkpointEvery` ticks (`TUNE` 100 in fixtures); the roster is
+part of the setup, and the bots' own commands are regenerated from it. `ReplaySetup` holds only
+those fields: a `Simulation` option outside it, such as `guardPlans` (each guard home's plan,
+`GUARD_PLANS` when omitted), is not recorded, so a match built with a non-default value replays
+only through a target factory that passes the same value. Such options are for tests and tools,
+never for a match a player can record. `StateHasher` is FNV-1a
+32-bit (offset basis `0x811c9dc5`, prime `0x01000193`, `Math.imul`) over its own canonical
+serialisation: tick, phase, RNG state, then every entity in store order with its component
+fields, then the other match fields once the match has left its initial state
+([03](03-game-model.md) §9).
 
 ```ts
 // packages/core/src/diagnostics/Replay.types.ts and replay.ts (DEC-20)
@@ -280,18 +301,26 @@ export interface ReplayTarget {
   hash(): number;
   snapshot(): Snapshot;
 } // the slice of Simulation a replay drives
-export type ReplayTargetFactory = (config: GameConfig, seed: number) => ReplayTarget; // e.g. (config, seed) => new Simulation(config, seed, logger, systems)
+// generic: ReplayOf<S> = S + commands + checkpoints; ReplaySetup, Replay and ReplayTargetFactory
+// are its Simulation instances (Simulation.types.ts)
+// e.g. (replay) => new Simulation({ ...replay, logger, systems }): runReplay passes the replay
+// itself, and Simulation ignores its commands and checkpoints
+export type ReplayTargetFactoryOf<S> = (setup: S) => ReplayTarget;
 export type ReplayOutcome = {
   readonly ok: boolean;
   readonly firstDivergence: { tick: number; expected: number; actual: number } | null;
   readonly finalHash: number;
   readonly violations: readonly Violation[]; // with the InvariantRunner
 };
-export function recordReplay(
-  plan: { config; seed; ticks; checkpointEvery; commandsFor(tick, snapshot): readonly Command[] },
-  createTarget: ReplayTargetFactory,
-): Replay;
-export function runReplay(replay: Replay, createTarget: ReplayTargetFactory): ReplayOutcome; // stops at the first divergence; refuses mismatched versions
+export function recordReplay<S extends object>(
+  setup: S,
+  plan: { ticks; checkpointEvery; commandsFor(tick, snapshot): readonly Command[] },
+  createTarget: ReplayTargetFactoryOf<S>,
+): ReplayOf<S>;
+export function runReplay<S extends object>(
+  replay: ReplayOf<S>,
+  createTarget: ReplayTargetFactoryOf<S>,
+): ReplayOutcome; // stops at the first divergence; refuses mismatched versions
 
 // next to the fixture, in the test that owns it
 it('still reproduces the committed wander-seed-7 fixture', () => {
@@ -487,6 +516,21 @@ every `died` removal of the tick had an `entity-died` with its killer this tick
 `DamageSource` kinds are still those of 05 §9 (`weapon`, `ability`, `status`, `structure`,
 `environment`); the `self`/`script` kinds and resolving the attacker in the store join with the
 abilities and the match director.
+
+Crash and error reports (ADR 0025, accepted 2026-10-30, DEC-124) are built (build-plan step 12):
+core's `Simulation.exportReplay()` and `recentContext()` (with the log of external commands and
+the replay checkpoints; `531cd90`), the client's writer (`ErrorReporter`, `ReportWriter` and its
+adapters, the dev-server plugin; `6db5713`), and the crash popup and the `ErrorBoundary`
+(`226e2c6`).
+
+The headless bench is built as `npm run bench` (`scripts/bench/hordes.mjs`, 2026-11-07): it loads
+core through Vite's module runner, fills a generated match with lane hordes and every bot Legend,
+and prints p50, p95 and max tick time, timed from the first death after the countdown so the
+hordes fight; CI runs it without a time assertion, and it fails when it stops measuring its
+scenario (a case it cannot fill, a bot Legend that never moves, hordes that never meet or never
+lose a mob while timed). It times whole ticks only; per-system times wait for the `Profiler` port (§6),
+which is still not built. It measures lane hordes with bot Legends, not the Phase 1 plan's
+300-dummy case, whose p95 ≤ 4 ms target is still unmeasured.
 
 ## Related
 

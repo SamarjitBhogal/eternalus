@@ -10,7 +10,10 @@ reviews:
     enabled: true
     allow_author_approval: false # authors cannot run @coderabbitai approve/resolve on their own PR
     overrides:
-      - enabled: false # no paths: matches every PR, so CodeRabbit never approves (DEC-96)
+      - enabled: false # matches every PR, so CodeRabbit never approves (DEC-96)
+        # The validator rejects an override with neither teams nor paths; the dot globs make
+        # sure dotfiles (.github/, .githooks/, this file) match too.
+        paths: ['**/*', '**/.*', '**/.*/**']
   auto_review:
     drafts: false # the pre-PR gate runs before the PR, so review it when it is ready (DEC-97)
     base_branches: ['main', 'phase/.*']

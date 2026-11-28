@@ -1,4 +1,9 @@
-import type { MapDefinition, MapPresentation } from '../content/maps/maps.types';
+import type {
+  MapDecoration,
+  MapDefinition,
+  MapFeature,
+  MapPresentation,
+} from '../content/maps/maps.types';
 import { SKETCH_WIDTH, SKETCH_HEIGHT } from '../content/maps/map1Scenery';
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { MapBuildingInteriorBuilder } from './MapBuildingInteriorBuilder';
@@ -7,6 +12,7 @@ import { MapPalaceWallsBuilder } from './MapPalaceWallsBuilder';
 import { placePalace } from './buildingPlacement';
 import { strongholdRing } from './strongholdRing';
 import type { InteriorPlacements } from './MapPresentationBuilder.types';
+import type { Polygon } from '../utils/geometry.types';
 
 /** Builds same-world cutaways from generated anchors and explicitly tagged authored floors. */
 export class MapPresentationBuilder {
@@ -24,31 +30,46 @@ export class MapPresentationBuilder {
   };
   /** Returns independently typed scenery and selectable floor/door silhouettes. */
   public build(map: MapDefinition): MapPresentation {
-    const features = map.features.filter((feature) => this.placements[feature.kind] !== undefined);
-    const interiors = features.flatMap(
-      (feature) =>
-        this.placements[feature.kind]?.(
-          new MapBuildingInteriorBuilder().build(feature),
-          map,
-          feature,
-        ) ?? [],
-    );
+    const interiors = map.features
+      .filter((feature) => this.placements[feature.kind] !== undefined)
+      .map((feature) => ({ feature, pieces: this.interiorOf(map, feature) }));
     return {
       scenery: [
         ...new MapSceneryBuilder(map).build(),
-        ...interiors,
-        ...features
-          .filter((feature) => feature.kind === 'stronghold')
-          .flatMap((feature) =>
+        ...interiors.flatMap(({ pieces }) => pieces),
+        ...interiors
+          .filter(({ feature }) => feature.kind === 'stronghold')
+          .flatMap(({ feature }) =>
             new MapPalaceWallsBuilder().build(feature, map, strongholdRing(map, feature)),
           ),
       ],
-      buildings: features.map((feature) => ({
+      buildings: interiors.map(({ feature, pieces }) => ({
         id: feature.id,
-        footprint: interiors
-          .filter((piece) => piece.buildingId === feature.id && piece.isFootprint === true)
-          .map((piece) => piece.shape),
+        footprint: MapPresentationBuilder.footprintIn(pieces),
       })),
     };
+  }
+
+  /**
+   * The placed floor polygons of one building, in world units: the same polygons `build` gives as
+   * its footprint. Builds only that building's interior, so it is cheap enough for match setup.
+   */
+  public footprintOf(map: MapDefinition, feature: MapFeature): readonly Polygon[] {
+    return MapPresentationBuilder.footprintIn(this.interiorOf(map, feature));
+  }
+
+  /** The placed interior pieces of one building; none for a kind without a placement. */
+  private interiorOf(map: MapDefinition, feature: MapFeature): readonly MapDecoration[] {
+    return (
+      this.placements[feature.kind]?.(
+        new MapBuildingInteriorBuilder().build(feature),
+        map,
+        feature,
+      ) ?? []
+    );
+  }
+
+  private static footprintIn(pieces: readonly MapDecoration[]): readonly Polygon[] {
+    return pieces.filter((piece) => piece.isFootprint === true).map((piece) => piece.shape);
   }
 }

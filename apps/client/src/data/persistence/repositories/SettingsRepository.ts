@@ -45,15 +45,15 @@ export class SettingsRepository {
         if (dto === null) {
           return null;
         }
-        const { bindings, audio, video, accessibility } = dto;
-        return { bindings, audio, video, accessibility };
+        const { bindings, audio, video, accessibility, hud } = dto;
+        return { bindings, audio, video, accessibility, ...(hud === undefined ? {} : { hud }) };
       },
     );
   }
 
   /** Replaces the saved settings of `profileId`. */
   public save(profileId: string, settings: PersistedSettings): Promise<void> {
-    const { bindings, audio, video, accessibility } = settings;
+    const { bindings, audio, video, accessibility, hud } = settings;
     const dto: SettingsDtoV1 = {
       schemaVersion: 1,
       profileId,
@@ -61,6 +61,7 @@ export class SettingsRepository {
       audio,
       video,
       accessibility,
+      ...(hud === undefined ? {} : { hud }),
     };
     return this.adapter.transaction([SETTINGS_STORE], 'readwrite', (tx) =>
       tx.put(SETTINGS_STORE, dto),

@@ -1,6 +1,11 @@
-import type { MapFeatureDefinition, MapLayout, MapPreset } from '../content/maps/maps.types';
+import type {
+  MapFeature,
+  MapFeatureDefinition,
+  MapLayout,
+  MapPreset,
+} from '../content/maps/maps.types';
 import type { Team } from '../teams/teams.types';
-import type { Polygon, Vec2 } from '../utils/geometry.types';
+import type { Polygon, Rect, Vec2 } from '../utils/geometry.types';
 import type { LaneGeometry } from './LaneGeometry';
 import type { LaneShape } from './LaneShape.types';
 import type { MapConfig } from './MapGenerator.types';
@@ -18,7 +23,11 @@ export type MapBuildInput = {
 };
 
 /** Optional extras when the builder places a feature. */
-type FeatureExtras = { readonly laneId?: string; readonly footprint?: Polygon };
+type FeatureExtras = {
+  readonly laneId?: string;
+  readonly footprint?: Polygon;
+  readonly wallBoundary?: MapFeature['wallBoundary'];
+};
 
 /** One feature to place: who owns it, which content it spawns, where, and its extras. */
 export type FeatureSpec = FeatureExtras & {
@@ -35,6 +44,12 @@ export type MirroredFeatureSpec = FeatureExtras & {
   readonly position: Vec2;
 };
 
+/** The ground camps keep clear of: keep-out boxes and a camp's half size, in world units. */
+export type CampClearance = {
+  readonly keepOuts: readonly Rect[];
+  readonly extent: Vec2;
+};
+
 /** What `placeCampSlots` needs: the lanes, the camp counts per corridor and the span. */
 export type CampLayoutInput = {
   readonly lightHalves: readonly LaneGeometry[];
@@ -44,6 +59,8 @@ export type CampLayoutInput = {
   readonly centreX: number;
   readonly band: readonly [number, number];
   readonly rng?: Rng;
+  /** Camps step clear of these keep-outs (`clearCampOfForts`). */
+  readonly clearance: CampClearance;
 };
 
 /** One piece of a Stronghold's wall ring on the Light side. */

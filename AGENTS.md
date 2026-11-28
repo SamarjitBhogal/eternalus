@@ -6,15 +6,16 @@ source of agent instructions. Tool-specific files (`CLAUDE.md`, `GEMINI.md`,
 `packages/core/AGENTS.md` and `apps/client/AGENTS.md`; read the one nearest to the files you edit.
 
 Eternalus is a browser-only 2D game: TypeScript monorepo, custom Canvas 2D engine, React UI,
-single player vs. AI bots, no server. **The architecture below is the target design:**
-`docs/plan/` tracks how much of it is built. Follow the design when adding code.
+single player vs. AI bots, no game server (the dev and preview servers take error reports,
+ADR 0025). **The architecture below is the target design:** `docs/plan/` tracks how much of it
+is built. Follow the design when adding code.
 
 ## Read first (in this order)
 
 1. This file, then the nearest package `AGENTS.md`.
 2. `docs/architecture/02-code-structure.md`, then the architecture doc whose `paths:`
    frontmatter matches the files you will touch (`docs/architecture/README.md` lists them).
-3. The current phase doc in `docs/plan/` and the last entry of `docs/plan/PROGRESS.md`.
+3. The current phase doc in `docs/plan/` and the newest entries in `docs/plan/progress/`.
 4. Your task brief (issue, prompt, or an open item in `INBOX.md`).
 
 Full documentation map: `docs/README.md`. Recipes for adding things: `docs/architecture/17-extension-recipes.md`.
@@ -26,7 +27,7 @@ Skills (`.claude/skills/`, mirrored in `.agents/skills/`): `new-entity`, `new-sy
 1. Run `npm run check:quick` (typecheck + lint) after each meaningful edit.
 2. Run `npm run check` before declaring a task done, and report the result verbatim.
 3. A task with any failing check is **not done**. Say so; do not hide or work around it.
-4. Append an entry to `docs/plan/PROGRESS.md` (date, phase/sprint, branch, what, checks, next).
+4. Add a new entry file in `docs/plan/progress/` (date, phase/sprint, branch, what, checks, next).
 
 ## Before opening a PR (pre-PR gate, ADR 0010)
 
@@ -38,6 +39,9 @@ After everything in the Definition of done, never instead of it, and in this ord
    (rework, re-run the critic until no blockers), **acceptable** (forced by a binding contract or
    an allowed interim stand-in; note it in the PR) or **better than the design** (tell the human
    in chat and add it to `INBOX.md`; once signed off, update the design docs in the same PR).
+   The critic also judges whether each decision in the code and the docs is the right one, and
+   whether a more SOLID, OOP-conforming or DRY design exists; such a finding is a
+   better-than-design item (DEC-139).
 2. **Ponytail.** `/ponytail-review` on the branch diff, then apply the accepted cuts with
    `/ponytail`. Architecture and ADRs outrank ponytail (see "Ponytail" below); tests are never
    deleted or weakened.
@@ -150,7 +154,9 @@ decision table is in `docs/architecture/02-code-structure.md`.
 - No `any`: use `unknown` and narrow. `type` for data shapes, `interface` for contracts that
   classes implement. String-literal unions, never `enum`. `readonly` by default.
 - Naming: `PascalCase` classes/types/components, `camelCase` functions/variables,
-  `SCREAMING_SNAKE_CASE` constants, `kebab-case` content IDs (never renamed once used),
+  `SCREAMING_SNAKE_CASE` constants, `kebab-case` content IDs (never renamed once a save
+  or a release stores them; until then a rename is a content refactor whose missed references
+  fail the checks; ADR 0023, `INBOX.md` HC-Q18 (4)),
   booleans prefixed `is/has/can/should/was`.
 - Files: each class has a single purpose and its file (`MovementSystem.ts`) contains **only that
   class**. Put the class's custom types in `MovementSystem.types.ts` and its constants in
@@ -174,6 +180,18 @@ decision table is in `docs/architecture/02-code-structure.md`.
 - Core behaviour also gets a determinism check (same seed + commands → same `StateHasher` hash);
   runtime invariants get a test that deliberately triggers them.
 
+## Writing style (ASD-STE100, DEC-329)
+
+Write at least 80% of the way to ASD-STE100 (Simplified Technical English). The text must still
+read naturally. The rule applies to messages to the owner and to other agents, Owner Calls cards,
+PR text, review comments, commit messages and docs. It does not apply to in-game text.
+
+- Use short sentences. Put one instruction or one fact in each sentence.
+- Use the active voice and common words. Use one term for one thing (`docs/reference/glossary.md`).
+- In Owner Calls cards and messages to the owner, say what the player sees first. Put code names
+  last.
+- If a reader must decode a sentence, write it again.
+
 ## Documentation
 
 - Every doc under `docs/` has YAML frontmatter (`title`, `description`, `audience`, `status`,
@@ -182,7 +200,7 @@ decision table is in `docs/architecture/02-code-structure.md`.
 - Docs must outlive the code they describe (OG-12, ADR 0011): design docs state intent,
   invariants and extension points; they name where a value lives instead of copying it; interim
   state goes in one "Implementation status" note, never into the design text; historical records
-  (accepted ADRs, dated changelogs, `PROGRESS.md` entries, dated reviews, prompts that have run)
+  (accepted ADRs, dated changelogs, `PROGRESS.md` and `docs/plan/progress/` entries, dated reviews, prompts that have run)
   are never rewritten.
 
 ## Commands

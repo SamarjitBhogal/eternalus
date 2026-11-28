@@ -1,18 +1,18 @@
 import type { MapDefinition, MapFeature, MapLayout } from '../content/maps/maps.types';
-import { distance } from '../utils/geometry';
 
-/** Reads the generated concentric wall edges, so presentation cannot silently use another layout. */
+/** Reads a generated Stronghold's wall boundary; fails instead of guessing its dimensions. */
 export function strongholdRing(
   map: MapDefinition,
   stronghold: MapFeature,
 ): Pick<MapLayout['wallRing'], 'radius' | 'thickness'> {
-  const distances = map.features
-    .filter((feature) => feature.kind === 'wall-segment' && feature.team === stronghold.team)
-    .flatMap((feature) =>
-      (feature.footprint ?? []).map((point) => distance(stronghold.position, point)),
-    );
-  if (distances.length === 0) throw new Error(`Missing generated wall ring for ${stronghold.id}`);
-  const inner = Math.min(...distances);
-  const outer = Math.max(...distances);
-  return { radius: (inner + outer) / 2, thickness: outer - inner };
+  const hasWall = map.features.some(
+    (feature) =>
+      feature.kind === 'wall-segment' &&
+      feature.team === stronghold.team &&
+      (feature.footprint?.length ?? 0) > 0,
+  );
+  if (!hasWall) throw new Error(`Missing generated wall arc for ${stronghold.id}`);
+  if (stronghold.wallBoundary === undefined)
+    throw new Error(`Missing generated wall boundary for ${stronghold.id}`);
+  return { radius: stronghold.wallBoundary.radius, thickness: stronghold.wallBoundary.thickness };
 }

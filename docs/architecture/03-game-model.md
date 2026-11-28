@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-27
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -35,7 +35,7 @@ carried over unchanged.
 
 ```mermaid
 flowchart LR
-  IN[InputMapper / controllers / DeveloperMenu] -->|Command| Q[CommandQueue]
+  IN[InputMapper / controllers / DeveloperMenu] -->|Command| Q["CommandQueues (bots', external)"]
   Q -->|next tick| APPLY[CommandApplySystem]
   APPLY --> SYS[SystemPipeline: AiSystem ... MovementSystem, CombatSystem, DeathSystem ... InvariantSystem]
   SYS -->|mutates| STATE[(GameState)]
@@ -59,26 +59,43 @@ export class GameState {
   public readonly rng: SeededRandom; // the only source of randomness
   public readonly entities: EntityStore; // deterministic, creation-order iteration
   public readonly world: MatchWorld | null; // definition, lane routes, WorldMap (grid, cost field, flow fields), structures index; null without a map
-  public readonly teams: Readonly<Record<Team, TeamState>>; // score, structures alive, buffs, spawn counters (18 §3.4)
+  public readonly teams: Readonly<Record<Team, TeamState>>; // structures alive, buffs, spawn counters (18 §3.4); the score is `TeamStats` (12 §5)
   public readonly hordes: HordeRegistry; // Horde aggregates (not entities)
   public readonly events: GameEvents;
   public readonly recentCommands: RingBuffer<TimedCommand>; // post-mortem context; recent events: events.recentEvents() (§4)
 
+  public readonly match: MatchRecord; // the director's memory (12 §4) and its only writers (DEC-177); `phase` is `match.phase`
+
   public get tick(): number;
-  public get phase(): MatchPhase;
   public advanceTick(): void; // called once per step(), by Simulation only
-  public setPhase(next: MatchPhase): void; // called by MatchDirector only; emits 'phase-changed'
+}
+
+// Sketch: packages/core/src/state/MatchRecord.ts — GameState.match (DEC-177)
+export class MatchRecord implements MatchState {
+  // the MatchState fields (12 §4) as read-only getters; only these five write them (DEC-172)
+  public setPhase(next: MatchPhase): void; // MatchDirector only; stamps `phaseEnteredTick`, emits 'phase-changed'
+  public holdIdle(isHeld: boolean): void; // the countdown phase only (DEC-88)
+  public endMatch(result: MatchResult): void; // MatchDirector only, once; a second call throws
+  public seatHuman(legendId: EntityId): void; // Simulation only, once, when the human slot's Legend spawns
+  public reseatHuman(legendId: EntityId | null): void; // DevSetControllerHandler only (sim mode, DEC-294); emits 'human-reseated'
+  public advanceTimeline(): void; // MatchDirector only, once per fired timeline entry
+  // the scoring data's only writer (DEC-211): written by Scoring only, in its fold (12 §5)
+  public readonly scoreBook: ScoreBook; // addRow, award, awardTeam, recordHit, takeAssists
+  public get scoring(): ScoringState; // the book's data, read-only at every depth
 }
 ```
 
-`EntityStore` keeps entities in insertion order (DEC-20), which is creation order: every `EntityId`
-comes from a monotonically increasing counter (`utils/IdGenerator`) and is never reused. `forEach`
+`EntityStore` keeps entities in insertion order (DEC-20), which is creation order, except that a returning Legend is appended at the end (DEC-295): every `EntityId`
+comes from a monotonically increasing counter (`utils/IdGenerator`) and is never reused: a Legend
+that respawns is the same entity, not a new one with an old id (DEC-295). `forEach`
 visits in that order, which is the iteration order every system uses (research
 [§1](../research/game-architecture-and-performance-research.md#1-fixed-timestep-interpolation-and-determinism)).
 Ids are strings (`entity-12`), so code that needs a total order compares them as strings or keeps
-store order; it never sorts them as numbers. `remove(id, cause)` is the only way out and always
-carries a `RemovalCause` (`'died' | 'despawned' | 'consumed' | 'dev-removed' | 'match-ended'`, plus
-the killer for `'died'`); an invariant checks no entity disappears any other way. The store never
+store order; it never sorts them as numbers. `remove(id, cause)` retires an entity for good, and
+`withdraw(id, cause)` takes a dead Legend that waits to respawn out without retiring it, so the same
+object can be added back (FR-051, DEC-295). Both are the only ways out and always carry a
+`RemovalCause` (`'died' | 'despawned' | 'consumed' | 'dev-removed' | 'match-ended'`, plus the killer
+for `'died'`); an invariant checks no entity disappears any other way. The store never
 exposes a `Map` for iteration.
 
 `GameState` is mutable only inside `Simulation.step()`, and only through component methods that
@@ -125,25 +142,34 @@ export type Command =
     }
   | { readonly type: 'dev-remove-entity'; readonly entityId: EntityId }
   | {
+      readonly type: 'dev-spawn-legend';
+      readonly team: PlayableTeam;
+      readonly definitionId: string;
+    }
+  | { readonly type: 'dev-remove-legend'; readonly entityId: EntityId }
+  | {
       readonly type: 'dev-set-controller';
       readonly entityId: EntityId;
-      readonly controllerId: ControllerId;
+      readonly controllerId: ControllerId | null; // null: the bot the Legend's team lacks
     }
   | { readonly type: 'dev-set-assert-level'; readonly level: AssertLevel };
 ```
 
-- `CommandQueue` is drained once (DEC-20), at the start of each `step()`, in enqueue order; a
-  command enqueued while a step runs (a bot deciding during `AiSystem`) waits for the next drain, so
-  every command applies exactly one tick boundary after it was issued. The client enqueues the
-  human's commands first, then controllers enqueue in store order during `AiSystem`, so the order is
-  deterministic.
+- Two `CommandQueue`s, the bots' (filled during `AiSystem`) and the external one
+  (`enqueueCommand`: player, developer menu), are drained once (DEC-20), at the start of each
+  `step()`: the bots' first, then the external, each in enqueue order (DEC-156). A command enqueued
+  while a step runs (a bot deciding during `AiSystem`, an event handler) waits for the next drain,
+  so every command applies exactly one tick boundary after it was issued. Controllers enqueue in
+  store order, so the order is deterministic, and a replay, which feeds the external commands
+  before each step, reproduces it.
 - `applyCommand(command, handlers, ctx)` dispatches to the handler registered for
   `command.type` (DEC-20): one `CommandHandler` class per type in `commands/handlers/`, listed in
   `commands/defaultCommandHandlers.ts` (the single place of change, 02 §9). The registry's type
   needs a handler for every union member, so a new command does not compile until its handler
   exists. A handler validates (actor alive, slot ready, caps such as `maxLegendsPerTeam` not
   exceeded) and returns a `CommandRejectReason` instead of throwing; `applyCommand` announces it
-  as `command-rejected`.
+  as `command-rejected`. Once `state.match.result` is set, `applyCommand` refuses every command as
+  `match-ended` before any handler runs (FR-002).
 - `dev-*` commands are the developer menu (requirements: add/remove Legends, spawn mobs from
   chosen origins, sim mode). They are ordinary commands so they appear in the log, respect the
   caps, and are covered by the same tests. `Match` only forwards them when the developer menu is
@@ -163,32 +189,51 @@ export class GameEvents {
 
 Events are synchronous, emitted during the tick and delivered to listeners in subscription order;
 listeners that need to change state defer the change to their own system's pass (Nystrom's Observer
-plus a deferred queue, research §2). `GameEvents` keeps the most recent events in a `RingBuffer`
-(`recentEvents()`, capacity in `GameEvents.constants.ts`) for invariant reports. Payload objects for
-high-frequency events (`damage-applied`) may be pooled (Recommendation, profile first).
+plus a deferred queue, research §2). One exception (DEC-406): an `entity-spawned` listener may
+finish, at once, the setup of the entity that the event names. A roster spawns in the `Simulation`
+constructor, before any pass, so a deferred change would show the entity unfinished on the first
+tick. The table lists each such listener. `GameEvents` keeps the most recent events in a
+`RingBuffer` (`recentEvents()`, capacity in `GameEvents.constants.ts`) for invariant reports.
+Payload objects for high-frequency events (`damage-applied`) may be pooled (Recommendation, profile
+first).
 
-| Event                               | Payload                                                | Emitted by                        | Typical listeners                                                  |
-| ----------------------------------- | ------------------------------------------------------ | --------------------------------- | ------------------------------------------------------------------ |
-| `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem` | `SnapshotSystem`, views                                            |
-| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                | `HordeSystem`, `ProjectilePool`, invariants                        |
-| `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                  | `ProgressionSystem` (assists), `AiSystem` (aggro)                  |
-| `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                   | `DeathSystem`, `ProgressionSystem`, `Scoring`                      |
-| `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                 | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields) |
-| `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                 | HUD, views                                                         |
-| `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                   | HUD, `MinimapView`                                                 |
-| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                   | `Scoring`, `MatchDirector`, `StatusEffectSystem`                   |
-| `phase-changed`                     | `{ from, to }`                                         | `MatchDirectorSystem`             | `SpawnSystem`, `Announcer`                                         |
-| `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                   | views (VFX), `Announcer`                                           |
-| `status-applied`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectApplier` (DEC-41)    | views, HUD                                                         |
-| `status-expired`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectSystem`              | views, HUD                                                         |
-| `horde-spawned` / `horde-dissolved` | `{ hordeId, lane, team, memberIds }`                   | `SpawnSystem` / `HordeSystem`     | `EnragedSystem`, `MinimapView`                                     |
-| `level-up`                          | `{ entityId, level }`                                  | `ProgressionSystem`               | `AbilitySystem` (scaling), HUD                                     |
-| `team-changed`                      | `{ entityId, from, to, cause }`                        | `Team` component                  | `HordeSystem`, views                                               |
-| `boss-summoned`                     | `{ entityId, kind }`                                   | `SpawnSystem` (timeline)          | `Announcer`, `AiSystem` (camps turn aggressive)                    |
-| `command-rejected`                  | `{ command, reason }`                                  | `applyCommand`                    | `DeveloperMenu`, tests                                             |
-| `collision-anomaly`                 | `{ entityId, from, to, colliderId }`                   | `CollisionSystem`                 | `InvariantSystem`, `Logger`                                        |
-| `invariant-violated`                | `{ invariantId, tick, details }`                       | `InvariantRunner`                 | `Logger`, `PerfOverlay`, tests (throw)                             |
-| `tick-completed`                    | `{ tick }`                                             | `Simulation`                      | `Match` (publish snapshot, throttle to the store)                  |
+| Event                               | Payload                                                                       | Emitted by                                                                                              | Typical listeners                                                                                                                                                 |
+| ----------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `entity-spawned`                    | `{ entityId, kind, team }`                                                    | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster; `RespawnSystem` for a returning Legend | `SnapshotSystem`, views, `Scoring` (a row per Legend); `ProgressionSystem` raises a Duel Legend to max level at once (05 §18, DEC-406)                            |
+| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`                                  | `DeathSystem` only                                                                                      | `HordeSystem`, `ProjectilePool`, invariants                                                                                                                       |
+| `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }`                        | `DamagePipeline`                                                                                        | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage)                                                                          |
+| `human-reseated`                    | `{ from: EntityId \| null, to: EntityId \| null }`                            | `MatchRecord.reseatHuman` (sim mode, DEC-294)                                                           | `Scoring`                                                                                                                                                         |
+| `damage-blocked`                    | `{ targetId, source: DamageSource }`                                          | `DamagePipeline` (a step took the hit to 0)                                                             | `CathedralGemSystem` (DEC-292)                                                                                                                                    |
+| `entity-died`                       | `{ entityId, killer: DamageSource }`                                          | `DeathResolver`                                                                                         | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                                                                                           |
+| `structure-destroyed`               | `{ entityId, kind, team, lane }`                                              | `StructureSystem`                                                                                       | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212)                                                                           |
+| `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                                             | `StructureSystem`                                                                                       | `HordeSystem` (gate holding), views                                                                                                                               |
+| `camp-cleared`                      | `{ entityId, team, killerId }`                                                | `SpawnSystem`                                                                                           | `ProgressionSystem` (camp reward), `MatchDirector`                                                                                                                |
+| `checkpoint-cleared`                | `{ pointId, checkpoint, defenceId, defendersTeam, team, killerId, position }` | `SpawnSystem` (`CheckpointGuardRespawn`)                                                                | `ProgressionSystem` (checkpoint XP share, 07 §7)                                                                                                                  |
+| `shield-bars-changed`               | `{ entityId, bars }`                                                          | `StructureSystem`                                                                                       | HUD, views                                                                                                                                                        |
+| `capture-progress`                  | `{ pointId, team, progress, checkpoint }`                                     | `CaptureSystem`                                                                                         | HUD, `MinimapView`                                                                                                                                                |
+| `checkpoint-reached`                | `{ pointId, team, checkpoint, presentLegendIds }`                             | `CaptureSystem`                                                                                         | `Scoring` (DEC-214, DEC-223), `SpawnSystem` (checkpoint defenders, DEC-259)                                                                                       |
+| `capture-point-owner-changed`       | `{ pointId, from, to }`                                                       | `CaptureSystem`                                                                                         | `MatchDirector`, `StatusEffectSystem`, `ZoneLevelUpSystem` (DEC-258), `SpawnSystem` (cancels waiting defenders, DEC-350), `CathedralGemSystem` (the gem's holder) |
+| `minion-level-earned`               | `{ entityId }`                                                                | `VeterancySystem` (kills, 18 MS-16)                                                                     | `MinionLevelSystem` (one minion level, DEC-168, DEC-353)                                                                                                          |
+| `minion-levels-granted`             | `{ entityId, levels, sourceId }`                                              | `ZoneLevelUpSystem` (07 §7, DEC-258)                                                                    | `MinionLevelSystem` (one minion level, DEC-168, DEC-353)                                                                                                          |
+| `phase-changed`                     | `{ from, to }`                                                                | `MatchRecord.setPhase` (called by `MatchDirector`)                                                      | `Announcer`                                                                                                                                                       |
+| `match-ended`                       | `{ result: MatchResult }`                                                     | `MatchDirector`                                                                                         | client `MatchBridge` (the results flow)                                                                                                                           |
+| `ability-cast`                      | `{ casterId, abilityId, slot }`                                               | `AbilitySystem`                                                                                         | views (VFX), `Announcer`                                                                                                                                          |
+| `status-applied`                    | `{ entityId, statusId, sourceId }`                                            | `StatusEffectApplier` (DEC-41)                                                                          | views, HUD                                                                                                                                                        |
+| `status-expired`                    | `{ entityId, statusId, sourceId }`                                            | `StatusEffectSystem`                                                                                    | views, HUD                                                                                                                                                        |
+| `status-stacks-lost`                | `{ entityId, statusId, sourceId, stacks }`                                    | `StatusEffectApplier.removeStacks` (DEC-353)                                                            | views, HUD                                                                                                                                                        |
+| `horde-spawned` / `horde-dissolved` | `{ hordeId, lane, team, memberIds }`                                          | `SpawnSystem` / `HordeSystem`                                                                           | `EnragedSystem`, `MinimapView`, `ZoneLevelUpSystem` (DEC-258)                                                                                                     |
+| `level-up`                          | `{ entityId, level }`                                                         | `ProgressionSystem`                                                                                     | `AbilitySystem` (scaling), HUD                                                                                                                                    |
+| `legend-respawned`                  | `{ entityId, team, position, owedXp }`                                        | `RespawnSystem` (after `entity-spawned`, FR-051, DEC-295)                                               | `ProgressionSystem` (buffers the owed XP and pays it on the next tick, DEC-186), the `level-matches-xp` invariant (checks the recipient is back in the store)     |
+| `team-changed`                      | `{ entityId, from, to, cause }`                                               | `Team` component                                                                                        | `HordeSystem`, views                                                                                                                                              |
+| `greater-boss-summoned`             | `{ bossId }`                                                                  | `MatchRecord.eruptGem` (the `summon-greater-boss` timeline action)                                      | `GemEruptionSystem` (the blast, DEC-371), `SpawnSystem` (spawns the boss), `CathedralGemSystem` (removes the gem), client `CathedralCutscene`                     |
+| `boss-summoned`                     | `{ entityId, kind }`                                                          | `SpawnSystem` (on `greater-boss-summoned`)                                                              | `Announcer`, `AiSystem` (camps turn aggressive)                                                                                                                   |
+| `boss-entrance`                     | `{ bossId }`                                                                  | `SpawnSystem` (the Greater Boss spawn)                                                                  | views and audio (later; the roar, reference 04)                                                                                                                   |
+| `boss-telegraph`                    | `{ bossId, move }`                                                            | `BossMoveHandler` (a `boss-move` command from `BossController`, 11 §4.6)                                | views (later; the move's warning), tests                                                                                                                          |
+| `boss-move-executed`                | `{ bossId, move }`                                                            | `BossMoveSystem` (the move lands, 11 §4.6)                                                              | views (later), tests                                                                                                                                              |
+| `command-rejected`                  | `{ command, reason }`                                                         | `applyCommand`                                                                                          | `DeveloperMenu`, tests                                                                                                                                            |
+| `collision-anomaly`                 | `{ entityId, from, to, colliderId }`                                          | `CollisionSystem`                                                                                       | `InvariantSystem`, `Logger`                                                                                                                                       |
+| `invariant-violated`                | `{ invariantId, tick, details }`                                              | `InvariantRunner`                                                                                       | `Logger`, `PerfOverlay`, tests (throw)                                                                                                                            |
+| `tick-completed`                    | `{ tick }`                                                                    | `Simulation`                                                                                            | `Match` (publish snapshot, throttle to the store)                                                                                                                 |
 
 Systems subscribe in their constructor and never call another system. `Simulation.on()` exposes
 the same channel to the client; the bridge re-publishes a throttled subset to React.
@@ -206,11 +251,11 @@ can be `postMessage`d to a Worker later without change (decided, D8; research §
 // Sketch: packages/core/src/state/Snapshot.types.ts
 export type Snapshot = {
   readonly tick: number;
-  readonly phase: MatchPhase;
+  readonly match: MatchSnapshot; // phase, phaseEnteredTick, the unfired timeline marks (12 §3), the countdown end tick (DEC-278), humanLegendId
   readonly entities: readonly EntitySnapshot[]; // store (creation) order
   readonly hordes: readonly HordeSnapshot[];
   readonly teams: Readonly<Record<Team, TeamSnapshot>>;
-  readonly player: PlayerSnapshot | null; // HUD data for the human Legend
+  readonly player: PlayerSnapshot | null; // the human Legend's player-only HUD data (05 §15, DEC-232)
   readonly mapRevision: number; // increments when destructible terrain changed
 };
 
@@ -221,26 +266,52 @@ export type EntitySnapshot = {
   readonly kind: EntityKind;
   readonly family: EntityFamily;
   readonly definitionId: string;
+  readonly mapFeatureId?: string; // a structure's or zone's map feature (MapFeatureLink; DEC-212, DEC-231)
+  readonly specId?: string; // a Legend's sub-class from its roster slot, so the client draws its sprite (DEC-378 (2), DEC-397)
+  readonly combatHitbox?: Polygon; // a big boss's body outline in world units, mirrored to its facing; a click inside it selects the unit (DEC-381)
   readonly team: Team | null;
   readonly transform: {
     readonly x: number;
     readonly y: number;
     readonly radius: number;
-    readonly facing: number;
+    readonly facing: { readonly x: number; readonly y: number }; // unit vector (10 §10)
   } | null;
   readonly health: {
     readonly current: number;
     readonly max: number;
     readonly shieldBars: readonly number[];
   } | null;
+  readonly progression: {
+    readonly level: number;
+    readonly xp: number; // XP earned inside the current level (resets on level-up)
+    readonly xpToNext: number | null; // XP the current level needs to reach the next; null at the cap (DEC-224)
+  } | null; // any entity with Progression (every Legend), not only the player (DEC-224)
+  readonly aether: {
+    readonly current: number;
+    readonly max: number;
+  } | null; // any entity with an aether pool (every Legend), not only the player (DEC-230)
+  readonly gem: {
+    readonly holder: Team; // who holds the Cathedral: the gem shows that team's colour (DEC-291)
+    readonly glowTicksLeft: number;
+    readonly glowHits: number; // hits since the glow last went dark (DEC-292)
+    readonly ticksSinceHit: number | null;
+  } | null; // the Cathedral gem's CathedralGemState only
   readonly statusIds: readonly StatusEffectId[];
   readonly anim: AnimState;
 };
 ```
 
+The groups a consumer may read by `mapFeatureId` are core's `FeatureKeyedGroup`, declared beside
+`EntitySnapshot`: at most one entity of a feature carries each, which `map-feature-groups-unique`
+checks ([15](15-diagnostics-and-runtime-testing.md) §3; DEC-233, DEC-256).
+
+`SnapshotSystem` builds each `EntitySnapshot` through `EntitySnapshotter`
+(`state/EntitySnapshotter.ts`), one group per component, so a new component group changes that
+class and the `EntitySnapshot` type, never `GameState` (DEC-232).
+
 `Match` keeps the two latest snapshots (`previous`, `current`); `SceneView.draw(previous, current,
 alpha)` pairs the entities of both by id (both arrays are in store order; an entity spawned or
-removed between them is in one only) and lerps positions (the research's "two positions per
+removed between them is in one only) and lerps positions and facings (the research's "two positions per
 entity, stored in the snapshot, never in the entity"). `mapRevision` lets `TerrainView` and
 `MinimapView` rebuild their cached layers only when terrain changed (Dirty Flag).
 
@@ -306,7 +377,7 @@ JavaScript-specific hazards and their rules (research §1, table "Determinism pi
 | `Map`/`Set`/object iteration order        | Never drive simulation order from a `Map`; iterate `EntityStore` (creation order) or arrays built in tick order                                                                                             | Review; `EntityStore` API exposes no `Map`                        |
 | `Array.prototype.sort` comparators        | Comparators are pure and total; ties broken by entity id                                                                                                                                                    | Review; `utils/compareById`                                       |
 | Transcendental `Math.*`                   | `sin`, `cos`, `atan2`, `exp`, `pow` only through `utils/deterministicMath.ts`; steering works with vectors, never angles                                                                                    | ESLint `no-restricted-properties` with a file override (ADR 0012) |
-| Update order and removal during iteration | Fixed `SystemPipeline` order; spawns and removals are deferred to `SpawnSystem`/`DeathSystem`                                                                                                               | Design + `InvariantSystem`                                        |
+| Update order and removal during iteration | Fixed `SystemPipeline` order; spawns and removals are deferred to `SpawnSystem`/`DeathSystem` (`RespawnSystem` also adds entities)                                                                          | Design + `InvariantSystem`                                        |
 | Floats                                    | Doubles are fine for single-machine replays; revisit fixed point only for networked lockstep                                                                                                                | None needed                                                       |
 
 ## 9. `StateHasher` and replays
@@ -316,24 +387,35 @@ JavaScript-specific hazards and their rules (research §1, table "Determinism pi
 [persistence C3](../research/persistence-input-diagnostics-research.md#c3-testing-a-running-game-properties-replays-golden-hashes-soak-tests))
 over a canonical serialisation of its own (DEC-20): `tick`, `phase`, the RNG state, then every
 entity in store order with its component fields in a fixed order, including state the client never
-sees (velocity). It does not hash the snapshot, so the hash covers what the snapshot leaves out; a
+sees (velocity), then the other match fields once the match has left its initial state (a match
+no director runs keeps its hash). It does not hash the snapshot, so the hash covers what the snapshot leaves out; a
 component with simulation state adds its fields in `StateHasher`. `Simulation.hash()` is cheap
 enough to call every N ticks in tests and on demand from the developer menu.
 
 ```ts
-// Sketch: packages/core/src/diagnostics/Replay.types.ts
-export type Replay = {
+// Sketch: `ReplayOf<S>` and `ReplayTargetFactoryOf<S>` are generic, in
+// packages/core/src/diagnostics/Replay.types.ts; the concrete types below are in
+// packages/core/src/Simulation.types.ts.
+// What the match was built with: the required `seed` and `config` and the optional `map`,
+// `mapObjects` and `roster` of `SimulationOptions`.
+export type ReplaySetup = Pick<
+  SimulationOptions,
+  'seed' | 'config' | 'map' | 'mapObjects' | 'roster'
+>;
+export type Replay = ReplaySetup & {
   readonly versions: { readonly core: string; readonly content: string; readonly schema: number };
-  readonly seed: number;
-  readonly config: GameConfig;
   readonly commands: readonly { readonly tick: number; readonly command: Command }[];
   readonly checkpoints: readonly { readonly tick: number; readonly hash: number }[];
 };
 ```
 
-A replay is seed + config + command log + versions; `runReplay(replay, createTarget)` builds a
-fresh `Simulation` through the factory it is given (so `diagnostics/` never imports
-`Simulation`), feeds the commands at their ticks, and compares `hash()` at each checkpoint.
+A replay is self-contained: its setup (seed, config and, when the match had them, the generated
+map, the map objects and the whole roster), the command log and the versions. The setup is plain
+data and `exportReplay()` copies it from the options the match was built with, so a replay
+reproduces a match whose world the client prepared (the roster can depend on the player's pick)
+without the code that prepared it. `runReplay(replay, createTarget)` builds a fresh `Simulation`
+through the factory it is given, which receives the replay itself and builds from its setup
+fields (so `diagnostics/` never imports `Simulation`), feeds the commands at their ticks, and compares `hash()` at each checkpoint.
 Replays are the regression-test format (fixtures under `__fixtures__/`, format in
 [15](15-diagnostics-and-runtime-testing.md) §7), the bug-report format (the developer menu can dump
 one) and the match-history record persisted by `ReplayRepository`.
@@ -383,11 +465,11 @@ requirement ceilings in `config/GameConfig.constants.ts`; this table records whe
 | `cornerCamps`                                       | **MVP-if-time**; 0 disables                                                  | game doc, Outer (Corner) Camps             |
 | `legendsPerTeam`, `legendsPerLane`                  | the lane Legends plus the Rover                                              | game doc, Minions and lanes; contract §2.1 |
 | `maxLegendsPerTeam`, `maxUnitsPerTeam`              | caps the developer menu and spawners respect                                 | requirements doc, developer menu           |
-| `countdownSeconds`                                  | only the initial hordes spawn                                                | requirements doc                           |
+| `countdownSeconds`                                  | the freeze length: no tower spawns, nothing moves (DEC-81)                   | requirements doc; DEC-81                   |
 | `hordeSizes`                                        | per weight class; the opening hordes are one per lane (`map.numLanes`)       | requirements doc; DEC-84                   |
-| `plannedMatchSeconds`                               | the target match length                                                      | DEC-13 (pending)                           |
+| `plannedMatchSeconds`                               | the target match length; its value: `config/defaultGameConfig.ts`            | DEC-13; DEC-81                             |
 | `flowFieldCorridorHalfWidth`, `flowFieldCellBudget` | a lane field's corridor reach; cells rebuilt per tick after a terrain change | 06 §6, 10 §9; Phase 3 sprint 3.2 (`TUNE`)  |
-| `pathMaxExpansions`, `pathSnapCells`                | A\* for Legends: cells one search may settle; how far a blocked end snaps    | 10 §9, 11 §6 (`TUNE`)                      |
+| `pathMaxSearchArea`, `pathSnapCells`                | A\* for Legends: area a search may settle (m²); how far a blocked end snaps  | 10 §9, 11 §6 (`TUNE`); DEC-243             |
 | `capturePoints`, `timeline`                         | one capture point per lane, the middle one the Cathedral; timed events       | game doc, Capture zones; 12                |
 
 `validateGameConfig(config: unknown)` throws a `ConfigValidationError` naming the first offending
@@ -396,7 +478,8 @@ rule holds; `Simulation` validates in its constructor, so it never starts on a b
 live in `config/validateGameConfig.ts`, cross-field rules after the fields they read: whole numbers
 where counts are meant, `tickRate` the supported rate, caps within the requirement ceilings,
 `maxUnitsPerTeam >= map.numLanes * hordeSizes.light`, the map rules of 06 §2; timeline
-entries ordered is a `Recommendation:`, and `campsPerSide` need not divide by the corridors
+entries in tick order, the first `enter-phase` entry at the end of the countdown, no `enter-phase`
+into `victory` or `defeat`, and `campsPerSide` need not divide by the corridors
 (DEC-14). Time fields are authored in seconds and converted to ticks once at construction, so
 systems only ever see ticks. `Match` builds the config from `createDefaultGameConfig()` plus
 developer-menu overrides (`map.presetId` picks a `MapPreset`, which shapes the ground and the lanes
@@ -417,26 +500,63 @@ a view never needs anything from the entity beyond its `definitionId`.
 The simulation kernel (sprint 1.1, PR #13) implements §2–§10 as written, with these interim gaps,
 each closed by the session or phase named:
 
-- `Simulation` takes `(config, seed, logger, systems = [])` (Sprint 1 brief); it becomes
-  `SimulationOptions` when content and `debug` arrive (four parameters at most, CONTRIBUTING §4).
-  No `exportReplay()` or `dispose()` yet. Its `EntityFactory` has an empty registry until session
-  C passes `createDefaultEntityRegistry()` (marked `TODO` in `Simulation.ts`).
-- `move`, `stop`, `attack-target`, `cast-ability`, `intent` and `dev-set-controller` are routed to
+- `Simulation` takes one `SimulationOptions` object (`SimulationOptions` in
+  `packages/core/src/Simulation.types.ts` lists its fields; CONTRIBUTING §4). Its `EntityFactory`
+  uses `createDefaultEntityRegistry()`. `exportReplay()` and `recentContext()` exist (ADR 0025 §4:
+  a log of the external commands and replay checkpoints, both outside the hashed state); no
+  `dispose()` yet.
+- `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
+  `AttackTargetHandler`). `boss-move { actorId, moveId }` (`BossMoveHandler`) is an interim
+  command, not in the sketch above: a boss's move until bosses cast through `cast-ability` (11's
+  Implementation status). Until then `boss-telegraph` comes from `BossMoveHandler` and
+  `boss-move-executed` from `BossMoveSystem`. `jump { actorId, isHeld }` (2026-11-27, DEC-390; not
+  in the §3 sketch) has `JumpHandler`, which sets the held jump key through `EntityStore.holdJump`
+  (rejected `cannot-jump` for an entity without `Jump`); `JumpSystem`, before `MovementSystem`,
+  flies each jump and starts the held ones on the ground; a stun (`cannot-move`) ends a jump in the
+  air at once (DEC-420). `cast-ability` and `intent` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
+- `dev-set-controller` (2026-11-13, FR-099) has `DevSetControllerHandler`: `controllerId` `player`
+  makes a Legend of `playerTeam` the human's (no `ControllerBinding`, no brain; the seat moves,
+  DEC-294); a bot's id (`rover`, or `bot-legend` on the lane with the fewest of its team's lane
+  bots, past `legendsPerLane` if every lane is full) binds that bot, and `null` binds the bot the
+  Legend's team lacks: the Rover if the team has no Rover bot, otherwise a `bot-legend` laner on
+  the free lane (`assignLanes` with `occupied`). On the human's Legend, a bot id or `null` leaves
+  no human (`humanLegendId` null; DEC-356). The Legend a seat move leaves also becomes the bot its
+  team lacks. Both choosers are in `state/missingRoleChooser.ts`, built by `Simulation` from
+  content. A refused command changes nothing. Refused `unknown-entity`,
+  `not-a-legend`, `not-player-team` (DEC-173), `unknown-controller` or, in a Duel,
+  `not-supported`. `MatchRecord.reseatHuman` is the second writer of `humanLegendId`; each seat
+  move emits `human-reseated`, which `Scoring` folds into the rows' `controller`. A bot re-bound loses its brain memory.
+- `dev-spawn-legend` (2026-11-13) is built as `{ team, definitionId }` (a bot Legend at the
+  Stronghold, Rover controller); it is in `Command.types.ts`.
+  `dev-remove-legend { entityId }` (2026-11-20, DEC-293) removes a Legend through
+  `DevRemoveEntityHandler`, which refuses a Legend in a human seat (`human-legend`).
 - `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /
   `entity-removed` themselves until `SpawnSystem` / `DeathSystem` exist (session C).
-- `GameState.snapshot()` builds the snapshot until `SnapshotSystem` exists; `Snapshot` carries
-  `tick`, `phase`, `entities`, `hordes` and `teams` (the team counters, since minion plan M1),
-  and `EntitySnapshot` its identity, `team`, `transform`
-  (`x`, `y`, `radius`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
-  `state/GameState.types.ts` and stays `countdown` until `match/` exists (phase 4).
+- `CathedralGemSystem` removes the erupted gem (12 §3) itself and emits `entity-removed`
+  (`despawned`) until `DeathSystem` takes removal requests.
+- `GameState.snapshot()` builds the snapshot, each entity through `EntitySnapshotter`, until
+  `SnapshotSystem` exists; `Snapshot` carries
+  `tick`, `match`, `entities`, `hordes` and `teams` (the team counters, since minion plan M1),
+  and `EntitySnapshot` its identity (with a Legend's sub-class, `specId`, when its roster slot
+  names one: DEC-378 (2); the Legend keeps it, and the replay's roster carries it, so
+  `StateHasher` does not hash it), `team`, `transform`
+  (`x`, `y`, `radius`, `facing`), `health` (`current`, `max`), `elevation` (a Legend's jump
+  `height` above the ground, DEC-390; named for what the view draws, DEC-420), `progression` (a Legend's `level`,
+  the `xp` inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the
+  level curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
+  `area` (a zone's polygons), `capture` (a capture point's state and presence), `aura` (a
+  structure's aura `radius` and the outline `box` it is measured beyond, `null` without an `Aura`,
+  DEC-315 (4), DEC-323 (3)) and `gem` (the Cathedral gem's holder and glow) groups only.
+  `MatchPhase` lives in `config/matchPhases.ts`; the match director is built (12 §13).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
-  `WorldMap` grid) with no structures index yet (minion plan M2c), and the grid keeps no flow
+  `WorldMap` grid, stamped and reopened by `map/MatchGrid`, which the composition root builds, so
+  `state/` imports `map/` types only) with no structures index yet (minion plan M2c), and the grid keeps no flow
   fields (`PathingSystem` caches them); `GameState` has `hordes` and `teams` (the spawn counters
   only) since minion plan M1, and `ai`, `space` and `hordeRequests` since M2a (11, 18); `EntityFactory` keeps its
   own id counter until session C switches it to `IdGenerator`. `MatchConfig` has no
-  `hordeSpawnIntervalSeconds`, `capturePoints` or `timeline` yet (they arrive with their systems).
+  `hordeSpawnIntervalSeconds` or `timeline` yet (they arrive with their systems).
 - `Simulation.step()` applies the queued commands itself, before the pipeline (Sprint 1 brief),
   until `CommandApplySystem` heads the default `SystemPipeline` (§1).
 - `Replay` has no `versions` yet (they arrive with the content catalogue).

@@ -1,3 +1,4 @@
+import { MIN_MAX_HEALTH } from './Health.constants';
 import type { DamageBreakdown, MutableShieldBar, ShieldBar } from './Health.types';
 
 /**
@@ -68,11 +69,32 @@ export class Health {
 
   /**
    * Raises full health by `amount` (finite, ≥ 0). Only the cap: whoever raises it decides whether to
-   * heal too (a level-up heals a living Legend by the raise, O3/O4).
+   * heal too; a level-up uses `raiseMaxAndHeal`.
    */
   public raiseMax(amount: number): void {
     Health.checkAmount(amount, 'max raise');
     this.maxValue += amount;
+  }
+
+  /**
+   * Lowers full health by `amount` (finite, ≥ 0, never below `MIN_MAX_HEALTH`), and current health
+   * with it when it would pass the new cap: a lost level's health step (07 §7, DEC-258).
+   */
+  public lowerMax(amount: number): void {
+    Health.checkAmount(amount, 'max lowering');
+    this.maxValue = Math.max(MIN_MAX_HEALTH, this.maxValue - amount);
+    this.currentValue = Math.min(this.currentValue, this.maxValue);
+  }
+
+  /**
+   * A level-up's health step, shared by Legend and minion levels: raises full health by `amount`
+   * and heals by the same, but only while alive, so a level never revives (O3/O4).
+   */
+  public raiseMaxAndHeal(amount: number): void {
+    this.raiseMax(amount);
+    if (!this.isDead) {
+      this.heal(amount);
+    }
   }
 
   /** Restores up to `amount` health (never above `max`) and returns how much. */

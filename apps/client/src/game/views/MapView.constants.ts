@@ -49,13 +49,13 @@ export const NEUTRAL_FEATURE_COLORS: Readonly<Record<MapFeatureKind, string>> = 
  */
 export const FEATURE_STYLES: Readonly<Record<MapFeatureKind, FeatureStyle>> = {
   stronghold: { shape: 'square', size: 50 },
-  'spawner-tower': { shape: 'square', size: 28 },
-  'buff-tower': { shape: 'diamond', size: 28 },
+  'spawner-tower': { shape: 'entity', size: 0 },
+  'buff-tower': { shape: 'entity', size: 0 },
   'wall-segment': { shape: 'footprint', size: 0 },
   gate: { shape: 'footprint', size: 0 },
   turret: { shape: 'dot', size: 14 },
   camp: { shape: 'dot', size: 26 },
-  'corner-camp': { shape: 'ring', size: 45 },
+  'corner-camp': { shape: 'ring', size: 0 }, // sized by core's CORNER_CAMP_RING, through Match
   'capture-point': { shape: 'ring', size: 45 },
   cathedral: { shape: 'diamond', size: 110 },
   obstacle: { shape: 'dot', size: 14 },

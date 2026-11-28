@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import type { DisplayCatalogue } from './catalogue.types';
 import { connectBusToStore } from './connectBusToStore';
-import type { BridgeEventMap, MatchSetupDraft, RosterEntry } from './events';
+import type { BridgeEventMap, CreditEntry, MatchSetupDraft, RosterEntry } from './events';
+import { FIGMA_HUD_PLAYER, figmaHudState, TEST_HUD_CATALOGUE } from './__fixtures__/hudFixtures';
+import { matchResultFixture } from './__fixtures__/matchResultFixtures';
 import { createAppStore } from './store';
 import { TypedEventBus } from './TypedEventBus';
 
@@ -17,6 +20,7 @@ const entry = (legendId: string, isPlayer: boolean): RosterEntry => ({
 });
 
 const DRAFT: MatchSetupDraft = {
+  mode: 'local',
   seed: 7,
   playerTeam: 'dark',
   allies: [entry('dark-1', true)],
@@ -31,6 +35,27 @@ function connected() {
 }
 
 describe('connectBusToStore', () => {
+  it('copies minimap-visibility into the view slice', () => {
+    const { bus, store } = connected();
+    bus.emit('minimap-visibility', { isShown: false });
+    expect(store.getState().view.isMinimapShown).toBe(false);
+  });
+
+  it('copies developer-menu into its slice and clears it on the next match-setup', () => {
+    const { bus, store } = connected();
+    bus.emit('developer-menu', {
+      isOpen: true,
+      origins: [],
+      humanLegendId: null,
+      followedLegendId: null,
+      legends: [],
+      controllerIds: { player: 'player', rover: 'rover', laner: 'bot-legend' },
+    });
+    expect(store.getState().developerMenu.isOpen).toBe(true);
+    bus.emit('match-setup', null);
+    expect(store.getState().developerMenu.isOpen).toBe(false);
+  });
+
   it('copies session events into the session slice', () => {
     const { bus, store } = connected();
     bus.emit('session-phase', { phase: 'menu', reason: 'select-timeout' });
@@ -41,12 +66,50 @@ describe('connectBusToStore', () => {
       reason: 'select-timeout',
       menuRoute: 'about',
       overlay: 'pause',
+      crashReport: null,
     });
+  });
+
+  it('copies the crash popup state into the session slice, and closes it with null', () => {
+    const { bus, store } = connected();
+    const saved = {
+      stage: 'saved',
+      file: 'logs/errors/a.json',
+      noteLimit: 5,
+      cause: 'match',
+      crashNumber: 1,
+    } as const;
+    bus.emit('crash-report', saved);
+    expect(store.getState().session.crashReport).toEqual(saved);
+    bus.emit('crash-report', null);
+    expect(store.getState().session.crashReport).toBeNull();
   });
 
   it('copies content and loading progress', () => {
     const { bus, store } = connected();
-    const catalogue = { legendClasses: [], backgroundSets: [], profileDisplayName: 'Chronicle' };
+    const catalogue: DisplayCatalogue = {
+      legendClasses: [],
+      backgroundSets: [],
+      profileDisplayName: 'Chronicle',
+      classSelectLayout: 'alternate',
+      selectionBannerAssetId: 'selection-banner',
+      selectClassChromeAssetId: 'select-class-chrome',
+      lockInChromeAssetId: 'lock-in-chrome',
+      effectsRenderer: 'css',
+      contrastMode: 'minimums',
+      uiEnhancements: [],
+      hud: TEST_HUD_CATALOGUE,
+      laneMinions: [],
+      teamNames: { light: 'Lux', dark: 'Umbra' },
+      botRoster: {
+        id: 'test',
+        laners: ['warrior'],
+        enemyRover: 'mirror-player',
+        difficulties: { laner: 'normal', rover: 'rover' },
+      },
+      verdictLines: {},
+      sovereignNames: { light: 'Queen', dark: 'Tyrant' },
+    };
     bus.emit('content-catalogue', catalogue);
     bus.emit('loading-progress', {
       group: 'selection',
@@ -67,36 +130,176 @@ describe('connectBusToStore', () => {
     bus.emit('class-selection', { classId: 'magus', specId: null });
     bus.emit('countdown', { kind: 'select', remainingMs: 59_000 });
     bus.emit('countdown', { kind: 'reveal', remainingMs: 9_000 });
+    bus.emit('countdown', { kind: 'results', remainingMs: 29_000 });
     expect(store.getState().matchSetup).toEqual({
+      mode: 'local',
       seed: 7,
       playerTeam: 'dark',
       selection: { classId: 'magus', specId: null },
       allies: DRAFT.allies,
       enemies: DRAFT.enemies,
-      countdownMs: 59_000,
-      revealMs: 9_000,
+      countdownsMs: { select: 59_000, reveal: 9_000, results: 29_000 },
+      isLockedIn: false,
     });
     bus.emit('match-setup', null);
     expect(store.getState().matchSetup.playerTeam).toBeNull();
+    expect(store.getState().matchSetup.mode).toBeNull();
     expect(store.getState().matchSetup.allies).toEqual([]);
+  });
+
+  it("keeps an online Duel's mode from its setup", () => {
+    const { bus, store } = connected();
+    bus.emit('match-setup', {
+      mode: 'duel',
+      seed: 9,
+      playerTeam: 'light',
+      allies: [],
+      enemies: [],
+    });
+    expect(store.getState().matchSetup.mode).toBe('duel');
+    expect(store.getState().matchSetup.playerTeam).toBe('light');
+  });
+
+  it('locks the pick and takes the filled rosters on selection-locked; a new setup unlocks', () => {
+    const { bus, store } = connected();
+    const filled = {
+      allies: [{ ...entry('dark-1', true), classId: 'magus', specId: 'oracle' }],
+      enemies: [{ ...entry('light-1', false), classId: 'magus', specId: 'oracle' }],
+    };
+    bus.emit('match-setup', DRAFT);
+    bus.emit('selection-locked', filled);
+    expect(store.getState().matchSetup).toMatchObject({ ...filled, isLockedIn: true });
+    bus.emit('match-setup', DRAFT);
+    expect(store.getState().matchSetup).toMatchObject({
+      allies: DRAFT.allies,
+      enemies: DRAFT.enemies,
+      isLockedIn: false,
+    });
+  });
+
+  it('clears the class pick on a null class-selection', () => {
+    const { bus, store } = connected();
+    bus.emit('match-setup', DRAFT);
+    bus.emit('class-selection', { classId: 'magus', specId: 'oracle' });
+    bus.emit('class-selection', null);
+    expect(store.getState().matchSetup.selection).toEqual({ classId: null, specId: null });
+  });
+
+  it("copies a Duel's outcome", () => {
+    const { bus, store } = connected();
+    const outcome = { winner: 'light', reason: 'finished' } as const;
+    bus.emit('duel-ended', outcome);
+    expect(store.getState().match.duel).toEqual(outcome);
   });
 
   it('copies the match clock, HUD state and announcements', () => {
     const { bus, store } = connected();
-    bus.emit('match-clock', { tick: 60, seconds: 2 });
+    bus.emit('match-clock', { tick: 60, seconds: 2, countdown: null });
     bus.emit('announcement', { id: 'first-blood', text: 'First blood' });
-    bus.emit('hud-state', {
-      health: { current: 5, max: 10 },
-      aether: { current: 1, max: 2 },
-      xp: { level: 1, current: 0, next: 100 },
-      abilities: [],
-      scores: [],
-    });
-    expect(store.getState().match.clock).toEqual({ tick: 60, seconds: 2 });
-    expect(store.getState().hud.health).toEqual({ current: 5, max: 10 });
+    bus.emit('hud-state', { player: FIGMA_HUD_PLAYER });
+    expect(store.getState().match.clock).toEqual({ tick: 60, seconds: 2, countdown: null });
+    expect(store.getState().hud.player).toBe(FIGMA_HUD_PLAYER);
     expect(store.getState().hud.announcements).toEqual([
       { id: 'first-blood', text: 'First blood' },
     ]);
+    bus.emit('hud-state', { player: null });
+    expect(store.getState().hud.player).toBeNull();
+    expect(store.getState().hud.announcements).toHaveLength(1);
+  });
+
+  it("stores the ended match's result and length; the next setup clears them", () => {
+    const { bus, store } = connected();
+    const result = matchResultFixture();
+    bus.emit('match-ended', { result, durationSeconds: 120 });
+    expect(store.getState().match).toMatchObject({ result, durationSeconds: 120 });
+    bus.emit('match-setup', DRAFT);
+    expect(store.getState().match).toMatchObject({ result: null, durationSeconds: null });
+  });
+
+  it('stores the structure and capture rosters as published', () => {
+    const { bus, store } = connected();
+    const { structures, capturePoints } = figmaHudState().match;
+    bus.emit('structure-state', { structures });
+    bus.emit('capture-state', { points: capturePoints });
+    expect(store.getState().match.structures).toBe(structures);
+    expect(store.getState().match.capturePoints).toBe(capturePoints);
+  });
+
+  it('stores the asset URLs and draw boxes of a group, empties them on release, and stores the credits', () => {
+    const { bus, store } = connected();
+    const urls = { 'selection-banner': '/a.webp', 'oracle-portrait@ally-tile': '/b.webp' };
+    const boxes = { 'oracle-portrait@ally-tile': { left: 1775, top: 848, width: 60, height: 60 } };
+    bus.emit('asset-urls', { group: 'selection', urls, boxes });
+    expect(store.getState().assets.urlsByGroup.selection).toBe(urls);
+    expect(store.getState().assets.boxesByGroup.selection).toBe(boxes);
+    expect(store.getState().assets.urlsByGroup.match).toEqual({});
+    expect(store.getState().assets.boxesByGroup.match).toEqual({});
+    bus.emit('asset-urls', { group: 'selection', urls: {}, boxes: {} });
+    expect(store.getState().assets.urlsByGroup.selection).toEqual({});
+    expect(store.getState().assets.boxesByGroup.selection).toEqual({});
+    const entries: readonly CreditEntry[] = [
+      {
+        licenceId: 'owner',
+        work: 'Eternalus art',
+        licenceName: 'Owner',
+        notice: '',
+        licenceText: null,
+        assets: [{ assetId: 'selection-banner', source: 'Figma 62:144' }],
+      },
+    ];
+    bus.emit('credits', { entries });
+    expect(store.getState().assets.credits).toBe(entries);
+  });
+
+  it('starts every published setup, and its clearing, with empty HUD and match state', () => {
+    for (const draft of [DRAFT, null]) {
+      const { bus, store } = connected();
+      const { structures } = figmaHudState().match;
+      bus.emit('hud-state', { player: FIGMA_HUD_PLAYER });
+      bus.emit('match-clock', { tick: 60, seconds: 2, countdown: null });
+      bus.emit('structure-state', { structures });
+      bus.emit('match-setup', draft);
+      expect(store.getState().hud.player).toBeNull();
+      expect(store.getState().match).toEqual({
+        clock: null,
+        structures: [],
+        capturePoints: [],
+        result: null,
+        durationSeconds: null,
+        versus: null,
+        duel: null,
+        opponentGraceMs: null,
+        duelHud: null,
+        isReconnecting: false,
+      });
+    }
+  });
+
+  it('copies the Duel names and scoreboard, and clears them with the next setup', () => {
+    const { bus, store } = connected();
+    const duel = { ownKills: 3, opponentKills: 1, killTarget: 10 };
+    bus.emit('duel-versus', { own: 'Ana', opponent: 'Ben' });
+    bus.emit('duel-state', duel);
+    expect(store.getState().match.versus).toEqual({ own: 'Ana', opponent: 'Ben' });
+    expect(store.getState().match.duelHud).toEqual(duel);
+    bus.emit('match-setup', null);
+    expect(store.getState().match.duelHud).toBeNull();
+  });
+
+  it('copies the Duel opponent presence', () => {
+    const { bus, store } = connected();
+    bus.emit('duel-opponent-presence', { graceMs: 10_000 });
+    expect(store.getState().match.opponentGraceMs).toBe(10_000);
+    bus.emit('duel-opponent-presence', { graceMs: null });
+    expect(store.getState().match.opponentGraceMs).toBeNull();
+  });
+
+  it('copies whether the Duel connection is reconnecting', () => {
+    const { bus, store } = connected();
+    bus.emit('duel-connection', { isReconnecting: true });
+    expect(store.getState().match.isReconnecting).toBe(true);
+    bus.emit('duel-connection', { isReconnecting: false });
+    expect(store.getState().match.isReconnecting).toBe(false);
   });
 
   it('copies the settings state', () => {

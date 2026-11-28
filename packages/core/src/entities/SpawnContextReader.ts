@@ -1,6 +1,6 @@
 import type { ControllerSpawn } from './EntityFactory.types';
 import { CONTROLLER_IDS } from '../content/ai/controllerIds';
-import type { Vec2 } from '../utils/geometry.types';
+import type { Polygon, Vec2 } from '../utils/geometry.types';
 import type { Entity } from './Entity';
 import type { WeaponSource } from './EntityFactory.types';
 import { SPAWNABLE_TEAMS } from './SpawnContextReader.constants';
@@ -42,15 +42,17 @@ export class SpawnContextReader {
   }
 
   /**
-   * Reads a context with a definition, a position and a team.
+   * Reads a context with a definition, a position and a team, and its controller and start facing
+   * when it gives them.
    *
-   * @throws Error when `positioned` would, or the team is not light, dark or neutral.
+   * @throws Error when `positioned` would, the team is not light, dark or neutral, or the context
+   *   gives a facing that is not a finite vector.
    */
   public placed<Definition extends DefinitionRef>(
     context: unknown,
   ): PlacedSpawnContext<Definition> {
     const positioned = this.positioned<Definition>(context);
-    const { team: candidate } = SpawnContextReader.fields(context);
+    const { team: candidate, facing } = SpawnContextReader.fields(context);
     const team = SPAWNABLE_TEAMS.find((spawnable) => spawnable === candidate);
 
     if (team === undefined) {
@@ -58,9 +60,19 @@ export class SpawnContextReader {
         `Entity "${this.entity.id}" needs a spawn context with a team (light, dark or neutral).`,
       );
     }
+    if (facing !== undefined && !SpawnContextReader.isFiniteVector(facing)) {
+      throw new Error(
+        `Entity "${this.entity.id}" was given a spawn facing that is not a finite vector.`,
+      );
+    }
 
     const controller = this.controllerOf(SpawnContextReader.fields(context).controller);
-    return controller === undefined ? { ...positioned, team } : { ...positioned, team, controller };
+    return {
+      ...positioned,
+      team,
+      ...(controller !== undefined && { controller }),
+      ...(facing !== undefined && { facing }),
+    };
   }
 
   /**
@@ -83,6 +95,42 @@ export class SpawnContextReader {
     return { controllerId: id, profileId, memory: memory as ControllerSpawn['memory'] };
   }
 
+  /**
+   * The context's `Placement.area`: a zone's polygons in world units.
+   *
+   * @throws Error when the context gives no list of polygons of points.
+   */
+  public area(context: unknown): readonly Polygon[] {
+    const { area } = SpawnContextReader.fields(context);
+    if (!SpawnContextReader.isArea(area)) {
+      throw new Error(`Entity "${this.entity.id}" needs a spawn context with an area.`);
+    }
+    return area;
+  }
+
+  /** A list of point lists; `ZoneArea` then rejects a polygon without 3 finite points. */
+  private static isArea(value: unknown): value is readonly Polygon[] {
+    return (
+      Array.isArray(value) &&
+      value.every(
+        (polygon) =>
+          Array.isArray(polygon) && polygon.every((point) => SpawnContextReader.isObject(point)),
+      )
+    );
+  }
+
+  /** The lane the context places the entity on (a lane structure's `MapLane.id`), or `null`. */
+  public laneId(context: unknown): string | null {
+    const { laneId } = SpawnContextReader.fields(context);
+    return typeof laneId === 'string' ? laneId : null;
+  }
+
+  /** The Legend spec the context names (`Placement.specId`), or `null`. */
+  public specId(context: unknown): string | null {
+    const { specId } = SpawnContextReader.fields(context);
+    return typeof specId === 'string' ? specId : null;
+  }
+
   /** The weapon source the factory put in the context, or `null` when it has none. */
   public weapons(context: unknown): WeaponSource | null {
     const { weapons } = SpawnContextReader.fields(context);
@@ -103,5 +151,15 @@ export class SpawnContextReader {
 
   private static isObject(value: unknown): value is Readonly<Record<string, unknown>> {
     return typeof value === 'object' && value !== null;
+  }
+
+  private static isFiniteVector(value: unknown): value is Vec2 {
+    return (
+      SpawnContextReader.isObject(value) &&
+      typeof value.x === 'number' &&
+      typeof value.y === 'number' &&
+      Number.isFinite(value.x) &&
+      Number.isFinite(value.y)
+    );
   }
 }

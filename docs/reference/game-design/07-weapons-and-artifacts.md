@@ -4,7 +4,7 @@ description: Weapon classes, the named weapons, the unique per-class weapons and
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-11-20
 tags: [reference, game-design, weapons, artifacts, gadgets]
 paths: ['packages/core/src/content/weapons/**', 'packages/core/src/content/artifacts/**']
 related:
@@ -25,7 +25,8 @@ default). The MVP ships "simple loadout options (weapons, some ability options, 
 - **Non-unique weapons are not class-specific**: any class can use any weapon available to
   another class. The class table's "weapon bias" (light weapons for Warrior, heavy for Sentinel,
   staves for Magus) is a bias, not a restriction.
-- **Each class has one unique weapon** it can use if desired.
+- **Each class has one unique weapon** it can use if desired. Only that class and its
+  subclasses can use it (DEC-11, owner 2026-10-10).
 - Weapons have a **damage type** (physical, magical, or both), a **reach** and optionally a
   **heavy attack** and a **parry** with effects.
 - **Open question** (`[STATUS: idea-pending]`): should weapons have abilities? "It may be

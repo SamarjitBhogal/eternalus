@@ -5,6 +5,15 @@ import {
   SUPPORTED_TICK_RATE,
 } from './GameConfig.constants';
 import type { GameConfig } from './GameConfig.types';
+import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from './matchPhases';
+import type {
+  MatchTimelineEntry,
+  TimelineActionKind,
+  TimelineFrame,
+} from './MatchTimelineEntry.types';
+import { timelineFrameOf } from './timelineFrameOf';
+import { timelineMarkTick } from './timelineMarkTick';
+import { isPlayableTeam } from '../teams/playableTeams';
 
 type Rule = {
   readonly path: string;
@@ -35,6 +44,58 @@ const positive = (path: string): Rule => ({
   rule: 'must be a finite number > 0',
   isValid: isPositive,
 });
+
+const isFraction = (value: unknown): boolean =>
+  typeof value === 'number' && value >= 0 && value <= 1;
+
+/** A timeline mark: exactly one of `atTick` (a whole number >= 0) or `atFraction` (0 to 1). */
+const isMark = (at: unknown): boolean =>
+  isRecord(at) &&
+  Object.keys(at).length === 1 &&
+  (isWhole(at.atTick, 0) || isFraction(at.atFraction));
+
+/** Each timeline action kind's field check: the registry a new kind adds its line to. */
+const ACTION_RULES: Readonly<
+  Record<TimelineActionKind, (action: Readonly<Record<string, unknown>>) => boolean>
+> = {
+  'enter-phase': (action) => MATCH_PHASES.some((phase) => phase === action.phase),
+  // config/ reads no content: `SpawnSystem` checks the id against the map's gem-eruption posts.
+  'summon-greater-boss': (action) => typeof action.bossId === 'string' && action.bossId !== '',
+};
+
+const isKnownAction = (action: unknown): boolean =>
+  isRecord(action) &&
+  typeof action.kind === 'string' &&
+  Object.hasOwn(ACTION_RULES, action.kind) &&
+  // Safe: `hasOwn` just found the kind among ACTION_RULES' keys.
+  ACTION_RULES[action.kind as TimelineActionKind](action);
+
+/** The timeline's entries as records; only for rules after the one that checks its shape. */
+const entriesOf = (timeline: unknown): readonly Readonly<Record<string, unknown>>[] =>
+  // Safe: the `match.timeline` shape rule passed before any rule that calls this.
+  timeline as readonly Readonly<Record<string, unknown>>[];
+
+/** The timeline typed; only for rules after the ones that check every mark and action. */
+const timelineOf = (config: unknown): readonly MatchTimelineEntry[] =>
+  // Safe: every mark and every action passed their rules before any rule that calls this.
+  valueAt(config, 'match.timeline') as readonly MatchTimelineEntry[];
+
+/** What the timeline's marks resolve against; only for rules after the three fields' own rules. */
+const frameOf = (config: unknown): TimelineFrame =>
+  // Safe: all three fields passed their own rules before any rule that calls this.
+  timelineFrameOf({
+    tickRate: valueAt(config, 'tickRate') as number,
+    match: {
+      plannedMatchSeconds: valueAt(config, 'match.plannedMatchSeconds') as number,
+      countdownSeconds: valueAt(config, 'match.countdownSeconds') as number,
+    },
+  });
+
+/** The timeline's `enter-phase` entries, in order: the ones the phase rules read. */
+const phaseEntriesOf = (config: unknown) =>
+  timelineOf(config).flatMap(({ at, action }) =>
+    action.kind === 'enter-phase' ? [{ at, action }] : [],
+  );
 
 /** Checked in order; cross-field rules come after the fields they read. */
 const RULES: readonly Rule[] = [
@@ -82,9 +143,11 @@ const RULES: readonly Rule[] = [
     isValid: (value) => isWhole(value, 1),
   },
   {
-    path: 'map.pathMaxExpansions',
-    rule: 'must be a whole number >= 1',
-    isValid: (value) => isWhole(value, 1),
+    path: 'map.pathMaxSearchArea',
+    rule: 'must be a finite number >= map.navCellSize squared (one cell)',
+    isValid: (value, config) =>
+      // Safe: the map.navCellSize rule passed before this one.
+      isPositive(value) && value >= (valueAt(config, 'map.navCellSize') as number) ** 2,
   },
   {
     path: 'map.pathSnapCells',
@@ -112,6 +175,108 @@ const RULES: readonly Rule[] = [
   count('match.hordeSizes.medium'),
   count('match.hordeSizes.heavy'),
   positive('match.plannedMatchSeconds'),
+  {
+    path: 'match.capturePoints.checkpoints',
+    rule: 'must be a whole number >= 1',
+    isValid: (value) => isWhole(value, 1),
+  },
+  positive('match.capturePoints.captureSeconds'),
+  positive('match.capturePoints.revertSeconds'),
+  positive('match.capturePoints.maxMargin'),
+  positive('match.capturePoints.weights.legend'),
+  positive('match.capturePoints.weights.unit'),
+  {
+    path: 'match.capturePoints.weights.legend',
+    rule: 'must be more than match.capturePoints.weights.unit (a Legend outweighs any other unit, 07 §7)',
+    // Safe: both weights passed their own rules above.
+    isValid: (value, config) =>
+      (value as number) > (valueAt(config, 'match.capturePoints.weights.unit') as number),
+  },
+  {
+    path: 'match.playerTeam',
+    rule: "must be a playable team: 'light' or 'dark'",
+    isValid: isPlayableTeam,
+  },
+  {
+    path: 'match.countdownSeconds',
+    rule: 'must not exceed match.plannedMatchSeconds (the countdown is part of the planned match)',
+    isValid: (value, config) =>
+      // Safe: both fields passed their own rules above.
+      (value as number) <= (valueAt(config, 'match.plannedMatchSeconds') as number),
+  },
+  {
+    path: 'match.timeline',
+    rule: 'must be an array of entries whose ids are non-empty strings, unique in the timeline',
+    isValid: (value) =>
+      Array.isArray(value) &&
+      value.every((entry) => isRecord(entry) && typeof entry.id === 'string' && entry.id !== '') &&
+      new Set(entriesOf(value).map((entry) => entry.id)).size === value.length,
+  },
+  {
+    path: 'match.timeline',
+    rule: 'every entry must be at one mark: { atTick: a whole number >= 0 } or { atFraction: 0 to 1 }',
+    isValid: (value) => entriesOf(value).every((entry) => isMark(entry.at)),
+  },
+  {
+    path: 'match.timeline',
+    rule: 'every action must be of a known kind with valid fields',
+    isValid: (value) => entriesOf(value).every((entry) => isKnownAction(entry.action)),
+  },
+  {
+    path: 'match.timeline',
+    rule: `enter-phase entries must not enter a terminal phase (${TERMINAL_MATCH_PHASES.join(', ')}): only a verdict does`,
+    isValid: (_value, config) =>
+      phaseEntriesOf(config).every(({ action }) => !TERMINAL_MATCH_PHASES.includes(action.phase)),
+  },
+  {
+    path: 'match.timeline',
+    rule: 'entries must be in tick order',
+    isValid: (_value, config) => {
+      const frame = frameOf(config);
+      let previous = 0;
+      return timelineOf(config).every(({ at }) => {
+        const tick = timelineMarkTick(at, frame);
+        const isInOrder = tick >= previous;
+        previous = tick;
+        return isInOrder;
+      });
+    },
+  },
+  {
+    path: 'match.timeline',
+    rule: `enter-phase entries must move forward through the match phases, after ${MATCH_PHASES[0]}`,
+    isValid: (_value, config) => {
+      let reached = 0; // the match starts in MATCH_PHASES[0]
+      for (const { action } of phaseEntriesOf(config)) {
+        const index = MATCH_PHASES.indexOf(action.phase);
+        if (index <= reached) {
+          return false;
+        }
+        reached = index;
+      }
+      return true;
+    },
+  },
+  {
+    path: 'match.timeline',
+    rule: 'must have at least one enter-phase entry: the first one ends the countdown',
+    isValid: (_value, config) => phaseEntriesOf(config).length > 0,
+  },
+  {
+    path: 'match.timeline',
+    rule: 'must have at most one summon-greater-boss entry: the gem erupts once (architecture 12 §3)',
+    isValid: (_value, config) =>
+      timelineOf(config).filter(({ action }) => action.kind === 'summon-greater-boss').length <= 1,
+  },
+  {
+    path: 'match.timeline',
+    rule: 'the first enter-phase entry ends the countdown, so it must be at tick round(match.countdownSeconds * tickRate)',
+    isValid: (_value, config) => {
+      const frame = frameOf(config);
+      const [first] = phaseEntriesOf(config);
+      return first !== undefined && timelineMarkTick(first.at, frame) === frame.countdownEndTick;
+    },
+  },
   {
     path: 'limits.maxUnitsPerTeam',
     rule: 'must fit the opening hordes, one per lane (map.numLanes * match.hordeSizes.light)',

@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { Deploying } from '../components/Deploying';
+import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
 import { Movement } from '../components/Movement';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { TeamMembership } from '../components/TeamMembership';
+import { Transform } from '../components/Transform';
 import type { Team } from '../teams/teams.types';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { Entity } from '../entities/Entity';
@@ -100,6 +103,23 @@ describe('EntityStore', () => {
     expect(idsOf(store)).toEqual(['entity-2']);
   });
 
+  it('withdraws an entity without retiring it, records the removal, and takes it back', () => {
+    const store = storeWith('entity-1', 'entity-2');
+    const walker = new Walker('entity-3', 'walker-definition');
+    walker.spawn(undefined);
+    store.add(walker);
+
+    const withdrawn = store.withdraw('entity-3', 'died');
+
+    expect(withdrawn).toBe(walker);
+    expect(walker.hasComponent(Movement)).toBe(true);
+    expect(store.has('entity-3')).toBe(false);
+    expect(store.removedThisTick()).toEqual([{ entityId: 'entity-3', cause: 'died' }]);
+    store.add(walker);
+    expect(idsOf(store)).toEqual(['entity-1', 'entity-2', 'entity-3']);
+    expect(() => store.withdraw('entity-9', 'died')).toThrow(/entity-9/);
+  });
+
   it('reports an entity as deploying only while it has the Deploying component', () => {
     const store = storeWith('entity-1');
     const entity = store.get('entity-1');
@@ -172,6 +192,21 @@ describe('EntityStore', () => {
     expect(store.steer('nobody', { x: 1, y: 0 })).toBe(false);
   });
 
+  it('holds the jump key of an entity that has Jump and refuses one that does not', () => {
+    const store = storeWith('still');
+    const jumper = new Walker('jumper', 'walker-definition');
+    jumper.spawn({});
+    jumper.addComponent(new Jump());
+    store.add(jumper);
+
+    expect(store.holdJump('jumper', true)).toBe(true);
+    expect(jumper.getComponent(Jump).isHeld).toBe(true);
+    expect(store.holdJump('jumper', false)).toBe(true);
+    expect(jumper.getComponent(Jump).isHeld).toBe(false);
+    expect(store.holdJump('still', true)).toBe(false);
+    expect(store.holdJump('nobody', true)).toBe(false);
+  });
+
   it("reads an entity's team and whether it is alive", () => {
     const store = storeWith('dummy');
     const minion = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)).create(
@@ -239,6 +274,58 @@ describe('EntityStore', () => {
     expect(store.isInReach(minion.id, 'nobody')).toBe(false);
   });
 
+  it('lets melee connect with the Greater Boss at the edge of its visible body (DEC-381)', () => {
+    const store = new EntityStore();
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const boss = factory.create('heavy-mob', 'greater-boss', {
+      team: 'neutral',
+      position: { x: 100, y: 100 },
+    });
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 121, y: 94 },
+    });
+    store.add(boss);
+    store.add(minion);
+    expect(store.isInReach(minion.id, boss.id)).toBe(true);
+    minion.getComponent(Transform).moveTo({ x: 125, y: 94 });
+    expect(store.isInReach(minion.id, boss.id)).toBe(false);
+  });
+
+  it('lets the Greater Boss reach a unit from the edge of its drawn body, not its feet (DEC-421)', () => {
+    const store = new EntityStore();
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const boss = factory.create('heavy-mob', 'greater-boss', {
+      team: 'neutral',
+      position: { x: 100, y: 100 },
+    });
+    // 1 m past the body's right edge (x 20 at y -6, either facing), about 22 m from its feet.
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 121, y: 94 },
+    });
+    store.add(boss);
+    store.add(minion);
+    expect(store.isInReach(boss.id, minion.id)).toBe(true);
+    minion.getComponent(Transform).moveTo({ x: 110, y: 100 });
+    expect(store.isInReach(boss.id, minion.id)).toBe(true);
+    minion.getComponent(Transform).moveTo({ x: 125, y: 94 });
+    expect(store.isInReach(boss.id, minion.id)).toBe(false);
+  });
+
+  it('gives no outline for a body shape that has no Transform, and does not throw', () => {
+    const store = new EntityStore();
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const boss = factory.create('heavy-mob', 'greater-boss', {
+      team: 'neutral',
+      position: { x: 100, y: 100 },
+    });
+    store.add(boss);
+    expect(store.outlineOf(boss.id)).toHaveLength(1);
+    boss.removeComponent(Transform);
+    expect(store.outlineOf(boss.id)).toBeUndefined();
+  });
+
   it('measures reach to a map object from its footprint edge, and never to a cornerless one', () => {
     const store = new EntityStore();
     const content = loadDefaultContent(30);
@@ -280,5 +367,119 @@ describe('EntityStore', () => {
     expect(store.isInReach(minion.id, near)).toBe(true);
     expect(store.isInReach(minion.id, far)).toBe(false);
     expect(store.isInReach(minion.id, cornerless)).toBe(false);
+  });
+
+  it("measures reach to a structure with a Footprint from its fort's outline, not its circle (DEC-185)", () => {
+    const store = new EntityStore();
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const tower = new Dummy('tower', 'tower-definition');
+    // The collider circle: 14 m around (30, 0). The fort's west wall: x 14..17.2.
+    tower.addComponent(new Transform({ x: 30, y: 0 }, 14));
+    tower.addComponent(
+      new Footprint([
+        [
+          { x: 14, y: -16 },
+          { x: 17.2, y: -16 },
+          { x: 17.2, y: 16 },
+          { x: 14, y: 16 },
+        ],
+      ]),
+    );
+    const minionAt = (x: number) => {
+      const minion = factory.create('light-mob', 'light-minion', {
+        team: 'dark',
+        position: { x, y: 0 },
+      });
+      store.add(minion);
+      return minion.id;
+    };
+    store.add(tower);
+    // Pressed on the wall, its 0.4 m radius off it: 16.4 m from the centre, 2 m edge to edge from
+    // the circle (past the 1.5 m reach), yet in reach of the wall. 2.5 m off the wall is not.
+    const pressed = minionAt(13.6);
+    const off = minionAt(11.5);
+
+    expect(store.isInReach(pressed, tower.id)).toBe(true);
+    expect(store.isInReach(off, tower.id)).toBe(false);
+  });
+
+  it('aims at the outline point nearest the attacker, at the attacker inside it, else at the centre, as reach measures (one aim rule)', () => {
+    const store = new EntityStore();
+    const square = [
+      { x: 10, y: -5 },
+      { x: 20, y: -5 },
+      { x: 20, y: 5 },
+      { x: 10, y: 5 },
+    ];
+    const house = new Dummy('house', 'house-definition');
+    house.addComponent(new Transform({ x: 15, y: 0 }, 0.5));
+    house.addComponent(
+      new MapObjectBody({ id: 'house', kind: 'house', isBlocking: true, footprints: [square] }),
+    );
+    const tower = new Dummy('tower', 'tower-definition');
+    tower.addComponent(new Transform({ x: 45, y: 0 }, 14));
+    tower.addComponent(new Footprint([square.map(({ x, y }) => ({ x: x + 30, y }))]));
+    const round = new Dummy('round', 'round-definition');
+    round.addComponent(new Transform({ x: -7, y: 3 }, 1));
+    store.add(house);
+    store.add(tower);
+    store.add(round);
+    const aim = { x: 0, y: 0 };
+    const aimAt = (id: string, from: { x: number; y: number }) =>
+      store.aimPointOf(id, from, aim) ? { ...aim } : null;
+
+    expect(store.outlineOf('house')).toEqual([square]);
+    expect(store.outlineOf('tower')).toHaveLength(1);
+    expect(store.outlineOf('round')).toBeUndefined();
+    expect(aimAt('house', { x: 0, y: 2 })).toEqual({ x: 10, y: 2 });
+    expect(aimAt('tower', { x: 60, y: 9 })).toEqual({ x: 50, y: 5 });
+    expect(aimAt('round', { x: 0, y: 0 })).toEqual({ x: -7, y: 3 });
+    expect(aimAt('nobody', { x: 0, y: 0 })).toBeNull();
+    // Inside the outline: the attacker's own position, so reach and chase hold there (DEC-234).
+    expect(aimAt('house', { x: 13, y: 1 })).toEqual({ x: 13, y: 1 });
+    expect(store.aimPointOf('house', { x: 0, y: 2 }, aim)).toBe('outline');
+    expect(store.aimPointOf('house', { x: 13, y: 1 }, aim)).toBe('inside');
+    expect(store.aimPointOf('tower', { x: 60, y: 9 }, aim)).toBe('outline');
+    expect(store.aimPointOf('round', { x: 0, y: 0 }, aim)).toBe('centre');
+    expect(store.aimPointOf('nobody', { x: 0, y: 0 }, aim)).toBeNull();
+  });
+
+  it('faces the aim point from outside an outline and the centre from inside it (DEC-220 (1))', () => {
+    const store = new EntityStore();
+    const at = (id: string, x: number, y: number): Dummy => {
+      const entity = new Dummy(id, `${id}-definition`);
+      entity.addComponent(new Transform({ x, y }, 0.5));
+      store.add(entity);
+      return entity;
+    };
+    at('house', 15, 0).addComponent(
+      new MapObjectBody({
+        id: 'house',
+        kind: 'house',
+        isBlocking: true,
+        footprints: [
+          [
+            { x: 10, y: -5 },
+            { x: 20, y: -5 },
+            { x: 20, y: 5 },
+            { x: 10, y: 5 },
+          ],
+        ],
+      }),
+    );
+    at('outside', 0, 2);
+    at('inside', 11, 4);
+    at('round', -7, 3);
+    store.add(new Dummy('nowhere', 'nowhere-definition'));
+    const out = { x: 0, y: 0 };
+    const faceAt = (attackerId: string, targetId: string) =>
+      store.facingPointOf(attackerId, targetId, out) ? { ...out } : null;
+
+    expect(faceAt('outside', 'house')).toEqual({ x: 10, y: 2 });
+    expect(faceAt('inside', 'house')).toEqual({ x: 15, y: 0 });
+    expect(faceAt('outside', 'round')).toEqual({ x: -7, y: 3 });
+    expect(faceAt('nowhere', 'house')).toBeNull();
+    expect(faceAt('outside', 'nowhere')).toBeNull();
+    expect(faceAt('outside', 'nobody')).toBeNull();
   });
 });

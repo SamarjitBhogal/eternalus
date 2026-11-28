@@ -4,7 +4,7 @@ description: Map 1 as the game doc describes it, the rule that the map and minim
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-02
 tags: [reference, game-design, map, minimap, terrain]
 paths:
   [
@@ -193,6 +193,17 @@ The north and south cathedral doors share their geometry with the interior and c
 For DEC-36, the furnished interior is currently presentation only. Duel must use generated
 wall and door features, with their snapshot state controlling closure, collision and pathing;
 decorative floors and cutaways cannot substitute for those gameplay structures.
+
+### 2026-11-02 owner ruling (DEC-143)
+
+The owner: "building roofs should automatically disappear when players enter said buildings, not
+require players to hide them", and the minimap "is not a dev item and is part of the HUD for
+players". A building's roof now opens while the player's Legend stands inside it and closes when
+the Legend walks out or dies; the minimap shows in every match. Clicking a building to toggle its
+roof, and **Restore roofs & overview**, are developer explorer tools (the amendment above
+describes them; DEC-105), shown with `?dev=1` or the developer camera hotkey. This builds the
+occupancy-driven cutaways the amendment above calls not yet scheduled
+([architecture 06](../../architecture/06-map-and-minimap.md) §10).
 
 ## Implementation status
 

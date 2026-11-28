@@ -4,7 +4,7 @@ description: Sprint checklists for the performance pass against budgets, the hea
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-26
 tags: [plan, phase-6, performance, balance, art, audio, reliability, release]
 paths: ['packages/core/src/content/**', 'packages/core/src/diagnostics/**', 'apps/client/assets/**']
 related:
@@ -51,7 +51,7 @@ and the budget split of [Phase 3 sprint 3.8](phase-3-minions-hordes-and-ai.md#sp
       browser; `performance.mark/measure` around tick and render; the long-animation-frame
       observer from `PerfOverlay`). Owner: _. Test: the bench prints p50/p95 per system and
       flags budget misses locally (CI runs it without time assertions). Done when: the top three
-      hotspots are named in [PROGRESS.md](PROGRESS.md) with before/after numbers.
+      hotspots are named in [progress log](progress/README.md) with before/after numbers.
 - [ ] **Pooling and allocation audit** (projectiles, particles, floating damage numbers,
       `GameEvents` payloads and mobs pooled; scratch vectors in steering; fields reset on
       acquire, references nulled on release). Owner: _. Test: a test-only allocation counter
@@ -65,17 +65,21 @@ and the budget split of [Phase 3 sprint 3.8](phase-3-minions-hordes-and-ai.md#sp
 - [ ] **Flow-field, AI and invariant budgets** (per-tick rebuild cell budget, AI cadence and
       stagger, `light` invariants every tick and `heavy` only in dev/soak builds, all as
       `GameConfig`/`DebugConfig` values). Owner: _. Test: a bridge destruction at 144 per team
-      is absorbed with no frame > 50 ms; AI ≤ 1.5 ms p95. Done when: no budget is a literal.
+      is absorbed with at most one missed frame and no frame > 50 ms (architecture 08 §9, DEC-368);
+      AI ≤ 1.5 ms p95. Done when: no budget is a literal.
 - [ ] **Memory, leaks and the slow machine** (30-minute headless soak sampling entity count,
       listener count, ring-buffer and pool sizes every 1,800 ticks; a manual browser run with
       `measureUserAgentSpecificMemory()` where available; the same match on the oldest teammate
-      laptop, `Recommendation:` tick ≤ 12 ms p95 and median frame ≤ 33 ms there). Owner: _.
+      laptop, `Recommendation:` tick ≤ 12 ms p95; median frame ≤ two 60 Hz frames there
+      (DEC-368)). Owner: _.
       Test: counters show no monotonic growth over 54,000 ticks. Done when: both machines are
-      named in PROGRESS with their numbers.
+      named in a progress entry with their numbers.
 
 **Success metric:** tick p95 ≤ 8 ms at 144 units per team + 20 Legends and 60 fps (median frame
-≤ 16.7 ms, no frame > 50 ms) over a 60 s segment of the busiest match state on the reference
-laptop; 0 per-tick allocations in the four hot systems.
+≤ one 60 Hz frame, no missed frame, no frame > 50 ms) over a 60 s segment of the busiest match
+state on the reference laptop; 0 per-tick allocations in the four hot systems.
+[Architecture 08](../architecture/08-game-engine.md) §9 defines "one 60 Hz frame", "missed
+frame" and the missed-frame count (DEC-328, DEC-336, DEC-368).
 
 ## Sprint 6.2 — Balance pass via headless sim mode
 
@@ -101,7 +105,7 @@ and [research C3](../research/persistence-input-diagnostics-research.md#c3-testi
 - [ ] **Class matrix + config sweeps** (3 × 3 class swaps: a swap moving the win rate more than
       10 points is the first tuning target; `numLanes` 1, 3 and 5 with `buffTowersPerLane` 1
       and 2 all playable, the D7 regression). Owner: _. Test: the grid. Done when: the results
-      table is in PROGRESS.
+      table is in a progress entry.
 - [ ] **balancing.md proposals evaluated** (every `Recommendation:` in
       [balancing.md](../reference/suggestions/balancing.md) becomes accepted, rejected or
       amended with the metric that decided it; product-level choices go to INBOX; accepted values
@@ -142,6 +146,15 @@ Owner: _ (art owner + client lane; product owner signs off). Week 9; anything no
       fallback in the `Announcer` HUD always on). Owner: _. Test: a fake `AudioOutput` receives
       one play per `GameEvents` type from a content table; muted buses play nothing. Done when:
       the event → sound mapping is a content table.
+- [ ] **UI enhancements on the owner's Figma screens** (the follow-up to
+      `feat/hud-and-character-select`, specified in [ui-enhancements-plan.md](ui-enhancements-plan.md):
+      the in-game reduce-motion setting applied to every reduced-motion rule (UE-03, INBOX HC-S3),
+      then the eleven enhancements the owner chose (DEC-100, INBOX HC-S5), each a data-selectable
+      variant with the Figma original kept live (DEC-53) and switched on by default (his answer of
+      2026-10-28); may start early once that branch has merged). Owner: _. Test: the plan's unit
+      and visual acceptance per enhancement; every Figma scenario is byte-identical with no
+      enhancement selected. Done when: each built enhancement has its `creative` row in
+      reference 15 and the owner's review of its scenario.
 
 **Success metric:** 100% of manifest entries carry a licence and a source; 100% of entity kinds
 have a sprite (registry walk); the announcer fires for every timeline event in a scripted match;
@@ -160,12 +173,13 @@ Owner: _ (sim lane lead + persistence owner). Week 10; the CI job lands in week 
 - [ ] **100 seeded full matches at `heavy`** (sim mode, default content, invariants at `heavy`
       every 30 ticks; every bug found adds a replay fixture). Owner: _. Test: the batch on the
       nightly job. Done when: 0 invariant violations and 0 unhandled exceptions, seeds recorded
-      in PROGRESS.
+      in a progress entry.
 - [ ] **Error boundaries and loop safety** (a React error boundary per screen and around the
       HUD; an exception in `Simulation.step()` stops `GameLoop`, logs the repro payload (seed,
-      tick, last 32 commands) through `Logger` and moves the session to `results` with a
-      diagnostic; never a silent freeze or a blank page). Owner: _. Test: a fake system that
-      throws routes to the boundary, leaves 0 scheduled frames and shows "copy repro".
+      tick, last 32 commands) through `Logger` and ends the match, returning the player to the menu
+      with the crash popup, which saves an error report that holds the replay (DEC-106, ADR 0025);
+      never a silent freeze or a blank page). Owner: _. Test: a fake system that throws ends the
+      match through `LoopTarget.crashed`, leaves 0 scheduled frames and shows the crash popup.
       Done when: no failure path ends in a blank page.
 - [ ] **Persistence failure modes** (`versionchange` from another tab → close and reload
       prompt; quota exceeded → evict replays and warn; private window or open failure → runtime
@@ -177,7 +191,7 @@ Owner: _ (sim lane lead + persistence owner). Week 10; the CI job lands in week 
       `visibilitychange`; a tab hidden five minutes resumes without a tick burst; a manual matrix
       of Chrome, Firefox and Safari on macOS, Windows and Linux for persistence, input including
       side buttons and the `code` fallback, and audio). Owner: _. Test: fake `visibilitychange`
-      events; the matrix table with browser versions. Done when: the matrix is in PROGRESS with 0
+      events; the matrix table with browser versions. Done when: the matrix is in a progress entry with 0
       open blockers.
 
 **Success metric:** 0 invariant violations and 0 unhandled exceptions over 100 seeded matches at
@@ -210,32 +224,32 @@ Owner: sholtzman (docs, report), SamarjitBhogal (release), everyone (deliverable
       `v0.1.0-mvp` on green `main` — humans tag, agents never do — and publishes release notes
       from the changelog; the team holds a retrospective: what worked, what did not, metrics
       against targets; leftovers triaged into [backlog-post-mvp.md](backlog-post-mvp.md); minutes
-      in PROGRESS). Owner: _. Test: CI is green on the tag. Done when: every backlog row has a
+      in a progress entry). Owner: _. Test: CI is green on the tag. Done when: every backlog row has a
       trigger and an owner.
 
 **Success metric:** docs check 0 errors; quick start verified on 3 OSes; `v0.1.0-mvp` on green
 `main`; report, presentation and demo delivered before the deadline; retrospective minutes in
-PROGRESS.
+a progress entry.
 
 ## Success metrics (phase level)
 
-| Metric                                                        | Target                                               |
-| ------------------------------------------------------------- | ---------------------------------------------------- |
-| Tick time at 144 units/team + 20 Legends                      | p95 ≤ 8 ms at 30 TPS on the reference laptop         |
-| Frame rate (busiest match state, 60 s)                        | median ≤ 16.7 ms, no frame > 50 ms                   |
-| Win rate light vs dark (200 seeds)                            | 45–55%                                               |
-| Match length (200 seeds)                                      | median 18–25 min, P95 < 35 min, 0 timeouts           |
-| Invariant violations (100 seeded matches at `heavy`)          | 0                                                    |
-| Unhandled exceptions (100 matches + 30-min play × 3 browsers) | 0                                                    |
-| Licensed assets                                               | 100% of manifest entries with licence and source     |
-| Docs check                                                    | 0 errors, 0 staleness warnings                       |
-| README quick start                                            | verified on macOS, Windows and Linux                 |
-| Coverage                                                      | core ≥ 90%, client ≥ 70% (roadmap ratchet)           |
-| Release                                                       | `v0.1.0-mvp` on green `main`; deliverables submitted |
+| Metric                                                        | Target                                                                                                                  |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Tick time at 144 units/team + 20 Legends                      | p95 ≤ 8 ms at 30 TPS on the reference laptop                                                                            |
+| Frame rate (busiest match state, 60 s)                        | median ≤ one 60 Hz frame, no missed frame, no frame > 50 ms (terms and the count: architecture 08 §9; DEC-336, DEC-368) |
+| Win rate light vs dark (200 seeds)                            | 45–55%                                                                                                                  |
+| Match length (200 seeds)                                      | median 18–25 min, P95 < 35 min, 0 timeouts                                                                              |
+| Invariant violations (100 seeded matches at `heavy`)          | 0                                                                                                                       |
+| Unhandled exceptions (100 matches + 30-min play × 3 browsers) | 0                                                                                                                       |
+| Licensed assets                                               | 100% of manifest entries with licence and source                                                                        |
+| Docs check                                                    | 0 errors, 0 staleness warnings                                                                                          |
+| README quick start                                            | verified on macOS, Windows and Linux                                                                                    |
+| Coverage                                                      | core ≥ 90%, client ≥ 70% (roadmap ratchet)                                                                              |
+| Release                                                       | `v0.1.0-mvp` on green `main`; deliverables submitted                                                                    |
 
 ## Exit criteria
 
-1. All sprint metrics pass and are recorded in [PROGRESS.md](PROGRESS.md) with the machines and
+1. All sprint metrics pass and are recorded in [progress log](progress/README.md) with the machines and
    browsers used.
 2. `v0.1.0-mvp` is tagged from green `main` by SamarjitBhogal and its release notes are
    published.
@@ -274,7 +288,7 @@ PROGRESS.
 - [README.md](README.md)
 - [phase-5-meta-ui-and-persistence.md](phase-5-meta-ui-and-persistence.md)
 - [backlog-post-mvp.md](backlog-post-mvp.md)
-- [PROGRESS.md](PROGRESS.md)
+- [progress log](progress/README.md)
 - [../architecture/15-diagnostics-and-runtime-testing.md](../architecture/15-diagnostics-and-runtime-testing.md)
 - [../reference/suggestions/balancing.md](../reference/suggestions/balancing.md)
 - [../reference/game-design/10-art-and-lore.md](../reference/game-design/10-art-and-lore.md)

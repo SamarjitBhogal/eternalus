@@ -1,12 +1,40 @@
 import type { EntityDefinitionBase } from '../EntityDefinition.types';
+import type { MapFeatureKind, MinimapGlyph } from '../maps/maps.types';
 
 /** The zone kinds: areas that can be held but not hit. */
 export type ZoneKind = 'capture-point';
 
-/** An area on the map with an owner and no collider. Capture rules arrive in Phase 3. */
+/**
+ * An area on the map with an owner and no collider. Its ground is the floor of the building its
+ * map feature stands for (`map/zoneArea.ts`, DEC-145 (a)), so the definition has no size.
+ */
 export type ZoneDefinition = EntityDefinitionBase & {
   /** Which entity class builds it. */
   readonly kind: ZoneKind;
-  /** Radius of the area in world units. */
-  readonly radius: number;
+  /** How the zone shows on the minimap. */
+  readonly minimapGlyph: MinimapGlyph;
+  /** Its zone level-up (07 §7, DEC-258; per zone, DEC-353 (c)). */
+  readonly levelUp: AuthoredZoneLevelUp;
+};
+
+/**
+ * Which zone definition a map feature places when the match starts (architecture 07 §7, recipe
+ * R7), keyed by the feature's kind. A feature kind without an entry places no zone.
+ */
+export type ZonePlacements = Readonly<Partial<Record<MapFeatureKind, string>>>;
+
+/**
+ * The zone level-up as authored (architecture 07 §7, DEC-258): a capture point held `holdSeconds`
+ * without a break grants its owner's minions spawned on its lane `levels` minion levels, taken back
+ * when it is lost. The levels' cap is the minion level cap (`MinionVeterancyDefinition.maxLevel`).
+ */
+type AuthoredZoneLevelUp = {
+  readonly holdSeconds: number;
+  readonly levels: number;
+};
+
+/** The zone level-up as loaded (`loadZoneLevelUp`): the hold time in ticks (DEC-241). */
+export type ZoneLevelUpDefinition = {
+  readonly holdTicks: number;
+  readonly levels: number;
 };

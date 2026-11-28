@@ -4,7 +4,7 @@ import type { MutableVec2 } from '../utils/vec2.types';
 
 /**
  * How fast an entity moves and in which direction. Speed builds up by `acceleration` each tick
- * and never goes above `maxSpeed`. A command sets the heading with `steer`; each tick
+ * and never goes above `topSpeed`. A command sets the heading with `steer`; each tick
  * `MovementSystem` calls `advance` and applies `velocity` to the `Transform`.
  *
  * @remarks Velocity and heading are updated in place, so a tick allocates nothing per unit.
@@ -22,9 +22,15 @@ export class Movement {
 
   private currentSpeed = 0;
 
+  private currentTopSpeed: number;
+
   private readonly currentVelocity: MutableVec2 = { x: 0, y: 0 };
 
   private readonly currentHeading: MutableVec2 = { x: 0, y: 0 };
+
+  private readonly pendingPush: MutableVec2 = { x: 0, y: 0 };
+
+  private readonly currentStep: MutableVec2 = { x: 0, y: 0 };
 
   /**
    * Creates a stopped movement component from a unit's movement profile.
@@ -41,14 +47,23 @@ export class Movement {
     }
 
     this.maxSpeed = stats.maxSpeed;
+    this.currentTopSpeed = stats.maxSpeed;
     this.acceleration = stats.acceleration;
     this.mass = stats.mass;
     this.strategyId = strategyId;
   }
 
-  /** Current speed, between 0 and `maxSpeed`. */
+  /** Current speed, between 0 and `topSpeed`. */
   public get speed(): number {
     return this.currentSpeed;
+  }
+
+  /**
+   * The top speed the last `advance` allowed: `maxSpeed` times its `speedScale`, so above
+   * `maxSpeed` while a status speeds the entity up (`enraged`).
+   */
+  public get topSpeed(): number {
+    return this.currentTopSpeed;
   }
 
   /** Movement this tick, in world units. */
@@ -59,6 +74,42 @@ export class Movement {
   /** The direction the entity wants to move in: a unit vector, or zero when it wants to stop. */
   public get heading(): Vec2 {
     return this.currentHeading;
+  }
+
+  /** The push waiting for the next `takeStep` (a knockback), or zero. */
+  public get push(): Vec2 {
+    return this.pendingPush;
+  }
+
+  /**
+   * Adds `delta` to the next step only (a knockback). ponytail: a displacement, not 10 §3's
+   * impulse over mass with friction; upgrade when a second pusher (the Sentinel's Slam) lands.
+   * It is not velocity: it ignores the top speed and statuses, and `CollisionSystem` sweeps it
+   * with the step, so it stops at walls.
+   *
+   * @throws Error when `delta` is not a finite vector.
+   */
+  public pushBy(delta: Vec2): void {
+    if (!Number.isFinite(delta.x) || !Number.isFinite(delta.y)) {
+      throw new Error(
+        `Movement push must be finite, got (${String(delta.x)}, ${String(delta.y)}).`,
+      );
+    }
+    this.pendingPush.x += delta.x;
+    this.pendingPush.y += delta.y;
+  }
+
+  /**
+   * This tick's step: `base` (the velocity by default; an airborne entity's takeoff velocity,
+   * DEC-390) plus the pending push, which it uses up. Read it, but do not keep it: the next call
+   * reuses it.
+   */
+  public takeStep(base: Vec2 = this.currentVelocity): Vec2 {
+    this.currentStep.x = base.x + this.pendingPush.x;
+    this.currentStep.y = base.y + this.pendingPush.y;
+    this.pendingPush.x = 0;
+    this.pendingPush.y = 0;
+    return this.currentStep;
   }
 
   /**
@@ -83,10 +134,12 @@ export class Movement {
    * One tick of movement: speeds up along the heading, or slows down by one tick of
    * acceleration when there is no heading. The heading is kept, so movement resumes on its own.
    *
-   * @param speedScale - Multiplies `maxSpeed` for this tick (statuses: 0.7 slowed, 0 stunned).
+   * @param speedScale - Multiplies `maxSpeed` for this tick (statuses: 0.7 slowed, 0 stunned,
+   *   above 1 enraged).
    */
   public advance(speedScale = 1): void {
     const cap = this.maxSpeed * speedScale;
+    this.currentTopSpeed = cap;
     if (this.currentHeading.x !== 0 || this.currentHeading.y !== 0) {
       this.accelerateToward(this.currentHeading, cap);
       return;

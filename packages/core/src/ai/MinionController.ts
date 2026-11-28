@@ -1,202 +1,116 @@
-import type { AiMemory } from '../state/AiState.types';
+import type { HordeAggroRuleDefinition } from '../content/ai/ai.types';
 import type { EntityId } from '../state/EntityStore.types';
-import { followerIndex, formationSlot } from '../state/formationSlot';
-import type { MutableVec2 } from '../utils/vec2.types';
-import { aggroRank } from './aggroRank';
+import type { GameState } from '../state/GameState';
+import type { LaneObjective } from '../state/LaneStructures.types';
+import { sqrt } from '../utils/deterministicMath';
 import type { Controller, Decision, DecisionInput } from './Controller.types';
-import { MINION_STATES } from './MinionController.constants';
+import { decideLeashed } from './decideLeashed';
+import { LeashBehaviour } from './LeashBehaviour';
 import type {
-  MinionControllerContent,
-  MinionMemory,
-  MinionSituation,
-  MinionStep,
-} from './MinionController.types';
+  LeashCandidate,
+  LeashControllerContent,
+  LeashDecisionParts,
+  LeashRules,
+} from './LeashBehaviour.types';
+import { MINION_STATES } from './MinionController.constants';
+import type { MinionSituation } from './MinionController.types';
 
 /**
- * Drives a lane minion (architecture 18 §6.1, 11 §4.3): `marching → engaging → returning →
- * marching`. Marching, it acquires the best-ranked enemy in `acquisitionRadius` (priority, then
- * distance, then id) and emits one `attack-target`; engaging, it switches only to a strictly
- * better-ranked enemy, and ends the chase with one `stop` when the target dies, the mob leaves its
- * leash or the aggro duration runs out; returning, it marches again within `reformDistance` of its
- * formation slot, with a cooldown before it may acquire. The chase itself is `PathingSystem`'s and
- * the hits `CombatSystem`'s. Stateless: everything it remembers is in the brain it returns.
+ * Drives a lane minion (architecture 18 §6.1, 11 §4.3): `marching ⇄ engaging`, through the
+ * `LeashBehaviour` and the `decideLeashed` step it shares with `GuardController`. Its leash is a
+ * circle of `leashRadius` around where it took its target, and it fights a target inside it with
+ * no time limit (MS-36, DEC-144); an enemy attacking a horde-mate within `callForHelpRadius` is in
+ * reach too. Back at rest, its horde's movement walks it to its formation slot (DEC-155). The
+ * chase itself is `PathingSystem`'s and the hits `CombatSystem`'s. Stateless: everything it
+ * remembers is in the brain it returns.
  *
- * @remarks ponytail: no lane objective until structure entities exist (minion plan M2c).
+ * The horde's next objective (18 §6.2) is a candidate too, ranked `lane-objective`, once it is
+ * breakable and either its edge is within `acquisitionRadius` or the horde has gathered at it (its
+ * anchor within `acquisitionRadius` of the objective's front), so the rear ranks and a Stronghold
+ * standing off the lane are reached too. A gate that is not breakable yet is never one, so the
+ * horde holds in front of it and fights what comes. Attacking the objective ignores the leash: a
+ * structure cannot drag a mob away.
  */
 export class MinionController implements Controller {
   public readonly id = 'minion';
-  private readonly anchor: MutableVec2 = { x: 0, y: 0 };
-  private readonly forward: MutableVec2 = { x: 0, y: 0 };
-  private readonly slot: MutableVec2 = { x: 0, y: 0 };
 
-  /** @param content - Aggro profiles, formations and kind classes; the controller holds none. */
-  public constructor(private readonly content: MinionControllerContent) {}
+  private readonly behaviour: LeashBehaviour;
+  private readonly rules: LeashRules<'marching', HordeAggroRuleDefinition> = {
+    idle: 'marching',
+    isOutsideLeash: ({ rule }, memory, point) => {
+      const dx = point.x - memory.leashX;
+      const dy = point.y - memory.leashY;
+      return dx * dx + dy * dy > rule.leashRadius * rule.leashRadius;
+    },
+    extra: (situation) => this.objectiveCandidate(situation),
+    isMate: ({ state, id }, victimId) => {
+      const hordeId = state.hordes.hordeOf(id)?.id;
+      return hordeId !== undefined && state.hordes.hordeOf(victimId)?.id === hordeId;
+    },
+    helpRadius: ({ rule }) => rule.callForHelpRadius,
+    acquisitionRadius: ({ rule }) => rule.acquisitionRadius,
+  };
+  /** What `decideLeashed` reads from this controller, built once (DEC-168 B1, DEC-219 (d)). */
+  private readonly parts: LeashDecisionParts<'marching', HordeAggroRuleDefinition> = {
+    controllerId: this.id,
+    profileOf: (profileId) => this.profileOf(profileId),
+    states: MINION_STATES,
+    idle: 'marching',
+    situate: (state, entityId) => ({
+      rules: this.rules,
+      objective: MinionController.objectiveOf(state, entityId),
+    }),
+  };
 
-  /** Whether `profileId` names one of the injected aggro rules. */
+  /** @param content - Aggro profiles and kind classes; the controller holds none. */
+  public constructor(private readonly content: LeashControllerContent) {
+    this.behaviour = new LeashBehaviour(content.classOf);
+  }
+
+  /** Whether `profileId` names one of the injected minion aggro profiles (not a guard's). */
   public hasProfile(profileId: string): boolean {
-    return this.content.aggro[profileId] !== undefined;
+    return this.profileOf(profileId) !== undefined;
   }
 
   /**
    * Advances the minion's state machine by one decision.
    *
-   * @throws Error when the brain names an aggro profile that does not exist (a content error).
+   * @throws Error when the brain names no minion aggro profile (a content error).
    */
-  public decide({ state, entityId, brain, perception }: DecisionInput): Decision {
-    const rule = this.content.aggro[brain.profileId];
-    if (rule === undefined) {
-      throw new Error(
-        `Minion "${entityId}" names aggro profile "${brain.profileId}", which does not exist.`,
-      );
-    }
-    const memory = MinionController.read(brain.memory);
-    const index = state.space?.indexOf(entityId);
-    const team = state.entities.teamOf(entityId);
-    if (state.space === null || index === undefined || team === undefined) {
-      return { commands: [], memory, rngState: brain.rngState };
-    }
-    const position = {
-      x: state.space.positions[2 * index] ?? 0,
-      y: state.space.positions[2 * index + 1] ?? 0,
-    };
-    const situation = { state, id: entityId, team, position, rule, perception };
-    const step = this.step(situation, memory);
-    return { commands: step.commands, memory: step.memory, rngState: brain.rngState };
+  public decide(input: DecisionInput): Decision {
+    return decideLeashed(input, this.behaviour, this.parts);
   }
 
-  private step(situation: MinionSituation, memory: MinionMemory): MinionStep {
-    if (memory.fsm === 'engaging') {
-      return this.engage(situation, memory);
-    }
-    if (memory.fsm === 'returning') {
-      return this.isAtSlot(situation)
-        ? {
-            memory: {
-              ...memory,
-              fsm: 'marching',
-              cooldownUntilTick: situation.state.tick + situation.rule.aggroCooldownTicks,
-            },
-            commands: [],
-          }
-        : { memory, commands: [] };
-    }
-    const best = situation.state.tick < memory.cooldownUntilTick ? null : this.acquire(situation);
-    if (best === null) {
-      return { memory, commands: [] };
-    }
-    return {
-      memory: {
-        ...memory,
-        fsm: 'engaging',
-        targetId: best.id,
-        aggroUntilTick: situation.state.tick + situation.rule.aggroDurationTicks,
-        leashX: situation.position.x,
-        leashY: situation.position.y,
-      },
-      commands: [{ type: 'attack-target', actorId: situation.id, targetId: best.id }],
-    };
+  /** The minion aggro profile `profileId` names, or `undefined` (AI56-F9). */
+  private profileOf(profileId: string): HordeAggroRuleDefinition | undefined {
+    const rule = this.content.aggro[profileId];
+    return rule?.controller === 'minion' ? rule : undefined;
   }
 
-  /** Engaging: keep the target, switch to a strictly better one, or give up and return. */
-  private engage(situation: MinionSituation, memory: MinionMemory): MinionStep {
-    const { state, id, position, rule } = situation;
-    const targetId = memory.targetId;
-    const dx = position.x - memory.leashX;
-    const dy = position.y - memory.leashY;
-    const isOver =
-      targetId === null ||
-      !state.entities.isAlive(targetId) ||
-      dx * dx + dy * dy > rule.leashRadius * rule.leashRadius ||
-      state.tick >= memory.aggroUntilTick;
-    if (isOver) {
-      return {
-        memory: { ...memory, fsm: 'returning', targetId: null },
-        commands: [{ type: 'stop', actorId: id }],
-      };
-    }
-    const current = this.rankOf(situation, targetId);
-    const best = this.acquire(situation);
-    if (best === null || best.rank >= current) {
-      return { memory, commands: [] };
-    }
-    return {
-      memory: {
-        ...memory,
-        targetId: best.id,
-        aggroUntilTick: state.tick + rule.aggroDurationTicks,
-      },
-      commands: [{ type: 'attack-target', actorId: id, targetId: best.id }],
-    };
+  /** The horde's next objective once it is breakable; `null` for none. */
+  private static objectiveOf(state: GameState, entityId: EntityId): LaneObjective | null {
+    const horde = state.hordes.hordeOf(entityId);
+    const standing =
+      horde === undefined
+        ? null
+        : state.laneStructures.objectiveFor(horde.lane, horde.team, state.entities);
+    return standing?.isBreakable === true ? standing : null;
   }
 
-  /** The best enemy in reach of acquisition: lowest rank, then nearest, then lowest id. */
-  private acquire(
-    situation: MinionSituation,
-  ): { readonly id: EntityId; readonly rank: number } | null {
-    const { state, team, position, rule, perception } = situation;
-    const space = state.space;
-    let best: { id: EntityId; rank: number; gap: number } | null = null;
-    const candidates = perception.unitsWithin(position, rule.acquisitionRadius, {
-      hostileTo: team,
-      aliveOnly: true,
-    });
-    for (const candidate of candidates) {
-      const rank = this.rankOf(situation, candidate);
-      const index = space?.indexOf(candidate);
-      if (rank === Number.POSITIVE_INFINITY || space === null || index === undefined) {
-        continue;
-      }
-      const dx = (space.positions[2 * index] ?? 0) - position.x;
-      const dy = (space.positions[2 * index + 1] ?? 0) - position.y;
-      const gap = dx * dx + dy * dy;
-      // Candidates come in id order, so a strict comparison keeps the lower id on a tie.
-      if (best === null || rank < best.rank || (rank === best.rank && gap < best.gap)) {
-        best = { id: candidate, rank, gap };
-      }
+  /** The lane objective as a candidate, once in reach or once the horde has gathered at it. */
+  private objectiveCandidate(situation: MinionSituation): LeashCandidate | null {
+    const { state, position, rule, objective } = situation;
+    if (objective === null) {
+      return null;
     }
-    return best;
-  }
-
-  /** The candidate's place in the priority list; infinite when it matches no entry. */
-  private rankOf({ state, team, rule }: MinionSituation, candidate: EntityId): number {
-    const rank = aggroRank(candidate, {
-      team,
-      priority: rule.priority,
-      entities: state.entities,
-      classOf: this.content.classOf,
-    });
-    return rank < 0 ? Number.POSITIVE_INFINITY : rank;
-  }
-
-  /** Within `reformDistance` of its formation slot, or in no horde (nothing to re-form with). */
-  private isAtSlot({ state, id, position, rule }: MinionSituation): boolean {
-    const horde = state.hordes.hordeOf(id);
-    const formation = horde === undefined ? undefined : this.content.formations[horde.formationId];
-    if (horde === undefined || formation === undefined || state.world === null) {
-      return true;
-    }
-    state.world.routes.pose(horde.lane, horde.team, horde.progress, this.anchor, this.forward);
-    const follower = followerIndex(horde.memberIds, horde.leaderId, id);
-    formationSlot(this.anchor, this.forward, follower, formation, this.slot);
-    const dx = this.slot.x - position.x;
-    const dy = this.slot.y - position.y;
-    return dx * dx + dy * dy <= rule.reformDistance * rule.reformDistance;
-  }
-
-  /** The minion's memory from its brain, or the fresh memory for anything it does not hold. */
-  private static read(memory: AiMemory): MinionMemory {
-    const number = (key: keyof MinionMemory): number => {
-      const value = memory[key];
-      return typeof value === 'number' ? value : 0;
-    };
-    const fsm = MINION_STATES.find((state) => state === memory.fsm) ?? 'marching';
-    return {
-      fsm,
-      targetId: typeof memory.targetId === 'string' ? memory.targetId : null,
-      aggroUntilTick: number('aggroUntilTick'),
-      cooldownUntilTick: number('cooldownUntilTick'),
-      leashX: number('leashX'),
-      leashY: number('leashY'),
-    };
+    const ox = objective.x - position.x;
+    const oy = objective.y - position.y;
+    const edge = sqrt(ox * ox + oy * oy) - objective.radius;
+    const rank = this.behaviour.rankOf(situation, objective.id);
+    const progress = state.hordes.hordeOf(situation.id)?.progress ?? Number.NEGATIVE_INFINITY;
+    const isGathered = progress + rule.acquisitionRadius >= objective.frontProgress;
+    return (edge <= rule.acquisitionRadius || isGathered) && rank !== Number.POSITIVE_INFINITY
+      ? { id: objective.id, rank, gap: Math.max(0, edge) ** 2 }
+      : null;
   }
 }

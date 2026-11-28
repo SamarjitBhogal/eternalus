@@ -1,19 +1,34 @@
 import { describe, expect, it } from 'vitest';
 
 import { Aether } from '../components/Aether';
+import { BossMoveCast } from '../components/BossMoveCast';
+import { Capturable } from '../components/Capturable';
+import { CathedralGemState } from '../components/CathedralGemState';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
+import { Jump } from '../components/Jump';
+import { MapFeatureLink } from '../components/MapFeatureLink';
 import { Movement } from '../components/Movement';
+import { ChaseWatch } from '../components/ChaseWatch';
+import { CombatClock } from '../components/CombatClock';
+import { LastEnemyHit } from '../components/LastEnemyHit';
+import { LastLegendHits } from '../components/LastLegendHits';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { INITIAL_FACING } from '../components/Transform.constants';
+import { Veterancy } from '../components/Veterancy';
 import { Vision } from '../components/Vision';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { CAPTURE_POINT } from '../content/zones/capturePoint';
 import { Entity } from '../entities/Entity';
+import type { Legend } from '../entities/Legend';
+import { CapturePoint } from '../entities/zones/CapturePoint';
 import { SeededRandom } from '../utils/SeededRandom';
 import { fnv1a } from '../utils/fnv1a';
 import { GameState } from './GameState';
 import type { Horde } from './Horde.types';
+import type { MatchState } from './MatchState.types';
 import { StateHasher } from './StateHasher';
 
 class Soldier extends Entity {
@@ -101,6 +116,220 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(before);
   });
 
+  it('changes when a collider turns unbreakable', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const wall = new Soldier('entity-1', 'soldier');
+    wall.spawn({});
+    const collider = new Collider({ kind: 'circle', radius: 1 }, 'structure', true);
+    wall.addComponent(collider);
+    state.entities.add(wall);
+    const before = hasher.hash(state);
+
+    collider.setUnbreakable(true);
+
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes when a minion counts a kill', () => {
+    const { state, soldier } = stateWithSoldier();
+    const veterancy = new Veterancy();
+    soldier.addComponent(veterancy);
+    const before = hasher.hash(state);
+
+    veterancy.recordKill(2);
+
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes while a push waits, and is back to before once the step uses it up', () => {
+    const { state, soldier } = stateWithSoldier();
+    const before = hasher.hash(state);
+    const movement = soldier.getComponent(Movement);
+
+    movement.pushBy({ x: 1, y: 0 });
+    expect(hasher.hash(state)).not.toBe(before);
+    movement.takeStep();
+    expect(hasher.hash(state)).toBe(before);
+  });
+
+  it('changes when a boss starts a move, with its move and landing tick, and again when it lands', () => {
+    const { state, soldier } = stateWithSoldier();
+    const before = hasher.hash(state);
+
+    state.entities.beginBossMove(soldier.id, 'slam', 10);
+    const waiting = hasher.hash(state);
+    expect(waiting).not.toBe(before);
+    state.entities.beginBossMove(soldier.id, 'sweep', 10);
+    expect(hasher.hash(state)).not.toBe(waiting);
+    state.entities.beginBossMove(soldier.id, 'slam', 11);
+    expect(hasher.hash(state)).not.toBe(waiting);
+    state.entities.beginBossMove(soldier.id, 'slam', 10);
+    expect(hasher.hash(state)).toBe(waiting);
+    soldier.getComponent(BossMoveCast).clear();
+    expect(hasher.hash(state)).not.toBe(waiting);
+  });
+
+  it('hashes an entity the same with or without a map-feature link: setup the replay carries (DEC-231)', () => {
+    const { state: plain } = stateWithSoldier();
+    const { state: linked, soldier } = stateWithSoldier();
+    soldier.addComponent(new MapFeatureLink('light-stronghold'));
+
+    expect(hasher.hash(linked)).toBe(hasher.hash(plain));
+  });
+
+  it('changes when only a granted minion level differs, the level capped (DEC-258)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const veterancy = new Veterancy();
+    soldier.addComponent(veterancy);
+    veterancy.gainLevels(3, 3);
+    const before = hasher.hash(state);
+
+    veterancy.grantLevels(1, 3, 'zone-1');
+
+    expect(veterancy.level).toBe(3);
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes when only the zone that granted a minion level differs (DEC-258)', () => {
+    const hashGrantedBy = (sourceId: string): number => {
+      const { state, soldier } = stateWithSoldier();
+      const veterancy = new Veterancy();
+      soldier.addComponent(veterancy);
+      veterancy.grantLevels(1, 3, sourceId);
+      return hasher.hash(state);
+    };
+
+    expect(hashGrantedBy('zone-1')).not.toBe(hashGrantedBy('zone-2'));
+  });
+
+  it('changes when an entity turns, and changes back when it turns back (DEC-192)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const before = hasher.hash(state);
+
+    soldier.getComponent(Transform).face({ x: 0, y: 1 });
+    const turned = hasher.hash(state);
+    soldier.getComponent(Transform).face({ x: -1, y: 0 });
+
+    expect(turned).not.toBe(before);
+    expect(hasher.hash(state)).not.toBe(turned);
+    soldier.getComponent(Transform).face(INITIAL_FACING);
+    expect(hasher.hash(state)).toBe(before);
+  });
+
+  it('changes with a chase watch and with its detour waypoint (DEC-193)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const watch = new ChaseWatch();
+    const bare = hasher.hash(state);
+    soldier.addComponent(watch);
+    const watched = hasher.hash(state);
+
+    watch.headFor(5, 6, 2, 0, 0);
+
+    expect(watched).not.toBe(bare);
+    expect(hasher.hash(state)).not.toBe(watched);
+  });
+
+  it('changes with a combat clock and with each of its ticks (DEC-188)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const clock = new CombatClock();
+    const bare = hasher.hash(state);
+    soldier.addComponent(clock);
+    const clocked = hasher.hash(state);
+    clock.recordDealt(5);
+    const dealt = hasher.hash(state);
+
+    clock.recordHurt(5);
+
+    expect(clocked).not.toBe(bare);
+    expect(dealt).not.toBe(clocked);
+    expect(hasher.hash(state)).not.toBe(dealt);
+  });
+
+  it('changes once the gem erupts, and not before', () => {
+    const { state } = stateWithSoldier();
+    const before = hasher.hash(state);
+    expect(hasher.hash(state)).toBe(before);
+
+    state.match.eruptGem('greater-boss');
+
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes with a last enemy hit and with each of its fields (DEC-346)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const bare = hasher.hash(state);
+    const last = new LastEnemyHit('entity-7', 5);
+    soldier.addComponent(last);
+    const hit = hasher.hash(state);
+    last.record('entity-8', 5);
+    const byAnother = hasher.hash(state);
+
+    last.record('entity-8', 6);
+
+    expect(hit).not.toBe(bare);
+    expect(byAnother).not.toBe(hit);
+    expect(hasher.hash(state)).not.toBe(byAnother);
+  });
+
+  it("changes with a team's last Legend hitter, with which Legend, and with each team (DEC-416)", () => {
+    const { state, soldier } = stateWithSoldier();
+    const bare = hasher.hash(state);
+    const hits = new LastLegendHits();
+    soldier.addComponent(hits);
+    hits.record('light', 'entity-7');
+    const light = hasher.hash(state);
+    hits.record('light', 'entity-8');
+    const byAnother = hasher.hash(state);
+
+    hits.record('dark', 'entity-9');
+
+    expect(light).not.toBe(bare);
+    expect(byAnother).not.toBe(light);
+    expect(hasher.hash(state)).not.toBe(byAnother);
+  });
+
+  it('changes when only the levels a waiting Legend is owed differ (DEC-371 E8a)', () => {
+    // A flat share's XP is unbounded, so its `levels` alone tells two owed shares apart.
+    const owedLevels = (levels: number): number => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+      const soldier = new Soldier('entity-1', 'soldier-definition');
+      soldier.spawn({});
+      state.respawns.add(soldier as unknown as Legend, 'light', 300);
+      state.respawns.owe(soldier.id, {
+        cause: 'team-kill',
+        victimId: 'entity-8',
+        victimTeam: 'neutral',
+        xp: Number.POSITIVE_INFINITY,
+        levels,
+      });
+      return hasher.hash(state);
+    };
+
+    expect(owedLevels(5)).not.toBe(owedLevels(2.5));
+  });
+
+  it('hashes a jump only while its key is held or it flies, then with each field (DEC-390)', () => {
+    const { state, soldier } = stateWithSoldier();
+    const bare = hasher.hash(state);
+    const jump = new Jump();
+    soldier.addComponent(jump);
+    const grounded = hasher.hash(state);
+    jump.hold(true);
+    const held = hasher.hash(state);
+    jump.takeOff({ x: 1, y: 0 });
+    const flying = hasher.hash(state);
+    jump.advance({ airTicks: 5, peakHeight: 1 });
+    const higher = hasher.hash(state);
+
+    jump.reset();
+
+    expect(grounded).toBe(bare);
+    expect(held).not.toBe(grounded);
+    expect(flying).not.toBe(held);
+    expect(higher).not.toBe(flying);
+    expect(hasher.hash(state)).toBe(bare);
+  });
+
   it('differs between seeds', () => {
     expect(hasher.hash(stateWithSoldier(1).state)).not.toBe(hasher.hash(stateWithSoldier(2).state));
   });
@@ -161,6 +390,160 @@ describe('StateHasher', () => {
     change(scout);
 
     expect(hasher.hash(state)).not.toBe(before);
+  });
+  it('hashes an untouched match as tick, phase and RNG only, as before the match fields existed', () => {
+    const state = new GameState(
+      createDefaultGameConfig(),
+      1,
+      null,
+      {},
+      {
+        schedule: [{ entryId: 'later', tick: 9 }],
+      },
+    );
+
+    expect(hasher.hash(state)).toBe(
+      fnv1a(JSON.stringify([0, 'countdown', state.rng.getState(), []])),
+    );
+  });
+
+  it.each<[string, (state: GameState) => void]>([
+    [
+      'the phase',
+      (state) => {
+        state.match.setPhase('early-game');
+      },
+    ],
+    [
+      'the timeline cursor',
+      (state) => {
+        state.match.advanceTimeline();
+      },
+    ],
+    [
+      'the idle hold',
+      (state) => {
+        state.match.holdIdle(true);
+      },
+    ],
+    [
+      'the scoring (a Legend row)',
+      (state) => {
+        state.match.scoreBook.addRow({
+          entityId: 'entity-1',
+          team: 'light',
+          classId: 'warrior',
+          controller: 'bot',
+        });
+      },
+    ],
+    [
+      'the scoring (a team total)',
+      (state) => {
+        state.match.scoreBook.awardTeam('dark', {
+          counter: 'structuresDestroyed',
+          by: 0,
+          points: 4,
+        });
+      },
+    ],
+    [
+      'the scoring (a team counter)',
+      (state) => {
+        state.match.scoreBook.awardTeam('dark', {
+          counter: 'structuresDestroyed',
+          by: 1,
+          points: 0,
+        });
+      },
+    ],
+    [
+      'the scoring (a recent hit)',
+      (state) => {
+        state.match.scoreBook.recordHit('entity-2', 'entity-1', 0);
+      },
+    ],
+    [
+      'the scoring (a reached checkpoint)',
+      (state) => {
+        state.match.scoreBook.awardTeam('light', {
+          counter: 'checkpointsReached',
+          by: 1,
+          points: 0,
+        });
+      },
+    ],
+    [
+      'the scoring (held ticks)',
+      (state) => {
+        state.match.scoreBook.awardTeam('light', {
+          counter: 'capturesHeldTicks',
+          by: 1,
+          points: 0,
+        });
+      },
+    ],
+  ])('changes when %s of the match changes', (_, change) => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const before = hasher.hash(state);
+
+    change(state);
+
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes with the tick the phase was entered on', () => {
+    const enteredFirst = new GameState(createDefaultGameConfig(), 1);
+    const enteredLater = new GameState(createDefaultGameConfig(), 1);
+    enteredFirst.match.setPhase('early-game');
+    enteredFirst.advanceTick();
+    enteredLater.advanceTick();
+    enteredLater.match.setPhase('early-game');
+
+    expect(hasher.hash(enteredLater)).not.toBe(hasher.hash(enteredFirst));
+  });
+
+  describe('between two matches that have both left their initial state', () => {
+    type MatchFields = Pick<
+      MatchState,
+      'phase' | 'phaseEnteredTick' | 'timelineCursor' | 'isIdleHeld'
+    >;
+    const AWAY: MatchFields = {
+      phase: 'early-game',
+      phaseEnteredTick: 1,
+      timelineCursor: 1,
+      isIdleHeld: true,
+    };
+
+    /** A match at tick 3 whose match fields are `fields`; non-initial, so they are all hashed. */
+    const matchWith = (fields: MatchFields): GameState => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+      while (state.tick < fields.phaseEnteredTick) {
+        state.advanceTick();
+      }
+      state.match.setPhase(fields.phase);
+      while (state.tick < 3) {
+        state.advanceTick();
+      }
+      for (let mark = 0; mark < fields.timelineCursor; mark += 1) {
+        state.match.advanceTimeline();
+      }
+      state.match.holdIdle(fields.isIdleHeld);
+      return state;
+    };
+
+    it.each<[string, Partial<MatchFields>]>([
+      ['phase', { phase: 'quarter-mark' }],
+      ['phaseEnteredTick', { phaseEnteredTick: 2 }],
+      ['timelineCursor', { timelineCursor: 2 }],
+      ['isIdleHeld', { isIdleHeld: false }],
+    ])('hashes differently when only %s differs', (_, change) => {
+      const base = matchWith(AWAY);
+      const changed = matchWith({ ...AWAY, ...change });
+
+      expect(hasher.hash(matchWith(AWAY))).toBe(hasher.hash(base));
+      expect(hasher.hash(changed)).not.toBe(hasher.hash(base));
+    });
   });
 
   it('covers every brain field and the deferred queue once a brain exists', () => {
@@ -237,7 +620,7 @@ describe('StateHasher', () => {
       const { state, soldier } = stateWithSoldier();
       const legacy = [
         state.tick,
-        state.phase,
+        state.match.phase,
         state.rng.getState(),
         [
           [
@@ -306,5 +689,166 @@ describe('StateHasher', () => {
         expect(new Set([withRequest(2, 2), withRequest(3, 3), withRequest(2, 1)]).size).toBe(3);
       },
     );
+  });
+
+  it('hashes the Cathedral gem: holder, glow ticks left, glow hits and ticks since hit each change the hash', () => {
+    const stateWithGem = (): { state: GameState; gem: CathedralGemState } => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+      const holder = new Bare('entity-1', 'bare');
+      holder.spawn({});
+      state.entities.add(holder);
+      const gem = new CathedralGemState();
+      holder.addComponent(gem);
+      return { state, gem };
+    };
+    const { state, gem } = stateWithGem();
+    const untouched = hasher.hash(state);
+
+    gem.hold('light');
+    const held = hasher.hash(state);
+    gem.struck(3);
+    const struck = hasher.hash(state);
+    gem.struck(3);
+    const struckTwice = hasher.hash(state);
+    gem.age();
+    const aged = hasher.hash(state);
+    gem.age();
+    gem.age();
+    const dark = hasher.hash(state);
+    gem.age(); // the glow is dark: only the ticks since the hit move
+    const later = hasher.hash(state);
+
+    expect(new Set([untouched, held, struck, struckTwice, aged, dark, later]).size).toBe(7);
+
+    // Each step above moves more than one field; these two gems differ in glow ticks left alone.
+    const struckFor = (glowTicks: number): number => {
+      const fresh = stateWithGem();
+      fresh.gem.struck(glowTicks);
+      return hasher.hash(fresh.state);
+    };
+    expect(struckFor(3)).not.toBe(struckFor(4));
+  });
+
+  it('hashes a capture point: owner, progress, checkpoint and reached marks each change the hash', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const point = new CapturePoint('entity-1', CAPTURE_POINT.id);
+    point.spawn({
+      definition: CAPTURE_POINT,
+      position: { x: 5, y: 5 },
+      team: 'neutral',
+      area: [
+        [
+          { x: 0, y: 0 },
+          { x: 10, y: 0 },
+          { x: 5, y: 10 },
+        ],
+      ],
+    });
+    state.entities.add(point);
+    const zone = point.getComponent(Capturable);
+    const untouched = hasher.hash(state);
+
+    zone.setProgress(0.5, 1);
+    const progressed = hasher.hash(state);
+    zone.setProgress(0.5, 2);
+    const checkpoint = hasher.hash(state);
+    zone.markReached('light', 2);
+    const reached = hasher.hash(state);
+    zone.setOwner('light', 0);
+    const owned = hasher.hash(state);
+
+    expect(new Set([untouched, progressed, checkpoint, reached, owned]).size).toBe(5);
+  });
+
+  it('changes when only the tick a capture point was taken differs (DEC-258)', () => {
+    const hashOwnedSince = (tick: number): number => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+      const point = new CapturePoint('entity-1', CAPTURE_POINT.id);
+      point.spawn({
+        definition: CAPTURE_POINT,
+        position: { x: 5, y: 5 },
+        team: 'neutral',
+        area: [
+          [
+            { x: 0, y: 0 },
+            { x: 10, y: 0 },
+            { x: 5, y: 10 },
+          ],
+        ],
+      });
+      state.entities.add(point);
+      point.getComponent(Capturable).setOwner('light', tick);
+      return hasher.hash(state);
+    };
+
+    expect(hashOwnedSince(0)).not.toBe(hashOwnedSince(5));
+  });
+
+  describe('ally damage (DEC-89)', () => {
+    const withTally = (...tallies: readonly ['light' | 'dark', string, number][]): number => {
+      const { state } = stateWithSoldier();
+      for (const [team, lane, amount] of tallies) {
+        state.allyDamage.add(team, lane, amount);
+      }
+      return hasher.hash(state);
+    };
+
+    it('hashes the same tallies the same, and a cleared tally as none', () => {
+      const { state } = stateWithSoldier();
+      const none = hasher.hash(state);
+      state.allyDamage.add('dark', 'lane-1', 9);
+      state.allyDamage.clear('dark');
+
+      expect(withTally(['light', 'lane-0', 5])).toBe(withTally(['light', 'lane-0', 5]));
+      expect(hasher.hash(state)).toBe(none);
+    });
+
+    it('changes with the team, the lane and the amount of a tally', () => {
+      const hashes = [
+        hasher.hash(stateWithSoldier().state),
+        withTally(['light', 'lane-0', 5]),
+        withTally(['dark', 'lane-0', 5]),
+        withTally(['light', 'lane-1', 5]),
+        withTally(['light', 'lane-0', 6]),
+      ];
+
+      expect(new Set(hashes).size).toBe(5);
+    });
+  });
+
+  it('changes when a checkpoint defender set is cleared, and with which set (07 §7)', () => {
+    const withCleared = (...sets: readonly string[]): number => {
+      const { state } = stateWithSoldier();
+      for (const set of sets) state.guards.markCleared(set);
+      return hasher.hash(state);
+    };
+
+    expect(new Set([withCleared(), withCleared('set-1'), withCleared('set-2')]).size).toBe(3);
+    expect(withCleared('set-1')).toBe(withCleared('set-1'));
+  });
+
+  describe('defender damage (07 §7)', () => {
+    const withTally = (set: string, legend: string, amount: number): number => {
+      const { state } = stateWithSoldier();
+      state.defenderDamage.add(set, legend, amount);
+      return hasher.hash(state);
+    };
+
+    it('hashes a taken tally as none, and changes with the set, the Legend and the amount', () => {
+      const { state } = stateWithSoldier();
+      const none = hasher.hash(state);
+      state.defenderDamage.add('set-1', 'legend-a', 9);
+      state.defenderDamage.take('set-1');
+      const hashes = [
+        none,
+        withTally('set-1', 'legend-a', 5),
+        withTally('set-2', 'legend-a', 5),
+        withTally('set-1', 'legend-b', 5),
+        withTally('set-1', 'legend-a', 6),
+      ];
+
+      expect(hasher.hash(state)).toBe(none);
+      expect(new Set(hashes).size).toBe(5);
+    });
   });
 });

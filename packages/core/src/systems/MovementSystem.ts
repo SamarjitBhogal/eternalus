@@ -1,3 +1,4 @@
+import { Jump } from '../components/Jump';
 import { Movement } from '../components/Movement';
 import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
@@ -6,14 +7,20 @@ import type { System, SystemContext } from './System.types';
 /**
  * Moves every entity that has `Movement` and `Transform`, in store order: one tick of
  * acceleration toward its heading (or of slowing down without one), then the velocity is added
- * to the position. Statuses scale the top speed (`moveSpeed`) or hold the entity in place
- * (`cannot-move`). Allocates nothing per entity (architecture 10 §2).
+ * to the position and the entity faces the way it moved (DEC-192; a still entity keeps its
+ * facing). Statuses scale the top speed (`moveSpeed`) or hold the entity in place
+ * (`cannot-move`); while the match holds units idle (`state.match.isIdleHeld`, the countdown)
+ * every entity is held the same way. An airborne entity (`Jump`, DEC-390) moves and faces by its
+ * takeoff velocity (momentum), while its `Movement` still follows the input for the next takeoff.
+ * A pending push (`Movement.pushBy`, a knockback) is added to the step once, held, airborne or
+ * not. Allocates nothing per entity (architecture 10 §2).
  */
 export class MovementSystem implements System {
   public readonly name = 'movement';
 
   /** Advances every moving entity by one tick. */
   public update({ state }: SystemContext): void {
+    const isHeld = state.match.isIdleHeld;
     state.entities.forEach((entity) => {
       const movement = entity.findComponent(Movement);
       const transform = entity.findComponent(Transform);
@@ -21,13 +28,16 @@ export class MovementSystem implements System {
       if (movement !== undefined && transform !== undefined) {
         const statuses = entity.findComponent(StatusEffects);
         const speedScale =
-          statuses === undefined
-            ? 1
-            : statuses.has('cannot-move')
-              ? 0
-              : statuses.multiplier('moveSpeed');
+          isHeld || statuses?.has('cannot-move') === true
+            ? 0
+            : (statuses?.multiplier('moveSpeed') ?? 1);
         movement.advance(speedScale);
-        transform.moveBy(movement.velocity);
+        const jump = entity.findComponent(Jump);
+        // No steering in the air: the takeoff velocity holds until landing (DEC-420). A pending
+        // push (a knockback) moves even a held or airborne unit once; it does not turn it.
+        const velocity = jump?.isAirborne === true ? jump.velocity : movement.velocity;
+        transform.moveBy(movement.takeStep(velocity));
+        transform.face(velocity);
       }
     });
   }

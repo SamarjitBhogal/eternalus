@@ -4,7 +4,7 @@ description: Sprint checklists for the deterministic simulation kernel, the firs
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-09
+last-reviewed: 2026-11-26
 tags: [plan, phase-1, simulation, map, engine, input]
 paths: ['packages/core/src/**', 'apps/client/src/game/**', 'apps/client/src/bridge/**']
 related:
@@ -119,9 +119,11 @@ Follows [04-entity-architecture.md](../architecture/04-entity-architecture.md).
       removal has a cause; tick advanced once. Owner: _. Test: an injected corrupt state yields a
       violation record with tick, seed, entity id and the last commands. Done when: violations
       throw in tests and log through `Logger` in the browser.
-- [ ] **`IdGenerator`, `RingBuffer`, `ObjectPool` base** in `utils/`. Owner: _. Test: pool
+- [x] **`IdGenerator`, `RingBuffer`, `ObjectPool` base** in `utils/`. Owner: _. Test: pool
       resets fields on acquire and nulls references on release. Done when: `GameEvents` payloads
-      for high-frequency events come from the pool.
+      for high-frequency events come from the pool. Status (2026-10-30, SCRUM-427): the
+      `ObjectPool` base is built. DEC-94 replaces this item's done-when: event payloads stay
+      unpooled until profiling shows a need, so the item is done.
 
 **Success metric:** an added test that registers a new fake unit kind touches exactly three
 places (class, content entry, registry line); coverage in `packages/core` ≥ 82% (raised from 80%,
@@ -196,10 +198,10 @@ Follows [08-game-engine.md](../architecture/08-game-engine.md),
       structure kind in `ViewRegistry` makes it appear on both the map and the minimap with zero
       minimap code changes; a `numLanes: 5` definition draws five lanes. Done when: the minimap
       has no per-kind code.
-- [ ] _(feat/session-shell-home, pending merge: `TypedEventBus<BridgeEventMap>`, `matchSlice.clock` and the typed hook done; the every-6th-tick publish and its 30 → 5 test belong to `MatchBridge`, session H)_ **Bridge event bus + first Redux slice (match clock)**: `TypedEventBus<BridgeEventMap>`,
+- [ ] _(feat/session-shell-home, pending merge: `TypedEventBus<BridgeEventMap>`, `matchSlice.clock` and the typed hook done; the every-6th-tick publish and its 30 → 5 test belong to `MatchBridge`, session H)_ _(feat/hud-and-character-select: the 30 → 5 test exists, `MatchBridge.test.ts` "publishes the clock and HUD every 6 ticks and the rosters every 30" (exactly five clock and five HUD publications in 30 ticks, each one dispatch through `connectBusToStore`); the `mm:ss` selector is tested in `selectMatchClockText.test.ts`; still open: no ESLint rule enforces "`ui/` imports only `bridge/`", because 02 §11's `ui/` block is not added yet (a scan finds no such import in a non-test file today; the test `SettingsScreen.rebind.test.tsx` imports `game/`, `data/` and core))_ **Bridge event bus + first Redux slice (match clock)**: `TypedEventBus<BridgeEventMap>`,
       `matchSlice` (its `clock` field), publish every 6th tick, typed hooks. Owner: _. Test: 30 ticks → 5
       dispatches; the selector formats `mm:ss`. Done when: `ui/` imports only `bridge/`.
-- [ ] **`Match` composition root + `MatchScreen` shell** (sim + loop + renderer + views +
+- [x] _(feat/hud-and-character-select, pending merge: the test is `Match.lifecycle.test.ts` "stops the loop and its subscriptions on destroy: 0 scheduled frames, 0 listeners" and `MatchHost.test.ts` "leaves 0 listeners and destroys the match before its adapters, once"; done when: `main.tsx` mounts `<App/>` behind the `Provider` and `App` shows `MatchScreen` in `match`, `App.test.tsx` T-APP-3; `SessionController` owns the lifetime, DEC-50)_ **`Match` composition root + `MatchScreen` shell** (sim + loop + renderer + views +
       bridge; `destroy()` tears everything down). Owner: _. Test: create/destroy leaves 0 live
       listeners and 0 scheduled frames. Done when: `main.tsx` mounts `MatchScreen` behind the
       Redux `Provider`.
@@ -207,8 +209,10 @@ Follows [08-game-engine.md](../architecture/08-game-engine.md),
       reason) and `RingBufferSink`. Owner: _. Test: records route by severity. Done when: the
       overlay can read the ring buffer.
 
-**Success metric:** with 300 dummies moving, the entity layer renders at a median ≤ 16.7 ms per
-frame and no frame above 50 ms during a 60 s run on the reference laptop (`PerfOverlay`).
+**Success metric:** with 300 dummies moving, the entity layer renders at a median frame time ≤
+one 60 Hz frame, with no missed frame and no frame above 50 ms, during a 60 s run on the
+reference laptop (`PerfOverlay`). [Architecture 08](../architecture/08-game-engine.md) §9 defines
+"one 60 Hz frame", "missed frame" and the missed-frame count (DEC-328, DEC-336, DEC-368).
 
 ## Sprint 1.5 — Input and player
 
@@ -228,7 +232,8 @@ Owner: _ (client lane + one sim-lane reviewer). Week 3. Depends on 1.2 and 1.4.
       follows, collides with the rift and bounds). Owner: _. Test: headless scenario: 60 `move`
       ticks displace the Legend; a wall stops it; 0 anomalies. Done when: a human can walk the
       map with WASD in the browser.
-- [ ] **`PerfOverlay` v1** (tick and frame histograms from `performance.mark/measure`,
+- [ ] **`PerfOverlay` v1** (tick histogram from `performance.mark/measure`, frame histogram from
+      frame intervals ([08](../architecture/08-game-engine.md) §9),
       long-animation-frame observer, toggled by a debug action). Owner: _. Test: histogram
       bucket math. Done when: the overlay reads only from the bridge store.
 - [ ] **`DeveloperMenu` v0** (gated by `?dev=1`): spawn N dummies at the cursor or a slot via a
@@ -237,6 +242,8 @@ Owner: _ (client lane + one sim-lane reviewer). Week 3. Depends on 1.2 and 1.4.
 - [ ] **Headless bench `npm run bench`** (`Recommendation:` Node script in core: 300 dummies ×
       3,000 ticks, prints p50/p95 tick time). Owner: _. Test: the script runs in CI without
       asserting a time (times are asserted locally). Done when: the number is in PROGRESS.
+      Status (2026-11-07): `npm run bench` is built, runs in CI and measures lane hordes with bot
+      Legends (`PROGRESS.md`); the 300-dummy case and its 4 ms target are not measured yet.
 - [x] **Coverage ratchet**: core 80 → 82, client 45/50 → 55/55 (`Recommendation:`). Owner: _.
       Test: `npm run test:coverage`. Done when: thresholds are committed in the same PR.
 
@@ -245,15 +252,15 @@ laptop; a teammate who did not write the code walks the map in the browser with 
 
 ## Success metrics (phase level)
 
-| Metric                                          | Target                                                   |
-| ----------------------------------------------- | -------------------------------------------------------- |
-| Replay determinism                              | 10 seeds × 3,000 ticks, identical hashes every 100 ticks |
-| Tick time (`npm run bench`, 300 dummies)        | p95 ≤ 4 ms on the reference dev laptop                   |
-| Frame rate (300 dummies on screen)              | median ≤ 16.7 ms, no frame > 50 ms over 60 s             |
-| Config-driven map + minimap                     | `numLanes` 3 → 5 passes in tests with 0 code changes     |
-| Collision anomalies in the random-movement soak | 0                                                        |
-| Coverage                                        | core ≥ 82%, client ≥ 55% lines/functions/statements      |
-| Lint, knip, docs check                          | green                                                    |
+| Metric                                          | Target                                                                                                                            |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Replay determinism                              | 10 seeds × 3,000 ticks, identical hashes every 100 ticks                                                                          |
+| Tick time (`npm run bench`, 300 dummies)        | p95 ≤ 4 ms on the reference dev laptop                                                                                            |
+| Frame rate (300 dummies on screen)              | median ≤ one 60 Hz frame, no missed frame, no frame > 50 ms over 60 s (terms and the count: architecture 08 §9; DEC-336, DEC-368) |
+| Config-driven map + minimap                     | `numLanes` 3 → 5 passes in tests with 0 code changes                                                                              |
+| Collision anomalies in the random-movement soak | 0                                                                                                                                 |
+| Coverage                                        | core ≥ 82%, client ≥ 55% lines/functions/statements                                                                               |
+| Lint, knip, docs check                          | green                                                                                                                             |
 
 ## Exit criteria
 

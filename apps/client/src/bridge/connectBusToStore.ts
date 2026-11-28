@@ -1,15 +1,19 @@
 import type { BridgeEventMap } from './events';
+import { assetsSlice } from './slices/assetsSlice';
 import { contentSlice } from './slices/contentSlice';
+import { developerMenuSlice } from './slices/developerMenuSlice';
 import { hudSlice } from './slices/hudSlice';
 import { loadingSlice } from './slices/loadingSlice';
 import { matchSetupSlice } from './slices/matchSetupSlice';
 import { matchSlice } from './slices/matchSlice';
 import { sessionSlice } from './slices/sessionSlice';
 import { settingsSlice } from './slices/settingsSlice';
+import { viewSlice } from './slices/viewSlice';
 import type { AppDispatch } from './store';
 import type { TypedEventBus } from './TypedEventBus';
 
 const setup = matchSetupSlice.actions;
+const match = matchSlice.actions;
 
 /**
  * Copies every game → UI event into its slice: the only path from the bus to the store.
@@ -23,26 +27,48 @@ export function connectBusToStore(
     bus.on('session-phase', (event) => dispatch(sessionSlice.actions.phaseChanged(event))),
     bus.on('menu-route', ({ route }) => dispatch(sessionSlice.actions.routeChanged(route))),
     bus.on('overlay', ({ overlay }) => dispatch(sessionSlice.actions.overlayChanged(overlay))),
+    bus.on('crash-report', (report) => dispatch(sessionSlice.actions.crashReportChanged(report))),
     bus.on('content-catalogue', (catalogue) =>
       dispatch(contentSlice.actions.catalogueLoaded(catalogue)),
     ),
     bus.on('loading-progress', (progress) =>
       dispatch(loadingSlice.actions.progressChanged(progress)),
     ),
-    // Every published setup starts clean: no selection or countdowns left from a previous one.
+    bus.on('asset-urls', (event) => dispatch(assetsSlice.actions.groupUrlsChanged(event))),
+    bus.on('credits', ({ entries }) => dispatch(assetsSlice.actions.creditsLoaded(entries))),
+    // Every published setup starts clean: no selection, countdowns, HUD or match state left over.
     bus.on('match-setup', (draft) => {
       dispatch(setup.reset());
+      dispatch(hudSlice.actions.reset());
+      dispatch(match.reset());
+      dispatch(viewSlice.actions.reset());
+      dispatch(developerMenuSlice.actions.reset());
       if (draft === null) return;
-      dispatch(setup.setTeam({ seed: draft.seed, playerTeam: draft.playerTeam }));
+      dispatch(setup.setTeam({ mode: draft.mode, seed: draft.seed, playerTeam: draft.playerTeam }));
       dispatch(setup.setRosters({ allies: draft.allies, enemies: draft.enemies }));
     }),
     bus.on('class-selection', (selection) => dispatch(setup.select(selection))),
-    bus.on('countdown', ({ kind, remainingMs }) =>
-      dispatch(kind === 'select' ? setup.setCountdown(remainingMs) : setup.setReveal(remainingMs)),
+    bus.on('selection-locked', (rosters) => dispatch(setup.lockIn(rosters))),
+    bus.on('countdown', (countdown) => dispatch(setup.countdownChanged(countdown))),
+    bus.on('match-clock', (clock) => dispatch(match.clockChanged(clock))),
+    bus.on('match-ended', (event) => dispatch(match.ended(event))),
+    bus.on('duel-ended', (outcome) => dispatch(match.duelEnded(outcome))),
+    bus.on('duel-versus', (names) => dispatch(match.versusChanged(names))),
+    bus.on('duel-state', (state) => dispatch(match.duelHudChanged(state))),
+    bus.on('duel-opponent-presence', ({ graceMs }) =>
+      dispatch(match.opponentPresenceChanged(graceMs)),
     ),
-    bus.on('match-clock', (clock) => dispatch(matchSlice.actions.clockChanged(clock))),
-    bus.on('hud-state', (hud) => dispatch(hudSlice.actions.hudStateChanged(hud))),
+    bus.on('duel-connection', ({ isReconnecting }) =>
+      dispatch(match.connectionChanged(isReconnecting)),
+    ),
+    bus.on('hud-state', ({ player }) => dispatch(hudSlice.actions.hudStateChanged(player))),
+    bus.on('structure-state', ({ structures }) => dispatch(match.structuresChanged(structures))),
+    bus.on('capture-state', ({ points }) => dispatch(match.capturePointsChanged(points))),
     bus.on('announcement', (line) => dispatch(hudSlice.actions.announced(line))),
+    bus.on('minimap-visibility', ({ isShown }) =>
+      dispatch(viewSlice.actions.minimapShownChanged(isShown)),
+    ),
+    bus.on('developer-menu', (state) => dispatch(developerMenuSlice.actions.changed(state))),
     bus.on('settings', (settings) => dispatch(settingsSlice.actions.settingsChanged(settings))),
   ];
   return () => {

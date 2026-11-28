@@ -1,4 +1,4 @@
-import { MAX_ZOOM, MIN_ZOOM } from './Camera.constants';
+import { BASE_ZOOM, MAX_ZOOM, MIN_ZOOM } from './Camera.constants';
 import type { Viewport } from './Camera.types';
 import type { WorldPoint, WorldRect } from './render/Renderer.types';
 
@@ -12,7 +12,7 @@ export class Camera {
   private center: WorldPoint;
   private readonly baseWidth: number;
   private readonly baseHeight: number;
-  private zoomLevel = 1;
+  private zoomLevel = BASE_ZOOM;
 
   /**
    * Creates a camera looking at `center`, showing `visibleWidth` world units across and
@@ -82,6 +82,8 @@ export class Camera {
     };
   }
 
+  // ponytail: no production caller since 54716be; delete it with its round-trip test at the
+  // phase-exit /ponytail-debt pass.
   /** The world position under a screen position (device pixels), for clicks. */
   public screenToWorld(point: WorldPoint, viewport: Viewport): WorldPoint {
     const view = this.visibleArea(viewport.worldWidth, viewport.worldHeight);

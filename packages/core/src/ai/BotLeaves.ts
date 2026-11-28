@@ -1,28 +1,30 @@
-import type { AiMemory, BotDifficultyDefinition } from '../content/ai/ai.types';
+import type { AiMemory } from '../content/ai/ai.types';
 import type { EntityId } from '../state/EntityStore.types';
-import type { GameState } from '../state/GameState';
 import { compareById } from '../utils/compareById';
-import { sqrt } from '../utils/deterministicMath';
 import type { Vec2 } from '../utils/geometry.types';
 import { SeededRandom } from '../utils/SeededRandom';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { BtStatus } from './bt/BtNode.types';
 import type { BotMemory, BotLegendControllerContent, BotTurn } from './BotLegendController.types';
+import { BotMovement } from './BotMovement';
+import { BotTargeting } from './BotTargeting';
 import type { Decision, DecisionInput } from './Controller.types';
-import { closeness, weakness } from './utility/considerations';
-import { UtilityScorer } from './utility/UtilityScorer';
+import { isPlayableTeam } from '../teams/playableTeams';
 
 /**
  * The conditions and actions every bot Legend tree is built from (architecture 11 §4.2):
- * surviving, choosing and fighting an enemy (and casting), following the lead horde and walking,
- * around obstacles through A\* (`state.paths`). `BotLegendController` and `RoverController` arrange
- * them into their trees. Stateless apart from scratch: what a bot remembers is its brain.
+ * surviving, choosing and fighting an enemy (and casting), defending its own lane structures,
+ * attacking the lane's next enemy structure, following the lead horde and walking. Which enemy it
+ * picks is `BotTargeting`'s; how the bot gets there (A\* round obstacles, footprint edges,
+ * detours) is `BotMovement`'s. `BotLegendController` and `RoverController`
+ * arrange the leaves into their trees. Stateless apart from scratch: what a bot remembers is its
+ * brain.
  */
 export class BotLeaves {
-  private readonly scorers = new Map<string, UtilityScorer<'closeness' | 'weakness'>>();
   private readonly anchor: MutableVec2 = { x: 0, y: 0 };
   private readonly forward: MutableVec2 = { x: 0, y: 0 };
-  private readonly step: MutableVec2 = { x: 0, y: 0 };
+  private readonly movement = new BotMovement();
+  private readonly targeting = new BotTargeting();
 
   /** @param content - Difficulties and retreat points; the leaves hold no numbers. */
   public constructor(private readonly content: BotLegendControllerContent) {}
@@ -44,9 +46,9 @@ export class BotLeaves {
         `Bot "${entityId}" names difficulty "${brain.profileId}", which does not exist.`,
       );
     }
-    const position = BotLeaves.positionOf(state, entityId);
+    const position = BotMovement.positionOf(state, entityId);
     const team = state.entities.teamOf(entityId);
-    if (position === undefined || (team !== 'light' && team !== 'dark')) {
+    if (position === undefined || !isPlayableTeam(team)) {
       return null;
     }
     const memory = BotLeaves.read(brain.memory);
@@ -62,6 +64,7 @@ export class BotLeaves {
       next: memory,
       commands: [],
       enemy: null,
+      objective: null,
       destination: null,
     };
   }
@@ -89,7 +92,7 @@ export class BotLeaves {
     let best: { readonly id: string; readonly position: Vec2 } | null = null;
     let bestGap = Number.POSITIVE_INFINITY;
     for (const feature of turn.state.world?.definition.features ?? []) {
-      const gap = BotLeaves.gapSquared(turn.position, feature.position);
+      const gap = BotMovement.gapSquared(turn.position, feature.position);
       const isNearer =
         gap < bestGap || (gap === bestGap && best !== null && compareById(feature.id, best.id) < 0);
       if (feature.team === turn.team && this.content.retreatTo.includes(feature.kind) && isNearer) {
@@ -101,46 +104,86 @@ export class BotLeaves {
       return 'failure';
     }
     if (turn.memory.targetId !== null) {
-      turn.commands.push({ type: 'stop', actorId: turn.id });
-      turn.next = { ...turn.next, targetId: null };
+      BotMovement.stop(turn);
     }
     return this.moveTo(turn, best.position);
   }
 
-  /** Picks the enemy in `engageRadius` the utility scorer likes best. */
+  /** Picks the enemy in `engageRadius` to fight (`BotTargeting.findEnemy`). */
   public findEnemy(turn: BotTurn): boolean {
-    const { state, team, position, difficulty, perception } = turn;
-    const enemies = perception.unitsWithin(position, difficulty.engageRadius, {
-      hostileTo: team,
-      aliveOnly: true,
-    });
-    turn.enemy = this.scorerFor(difficulty).best(enemies, (enemy) => {
-      const at = BotLeaves.positionOf(state, enemy) ?? position;
-      return {
-        closeness: closeness(sqrt(BotLeaves.gapSquared(position, at)), difficulty.engageRadius),
-        weakness: weakness(state.entities.healthFractionOf(enemy) ?? 1),
-      };
-    });
-    return turn.enemy !== null;
+    return this.targeting.findEnemy(turn);
   }
 
-  /** Attacks `turn.enemy`, may cast at it, and closes in until it is in reach. */
+  /** Picks an enemy attacking the bot's own structures on `lane` (`BotTargeting.findDefence`). */
+  public findDefence(turn: BotTurn, lane: string): boolean {
+    return this.targeting.findDefence(turn, lane);
+  }
+
+  /**
+   * Attacks `turn.enemy`, may cast at it, and closes in until it is in reach. An enemy on ground
+   * the nav grid blocks (inside a tower's fort court) is closed in on as a siege closes in, so the
+   * bot follows it inside instead of waiting at the edge (DEC-189). A bot stuck on the way goes
+   * round (`BotMovement.goRound`, DEC-193).
+   */
   public fight(turn: BotTurn): BtStatus {
     const { state, id, enemy } = turn;
-    const at = enemy === null ? undefined : BotLeaves.positionOf(state, enemy);
+    const at = enemy === null ? undefined : BotMovement.positionOf(state, enemy);
     if (enemy === null || at === undefined) {
       return 'failure';
     }
-    if (enemy !== turn.memory.targetId) {
-      turn.commands.push({ type: 'attack-target', actorId: id, targetId: enemy });
-      turn.next = { ...turn.next, targetId: enemy };
-    }
+    const isHolding = BotLeaves.attackAndHold(turn, enemy, state.entities.isInReach(id, enemy));
     this.mayCast(turn, enemy, at);
-    if (state.entities.isInReach(id, enemy)) {
-      turn.commands.push({ type: 'move', actorId: id, direction: { x: 0, y: 0 } });
+    if (isHolding) {
       return 'running';
     }
-    return this.moveTo(turn, at);
+    if (BotMovement.goRound(turn)) {
+      return 'running';
+    }
+    const isOnOpenGround = state.world?.grid.isWalkableAt(at.x, at.y) ?? true;
+    return isOnOpenGround ? this.moveTo(turn, at) : this.movement.closeIn(turn, at, 0);
+  }
+
+  /**
+   * Finds `lane`'s next standing enemy structure (18 §6.2) once the bot has come within
+   * `engageRadius` of the point hordes gather at to attack it. A gate that cannot be broken yet
+   * does not count, so the bot stays with its horde, which holds in front of it.
+   */
+  public findObjective(turn: BotTurn, lane: string): boolean {
+    const { state, team, position, difficulty } = turn;
+    const routes = state.world?.routes ?? null;
+    if (routes === null || lane === '') {
+      return false;
+    }
+    const objective = state.laneStructures.objectiveFor(lane, team, state.entities);
+    const progress = routes.distanceAlong(lane, team, position);
+    if (
+      objective === null ||
+      !objective.isBreakable ||
+      progress + difficulty.engageRadius < objective.frontProgress
+    ) {
+      return false;
+    }
+    turn.objective = objective;
+    return true;
+  }
+
+  /**
+   * Attacks `turn.objective` (11 §4.2 `Push`): A\* to the edge of its footprint on the bot's side
+   * (from its collider radius), then straight at it for the last step, holding once it is in
+   * reach (B66-F1, `BotMovement.closeIn`). The edge faces the bot, so a Stronghold behind its wall
+   * ring is reached through the ring's gate instead of leaned on from outside. A bot stuck on the
+   * way goes round (`BotMovement.goRound`, DEC-193).
+   */
+  public siege(turn: BotTurn): BtStatus {
+    const { state, id, objective } = turn;
+    if (objective === null) {
+      return 'failure';
+    }
+    const isInReach = state.entities.isInReach(id, objective.id);
+    if (BotLeaves.attackAndHold(turn, objective.id, isInReach) || BotMovement.goRound(turn)) {
+      return 'running';
+    }
+    return this.movement.closeIn(turn, objective, objective.radius);
   }
 
   /** Finds the anchor of the most advanced allied horde on `lane`. */
@@ -180,33 +223,26 @@ export class BotLeaves {
   }
 
   /**
-   * One `move` toward `destination`, through the A\* waypoint when the straight line is blocked,
-   * or a halt once within `arrivalDistance` of it. When the pathfinder finds no way, a `stop`, a
-   * forgotten target and `failure`, so the bot does not lean on the obstruction and lower branches may run.
+   * One `move` toward `to`, or a halt once there, round blocked ground (`BotMovement.moveTo`):
+   * the walking leaf of the trees.
    */
-  public moveTo(turn: BotTurn, destination: Vec2 | null): BtStatus {
-    if (destination === null) {
-      return 'failure';
+  public moveTo(turn: BotTurn, to: Vec2 | null): BtStatus {
+    return this.movement.moveTo(turn, to);
+  }
+
+  /**
+   * Points the bot's attack at `targetId` unless it already is, and holds it still while
+   * `isInReach`: the opening Fight and Push share (DEC-168, B9). Returns whether it holds.
+   */
+  private static attackAndHold(turn: BotTurn, targetId: EntityId, isInReach: boolean): boolean {
+    if (targetId !== turn.memory.targetId) {
+      turn.commands.push({ type: 'attack-target', actorId: turn.id, targetId });
+      turn.next = { ...turn.next, targetId };
     }
-    const { arrivalDistance } = turn.difficulty;
-    const isThere =
-      BotLeaves.gapSquared(turn.position, destination) <= arrivalDistance * arrivalDistance;
-    const paths = turn.state.paths;
-    if (!isThere && paths !== null && !paths.waypoint(turn.position, destination, this.step)) {
-      // `stop` clears the live attack target, so memory forgets it too and a later fight re-targets.
-      turn.commands.push({ type: 'stop', actorId: turn.id });
-      turn.next = { ...turn.next, targetId: null };
-      return 'failure';
+    if (isInReach) {
+      BotMovement.halt(turn);
     }
-    const next = !isThere && paths !== null ? this.step : destination;
-    turn.commands.push({
-      type: 'move',
-      actorId: turn.id,
-      direction: isThere
-        ? { x: 0, y: 0 }
-        : { x: next.x - turn.position.x, y: next.y - turn.position.y },
-    });
-    return 'running';
+    return isInReach;
   }
 
   /** Casts its first ability at the enemy when the cast is due and the roll comes up (11 §4.2). */
@@ -224,32 +260,6 @@ export class BotLeaves {
     turn.next = { ...turn.next, nextCastTick: turn.state.tick + castIntervalTicks };
   }
 
-  private scorerFor(difficulty: BotDifficultyDefinition): UtilityScorer<'closeness' | 'weakness'> {
-    let scorer = this.scorers.get(difficulty.id);
-    if (scorer === undefined) {
-      scorer = new UtilityScorer(difficulty.utilityWeights);
-      this.scorers.set(difficulty.id, scorer);
-    }
-    return scorer;
-  }
-
-  /** Where `id` stood at the last index rebuild, or `undefined` when the index lacks it. */
-  public static positionOf(state: GameState, id: EntityId): Vec2 | undefined {
-    const index = state.space?.indexOf(id);
-    if (state.space === null || index === undefined) {
-      return undefined;
-    }
-    return {
-      x: state.space.positions[2 * index] ?? 0,
-      y: state.space.positions[2 * index + 1] ?? 0,
-    };
-  }
-
-  /** The squared distance between two points. */
-  public static gapSquared(a: Vec2, b: Vec2): number {
-    return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
-  }
-
   /** A bot's memory from its brain; anything it does not hold reads as a fresh bot's. */
   private static read(memory: AiMemory): BotMemory {
     return {
@@ -257,6 +267,12 @@ export class BotLeaves {
       isRetreating: memory.isRetreating === true,
       targetId: typeof memory.targetId === 'string' ? memory.targetId : null,
       nextCastTick: typeof memory.nextCastTick === 'number' ? memory.nextCastTick : 0,
+      isHalted: memory.isHalted === true,
+      pathGoalX: typeof memory.pathGoalX === 'number' ? memory.pathGoalX : null,
+      pathGoalY: typeof memory.pathGoalY === 'number' ? memory.pathGoalY : null,
+      pathStepX: typeof memory.pathStepX === 'number' ? memory.pathStepX : null,
+      pathStepY: typeof memory.pathStepY === 'number' ? memory.pathStepY : null,
+      pathVersion: typeof memory.pathVersion === 'number' ? memory.pathVersion : null,
     };
   }
 }

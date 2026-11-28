@@ -1,10 +1,11 @@
 import type { GameState } from '../state/GameState';
 import type { Invariant, Violation } from './Invariant.types';
-import { LOG_LEVEL_OF, REPORTED_COMMANDS, REPORTED_EVENTS } from './InvariantRunner.constants';
+import { LOG_LEVEL_OF } from './InvariantRunner.constants';
 import type { AssertLevel, DebugConfig } from './InvariantRunner.types';
 import { InvariantViolationError } from './InvariantViolationError';
 import type { Logger } from './Logger.types';
 import { makeLogRecord } from './makeLogRecord';
+import { recentContext } from './recentContext';
 
 /**
  * Runs the invariants that are due this tick and reports each violation twice, in a fixed order:
@@ -77,10 +78,7 @@ export class InvariantRunner {
           name: 'invariant-violated',
           attributes: { invariantId, entityId, seed: state.seed, tick: state.tick },
         },
-        context: {
-          recentCommands: state.recentCommands().slice(-REPORTED_COMMANDS),
-          recentEvents: state.events.recentEvents().slice(-REPORTED_EVENTS),
-        },
+        context: recentContext(state),
       }),
     );
   }

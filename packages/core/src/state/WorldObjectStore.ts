@@ -1,52 +1,116 @@
+import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { TeamMembership } from '../components/TeamMembership';
-import type { MapObject, MapObjectKind, MapObjectSnapshot } from '../content/maps/mapObjects.types';
+import type { MapObject, MapObjectSnapshot } from '../content/maps/mapObjects.types';
 import type { ObstacleDefinition } from '../content/obstacles/obstacles.types';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { EntityStore } from './EntityStore';
-import type { WorldObjectRecord } from './WorldObjectStore.types';
-import type { Vec2 } from '../utils/geometry.types';
+import type { WorldObjectRecord, WorldObjectStoreOptions } from './WorldObjectStore.types';
+import type { Polygon, Rect, Vec2 } from '../utils/geometry.types';
 import { doesCircleOverlapPolygon, isCircleInsidePolygon } from '../utils/circlePolygon';
+import { boundsOf } from '../utils/geometry';
+import { courtBoxOf } from './courtBoxOf';
 
 /** Owns placed-object identity and persistent destroyed state after DeathSystem retires entities. */
 export class WorldObjectStore {
   private readonly records: WorldObjectRecord[] = [];
   private readonly entityObjects = new Map<string, MapObject>();
   private readonly destroyed = new Set<string>();
+  private readonly factory: EntityFactory;
+  private readonly entities: EntityStore;
 
-  /** Spawns physical objects through the existing registry/factory; terrain has no health entity. */
-  public constructor(
-    objects: readonly MapObject[],
-    factory: EntityFactory,
-    entities: EntityStore,
-    definitions: Readonly<Record<MapObjectKind, ObstacleDefinition>>,
-  ) {
+  /** A structure's id → the indexes of the records of the map objects that are its body. */
+  private readonly bodies = new Map<string, readonly number[]>();
+
+  /** Map object id → the index of its record. */
+  private readonly indexes = new Map<string, number>();
+
+  /** Building id → its interior (`interiorOf`), built on first use: footprints never change. */
+  private readonly interiors = new Map<string, readonly Polygon[]>();
+
+  /**
+   * Spawns physical objects through the existing registry/factory; terrain has no health entity.
+   * An object named in `owners` gets no entity of its own: it is part of its structure's body and
+   * shares its one health pool (DEC-185 B: a lane tower's own object and its fort walls; only
+   * towers, DEC-217 (13)), so a hit on it is a hit on the structure. The pool shows on the
+   * structure's own object; a wall (`MapObject.partOf`) shows none. An `isUnbreakable` object's
+   * collider is unbreakable, so it takes no damage. An object with no health named in `carriers`
+   * is retired with its carrier (`removed`).
+   *
+   * @param options - The objects, how to spawn them, and the structures some of them are bodies of
+   *   or carried by.
+   */
+  public constructor({
+    objects,
+    factory,
+    entities,
+    definitions,
+    owners = new Map(),
+    carriers = new Map(),
+  }: WorldObjectStoreOptions) {
+    this.factory = factory;
+    this.entities = entities;
     for (const object of objects) {
+      this.indexes.set(object.id, this.records.length);
       const definition = definitions[object.kind];
-      if (definition.health === null) {
-        this.records.push({ object, entityId: null, health: null });
+      const bounds = boundsOf(object.footprints.flat());
+      const owner = entities.get(owners.get(object.id) ?? '');
+      const health = owner?.findComponent(Health);
+      if (owner !== undefined && health !== undefined) {
+        this.bodies.set(owner.id, [...(this.bodies.get(owner.id) ?? []), this.records.length]);
+        const pool = object.partOf === undefined ? health : null;
+        this.records.push({ object, entityId: owner.id, health: pool, bounds });
         continue;
       }
-      const points = object.footprints.flat();
-      const position = points.reduce(
-        (sum, p) => ({ x: sum.x + p.x / points.length, y: sum.y + p.y / points.length }),
-        { x: 0, y: 0 },
-      );
-      const entity = factory.create('obstacle', definition.id, { position });
-      entity.addComponent(new MapObjectBody(object));
-      // Stand-in for the Structure family's Team (07 §1, sprint 2.1): own-side attacks are refused.
-      if (object.team !== undefined) entity.addComponent(new TeamMembership(object.team));
-      entities.add(entity);
-      this.entityObjects.set(entity.id, object);
-      this.records.push({ object, entityId: entity.id, health: entity.getComponent(Health) });
+      if (definition.health === null) {
+        const carrierId = carriers.get(object.id);
+        // A carried object is retired with its carrier (`removed`), as an obstacle is with its own.
+        if (carrierId !== undefined) this.entityObjects.set(carrierId, object);
+        this.records.push({ object, entityId: carrierId ?? null, health: null, bounds });
+        continue;
+      }
+      this.records.push(this.spawn(object, definition, bounds));
     }
   }
 
-  /** Marks only actual retired entities destroyed; a roof toggle never changes this state. */
+  /**
+   * Marks only actual retired entities destroyed; a roof toggle never changes this state. A
+   * structure's body is the caller's to retire (`destroy`, `standAlone`, 07 §8): a retired
+   * structure id leaves its body as it is. A carried object (the gem's plinth) is destroyed with
+   * its carrier.
+   */
   public removed(entityId: string): void {
     const object = this.entityObjects.get(entityId);
     if (object !== undefined) this.destroyed.add(object.id);
+  }
+
+  /** The map objects of the body of the structure `structureId`, in record order; none for any other id. */
+  public bodyOf(structureId: string): readonly MapObject[] {
+    return (this.bodies.get(structureId) ?? []).flatMap((index) => {
+      const record = this.records[index];
+      return record === undefined ? [] : [record.object];
+    });
+  }
+
+  /** Destroys `object` for good: it has no entity and no health pool afterwards (its record stays). */
+  public destroy(object: MapObject): void {
+    const index = this.indexes.get(object.id);
+    const record = index === undefined ? undefined : this.records[index];
+    if (index === undefined || record === undefined) return;
+    this.destroyed.add(object.id);
+    this.records[index] = { ...record, entityId: null, health: null };
+  }
+
+  /**
+   * Makes `object` stand on its own: a spawned obstacle entity of `definition`, with a health pool
+   * of its own and no team of its own beyond the object's, in place of the structure it was part of.
+   */
+  public standAlone(object: MapObject, definition: ObstacleDefinition): void {
+    const index = this.indexes.get(object.id);
+    const record = index === undefined ? undefined : this.records[index];
+    if (index === undefined || record === undefined) return;
+    this.records[index] = this.spawn(object, definition, record.bounds);
   }
 
   /** Exact map object for a live or retired entity. */
@@ -61,6 +125,40 @@ export class WorldObjectStore {
     );
   }
 
+  /**
+   * The ground inside the building `buildingId`, as polygons: the floor of its walkable map object
+   * of that id (the Stronghold, the Cathedral) and the court inside the wall band of the walls that
+   * are `partOf` it (a lane tower's fort, DEC-185 B; `courtBoxOf`, so not its doorways, DEC-324
+   * (2)). Empty for an id that is neither. Pure data, no kind
+   * test: a building is whatever has a floor or walls under its id. Built once per building, as
+   * the damage path asks for it on every wall hit.
+   */
+  public interiorOf(buildingId: string): readonly Polygon[] {
+    const cached = this.interiors.get(buildingId);
+    if (cached !== undefined) return cached;
+    const interior = this.buildInterior(buildingId);
+    this.interiors.set(buildingId, interior);
+    return interior;
+  }
+
+  private buildInterior(buildingId: string): readonly Polygon[] {
+    const floors = this.records.flatMap(({ object }) =>
+      object.id === buildingId && !object.isBlocking ? object.footprints : [],
+    );
+    const box = courtBoxOf(
+      this.records.flatMap(({ object }) => (object.partOf === buildingId ? [object] : [])),
+    );
+    if (box === undefined) return floors;
+    const { x, y, width, height } = box;
+    const court: Polygon = [
+      { x, y },
+      { x: x + width, y },
+      { x: x + width, y: y + height },
+      { x, y: y + height },
+    ];
+    return [...floors, court];
+  }
+
   /** Persistent destroyed identifiers, including walkable rubble left by retired entities. */
   public get destroyedIds(): ReadonlySet<string> {
     return this.destroyed;
@@ -68,11 +166,17 @@ export class WorldObjectStore {
 
   /** Independent diagnostic check against live solids and authored bridge openings. */
   public blockingAt(point: Vec2, radius: number): string | null {
-    for (const { object, health } of this.records) {
+    for (const { object, entityId, health, bounds } of this.records) {
       if (
+        point.x + radius < bounds.x ||
+        point.x - radius > bounds.x + bounds.width ||
+        point.y + radius < bounds.y ||
+        point.y - radius > bounds.y + bounds.height ||
         !object.isBlocking ||
         this.destroyed.has(object.id) ||
-        health?.isDead === true ||
+        // A structure's body stands until its objects are retired (`destroy`, `standAlone`), which
+        // rewrites every body record, so only an object's own death counts.
+        (health?.isDead === true && !this.bodies.has(entityId ?? '')) ||
         object.passages?.some((shape) => isCircleInsidePolygon(point, radius, shape)) === true
       )
         continue;
@@ -90,5 +194,27 @@ export class WorldObjectStore {
       health: health === null ? null : { current: health.current, max: health.max },
       isDestroyed: this.destroyed.has(object.id),
     }));
+  }
+
+  /** Spawns `object` as an obstacle of `definition` at its footprints' centroid. */
+  private spawn(
+    object: MapObject,
+    definition: ObstacleDefinition,
+    bounds: Rect,
+  ): WorldObjectRecord {
+    const points = object.footprints.flat();
+    const position = points.reduce(
+      (sum, p) => ({ x: sum.x + p.x / points.length, y: sum.y + p.y / points.length }),
+      { x: 0, y: 0 },
+    );
+    const entity = this.factory.create('obstacle', definition.id, { position });
+    entity.addComponent(new MapObjectBody(object));
+    // Stand-in for the Structure family's Team (07 §1, sprint 2.1): own-side attacks are refused.
+    if (object.team !== undefined) entity.addComponent(new TeamMembership(object.team));
+    // A Duel's Cathedral wall (DEC-348): `BreakabilityStep` blocks every hit on it.
+    if (object.isUnbreakable === true) entity.getComponent(Collider).setUnbreakable(true);
+    this.entities.add(entity);
+    this.entityObjects.set(entity.id, object);
+    return { object, entityId: entity.id, health: entity.getComponent(Health), bounds };
   }
 }

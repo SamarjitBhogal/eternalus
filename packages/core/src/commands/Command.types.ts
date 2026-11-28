@@ -29,6 +29,8 @@ export type Aim = { readonly point: Vec2; readonly targetId: EntityId | null };
 export type InputIntent = {
   /** Whether the existing basic-attack binding is held. */
   readonly isAttacking?: boolean;
+  /** Whether the jump binding is held (DEC-390). */
+  readonly isJumping?: boolean;
   readonly move: Vec2;
   readonly aim: Vec2 | null;
   readonly triggered: readonly AbilitySlot[];
@@ -41,6 +43,11 @@ export type InputIntent = {
 type CommandPayloads = {
   readonly move: { readonly actorId: EntityId; readonly direction: Vec2 };
   readonly stop: { readonly actorId: EntityId };
+  /**
+   * Holds or releases a Legend's jump key (DEC-390): a held key lifts the Legend from the ground
+   * and again on each landing. Sent only when the held state changes, like `move`.
+   */
+  readonly jump: { readonly actorId: EntityId; readonly isHeld: boolean };
   readonly 'attack-target': { readonly actorId: EntityId; readonly targetId: EntityId };
   readonly 'cast-ability': {
     readonly actorId: EntityId;
@@ -48,6 +55,8 @@ type CommandPayloads = {
     readonly aim: Aim;
   };
   readonly intent: { readonly actorId: EntityId; readonly intent: InputIntent };
+  /** A boss telegraphs `moveId` now; it lands the move's telegraph later (architecture 11 §4.6). */
+  readonly 'boss-move': { readonly actorId: EntityId; readonly moveId: string };
   /** Developer menu: spawn `count` entities of `kind` at `at`. */
   readonly 'dev-spawn': {
     readonly kind: string;
@@ -67,10 +76,33 @@ type CommandPayloads = {
     readonly count: number;
     readonly origin: SpawnOrigin;
   };
-  /** Developer menu: remove an entity (cause `dev-removed`). */
+  /**
+   * Developer menu: add one bot Legend of class `definitionId` at `team`'s Stronghold, played by
+   * the Rover controller (it takes no lane). Refused at `maxLegendsPerTeam`.
+   */
+  readonly 'dev-spawn-legend': { readonly team: PlayableTeam; readonly definitionId: string };
+  /**
+   * Developer menu: remove an entity (cause `dev-removed`). A Legend a human plays is refused
+   * (`human-legend`): the human is removed only in sim mode (13 §4).
+   */
   readonly 'dev-remove-entity': { readonly entityId: EntityId };
-  /** Developer menu: hand an entity to another controller (sim mode). */
-  readonly 'dev-set-controller': { readonly entityId: EntityId; readonly controllerId: string };
+  /**
+   * Developer menu: remove a Legend (cause `dev-removed`; FR-097, DEC-293). Refused for an entity
+   * that is not a Legend (`not-a-legend`) and refused (`human-legend`) while a human seat holds
+   * the Legend, that is, outside sim mode.
+   */
+  readonly 'dev-remove-legend': { readonly entityId: EntityId };
+  /**
+   * Developer menu, sim mode: hand a Legend to a controller. `controllerId` is `player` (the Legend
+   * becomes the human's; a Legend of `playerTeam` only; a seated human is swapped off to the bot
+   * its team lacks, DEC-294), a bot's id (the Rover's or the lane bot's: that bot plays it; the
+   * game picks the lane) or `null` (the bot its team lacks plays it). On the human's Legend, a bot
+   * id or `null` leaves no human (DEC-356).
+   */
+  readonly 'dev-set-controller': {
+    readonly entityId: EntityId;
+    readonly controllerId: string | null;
+  };
 };
 
 /** The name of a command. */
@@ -89,13 +121,21 @@ export type CommandRejectReason =
   | 'unknown-entity'
   | 'unknown-kind'
   | 'unknown-definition'
+  | 'unknown-controller'
   | 'invalid-count'
   | 'invalid-position'
   | 'invalid-origin'
   | 'cap-exceeded'
+  | 'not-a-legend'
+  | 'no-stronghold'
   | 'horde-only'
+  | 'map-only'
   | 'invalid-direction'
   | 'not-movable'
   | 'cannot-attack'
+  | 'cannot-jump'
   | 'invalid-target'
-  | 'not-supported';
+  | 'not-supported'
+  | 'human-legend'
+  | 'not-player-team'
+  | 'match-ended';

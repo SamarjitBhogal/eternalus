@@ -1,4 +1,9 @@
-import { DEFAULT_MAP_CONFIG, type MapDecoration, MapGenerator } from '@eternalus/core';
+import {
+  CORNER_CAMP_RING,
+  DEFAULT_MAP_CONFIG,
+  type MapDecoration,
+  MapGenerator,
+} from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
@@ -13,11 +18,17 @@ import {
 /** The default generated map, the same one the game draws. */
 const MAP = new MapGenerator().generate({ map: DEFAULT_MAP_CONFIG }, 1);
 
-const footprintKinds = new Set(
-  Object.entries(FEATURE_STYLES)
-    .filter(([, style]) => style.shape === 'footprint')
-    .map(([kind]) => kind),
-);
+const kindsWith = (...shapes: readonly string[]): ReadonlySet<string> =>
+  new Set(
+    Object.entries(FEATURE_STYLES)
+      .filter(([, style]) => shapes.includes(style.shape))
+      .map(([kind]) => kind),
+  );
+
+/** Kinds the main view fills from their footprint. */
+const footprintKinds = kindsWith('footprint');
+/** Kinds the main view draws no glyph for: a footprint fill, or the entity's own view. */
+const glyphlessKinds = kindsWith('footprint', 'entity');
 
 /** Draws the map for the main view and returns the recorded calls. */
 const drawMain = (): RecordingRenderer => {
@@ -27,6 +38,29 @@ const drawMain = (): RecordingRenderer => {
 };
 
 describe('MapView', () => {
+  it('replaces dressed camp placeholders only in the main view, retaining minimap markers', () => {
+    const feature = MAP.features.find((entry) => entry.kind === 'corner-camp');
+    if (feature === undefined) throw new Error('Missing camp');
+    const art: MapDecoration = {
+      id: 'shrine',
+      replacesFeature: feature.id,
+      color: 'stone',
+      layer: 'detail',
+      shape: [],
+    };
+    const renderer = new RecordingRenderer();
+    new MapView(MAP, [art]).draw(renderer);
+    expect(
+      renderer.calls
+        .filter((call) => call.op === 'drawWorldGlyph')
+        .some((call) => call.args[1] === feature.position),
+    ).toBe(false);
+    const minimap = new RecordingRenderer();
+    new MapView(MAP, [art]).drawMinimap(minimap);
+    expect(minimap.calls.filter((call) => call.op === 'drawGlyph')).toHaveLength(
+      MAP.features.length,
+    );
+  });
   it('hides main-view building markers with roofs closed as well as open', () => {
     const building = MAP.features.find((feature) => feature.kind === 'cathedral');
     if (building === undefined) throw new Error('Missing building');
@@ -36,9 +70,30 @@ describe('MapView', () => {
       const glyphs = renderer.calls.filter((call) => call.op === 'drawWorldGlyph');
       expect(glyphs.some((call) => call.args[1] === building.position)).toBe(false);
       expect(glyphs).toHaveLength(
-        MAP.features.filter((feature) => !footprintKinds.has(feature.kind)).length - 1,
+        MAP.features.filter((feature) => !glyphlessKinds.has(feature.kind)).length - 1,
       );
     }
+  });
+  it('leaves lane tower markers to the structure view in the main view', () => {
+    const towers = MAP.features.filter(
+      (f) => f.kind === 'spawner-tower' || f.kind === 'buff-tower',
+    );
+    expect(towers.length).toBeGreaterThan(0);
+    const glyphs = drawMain().calls.filter((call) => call.op === 'drawWorldGlyph');
+    for (const tower of towers) {
+      expect(glyphs.some((call) => call.args[1] === tower.position)).toBe(false);
+    }
+  });
+  it('removes a fallen structure from the minimap, and keeps a standing one', () => {
+    const tower = MAP.features.find((f) => f.kind === 'buff-tower');
+    if (tower === undefined) throw new Error('Missing tower');
+    const renderer = new RecordingRenderer();
+    new MapView(MAP, [], new Set(), undefined, [], undefined, (id) => id === tower.id).drawMinimap(
+      renderer,
+    );
+    const markers = renderer.calls.filter((call) => call.op === 'drawGlyph');
+    expect(markers).toHaveLength(MAP.features.length - 1);
+    expect(markers.some((call) => call.args[1] === tower.position)).toBe(false);
   });
   it('removes destroyed feature markers from the minimap', () => {
     const feature = MAP.features[0];
@@ -55,13 +110,28 @@ describe('MapView', () => {
     const renderer = new RecordingRenderer();
     new MapView(MAP, [], new Set([cathedral?.id ?? ''])).draw(renderer);
     const glyphs = renderer.calls.filter((c) => c.op === 'drawWorldGlyph');
-    expect(glyphs).toHaveLength(MAP.features.filter((f) => !footprintKinds.has(f.kind)).length - 1);
+    expect(glyphs).toHaveLength(MAP.features.filter((f) => !glyphlessKinds.has(f.kind)).length - 1);
     expect(glyphs.some((c) => c.args[1] === cathedral?.position)).toBe(false);
     const minimap = new RecordingRenderer();
     new MapView(MAP, [], new Set(MAP.features.map((f) => f.id))).drawMinimap(minimap);
     const markers = minimap.calls.filter((c) => c.op === 'drawGlyph');
     expect(markers).toHaveLength(MAP.features.length);
     expect(markers.some((c) => c.args[1] === cathedral?.position)).toBe(true);
+  });
+  it("draws the corner camp ring at core's ring size when Match injects it", () => {
+    const camps = MAP.features.filter((f) => f.kind === 'corner-camp');
+    expect(camps.length).toBeGreaterThan(0);
+    const renderer = new RecordingRenderer();
+    const featureSizes = { 'corner-camp': 2 * CORNER_CAMP_RING.radius };
+    new MapView(MAP, [], new Set(), undefined, [], () => false, undefined, featureSizes).draw(
+      renderer,
+    );
+    const rings = renderer.calls.flatMap((c) =>
+      c.op === 'drawWorldGlyph' && camps.some(({ position }) => position === c.args[1])
+        ? [c.args[0]]
+        : [],
+    );
+    expect(rings).toEqual(camps.map(() => ({ shape: 'ring', size: 45 })));
   });
   it('draws the ground first, then every terrain shape, then footprint features', () => {
     const fills = drawMain().calls.flatMap((call) =>
@@ -101,17 +171,63 @@ describe('MapView', () => {
     expect(lines).toHaveLength(MAP.lanes.length);
   });
 
+  it('uses feature-owned shield art instead of drawing the old solid wall marker over it', () => {
+    const wall = MAP.features.find((feature) => feature.kind === 'wall-segment');
+    if (wall?.footprint === undefined) throw new Error('Missing wall');
+    const art: MapDecoration = {
+      id: 'shield',
+      replacesFeature: wall.id,
+      shape: wall.footprint,
+      color: '#8edbea',
+      layer: 'ground',
+      object: { id: wall.id, kind: 'wall', isFootprint: false },
+    };
+    const renderer = new RecordingRenderer();
+    new MapView(MAP, [art]).draw(renderer);
+    expect(
+      renderer.calls
+        .filter((call) => call.op === 'fillPolygon' && call.args[0] === wall.footprint)
+        .map((call) => call.args[1]),
+    ).toEqual([art.color]);
+  });
+
+  it('uses world-sized road artwork without a screen-width line on top, retaining minimap routes', () => {
+    const road: MapDecoration = {
+      id: 'road',
+      shape: [
+        { x: 0, y: 0 },
+        { x: 20, y: 0 },
+        { x: 20, y: 6 },
+      ],
+      color: '#9a8b6d',
+      layer: 'ground',
+      isLaneSurface: true,
+    };
+    const renderer = new RecordingRenderer();
+    const view = new MapView(MAP, [road]);
+    view.draw(renderer);
+    expect(renderer.calls.filter((call) => call.op === 'strokePath')).toEqual([]);
+    expect(
+      renderer.calls.some((call) => call.op === 'fillPolygon' && call.args[0] === road.shape),
+    ).toBe(true);
+    renderer.calls.length = 0;
+    view.drawMinimap(renderer);
+    expect(renderer.calls.filter((call) => call.op === 'strokePath')).toHaveLength(
+      MAP.lanes.length,
+    );
+  });
+
   it('draws one glyph per other feature, styled by kind, in team colours for team features', () => {
     const glyphs = drawMain().calls.flatMap((call) =>
       call.op === 'drawWorldGlyph' ? [call.args] : [],
     );
-    const glyphFeatures = MAP.features.filter((feature) => !footprintKinds.has(feature.kind));
-    const tower = MAP.features.find((feature) => feature.id === 'light-spawner-tower-lane-0-0');
+    const glyphFeatures = MAP.features.filter((feature) => !glyphlessKinds.has(feature.kind));
+    const stronghold = MAP.features.find((feature) => feature.id === 'light-stronghold');
 
     expect(glyphs).toHaveLength(glyphFeatures.length);
     expect(glyphs).toContainEqual([
-      FEATURE_STYLES['spawner-tower'],
-      tower?.position,
+      FEATURE_STYLES.stronghold,
+      stronghold?.position,
       TEAM_COLORS.light,
     ]);
     expect(glyphs.map((args) => args[2])).toContain(TEAM_COLORS.dark);

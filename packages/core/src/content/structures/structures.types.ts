@@ -1,4 +1,5 @@
 import type { EntityDefinitionBase } from '../EntityDefinition.types';
+import type { BreakabilityRule } from './breakability.types';
 
 /** The structure kinds (`04-entity-architecture.md`, family table). Their classes arrive in Phase 2. */
 export type StructureKind =
@@ -9,10 +10,11 @@ export type StructureKind =
   | 'gate'
   | 'turret'
   | 'camp'
-  | 'cathedral';
+  | 'cathedral'
+  | 'cathedral-gem';
 
 /**
- * A static thing with health: a building, wall, gate, turret, camp or the Cathedral.
+ * A static thing with health: a building, wall, gate, turret, camp or the Cathedral gem.
  * Shield fractions, breakability, spawn tables and auras are added with the structures in Phase 2.
  */
 export type StructureDefinition = EntityDefinitionBase & {
@@ -22,24 +24,81 @@ export type StructureDefinition = EntityDefinitionBase & {
   readonly baseHealth: number;
   /** Collider circle radius in world units (convex polygon footprints arrive in Phase 2). */
   readonly footprintRadius: number;
+  /** When it may take damage (07 §3). */
+  readonly breakability: BreakabilityRule;
+  /**
+   * Whether its map object of the same id (a lane tower's fort, the Stronghold's palace) is its
+   * outline: attack reach and chases measure to that object's footprints, not the collider circle
+   * (`Footprint`, DEC-185). A blocking such object is also its body, with no health of its own.
+   */
+  readonly hasMapFootprint?: true;
+  /**
+   * Whether the box round its `Footprint` is a fort box (`PathingWorld.forts`): a chase of a unit
+   * standing inside it closes in over the blocked ground there (DEC-185; the Stronghold's palace,
+   * DEC-217 (16)). A gate's outline is for reach only (DEC-217 (17)).
+   */
+  readonly hasFortBox?: true;
+  /**
+   * A map object with no health of its own that stands while this structure does and is destroyed
+   * with it (`WorldObjectStore`'s `carriers`): the gem's plinth, gone when the gem erupts (12 §3).
+   */
+  readonly carriedObjectId?: string;
+  /**
+   * The aura a living structure keeps (DEC-315 (4), 07 §1: the BuffTower): every unit of the
+   * structure's team within `radius` has `allyStatusId`, every unit of the other playable team
+   * has `enemyStatusId`, refreshed on `StructureAuraCadence` and ended when the unit leaves or the
+   * structure falls. Neutral units get neither.
+   */
+  readonly aura?: StructureAuraDefinition;
+};
+
+/** One structure's aura: how far it reaches and the status each side gets inside it. */
+export type StructureAuraDefinition = {
+  /** World units from the structure's centre. */
+  readonly radius: number;
+  /** The status given to units of the structure's own team. */
+  readonly allyStatusId: string;
+  /** The status given to units of the other playable team. */
+  readonly enemyStatusId: string;
+};
+
+/** How often structure auras are refreshed, as authored (`STRUCTURE_AURA_CADENCE`). */
+export type AuthoredStructureAuraCadence = {
+  readonly everySeconds: number;
+};
+
+/** The structure aura cadence as loaded (`loadStructureAuraCadence`): in ticks, at least one. */
+export type StructureAuraCadence = {
+  readonly everyTicks: number;
 };
 
 /** Which lane a spawner's horde takes: the spawner's own lane, or the team's worst lane. */
 type SpawnLaneRule = 'own-lane' | 'worst-lane';
 
-/**
- * One repeating horde wave of a spawning structure (DISC-10, architecture 18 §3.1). Its clock
- * starts when the countdown ends: the first wave goes out `firstAtSeconds` later, then one every
- * `everySeconds` (DEC-87); the horde size comes from `GameConfig.match.hordeSizes`.
- */
-export type SpawnWaveDefinition = {
+/** The fields of a horde wave that are the same as authored and as loaded. */
+type SpawnWaveBase = {
   /** The mob definition the horde is made of. */
   readonly mobId: string;
   readonly weightClass: 'light' | 'medium' | 'heavy';
+  readonly lane: SpawnLaneRule;
+};
+
+/**
+ * One repeating horde wave of a spawning structure (DISC-10, architecture 18 §3.1), as authored.
+ * Its clock starts when the countdown ends: the first wave goes out `firstAtSeconds` later, then
+ * one every `everySeconds` (DEC-87); the horde size comes from `GameConfig.match.hordeSizes`.
+ */
+export type AuthoredSpawnWave = SpawnWaveBase & {
   /** Seconds from the countdown's end to the first wave. */
   readonly firstAtSeconds: number;
   readonly everySeconds: number;
-  readonly lane: SpawnLaneRule;
+};
+
+/** A horde wave as loaded (`loadSpawnWaves`): its times in ticks, converted once. */
+export type SpawnWaveDefinition = SpawnWaveBase & {
+  /** Ticks from the countdown's end to the first wave. */
+  readonly firstAtTicks: number;
+  readonly everyTicks: number;
 };
 
 /**
@@ -50,4 +109,111 @@ export type SpawnWaveDefinition = {
 export type OpeningWaveDefinition = Pick<SpawnWaveDefinition, 'mobId' | 'weightClass'> & {
   /** The structure kind that sends them: a team without one sends no opening hordes. */
   readonly source: StructureKind;
+};
+
+/** One row of a guard plan: which guard, how many, and how a lost SpawnerTower shrinks it. */
+export type GuardTableEntry = {
+  readonly mobId: string;
+  readonly count: number;
+  /**
+   * `count` guards of this row lost for good per destroyed team structure of kind `perLost`
+   * (DISC-21, 07 §8).
+   */
+  readonly shrink?: { readonly perLost: string; readonly count: number };
+};
+
+/** The fields of a guard plan that are the same as authored and as loaded. */
+type GuardPlanBase = {
+  readonly table: readonly GuardTableEntry[];
+  /** How far past the home's edge a guard may chase ("don't leave the tower's perimeter"). */
+  readonly leashRadius: number;
+  /** Posts stand on a ring this far outside the home's edge. */
+  readonly postGap: number;
+  /**
+   * How far past its leash a guard may stand (`GuardWithinLeashInvariant`): the distance it covers
+   * between two decisions plus the farthest it stands from a target in reach.
+   */
+  readonly leashTolerance: number;
+  /**
+   * Whether the plan's guards level from their kills and are rallied by the veterancy aura
+   * (`VeterancySystem`, 18 MS-16). Each plan in `guardPlans.ts` names the DEC row that sets it.
+   */
+  readonly canLevel: boolean;
+};
+
+/**
+ * The defenders one capture-point checkpoint spawns (architecture 07 §7, 18 §7.1): held by
+ * `GuardController` with the capture point as home, for the team that owns the point when the
+ * checkpoint is reached (`neutral` while no team does). Their leash is the zone's reach (owner,
+ * 18 §10 item 4), so it is not content; they never respawn.
+ */
+export type CheckpointDefenderPlanDefinition = {
+  readonly table: readonly Omit<GuardTableEntry, 'shrink'>[];
+  /** Posts stand on a ring this far from the zone's centre. */
+  readonly postGap: number;
+  /** As `GuardPlanDefinition.leashTolerance`. */
+  readonly leashTolerance: number;
+  /** As `GuardPlanDefinition.canLevel` (DEC-260: owned and neutral defenders level). */
+  readonly canLevel: boolean;
+};
+
+/**
+ * The guards a structure or zone keeps (architecture 07 §6, 18 §7.1): tower guards, a camp's
+ * group, or a zone's guards, as authored. Posts are filled while the home stands (a zone always
+ * stands). Distances are measured from the home's edge; a zone's edge is its anchor (radius 0).
+ */
+export type AuthoredGuardPlan = GuardPlanBase & {
+  readonly activation: AuthoredGuardActivation;
+  readonly respawn: AuthoredGuardRespawn;
+};
+
+/** A guard plan as loaded (`loadGuardPlans`): its activation delay and respawn time in ticks. */
+export type GuardPlanDefinition = GuardPlanBase & {
+  readonly activation: GuardActivation;
+  readonly respawn: GuardRespawn;
+};
+
+/**
+ * When a guard plan's posts are first filled (architecture 18 §7.1), as authored: the match's
+ * first tick, `delaySeconds` after the countdown ends (0 for camps), or the tick the Cathedral gem
+ * erupts (`greater-boss-summoned`, 12 §3: the Greater Boss).
+ */
+type AuthoredGuardActivation =
+  | { readonly at: 'match-start' }
+  | { readonly at: 'countdown-end'; readonly delaySeconds: number }
+  | { readonly at: 'gem-eruption' };
+
+/** `AuthoredGuardActivation` as loaded: the delay in ticks. */
+type GuardActivation =
+  | { readonly at: 'match-start' }
+  | { readonly at: 'countdown-end'; readonly delayTicks: number }
+  | { readonly at: 'gem-eruption' };
+
+/**
+ * How a guard plan's posts refill (architecture 18 §7.1), as authored. `each`: a guard comes back
+ * `seconds` after it dies (tower guards). `group`: the posts wait until every guard is dead, then
+ * all come back `seconds` later and the home is announced cleared (`camp-cleared`, camps).
+ * `never`: a dead guard's post stays empty for the rest of the match.
+ */
+type AuthoredGuardRespawn =
+  { readonly kind: 'each' | 'group'; readonly seconds: number } | { readonly kind: 'never' };
+
+/** `AuthoredGuardRespawn` as loaded: the respawn time in ticks. */
+type GuardRespawn =
+  { readonly kind: 'each' | 'group'; readonly ticks: number } | { readonly kind: 'never' };
+
+/**
+ * What the Cathedral gem does to whoever hits it (DEC-292, DEC-346), by status id: the statuses
+ * it lands on them (from the environment: the gem is no team's), and how long it glows after.
+ */
+export type CathedralGemDefinition = {
+  /** Landed on a hitter, in order (a stun and its tick damage). */
+  readonly statusIds: readonly string[];
+  /** The gem glows for this status's duration plus `extraTicks` after each hit. */
+  readonly glow: { readonly statusId: string; readonly extraTicks: number };
+  /**
+   * The eruption's blast (DEC-371 "BOSS guards" C): every unit in the capture zone the gem stands
+   * in dies to it. It is no team's, so no one is credited; `sourceId` names it as the killer.
+   */
+  readonly eruption: { readonly sourceId: string };
 };

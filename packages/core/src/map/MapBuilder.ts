@@ -2,22 +2,28 @@ import type { MapDefinition, MapFeature, MapLane, MapTerrain } from '../content/
 import type { Vec2 } from '../utils/geometry.types';
 import {
   campDefinitionFor,
+  clearCampOfForts,
   cornerCampPositions,
   distributeCamps,
   placeCampSlots,
 } from './campPlacement';
+import { SKETCH_HEIGHT, SKETCH_WIDTH } from '../content/maps/map1Scenery';
+import { laneFortKeepOuts } from './fortInWorld';
+import { campHalfExtent } from './campArtByKind';
+import type { CampArtKind } from './campArtByKind';
 import { createMapFeature } from './createMapFeature';
 import { LaneGeometry } from './LaneGeometry';
 import { RADIANS_PER_DEGREE } from '../utils/geometry';
 import { NEUTRAL_SIDES, TEAM_SIDES } from './MapBuilder.constants';
 import type {
+  CampClearance,
   FeatureSpec,
   MapBuildInput,
   MirroredFeatureSpec,
   MirrorSide,
 } from './MapBuilder.types';
 import { MapGenerationError } from './MapGenerationError';
-import { laneTowerSpecs, wallRingSpecs } from './laneStructures';
+import { assertLaneFortsApart, laneTowerSpecs, wallRingSpecs } from './laneStructures';
 import { scatterObstacles } from './obstacleScatter';
 import { mirrorPoint, mirrorPolygon } from './symmetry';
 import { layOutTerrain } from './terrainLayout';
@@ -53,7 +59,15 @@ export class MapBuilder {
   /** Light's Stronghold on the west edge, centred vertically; Dark's is its mirror. */
   public placeStrongholds(): this {
     this.addMirrored(
-      { suffix: 'stronghold', definitionId: this.ids().stronghold, position: this.stronghold },
+      {
+        suffix: 'stronghold',
+        definitionId: this.ids().stronghold,
+        position: this.stronghold,
+        wallBoundary: {
+          radius: this.input.layout.wallRing.radius,
+          thickness: this.input.layout.wallRing.thickness,
+        },
+      },
       TEAM_SIDES,
     );
     return this;
@@ -84,13 +98,18 @@ export class MapBuilder {
     return this;
   }
 
-  /** Per lane: SpawnerTowers on the front band, then BuffTowers on the second band. */
+  /**
+   * Per lane: SpawnerTowers on the front band, then BuffTowers on the second band. Then checks
+   * that no two lane tower forts on the map overlap (DEC-215 (1)).
+   */
   public placeLaneStructures(): this {
+    const first = this.features.length;
     for (const lane of this.lanes) {
       for (const spec of laneTowerSpecs(lane, this.input.config, this.input.layout)) {
         this.addMirrored(spec, TEAM_SIDES);
       }
     }
+    assertLaneFortsApart(this.features.slice(first), this.input.config);
     return this;
   }
 
@@ -112,6 +131,21 @@ export class MapBuilder {
   /** Forest camps between adjacent lanes (weight by depth, DISC-42), then the corner camps. */
   public placeCamps(): this {
     const { config, layout } = this.input;
+    // Camps are in world units; keep-outs and the camp art are authored in sketch units.
+    const world = { width: config.worldWidth, height: config.worldHeight };
+    const keepOuts = laneFortKeepOuts(this.features, world);
+    const clearanceOf = (kind: CampArtKind): CampClearance => {
+      const half = campHalfExtent(kind);
+      return {
+        keepOuts,
+        extent: {
+          x: (half.x * world.width) / SKETCH_WIDTH,
+          y: (half.y * world.height) / SKETCH_HEIGHT,
+        },
+      };
+    };
+    const clearance = clearanceOf('camp');
+    const cornerClearance = clearanceOf('corner-camp');
     const slots = placeCampSlots({
       lightHalves: this.lightHalves,
       lanePaths: this.lanes.map((lane) => lane.path),
@@ -120,6 +154,7 @@ export class MapBuilder {
       centreX: this.centreX,
       band: layout.camps.band,
       rng: this.input.rng,
+      clearance,
     });
     for (const slot of slots) {
       const definitionId = campDefinitionFor(slot.depth, layout.camps.weightClasses);
@@ -137,10 +172,15 @@ export class MapBuilder {
     }
     cornerCampPositions(config.cornerCamps, layout.cornerCamps, config.worldHeight).forEach(
       (anchor, index) => {
-        const position = {
-          x: anchor.x + this.input.rng.next() * layout.cornerCamps.stepX,
-          y: anchor.y,
-        };
+        const position = clearCampOfForts(
+          { x: anchor.x + this.input.rng.next() * layout.cornerCamps.stepX, y: anchor.y },
+          cornerClearance,
+          ({ x, y }) =>
+            x >= cornerClearance.extent.x &&
+            x <= this.centreX &&
+            y >= cornerClearance.extent.y &&
+            y <= config.worldHeight - cornerClearance.extent.y,
+        );
         this.addMirrored(
           { suffix: `corner-camp-${String(index)}`, definitionId: this.ids().cornerCamp, position },
           NEUTRAL_SIDES,
@@ -206,6 +246,12 @@ export class MapBuilder {
           centre: this.stronghold,
           radius: layout.wallRing.radius + layout.obstacles.featureClearance,
         },
+        fortKeepOuts: laneFortKeepOuts(this.features, {
+          width: config.worldWidth,
+          height: config.worldHeight,
+        }),
+        // `MapGenerator` rejects an unknown choice before building; `createMapFeature` backs it up.
+        radiusOf: (definitionId) => this.input.definitions[definitionId]?.footprintRadius ?? 0,
       },
       layout.obstacles,
     );

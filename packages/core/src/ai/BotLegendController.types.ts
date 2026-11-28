@@ -2,6 +2,7 @@ import type { Command } from '../commands/Command.types';
 import type { BotDifficultyDefinition } from '../content/ai/ai.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { LaneObjective } from '../state/LaneStructures.types';
 import type { PlayableTeam } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { SeededRandom } from '../utils/SeededRandom';
@@ -17,6 +18,21 @@ export type BotMemory = {
   readonly targetId: string | null;
   /** The first tick it may cast again. */
   readonly nextCastTick: number;
+  /**
+   * Whether its last `move` or `stop` left it standing, so holding still needs no new command
+   * (B66-F2). Only its own commands steer a Legend, so this matches its heading.
+   */
+  readonly isHalted: boolean;
+  /** Path cache (11 §6): x of the last A\* search's destination; `null` when none is cached. */
+  readonly pathGoalX: number | null;
+  /** Path cache: y of the last A\* search's destination; `null` when none is cached. */
+  readonly pathGoalY: number | null;
+  /** Path cache: x of the waypoint that search gave; `null` when none is cached. */
+  readonly pathStepX: number | null;
+  /** Path cache: y of the waypoint that search gave; `null` when none is cached. */
+  readonly pathStepY: number | null;
+  /** Path cache: `PathQuery.version` when that search ran; `null` when none is cached. */
+  readonly pathVersion: number | null;
 };
 
 /** What the bot controllers read besides the state, injected so they hold no content. */
@@ -45,6 +61,8 @@ export type BotTurn = {
   readonly commands: Command[];
   /** The enemy `Fight` chose, once its condition found one. */
   enemy: EntityId | null;
+  /** The enemy structure `Push` attacks, once its condition found one in reach of the lane. */
+  objective: LaneObjective | null;
   /** Where a moving branch goes, once its condition found the way. */
   destination: Vec2 | null;
 };

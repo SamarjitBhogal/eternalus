@@ -3,6 +3,7 @@ import type { StructureKind } from '../content/structures/structures.types';
 import type { GameState } from '../state/GameState';
 import type { PlayableTeam } from '../teams/teams.types';
 import type { System, SystemContext } from './System.types';
+import { isPlayableTeam } from '../teams/playableTeams';
 
 /**
  * Enrages a lane's minions when their team loses a tower on it (architecture 07 §8, 18 MS-16,
@@ -11,9 +12,6 @@ import type { System, SystemContext } from './System.types';
  * later, for the rest of the match. It records the loss per team and lane in
  * `TeamState.towersLostByLane`, so it is hashed and replayed, and `MinionStrengthStep` reads the
  * same count (DISC-24's shift). Runs after `SpawnSystem`, so a horde spawned this tick is covered.
- *
- * @remarks ponytail: no structure can fall until structure entities exist (minion plan M2c), so
- * in a live match nothing emits `structure-destroyed` yet.
  */
 export class EnragedSystem implements System {
   public readonly name = 'enraged';
@@ -32,7 +30,7 @@ export class EnragedSystem implements System {
   ) {
     state.events.on('structure-destroyed', ({ kind, team, lane }) => {
       const isEnraging = enraging.some((enragingKind) => enragingKind === kind);
-      if (isEnraging && lane !== null && (team === 'light' || team === 'dark')) {
+      if (isEnraging && lane !== null && isPlayableTeam(team)) {
         this.lost.push({ team, lane });
       }
     });

@@ -14,11 +14,19 @@ const context = (): CommandContext => ({
   factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
 });
 
+const TEST_CONTROLLER = { controllerId: 'rover', profileId: 'rover', memory: {} } as const;
+
 describe('applyCommand', () => {
   it('dispatches to the handler registered for the command type', () => {
     const seen: string[] = [];
     const handlers: CommandHandlers = {
-      ...createDefaultCommandHandlers(),
+      ...createDefaultCommandHandlers({
+        rover: TEST_CONTROLLER,
+        player: 'player',
+        missingRole: () => TEST_CONTROLLER,
+        pickedBot: () => undefined,
+        bossTelegraphTicks: {},
+      }),
       stop: {
         handle: (command) => {
           seen.push(command.actorId);
@@ -39,7 +47,61 @@ describe('applyCommand', () => {
     const rejected: unknown[] = [];
     ctx.state.events.on('command-rejected', (payload) => rejected.push(payload));
     const command = { type: 'stop', actorId: 'entity-3' } as const;
-    applyCommand(command, createDefaultCommandHandlers(), ctx);
+    applyCommand(
+      command,
+      createDefaultCommandHandlers({
+        rover: TEST_CONTROLLER,
+        player: 'player',
+        missingRole: () => TEST_CONTROLLER,
+        pickedBot: () => undefined,
+        bossTelegraphTicks: {},
+      }),
+      ctx,
+    );
     expect(rejected).toEqual([{ command, reason: 'unknown-entity' }]);
+  });
+
+  it('applies no command once the match has ended (FR-002): the handler is skipped and the command rejected', () => {
+    const ctx = context();
+    let calls = 0;
+    const handlers: CommandHandlers = {
+      ...createDefaultCommandHandlers({
+        rover: TEST_CONTROLLER,
+        player: 'player',
+        missingRole: () => TEST_CONTROLLER,
+        pickedBot: () => undefined,
+        bossTelegraphTicks: {},
+      }),
+      stop: {
+        handle: () => {
+          calls += 1;
+          return null;
+        },
+      },
+    };
+    ctx.state.match.endMatch({
+      winner: 'light',
+      condition: 'objective-lost',
+      playerTeam: 'light',
+      hadHuman: false,
+      durationTicks: 1,
+      matchTicks: 0,
+      seed: 1,
+      configHash: 0,
+      legends: [],
+      teams: {
+        light: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+        dark: { score: 0, structuresDestroyed: 0, capturesHeldTicks: 0, checkpointsReached: 0 },
+      },
+      finalHash: 0,
+    });
+    const rejected: unknown[] = [];
+    ctx.state.events.on('command-rejected', (payload) => rejected.push(payload));
+    const command = { type: 'stop', actorId: 'entity-3' } as const;
+
+    applyCommand(command, handlers, ctx);
+
+    expect(calls).toBe(0);
+    expect(rejected).toEqual([{ command, reason: 'match-ended' }]);
   });
 });
